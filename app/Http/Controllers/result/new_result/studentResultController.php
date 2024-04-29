@@ -1450,7 +1450,7 @@ class studentResultController extends Controller
             foreach ($exam_title as $key2 => $exam) {
                 
                 $exam_marks = DB::table('result_marks as rm')
-                ->select('rm.id', 'rm.student_id', 'rm.exam_id', 'rce.exam_id as ExamId', 'rce.title', DB::raw('SUM(rm.points) as points') ,DB::raw('sum(rce.points) as total'))
+                ->select('rm.id', 'rm.student_id', 'rm.exam_id', 'rce.exam_id as ExamId', 'rce.title', DB::raw('SUM(rm.points) as points') ,DB::raw('sum(rce.points) as total'),'rm.is_absent')
                 ->join('result_create_exam as rce', 'rce.id', '=', 'rm.exam_id')
                 ->where('rm.student_id', $student_id)
                 ->where('rm.sub_institute_id', $sub_institute_id)
@@ -1462,14 +1462,18 @@ class studentResultController extends Controller
                 //marks
                 $mark = $exam_marks->points ?? 0;
                 $total = $exam_marks->total ?? 0;
+                $is_absent = $exam_marks->is_absent ?? '-';
                 $ob_marks = ($total!=0) ? round(($mark/$total) * $exam->weightage,1) : 0;
                 // total subject wise
                 $total_ob_mark +=$ob_marks;
                 $total_sub_mark  += $exam->weightage;
                 // print marks
-                
-                $table .= '<td>'.$ob_marks.'</td>';
-               
+                if($is_absent != null && $is_absent!='' && $is_absent!='-'){
+                    $table .= '<td>'. $is_absent .'</td>';
+                }else{
+                    $table .= '<td>'. $ob_marks .'</td>';
+                }
+
                 // total marks array 
                 if(!isset($total_sub_arr[$exam->ExamTitle])){
                     $total_sub_arr[$exam->ExamTitle]=0;
@@ -1482,14 +1486,7 @@ class studentResultController extends Controller
             }
             // get grade arr
             $grade_arr = $this->getGradeScale($standard_id, '');
-            // static 18 
-            // if(!isset($total_sub_arr['static_18'])){
-            //     $total_sub_arr['static_18']=0;
-            // }
-            // if(!isset($total_mark_arr['static_18'])){
-            //     $total_mark_arr['static_18']=0;
-            // }
-
+           
             // total marks array 
             if(!isset($total_sub_arr['Total'])){
                 $total_sub_arr['Total']=0;
@@ -1497,16 +1494,14 @@ class studentResultController extends Controller
             if(!isset($total_mark_arr['Total'])){
                 $total_mark_arr['Total']=0;
             }
+            // convert into 100 
+            $outof100 = ($total_sub_mark!=0) ? ($total_ob_mark * 100) / $total_sub_mark : 0 ;
 
-            // static 18 
-            // $total_mark_arr['static_18']+=18;
-            // $total_sub_arr['static_18']+=20;    
-            // total marks array             
-            $total_mark_arr['Total']+=$total_ob_mark;
-            $total_sub_arr['Total']+=$total_sub_mark;    
+            $total_mark_arr['Total']+=$outof100;
+            $total_sub_arr['Total']+=100;    
             // print subject wise marks and grade        
             // $table .= '<td>18</td>';
-            $table .= '<td class="data_center">'.$total_ob_mark.'</td><td class="data_center">' . $this->getGrade($grade_arr, $total_sub_mark, $total_ob_mark) . '</td>';
+            $table .= '<td class="data_center">'.$outof100.'</td><td class="data_center">' . $this->getGrade($grade_arr, $total_sub_mark, $total_ob_mark) . '</td>';
             $table.='<tr>';
         }
 
