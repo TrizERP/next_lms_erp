@@ -39,11 +39,11 @@
                             </div>
                             <div class="col-md-4 form-group">
                                 <label>Doctor Name </label>
-                                <input type="text" id='doctor_name' name="doctor_name" class="form-control" required>
+                                <input type="text" id='doctor_name' name="doctor_name" class="form-control">
                             </div>
                             <div class="col-md-4 form-group">
                                 <label>Doctor Contact </label>
-                                <input type="text" id='doctor_contact' name="doctor_contact" class="form-control" required>
+                                <input type="text" id='doctor_contact' name="doctor_contact" class="form-control">
                             </div>
                             <div class="col-md-4 form-group ml-0 mr-0">
                                 <label>Date</label>

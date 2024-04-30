@@ -578,7 +578,7 @@ $route = ['dashboard'];
     function openTTMS(){
        var username = '{{$userEmail}}';
        var password = '{{$userPassword}}';
-       var url = 'http://crm.triz.co.in/customerportal/index.php?api=Login&module=Portal&q=' +
+       var url = 'https://crm.triz.co.in/customerportal/index.php?api=Login&module=Portal&q=' +
         encodeURIComponent(JSON.stringify({
             "password": "{{$userPassword}}",
             "username": "{{$userEmail}}",

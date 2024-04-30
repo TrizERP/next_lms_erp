@@ -41,14 +41,14 @@
 
                 <div class="col-md-4 form-group">
                     <label>User whatsapp No </label>
-                    <input type="text" id='user_whatsapp_no' required name="user_whatsapp_no" class="form-control"
+                    <input type="number" id='user_whatsapp_no' required name="user_whatsapp_no" class="form-control"
                            value="{{$data['user_whatsapp_no']}}">
                     @error('user_whatsapp_no')
                     <span style="color: red">{{$message}}</span>
                     @enderror
                 </div>
                 <div class="col-md-4 form-group">
-                    <label>User Whatsapp Sid</label>
+                    <label>User Whatsapp SID</label>
                     <input type="text" id='user_whatsapp_sid' required name="user_whatsapp_sid" class="form-control"
                            value="{{$data['user_whatsapp_sid']}}">
                     @error('user_whatsapp_sid')
