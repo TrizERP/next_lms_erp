@@ -138,7 +138,7 @@ class BookController extends Controller
             $createBook->publisher_name = $request->publisher_name;
             $createBook->publish_year = $request->publish_year;
             $createBook->publish_place = $request->publish_place;
-            $createBook->collation = $request->collation;
+            $createBook->pages = $request->pages;
             $createBook->series_title = $request->series_title;
             $createBook->call_number = $request->call_number;
             $createBook->language = $request->language;

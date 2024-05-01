@@ -19,7 +19,7 @@
     </tr>
     <tr>
         <td>Bank A/C No</td>
-        <td>{{$employeeData['bank_no']}}</td>
+        <td>{{ isset($employeeData['bank_no']) ? $employeeData['bank_no'] : '-'}}</td>
         <td>Days Present</td>
         <td>{{$employeeData['total_day']}}</td>
     </tr>
@@ -59,7 +59,7 @@
             <td align="right">{{ $employeeSalary[0][3] == 'allowance' ? $employeeSalary[0][1]: '-'}}</td>
             <td align="right">{{$employeeSalary[0][3] == 'allowance' ? $employeeSalary[0][2] : '-'}}</td>
             @if(isset($employeeSalary[1]))
-                @if($employeeSalary[1][3] == 'allowance')
+                @if(isset($employeeSalary[1][3]) && $employeeSalary[1][3] == 'allowance')
                     <td>&nbsp;&nbsp;-</td>
                     <td align="right">-</td>
                     </tr>
@@ -71,8 +71,8 @@
                     <td align="right">-</td>
                     </tr>
                 @else
-                    <td>&nbsp;&nbsp;{{$employeeSalary[1][3] == 'deduction' ? $employeeSalary[1][0] : '-'}}</td>
-                    <td align="right">{{$employeeSalary[1][3] == 'deduction' ? $employeeSalary[1][2] : '-'}}</td>
+                    <td>&nbsp;&nbsp;{{ isset($employeeSalary[1][3]) && $employeeSalary[1][3] == 'deduction' ? $employeeSalary[1][0] : '-'}}</td>
+                    <td align="right">{{ isset($employeeSalary[1][3]) && $employeeSalary[1][3] == 'deduction' ? $employeeSalary[1][2] : '-'}}</td>
                 @endif
             @else
                 <td>&nbsp;&nbsp;-</td>

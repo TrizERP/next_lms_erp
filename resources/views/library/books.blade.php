@@ -220,7 +220,7 @@
                                     <div class="col-md-4">
                                         <div class="form-group">
                                             <label for="">Book Size/ Number of page</label>
-                                            <input type="number" type="any" name="collation" id="collation"
+                                            <input type="number" type="any" name="pages" id="pages"
                                                 class="form-control" placeholder="Enter Book Size/ Number of page">
                                         </div>
                                     </div>
@@ -535,7 +535,7 @@
             $('input[type="number"]').val('');   
             $('#no_span').remove();               
 
-           $('#title,#sub_title,#material_resource_type,#no_of_items,#author_name,#isbn_issn,#classification,#publisher_name,#publish_year,#publish_place,#collation,#series_title,#call_number,#language,#source,#subject,#price,#price_currency,#notes,#review, #edition, #tags, #no_of_items').prop('required', true);               
+           $('#title,#sub_title,#material_resource_type,#no_of_items,#author_name,#isbn_issn,#classification,#publisher_name,#publish_year,#publish_place,#pages,#series_title,#call_number,#language,#source,#subject,#price,#price_currency,#notes,#review, #edition, #tags, #no_of_items').prop('required', true);               
         })
         $(document).on("click", ".btn-edit", function(e) {
            
@@ -579,7 +579,7 @@
                         $('#publisher_name').val(data.data[0].publisher_name);
                         $('#publish_year').val(data.data[0].publish_year);
                         $('#publish_place').val(data.data[0].publish_place);
-                        $('#collation').val(data.data[0].collation);
+                        $('#pages').val(data.data[0].pages);
                         $('#series_title').val(data.data[0].series_title);
                         $('#call_number').val(data.data[0].call_number);
                         $('#language').val(data.data[0].language);

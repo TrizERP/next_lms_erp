@@ -21,9 +21,9 @@ class studentResultController extends Controller
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
 
-        $data['data'] = result_template::where('sub_institute_id', $sub_institute_id)->orderBy('sort_order')->get()->toArray();
+        $data['data'] = result_template::where('sub_institute_id', $sub_institute_id)->where('status', 1)->orderBy('sort_order')->get()->toArray();
         if (empty($data['data'])) {
-            $data['data'] = result_template::where('sub_institute_id', 0)->orderBy('sort_order')->get()->toArray();
+            $data['data'] = result_template::where('sub_institute_id', 0)->where('status', 1)->orderBy('sort_order')->get()->toArray();
         }
         $data['terms'] = DB::table('academic_year')->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->get()->toArray();
          if (session()->has('data')) { // check if it exists
@@ -48,9 +48,9 @@ class studentResultController extends Controller
         // get students
         $studentData = SearchStudent($grade, $standard, $division);
         
-        $res['data'] = result_template::where('sub_institute_id', $sub_institute_id)->orderBy('sort_order')->get()->toArray();
+        $res['data'] = result_template::where('sub_institute_id', $sub_institute_id)->where('status', 1)->orderBy('sort_order')->get()->toArray();
         if (empty($res['data'])) {
-            $res['data'] = result_template::where('sub_institute_id', 0)->orderBy('sort_order')->get()->toArray();
+            $res['data'] = result_template::where('sub_institute_id', 0)->where('status', 1)->orderBy('sort_order')->get()->toArray();
         }
         $res['terms'] = DB::table('academic_year')->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->get()->toArray();
 
@@ -1167,7 +1167,7 @@ class studentResultController extends Controller
                         $table.='<th class="data_center"><b>'.$title->ExamTitle.'<br>('.$title->weightage.')</b></th>'; 
                         $total_weightage += $title->weightage;
                     }
-            $table.='<th><b>Total ('.$total_weightage.')</b></th>
+            $table.='<th><b>Total<br/>('.$total_weightage.')</b></th>
             <th><b>Grade</b></th>
             </tr>            
             </thead>
@@ -1177,7 +1177,7 @@ class studentResultController extends Controller
         foreach ($get_subject as $key => $value) {
             $table .= '<tr>
             <td class="data_center" width="50px" '.$student_id.'>'.($key+1).'</td>
-            <td>' . $value->subject_name . '</td>';
+            <td style="text-align:left !important">' . $value->subject_name . '</td>';
             // exam wise marks
             $total_sub_mark = $total_ob_mark=0;
             foreach ($exam_title as $key2 => $exam) {
@@ -1253,9 +1253,9 @@ class studentResultController extends Controller
         $stu_detail='<table class="aca-year" style="width:100%;border-collapse:collapse; border:1px solid #e68023;margin-bottom:10px" cellspacing="0"  border="1" align="right">
         <tbody>
             <tr>
-                <th><b><span style="font-size: medium;"><b>Date of Birth</span></b></th>
-                <th><b><span style="font-size: medium;"><b>G.R.</span></b></th>
-                <th><b><span style="font-size: medium;"><b>Per.</span></b></th>
+                <th><b>Date of Birth</b></th>
+                <th><b>G.R.</b></th>
+                <th><b>Per.</b></th>
             </tr>
             <tr>
                 <td><b>'.\Carbon\Carbon::parse($getStudentDetails->dob)->format('d-m-Y').'</b></td>
@@ -1263,9 +1263,9 @@ class studentResultController extends Controller
                 <td><b>'.$per.'</b></td>
             </tr>
             <tr>
-            <th><b><span style="font-size: medium;"><b>Height</span></b></th>
-            <th><b><span style="font-size: medium;"><b>Weight</span></b></th>
-            <th><b><span style="font-size: medium;"><b>Att.</span></b></th>
+            <th><b>Height</b></th>
+            <th><b>Weight</b></th>
+            <th><b>Att.</b></th>
             </tr>
             <tr>
                 <td>'.$getStudentDetails->height.'</td>
@@ -1428,8 +1428,8 @@ class studentResultController extends Controller
                     <th><b>1st<br>Term</b></th>
                     <th><b>2nd<br>Term</b></th>
                     <th colspan="2"><b>Annual<br>Evalution</b></th>
-                    <th rowspan="2"><b>Total (100)</b></th>
-                    <th rowspan="2"><b>Grade</b></th>
+                    <th rowspan="2"><b>Total<br/>(100)</b></th>
+                    <th rowspan="2"><b>Practical<br/>Assessment </b></th>
                 </tr>   
                 <tr>';
                 foreach ($exam_title as $key => $exam) {
@@ -1444,7 +1444,7 @@ class studentResultController extends Controller
 
             $table .= '<tr>
             <td class="data_center" width="50px" '.$student_id.'>'.($key+1).'</td>
-            <td><b>' . $value->subject_name . '</b></td>';
+            <td style="text-align:left !important"><b>' . $value->subject_name . '</b></td>';
             // exam wise marks
             $total_sub_mark = $total_ob_mark=0;
             foreach ($exam_title as $key2 => $exam) {
@@ -1557,7 +1557,7 @@ class studentResultController extends Controller
                     });
                     
                 $grade_arr_co = DB::table('result_co_scholastic_grades')->whereIN('map_id',$grade_map)->where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
-                   
+                                
                 foreach ($getCoScholastic as $key => $value) 
                 {
                     $ob_mark=0;
@@ -1576,65 +1576,20 @@ class studentResultController extends Controller
                     }
                     $getCoScholastic[$key]->ob_mark = $ob_mark;
                 }
-
-                $groupedData = [];
-                foreach ($getCoScholastic as $key => $value) {
-                    $groupedData[$value->child_title][$value->term_id] = $value->ob_mark;
-                }
-        // echo "<pre>";print_r($groupedData);exit;
-        if(!empty($groupedData)){
-                $co_scholastic = '<table  class="aca-year" style="width:100%;border-collapse:collapse; border:1px solid #e68023;margin-bottom:10px" cellspacing="0"  border="1" align="right">
-                <tr>
-                    <th></th>';
-                // foreach ($getCoScholastic as $key => $value) {
-                //     if($key <=2){
-                //         $co_scholastic.='<th>'.$value->child_title.'</th>';
-                //     }
-                // }
-                // $co_scholastic.='</tr><tr>';
-                // foreach ($getCoScholastic as $key => $value) {
-                //     if($key <=2){
-                //         $co_scholastic.='<td>'.$value->ob_mark.'</td>';
-                //     }
-                // }
-                // $co_scholastic.='</tr><tr>';
-                // foreach ($getCoScholastic as $key => $value) {
-                //     if($key >2){
-                //         $co_scholastic.='<th>'.$value->child_title.'</th>';
-                //     }
-                // }
-                // $co_scholastic.='</tr><tr>';
-                // foreach ($getCoScholastic as $key => $value) {
-                //     if($key >2){
-                //         $co_scholastic.='<td>'.$value->ob_mark.'</td>';
-                //     }
-                // }
-                    
-                foreach ($term_name as $key => $terms) {
-                    if($terms->title=='TERM-1'){
-                        $co_scholastic.='<th>Gujarati</th>';
-                    }elseif($terms->title=='TERM-2'){
-                        $co_scholastic.='<th>Hindi</th>';
-                    }elseif($terms->title=='TERM-3'){
-                        $co_scholastic.='<th>English</th>';
-                    }
-                }
-
-                $co_scholastic.='</tr>';
-                $coTitle=[];
-                foreach ($groupedData as $key => $value) {
-                   $co_scholastic.='<tr>
-                    <th>'.$key.'</th>';
-                    foreach ($term_name as $termskey => $terms) {
-                        if(isset($value[$terms->term_id])){
-                            $co_scholastic.='<td>'.$value[$terms->term_id].'</td>';
-                        }
-                    }
-                   $co_scholastic.='</tr>';
-                }
-                $co_scholastic .='</table>';
+        // echo "<pre>";print_r($getCoScholastic);exit;
+        if(!empty($getCoScholastic)){
+            $co_scholastic = '<table  class="aca-year" style="width:80%;border-collapse:collapse; border:1px solid #e68023;margin-bottom:10px" cellspacing="0"  border="1">
+            <tr>
+                <th class="data_center"><b>Co-curricular Activities</b></th>
+                <th class="data_center"><b>Participation</b></th>
+            </tr>';
+            foreach ($getCoScholastic as $key => $value) {
+                $co_scholastic.=' <tr><td class="data_center"><b>'.$value->child_title.'</b></td>
+                                <td class="data_center"><b>'.$value->ob_mark.'</b></td></tr>';
+            }
+            $co_scholastic .='</table>';
         }
-        // echo "<pre>";print_r($co_scholastic);
+        // echo "<pre>";print_r($co_scholastic);exit;
         $get_grade_ranges = $this->getGradeRange($standard_id);
         $grade_range = '';
         if (!empty($get_grade_ranges['mark_range'])) {
