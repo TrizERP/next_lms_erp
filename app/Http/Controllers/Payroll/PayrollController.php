@@ -904,7 +904,7 @@ class PayrollController extends Controller
         $get_user_detail = DB::table('tbluserprofilemaster as tum')
             ->selectRaw('ts.*,tum.name as profile_name')
             ->join('tbluser as ts',function($join){
-                $join('ts.user_profile_id', 'tum.id')->where('ts.status',1);  // 23-04-24 by uma
+                $join->on('ts.user_profile_id','=','tum.id')->where('ts.status',1);  // 23-04-24 by uma
             })
             ->where(['tum.sub_institute_id' => $sub_institute_id, 'ts.id' => $id])
             ->first();
@@ -941,7 +941,7 @@ class PayrollController extends Controller
                 } else {
                     //return $payrollType->amount_type;
                     $deductionkey = $deductionkey + 1;
-                    $salaryData[$deductionkey] = [$payrollType->payroll_name,$employeeSalaryStructureDetails[$payrollType->id],$employeeSalaryDetails[$payrollType->id],'deduction'];
+                    $salaryData[$deductionkey] = isset($employeeSalaryDetails[$payrollType->id]) ? [$payrollType->payroll_name,$employeeSalaryStructureDetails[$payrollType->id],$employeeSalaryDetails[$payrollType->id],'deduction'] : [];
                     $deductionkey = $deductionkey + 1;
                 }
             }
