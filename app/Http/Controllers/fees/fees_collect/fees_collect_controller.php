@@ -30,6 +30,7 @@ use function App\Helpers\OtherBreackOfMonthHead;
 use function Illuminate\Session\expired;
 use App\Models\fees\fees_breackoff\fees_breackoff;
 use App\Http\Controllers\easy_com\send_sms_parents\send_sms_parents_controller;
+use Carbon\Carbon;
 
 class fees_collect_controller extends Controller
 {
@@ -2318,12 +2319,19 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
         // echo "<pre>";print_r($sub_institute_id);exit;
         $res['bank_data'] = bankmasterModel::get()->toArray();
         
-        $res['fees_config_data'] = tblfeesConfigModel::where([
+        $config = tblfeesConfigModel::where([
             'sub_institute_id' => $sub_institute_id, 'syear' => $syear,
-        ])->get()->toArray();
+        ])->first();
 
-        if (!empty($res['fees_config_data'])) {
-            $res['fees_config_data'] = $res['fees_config_data'][0];
+        if (!empty($config)) {
+            $late_fees_amount = isset($config->late_fees_amount) ? $config->late_fees_amount : 0;
+            $hillsFine = $this->hillsFine($id,$request,$late_fees_amount);
+
+            if($sub_institute_id==254){
+                $res['hillsFine'] = $hillsFine;
+            }
+            $res['fees_config_data'] = $config;
+            // echo "<pre>";print_r($res['hillsFine']);exit;
             return is_mobile($type, "fees/fees_collect/fees_collect", $res, "view");exit;
         } 
         $res = [
@@ -2332,6 +2340,69 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
         ];
 
         return is_mobile($type, "fees_collect.index", $res, "redirect");
+    }
+
+
+    // 01-03-2024 by uma autoincrement fine amount for hills
+    public function hillsFine($id,$request,$late_fees_amount){
+           
+        $stu_arr = [
+            "0" => $id,
+        ];
+
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+
+        $thisMonth = Carbon::now()->month;
+        $thisYear = Carbon::now()->year;
+        $currentMonth = $thisMonth.$thisYear;
+
+        $studentDetails = DB::table('tblstudent as s')->join('tblstudent_enrollment as se','s.id','=','se.student_id')->select('se.standard_id as std')->where(['s.sub_institute_id'=>$sub_institute_id,'s.id'=>$id])->where('se.syear',$syear)->first();
+
+        $fineAmount = [];
+        $inAmount = 0;
+
+        if($studentDetails){
+            // $currentMonth = 72024; // for testing
+            $getBreakoff = FeeBreackoff($stu_arr, $studentDetails->std,$syear,$sub_institute_id);
+            $monthBreakoff = [];
+            if(!empty($getBreakoff)){
+                foreach($getBreakoff as $key => $value){
+                    if($value->month_id == $currentMonth){
+                        break;
+                    }
+                    $monthBreakoff[] = $value->month_id;
+                }
+            }
+            // get months which student have paid fees 
+            $findFees = DB::table('fees_collect')->selectRaw('group_concat(term_id) as month_id')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear])->where('student_id',$id)->where('is_deleted','N')->groupBy('student_id')->first();
+
+            // when fees breakoff found 
+            if(!empty($monthBreakoff)){
+                $monthBreakoff = array_reverse($monthBreakoff);
+                // if fees for any month find in fees collect table 
+                if(!empty($findFees)){
+                    $monthsArr = explode(',',$findFees->month_id);
+                    foreach ($monthBreakoff as $key => $value) {
+                        if(!in_array($value,$monthsArr)){
+                            // add monthwise fine 
+                            $fineAmount[$value] = $inAmount + $late_fees_amount;
+                            $inAmount +=$late_fees_amount;
+                        }
+                    }
+                }else{
+                    foreach ($monthBreakoff as $key => $value) {
+                        // add monthwise fine 
+                        $fineAmount[$value] = $inAmount + $late_fees_amount;
+                        $inAmount +=$late_fees_amount;
+                    }
+                }
+            }
+        }
+        // get total of all months fine 
+        $fineAmount['total'] = !empty($fineAmount) ? array_sum($fineAmount) : 0;
+
+        return $fineAmount;
     }
 
     // function is used to get data of collected fees for perticular student
