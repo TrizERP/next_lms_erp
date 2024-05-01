@@ -13,8 +13,8 @@
       </div>
    </div>
    @php 
-   $colours = [0=>"FE8C00",1=>"396AFC",2=>"BF5AE0",3=>"FF8008",4=>"2B5876",5=>"FF6A00",6=>"8CC63E",7=>"B0B0B0",8=>"CCBF08",9=>"396AFC",10=>"BF5AE0",11=>"FF8008"];
-   $colours2 = [0=>"396AFC",1=>"BF5AE0",2=>"FF8008",3=>"ADE5FC",4=>"FF6A00",5=>"8CC63E",6=>"B0B0B0",7=>"CCBF08",8=>"396AFC",9=>"BF5AE0",10=>"FF8008",11=>"FE8C00"];
+   $colours = [0=>"FE8C00",1=>"396AFC",2=>"BF5AE0",3=>"6C08FF",4=>"2B5876",5=>"B3AC4D",6=>"8CC63E",7=>"B0B0B0",8=>"CCBF08",9=>"396AFC",10=>"BF5AE0",11=>"FF8008"];
+   $colours2 = [0=>"396AFC",1=>"BF5AE0",2=>"FF8008",3=>"ADE5FC",4=>"B3AC4D",5=>"8CC63E",6=>"B0B0B0",7=>"CCBF08",8=>"396AFC",9=>"BF5AE0",10=>"FF8008",11=>"FE8C00"];
    @endphp
    <!-- main div  -->
    <div class="lmsmain">
@@ -66,7 +66,7 @@
                   @endforeach
                </div>
                @else
-               <center> No Data Found</center>
+               <center> No Marks Found</center>
                @endif
             </div>
          </div>
@@ -113,7 +113,7 @@
                </div>
                @endforeach
                @else
-               <center> No Data Found</center>
+               <center> No Marks Found</center>
                @endif
             </div>
          </div>
