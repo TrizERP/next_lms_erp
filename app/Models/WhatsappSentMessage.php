@@ -12,6 +12,6 @@ class WhatsappSentMessage extends Model
 
     function student()
     {
-        return $this->hasOne(tblstudentModel::class,'id','student_id');
+        return $this->hasMany(tblstudentModel::class,'id','student_id');
     }
 }

@@ -38,12 +38,12 @@
                             @foreach($data['data'] as $key => $data)
                                 <tr>
                                     <td>{{$key + 1}}</td>
-                                    <td>{{$data->standard_id}}</td>
-                                    <td>{{$data->division_id}}</td>
-                                    <td>{{$data->first_name.' '.$data->last_name}}</td>
-                                    <td>{{$data->mobile}}</td>
-                                    <td>{{$data->created_by_name ?? '-'}}</td>
-                                    <td>{{$data->message ?? '-'}}</td>
+                                    <td>{{$data['standard_id']}}</td>
+                                    <td>{{$data['division_id']}}</td>
+                                    <td>{{ (isset($data['student'][0])) ? $data['student'][0]['first_name'].' '.$data['student'][0]['last_name'] : '-'}}</td>
+                                    <td>{{ (isset($data['student'][0])) ? $data['student'][0]['mobile'] : '-' }}</td>
+                                    <td>{{$data['created_by_name'] ?? '-'}}</td>
+                                    <td>{{$data['message'] ?? '-'}}</td>
                                 </tr>
                             @endforeach
                             </tbody>
