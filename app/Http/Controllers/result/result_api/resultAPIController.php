@@ -11,6 +11,7 @@ use function App\Helpers\is_mobile;
 class resultAPIController extends Controller
 {
     //
+
     public function resultPersonalize(Request $request){
         $type = $request->type;
         $sub_institute_id = $request->sub_institute_id;
@@ -19,12 +20,11 @@ class resultAPIController extends Controller
         $res['message']="No data Found"; 
         // previous data start
         $allData = DB::table('result_personalize_marks')->selectRaw('student_name,enrollment_no,standard,subject,sum(total) as total,sum(obtain) as obtain')->where('sub_institute_id',$sub_institute_id)
-        ->where('syear','!=',$syear)->when($request->enrollment_no, function ($q) use($request) {
+        ->where('syear',$syear)->when($request->enrollment_no, function ($q) use($request) {
             $q->where('enrollment_no',$request->enrollment_no);
         })->when($request->standard, function ($q) use($request) {
             $q->where('standard',$request->standard);
         })->groupBy(['subject','standard'])->get()->toArray();  
-
         $previous_marks=[];
 
         $previous_marks['previousdata']['overallresult'] = [];
@@ -45,7 +45,7 @@ class resultAPIController extends Controller
                     'sub_institute_id' => $sub_institute_id,
                     'enrollment_no' => $value->enrollment_no
                 ])
-                ->where('syear', '!=', $syear)
+                ->where('syear', $syear)
                 ->groupBy('standard', 'exam')
                 ->get()
                 ->toArray();
@@ -150,6 +150,7 @@ class resultAPIController extends Controller
                     $newData[$value->standard]['subjectdata'][$subjectIndex]['examdata'][] = $examData;
                 } else {
                     $newData[$value->standard]['subjectdata'][] = [
+                        'subject_id'=>$value->subject_id,
                         'title' => $value->subject,
                         'examdata' => [$examData],
                     ];
@@ -164,6 +165,7 @@ class resultAPIController extends Controller
                     'totalobtain' => $stdObtMark,                    
                     'subjectdata' => [
                         [
+                            'subject_id'=>$value->subject_id,
                             'title' => $value->subject,
                             'examdata' => [$examData],
                         ],
@@ -210,17 +212,22 @@ class resultAPIController extends Controller
         ->get()->toArray();
         $subTotMark = $subObtMark = 0;
         $allchapterdata=[];
+        
+        set_time_limit(300);
+
         // db::enableQueryLog();
         $chapterData = DB::table('question_paper as qp')
             ->select('qp.standard_id','qp.subject_id','qp.id AS question_paper_id','qp.paper_name','le.student_id','le.question_paper_id',DB::raw('SUM(qp.total_marks) as total_marks'),DB::raw('SUM(IFNULL(le.total_right, 0)) AS obtain_marks'),'qp.question_ids',DB::raw('GROUP_CONCAT(qm.question_title) as question_titles'),'ch.chapter_name',DB::raw('ch.id as chapter_id'),)
-            ->join('lms_online_exam as le', 'le.question_paper_id', '=', 'qp.id')
+            ->leftjoin('lms_online_exam as le', 'le.question_paper_id', '=', 'qp.id')
             ->join('lms_question_master as qm', function ($join) {
                 $join->on('qm.sub_institute_id','=','qp.sub_institute_id')->whereRaw('qm.id IN (qp.question_ids)');
             })
             ->join('chapter_master as ch', 'ch.id', '=', 'qm.chapter_id')
             ->where('qp.sub_institute_id', $sub_institute_id)
             ->where('qp.standard_id', $request->standard)
-            ->where('qp.subject_id', $request->subject_id)
+            ->when($request->subject_id,function($q) use($request){
+                $q->where('qp.subject_id', $request->subject_id);
+            })
             ->where('qp.syear',$syear)
             // ->where('le.student_id',$request->student_id)
             ->groupBy('ch.chapter_name')
@@ -231,10 +238,10 @@ class resultAPIController extends Controller
         foreach ($subjectDatas as $value) {
             $subTotMark +=$value->total;
             $stdObtMark +=$value->obtain;
-
-            $allchapterdata['subjectdata'] = $value->subject;             
-            $allchapterdata['totalmarks'] = $subTotMark;
-            $allchapterdata['totalobtain'] = $stdObtMark;
+           
+            $allchapterdata[$value->subject_id]['subjectdata'] = $value->subject;             
+            $allchapterdata[$value->subject_id]['totalmarks'] = $subTotMark;
+            $allchapterdata[$value->subject_id]['totalobtain'] = $stdObtMark;
 
         // Access the results
         $chapters=$all_mapped_data=[];
@@ -275,14 +282,14 @@ class resultAPIController extends Controller
             // echo "<pre>";print_r($explodedQuestionPaper);exit;
             //chapter progress
             $chpaterProgress=DB::table('question_paper as qp')
-            ->join('lms_online_exam as loe','loe.question_paper_id','=','qp.id')
+            ->leftjoin('lms_online_exam as loe','loe.question_paper_id','=','qp.id')
             ->join('lms_question_master as lqm',function($join){
                 $join->on('qp.sub_institute_id','=','lqm.sub_institute_id')->whereRaw('lqm.id IN (qp.question_ids)');
             })
             ->join('tblstudent as s','s.id','=','loe.student_id')
             ->join('tblstudent_enrollment as se','se.student_id','=','s.id')
             ->selectRaw("qp.*,lqm.*,loe.*,s.*,sum(qp.total_marks) as total_marks, sum(IFNULL(loe.total_right, '0')) AS obtain_marks")
-            ->whereRaw('qp.standard_id='.$request->standard.' and qp.subject_id = '.$request->subject_id.' and qp.sub_institute_id='.$sub_institute_id.' and qp.syear='.$syear.' and lqm.chapter_id='.$row->chapter_id.' ')->groupBy('s.id')->get()->toArray();
+            ->whereRaw('qp.standard_id='.$request->standard.'  and qp.sub_institute_id='.$sub_institute_id.' and qp.syear='.$syear.' and lqm.chapter_id='.$row->chapter_id.' ')->groupBy('qp.subject_id')->get()->toArray();
             // echo "<pre>";print_r($getCurrentStudentExam->question_paper_id);exitand loe.question_paper_id NOT IN ('.$getCurrentStudentExam->question_paper_id.') ;
             $progressData = $all_students=[];
            
@@ -310,7 +317,7 @@ class resultAPIController extends Controller
            
             $progressData = array_values($progressData);
            
-            $chapters[]=array(
+            $chapters[$row->chapter_id]=array(
                 "title"=>$row->chapter_name,
                 "totalmarks"=>$row->total_marks,
                 "totalobtain"=>$row->obtain_marks,
@@ -342,17 +349,19 @@ class resultAPIController extends Controller
             );
         }
 
-            $allchapterdata['chapterdata'] = $chapters;
+            $allchapterdata[$item->subject_id]['chapterdata'] = $chapters;
          
         }
 
         $flattenedData2 = [];
         
         foreach ($newData as $standard) {
-            $flattenedData2['subjectdata']=!empty($allchapterdata['subjectdata']) ? $allchapterdata['subjectdata'] : [];
-            $flattenedData2['totalmarks']=!empty($allchapterdata['totalmarks']) ? $allchapterdata['totalmarks'] : [];
-            $flattenedData2['totalobtain']=!empty($allchapterdata['totalobtain']) ? $allchapterdata['totalobtain'] : [];  
-            $flattenedData2['chapterdata']=!empty($allchapterdata['chapterdata']) ? $allchapterdata['chapterdata'] : [];                                  
+            foreach($subjectDatas as $k =>$subjectVal){
+                    $flattenedData2[$subjectVal->subject_id]['subjectdata']=!empty($allchapterdata[$subjectVal->subject_id]['subjectdata']) ? $allchapterdata[$subjectVal->subject_id]['subjectdata'] : [];
+                    $flattenedData2[$subjectVal->subject_id]['totalmarks']=!empty($allchapterdata[$subjectVal->subject_id]['totalmarks']) ? $allchapterdata[$subjectVal->subject_id]['totalmarks'] : [];
+                    $flattenedData2[$subjectVal->subject_id]['totalobtain']=!empty($allchapterdata[$subjectVal->subject_id]['totalobtain']) ? $allchapterdata[$subjectVal->subject_id]['totalobtain'] : [];  
+                    $flattenedData2[$subjectVal->subject_id]['chapterdata']=!empty($allchapterdata[$subjectVal->subject_id]['chapterdata']) ? $allchapterdata[$subjectVal->subject_id]['chapterdata'] : [];                     
+             }             
         }
         $current_marks['currentdata']['subjectdata'] = $flattenedData2; 
         

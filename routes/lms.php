@@ -45,6 +45,7 @@ use App\Http\Controllers\bazar\bulkUploadedReportController;
 use App\Http\Controllers\lms\pal\palController;
 use App\Http\Controllers\lms\virtualclassroomController;
 use App\Http\Controllers\school_setup\sub_std_mapController;
+use App\Http\Controllers\lms\lmsDashboardController;
 use Illuminate\Support\Facades\Route;
 
 Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute']], function () {
@@ -72,6 +73,8 @@ Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute']
 
     Route::get('ajax_ChapterwiseLOmaster', [lomasterController::class, 'ajax_ChapterwiseLOmaster'])->name('ajax_ChapterwiseLOmaster');
 
+    Route::resource('lmsdashboard', lmsDashboardController::class);
+    
     Route::resource('lo_master', lomasterController::class);
 
     Route::resource('lo_indicator', loindicatorController::class);
