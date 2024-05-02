@@ -2267,6 +2267,26 @@ $overall_total = $overall_total / 2;
                 $post_start_date = date('Y-m-d', strtotime($post_start_date . ' +1 day'));
             }
             $attTotDays = $attTotDays - count($calArr);
+
+/* Rajesh 02-05-2024            
+$cal_event = DB::table('calendar_events as ce')
+    ->join('academic_year as ay', 'ce.syear', '=', 'ay.syear')
+    ->where(['ce.sub_institute_id' => $sub_institute_id, 'ce.syear' => $syear])
+    ->whereRaw("FIND_IN_SET('$standard_id', ce.standard) AND ce.event_type IN ('holiday', 'vacation')")
+    ->whereBetween('ce.school_date', [$post_start_date, $post_end_date])
+    ->pluck('ce.school_date')
+    ->toArray();
+
+$attTotDays = 0;
+$current_date = $post_start_date;
+while ($current_date <= $post_end_date) {
+    $day_of_week = date('w', strtotime($current_date)); // Get the day of the week (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
+    if ($day_of_week != 0 && !in_array($current_date, $cal_event)) {
+        $attTotDays++;
+    }
+    $current_date = date('Y-m-d', strtotime($current_date . ' +1 day'));
+}
+*/       
             // db::enableQueryLog();
             $attarray = DB::table('attendance_student as ap')
                 ->join('tblstudent as s', 'ap.student_id', '=', 's.id')
@@ -2516,7 +2536,7 @@ $overall_total = $overall_total / 2;
                                     if($obtained_mark_arr[0]!='N.A.' || $obtained_mark_arr[0]!='EX'){
                                         $total_marks += $w_m;
                                     }
-                                    $table .= '<td class="data_center" '. $exam_id . '-'.$val->subject_id.'-'.$standard_id.'>' . number_format($obtained_mark_arr[0],2) .'</td>';
+                                    $table .= '<td class="data_center" '. $exam_id . '-'.$val->subject_id.'-'.$standard_id.'>' . number_format((float)$obtained_mark_arr[0], 2) .'</td>';
                                 }
                                 
                         // echo $exam_id;echo "<pre>";print_r($obtained_mark_sum);

@@ -158,7 +158,7 @@ class studentReportController extends Controller
 
 
         $array = [
-            'tblstudent.enrollment_no as enrollment_no','tblstudent.roll_no as roll_no', 'tblstudent.id as id', 'standard.name as standard', 'division.name as division',// 'academic_section.title as grade',
+            'tblstudent.enrollment_no as enrollment_no','tblstudent_enrollment.roll_no as roll_no', 'tblstudent.id as id', 'standard.name as standard', 'division.name as division',// 'academic_section.title as grade',
         ];
         $header = [
             'enrollment_no' => get_string('grno','request'), 'student_name' => 'Student Name', 'standard' => get_string('standard','request'), 'division' => get_string('division','request'),// 'grade' => get_string('academicsection','request'),
@@ -170,7 +170,7 @@ class studentReportController extends Controller
 
         if ($request->input('dynamicFields') == '') {
             $array = [
-                'tblstudent.enrollment_no as enrollment_no','tblstudent.roll_no as roll_no', 'tblstudent.id as id', 'standard.name as standard', 'division.name as division',// 'academic_section.title as grade',
+                'tblstudent.enrollment_no as enrollment_no','tblstudent_enrollment.roll_no as roll_no', 'tblstudent.id as id', 'standard.name as standard', 'division.name as division',// 'academic_section.title as grade',
             ];
             $header = [
                 'enrollment_no' => get_string('grno','request'), 'student_name' => 'Student Name', 'standard' => get_string('standard','request'), 'division' => get_string('division','request'),// 'grade' => get_string('academicsection','request'),
