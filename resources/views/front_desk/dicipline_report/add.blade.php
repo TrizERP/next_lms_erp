@@ -18,6 +18,10 @@
                 $standard_id = $data['standard_id'];
                 $division_id = $data['division_id'];
             }
+            $stu_name = isset($data['stu_name']) ? $data['stu_name'] : '';
+            $mobile = isset($data['mobile']) ? $data['mobile'] : '';
+            $grno = isset($data['grno']) ? $data['grno'] : '';
+            $uniqueid = isset($data['uniqueid']) ? $data['uniqueid'] : '';
         @endphp
         <div class="card">
             @if ($message = Session::get('success'))
@@ -26,18 +30,54 @@
                 <strong>{{ $message }}</strong>
             </div>
             @endif
-            <div class="row">                
-                <div class="col-lg-12 col-sm-12 col-xs-12">
-                    @php
-                    if(isset($data['data'])){
-                    @endphp
+            
                     @php
                         $fromDate = request('from_date');
                         $toDate = request('to_date');
                     @endphp
-                    <form action="{{ route('dicipline_report.index') }}" enctype="multipart/form-data" method="post">
-                        {{ method_field("POST") }}
+                    <div class="row">                
+                <div class="col-lg-12 col-sm-12 col-xs-12">
+                    <form action="{{ route('dicipline_report.create') }}" enctype="multipart/form-data" method="post">
+                        {{ method_field("GET") }}
                         {{csrf_field()}}
+                        <div class="row">                            
+                            {{ App\Helpers\SearchChain('4','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
+                            <div class="col-md-4 form-group">
+                        <label>{{App\Helpers\get_string('studentname')}}<i class="mdi mdi-lead-pencil"></i></label>
+                        <input type="text" id="stu_name" placeholder="{{App\Helpers\get_string('studentname')}}" name="stu_name" class="form-control" @if(isset($data['stu_name'])) value="{{$data['stu_name']}}" @endif>
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label>{{App\Helpers\get_string('uniqueid')}}<i class="mdi mdi-lead-pencil"></i></label>
+                        <input type="text" id="uniqueid" placeholder="{{App\Helpers\get_string('uniqueid')}}" name="uniqueid" class="form-control" @if(isset($data['uniqueid'])) value="{{$data['uniqueid']}}" @endif>
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label>Mobile</label>
+                        <input type="text" id="mobile" placeholder="Mobile" name="mobile" class="form-control" @if(isset($data['mobile'])) value="{{$data['mobile']}}" @endif>
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label>{{App\Helpers\get_string('grno')}}<i class="mdi mdi-lead-pencil"></i></label>
+                        <input type="text" id="grno" placeholder="{{App\Helpers\get_string('grno')}}" name="grno" class="form-control" @if(isset($data['grno'])) value="{{$data['grno']}}" @endif>
+                    </div>
+                            <div class="col-md-4 form-group mr-0 ml-0">
+                                <label>From Date</label>
+                                <input type="text" name="from_date" class="form-control mydatepicker"  value="{{$fromDate}}">
+                            </div>
+                            <div class="col-md-4 form-group ml-0">
+                                <label>To Date</label>
+                                <input type="text" name="to_date" class="form-control mydatepicker" value="{{$toDate}}" >
+                            </div>
+                            <div class="col-md-12 form-group">
+                                <center>
+                                    <input type="submit" name="submit" value="Search" class="btn btn-success" >
+                                </center>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+@if(!empty($data['data']))
+            <div class="row">                
+                <div class="col-lg-12 col-sm-12 col-xs-12">
                         <div class="table-responsive">
                             @php
                                 echo App\Helpers\get_school_details("$grade_id","$standard_id","$division_id");
@@ -54,36 +94,25 @@
                                         <th>Mobile</th>
                                         <th>Dicipline</th>
                                         <th>Message</th>
-                                        <th>Name</th>
+                                        <th class="text-left">Name</th>
                                     </tr>
                                 </thead>
                                 <tbody>                                    
-                                    @php
-                                    $arr = $data['data'];
-                                    foreach ($arr as $id=>$col_arr){
-                                    @endphp
+                                    @foreach ($data['data'] as $id=>$col_arr)
                                     <tr>
-                                        <td>@php echo $id+1; @endphp</td>
-                                        <td>@php echo $col_arr->first_name.' '.$col_arr->middle_name.' '.$col_arr->last_name; @endphp</td>
-                                        <td>@php echo $col_arr->standard_name; @endphp</td>
-                                        <td>@php echo $col_arr->division_name; @endphp</td>
-                                        <td>@php echo $col_arr->mobile; @endphp</td>
-                                        <td>@php echo $col_arr->dicipline; @endphp</td>
-                                        <td>@php echo $col_arr->message; @endphp</td>
-                                        <td>@php echo $col_arr->name; @endphp</td>                                        
+                                        <td>{{ $id+1 }}</td>
+                                        <td>{{ $col_arr['first_name'].' '.$col_arr['middle_name'].' '.$col_arr['last_name'] }}</td>
+                                        <td>{{ $col_arr['standard_name'] }}</td>
+                                        <td>{{ $col_arr['division_name'] }}</td>
+                                        <td>{{ $col_arr['mobile'] }}</td>
+                                        <td>{{ $col_arr['dicipline'] }}</td>
+                                        <td>{{ $col_arr['message'] }}</td>
+                                        <td>{{ $col_arr['name'] }}</td>                                        
                                     </tr>
-                                    @php
-                                    }
-                                    @endphp
+                                    @endforeach
                                 </tbody>
                             </table>
                         </div>
-                    </form>
-                    @php
-                    }else{
-                    echo "No Student Found.";
-                    }
-                    @endphp
                 </div>
             </div>
             @if (count($errors) > 0)
@@ -98,6 +127,7 @@
             @endif
         </div>
     </div>
+    @endif
 </div>
 
 

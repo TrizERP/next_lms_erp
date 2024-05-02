@@ -16,6 +16,14 @@
                 <strong>{{ $data['message'] }}</strong>
             </div>
             @endif
+            @php
+                $grade_id = $standard_id = $division_id = '';
+                    if(isset($data['grade_id'])){
+                        $grade_id = $data['grade_id'];
+                        $standard_id = $data['standard_id'];
+                        $division_id = $data['division_id'];
+                    }
+            @endphp
             <div class="row">                
                 <div class="col-lg-12 col-sm-12 col-xs-12">
                     <form action="{{ route('dicipline_report.create') }}" enctype="multipart/form-data" method="post">
@@ -24,7 +32,22 @@
                         <div class="row">                            
                             
                             {{ App\Helpers\SearchChain('4','single','grade,std,div') }}
-                           
+                            <div class="col-md-4 form-group">
+                        <label>{{App\Helpers\get_string('studentname')}}<i class="mdi mdi-lead-pencil"></i></label>
+                        <input type="text" id="stu_name" placeholder="{{App\Helpers\get_string('studentname')}}" name="stu_name" class="form-control" @if(isset($data['stu_name'])) value="{{$data['stu_name']}}" @endif>
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label>{{App\Helpers\get_string('uniqueid')}}<i class="mdi mdi-lead-pencil"></i></label>
+                        <input type="text" id="uniqueid" placeholder="{{App\Helpers\get_string('uniqueid')}}" name="uniqueid" class="form-control" @if(isset($data['uniqueid'])) value="{{$data['uniqueid']}}" @endif>
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label>Mobile</label>
+                        <input type="text" id="mobile" placeholder="Mobile" name="mobile" class="form-control" @if(isset($data['mobile'])) value="{{$data['mobile']}}" @endif>
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label>{{App\Helpers\get_string('grno')}}<i class="mdi mdi-lead-pencil"></i></label>
+                        <input type="text" id="grno" placeholder="{{App\Helpers\get_string('grno')}}" name="grno" class="form-control" @if(isset($data['grno'])) value="{{$data['grno']}}" @endif>
+                    </div>
                             <div class="col-md-4 form-group mr-0 ml-0">
                                 <label>From Date</label>
                                 <input type="text" name="from_date" class="form-control mydatepicker" >

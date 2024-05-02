@@ -67,9 +67,11 @@ class lmsDashboardController extends Controller
             ->where('se.student_id',$user_id)
             ->where('syear',$syear)
             ->first(); 
-
-            $request3 = new Request(['type' => "API",'sub_institute_id'=>$sub_institute_id,'enrollment_no'=>$request->enrollment_no,'student_id'=>$currentData->id,'standard'=>$currentData->standard_id,'syear'=>$syear]);
-        $res['selectedCurrentData'] = $resultAPIController->currentResult($request3);
+            
+            if(isset($currentData->id)){
+                $request3 = new Request(['type' => "API",'sub_institute_id'=>$sub_institute_id,'enrollment_no'=>$request->enrollment_no,'student_id'=>$currentData->id,'standard'=>$currentData->standard_id,'syear'=>$syear]);
+                $res['selectedCurrentData'] = $resultAPIController->currentResult($request3);
+            }
         $res['standardCount'] = count($res['standardData']);
         $res['user_id'] = $user_id;
         $res['sub_institute_id'] = $sub_institute_id;

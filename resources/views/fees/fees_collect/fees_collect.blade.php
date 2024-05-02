@@ -329,21 +329,30 @@
 											<input type="text" class="form-control" name="remarks" id="remarks" autocomplete="off">
 										</td>
 									</tr>
-									@php $cheque_return_charges0 = $data['cheque_return_charges'][0]; $cheque_return_charges = $data['fees_config_data']['late_fees_amount'];
-									$sub_institute_id=[257]; @endphp
+									@php 
+										if(session()->get('sub_institute_id')==254 && !empty($data['hillsFine'])){
+											$cheque_return_charges0 = $data['hillsFine']['total'];
+											$cheque_return_charges=$data['hillsFine']['total'];
+										}else{
+											$cheque_return_charges0 = $data['cheque_return_charges'][0];
+											$cheque_return_charges = $data['fees_config_data']->late_fees_amount;
+										}
+										$sub_institute_id=[257]; 
+									@endphp
 									<tr>
 										<td></td>
 										<td>Fine(Include Cheque return charges)</td>
 										<td></td>
 										<td>
 											@if(in_array(session()->get('sub_institute_id'),$sub_institute_id) )
-
-											<input type="text" name="fees_data[fine]" id="cheque_return_charges1" class="form-control cheque_return_charges1" value="@if(date('d') >= 5 && $total_amt!=0) {{$data['fees_config_data']['late_fees_amount']}} @else {{$cheque_return_charges0}} @endif" >
-										
-											<input type="hidden" name="hidden_cheque_return_charges" id="hidden_cheque_return_charges" class="form-control cheque_return_charges1" value="{{$data['fees_config_data']['late_fees_amount']}}"> @else
-											<input type="text" name="fees_data[fine]" id="cheque_return_charges" class="form-control" value="@php if(isset($cheque_return_charges0)) echo $cheque_return_charges0; @endphp"
-											 readonly="readonly">
-											<input type="hidden" name="hidden_cheque_return_charges" id="hidden_cheque_return_charges" class="form-control" value="@if(isset($cheque_return_charges0)){{$cheque_return_charges0}}@endif"> @endif
+												<input type="text" name="fees_data[fine]" id="cheque_return_charges1" class="form-control cheque_return_charges1" value="@if(date('d') >= 5 && $total_amt!=0) {{$data['fees_config_data']['late_fees_amount']}} @else {{$cheque_return_charges0}} @endif" >
+											
+												<input type="hidden" name="hidden_cheque_return_charges" id="hidden_cheque_return_charges" class="form-control cheque_return_charges1" value="{{$data['fees_config_data']['late_fees_amount']}}"> 
+											@else
+												<input type="text" name="fees_data[fine]" id="cheque_return_charges" class="form-control" value="@php if(isset($cheque_return_charges0)) echo $cheque_return_charges0; @endphp"
+												readonly="readonly">
+												<input type="hidden" name="hidden_cheque_return_charges" id="hidden_cheque_return_charges" class="form-control" value="@if(isset($cheque_return_charges0)){{$cheque_return_charges0}}@endif">
+											@endif
 										</td>
 									</tr>
 
@@ -710,7 +719,7 @@ function checkForm() {
 			}
 
 
-$('.months').click(function() {
+			$('.months').click(function() {
 				var currentCheckedIndex = $('.months').index(this); 
 
 				$('.months').each(function(index) {
@@ -727,13 +736,23 @@ $('.months').click(function() {
 			function monthCheck() {
 				var checkedMonths = new Array();
 					var j = 0;
+					var TotalFin = 0;
 				for (var i = 0; i < document.getElementsByClassName('months').length; i++) {
 					if (document.getElementsByClassName('months')[i].checked) {
 						checkedMonths[j] = document.getElementsByClassName('months')[i].value;
+						@if(session()->get('sub_institute_id')==254 && !empty($data['hillsFine']) )
+							@if($data['hillsFine']!=0)
+								var hillsFine = @json($data['hillsFine']);
+								if(!isNaN(hillsFine[checkedMonths[j]])){
+									var fineVal = hillsFine[checkedMonths[j]];
+									TotalFin += fineVal;
+								}
+							@endif
+						@endif
 						j = j + 1;
 					}
 				}
-
+				$('#cheque_return_charges').val(TotalFin);
 				$.ajax({
 					type: "POST",
 					url: "{{route('get-fees-list')}}",
