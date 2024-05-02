@@ -82,7 +82,7 @@ class bulkStudentController extends Controller
         $tblcustom_fields['bloodgroup']['name'] = 'Blood Group';
         $tblcustom_fields['adharnumber']['name'] = 'Adhar Number';
         $tblcustom_fields['anuualincome']['name'] = 'Annual Income';
-        $tblcustom_fields['roll_no']['name'] = 'Roll Number';
+        $tblcustom_fields['roll_no']['name'] = 'Roll No';
         $tblcustom_fields['image']['name'] = 'Image';
         $tblcustom_fields['uniqueid']['name'] = 'Unique ID';
         $tblcustom_fields['dise_uid']['name'] = 'Dise U_ID';
@@ -246,7 +246,9 @@ class bulkStudentController extends Controller
         $array = [
             'tblstudent_enrollment.standard_id as standard',
             'tblstudent_enrollment.section_id as division',
-            'tblstudent_enrollment.grade_id as grade','tblstudent_enrollment.roll_no as roll_no', 'tblstudent.id as id',
+            'tblstudent_enrollment.grade_id as grade',
+            'tblstudent_enrollment.roll_no as roll_no',
+            'tblstudent.id as id',
         ];
         //$header = array('student_name' => 'Student Name');
         $header = [

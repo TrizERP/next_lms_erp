@@ -14,7 +14,6 @@ class tblstudentModel extends Model
     protected $fillable = [
         'id',
         'enrollment_no',
-        'roll_no',
         'admission_year',
         'first_name',
         'middle_name',
