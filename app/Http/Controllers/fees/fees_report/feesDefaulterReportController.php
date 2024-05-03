@@ -85,7 +85,7 @@ class feesDefaulterReportController extends Controller
         $extraSearchArray['tblstudent_enrollment.syear'] = $syear;
         $extraSearchArray['tblstudent.sub_institute_id'] = $sub_institute_id;
 
-        $feesData = tblstudentModel::selectRaw("tblstudent.id,CONCAT_WS(' ',tblstudent.first_name,tblstudent.middle_name,tblstudent.last_name) AS student_name,academic_section.title as grade,standard.name as standard_name,division.name as division_name,tblstudent.enrollment_no,tblstudent.mobile,tblstudent.uniqueid,tblstudent.roll_no")
+        $feesData = tblstudentModel::selectRaw("tblstudent.id,CONCAT_WS(' ',tblstudent.first_name,tblstudent.middle_name,tblstudent.last_name) AS student_name,academic_section.title as grade,standard.name as standard_name,division.name as division_name,tblstudent.enrollment_no,tblstudent.mobile,tblstudent.uniqueid,tblstudent_enrollment.roll_no")
             ->join('tblstudent_enrollment', 'tblstudent.id', '=', 'tblstudent_enrollment.student_id')
             ->join('academic_section', 'academic_section.id', '=', 'tblstudent_enrollment.grade_id')
             ->join('standard', function($join) use($marking_period_id){
