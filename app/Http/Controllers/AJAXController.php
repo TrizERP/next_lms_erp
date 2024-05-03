@@ -207,7 +207,13 @@ class AJAXController extends Controller
 
         $explode = explode(',', $request->grade_id);
         // menu_ids to get class teacher class only
-        $menu_ids = [80,102,156];
+        // menu_ids to get class teacher class only
+        if(session()->get('sub_institute_id')==195){
+            $menu_ids = [80,102];
+        }else{
+            $menu_ids = [80,102,156];
+        }
+
         $getClass=DB::table('class_teacher')->whereRaw('sub_institute_id='.session()->get('sub_institute_id').' and teacher_id ='.session()->get('user_id').' and syear="'.session()->get('syear').'"')->first();
         if (count($explode) > 1) {
             $query = DB::table('standard');
@@ -266,7 +272,7 @@ class AJAXController extends Controller
             //START Check for subject teacher assigned
             $subjectTeacherStdArr = session()->get('subjectTeacherStdArr');
             if ($subjectTeacherStdArr != "" && ($classTeacherStdArr == "" || in_array($module_name, $module_array))) {
-                if(in_array(session()->get('right_menu_id'),$menu_ids) && session()->get('user_profile_name')=="Teacher"){
+                if(in_array(session()->get('right_menu_id'),$menu_ids) && session()->get('user_profile_name')=="Teacher" && isset($getClass->standard_id)){
                     $query->where('id', $getClass->standard_id);
                 }else{
                 $query->whereIn('id', $subjectTeacherStdArr);
@@ -309,7 +315,13 @@ class AJAXController extends Controller
             '8' => 'co_scholastic_marks_entry',            
         ];
 
-        $menu_ids = [80,102,156];
+       // menu_ids to get class teacher class only
+       if(session()->get('sub_institute_id')==195){
+            $menu_ids = [80,102];
+        }else{
+            $menu_ids = [80,102,156];
+        }
+
         $getClass=DB::table('class_teacher')->whereRaw('sub_institute_id='.session()->get('sub_institute_id').' and teacher_id ='.session()->get('user_id').' and syear="'.session()->get('syear').'"')->first();
 
         $standard_id = $request->standard_id;
@@ -2050,7 +2062,7 @@ class AJAXController extends Controller
         //$type_bloom = $request->type_bloom;
         $type_learning = $request->type_learning;
         $sub_institute_id=session()->get('sub_institute_id');
-
+        $bloom = $depth = $learning = $reason_bloom =$reason_depth= '';
         if($request->has('question') && $question!==''){
             if($request->type_depth){
                 $options = DB::table('lms_mapping_type')->select(DB::raw('group_concat(name) as type_name'))->where('parent_id',$request->type_depth)->first();                
@@ -2229,33 +2241,14 @@ class AJAXController extends Controller
     }
 
     public function pythonTimetable(Request $request){
-        $sub_institute_id = 1;
-        $syear = 2021;
-        $type = 'API';
-        $standard_id = 39;
-        $subject_id = 3976;
-        $chapter_id = 43;
-        $enrollment_no = 101;
-
-        if($request->file_name=="fees"){
-            $command = 'python3 /home/fees_analysis_10_04.py';
-        }else if ($request->file_name=="timetable"){
-            $command = 'python3 /home/timetable.py';
+        $sub_institute_id = session()->get('sub_institute_id');
+        $file_response = shell_exec('python3 /home/admission.py');
+        if($file_response==null){
+            echo "file has no response";
         }else{
-            // Construct the command string with parameters
-            $command = "python3 /home/pal/pal.py $sub_institute_id $syear $standard_id $subject_id $chapter_id $enrollment_no";
-        }
-      
-        // Execute the command and capture the response
-        $file_response = shell_exec($command);
-
-        // if($file_response==null){
-        //     echo $command;
-        // }else{
             echo "<pre>";print_r($file_response);
-        // }
+        }
         exit; 
-        
         $file_response = shell_exec('python3 /home/fees_analysis_1.py ' . escapeshellarg($sub_institute_id));
 
         // Decode the JSON string
