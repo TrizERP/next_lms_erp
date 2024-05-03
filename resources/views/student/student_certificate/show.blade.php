@@ -42,7 +42,7 @@
                                 <div class="alert alert-danger alert-block">
                                     @endif
                                     <button type="button" class="close" data-dismiss="alert">×</button>
-                                    <strong>{{ $data['message'] }}</strong>
+                                    <strong>{!! $data['message'] !!}</strong>
                                 </div>
                             @endif
             <form action="{{ route('student_certificate_report.create') }}" enctype="multipart/form-data">
