@@ -38,6 +38,7 @@
                                     <th>From Shift</th>
                                     <th>From Bus</th>
                                     <th>From</th>
+                                    <th>Distance</th>
                                     <th>Amount</th>
                                     <th>To Shift</th>
                                     <th>To Bus</th>
@@ -90,8 +91,13 @@
                                         </select>
                                     </td>
                                     <td>
-                                        <input type="hidden" class="form-control distance" disabled="true" name="values[{{ $col_arr['student_id'] }}][distance]" id="distance_{{ $col_arr['student_id'] }}" value="{{ $col_arr['distance']?? 1 }}" readonly>
+                                        <input type="text" class="form-control distance"  disabled="true"  name="values[{{ $col_arr['student_id'] }}][distance]" id="distance_{{ $col_arr['student_id'] }}" value="{{ $col_arr['distance']?? 1 }}" onkeyup="updateAmount({{$col_arr['student_id']}})">
 
+                                        <input type="hidden" class="form-control shift_rate"  disabled="true" id="shift_rate_{{ $col_arr['student_id'] }}" value="{{ $col_arr['shift_rate']?? 1 }}" >
+
+                                        <input type="hidden" class="form-control km_amount"  disabled="true" id="km_amount_{{ $col_arr['student_id'] }}" value="{{ $col_arr['km_amount']?? 1 }}" >
+                                    </td>
+                                    <td>
                                         <input type="text" class="form-control distance_amount" disabled="true" name="values[{{ $col_arr['student_id'] }}][distance_amount]" id="distance_amount_{{ $col_arr['student_id'] }}" value="{{ $col_arr['total_amount']?? 0}}" readonly>
                                     </td>                                    
                                     <td>
@@ -331,9 +337,19 @@
                 }
             });
         }
-
-
     });
+
+    function updateAmount(stuId) {
+            const distance = parseFloat($('#distance_'+stuId).val());
+            const shiftRate = parseFloat($("#shift_rate_"+stuId).val());
+            const kmAmount = parseFloat($("#km_amount_"+stuId).val());
+            
+            // Check if distance is zero
+            const totalAmt = (distance === 0) ? 0 : shiftRate + (distance * kmAmount);
+
+            $('#distance_amount_'+stuId).val(totalAmt.toFixed(2));
+        }
+
     $('#myTable').on('change', '.to_shift', function () {
         var selectedValue = $(this).val();
         var row = $(this).closest('tr'); // get the row
