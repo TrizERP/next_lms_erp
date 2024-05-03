@@ -275,7 +275,7 @@ class tblstudentController extends Controller
                 && $key != 'division' && $key != 'student_quota' && $key != 'optional_subject' && $key != 'previous_school_gr_no'
                 && $key != 'house' && $key != 'father_occupation' && $key != 'father_qualification' && $key != 'mother_occupation'
                 && $key != 'mother_qualification' && $key != 'guardian_name' && $key != 'guardian_relation' && $key != 'house_no'
-                && $key != 'building_name_appratment_name_society_name' && $key != 'district_name') { //&& $key != 'place_of_birth' && $key != 'previous_school_name'
+                && $key != 'building_name_appratment_name_society_name' && $key != 'district_name' && $key != 'roll_no') { //&& $key != 'place_of_birth' && $key != 'previous_school_name'
                 if (is_array($value)) {
                     $value = implode(",", $value);
                 }
@@ -320,7 +320,7 @@ class tblstudentController extends Controller
 				$key == 'place_of_birth' || $key == 'previous_school_name'
 				|| $key  == 'father_occupation' || $key  == 'father_qualification' || $key  == 'mother_occupation'
 				|| $key  == 'mother_qualification' || $key  == 'guardian_name' || $key  == 'guardian_relation'
-				|| $key  == 'house_no' || $key == 'building_name_appratment_name_society_name' || $key  == 'district_name'
+				|| $key  == 'house_no' || $key == 'building_name_appratment_name_society_name' || $key  == 'district_name'|| $key  == 'roll_no'
 			) {
 				if (is_array($value)) {
 					$value = implode(",", $value);
@@ -361,7 +361,7 @@ class tblstudentController extends Controller
                 && $key != 'id' && $key != 'optional_subject' && $key != 'previous_school_gr_no' && $key != 'house'
                 && $key != 'father_occupation' && $key != 'father_qualification' && $key != 'mother_occupation'
                 && $key != 'mother_qualification' && $key != 'guardian_name' && $key != 'guardian_relation'
-                && $key != 'house_no' && $key != 'building_name_appratment_name_society_name' && $key != 'district_name') { //&& $key != 'place_of_birth' && $key != 'previous_school_name'
+                && $key != 'house_no' && $key != 'building_name_appratment_name_society_name' && $key != 'district_name' && $key != 'roll_no') { //&& $key != 'place_of_birth' && $key != 'previous_school_name'
                 if (is_array($value)) {
                     $value = implode(",", $value);
                 }
@@ -391,7 +391,7 @@ class tblstudentController extends Controller
 				$key == 'place_of_birth' || $key == 'previous_school_name'
 				|| $key  == 'father_occupation' || $key  == 'father_qualification' || $key  == 'mother_occupation'
 				|| $key  == 'mother_qualification' || $key  == 'guardian_name' || $key  == 'guardian_relation'
-				|| $key  == 'house_no' || $key == 'building_name_appratment_name_society_name' || $key  == 'district_name'
+				|| $key  == 'house_no' || $key == 'building_name_appratment_name_society_name' || $key  == 'district_name' || $key  == 'roll_no'
 			) {
                 if (is_array($value)) {
                     $value = implode(",", $value);
