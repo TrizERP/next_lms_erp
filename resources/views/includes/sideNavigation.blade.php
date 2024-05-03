@@ -24,8 +24,8 @@ $school_logo = session()->get('school_logo');
                 @foreach ($menuMaster as $key => $value)
                 @php
                 $icon_name = $value['icon'];
-                $icon_nrml = env('APP_URL') . "/admin_dep/images/menu-$icon_name.png";
-                $icon_hvr = env('APP_URL') . "/admin_dep/images/menu-$icon_name-white.png";
+                $icon_nrml = "../admin_dep/images/menu-$icon_name.png"; //env('APP_URL') . 
+                $icon_hvr = "../admin_dep/images/menu-$icon_name-white.png"; //env('APP_URL') . 
                 @endphp
                 <a class="nav-link" id="menu-{{ $i }}-tab" data-toggle="pill" href="#menu-{{ $i }}" role="tab" aria-controls="menu-{{ $i }}" aria-selected="false">
                     <span class="menu-main-icon">
