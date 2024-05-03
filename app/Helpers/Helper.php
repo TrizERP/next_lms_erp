@@ -726,7 +726,7 @@ if (!function_exists('SearchStudent')) {
         );
 
 
-        $select_fields = "ts.*,se.syear,se.student_id,se.grade_id,
+        $select_fields = "ts.*,se.syear,se.student_id,se.grade_id,se.roll_no,
                 se.standard_id,se.section_id,se.student_quota,se.start_date,
                 se.end_date,se.enrollment_code,se.drop_code,se.drop_remarks,
                 se.drop_remarks,se.term_id,se.remarks,se.admission_fees,
@@ -907,7 +907,7 @@ if (!function_exists('FeeBreackoff')) {
                     $join->on('fb.standard_id', '=', DB::raw("'" . $standard . "'"));
                 }
             })
-            ->selectRaw("s.*, se.syear, se.student_id, se.grade_id, se.standard_id, se.section_id, se.student_quota, g.medium, sq.title AS stu_quota,
+            ->selectRaw("s.*, se.syear, se.student_id, se.grade_id, se.standard_id, se.section_id, se.student_quota, g.medium, sq.title AS stu_quota,se.roll_no,
                     se.start_date, se.end_date, se.enrollment_code, se.drop_code, se.drop_remarks, se.drop_remarks,
                     se.term_id, se.remarks, se.admission_fees, se.house_id, se.lc_number, sum(fb.amount) as bkoff,
                     st.name as standard_name, d.name as division_name, fb.month_id,
@@ -968,7 +968,7 @@ if (!function_exists('FeeBreakoffHeadWise')) {
                 $join->on('ae.id', '=', 'ar.enquiry_id')
                     ->on('ar.sub_institute_id', '=', 'ae.sub_institute_id');
             })
-            ->selectRaw("s.*, se.syear, se.student_id, se.grade_id, se.standard_id, se.section_id, se.student_quota,
+            ->selectRaw("s.*, se.syear, se.student_id, se.roll_no, se.grade_id, se.standard_id, se.section_id, se.student_quota,
                     se.start_date, se.end_date, se.enrollment_code, se.drop_code, se.drop_remarks, se.drop_remarks, se.term_id,
                     se.remarks, se.admission_fees, se.house_id, se.lc_number, fb.amount, st.name as standard_name, d.name as division_name,
                     fb.month_id, ft.display_name, ft.fees_title, ft.mandatory, '' as breakoff, s.father_name, s.mother_name,
@@ -1433,7 +1433,7 @@ if (!function_exists('getStudents')) {
             })->leftJoin('fees_collect as fc', function ($join) {
                 $join->on('fc.student_id', '=', 's.id')->on('fc.sub_institute_id','=','s.sub_institute_id')->on('se.syear','=','fc.syear')->where('fc.is_deleted', 'N')->groupBy('fc.term_id');
             })
-            ->selectRaw("tc.*,s.*,se.syear,se.student_id,se.grade_id,se.standard_id,se.section_id,se.student_quota,
+            ->selectRaw("tc.*,s.*,se.syear,se.student_id,se.grade_id,se.standard_id,se.section_id,se.student_quota,se.roll_no,
                 se.start_date,se.end_date,se.enrollment_code,se.drop_code,se.drop_remarks,se.drop_remarks,se.term_id,
                 se.remarks,se.admission_fees,se.house_id,se.lc_number,st.name standard_name,st.short_name as short_standard_name,st.school_stream,s.city,se.standard_id,se.section_id,se.roll_no,
                 se.grade_id,d.name as division_name,s.father_name,s.mother_name,ss.SchoolName as school_name,ss.Mobile as school_mobile,

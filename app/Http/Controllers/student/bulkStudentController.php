@@ -529,7 +529,7 @@ class bulkStudentController extends Controller
         // unset($newRequest['student_image']);
         $finalArray = array();
         foreach ($newRequest as $key => $value) {
-            if ($key != '_method' && $key != '_token' && $key != 'submit' && $key != 'grade' && $key != 'standard' && $key != 'division' && $key != 'student_quota' && $key != 'id' && $key != 'house') {
+            if ($key != '_method' && $key != '_token' && $key != 'submit' && $key != 'grade' && $key != 'standard' && $key != 'division' && $key != 'student_quota' && $key != 'id' && $key != 'house' && $key != 'updateData'  && $key != 'roll_no') {
                 if (is_array($value)) {
                     $value = implode(",", $value);
                 }
