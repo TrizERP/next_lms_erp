@@ -64,6 +64,7 @@
                     </center>
                 </div>
                 <center>
+                <button id="printDiv" class="btn btn-success" onclick="printContent()">Test Print</button>
                     <button id="ajax_PDF_Certificate" class="btn btn-success" >Print Certificate</button>
                     {{--onclick="certificate_save_data();"--}}
                 </center>
@@ -104,7 +105,13 @@
     //             }
     //     });
     // }
-
+    function printContent() {
+    var printWindow = window.open('', '_blank');
+    var content = document.getElementById('printPage').innerHTML;
+    printWindow.document.open();
+    printWindow.document.write('<html><head><title>Print</title></head><body onload="window.print()">' + content + '</body></html>');
+    printWindow.document.close();
+}
     if ( window.history.replaceState )
     {
       window.history.replaceState( null, null, window.location.href );

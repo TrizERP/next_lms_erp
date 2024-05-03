@@ -37,7 +37,16 @@ class studentCertificateController extends Controller
         $standard = $request->input('standard');
         $division = $request->input('division');
 
-        $studentData = SearchStudent($grade, $standard, $division);
+        $res['stu_name'] = $stu_name = $request->stu_name;
+        $res['uniqueid'] = $uniqueid = $request->uniqueid;
+        $res['mobile'] = $mobile = $request->mobile;
+        $res['grno'] = $grno = $request->grno;
+        $res['from_date'] = $from_date = $request->from_date;
+        $res['to_date'] = $to_date = $request->to_date;
+        
+        // serach student from helper  serachStudent function
+        $studentData = SearchStudent($grade, $standard, $division, "","","", $stu_name , $uniqueid, $mobile, $grno,"","");
+
         if (! isset($studentData[0]['enrollment_no'])) {
             $res['status_code'] = 0;
             $res['message'] = "No student found please check your search panel";
@@ -83,7 +92,7 @@ class studentCertificateController extends Controller
 
         if(!empty($studentEnroll) && $template == 'Transfer Certificate'){
             $res['status_code'] = 0;
-            $res['message'] = "Certificate is already Issued with Certificate No ".implode(',',$studentEnroll).". Please check in Student Certificate Report.";
+            $res['message'] = "Certificate is already Issued with Certificate No <a href='".route('student_certificate_report.index')."' target='_blank'>".implode(',',$studentEnroll)."</a>. Please check in Student Certificate Report.";
             return is_mobile($type, "student/student_certificate/show_student", $res, "view");     
         }
         $data = getStudents($student_ids);
@@ -115,14 +124,7 @@ class studentCertificateController extends Controller
         $insert_ids = '';
         $i = 0;
         foreach ($data as $key => $value) {
-            // check exists or not
-            $CheckExistCertificate = DB::table('certificate_history as c')
-            ->where('c.sub_institute_id', $sub_institute_id)
-            ->where('certificate_type', $template)
-            ->where('student_id',$value['id'])
-            ->where('syear', $syear)->first();
-
-            // get certificate new number 
+         // get certificate new number 
             $certificate_no_result = DB::table('certificate_history as c')
                 ->selectRaw('(IFNULL(MAX(cast(c.certificate_number AS UNSIGNED)),0) + 1) AS certificate_no')
                 ->where('c.sub_institute_id', $sub_institute_id)
@@ -130,14 +132,24 @@ class studentCertificateController extends Controller
                 ->where('syear', $syear)->get()->toArray();
             $certificate_no = $certificate_no_result[0]->certificate_no;
             
-            if ($template == 'Transfer Certificate' && !empty($CheckExistCertificate) && $sub_institute_id==47) 
+            if ($template == 'Transfer Certificate' &&  $sub_institute_id==254) 
             {
-                $certificate_no1 = $CheckExistCertificate->certificate_number;
+                $certificate_no_result = DB::table('certificate_history as c')
+                ->selectRaw('c.certificate_number')
+                ->where('c.sub_institute_id', $sub_institute_id)
+                ->where('certificate_type', $template)
+                ->where('syear', $syear)->orderBy('id','DESC')->first();
+                $year = substr($syear,'-2');
+                $prefix = $year.'-'.($year+1);
+                $getLastNo = explode('/',$certificate_no_result->certificate_number ?? 0);
+                $cno =($getLastNo[1] ?? 0)+ 1 + $i;
+                $certificate_no1 = $prefix.'/'.$cno;
+                $i++;
             }else{
                 $certificate_no1 = $certificate_no + $i;
                 $i++;
             }
-
+            // echo "<pre>";print_r($certificate_no1);exit;
             if(!isset($tData[0]['html_content']) || empty($tData[0]['html_content']) || $tData[0]['html_content']==null){
                 $res['status_code'] = 0;
                 $res['message'] = "Please Set Template For ".$request->template;
@@ -672,23 +684,26 @@ class studentCertificateController extends Controller
         $last_insert_ids = '';
         foreach ($data as $key => $value) {
             
-        $CheckExistCertificate = [];
-        if($template=="Transfer Certificate" && $sub_institute_id==47){
-            $CheckExistCertificate = DB::table('certificate_history as c') 
-            ->where('c.sub_institute_id', $sub_institute_id)
-            ->where('certificate_type', $template)
-            ->where('student_id',$value['id'])
-            ->where('syear', $syear)->first();
-        }
-        if(empty($CheckExistCertificate)){
-            $certificate_no_result = DB::table('certificate_history as c')
+       $certificate_no_result = DB::table('certificate_history as c')
                 ->selectRaw('(IFNULL(MAX(cast(c.certificate_number AS UNSIGNED)),0) + 1) AS certificate_no')
                 ->where('c.sub_institute_id', $sub_institute_id)
                 ->where('certificate_type', $template)
                 ->where('syear', $syear)->get()->toArray();
 
             $certificate_no = $certificate_no_result[0]->certificate_no;
-            
+
+            if($template=="Transfer Certificate" && $sub_institute_id==254){
+                $certificate_no_result = DB::table('certificate_history as c')
+                ->selectRaw('c.certificate_number')
+                ->where('c.sub_institute_id', $sub_institute_id)
+                ->where('certificate_type', $template)
+                ->where('syear', $syear)->orderBy('id','DESC')->first();
+                $year = substr($syear,'-2');
+                $prefix = $year.'-'.($year+1);
+                $getLastNo = explode('/',$certificate_no_result->certificate_number ?? 0);
+                $cno =($getLastNo[1] ?? 0)+ 1;
+                $certificate_no = $prefix.'/'.$cno;
+            }
             $html_content = $tData[0]['html_content'];
             
             $new_html_content = $this->create_html_content($syear, $sub_institute_id, $html_content, $value,
@@ -706,9 +721,6 @@ class studentCertificateController extends Controller
                 ]);
                 $last_inserted_id = DB::getPdo()->lastInsertId();
                 $last_insert_ids .= $last_inserted_id.',';
-        }else{
-            $last_insert_ids .=$CheckExistCertificate->id.',';
-        }
     }
 
         return rtrim($last_insert_ids, ',');
