@@ -119,7 +119,7 @@ class dicipline_reportController extends Controller
         }else{
             // get decipline data 
             $student_ids = array_column($studentLists, 'id');
-            $deciplineData = DB::table('dicipline')->selectRaw('*,id as des_id')->whereIn('student_id', $student_ids)->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear])->get()->toArray();
+            $deciplineData = DB::table('dicipline')->selectRaw('*,id as des_id')->whereIn('student_id', $student_ids)->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear])->orderBy('date_', 'desc')->get()->toArray();
             $studentArr = [];
 
             foreach ($deciplineData as $key => $value) {

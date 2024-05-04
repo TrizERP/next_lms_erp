@@ -320,7 +320,7 @@ class tblstudentController extends Controller
 				$key == 'place_of_birth' || $key == 'previous_school_name'
 				|| $key  == 'father_occupation' || $key  == 'father_qualification' || $key  == 'mother_occupation'
 				|| $key  == 'mother_qualification' || $key  == 'guardian_name' || $key  == 'guardian_relation'
-				|| $key  == 'house_no' || $key == 'building_name_appratment_name_society_name' || $key  == 'district_name'|| $key  == 'roll_no'
+				|| $key  == 'house_no' || $key == 'building_name_appratment_name_society_name' || $key  == 'district_name'
 			) {
 				if (is_array($value)) {
 					$value = implode(",", $value);
@@ -391,8 +391,7 @@ class tblstudentController extends Controller
 				$key == 'place_of_birth' || $key == 'previous_school_name'
 				|| $key  == 'father_occupation' || $key  == 'father_qualification' || $key  == 'mother_occupation'
 				|| $key  == 'mother_qualification' || $key  == 'guardian_name' || $key  == 'guardian_relation'
-				|| $key  == 'house_no' || $key == 'building_name_appratment_name_society_name' || $key  == 'district_name' || $key  == 'roll_no'
-			) {
+				|| $key  == 'house_no' || $key == 'building_name_appratment_name_society_name' || $key  == 'district_name') {
                 if (is_array($value)) {
                     $value = implode(",", $value);
                 }

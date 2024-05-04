@@ -95,6 +95,7 @@
                                         <th>Dicipline</th>
                                         <th>Message</th>
                                         <th class="text-left">Name</th>
+                                        <th>Date</th>
                                     </tr>
                                 </thead>
                                 <tbody>                                    
@@ -107,7 +108,8 @@
                                         <td>{{ $col_arr['mobile'] }}</td>
                                         <td>{{ $col_arr['dicipline'] }}</td>
                                         <td>{{ $col_arr['message'] }}</td>
-                                        <td>{{ $col_arr['name'] }}</td>                                        
+                                        <td>{{ $col_arr['name'] }}</td>
+                                        <td>{{ $col_arr['date_'] }}</td>
                                     </tr>
                                     @endforeach
                                 </tbody>
