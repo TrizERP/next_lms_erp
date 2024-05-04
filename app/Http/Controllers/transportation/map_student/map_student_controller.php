@@ -128,8 +128,10 @@ class map_student_controller extends Controller
                 $responce_arr['stu_data'][$id]['van-shift'] = $results[0]['from_bus_id']."-".$results[0]['from_shift_id'];
                 $responce_arr['stu_data'][$id]['van_shift'] = $this->van_shift();
                 $responce_arr['stu_data'][$id]['area'] = $this->area();
-                
-                }     
+                } else{
+                    $responce_arr['stu_data'][$id]['shift_rate'] = $shift[0]->shift_rate;
+                    $responce_arr['stu_data'][$id]['km_amount'] = $shift[0]->km_amount;
+                }    
              
                 $responce_arr['stu_data'][$id]['ddShift'] = $this->ddShift();
                

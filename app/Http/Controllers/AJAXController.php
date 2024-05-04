@@ -207,7 +207,13 @@ class AJAXController extends Controller
 
         $explode = explode(',', $request->grade_id);
         // menu_ids to get class teacher class only
-        $menu_ids = [80,102,156];
+        // menu_ids to get class teacher class only
+        if(session()->get('sub_institute_id')==195){
+            $menu_ids = [80,102];
+        }else{
+            $menu_ids = [80,102,156];
+        }
+
         $getClass=DB::table('class_teacher')->whereRaw('sub_institute_id='.session()->get('sub_institute_id').' and teacher_id ='.session()->get('user_id').' and syear="'.session()->get('syear').'"')->first();
         if (count($explode) > 1) {
             $query = DB::table('standard');
@@ -266,7 +272,7 @@ class AJAXController extends Controller
             //START Check for subject teacher assigned
             $subjectTeacherStdArr = session()->get('subjectTeacherStdArr');
             if ($subjectTeacherStdArr != "" && ($classTeacherStdArr == "" || in_array($module_name, $module_array))) {
-                if(in_array(session()->get('right_menu_id'),$menu_ids) && session()->get('user_profile_name')=="Teacher"){
+                if(in_array(session()->get('right_menu_id'),$menu_ids) && session()->get('user_profile_name')=="Teacher" && isset($getClass->standard_id)){
                     $query->where('id', $getClass->standard_id);
                 }else{
                 $query->whereIn('id', $subjectTeacherStdArr);
@@ -309,7 +315,13 @@ class AJAXController extends Controller
             '8' => 'co_scholastic_marks_entry',            
         ];
 
-        $menu_ids = [80,102,156];
+       // menu_ids to get class teacher class only
+       if(session()->get('sub_institute_id')==195){
+            $menu_ids = [80,102];
+        }else{
+            $menu_ids = [80,102,156];
+        }
+
         $getClass=DB::table('class_teacher')->whereRaw('sub_institute_id='.session()->get('sub_institute_id').' and teacher_id ='.session()->get('user_id').' and syear="'.session()->get('syear').'"')->first();
 
         $standard_id = $request->standard_id;
