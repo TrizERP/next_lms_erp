@@ -276,10 +276,11 @@ class studentBulkUpdateController extends Controller
             ->whereNull('se.end_date')
             ->orderBy('s.first_name')
             ->get()->toArray();
+            
             if(!empty($students_arr)){
                 $roll_no = 1;
                 foreach ($students_arr as $key => $value) {
-                    $update=DB::table('tblstudent')->where('id',$value->student_id)->update([
+                    $update=DB::table('tblstudent_enrollment')->where('student_id',$value->student_id)->update([
                         'roll_no'=>$roll_no,
                     ]);
                     $roll_no++;

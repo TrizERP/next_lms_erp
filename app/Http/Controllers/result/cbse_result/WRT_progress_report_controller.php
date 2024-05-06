@@ -242,7 +242,7 @@ class WRT_progress_report_controller extends Controller
         }
 
         $rank_data = $rank_data->groupBy("s.id")
-            ->orderBy('percentage', 'DESC')->orderBy('roll_no', 'ASC') //26-08-2023 By Rajesh Rafaliya - Rank display wrong as per 
+            ->orderBy('percentage', 'DESC')->orderBy('se.roll_no', 'ASC') //26-08-2023 By Rajesh Rafaliya - Rank display wrong as per 
             ->get()->toArray();
 
         $rank_data = json_decode(json_encode($rank_data), true);
