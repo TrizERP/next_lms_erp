@@ -347,7 +347,7 @@ class ImportController extends Controller
                         $found = false;
                         if (isset($data->is_skip) && $data->is_skip !== null) {
                             if ($data->is_skip == 1) {
-                                $is_found = DB::table($request->table_name)->where([['student_id', $student_id->id], ['sub_institute_id', session()->get('sub_institute_id')]])->where('syear', $syear)->where('is_deleted','Y')->where($condition)->first();
+                                $is_found = DB::table($request->table_name)->where([['student_id', $student_id->id], ['sub_institute_id', session()->get('sub_institute_id')]])->where('syear', $syear)->where('is_deleted','N')->where($condition)->first();
                                 if ($is_found) {
                                     $found = true;
                                     $totalSkipRecordCount = $totalSkipRecordCount + 1;

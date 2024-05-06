@@ -63,12 +63,13 @@
                         <img src="https://erp.triz.co.in/admin_dep/images/loader.gif">
                     </center>
                 </div>
-                <center>
-                <button id="printDiv" class="btn btn-success" onclick="printContent()">Test Print</button>
-                    <button id="ajax_PDF_Certificate" class="btn btn-success" >Print Certificate</button>
-                    {{--onclick="certificate_save_data();"--}}
-                </center>
             </div>
+        </div>
+        <div class="row">
+                <div class="col-md-3">&nbsp;</div>
+                <div class="col-md-3"><button id="printDiv" class="btn btn-danger" onclick="printContent()">Test Print</button></div>
+                <div class="col-md-3"><button id="ajax_PDF_Certificate" class="btn btn-warning" >Print Certificate</button>
+                    {{--onclick="certificate_save_data();"--}}</div>
         </div>
         @endif
     </div>

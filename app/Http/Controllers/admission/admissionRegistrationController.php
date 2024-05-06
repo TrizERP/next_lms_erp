@@ -351,7 +351,6 @@ class admissionRegistrationController extends Controller
 
         if (isset($data['enrollment_no']) && $data['enrollment_no'] != '') {
             $enrollment_no_sql_new = $data['enrollment_no'];
-
             DB::table('tblstudent')
                 ->insert([
                     'admission_id'        => $studentArray['admission_id'],

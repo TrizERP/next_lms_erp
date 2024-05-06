@@ -177,7 +177,7 @@
                         if(value.end_date === null){
                             var act = " (Active)";
                         }else{
-                            var act = "";
+                            var act = " (Inactive)";
                         }
                         $("#student_id").append('<option value=' + value.id + '>' + value.name + act +
                             '</option>');
