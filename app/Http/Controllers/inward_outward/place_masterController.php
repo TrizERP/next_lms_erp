@@ -19,11 +19,19 @@ class place_masterController extends Controller
             }
         }
 
-        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $type = $request->input('type');
+
+        if ($type == "API") {
+            $sub_institute_id = $request->input('sub_institute_id');
+        }else{
+            $sub_institute_id = $request->session()->get('sub_institute_id');
+        }
+
+
         $data = place_masterModel::where(['sub_institute_id' => $sub_institute_id])->get();
+
         $place_data['status_code'] = 1;
         $place_data['data'] = $data;
-        $type = $request->input('type');
 
         return is_mobile($type, "inward_outward/show_place_master", $place_data, "view");
     }

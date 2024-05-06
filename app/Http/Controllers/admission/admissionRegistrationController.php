@@ -358,7 +358,7 @@ class admissionRegistrationController extends Controller
                     'username'            => $studentArray['username'],
                     'user_profile_id'     => $studentArray['user_profile_id'],
                     'admission_year'      => $studentArray['admission_year'],
-                    'since_when'          => $studentArray['since_when'],
+                    'since_when'          => $studentArray['si  nce_when'],
                     'admission_date'      => $studentArray['admission_date'],
                     'sub_institute_id'    => $studentArray['sub_institute_id'],
                     'status'              => $studentArray['status'],
