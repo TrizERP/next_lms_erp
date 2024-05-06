@@ -346,7 +346,7 @@
 										<td></td>
 										<td>
 											@if(in_array(session()->get('sub_institute_id'),$sub_institute_id) )
-												<input type="text" name="fees_data[fine]" id="cheque_return_charges1" class="form-control cheque_return_charges1" value="@if(date('d') >= 5 && $total_amt!=0) {{$data['fees_config_data']['late_fees_amount']}} @else {{$cheque_return_charges0}} @endif" >
+												<input type="text" name="fees_data[fine]" id="cheque_return_charges1" class="form-control cheque_return_charges1" value="@if(date('d') >= 3 && $total_amt!=0) {{$data['fees_config_data']['late_fees_amount']}} @else {{$cheque_return_charges0}} @endif" >
 											
 												<input type="hidden" name="hidden_cheque_return_charges" id="hidden_cheque_return_charges" class="form-control cheque_return_charges1" value="{{$data['fees_config_data']['late_fees_amount']}}"> 
 											@else

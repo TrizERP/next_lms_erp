@@ -19,12 +19,18 @@ class physical_file_locationController extends Controller
             }
         }
 
-        $sub_institute_id = $request->session()->get('sub_institute_id');
-        $data = physical_file_locationModel::where(['sub_institute_id' => $sub_institute_id])->get();
+        $type = $request->input('type');
+
+        if ($type == "API") {
+            $sub_institute_id = $request->input('sub_institute_id');
+            $data = physical_file_locationModel::where(['sub_institute_id' => $sub_institute_id])->get();
+        }else{
+            $sub_institute_id = $request->session()->get('sub_institute_id');
+            $data = physical_file_locationModel::where(['sub_institute_id' => $sub_institute_id])->get();
+        }
 
         $physical_data['status_code'] = 1;
         $physical_data['data'] = $data;
-        $type = $request->input('type');
 
         return is_mobile($type, "inward_outward/show_physical_file_location", $physical_data, "view");
     }
