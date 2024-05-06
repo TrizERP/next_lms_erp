@@ -343,6 +343,7 @@ class admissionRegistrationController extends Controller
 
         if (isset($data['enrollment_no']) && $data['enrollment_no'] != '') {
             $enrollment_no_sql_new = $data['enrollment_no'];
+            echo "<pre>";print_r($enrollment_no_sql_new);exit;
 
             DB::table('tblstudent')
                 ->insert([
@@ -378,7 +379,7 @@ class admissionRegistrationController extends Controller
 
         } else {
             $enrollment_no_sql_new = $this->max_enrollment_no_new($sub_institute_id, $data['admission_standard']);
-
+            echo "<pre>";print_r($enrollment_no_sql_new);exit;
             DB::table('tblstudent')
                 ->insert([
                     'admission_id'        => $studentArray['admission_id'],
@@ -449,7 +450,7 @@ class admissionRegistrationController extends Controller
                 ->get()->toArray();
 
             $prefix = $get_prefix_result[0]->prefix;
-
+            echo "<pre>";print_r($prefix);exit;
             if ($prefix != '') {
                 $enrollment_result = DB::table('tblstudent')
                     ->selectRaw('*,MAX(enrollment_no) as new_enrollment_no')
