@@ -111,10 +111,10 @@ class admissionRegistrationController extends Controller
                 ->where('ae.id', $id)->get()->toArray();
         } else {
             $data = DB::table('admission_enquiry as ae')
-                ->join('admission_form as af', function ($join) {
-                    $join->whereRaw('ae.id = af.enquiry_id');
-                })->leftJoin('admission_registration as ar', function ($join) {
-                    $join->whereRaw('ae.id = ar.enquiry_id');
+                ->join('admission_form as af', function ($join) use($sub_institute_id) {
+                    $join->on('ae.id', '=', 'af.enquiry_id')->where('af.sub_institute_id',$sub_institute_id);
+                })->leftJoin('admission_registration as ar', function ($join) use($sub_institute_id) {
+                    $join->on('ae.id', '=', 'ar.enquiry_id')->where('ar.sub_institute_id',$sub_institute_id);
                 })
                 ->selectRaw("ae.*,ar.*,ae.id as id,ae.enquiry_no as enquiry_no,ar.enquiry_id as registration_enquiry_id")
                 ->where('ae.id', $id)->get()->toArray();
@@ -123,9 +123,8 @@ class admissionRegistrationController extends Controller
         $data = array_map(function ($value) {
             return (array) $value;
         }, $data);
-
         $editData = $data;
-        $checkStudent = tblstudentModel::where(['admission_id' => $id])->get()->toArray();
+        $checkStudent = tblstudentModel::where(['admission_id' => $id])->where('sub_institute_id',$sub_institute_id)->get()->toArray();
 
         $dataCustomFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "admission_registration"])
             ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1)')
@@ -140,6 +139,7 @@ class admissionRegistrationController extends Controller
             $i++;
         }
 
+        // echo "<pre>";print_r($checkStudent);exit;
 
         if (count($checkStudent) > 0) {
             $res['display_save_student'] = '0';
@@ -154,6 +154,14 @@ class admissionRegistrationController extends Controller
         } else {
             $res['new_enrollment_no'] = $this->max_enrollment_no($sub_institute_id, $editData[0]['admission_standard']);
         }
+        // if enrollment no already exists then get new enrollment and make add button hidden 
+        $checkGrnoExist = tblstudentModel::where('enrollment_no',$res['new_enrollment_no'])->where('sub_institute_id',$sub_institute_id)->get()->toArray();
+
+        if(!empty($checkGrnoExist) && $res['display_save_student']==1){
+            $res['new_enrollment_no'] = $this->max_enrollment_no($sub_institute_id, $editData[0]['admission_standard']);
+            $res['display_save_student']=0;
+        }
+        // echo "<pre>";print_r($res['display_save_student']);exit;
 
         $standard = standardModel::where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
 
@@ -232,7 +240,7 @@ class admissionRegistrationController extends Controller
         $editdata['address'] = $request->input("address");
         $editdata['previous_school_name'] = $request->input("previous_school_name");
         $editdata['source_of_enquiry'] = $request->input("source_of_enquiry");
-
+        
         admissionEnquiryModel::where(['id' => $id, 'sub_institute_id' => $sub_institute_id])->update($editdata);
 
         $data = $request->except([
@@ -241,14 +249,14 @@ class admissionRegistrationController extends Controller
             'admission_standard',
         ]); //,'remarks','followup_date'
 
-        $checkForm = admissionRegistrationModel::where(['enquiry_id' => $id])->get()->toArray();
+        $checkForm = admissionRegistrationModel::where(['enquiry_id' => $id])->where('sub_institute_id',$sub_institute_id)->get()->toArray();
         if (count($checkForm) > 0) {
             $data['enquiry_id'] = $id;
             $data['created_by'] = $user_id;
             $data['created_on'] = date('Y-m-d H:i:s');
             $data['sub_institute_id'] = $sub_institute_id;
 
-            admissionRegistrationModel::where(['enquiry_id' => $id])->update($data);
+            admissionRegistrationModel::where(['enquiry_id' => $id])->where('sub_institute_id',$sub_institute_id)->update($data);
         } else {
             $data['enquiry_id'] = $id;
             $data['created_by'] = $user_id;
@@ -261,7 +269,7 @@ class admissionRegistrationController extends Controller
         $res['status_code'] = "1";
         $res['message'] = "Added successfully";
 
-        return is_mobile($type, "admission_registration.index", $res);
+        return is_mobile($type, "admission_confirmation.index", $res);
     }
 
     /**
@@ -343,8 +351,6 @@ class admissionRegistrationController extends Controller
 
         if (isset($data['enrollment_no']) && $data['enrollment_no'] != '') {
             $enrollment_no_sql_new = $data['enrollment_no'];
-            echo "<pre>";print_r($enrollment_no_sql_new);exit;
-
             DB::table('tblstudent')
                 ->insert([
                     'admission_id'        => $studentArray['admission_id'],
@@ -358,7 +364,7 @@ class admissionRegistrationController extends Controller
                     'username'            => $studentArray['username'],
                     'user_profile_id'     => $studentArray['user_profile_id'],
                     'admission_year'      => $studentArray['admission_year'],
-                    'since_when'          => $studentArray['si  nce_when'],
+                    'since_when'          => $studentArray['since_when'],
                     'admission_date'      => $studentArray['admission_date'],
                     'sub_institute_id'    => $studentArray['sub_institute_id'],
                     'status'              => $studentArray['status'],
@@ -379,7 +385,7 @@ class admissionRegistrationController extends Controller
 
         } else {
             $enrollment_no_sql_new = $this->max_enrollment_no_new($sub_institute_id, $data['admission_standard']);
-            echo "<pre>";print_r($enrollment_no_sql_new);exit;
+
             DB::table('tblstudent')
                 ->insert([
                     'admission_id'        => $studentArray['admission_id'],
@@ -430,7 +436,7 @@ class admissionRegistrationController extends Controller
         $res['status_code'] = 1;
         $res['message'] = "Student added successfully";//with Enrollment Number - ".$studentArray['enrollment_no'];
 
-        return is_mobile($type, "admission_registration.index", $res);
+        return is_mobile($type, "admission_confirmation.index", $res);
     }
 
     public function max_enrollment_no($sub_institute_id, $admission_standard_id)
@@ -450,8 +456,8 @@ class admissionRegistrationController extends Controller
                 ->get()->toArray();
 
             $prefix = $get_prefix_result[0]->prefix;
-            echo "<pre>";print_r($prefix);exit;
-            if ($prefix != '') {
+
+            if ($prefix != '' && $prefix!=null) {
                 $enrollment_result = DB::table('tblstudent')
                     ->selectRaw('*,MAX(enrollment_no) as new_enrollment_no')
                     ->where('sub_institute_id', $sub_institute_id)
