@@ -406,23 +406,22 @@ class studentHomeworkController extends Controller
         $sub_institute_id = $request->input("sub_institute_id");
         $syear = $request->input("syear");
         $action = $request->input("action");
-        $marking_period_id = session()->get('term_id');
+        
+        $from_date = $request->from_date;
+        $to_date = $request->to_date;
 
         if ($teacher_id != "" && $sub_institute_id != "" && $syear != "" && $action != "") {
             $data = DB::table('homework as h')
                 ->join('tblstudent as ts', function ($join) {
-                    $join->whereRaw('ts.id = h.student_id AND ts.sub_institute_id = h.sub_institute_id');
-                })->join('standard as s', function ($join) use($marking_period_id) {
-                    $join->whereRaw('h.standard_id = s.id AND h.sub_institute_id = s.sub_institute_id');
-                    // ->when($marking_period_id,function($query) use($marking_period_id){
-                    //     $query->where('s.marking_period_id',$marking_period_id);
-                    // });
+                    $join->on('ts.id', '=', 'h.student_id')->on('ts.sub_institute_id', '=', 'h.sub_institute_id');
+                })->join('standard as s', function ($join){
+                    $join->on('h.standard_id', '=', 's.id')->on('h.sub_institute_id', '=', 's.sub_institute_id');
                 })->join('division as d', function ($join) {
-                    $join->whereRaw('d.id = h.division_id AND h.sub_institute_id= d.sub_institute_id');
+                    $join->on('d.id', '=', 'h.division_id')->on('h.sub_institute_id','=','d.sub_institute_id');
                 })->join('subject as ss', function ($join) {
-                    $join->whereRaw('ss.id = h.subject_id AND ss.sub_institute_id = h.sub_institute_id');
+                    $join->on('ss.id', '=', 'h.subject_id')->on('ss.sub_institute_id', '=', 'h.sub_institute_id');
                 })->join('class_teacher as ct', function ($join) {
-                    $join->whereRaw('ct.standard_id = h.standard_id AND ct.division_id = h.division_id');
+                    $join->on('ct.standard_id', '=', 'h.standard_id')->on('ct.division_id', '=', 'h.division_id');
                 })->selectRaw("h.id,h.title,h.description,h.date,if(h.image = '','',
                     concat('https://".$_SERVER['SERVER_NAME']."/storage/student/',h.image)) as file_name,s.name AS standard_name,
                     d.name AS division_name,ss.subject_name,CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name) AS student_name,
@@ -430,7 +429,14 @@ class studentHomeworkController extends Controller
                 ->where('h.sub_institute_id', $sub_institute_id)
                 ->where('h.syear', $syear)
                 ->where('ct.teacher_id', $teacher_id)
-                ->where('h.type', $action)->get()->toArray();
+                ->where('h.type', $action)
+                ->when($from_date != '',function($q) use($from_date){
+                    $q->where('h.date', '>=', $from_date);
+                })
+                ->when($to_date != '',function($q) use($to_date){
+                    $q->where('h.date', '<=', $to_date);
+                })
+                ->orderBy('date','DESC')->get()->toArray();
 
             $res['status'] = 1;
             $res['message'] = "Success";
