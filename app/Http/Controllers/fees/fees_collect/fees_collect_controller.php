@@ -700,7 +700,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             ->selectRaw('fc.* ,frc.css')->where(['fc.sub_institute_id'=>$sub_institute_id,'syear'=>$syear])->get()->toArray();
 
         $res = [];
-
+            
         // send recipt to view page
         if (count($fees_config)) {
             $receipt_html_with_css = '<style>' . $fees_config[0]->css . '</style>' . $receipt_html;
@@ -724,6 +724,12 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                 "receipt_id_html" => $receipt_id_html,
             ];
         }
+        // echo "<pre>";print_r($receipt_html);exit;
+
+        if(isset($res['data']) && !empty($receipt_html) && isset($_REQUEST['send_sms']) && $_REQUEST['send_sms']!=''){
+        // send sms to parent after fees paid
+            $res['sms_sent'] = $this->send_sms_to_parents($res);
+        }
 
         return $res;
     }
@@ -737,10 +743,6 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
         
         $res['standard_id'] = $request->standard_id;
         $type = $request->input('type');
-        if(!empty($res) && isset($res['data']) && isset($request->send_sms)){
-        // send sms to parent after fees paid
-         $res['sms_sent'] = $this->send_sms_to_parents($res);
-        }
         return is_mobile($type, "fees/fees_collect/receipt_view", $res, "view");
     }
 
@@ -2664,7 +2666,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
         ->selectRaw('student_id, months, sum(amount) as amount,receipt_date,student_name,mobile')
         ->groupBy('student_id')
         ->first();
-
+        
         $mobile = $get_data->mobile;
         $student_name = $get_data->student_name;
         $amount = $get_data->amount;

@@ -12,6 +12,7 @@ use Razorpay\Api\Api;
 use Illuminate\Support\Facades\Http;
 use App\Models\fees\tblfeesConfigModel;
 use Illuminate\Support\Str;
+use function App\Helpers\fees_config;
 
 class online_fees_collect_controller extends Controller
 {
@@ -1032,6 +1033,10 @@ exit; */
             // $_REQUEST['enrollment']
             // $_REQUEST['mobile']
             // creating final send arr
+            $send_sms ='';
+            if(isset($fees_config->send_sms) && $fees_config->send_sms == 1){
+               $send_sms = "on";
+           }
             $send_arr = array(
                 "grade_id" => $fees_bk_data["stu_data"]["grade_id"],
                 "standard_id" => $fees_bk_data["stu_data"]["std_id"],
@@ -1058,6 +1063,7 @@ exit; */
                 "cheque_no" => $cheque_no,
                 "bank_name" => $payment_mode,
                 "bank_branch" => "",
+                "send_sms"=>$send_sms,
                 "submit" => "Save",
             );
             // echo '<pre>';
@@ -1135,6 +1141,10 @@ exit; */
              print_r($discount_data_arr);
              print_r($fine_data_arr);
              exit; */
+             $send_sms ='';
+             if(isset($fees_config->send_sms) && $fees_config->send_sms == 1){
+                $send_sms = "on";
+            }
             // creating final send arr
             $send_arr = array(
                 "grade_id" => $fees_bk_data["stu_data"]["grade_id"],
@@ -1163,6 +1173,7 @@ exit; */
                 "cheque_no" => $cheque_no,
                 "bank_name" => $payment_mode,
                 "bank_branch" => "",
+                "send_sms"=>$send_sms,
                 "submit" => "Save",
             );
             /* echo '<pre>';
