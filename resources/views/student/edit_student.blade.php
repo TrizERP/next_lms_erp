@@ -60,6 +60,12 @@ br {
     color: green;
     font-weight: bold;
 }
+
+datalist {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
 </style>
 
 <div id="page-wrapper">
@@ -210,6 +216,16 @@ br {
                                         </div>
                                         <div class="col-md-4 form-group">                   
                                             <label>City</label>
+                                        @if(session()->get('sub_institute_id')==195)
+                                            <input list="city" name="city" id="exampleDataList" @if(isset($student_data->city)) value="{{$student_data->city}}" @endif class="form-control"/>
+                                            <datalist id="city" height="100" style="height:100px">
+                                            @if(!empty($data['city_data']))  
+                                            @foreach($data['city_data'] as $k1 => $v1)
+                                                <option value="{{ $v1['city_name'] }}" @if(isset($student_data->city)) {{ $student_data->city == $v1['city_name'] ? 'selected' : '' }} @endif> {{ $v1['city_name'] }} </option>
+                                            @endforeach
+                                            @endif
+                                            </datalist>
+                                        @else
                                             <select class="form-control" name="city" id="city">
                                                @if(empty($data['city_data']))
                                                 <option value="">Select City</option>
@@ -220,6 +236,7 @@ br {
                                             @endforeach
                                             @endif
                                             </select>
+                                        @endif
                                         </div>
 
                                         <!-- <div class="col-md-4 form-group">
