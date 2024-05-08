@@ -13,8 +13,9 @@
       </div>
    </div>
    @php 
-   $colours = [0=>"FE8C00",1=>"396AFC",2=>"BF5AE0",3=>"6C08FF",4=>"2B5876",5=>"B3AC4D",6=>"8CC63E",7=>"B0B0B0",8=>"CCBF08",9=>"396AFC",10=>"BF5AE0",11=>"FF8008"];
-   $colours2 = [0=>"396AFC",1=>"BF5AE0",2=>"FF8008",3=>"ADE5FC",4=>"B3AC4D",5=>"8CC63E",6=>"B0B0B0",7=>"CCBF08",8=>"396AFC",9=>"BF5AE0",10=>"FF8008",11=>"FE8C00"];
+   $colours = [0=>"FE8C00",1=>"396AFC",2=>"BF5AE0",3=>"6C08FF",4=>"2B5876",5=>"B3AC4D",6=>"8CC63E",7=>"B0B0B0",8=>"CCBF08",9=>"396AFC",10=>"BF5AE0",11=>"FF8008",12=>"396AFC",13=>"BF5AE0",14=>"FF8008",15=>"ADE5FC",16=>"B3AC4D",17=>"8CC63E",18=>"B0B0B0",19=>"CCBF08",20=>"396AFC",21=>"BF5AE0",22=>"FF8008",23=>"FE8C00"];
+
+   $colours2 = [0=>"396AFC",1=>"BF5AE0",2=>"FF8008",3=>"ADE5FC",4=>"B3AC4D",5=>"8CC63E",6=>"B0B0B0",7=>"CCBF08",8=>"396AFC",9=>"BF5AE0",10=>"FF8008",11=>"FE8C00",12=>"396AFC",13=>"BF5AE0",14=>"FF8008",15=>"ADE5FC",16=>"B3AC4D",17=>"8CC63E",18=>"B0B0B0",19=>"CCBF08",20=>"396AFC",21=>"BF5AE0",22=>"FF8008",23=>"FE8C00"];
    @endphp
    <!-- main div  -->
    <div class="lmsmain">
@@ -26,45 +27,41 @@
             </div>
             <div class="cardSelect">
                <div class="row">
-                  @if(!empty($data['standardData']))
-                  @foreach($data['standardData'] as $key=>$value)
-                  @if(($key+1) < $data['standardCount'])
-                  <form action="{{route('lmsdashboard.index')}}" method="get" id="previousData{{$key}}">
-                     <input type="hidden" name="syear" value="{{$value->syear}}">
-                     <input type="hidden" name="enrollment_no" value="{{$value->enrollment_no}}">
-                     <input type="hidden" name="stdname" value="{{$value->standardName}}">
+                  @if(!empty($data['previousData']['previousdata']['overallresult']))
+                  @foreach($data['previousData']['previousdata']['overallresult'] as $key=>$value)
                      <div class="col-md-2 circleContent">
-                        <a onclick="getPreviousData('{{$value->enrollment_no}}',{{$key}},{{$value->syear}},'{{$value->standardName}}');">
-                           <div class="circle1 {{ (isset($data['standard_name']) && $data['standard_name'] == $value->standardName) ? 'active' : '' }}" data-val="{{ $key }}">
-                              <div class="circle1-content">{{$value->standardName}}</div>
+                        <a data-bs-toggle="collapse" href="#collapseExample_{{$key}}" aria-expanded="{{ $loop->last ? 'true' : 'false' }}" aria-controls="collapseExample_{{$key}}" onclick="PreviousCircle('{{$key}}')">
+                           <div class="circle1 {{ $loop->last ? 'active' : '' }}" data-val="{{ $key }}">
+                              <div class="circle1-content">{{$key}}</div>
                            </div>
                         </a>
                      </div>
-                  </form>
-                  @endif
                   @endforeach
                   @endif
                </div>
             </div>
             <div class="cardData" id="#cardData">
-               @if(!empty($data['selectedData']['previousdata']['overallresult']) && isset($data['selectedData']['previousdata']['overallresult']))
-               <div class="bar-graph">
-                  @foreach($data['selectedData']['previousdata']['overallresult'] as $key=>$value)
-                  @php 
-                  $per = ($value['totalmarks'] !=0) ? round(($value['totalobtain'] * 100) / $value['totalmarks'],0) : 0;
-                  @endphp
-                  <style>
-                     .circular-bar{{$key}}::before,
-                     .circular-bar{{$key}}::after {
-                     border-color: transparent transparent #{{$colours[$key]}};
-                     }
-                  </style>
-                  <div class="bar" style="height: {{$per}}%; background-color: #{{$colours[$key]}};width:30% !important">
-                     <div class="bar-label">{{$value['subjectname']}}</div>
-                     <div class="circular-bar circular-bar{{$key}}" style="background-color: #{{$colours[$key]}};color:#fff">{{$per}}%</div>
-                  </div>
+               @if(!empty($data['previousData']['previousdata']['overallresult']) && isset($data['previousData']['previousdata']['overallresult']))
+                  @foreach($data['previousData']['previousdata']['overallresult'] as $key=>$value)
+                     <div class="bar-graph collapse {{ $loop->last ? 'show' : '' }}"  id="collapseExample_{{$key}}">
+                  @foreach($value as $key2=>$value2)
+                        @php 
+                        $per = ($value2['totalmarks'] !=0) ? round(($value2['totalobtain'] * 100) / $value2['totalmarks'],0) : 0;
+                        @endphp
+                        <style>
+                           .circular-bar{{$key2}}::before,
+                           .circular-bar{{$key2}}::after {
+                           border-color: transparent transparent #{{$colours[$key2]}};
+                           }
+                        </style>
+                        <div class="bar" style="height: {{$per}}%; background-color: #{{$colours[$key2]}};width:30% !important">
+                           <div class="bar-label">{{$value2['subjectname']}}</div>
+                           <div class="circular-bar circular-bar{{$key2}}" style="background-color: #{{$colours[$key2]}};color:#fff">{{$per}}%</div>
+                        </div>
                   @endforeach
-               </div>
+
+                     </div>
+                  @endforeach
                @else
                <center> No Marks Found</center>
                @endif
@@ -74,43 +71,51 @@
       <!-- card 1 end  -->
       <!-- card 2 start  -->
       <div class="lmscard">
-         <div class="card">
+         <div class="card" style="height:477px;border-radius:20px">
             <div class="cardHead">
-               <h4>Last Standard @if(isset($data['standard_name'])) {{$data['standard_name']}} @endif</h4>
+               <h4>Last Standard <span id="lastStd"></span></h4>
             </div>
-            <div class="SelectPreSub row">
-               @if(!empty($data['selectedData']['previousdata']['overallresult']) && isset($data['selectedData']['previousdata']['overallresult']))
-               @foreach($data['selectedData']['previousdata']['overallresult'] as $key=>$value)
-               <a class="btn" style="background:#{{$colours[$key]}};color:#fff;margin:4px" data-bs-toggle="collapse" href="#collapseExample_{{$value['subjectname']}}" role="button" aria-expanded="false" aria-controls="collapseExample_{{$value['subjectname']}}" >
-               {{$value['subjectname']}}
-               </a>
+            <div class="SelectPreSub">
+               @if(!empty($data['previousData']['previousdata']['overallresult']) && isset($data['previousData']['previousdata']['overallresult']))
+               @foreach($data['previousData']['previousdata']['overallresult'] as $key=>$value)
+               <div class="row PreSubcollapse collapse  {{ $loop->last ? 'show' : '' }}"  id="collapseExample_{{$key}}" data-val="collapseExample_{{$key}}">
+                     @foreach($value as $key2=>$value2)
+                     <a class="btn" style="background:#{{$colours[$key2]}};color:#fff;margin:4px" data-bs-toggle="collapse" href="#collapseExample_{{$key}}_{{$value2['subjectname']}}" role="button" aria-expanded="false" aria-controls="collapseExample_{{$key}}_{{$value2['subjectname']}}" onclick="PreSubCollepse('{{$key}}_{{$value2['subjectname']}}')">
+                     {{$value2['subjectname']}}
+                     </a>
+                     @endforeach
+               </div>
                @endforeach
                @endif
             </div>
-            <div class="cardData" id="#cardData2" style="padding-top:0px !important;">
-               @if(!empty($data['selectedData']['previousdata']['standarddata']) && isset($data['selectedData']['previousdata']['standarddata'][0]['subjectdata']))
-               @foreach($data['selectedData']['previousdata']['standarddata'][0]['subjectdata'] as $key=>$value)
-               <div class="collapse subject_col" id="collapseExample_{{$value['title']}}">
-                  <div class="card card-body p-4">
-                     @if(!empty($value['examdata']))
-                     @foreach($value['examdata'] as $examdataKey => $examdataVal)
-                     <div class="examDetails d-flex flex-wrap"  style="width:100%">
-                        <div class="examhead" style="width:20%">
-                           <p style="font-size:0.8rem">{{$examdataVal['title']}}</p>
-                        </div>
-                        @php 
-                        $examdataper = ($examdataVal['marks'] !=0) ? round(($examdataVal['obtain'] * 100) / $examdataVal['marks'],0) : 0;
-                        @endphp
-                        <div class="examProgress" style="width:80%">
-                           <div class="progress" style="height:16px">
-                              <div class="progress-bar progress-bar{{$examdataKey}}" role="progressbar" aria-valuenow="{{$examdataper}}" aria-valuemin="0" aria-valuemax="100" style="width: {{$examdataper}}%;background-color: #{{$colours2[$examdataKey]}};color:#fff;border-radius:10px">{{$examdataper}}%</div>
+            <div class="cardData" id="#cardData2" style="padding-top:0px !important;height:346px">
+               @if(!empty($data['previousData']['previousdata']['standarddata']))
+               @foreach($data['previousData']['previousdata']['standarddata'] as $key=>$value)
+                  @if(isset($value['subjectdata']))
+                  @foreach($value['subjectdata'] as $key2=>$value2)
+                  <div class="collapse collapseExample_{{$value['standardname']}}_{{$value2['title']}} subject_col" id="collapseExample_{{$value['standardname']}}_{{$value2['title']}}">
+                     <div class="card card-body p-4">
+                        @if(!empty($value2['examdata']))
+                        @foreach($value2['examdata'] as $examdataKey => $examdataVal)
+                        <div class="examDetails d-flex flex-wrap"  style="width:100%">
+                           <div class="examhead" style="width:20%">
+                              <p style="font-size:0.8rem">{{$examdataVal['title']}}</p>
+                           </div>
+                           @php 
+                           $examdataper = ($examdataVal['marks'] !=0) ? round(($examdataVal['obtain'] * 100) / $examdataVal['marks'],0) : 0;
+                           @endphp
+                           <div class="examProgress" style="width:80%">
+                              <div class="progress" style="height:16px">
+                                 <div class="progress-bar progress-bar{{$examdataKey}}" role="progressbar" aria-valuenow="{{$examdataper}}" aria-valuemin="0" aria-valuemax="100" style="width: {{$examdataper}}%;background-color: #{{$colours2[$examdataKey]}};color:#fff;border-radius:10px">{{$examdataper}}%</div>
+                              </div>
                            </div>
                         </div>
+                        @endforeach
+                        @endif
                      </div>
-                     @endforeach
-                     @endif
                   </div>
-               </div>
+                  @endforeach
+                  @endif
                @endforeach
                @else
                <center> No Marks Found</center>
@@ -156,7 +161,7 @@
                         }
                      </style>
                      <div class="progress-circle col-md-2">
-                        <a data-bs-toggle="collapse" href="#collapseExample2_{{$value['subject_id']}}" aria-expanded="false" aria-controls="collapseExample2_{{$value['subject_id']}}">
+                        <a class="ProgressCircle {{$loop->first ? 'active' : ''}}" data-bs-toggle="collapse" data-val="{{$value['subject_id']}}" href="#collapseExample2_{{$value['subject_id']}}" aria-expanded="false" aria-controls="collapseExample2_{{$value['subject_id']}}" onclick="currentCircle('{{$value['subject_id']}}')">
                         <div class="subjectName">
                            <h4 style="opacity: 1000;z-index: 1000;color:black">{{$value['title']}}</h4>
                            <div class="circle circle{{$key}} d-block">
@@ -172,25 +177,29 @@
                   <div class="circularDivData cardData"  style="padding-top:0px !important;">
                      @if(!empty($data['selectedCurrentData']['currentdata']['subjectdata']) && isset($data['selectedCurrentData']['currentdata']['subjectdata']))
                      @foreach($data['selectedCurrentData']['currentdata']['subjectdata'] as $sub_id=>$value)   
-                     <div class="collapse subject_col" id="collapseExample2_{{$sub_id}}">
-                        <div class="card card-body p-4">
+                     <div class="collapse CurrentTable  {{$loop->first ? 'show' : '' }}" id="collapseExample2_{{$sub_id}}" data-val="collapseExample2_{{$sub_id}}">
+                        <div class="card card-body p-4" style="height:316px;overflow-y:scroll;padding:10px !important">
                            <h4>{{$value['subjectdata']}}</h4>
                            @if(isset($value['chapterdata']))
-                           <table class="table table-borderless">
+                           <table class="table table-borderless table-responsive" style="overflow-y:visible">
+                              <thead>
                               <tr>
                                  <th style="width:70%">chapter</th>
                                  <th style="width:10%">Part 1</th>
                                  <th style="width:10%">Part 2</th>
                                  <th style="width:10%">Part 3</th>
                               </tr>
+                              </thead>
+                              <tbody>
                               @foreach($value['chapterdata'] as $ch=>$chVal)
-                              <tr class="trsub"  onclick="activeTr('tr{{$ch}}',{{$ch}})" id="tr{{$ch}}">
+                              <tr class="trsub"  onclick="activeTr('tr{{$ch}}',{{$ch}})" id="tr{{$ch}}" data-val="{{$ch}}">
                                  <td style="width:70%" >{{$chVal['title']}}</td>
                                  <td style="width:10%" >80%</td>
                                  <td style="width:10%" >20%</td>
                                  <td style="width:10%"  >0%</td>
                               </tr>
                               @endforeach
+                              </tbody>
                            </table>
                            @endif
                         </div>
@@ -295,7 +304,7 @@
             <div class="cardHead">
                <h4>Recommendation</h4>
             </div>
-            <div class="cardData" style="padding:10px 10px;overflow-y:scroll;">
+            <div class="cardData" style="padding:10px 10px;">
             @if(!empty($data['selectedCurrentData']['currentdata']['subjectdata']) && isset($data['selectedCurrentData']['currentdata']['subjectdata']))
                   @foreach($data['selectedCurrentData']['currentdata']['subjectdata'] as $sub_id=>$value)   
                   <!-- get recommendation data data  -->
@@ -341,8 +350,122 @@
                         @foreach($value['chapterdata'] as $ch=>$chVal)  
                            @if(!empty($chVal['chapterprogress']))
                               @foreach($chVal['chapterprogress'] as $chp=>$chpVal)  
+                                    <!-- get student percentage wise -->
+                                    @php $noPer= $per10=$per20 = $per40 = $per60 = $per80 = [] @endphp
+                                       @if(isset($chpVal['students']))
+                                          @foreach($chpVal['students'] as $studKey=>$studVal)  
+                                          @php 
+                                             $chtotal = $studVal['total'];
+                                             $chprogress = $studVal['progress'];
+                                             $chPer= ($chtotal!=0) ? round(($chprogress*100) / $chtotal,0) : 0;
+                                             
+                                             if($chPer > 80){
+                                                $per80[]=$studVal['photo'];
+                                             }else if($chPer > 60){
+                                                $per60[]=$studVal['photo'];
+                                             }else if($chPer > 40){
+                                                $per40[]=$studVal['photo'];
+                                             }else if($chPer > 20){
+                                                $per20[]=$studVal['photo'];
+                                             }else if($chPer > 10){
+                                                $per10[]=$studVal['photo'];
+                                             }else{
+                                                $noPer[]=$studVal['photo'];
+                                             }
+                                          @endphp
+                                          @endforeach 
+                                       @endif
                                     <div class="curveData" id="curveData_{{$ch}}">
-                                       curveData
+                                       <div class="d-flex">
+                                       <!-- img div -->
+                                          <div class="d1" style="width:80%">
+
+                                             <div class="node1" style="position: absolute; left: 0%;top: 50%;">
+                                                <div class="studImg">
+                                                   @if(!empty($noPer))
+                                                      @foreach($noPer as $studImg)
+                                                         <img src="{{$studImg}}" alt="students img">
+                                                      @endforeach
+                                                   @endif
+                                                </div>
+                                                <div class="node">
+                                                  <span class="mdi mdi-checkbox-blank-circle"></span>
+                                                </div>
+                                             </div>
+
+                                             <div class="node2" style="position: absolute; left: 11%; top: 23%;">
+                                                <div class="studImg">
+                                                   @if(!empty($per10))
+                                                      @foreach($per10 as $studImg)
+                                                         <img src="{{$studImg}}" alt="students img">
+                                                      @endforeach
+                                                   @endif
+                                                </div>
+                                                <div class="node">
+                                                  <span class="mdi mdi-checkbox-blank-circle"></span>
+                                                </div>
+                                             </div>
+
+                                             <div class="node3" style="position: absolute; left: 21%; top: 69%;">
+                                                <div class="studImg">
+                                                   @if(!empty($per20))
+                                                      @foreach($per20 as $studImg)
+                                                         <img src="{{$studImg}}" alt="students img">
+                                                      @endforeach
+                                                   @endif
+                                                </div>
+                                                <div class="node">
+                                                  <span class="mdi mdi-checkbox-blank-circle"></span>
+                                                </div>
+                                             </div>
+
+                                             <div class="node4" style="position: absolute; left: 34%; top: 11%;">
+                                                <div class="studImg">
+                                                   @if(!empty($per40))
+                                                      @foreach($per40 as $studImg)
+                                                         <img src="{{$studImg}}" alt="students img">
+                                                      @endforeach
+                                                   @endif
+                                                </div>
+                                                <div class="node">
+                                                  <span class="mdi mdi-checkbox-blank-circle"></span>
+                                                </div>
+                                             </div>
+
+                                             <div class="node5" style="position: absolute; left: 49%; top: 75%;">
+                                                <div class="studImg">
+                                                   @if(!empty($per60))
+                                                      @foreach($per60 as $studImg)
+                                                         <img src="{{$studImg}}" alt="students img">
+                                                      @endforeach
+                                                   @endif
+                                                </div>
+                                                <div class="node">
+                                                  <span class="mdi mdi-checkbox-blank-circle"></span>
+                                                </div>
+                                             </div>
+
+                                             <div class="node6" style="position: absolute; left: 61%; top: 24%;">
+                                                <div class="studImg">
+                                                   @if(!empty($per80))
+                                                      @foreach($per80 as $studImg)
+                                                         <img src="{{$studImg}}" alt="students img">
+                                                      @endforeach
+                                                   @endif
+                                                </div>
+                                                <div class="node">
+                                                  <span class="mdi mdi-checkbox-blank-circle"></span>
+                                                </div>
+                                             </div>
+
+                                             <img src="{{asset('admin_dep/images/chapterProgress.png')}}" alt="chapterProgress" style="width:100%;height: 255px;">
+                                          </div>
+                                       <!-- goal div -->
+                                          <div class="d2" style="width:20%">
+                                             <img src="{{asset('admin_dep/images/goalFlag.png')}}" alt="Goal Flag" style="padding:20px">
+                                          </div>
+                                          
+                                      </div>
                                     </div>
                               @endforeach 
                            @endif
@@ -390,49 +513,112 @@
 </div>
 @include('includes.footerJs')
 <script> 
-   $('.chapdata').hide();
-   $('.recommendation').hide();
-   $('.rankData').hide();
-   $('.curveData').hide();
+    $('.row.PreSubcollapse.collapse.show').each(function() {
+        var divId = $(this).attr('id');
+
+        var firstHref = $(this).find('a:first').attr('aria-controls');
+         $('.'+firstHref).toggleClass('show');
+    });
+
+
+    $('.ProgressCircle.active').each(function() {
+        var divId = $(this).attr('data-val');
+        console.log('sub id'+divId);
+        $('.CurrentTable[data-val="collapseExample2_'+divId+'"]').toggleClass('active');
+   
+         var $firstRow = $('.CurrentTable[data-val="collapseExample2_'+divId+'"] tbody').find('tr:first');
+         if ($firstRow.length > 0) {
+            $firstRow.toggleClass('activeChapter');
+            var ch = $firstRow.attr('data-val');
+
+            $('.chapdata').hide();
+            $('#collapseExample3_'+ch).show();
+
+            $('.recommendation').hide();
+            $('#recommendation_'+ch).show();
+
+            $('.curveData').hide();
+            $('#curveData_'+ch).show();
+
+            $('.rankData').hide();
+            $('#rankData_'+ch).show();
+         }else{
+            $('.chapdata').hide();
+            $('.recommendation').hide();
+            $('.rankData').hide();
+            $('.curveData').hide();
+         }
+
+    });
+
 
    $('.circle').on('click',function(){
       $('.chapdata').hide();
       $('.rankData').hide();
    })
 
-      function getPreviousData(enrollment_no,key,syear,standard_name){
-          $('.circle1').removeClass('active');
-          $('.circle1[data-val="'+key+'"]').toggleClass('active');
-          // alert(enrollment_no);
-         // Set the values of hidden inputs
-          $('#previousData input[name="enrollment_no"]').val(enrollment_no);
-          $('#previousData input[name="previousData"]').val(standard_name);
-          $('#previousData input[name="syearData"]').val(syear);
-          // Submit the form
-          $('#previousData'+key).submit();
-      
-      }
-      $('.collapse').on('show.bs.collapse', function () {
-          $('.collapse.show').each(function(){
-              if (this !== event.target) {
-                  $(this).collapse('hide');
-              }
-          });
-      });
 </script>
 <script>
-   // Add click event listener to all buttons with class "btn"
-   document.querySelectorAll('.btn').forEach(function(button) {
-       button.addEventListener('click', function() {
-           var targetId = this.getAttribute('data-bs-target');
-      document.querySelectorAll('.collapse').forEach(function(collapse) {
-               if (collapse.id !== targetId.slice(1)) { // Slice to remove the #
-                   collapse.classList.remove('show');
-               }
-           });
-       });
-   });
+  function PreviousCircle(std){
+   $('.circle1').removeClass('active');
+   $('.PreSubcollapse').removeClass('show');
+   $('.bar-graph').removeClass('show');
+   $('.subject_col').removeClass('show');
+   $('#lastStd').empty();
+   $('#lastStd').text(std);
+   $('.circle1[data-val="'+std+'"]').toggleClass('active');
+
+   $('.PreSubcollapse[data-val="collapseExample_'+std+'"]').toggleClass('show');
+   var firstHref2 = $('.PreSubcollapse[data-val="collapseExample_'+std+'"]').find('a:first').attr('aria-controls');
+   if (firstHref2) {
+      $('.'+firstHref2).toggleClass('show');
+   } else {
+      console.log("No href found.");
+   }
+
+  }
+
+  function PreSubCollepse(subId) {
+   currentId = "collapseExample_'"+subId+"'";
+    $('.subject_col').each(function() {
+        var $collapse = $(this);
+        var id = $collapse.attr('id');
+
+        if (id === subId) {
+            $collapse.collapse('show');
+        } else {
+            $collapse.collapse('hide');
+        }
+    });
+}
+
+function currentCircle(sub){
+   $('.CurrentTable').removeClass('show');
+   $('.CurrentTable[data-val="collapseExample2_'+sub+'"]').toggleClass('active');
    
+   var $firstRow = $('.CurrentTable[data-val="collapseExample2_'+sub+'"] tbody').find('tr:first');
+   if ($firstRow.length > 0) {
+      $firstRow.toggleClass('activeChapter');
+      var ch = $firstRow.attr('data-val');
+
+      $('.chapdata').hide();
+      $('#collapseExample3_'+ch).show();
+
+      $('.recommendation').hide();
+      $('#recommendation_'+ch).show();
+
+      $('.curveData').hide();
+      $('#curveData_'+ch).show();
+
+      $('.rankData').hide();
+      $('#rankData_'+ch).show();
+
+   } else {
+      console.log("No first row found in table.");
+   }
+  
+}
+
    function activeTr(trsub,ch_id){
         $('.trsub').removeClass('activeChapter');
        $('#'+trsub).toggleClass('activeChapter');
