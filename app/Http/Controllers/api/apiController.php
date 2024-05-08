@@ -85,7 +85,7 @@ class apiController extends Controller
                         $text = "Dear Student Your Application Login OTP is ".$otp;
                     } //"Dear Student your OTP is ".$otp;
                     else if($sub_institute_id == 47){
-                        $text = "Dear Parent, Your OTP is ".$otp." MULJIM";
+                        $text = "Dear Parent, Your OTP is ".$otp.". MULJIM";
                     }
                     else {
                         $text = "OTP for login is ".$otp." and is valid for 5 minutes";
@@ -164,7 +164,7 @@ class apiController extends Controller
                     if ($sub_institute_id == 49 || $sub_institute_id == 232 || $sub_institute_id == 233) {
                         $text = "Dear Teacher your OTP is ".$otp;
                     }else if($sub_institute_id == 47){
-                        $text = "Dear Parent, Your OTP is ".$otp." MULJIM";
+                        $text = "Dear Parent, Your OTP is ".$otp.". MULJIM";
                     }else {
                         $text = "OTP for login is ".$otp." and is valid for 5 minutes";
                     }
@@ -744,13 +744,19 @@ public function studentData($is_exist,$request,$student_id){
             $data['last_var'] = urlencode($data['last_var']);
 
 //Start added by rajesh OTP for CN all institute
-$cn_templateid = '';
+$templateid = '';
 $cn = array(244,245,246,247,248,253,257,264,265);
+$mmis = array(47);
+
 if(in_array($sub_institute_id, $cn))
-    $cn_templateid = '&template_id=1507166607307092495';
+    $templateid = '&template_id=1507166607307092495';
+
+if(in_array($sub_institute_id, $mmis))
+    $templateid = '&templateid=1707166555566064422';
+
 //END added by rajesh OTP for CN all institute
 
-            $url = $data['url'].$data['pram'].$cn_templateid.$data['mobile_var'].$mobile.$data['text_var'].$text.$data['last_var'];
+            $url = $data['url'].$data['pram'].$templateid.$data['mobile_var'].$mobile.$data['text_var'].$text.$data['last_var'];
 
             $ch = curl_init();
 
