@@ -333,9 +333,13 @@
 										if(session()->get('sub_institute_id')==254 && !empty($data['hillsFine'])){
 											$cheque_return_charges0 = $data['hillsFine']['total'];
 											$cheque_return_charges=$data['hillsFine']['total'];
+											$readable='';
+											$inputId="cheque_return_charges1";
 										}else{
 											$cheque_return_charges0 = $data['cheque_return_charges'][0];
 											$cheque_return_charges = $data['fees_config_data']->late_fees_amount;
+											$readable='readonly="readonly"';
+											$inputId="cheque_return_charges";
 										}
 										$sub_institute_id=[257]; 
 									@endphp
@@ -349,8 +353,8 @@
 											
 												<input type="hidden" name="hidden_cheque_return_charges" id="hidden_cheque_return_charges" class="form-control cheque_return_charges1" value="{{$data['fees_config_data']['late_fees_amount']}}"> 
 											@else
-												<input type="text" name="fees_data[fine]" id="cheque_return_charges" class="form-control" value="@php if(isset($cheque_return_charges0)) echo $cheque_return_charges0; @endphp"
-												readonly="readonly">
+												<input type="text" name="fees_data[fine]" id="{{$inputId}}" class="form-control hillsFine" value="@php if(isset($cheque_return_charges0)) echo $cheque_return_charges0; @endphp"
+												{{$readable}}>
 												<input type="hidden" name="hidden_cheque_return_charges" id="hidden_cheque_return_charges" class="form-control" value="@if(isset($cheque_return_charges0)){{$cheque_return_charges0}}@endif">
 											@endif
 										</td>
@@ -679,6 +683,14 @@ function checkForm() {
 				sum = amount + parseFloat(cheque_return_charges);
 				$("#cheque_return_charges").val(sum);
 				calculateTotal();
+			});
+
+			$(document).on('change', '.hillsFine', function() {
+				var amount = parseFloat($(this).val());
+				var grandTotal = parseFloat($('#all_total').text());
+				// subtract totalFin from grandTotal
+				var TotVal = (grandTotal + amount);
+				$("#grandTotal").val(TotVal);
 			});
 
 			// END 30-12-2021 Added for total fine in grandtotal

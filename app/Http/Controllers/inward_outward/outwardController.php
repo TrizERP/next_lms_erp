@@ -143,12 +143,16 @@ class outwardController extends Controller
             'syear'            => $syear,
         ]);
         $outward->save();
+        
+        if($outward->save()){
+            $message['status_code'] = "1";
+            $message['message']="Added Successfully";
+        }else{
+            $message['status_code'] = "0";
+            $message['message']="Failed To Add";
+        }
 
-        $message['status_code'] = "1";
-//        $message = [
-//            "message" => "Outward Added Succesfully",
-//        ];
-        $message = outwardModel::where(['sub_institute_id' => $sub_institute_id])->get();
+        $message['data'] = outwardModel::where(['sub_institute_id' => $sub_institute_id])->get();
 
         return is_mobile($type, "add_outward.index", $message, "redirect");
     }

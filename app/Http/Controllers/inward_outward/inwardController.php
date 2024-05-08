@@ -145,15 +145,18 @@ class inwardController extends Controller
         ]);
 
         $inward->save();
+        
         if($inward->save()){
             $message['status_code'] = "1";
+            $message['message']="Added Successfully";
         }else{
             $message['status_code'] = "0";
+            $message['message']="Failed To Add";
         }
 //        $message = [
 //            "message" => "Inward Added Succesfully",
 //        ];
-        $message = inwardModel::where(['sub_institute_id' => $sub_institute_id])->get();
+        $message['data'] = inwardModel::where(['sub_institute_id' => $sub_institute_id])->get();
 
         return is_mobile($type, "add_inward.index", $message, "redirect");
     }
