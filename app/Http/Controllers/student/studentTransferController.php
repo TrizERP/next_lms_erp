@@ -535,4 +535,43 @@ class studentTransferController extends Controller
             ->get()->toArray();
     }
 
+    public function DocumentTypeDetails(Request $request){
+   
+    $type = $request->type;
+    $sub_institute_id = $request->sub_institute_id;
+    $document_type = $request->document_type;
+    $student_id = $request->student_id;
+        if(!isset($type)){
+            $res['status_code'] = 0;
+            $res['message'] = "Type is Required";
+        } else if(!isset($document_type)){
+            $res['status_code'] = 0;
+            $res['message'] = "Document Type is Required";
+        } else if(!isset($sub_institute_id)){
+            $res['status_code'] = 0;
+            $res['message'] = "Sub Institute Id is Required";
+        }
+        else{
+
+            $server = "https://".$_SERVER['HTTP_HOST'];
+
+            $res = DB::table('tblstudent_document as tsd')
+            ->join('tblstudent as ts','ts.id','=','tsd.student_id')
+            ->selectRaw('tsd.student_id,YEAR(tsd.created_on) as year,CONCAT_WS("",COALESCE(ts.first_name,"-"),COALESCE(ts.middle_name,"-"),COALESCE(ts.last_name,"-")) AS student_name,tsd.document_title,CONCAT("'.$server.'/storage/student_document/",tsd.file_name) file_name')
+            ->where('tsd.sub_institute_id',$sub_institute_id)
+            ->where('tsd.document_type_id',$document_type)
+            ->when($student_id,function($q) use ($student_id){
+                $q->where('tsd.student_id',$student_id);
+            })
+            ->get()->toArray();
+
+            if(empty($res)){
+                $res['status_code'] = 0;
+                $res['message'] = "No Data Found";
+            }
+        }
+        // /var/www/html/triz_erp/storage/app/public/student_document/24208820240327122626.jpg
+        return $res;
+
+    }
 }
