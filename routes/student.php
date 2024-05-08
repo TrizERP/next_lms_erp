@@ -220,6 +220,9 @@ Route::get('ajax_checkEmailExist', [tblstudentController::Class, 'ajax_checkEmai
 Route::get('ajax_checkDivisionCapacity', [tblstudentController::class, 'ajax_checkDivisionCapacity'])->name('ajax_checkDivisionCapacity');
 Route::get('ajax_StatewiseCity', [tblstudentController::class, 'ajax_StatewiseCity'])->name('ajax_StatewiseCity');
 Route::get('get_batch', [studentAttendanceController::class, 'get_batch'])->name('get_batch');
+
+Route::get('document_details', [studentTransferController::class, 'DocumentTypeDetails'])->name('document_details');
+
 // Route::post('front_desk/leave_application/add_leave_application', function(){
 //     echo "asds";
 // });

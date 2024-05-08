@@ -19,8 +19,8 @@ class resultAPIController extends Controller
         $res['status_code']=0;
         $res['message']="No data Found"; 
         // previous data start
-        $allData = DB::table('result_personalize_marks')->selectRaw('student_name,enrollment_no,standard,subject,sum(total) as total,sum(obtain) as obtain')->where('sub_institute_id',$sub_institute_id)
-        ->where('syear',$syear)->when($request->enrollment_no, function ($q) use($request) {
+        $allData = DB::table('result_personalize_marks')->selectRaw('student_name,enrollment_no,standard,subject,sum(total) as total,sum(obtain) as obtain,syear')->where('sub_institute_id',$sub_institute_id)
+        ->when($request->enrollment_no, function ($q) use($request) {
             $q->where('enrollment_no',$request->enrollment_no);
         })->when($request->standard, function ($q) use($request) {
             $q->where('standard',$request->standard);
@@ -31,7 +31,7 @@ class resultAPIController extends Controller
         $standardData = [];
         
         foreach ($allData as $key => $value) {
-            $previous_marks['previousdata']['overallresult'][] = [
+            $previous_marks['previousdata']['overallresult'][$value->standard][] = [
                 "subjectname" => $value->subject,
                 "totalmarks" => $value->total,
                 "totalobtain" => $value->obtain,
@@ -43,9 +43,8 @@ class resultAPIController extends Controller
                     'standard' => $value->standard,
                     'subject' => $value->subject,
                     'sub_institute_id' => $sub_institute_id,
-                    'enrollment_no' => $value->enrollment_no
                 ])
-                ->where('syear', $syear)
+                ->where('enrollment_no',$value->enrollment_no)
                 ->groupBy('standard', 'exam')
                 ->get()
                 ->toArray();
@@ -310,6 +309,7 @@ class resultAPIController extends Controller
                         'name' => $item->first_name.' '.$item->middle_name.' '.$item->last_name,
                         'photo' => 'https://erp.triz.co.in/storage/student/'.$item->image,
                         'progress' => $item->obtain_marks,
+                        'total' =>$item->total_marks,
                     ];
                  }
 
@@ -348,9 +348,9 @@ class resultAPIController extends Controller
                 "chapterprogress"=> $progressData,
             );
         }
-
-            $allchapterdata[$item->subject_id]['chapterdata'] = $chapters;
-         
+            if(isset($item->subject_id)){
+                $allchapterdata[$item->subject_id]['chapterdata'] = $chapters;
+            }
         }
 
         $flattenedData2 = [];

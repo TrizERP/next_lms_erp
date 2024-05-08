@@ -24,24 +24,7 @@ class lmsDashboardController extends Controller
             $syear = $request->syear;
             $user_id= $request->user_id;
         }
-        // [user_id] => 97382
-        // [DUSER_ID] => evaan_rafaliya
-        // [DUSER_PWD] => cd73502828457d15655bbd7a63fb0bc8
-        // [hrms_rights] => 0
-        // [client_id] => 
-        // [is_admin] => 
-        // [user_profile_name] => Student
-        // [profile_parent_id] => 0
-        // [user_name] => evaan_rafaliya
-        // [name] => EVAAN RAFALIYA
-        // [email] => student1@gmail.com
-        // [image] => 97382_1.jpg
-        // [erpcode] => TIS
-        // [school_name] => Triz International School
-        // [school_logo] => scholar_clone.png
-        // [user_token] => 1276216921_97382
-        // [current_menu_id] =>
-        // get student standards
+       
         $res['standardData'] = DB::table('tblstudent_enrollment as se')
                                 ->join('tblstudent as s','s.id','=','se.student_id')    
                                 ->join('standard as std','std.id','=','se.standard_id')
@@ -49,29 +32,26 @@ class lmsDashboardController extends Controller
                                 ->where('se.student_id',$user_id)
                                 ->orderBy('se.syear')
                                 ->get()->toArray();
-            set_time_limit(300);
+        set_time_limit(300);
+
+        $currentData =  DB::table('tblstudent_enrollment as se')
+        ->join('tblstudent as s','s.id','=','se.student_id')    
+        ->join('standard as std','std.id','=','se.standard_id')
+        ->selectRaw('se.student_id as id,s.enrollment_no,std.id as standardId,std.name as standardName,se.syear,se.standard_id')
+        ->where('se.student_id',$user_id)
+        ->where('se.syear',$syear)
+        ->orderBy('se.id','DESC')->get()->take(1); 
 
         $resultAPIController = new resultAPIController;
 
-        if(isset($request->stdname)){
-            // create a request 
-            $res['standard_name'] = $request->stdname;
-            $request2 = new Request(['type' => "API",'sub_institute_id'=>$sub_institute_id,'enrollment_no'=>$request->enrollment_no,'syear'=>$request->syear]);
-            $res['selectedData'] = $resultAPIController->resultPersonalize($request2);
+        if(isset($currentData[0]->id)){
+            $request2 = new Request(['type' => "API",'sub_institute_id'=>$sub_institute_id,'enrollment_no'=>$currentData[0]->enrollment_no]);
+            $res['previousData'] = $resultAPIController->resultPersonalize($request2);
+        
+            $request3 = new Request(['type' => "API",'sub_institute_id'=>$sub_institute_id,'enrollment_no'=>$currentData[0]->enrollment_no,'student_id'=>$currentData[0]->id,'standard'=>$currentData[0]->standard_id,'syear'=>$syear]);
+            $res['selectedCurrentData'] = $resultAPIController->currentResult($request3);
+        // echo "<pre>";print_r($res['selectedCurrentData']);exit;
         }
-        // get current standard 
-            $currentData =  DB::table('tblstudent_enrollment as se')
-            ->join('tblstudent as s','s.id','=','se.student_id')    
-            ->join('standard as std','std.id','=','se.standard_id')
-            ->selectRaw('se.student_id as id,s.enrollment_no,std.id as standardId,std.name as standardName,se.syear,se.standard_id')
-            ->where('se.student_id',$user_id)
-            ->where('syear',$syear)
-            ->first(); 
-            
-            if(isset($currentData->id)){
-                $request3 = new Request(['type' => "API",'sub_institute_id'=>$sub_institute_id,'enrollment_no'=>$request->enrollment_no,'student_id'=>$currentData->id,'standard'=>$currentData->standard_id,'syear'=>$syear]);
-                $res['selectedCurrentData'] = $resultAPIController->currentResult($request3);
-            }
         $res['standardCount'] = count($res['standardData']);
         $res['user_id'] = $user_id;
         $res['sub_institute_id'] = $sub_institute_id;
