@@ -1803,8 +1803,8 @@ datalist {
                                         </div>
 
                                         <div class="col-md-4 form-group">
-                                            <label>Distance </label>
-                                            <input type="number" id='distance' name="distance"  class="form-control" value="{{ $val['distance'] ?? 0 }}">
+                                            <label>Distance</label>
+                                            <input type="number" id='distance' name="distance"  class="form-control" value="{{ $val['distance'] ?? 0 }}" style="pointer-events:none">
                                         </div>
                                         <input type="hidden" name="transport_details" value="true">
                                         <div class="col-md-4 form-group">
