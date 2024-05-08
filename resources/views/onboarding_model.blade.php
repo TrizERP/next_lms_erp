@@ -147,25 +147,25 @@
 								<h6><b><a class="fcolor" onclick="get_roles_respo_fees('Teacher','Fees');">Teacher</a></b></h6>
 								<br>
 								<h6><b><a class="fcolor" onclick="get_roles_respo_fees('Student','Fees');">Student</a></b></h6><br>
-								<h6><b><a class="fcolor" onclick="get_roles_respo_fees('Student','Fees');">Parent</a></b></h6>
+								<h6><b><a class="fcolor" onclick="get_roles_respo_fees('Parent','Fees');">Parent</a></b></h6>
 								<br>
-								<h6><b><a class="fcolor" onclick="get_roles_respo_fees('Student','Fees');">Principal</a></b></h6>
+								<h6><b><a class="fcolor" onclick="get_roles_respo_fees('Principal','Fees');">Principal</a></b></h6>
 								<br>
-								<h6><b><a class="fcolor" onclick="get_roles_respo_fees('Student','Fees');">Clerk</a></b></h6>
+								<h6><b><a class="fcolor" onclick="get_roles_respo_fees('Clerk','Fees');">Clerk</a></b></h6>
 								<br>
-								<h6><b><a class="fcolor" onclick="get_roles_respo_fees('Student','Fees');">Counseller</a></b></h6>
+								<h6><b><a class="fcolor" onclick="get_roles_respo_fees('Counseller','Fees');">Counseller</a></b></h6>
 								<br>
 								<h6><b><a class="fcolor" onclick="get_roles_respo_fees('Lms Teacher','Fees');">LMS Teacher</a></b></h6>
 								<br>
-								<h6><b><a class="fcolor" onclick="get_roles_respo_fees('Student','Fees');">Trustee</a></b></h6>
+								<h6><b><a class="fcolor" onclick="get_roles_respo_fees('Trustee','Fees');">Trustee</a></b></h6>
 								<br>
-								<h6><b><a class="fcolor" onclick="get_roles_respo_fees('Student','Fees');">Librarian</a></b></h6>
+								<h6><b><a class="fcolor" onclick="get_roles_respo_fees('Librarian','Fees');">Librarian</a></b></h6>
 								<br>
-								<h6><b><a class="fcolor" onclick="get_roles_respo_fees('Student','Fees');">Peon</a></b></h6>
+								<h6><b><a class="fcolor" onclick="get_roles_respo_fees('Peon','Fees');">Peon</a></b></h6>
 								<br>
-								<h6><b><a class="fcolor" onclick="get_roles_respo_fees('Student','Fees');">Exam Department</a></b></h6>
+								<h6><b><a class="fcolor" onclick="get_roles_respo_fees('Exam Department','Fees');">Exam Department</a></b></h6>
 								<br>
-								<h6><b><a class="fcolor" onclick="get_roles_respo_fees('Student','Fees');">Academic Dept.</a></b></h6>
+								<h6><b><a class="fcolor" onclick="get_roles_respo_fees('Academic Dept.','Fees');">Academic Dept.</a></b></h6>
 							</div>
 							<div class="col-md-8" id="roles_respo">
 							</div>
