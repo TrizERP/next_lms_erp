@@ -84,18 +84,18 @@
                             <th>Bank Name</th>
                             <th>A/C No.</th>
                             <th>IFSC Code</th>
-                            <th>Net Payable Amount</th>
+                            <th class="text-left">Net Payable Amount</th>
                         </tr>
                         </thead>
                         <tbody>
                         @foreach($employees as $employee)
                         <tr>
-                            <td>{{$employee['id']}}</td>
-                            <td>{{$employee->getUser['first_name'] .' '. $employee->getUser['last_name']}}</td>
-                            <td>{{$employee->getUser['bank_name']}}</td>
-                            <td>{{$employee->getUser['account_no']}}</td>
-                            <td>{{$employee->getUser['ifsc_code']}}</td>
-                            <td>{{$employee['total_payment']}}</td>
+                            <td>{{$employee->employee_no}}</td>
+                            <td>{{$employee->first_name .' '. $employee->last_name}}</td>
+                            <td>{{$employee->bank_name}}</td>
+                            <td>{{$employee->account_no}}</td>
+                            <td>{{$employee->ifsc_code}}</td>
+                            <td>{{$employee->total_payment}}</td>
                         </tr>
                         @endforeach
                         </tbody>
