@@ -30,6 +30,8 @@ br {
                     @php
                     $departments = $data['departments'];
                     $new_emp_code = $data['new_emp_code'];
+                    $qualificationList = $data['qualificationList'];
+                    $occupationList = $data['occupationList'];
                     $employees = $data['employees'];
                     $job_titles = $data['job_titles'];
                     $user_profiles = $data['user_profiles'];
@@ -255,6 +257,31 @@ br {
                                 <label>Employee Id</label>
                                 <input type="text" id='employee_no' name="employee_no" class="form-control"  value="{{$new_emp_code}}">
                             </div>
+                            <!-- qualification and occupation  -->
+                            <div class="col-md-4 form-group">
+                                <label>Qualification</label>
+                                <input type="text" id='qualification' list="qualifications"  name="qualification" class="form-control" value="{{$data['qualification']}}">
+                                <datalist id="qualifications" height="100" style="height:100px">
+                                @if(!empty($qualificationList))
+                                    @foreach($qualificationList as $key => $value)
+                                        <option value="{{$value}}" {{ isset($data['qualification']) && $data['qualification'] == $value ? 'selected' : '' }}>{{$value}}</option>
+                                    @endforeach
+                                @endif
+                                </datalist>
+                            </div>
+                            <div class="col-md-4 form-group">
+                                <label>Occupation</label>
+                                <input type="text" id='occupation'  list="occupations" name="occupation" class="form-control" value="{{$data['occupation']}}" {{ $data['terminated_date'] ? date('Y-m-d',strtotime($data['terminated_date'])) : '' }}>
+                                <datalist id="occupations" height="100" style="height:100px">
+                                @if(!empty($occupationList))
+                                    @foreach($occupationList as $key => $value)
+                                        <option value="{{$value}}" {{ isset($data['occupation']) && $data['occupation'] == $value ? 'selected' : '' }}>{{$value}}</option>
+                                    @endforeach
+                                @endif 
+                                </datalist>
+                            </div>
+                            <!-- end qualification and occupation -->
+
                             <div class="col-md-4 form-group">
                                 <label>Joining Date</label>
                                 <input type="date" id='joined_date' name="joined_date" value="{{ $data['joined_date'] ? date('Y-m-d',strtotime($data['joined_date'])) : '' }}" class="form-control">

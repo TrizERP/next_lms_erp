@@ -73,7 +73,14 @@ class tbluserController extends Controller
             }, $maxEmpCode);
 
         $new_emp_code = ($maxEmpCode['0']['new_emp_code'] + 1) ?? 1;
-     
+
+        $qualificationList = tbluserModel::where('sub_institute_id',$sub_institute_id)->where('status',1)->whereNotNull('qualification')->groupBy('qualification')->pluck('qualification');
+
+        $occupationList = tbluserModel::where('sub_institute_id',$sub_institute_id)->where('status',1)->whereNotNull('occupation')->groupBy('occupation')->pluck('occupation');
+
+        view()->share('qualificationList', $qualificationList);
+        view()->share('occupationList', $occupationList);
+            
         view()->share('new_emp_code', $new_emp_code);
         // end 20-04-24
         view()->share('custom_fields', $dataCustomFields);
@@ -255,6 +262,11 @@ class tbluserController extends Controller
         }else{
             $new_emp_code = $empCode->employee_no ? $empCode->employee_no : 1;
         }
+
+        $res['qualificationList'] = tbluserModel::where('sub_institute_id',$sub_institute_id)->where('status',1)->whereNotNull('qualification')->groupBy('qualification')->pluck('qualification');
+
+        $res['occupationList'] = tbluserModel::where('sub_institute_id',$sub_institute_id)->where('status',1)->whereNotNull('occupation')->groupBy('occupation')->pluck('occupation');
+
         // end  20-04-24
         $res['departments'] = DB::table('hrms_departments')->where('status',1)->get()->toArray();
         $res['employees'] = tbluserModel::where('sub_institute_id',$sub_institute_id)->get();
