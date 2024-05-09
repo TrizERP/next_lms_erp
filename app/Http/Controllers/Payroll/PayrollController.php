@@ -96,7 +96,7 @@ class PayrollController extends Controller
         }
         $employees =$employeeLists= employeeDetails($sub_institute_id,$employee_id,$status);
     //    echo "<pre>";print_r($employees);exit;
-        $payrollTypes = PayrollType::where('status', 1)->get();
+        $payrollTypes = PayrollType::where('status', 1)->orderBy('sort_order')->get();
         
         $employeeSalaryStructures = EmployeeSalaryStructure::where('sub_institute_id',$sub_institute_id)->where('year',$syear)->get();
        
@@ -240,7 +240,7 @@ class PayrollController extends Controller
         $res['emp_id'] = $emp_id = $request->employee_id;
 
         $sub_institute_id = session()->get('sub_institute_id');
-        $payrollTypes = PayrollType::where('status', 1)->get();
+        $payrollTypes = PayrollType::where('status', 1)->orderBy('sort_order')->get();
 
         $header = [];
         foreach ($payrollTypes as $payrollType) {
@@ -762,7 +762,7 @@ class PayrollController extends Controller
     {
         
         $sub_institute_id = $request->session()->get('sub_institute_id');
-        $payrollTypes = PayrollType::where('status', 1)->get();
+        $payrollTypes = PayrollType::where('status', 1)->orderBy('sort_order')->get();
         //        return $payrollTypes;
         $employeeDetails = employeeDetails($sub_institute_id);
         $header = [];
@@ -1049,7 +1049,7 @@ class PayrollController extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $employeeLists = employeeDetails($sub_institute_id);
         $sub_institute_id = $request->session()->get('sub_institute_id');
-        $payrollTypes = PayrollType::where('status', 1)->get();
+        $payrollTypes = PayrollType::where('status', 1)->orderBy('sort_order')->get();
         $currentYearemployeeDetails = [];
         $nextYearemployeeDetails = [];
         $years = Helpers::getYears();
