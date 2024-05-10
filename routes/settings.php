@@ -6,6 +6,7 @@ use App\Http\Controllers\settings\manageInstituteController;
 use App\Http\Controllers\settings\smtpController;
 use App\Http\Controllers\settings\tblcustomfieldsController;
 use App\Http\Controllers\settings\templateMasterController;
+use App\Http\Controllers\settings\announcementController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -21,5 +22,6 @@ Route::group(['prefix' => 'settings', 'middleware' => ['session', 'menu', 'logRo
     Route::get('view_all_tag', [templateMasterController::class, 'viewAllTag'])->name('view_all_tag');
     Route::resource('institute_detail', instituteDetailController::class);
     Route::resource('manage_institute', manageInstituteController::class);
-
+    Route::resource('announcements', announcementController::class);
+    Route::get('announcement_dashboard',[announcementController::class,'dashboardData']);
 });

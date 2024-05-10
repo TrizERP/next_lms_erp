@@ -261,6 +261,7 @@ $academicTerms = session()->get('academicTerms');
                             <span class="notify-dot"></span>
                         </div>
                     </div>-->
+                    
                     <div class="dropdown user-dropdown">
                         <button class="dropdown-toggle d-flex align-items-center" type="button" id="dropdownMenuButton"
                                 data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -302,6 +303,13 @@ $academicTerms = session()->get('academicTerms');
                             @endif
                         </div>
                     </div>
+
+                <div class="d-xl-flex d-md-block d-flex flex-wrap align-items-center justify-content-between">
+                    <div style="padding-left:0px">
+                        <a class="btn abtn" href="{{route('announcements.index')}}"><span class="mdi mdi-bell"></span></a>
+                    </div>
+                </div>
+            
                 </div>
             </div>
         </header>
