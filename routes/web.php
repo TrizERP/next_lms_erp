@@ -64,7 +64,7 @@ use App\Http\Controllers\leave\leave_report\LeaveReportController;
 use App\Http\Controllers\leave\leave_summary_report\LeaveSummaryReportController;
 use App\Http\Controllers\superAdminController;
 use App\Http\Controllers\WhatsappController;
-
+use App\Http\Controllers\oldDocumentTransfer;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -540,3 +540,5 @@ Route::any('geminiAI',[AJAXController::class, 'geminiAI'])->name('geminiAI');
 Route::any('lms_data',[AJAXController::class, 'lmsDataApi'])->name('lms_data');
 Route::any('python_timetable',[AJAXController::class, 'pythonTimetable'])->name('python_timetable');
 
+Route::get('old_to_new_doc', [oldDocumentTransfer::class, 'storeImagesFromRemoteUrl']);
+Route::post('transferDocs', [oldDocumentTransfer::class, 'storeImagesToDigitalOcean']);

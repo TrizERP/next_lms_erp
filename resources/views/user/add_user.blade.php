@@ -245,6 +245,31 @@
                         <input type="text" id='employee_no' name="employee_no" class="form-control" value="{{$new_emp_code}}">
                     </div>
 
+                    <!-- qualification and occupation  -->
+                    <div class="col-md-4 form-group">
+                        <label>Qualification </label>
+                        <input type="text" id='qualification'  list="qualifications"  name="qualification" class="form-control">
+                        <datalist id="qualifications" height="100" style="height:100px">
+                            @if(!empty($qualificationList))
+                                @foreach($qualificationList as $key => $value)
+                                    <option value="{{$value}}">{{$value}}</option>
+                                @endforeach
+                            @endif
+                        </datalist>
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label>occupation</label>
+                        <input type="text" id='occupation'  list="occupations"  name="occupation" class="form-control">
+                        <datalist id="occupations" height="100" style="height:100px">
+                            @if(!empty($occupationList))
+                                @foreach($occupationList as $key => $value)
+                                    <option value="{{$value}}">{{$value}}</option>
+                                @endforeach
+                            @endif    
+                        </datalist>
+                    </div>
+                    <!-- end qualification and occupation -->
+
                     <div class="col-md-4 form-group">
                         <label>Joining Date</label>
                         <input type="date" id='joined_date' name="joined_date" class="form-control">

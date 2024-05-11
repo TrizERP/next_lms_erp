@@ -86,6 +86,8 @@
                                     @foreach($data['headers'] as $hkey => $header)
                                         @if(isset($jsonData[$hkey]))
                                             <td>{{$jsonData[$hkey]}}</td>
+                                        @else 
+                                            <td>0</td>
                                         @endif
                                     @endforeach
                                 </tr>

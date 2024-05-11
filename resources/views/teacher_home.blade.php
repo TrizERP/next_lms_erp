@@ -185,7 +185,49 @@
                 </div>
             </div>
             @endif
-
+<!-- announcement start  -->
+@if(isset($data['announcements']))
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100">
+                        <h3 class="card-title">Notice & Announcements</h3>
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <th>Sr.No.</th>
+                                    <th>Title</th>
+                                    <th>Description</th>
+                                    <th>Attachment</th>
+                                    <th>From Date</th>
+                                    <th class="text-left">To date</th>
+                                    @if(session()->get('user_profile_name')=="Admin" || session()->get('user_profile_name')=="Super Admin")
+                                    <th class="text-left">User Profile</th>
+                                    @endif
+                                </thead>
+                                <tbody>
+                                @if(isset($data['announcements']['announcementDetails']) && !empty($data['announcements']['announcementDetails']))
+                                @foreach($data['announcements']['announcementDetails'] as $key=>$value)
+                                <tr>
+                                    <td>{{$key+1}}</td>
+                                    <td>{{$value->title}}</td>
+                                    <td>{{$value->description}}</td>
+                                    <td>@if(isset($value->attachment))<a href="{{$value->attachment_url}}" target="_blank">View</a>  @else N/A @endif </td>
+                                    <td>{{ ($value->from_date!="0000-00-00") ? $value->from_date : '-'}}</td>
+                                    <td>{{ ($value->to_date!="0000-00-00") ? $value->to_date : '-'}}</td>
+                                    @if(session()->get('user_profile_name')=="Admin" || session()->get('user_profile_name')=="Super Admin")
+                                    <td>{{$value->name}}</td>
+                                    @endif
+                                </tr>
+                                @endforeach
+                                @else
+                                    <tr><td colspan="{{ (session()->get('user_profile_name')=='Admin' || session()->get('user_profile_name')=='Super Admin') ? '7' : '6'}}" class="font-weight-bold"><center>No Records</center></td></tr>
+                                @endif
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                @endif
+                <!-- announcement end  -->
             @if(isset($data['visitorBlock']) && Session::get('user_profile_name') != 'Student')
             <div class="col-md-6 mb-4">
                 <div class="card h-100">

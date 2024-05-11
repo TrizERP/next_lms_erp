@@ -30,7 +30,7 @@
                                         <select id='employee_id' name="employee_id" class="form-control">
                                             <option value="0">Select Employee</option>
                                             @foreach($employees as $key => $employee)
-                                                    <option value="{{$employee['id']}}" @if(isset($employee_id) && $employee_id==$employee['id']) @endif>{{$employee['first_name'] .' '. $employee['last_name']}} ({{$employee['user_profile']}})</option>
+                                                    <option value="{{$employee['id']}}" @if(isset($employee_id) && $employee_id==$employee['id']) selected @endif>{{$employee['first_name'] .' '. $employee['last_name']}} ({{$employee['user_profile']}})</option>
                                             @endforeach
                                         </select>
                                     </div>
@@ -134,6 +134,8 @@
                                                 <input type="hidden" name="emp[{{$hkey}}]"
                                                        value="{{$totalallowance - $totaldeduction}}">
                                                 <td>{{$totalallowance - $totaldeduction}}</td>
+                                                @else
+                                                <td>0</td>
                                             @endif
                                         @endif
                                     @endforeach
