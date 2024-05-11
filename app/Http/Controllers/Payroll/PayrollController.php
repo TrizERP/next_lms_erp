@@ -96,7 +96,7 @@ class PayrollController extends Controller
         }
         $employees =$employeeLists= employeeDetails($sub_institute_id,$employee_id,$status);
     //    echo "<pre>";print_r($employees);exit;
-        $payrollTypes = PayrollType::where('status', 1)->get();
+        $payrollTypes = PayrollType::where('status', 1)->orderBy('sort_order')->get();
         
         $employeeSalaryStructures = EmployeeSalaryStructure::where('sub_institute_id',$sub_institute_id)->where('year',$syear)->get();
        
@@ -240,7 +240,7 @@ class PayrollController extends Controller
         $res['emp_id'] = $emp_id = $request->employee_id;
 
         $sub_institute_id = session()->get('sub_institute_id');
-        $payrollTypes = PayrollType::where('status', 1)->get();
+        $payrollTypes = PayrollType::where('status', 1)->orderBy('sort_order')->get();
 
         $header = [];
         foreach ($payrollTypes as $payrollType) {
@@ -762,7 +762,7 @@ class PayrollController extends Controller
     {
         
         $sub_institute_id = $request->session()->get('sub_institute_id');
-        $payrollTypes = PayrollType::where('status', 1)->get();
+        $payrollTypes = PayrollType::where('status', 1)->orderBy('sort_order')->get();
         //        return $payrollTypes;
         $employeeDetails = employeeDetails($sub_institute_id);
         $header = [];
@@ -884,8 +884,10 @@ class PayrollController extends Controller
         if($request->month && $request  ->year) {
             $list['month'] = $request->month;
             $list['year'] = $request->year;
-            $employeeSalaryData = EmployeeMonthlySalaryData::with('getUser')->where([['month',$request->month],['year', $request->year],['sub_institute_id', $sub_institute_id]])->get();
+            // $employeeSalaryData = EmployeeMonthlySalaryData::with('getUser')->where([['month',$request->month],['year', $request->year],['sub_institute_id', $sub_institute_id]])->get();
+            $employeeSalaryData = DB::table('employee_monthly_salary_data as emd')->join('tbluser as u','u.id','=','emd.employee_id')->where([['emd.month',$request->month],['emd.year', $request->year],['emd.sub_institute_id', $sub_institute_id]])->where('u.status',1)->get();
         }
+        // echo "<pre>";print_r($employeeSalaryData);exit;
         return view('payroll.payroll_bankwise_report.index', ['employees' => $employeeSalaryData,'list'=>$list,'months' => $months,'years' => $years]);
 
 
@@ -1047,7 +1049,7 @@ class PayrollController extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $employeeLists = employeeDetails($sub_institute_id);
         $sub_institute_id = $request->session()->get('sub_institute_id');
-        $payrollTypes = PayrollType::where('status', 1)->get();
+        $payrollTypes = PayrollType::where('status', 1)->orderBy('sort_order')->get();
         $currentYearemployeeDetails = [];
         $nextYearemployeeDetails = [];
         $years = Helpers::getYears();
@@ -1066,6 +1068,7 @@ class PayrollController extends Controller
             $currentYearemployeeDetails = $currentYearemployeeDetails->map(function($employee){
                 $data = [];
                 $data['employee_id'] = $employee->employee_id;
+                $data['employee_no'] = $employee->employee_no;
                 $data['employee_name'] = $employee->getUser->first_name . ' ' . $employee->getUser->middle_name . ' ' . $employee->getUser->last_name;
                 $data['data'] = json_decode($employee->employee_salary_data, true);
                 $data['total_day'] =$employee->total_day;

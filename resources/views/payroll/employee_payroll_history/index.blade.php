@@ -89,10 +89,10 @@
                                     @foreach($currentYearemployeeDetails as $employee)
                                         <tr>
                                         <td>{{$employee['month'] .'/'. $employee['year']}}</td>
-                                        <td>{{$employee['employee_id']}}</td>
+                                        <td>{{$employee['employee_no']}}</td>
                                         <td>{{$employee['total_day']}}</td>
                                         @foreach($header as $hkey => $col)
-                                            <td>{{$employee['data'][$hkey]}}</td>
+                                            <td>{{$employee['data'][$hkey] ?? '0' }}</td>
                                         @endforeach
                                         <td>{{$employee['total_deduction']}}</td>
                                         <td>{{$employee['total_payment']}}</td>
@@ -106,7 +106,7 @@
                                         <td>{{$employee['employee_id']}}</td>
                                         <td>{{$employee['total_day']}}</td>
                                         @foreach($header as $hkey => $col)
-                                            <td>{{$employee['data'][$hkey]}}</td>
+                                            <td>{{$employee['data'][$hkey] ?? '0' }}</td>
                                         @endforeach
                                         <td>{{$employee['total_deduction']}}</td>
                                         <td>{{$employee['total_payment']}}</td>

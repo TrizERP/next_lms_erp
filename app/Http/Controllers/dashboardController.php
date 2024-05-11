@@ -18,6 +18,7 @@ use function App\Helpers\is_mobile;
 use function App\Helpers\FeeMonthId;
 use Illuminate\Support\Facades\Schema;
 use App\Http\Controllers\fees\fees_report\feesMonthlyReportController;
+use App\Http\Controllers\settings\announcementController;
 use Carbon\Carbon;
 
 class dashboardController extends Controller
@@ -1107,6 +1108,10 @@ class dashboardController extends Controller
 
                 // END Code for calculate used space in MB (using sub_institute_wise folder)
 
+                // notification and announcements
+                $annDash = new announcementController;
+                $res['announcements'] = $annDash->dashboardData($request);
+                // echo "<pre>";print_r($res['announcements']);exit;
                 return is_mobile($type, "home", $res, "view");
             } else {
                 $type = $request->input('type');
@@ -1116,7 +1121,9 @@ class dashboardController extends Controller
                 return is_mobile($type, "home", $res, "view");
             }
         } else {
-
+            $annDash = new announcementController;
+            $res['announcements'] = $annDash->dashboardData($request);
+            // echo "<pre>";print_r($res['announcements']);exit;
             $date = date('Y-m-d');
 
             $date15 = date('Y-m-d', strtotime($date . ' +15 day'));
