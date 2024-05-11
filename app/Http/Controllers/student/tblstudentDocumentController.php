@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\student\tblstudentDocumentModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
 
 class tblstudentDocumentController extends Controller
 {
@@ -46,7 +47,8 @@ class tblstudentDocumentController extends Controller
             $name = $request->input('student_id').date('YmdHis');
             $ext = File::extension($originalname);
             $file_name = $name.'.'.$ext;
-            $path = $file->storeAs('public/student_document/', $file_name);
+            // $path = $file->storeAs('public/student_document/', $file_name);
+            Storage::disk('digitalocean')->putFileAs('public/student_document/', $file, $file_name, 'public');
         }
 
         $request->request->add(['file_name' => $file_name]); //add request
