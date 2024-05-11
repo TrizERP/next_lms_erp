@@ -557,7 +557,7 @@ class studentTransferController extends Controller
 
             $res = DB::table('tblstudent_document as tsd')
             ->join('tblstudent as ts','ts.id','=','tsd.student_id')
-            ->selectRaw('tsd.student_id,YEAR(tsd.created_on) as year,CONCAT_WS("",COALESCE(ts.first_name,"-"),COALESCE(ts.middle_name,"-"),COALESCE(ts.last_name,"-")) AS student_name,tsd.document_title,CONCAT("'.$server.'/storage/student_document/",tsd.file_name) file_name')
+            ->selectRaw('tsd.student_id,YEAR(tsd.created_on) as year,CONCAT_WS(" ",COALESCE(ts.first_name,"-"),COALESCE(ts.middle_name,"-"),COALESCE(ts.last_name,"-")) AS student_name,ts.enrollment_no as gr_no,tsd.document_title,CONCAT("'.$server.'/storage/student_document/",tsd.file_name) file_name')
             ->where('tsd.sub_institute_id',$sub_institute_id)
             ->where('tsd.document_type_id',$document_type)
             ->when($student_id,function($q) use ($student_id){
