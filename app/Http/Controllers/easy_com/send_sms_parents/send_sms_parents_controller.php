@@ -121,12 +121,14 @@ class send_sms_parents_controller extends Controller
             $errorMessage = true;
 
             $text = urlencode($text);
-            $data['last_var'] = urlencode($data['last_var']);
+            //$data['last_var'] = urlencode($data['last_var']);
             if($template_id !=''){
                 $data['last_var'] = $template_id;
             }
 
-            $url = $data['url'].$data['pram'].$data['mobile_var'].$mobile.$data['text_var'].$text.$data['last_var'];
+            $url = $data['url'].$data['pram'].$data['last_var'].$data['mobile_var'].$mobile.$data['text_var'].$text;
+            //echo $url;
+            //die();
             $ch = curl_init();
 
             // Ignore SSL certificate verification

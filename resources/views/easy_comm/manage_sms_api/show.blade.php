@@ -20,7 +20,11 @@
             @endif
             <div class="row">                
                 <div class="col-lg-3 col-sm-3 col-xs-3">
-                    <a href="{{ route('manage_sms_api.create') }}" class="btn btn-info add-new"><i class="fa fa-plus"></i> Add New</a>
+                    @if(isset($data['data']))
+                        @if (count(($data['data']))==0)
+                            <a href="{{ route('manage_sms_api.create') }}" class="btn btn-info add-new"><i class="fa fa-plus"></i> Add New</a>
+                        @endif
+                    @endif
                 </div>
                 <div class="col-lg-12 col-sm-12 col-xs-12">
                     <div class="table-responsive">                          

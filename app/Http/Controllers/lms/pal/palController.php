@@ -82,22 +82,28 @@ class palController extends Controller
         $command = "python3 /home/pal/pal.py $sub_institute_id $syear $standard_id $subject_id $chapter_id $enrollment_no";
         $getLists = shell_exec($command);
         $questionList=json_decode($getLists,true);
-        // echo "<pre>";print_r($request->all());exit;
+        // echo "<pre>";print_r($questionList);exit;
 
         // $questionList = lmsQuestionMasterModel::where(['sub_institute_id'=>$sub_institute_id,'standard_id'=>$standard_id,'subject_id'=>$subject_id,'chapter_id'=>$chapter_id])->take(10)->orderBy('id','DESC')->get()->toArray();
         $answer=[];
+        $existQusetion = [];
+
         if(!empty($questionList)){
         foreach ($questionList as $key => $val) {
-            $answer_arr = answermasterModel::where([
-                "question_id"      => $val['question_id'],
-                "sub_institute_id" => $sub_institute_id,
-            ])->get()->toArray();
-            if (count($answer_arr) > 0) {
-                foreach ($answer_arr as $anskey => $ansval) {
-                    $answer[$val['question_id']][] = $ansval;
+            if(!in_array($val['question_id'],$existQusetion)){
+                $answer_arr = answermasterModel::where([
+                    "question_id"      => $val['question_id'],
+                    "sub_institute_id" => $sub_institute_id,
+                ])->get()->toArray();
+                if (count($answer_arr) > 0) {
+                    foreach ($answer_arr as $anskey => $ansval) {
+                        $answer[$val['question_id']][] = $ansval;
+                    }
                 }
+                $existQusetion[]=$val['question_id'];
             }
         }
+        // echo "<pre>";print_r($answer);exit;
     }
     if(empty($questionList)){
         $res['status_code'] = 0;
