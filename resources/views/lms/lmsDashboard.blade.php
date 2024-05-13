@@ -554,7 +554,9 @@
 
    $('.circle').on('click',function(){
       $('.chapdata').hide();
+      $('.recommendation').hide();
       $('.rankData').hide();
+      $('.curveData').hide();
    })
 
 </script>
@@ -605,13 +607,13 @@ function currentCircle(sub){
       $('#collapseExample3_'+ch).show();
 
       $('.recommendation').hide();
-      $('#recommendation_'+ch).show();
+            $('#recommendation_'+ch).show();
 
-      $('.curveData').hide();
-      $('#curveData_'+ch).show();
+            $('.curveData').hide();
+            $('#curveData_'+ch).show();
 
-      $('.rankData').hide();
-      $('#rankData_'+ch).show();
+            $('.rankData').hide();
+            $('#rankData_'+ch).show();
 
    } else {
       console.log("No first row found in table.");
