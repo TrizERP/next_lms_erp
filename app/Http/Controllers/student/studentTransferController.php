@@ -553,7 +553,7 @@ class studentTransferController extends Controller
         }
         else{
 
-            $server = "https://".$_SERVER['HTTP_HOST'];
+            $server = env('do_path');
 
             $res = DB::table('tblstudent_document as tsd')
             ->join('tblstudent as ts','ts.id','=','tsd.student_id')
