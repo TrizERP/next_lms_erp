@@ -6,60 +6,39 @@ use Illuminate\Http\Request;
 use function App\Helpers\is_mobile;
 use Aws\S3\S3Client;
 use Illuminate\Support\Facades\Storage;
-use GuzzleHttp\Client;
-use Illuminate\Support\Facades\Http;
+use DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Http\Client\HttpClientException;
+use Illuminate\Support\Facades\Http;
 
 class oldDocumentTransfer extends Controller
 {
-   
-    public function storeImagesFromRemoteUrl()
-    { // not working code
-        try {
-            // Remote URL containing the images
-            $remoteUrl = 'http://apps.triz.co.in/mmiserp/Products/cms/assets/logo';
-    
-            // Custom cURL options to specify the host and port
-        $curlOptions = [
-            CURLOPT_PROXY => 'http://apps.triz.co.in:80', // Set the host and port
-            CURLOPT_PROXYTYPE => CURLPROXY_SOCKS5, // Specify the proxy type (optional)
-        ];
-
-        // Fetch the contents of the remote directory with custom cURL options
-        $response = Http::withOptions(['curl' => $curlOptions])->get($remoteUrl);
-
-    
-            // Check if the request was successful
-            if ($response->successful()) {
-                // Get the body of the response
-                $body = $response->body();
-    
-                // Extract image filenames from the body
-                preg_match_all('/href="(.*?)"/', $body, $matches);
-    
-                // Loop through each filename and store the file
-                foreach ($matches[1] as $filename) {
-                    // Get the file contents
-                    $fileContents = Http::get($remoteUrl . '/' . $filename)->body();
-    
-                    // Store the file to the desired location with its original name
-                    $stored = Storage::disk('digitalocean')->put('public/student_document/' . $filename, $fileContents);
-    
-                    if ($stored) {
-                        echo "File '$filename' has been stored successfully.<br>";
-                    } else {
-                        echo "Failed to store file '$filename'.<br>";
-                    }
-                }
-            } else {
-                echo "Failed to fetch remote directory contents. Status Code: " . $response->status() . "<br>";
+    private function convertDataToUtf8($data)
+    {
+        if (is_array($data)) {
+            // Convert each element of the array to UTF-8 encoding
+            foreach ($data as $key => $value) {
+                $data[$key] = $this->convertDataToUtf8($value);
             }
-        } catch (\Exception $e) {
-            echo "Error: " . $e->getMessage() . "<br>";
+        } elseif (is_object($data)) {
+            // Convert each property of the object to UTF-8 encoding
+            foreach ($data as $key => $value) {
+                $data->$key = $this->convertDataToUtf8($value);
+            }
+        } elseif (is_string($data)) {
+            // Attempt to detect the character encoding
+            $encoding = mb_detect_encoding($data, mb_detect_order(), true);
+            
+            // Specify the input encoding (use ISO-8859-1 as a fallback)
+            $inputEncoding = $encoding ?: 'ISO-8859-1';
+            
+            // Convert string to UTF-8 encoding
+            $data = mb_convert_encoding($data, 'UTF-8', $inputEncoding);
         }
+        
+        return $data;
     }
     
-
 
 
     public function storeImagesToDigitalOcean(Request $request)

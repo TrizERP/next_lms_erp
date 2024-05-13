@@ -1184,7 +1184,7 @@ datalist {
                                                     <td>{{$docdata['document_type']}}</td>
                                                     <td>{{$docdata['document_title']}}</td>
                                                     <td>{{$docdata['created_on']}}</td>
-                                                    <td><a target="_blank" href="../../../../storage/student_document/{{$docdata['file_name']}}">{{$docdata['file_name']}}</a></td>
+                                                    <td><a target="_blank" href="{{ Storage::disk('digitalocean')->url('public/student_document/'.$docdata['file_name'])}}">{{$docdata['file_name']}}</a></td>
                                                 </tr>
                                             @php
                                             $j++;
