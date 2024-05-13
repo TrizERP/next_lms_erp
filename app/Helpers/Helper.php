@@ -170,7 +170,8 @@ if (!function_exists('SearchChain')) {
         if(session()->get('sub_institute_id')==195){
             $menu_ids = [80,102];
         }else{
-            $menu_ids = [80,102,156];
+            // $menu_ids = [80,102,156];
+            $menu_ids=[];
         }
 
         $getClass=DB::table('class_teacher')->whereRaw('sub_institute_id='.session()->get('sub_institute_id').' and teacher_id ='.session()->get('user_id').' and syear="'.session()->get('syear').'"')->groupBy('teacher_id')->first();
