@@ -75,8 +75,8 @@
                                 <thead>
                                 <tr>
                                     <th>Sr No.</th>
-                                    <th>Emp Id</th>
-                                    <th>Emp Name</th>
+                                    <th>Emp.No</th>
+                                    <th>Emp.Name</th>
                                     <th>Gender</th>
                                     @foreach ($data['payrollTypes'] as $payrollType)
                                         <th class="text-left">{{$payrollType->payroll_name}}</th>
@@ -88,7 +88,7 @@
                                 @foreach($data['employees'] as $key => $value)
                                     <tr>
                                         <td>{{$key+1}}</td>
-                                        <td>{{$value['id']}}</td>
+                                        <td>{{$value['employee_no']}}</td>
                                         <td>{{$value['first_name'] .' '. $value['middle_name'] .' '.$value['last_name']}} ({{$value['department']}}) </td>
                                         <td>{{$value['gender']}}<input type="hidden" name="emp[{{$value['id']}}][]" value="{{$value['id']}}"></td>
                                          
