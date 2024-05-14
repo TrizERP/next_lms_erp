@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use function App\Helpers\is_mobile;
+use Illuminate\Support\Facades\Storage;
 
 class tbluserController extends Controller
 {
@@ -267,6 +268,12 @@ class tbluserController extends Controller
 
         $res['occupationList'] = tbluserModel::where('sub_institute_id',$sub_institute_id)->where('status',1)->whereNotNull('occupation')->groupBy('occupation')->pluck('occupation');
 
+        $res['documentTypeLists'] = DB::table('student_document_type')->where('status',1)->where('user_type','staff')->get()->toArray();
+        $res['documentLists'] = DB::table('staff_document')->select('staff_document.*', 'd.document_type')
+        ->join('student_document_type as d', 'd.id', 'staff_document.document_type_id')
+        ->where(['sub_institute_id' => $sub_institute_id, 'user_id' => $id])
+        ->get()
+        ->toArray();
         // end  20-04-24
         $res['departments'] = DB::table('hrms_departments')->where('status',1)->get()->toArray();
         $res['employees'] = tbluserModel::where('sub_institute_id',$sub_institute_id)->get();
@@ -394,4 +401,45 @@ class tbluserController extends Controller
         return json_encode($res);
     }
 
+    function addUserDocument(Request $request,$id){
+        $type = $request->type;
+        $document = $request->document;
+        $doc_type= $request->document_type_id; 
+        $document_title = $request->document_title;
+        $sub_institute_id = session()->get('sub_institute_id');
+        if($type=="API"){
+            $sub_institute_id= $request->sub_institute_id;
+        }
+        $filename='';
+        if($request->hasFile('document')){
+            $file = $request->file('document');
+            $originalname = $file->getClientOriginalName();
+            $name = $id.date('YmdHis');
+            $ext = File::extension($originalname);
+            $file_name = $name.'.'.$ext;
+            // $path = $file->storeAs('public/student_document/', $file_name);
+            Storage::disk('digitalocean')->putFileAs('public/staff_document/', $file, $file_name, 'public');
+        }
+
+        $data = [
+            'user_id'          => $id,
+            'document_title'   => $request->get('document_title'),
+            'document_type_id' => $request->get('document_type_id'),
+            'file_name'        => $file_name,
+            'sub_institute_id' => $sub_institute_id,
+            'created_at'       => now(),
+        ];
+
+        $insert = DB::table('staff_document')->insert($data);
+
+        if($insert){
+            $res['success'] = 1;
+            $res['message'] = "Document Added successfully";
+        }else{
+            $res['fail'] = 0;
+            $res['message'] = "Failed to Add Document";
+        }
+
+        return is_mobile($type, "add_user.index", $res);
+    }
 }

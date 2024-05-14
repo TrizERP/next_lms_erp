@@ -13,8 +13,11 @@ br {
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row bg-title">
-            <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
+            <div class="col-lg-9 col-md-4 col-sm-4 col-xs-12">
                 <h4 class="page-title">Edit User</h4>
+            </div>
+            <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
+                <a class="btn btn-success" data-toggle="modal" data-target="#documentModel">Add Document</a>
             </div>
         </div>
         <div class="card">
@@ -32,6 +35,8 @@ br {
                     $new_emp_code = $data['new_emp_code'];
                     $qualificationList = $data['qualificationList'];
                     $occupationList = $data['occupationList'];
+                    $documentTypeLists = $data['documentTypeLists'];
+                    $documentLists = $data['documentLists'];
                     $employees = $data['employees'];
                     $job_titles = $data['job_titles'];
                     $user_profiles = $data['user_profiles'];
@@ -608,5 +613,7 @@ br {
             document.getElementById("user_name").value = username;
         }
     </script>
+@include('user.documentModel')
+
 @include('includes.footer')
 @endsection

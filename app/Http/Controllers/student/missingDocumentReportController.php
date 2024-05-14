@@ -41,38 +41,47 @@ class missingDocumentReportController extends Controller
         $grade_id = $request->input("grade");
         $standard_id = $request->input("standard");
         $division_id = $request->input("division");
-        $marking_period_id = session()->get('term_id');
+        $user_type = $request->user_type;
 
-        $result = DB::table('tblstudent as s')
-            ->join('tblstudent_enrollment as se', function ($join) {
-                $join->whereRaw('s.id = se.student_id');
-            })->join('standard as st', function ($join) use($marking_period_id) {
-                $join->whereRaw('st.id = se.standard_id');
-                // ->when($marking_period_id,function($query) use($marking_period_id){
-                //     $query->where('st.marking_period_id',$marking_period_id);
-                // });
-            })->join('division as d', function ($join) {
-                $join->whereRaw('d.id = se.section_id');
-            })->leftJoin('tblstudent_document as sd', function ($join) {
-                $join->whereRaw('sd.student_id = se.student_id');
-            })->selectRaw("s.enrollment_no, CONCAT_WS(' ',s.first_name,s.last_name) AS student_name,
-                st.name as standard_name,d.name as division_name,GROUP_CONCAT(sd.document_type_id) as document_list")
-            ->where('se.syear', $syear)
-            ->where('s.sub_institute_id', $sub_institute_id);
+        if($user_type=="student"){
+            $result = DB::table('tblstudent as s')
+                ->join('tblstudent_enrollment as se', function ($join) {
+                    $join->whereRaw('s.id = se.student_id');
+                })->join('standard as st', function ($join) {
+                    $join->whereRaw('st.id = se.standard_id');
+                })->join('division as d', function ($join) {
+                    $join->whereRaw('d.id = se.section_id');
+                })->leftJoin('tblstudent_document as sd', function ($join) {
+                    $join->whereRaw('sd.student_id = se.student_id');
+                })->selectRaw("s.enrollment_no, CONCAT_WS(' ',s.first_name,s.last_name) AS student_name,
+                    st.name as standard_name,d.name as division_name,GROUP_CONCAT(sd.document_type_id) as document_list")
+                ->where('se.syear', $syear)
+                ->where('s.sub_institute_id', $sub_institute_id);
 
-        if ($grade_id != '') {
-            $result = $result->where('se.grade_id', $grade_id);
+            if ($grade_id != '') {
+                $result = $result->where('se.grade_id', $grade_id);
+            }
+            if ($standard_id != '') {
+                $result = $result->where('se.standard_id', $standard_id);
+            }
+            if ($division_id != '') {
+                $result = $result->where('se.section_id', $division_id);
+            }
+            $result = $result->groupBy('se.student_id')->get()->toArray();
+        }else if($user_type=="staff"){
+            $result = DB::table('tbluser as s')
+          ->leftJoin('staff_document as sd', function ($join) {
+                $join->whereRaw('sd.user_id = s.id');
+            })->selectRaw("CONCAT_WS(' ',s.first_name,s.last_name) AS student_name,GROUP_CONCAT(sd.document_type_id) as document_list")
+            ->where('s.sub_institute_id', $sub_institute_id)
+            ->groupBy('s.id')->get()->toArray();
+        }else{
+            $res['status_code']=0;
+            $res['message'] = "User Type Not Selected";
         }
-        if ($standard_id != '') {
-            $result = $result->where('se.standard_id', $standard_id);
-        }
-        if ($division_id != '') {
-            $result = $result->where('se.section_id', $division_id);
-        }
-        $result = $result->groupBy('se.student_id')->get()->toArray();
 
 
-        $docment_type_data = documentTypeModel::select('*')->get()->toArray();
+        $docment_type_data = documentTypeModel::select('*')->where('user_type',$user_type)->get()->toArray();
 
         $res['status_code'] = 1;
         $res['message'] = "Success";
@@ -81,6 +90,7 @@ class missingDocumentReportController extends Controller
         $res['grade_id'] = $grade_id;
         $res['standard_id'] = $standard_id;
         $res['division_id'] = $division_id;
+        $res['user_type'] = $user_type ;
 
         return is_mobile($type, "student/missing_document_report", $res, "view");
     }

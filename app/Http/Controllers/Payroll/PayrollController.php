@@ -1099,4 +1099,41 @@ class PayrollController extends Controller
 
         return view('payroll.employee_payroll_history.index', ['employeeLists' => $employeeLists,'currentYearemployeeDetails' => $currentYearemployeeDetails,'header' => $header, 'list' => $list,'years' => $years]);
     }
+
+    public function payrollTypeReport(Request $request){
+        $type=$request->type;
+        $res=session()->get('data');
+        $res['months'] = Helpers::getMonths();
+        $res['years'] = Helpers::getYears();
+        $res['py_types'] = PayrollType::orderBy('sort_order')->where('status',1)->get()->toArray();
+
+        return is_mobile($type, "payroll.payroll_report.payrollTypeReport", $res, "view");
+    }
+
+    public function payrollTypeReportCreate(Request $request){
+        $type=$request->type;
+        // echo "<pre>";print_r($request->all());exit;
+        $res['selectedMonth']=$month=$request->month;
+        $res['selectedYear']=$year=$request->year;
+        $res['selectedPayrollType']=$payrollTypes=$request->payroll_type;
+        $res['payrollHeads'] =PayrollType::orderBy('sort_order')
+            ->when($payrollTypes,function($q) use($payrollTypes){
+                $q->whereIn('id',$payrollTypes);
+            })->where('status',1)->select('payroll_name','id')->get()->toArray();
+        
+        $res['payrollData'] = DB::table('employee_monthly_salary_data as emsd')
+            ->join('tbluser as u',function($query) {
+                $query->on('u.id','=','emsd.employee_id')->where('u.status',1);
+            })
+            ->join('tbluserprofilemaster as up','up.id','=','u.user_profile_id')
+            ->selectRaw('emsd.*,concat_ws(" ",COALESCE(u.first_name,"-"),COALESCE(u.last_name,"-")) as emp_name,u.employee_no,up.name as profile_name')
+            ->where(['emsd.month'=>$month,'emsd.year'=>$year])->get()->toArray();
+
+            if(empty($res['payrollData'])){
+                $res['status_code'] = 0;
+                $res['message'] = "No data Found";
+            }
+            // echo "<pre>";print_r($res['payrollData']);exit;
+        return is_mobile($type, "payrollTypeReport.index", $res);
+    }
 }

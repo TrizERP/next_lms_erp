@@ -175,6 +175,9 @@ Route::group([ 'middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::get('/payroll-type/create/{id}', [PayrollController::class, 'payrollCreate']);
     Route::delete('/payroll-type/destroy/{id}', [PayrollController::class, 'payrollDestroy'])->name('payroll_type.destroy');
 
+    Route::get('/payroll-type-report', [PayrollController::class, 'payrollTypeReport'])->name('payrollTypeReport.index');
+    Route::get('/payroll-type-report/create', [PayrollController::class, 'payrollTypeReportCreate'])->name('payrollTypeReport.create');
+
     Route::get('/employee-salary-structure', [PayrollController::class, 'employeeSalaryStructure'])->name('employee_salary_structure.index');
     Route::post('/employee-salary-structure', [PayrollController::class, 'employeeSalaryStructure'])->name('payroll.show_employee_salary_structure');
     Route::get('/roll-over', [PayrollController::class, 'rollOver'])->name('employee_salary_structure.rollover');
