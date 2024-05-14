@@ -771,7 +771,7 @@ class PayrollController extends Controller
         $header['total_day'] = 'Total Day';
         $list = [];
         $totalDay = '';
-        $hide_button = true;
+        $hide_button = $show = true;
         $employeeSalaryDetails = 0;
         $totaldeduction = $totalallowance = 0;
         foreach ($payrollTypes as $payrollType) {
@@ -780,7 +780,11 @@ class PayrollController extends Controller
         $header['total_deduction'] = 'Total Deduction';
         $header['total_payment'] = 'Total Payment';
         $header['received_by'] = 'Received By';
+        if ($request->emp && $request->delete) {
+            $employeeSalaryData = EmployeeMonthlySalaryData::where(['employee_id'=> $request->emp['id'],'month'=>$request->month,'year'=>$request->year,'sub_institute_id'=>$sub_institute_id])->delete();
+        }
         if ($request->employee_id && $request->year && $request->month) {
+            
             // return $request->all();
             $employeeName = tbluserModel::find($request->employee_id);
             $employeeSalaryData = EmployeeMonthlySalaryData::where([['employee_id', $request->employee_id],['month', $request->month],['year',$request->year],[ 'sub_institute_id', $sub_institute_id]])->first();
@@ -795,7 +799,13 @@ class PayrollController extends Controller
                 $totalDay = $employeeSalaryData->total_day;
                 $list['month'] = $employeeSalaryData->month;
                 $list['year'] = $employeeSalaryData->year;
+              
+                if($totalDay!=0){
+                    $hide_button = false;
+                }
+               
             }
+
             //return $list;
         }
 
@@ -804,7 +814,9 @@ class PayrollController extends Controller
             if ($employeeSalaryData) {
                 $employeeSalaryDetails = json_decode($employeeSalaryData->employee_salary_data, true);
                 $totalDay = $employeeSalaryData->total_day;
-            } else {
+                
+
+            } else if(!$request->delete){
                 //return $request->all();
                 $employeeSalaryDetails = EmployeeSalaryStructure::where([['employee_id', $request->employee_id], ['sub_institute_id', $request->session()->get('sub_institute_id')]])->first();
                 if(empty($employeeSalaryDetails)){
@@ -870,6 +882,10 @@ class PayrollController extends Controller
                 ]);
             }
             $hide_button = false;
+        }
+    
+        if($request->delete){
+            $totalDay = '';
         }
 
         return view('payroll.monthly_payroll_report.index', ['employees' => $employeeDetails,'hide_button'=>$hide_button, 'header' => $header, 'list' => $list, 'employeeSalaryDetails' => $employeeSalaryDetails, 'total_day' => $totalDay, 'hideButton' => $hide_button,'totaldeduction'=> $totaldeduction,'totalallowance' => $totalallowance,'months' => $months,'years' => $years,'employee_id'=>$request->employee_id]);
