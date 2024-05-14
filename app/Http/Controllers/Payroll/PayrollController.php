@@ -94,7 +94,7 @@ class PayrollController extends Controller
             $sub_institute_id = $request->get('sub_institute_id');
             $syear = $request->get('syear');
         }
-        $employees =$employeeLists= employeeDetails($sub_institute_id,$employee_id,$status);
+        $employees = $employeeLists= employeeDetails($sub_institute_id,$employee_id,$status);
     //    echo "<pre>";print_r($employees);exit;
         $payrollTypes = PayrollType::where('status', 1)->orderBy('sort_order')->get();
         

@@ -49,15 +49,15 @@
                   <div class="col-lg-3">
                      <div class="logo-div">
                         @if(isset($data['Logo']))
-                        <img id="logo" src="{{$data['Logo']}}" alt="Logo" style="height: 200px; width: 200px;" />
-                        <link rel="icon" href="{{$data['Logo']}}" sizes="192x192" />
+                        <img id="logo" src="../../../admin_dep/images/{{$data['Logo']}}" alt="Logo" style="height: 100px;" />
+                        <link rel="icon" href="../../../admin_dep/images/{{$data['Logo']}}" sizes="192x192" />
                         @else
-                        <img id="logo" src="http://202.47.117.124/admin_dep/images/logo_triz.png" alt="Logo" />
-                        <link rel="icon" href="http://202.47.117.124/admin_dep/images/logo_triz.png" sizes="192x192" />
+                        <img id="logo" src="https://erp.triz.co.in/admin_dep/images/logo_triz.png" alt="Logo" />
+                        <link rel="icon" href="https://erp.triz.co.in/admin_dep/images/logo_triz.png" sizes="192x192" />
                         @endif
                      </div>
                   </div>
-                  <div class="col-lg-9 text-primary">
+                  <div class="col-lg-6 text-primary">
                      <h2>
                      WELCOME TO
                      <h2>
@@ -65,6 +65,8 @@
                         {{$data['SchoolName']}}
                      </h2>
                      <h2></h2>
+                  </div>
+                  <div class="col-lg-3">&nbsp;
                   </div>
                </div>
             </div>
@@ -615,6 +617,6 @@
          integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
          crossorigin="anonymous"
          ></script>
-      <script defer src="http://202.47.117.124//scripts/script.js"></script>
+      <script defer src="https://erp.triz.co.in/scripts/script.js"></script>
    </body>
 </html>
