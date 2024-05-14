@@ -40,6 +40,8 @@ Route::group(['prefix' => 'user', 'middleware' => ['session', 'menu', 'logRoute'
         [tbluserProfileWiseMenuController::class, 'displayUserProfileWiseRights'])->name('ajax_user_profile_wise_rights');
     Route::get('ajax_mobile_app_menu_rights',
         [tblmobileAppMenuRightsController::class, 'displayMobileAppMenuRights'])->name('ajax_mobile_app_menu_rights');
+
+        Route::post('user_document/{id}',[tbluserController::class, 'addUserDocument'])->name('user_document');
 });
 
 Route::post('/teacherListAPI', [tbluserController::class, 'teacherListAPI']);
