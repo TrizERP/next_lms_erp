@@ -112,8 +112,8 @@
                                                     }
                                                 }
                                                 @endphp
-                                                <input id="{{$value->field_name}}" {{$checked}} value="{{$value->field_name}}" class="custom-control-input" name="dynamicFields[]" type="checkbox">
-                                                <label for="{{$value->field_name}}" class="custom-control-label"> {{$value->field_label}} </label>
+                                                <input id="{{$key}}" {{$checked}} value="{{$key}}" class="custom-control-input" name="dynamicFields[]" type="checkbox">
+                                                <label for="{{$key}}" class="custom-control-label"> {{$value}} </label>
                                             </div>
                                         </div>
                                         @endforeach
@@ -141,7 +141,8 @@
                         <table id="example" class="table table-striped">
                             <thead>
                             <tr>
-                           @foreach($data['headers'] as $hkey => $header)
+                            <!--<th>Sr no</th>-->
+                                @foreach($data['headers'] as $hkey => $header)
                                 <th class="text-left"> {{$header}} </th>
                             @endforeach
                             </tr>
@@ -149,6 +150,7 @@
                             <tbody>
                             @foreach($student_data as $key => $value)
                                 <tr>
+                                <!--<td>{{$j++}}</td>-->
                                     @foreach($data['headers'] as $hkey => $header)
 
                                         @if($hkey == 'image')
@@ -159,7 +161,7 @@
                                         @elseif($hkey == 'dise_uid')
                                             <td>{{$value->$hkey}}</td>
                                         @else
-                                            <td> {{$value->$hkey ?? '-'}} </td>
+                                            <td> {{$value->$hkey}} </td>
                                         @endif
 
                                     @endforeach

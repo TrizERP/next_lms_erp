@@ -41,14 +41,98 @@ class userReportController extends Controller
 
     public function customFields(Request $request)
     {
-        $sub_institute_id= session()->get('sub_institute_id');
+
+        $tblcustom_fields['first_name'] = 'First Name';
+        $tblcustom_fields['middle_name'] = 'Middle Name';
+        $tblcustom_fields['last_name'] = 'Last Name';
+        $tblcustom_fields['mobile'] = 'Mobile';
+        // $tblcustom_fields['father_name'] = 'Father Name';
+        $tblcustom_fields['gender'] = 'Gender';
+        $tblcustom_fields['birthdate'] = 'Birthdate';
+        $tblcustom_fields['email'] = 'Email';
+        // $tblcustom_fields['username'] = 'Username';
+        $tblcustom_fields['city'] = 'City';
+        $tblcustom_fields['state'] = 'State';
+        $tblcustom_fields['address'] = 'Address';
+        $tblcustom_fields['pincode'] = 'Pincode';
+
         $tblcustoms = DB::table("tblcustom_fields")
-        ->whereRaw("status=1 AND (common_to_all= 1 or sub_institute_id=$sub_institute_id) AND is_deleted != 'Y'")
-        ->where('user_type','staff')
-        ->get()->toArray();  
+            ->where(["sub_institute_id" => session()->get('sub_institute_id'), "table_name" => "tbluser"])
+            ->pluck("field_label", "field_name");
 
-        return $tblcustoms;
+        $customfieldArray = [];
+        foreach ($tblcustoms as $key => $value) {
+            $customfieldArray[$key] = $value;
+        }
 
+        return array_merge($tblcustom_fields, $customfieldArray);
+
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     *
+     * @return void
+     */
+    public function create()
+    {
+        //
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     *
+     * @param  Request  $request
+     * @return void
+     */
+    public function store(Request $request)
+    {
+        //
+    }
+
+    /**
+     * Display the specified resource.
+     *
+     * @param  int  $id
+     * @return void
+     */
+    public function show($id)
+    {
+        //
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     *
+     * @param  int  $id
+     * @return void
+     */
+    public function edit($id)
+    {
+        //
+    }
+
+    /**
+     * Update the specified resource in storage.
+     *
+     * @param  Request  $request
+     * @param  int  $id
+     * @return void
+     */
+    public function update(Request $request, $id)
+    {
+        //
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param  int  $id
+     * @return void
+     */
+    public function destroy($id)
+    {
+        //
     }
 
     public function searchUser(Request $request)
@@ -64,7 +148,7 @@ class userReportController extends Controller
             ->orderBy('sort_order', 'asc')
             ->pluck("name", "id");
 
-        $header = $array =[];
+        $header = [];
         $searchArr = ['_'];
         $replaceArr = [' '];
         if ($request->input('dynamicFields') == '') {
@@ -76,25 +160,13 @@ class userReportController extends Controller
         foreach ($request->input('dynamicFields') as $key => $value) {
             $value1 = str_replace($searchArr, $replaceArr, $value);
             $header[$value] = ucfirst($value1);
-            if($value=="user_name"){
-                $array[] = 'CONCAT_WS(" ", tbluser.first_name, tbluser.middle_name, tbluser.last_name) AS user_name';
-            }else{
-                $customDetails = DB::table("tblcustom_fields")
-                ->whereRaw("status=1 AND (common_to_all= 1 or sub_institute_id=$sub_institute_id) AND is_deleted != 'Y'")
-                ->where('field_name',$value)
-                ->where('user_type','staff')
-                ->first();
-                if(!empty($customDetails) && !in_array($value,["user_name"])){
-                    $array[] = $customDetails->table_name.".".$value;
-                }
-            }
         }
         $extraSearchArray = [];
         $extraSearchArray['tbluser.sub_institute_id'] = $sub_institute_id;
         $extraSearchArray['tbluser.status'] = $status;
         $extraSearchArray['tbluser.user_profile_id'] = $profile;
 
-        $user_data = tbluserModel::select(DB::raw(implode(',', $array)))
+        $user_data = tbluserModel::select('tbluser.*')
             ->join('tbluserprofilemaster', 'tbluser.user_profile_id', '=', 'tbluserprofilemaster.id')
             ->where($extraSearchArray)
             ->get();

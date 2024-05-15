@@ -81,11 +81,11 @@
                                                         }
                                                     }
                                                 @endphp
-                                                <input id="{{$value->field_name}}" {{$checked}} value="{{$value->field_name}}"
+                                                <input id="{{$key}}" {{$checked}} value="{{$key}}"
                                                        class="custom-control-input" name="dynamicFields[]"
                                                        type="checkbox">
                                                 <label class="custom-control-label mb-0 pt-1"
-                                                       for="{{$value->field_name}}"> {{$value->field_label}} </label>
+                                                       for="{{$key}}"> {{$value}} </label>
                                             </div>
                                         </div>
                                     @endforeach
@@ -103,12 +103,12 @@
                                 $user_data = $data['user_data'];
                             }
                         @endphp
-                        <div class="card table-responsive">
+                        <div class="table-responsive">
                             <table id="example" class="table table-striped">
                                 <thead>
                                 <tr>
                                     @foreach($data['headers'] as $hkey => $header)
-                                        <th class="text-left"> {{$header}} </th>
+                                        <th> {{$header}} </th>
                                     @endforeach
                                 </tr>
                                 </thead>
