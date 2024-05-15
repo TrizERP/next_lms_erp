@@ -98,6 +98,8 @@ class RouteServiceProvider extends ServiceProvider
         $this->mapTeacherApiRoutes();
 
         $this->mapAdminApiRoutes();
+
+        $this->mapHrmsRoutes();
     }
 
     /**
@@ -260,6 +262,13 @@ class RouteServiceProvider extends ServiceProvider
             ->group(base_path('routes/adminapi.php'));
     }
 
+    protected function mapHrmsRoutes()
+    {
+        Route::namespace($this->namespace)
+            ->middleware('web')
+            ->group(base_path('routes/hrms.php'));
+    }
+    
     /**
      * Configure the rate limiters for the application.
      *

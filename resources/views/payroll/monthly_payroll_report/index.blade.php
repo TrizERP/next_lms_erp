@@ -64,21 +64,7 @@
                                         <input type="submit" name="submit" value="Search" class="btn btn-success">
                                     </div>
                                 </div>
-                                <!-- Modal -->
-                                <div class="modal fade bd-example-modal-lg" id="exampleModal" tabindex="-1"
-                                     role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-                                    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-                                        <div class="modal-content">
-                                            <div class="modal-header">
-                                                <h5 class="modal-title" id="exampleModalLabel">Choose Field</h5>
-                                                <button type="button" class="close" data-dismiss="modal"
-                                                        aria-label="Close">
-                                                    <span aria-hidden="true">x</span>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                               
                             </form>
                         </div>
             </div>
@@ -99,7 +85,7 @@
                                     <th>Employee Id</th>
                                     <th>Employee Name</th>
                                     @foreach($header as $hkey => $col)
-                                        <th>{{$col}} </th>
+                                        <th class="text-left">{{$col}} </th>
                                     @endforeach
                                 </tr>
                                 </thead>
@@ -107,17 +93,20 @@
                                 @csrf
                                 <tbody>
                                 <tr>
-                                    <td>{{$employeeName['id']}}</td>
+                                    <td>{{$employeeName['employee_no']}}</td>
                                     <td>{{$employeeName['first_name'] .' '.$employeeName['last_name']}}</td>
                                     <input type="hidden" name="employee_id" value="{{$employeeName['id']}}">
                                     <input type="hidden" name="month" value="{{$list['month']}}">
                                     <input type="hidden" name="year" value="{{$list['year']}}">
                                     @foreach($header as $hkey => $col)
                                         @if($hkey == 'total_day')
-                                            <td><input type="text" name="total_day" value="{{$total_day}}">
+                                            <td class="d-flex"><input type="text" name="total_day" value="{{$total_day}}" @if($total_day!='') readonly @endif>
                                                 @if($hide_button)
                                                     <input type="submit" name="add" class="btn btn-primary" value="add">
                                                     <p style="color: red">{{isset($message) ?$message : ''}}</p>
+                                                @endif 
+                                                @if(!$hide_button)
+                                                    <input type="submit" name="delete" class="btn btn-danger" value="X" style="padding: 0px;font-size: 0.6rem;width:20px;height:20px">
                                                 @endif
                                             </td>
                                         @elseif(isset($employeeSalaryDetails[$hkey]) && $hkey != 'total_deduction' && $hkey != 'total_payment' && $hkey != 'received_by')
@@ -143,7 +132,7 @@
                                 </tbody>
                             </table>
                             @if($hide_button)
-                                <input type="submit" name="save" value="save" class="btn btn-success">
+                                <input type="submit" name="save" value="save" class="btn btn-success" >
                             @endif
                             @if(!$hide_button)
                                 <a href="{{url('monthly-payroll-report/pdf').'/'.$employeeName['id'].'/'.$list['month'].'/'.$list['year']}}"
@@ -201,5 +190,7 @@
                 });
             });
         });
+
+       
     </script>
 @include('includes.footer')
