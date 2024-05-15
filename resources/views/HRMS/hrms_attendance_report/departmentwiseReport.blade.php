@@ -264,31 +264,29 @@
                 $('#dateRangeInfo').html(modalContent);
                 $('#totalDaysModel').modal('show');
             }
-            else{
-                var modalContent2 = '';
-                var fromDate ="{{$fromdate}}";
-                var toDate = "{{$todate}}";
+            
+                var fromDate2 ="{{$fromdate}}";
+                var toDate2 = "{{$todate}}";
 
                  if (DayDetails=="holidays") {
-                    var url = "/get-holidays?department_id="+user_id+'&from_date='+fromDate+'&to_date='+toDate;
+                    var url = "/get-holidays?department_id="+user_id+'&from_date='+fromDate2+'&to_date='+toDate2;
                     $('#dateRangeModalLabel').text('Holidays');
                  }
                  if (DayDetails=="total_att_day") {
-                    var url = "/get-present-days?user_id="+user_id+'&from_date='+fromDate+'&to_date='+toDate;
+                    var url = "/get-present-days?user_id="+user_id+'&from_date='+fromDate2+'&to_date='+toDate2;
                         $.ajax({
                             url : url,
                             type: 'Get',
                             success : function(result){
                                 if (Array.isArray(result)) {
-                                     modalContent2 += '<table class="table table-border"><tr><th>Sr</th><th>Emp No</th><th>Employee Name</th><th>Department</th><th>Attandance Date</th><th>Day</th></tr>';
                                     var i =1;
                                     result.forEach(value=>{
                                         var fdate = new Date(value.day);
-                                        modalContent2 +='<tr><td>'+(i++)+'</td><td>'+value.employee_no+'</td><td>'+value.full_name+'</td><td>'+value.department+'</td><td>' + formatDate(fdate) + '</td><td>' + getDayName(fdate.getDay()) + '</td></tr>';
+                                        modalContent +='<tr><td>'+(i++)+'</td><td>'+value.employee_no+'</td><td>'+value.full_name+'</td><td>'+value.department+'</td><td>' + formatDate(fdate) + '</td><td>' + getDayName(fdate.getDay()) + '</td></tr>';
                                     });
-                                    modalContent2 += '</table>';
+                                    modalContent += '</table>';
                                     $('#dateRangeModalLabel').text('Total Attendance Days');
-                                    $('#dateRangeInfo').html(modalContent2);
+                                    $('#dateRangeInfo').html(modalContent);
                                     $('#totalDaysModel').modal('show');
                                 }
                                 
@@ -301,21 +299,20 @@
                     
                  
                  if (DayDetails=="absent_days") {
-                    var url = "/get-absent-days?user_id="+user_id+'&from_date='+fromDate+'&to_date='+toDate;
+                    var url = "/get-absent-days?user_id="+user_id+'&from_date='+fromDate2+'&to_date='+toDate2;
                     $.ajax({
                             url : url,
                             type: 'Get',
                             success : function(result){
                                 if (Array.isArray(result)) {
-                                     modalContent2 += '<table class="table table-border"><tr><th>Sr</th><th>Emp No</th><th>Employee Name</th><th>Department</th><th>Leave Day Type</th><th>Leave Type</th><th>Date</th><th>Day</th></tr>';
                                     var i =1;
                                     result.forEach(value=>{
                                         var fdate = new Date(value.from_date);
-                                        modalContent2 +='<tr><td>'+(i++)+'</td><td>'+value.employee_no+'</td><td>'+value.full_name+'</td><td>'+value.department+'</td><td>'+value.day_type+'</td><td>'+value.leave_type+'</td><td>' + formatDate(fdate) + '</td><td>' + getDayName(fdate.getDay()) + '</td></tr>';
+                                        modalContent +='<tr><td>'+(i++)+'</td><td>'+value.employee_no+'</td><td>'+value.full_name+'</td><td>'+value.department+'</td><td>'+value.day_type+'</td><td>'+value.leave_type+'</td><td>' + formatDate(fdate) + '</td><td>' + getDayName(fdate.getDay()) + '</td></tr>';
                                     });
-                                    modalContent2 += '</table>';
+                                    modalContent += '</table>';
                                     $('#dateRangeModalLabel').text('Absent Days');
-                                    $('#dateRangeInfo').html(modalContent2);
+                                    $('#dateRangeInfo').html(modalContent);
                                     $('#totalDaysModel').modal('show');
                                 }
                                 
@@ -327,21 +324,20 @@
                  }
 
                  if (DayDetails=="half_day") {
-                    var url = "/get-half-day?user_id="+user_id+'&from_date='+fromDate+'&to_date='+toDate;
+                    var url = "/get-half-day?user_id="+user_id+'&from_date='+fromDate2+'&to_date='+toDate2;
                     $.ajax({
                             url : url,
                             type: 'Get',
                             success : function(result){
                                 if (Array.isArray(result)) {
-                                     modalContent2 += '<table class="table table-border"><tr><th>Sr</th><th>Emp No</th><th>Employee Name</th><th>Department</th><th>Leave Day Type</th><th>Leave Type</th><th>Date</th><th>Day</th></tr>';
                                     var i =1;
                                     result.forEach(value=>{
                                         var fdate = new Date(value.from_date);
-                                        modalContent2 +='<tr><td>'+(i++)+'</td><td>'+value.employee_no+'</td><td>'+value.full_name+'</td><td>'+value.department+'</td><td>'+value.day_type+'</td><td>'+value.leave_type+'</td><td>' + formatDate(fdate) + '</td><td>' + getDayName(fdate.getDay()) + '</td></tr>';
+                                        modalContent +='<tr><td>'+(i++)+'</td><td>'+value.employee_no+'</td><td>'+value.full_name+'</td><td>'+value.department+'</td><td>'+value.day_type+'</td><td>'+value.leave_type+'</td><td>' + formatDate(fdate) + '</td><td>' + getDayName(fdate.getDay()) + '</td></tr>';
                                     });
-                                    modalContent2 += '</table>';
+                                    modalContent += '</table>';
                                     $('#dateRangeModalLabel').text('Half Days');
-                                    $('#dateRangeInfo').html(modalContent2);
+                                    $('#dateRangeInfo').html(modalContent);
                                     $('#totalDaysModel').modal('show');
                                 }
                                 
@@ -352,7 +348,7 @@
                         })
                  }
         }
-    }
+    
     function formatDate(date) {
         var day = date.getDate();
         var month = date.getMonth() + 1;
