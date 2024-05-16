@@ -30,7 +30,7 @@
                                         <label>Employee List</label>
                                         <select id='employee_id' name="employee_id" class="form-control">
                                             <option value="0">Select Employee</option>
-                                            @foreach($data['employees'] as $key => $employeeList)
+                                            @foreach($data['employeeLists'] as $key => $employeeList)
                                             <option value="{{$employeeList['id']}}" @if(isset($data['selected_emp']) && $data['selected_emp']==$employeeList['id']) selected @endif>{{$employeeList['first_name'] .' '. $employeeList['last_name'] }} ({{$employeeList['department']}}) </option>                              
                                             @endforeach
                                         </select>
@@ -65,7 +65,7 @@
                             </form>
                         </div>
             </div>
-            <form action="{{ route('employee_salary_structure.store') }}" enctype="multipart/form-data" method="post">
+            <form class="card" action="{{ route('employee_salary_structure.store') }}" enctype="multipart/form-data" method="post">
                 {{ method_field("POST") }}
                 @csrf
                 <div class="row">
@@ -88,12 +88,12 @@
                                 @foreach($data['employees'] as $key => $value)
                                     <tr>
                                         <td>{{$key+1}}</td>
-                                        <td>{{$value['id']}}</td>
+                                        <td>{{$value['employee_no']}}</td>
                                         <td>{{$value['first_name'] .' '. $value['middle_name'] .' '.$value['last_name']}} ({{$value['department']}}) </td>
-                                        <td>{{$value['gender']}}<input type="hidden" name="emp[{{$value['id']}}][]" value="{{$value['id']}}"></td>
+                                        <td>{{$value['gender']}}<input type="hidden" name="emp[{{$value['id']}}][]" value="{{$value['gender']}}"></td>
                                          
                                         @foreach ($data['payrollTypes'] as $payrollType)
-                                            @if($payrollType->payroll_name == 'PF' || $payrollType->payroll_name == 'Pro.Tax')
+                                            @if($payrollType->payroll_name == 'PF' || $payrollType->payroll_name == 'PT')
                                                 
                                                 <td>
                                                     <input type="hidden" name="emp[{{$value['id']}}][{{$payrollType->id}}][]"
