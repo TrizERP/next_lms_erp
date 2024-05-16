@@ -22,16 +22,31 @@ class ApplyLeaveController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
         $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+
+        $type = $request->type;
+        if($type=="API"){
+            $sub_institute_id=$request->sub_institute_id;
+            $syear = $request->syear;
+        }
 
         try {
-            $departments = HrmsDepartment::where('status', true)->pluck('department', 'id');
-            $users = tbluserModel::where('sub_institute_id', $sub_institute_id)->where('status',1)->get();   // 23-04-24 by uma
+            $res = session()->get('data');
+            $res['departments'] = HrmsDepartment::where('status', true)->pluck('department', 'id');
+            $res['users'] = tbluserModel::where('sub_institute_id', $sub_institute_id)->where('status',1)->get();   // 23-04-24 by uma
             //echo("<pre>");print_r($users);exit;
-            $leave_types = HrmsLeaveType::get();
-            return view('leave.apply_leave', compact('departments', 'users', 'leave_types'));
+            $res['leave_types'] = HrmsLeaveType::get();
+            
+            $res['leaveHistory'] = DB::table('hrms_emp_leaves as hel')->selectRaw("hel.*, hlt.leave_type as leave_type_name")
+            ->join('hrms_leave_types as hlt', 'hlt.id', '=', 'hel.leave_type_id')
+            ->where('hel.user_id', session()->get('user_id'))
+            ->whereYear('hel.from_date', $syear)
+            ->get()->toArray();
+            // return view('leave.apply_leave', compact('departments', 'users', 'leave_types'));
+            return is_mobile($type, "leave.apply_leave", $res, "view");
         } catch (Exception $e) {
             return response()->json($e->getMessage(), 500);
         }
@@ -100,6 +115,7 @@ class ApplyLeaveController extends Controller
         $type = $request->input('type');
         $subInstituteId = $request->session()->get('sub_institute_id');
         $total_days = $request->get('total_days');
+        $day_type= ($request->day_type=="full") ? 1 : "0.5";
 
         $request->validate([
             'type_leave' => 'required',
@@ -120,7 +136,7 @@ class ApplyLeaveController extends Controller
                 'sub_institute_id' => $subInstituteId,
                 'department_id' => $request->department_id,
                 'leave_type_id' => $request->leave_type,
-                'day_type' => $total_days,
+                'day_type' => $day_type,
                 'from_date' => $request->from_date,
                 'to_date' => $request->to_date,
                 'slot' => $request->slot ?? 'NULL',
@@ -130,7 +146,7 @@ class ApplyLeaveController extends Controller
         $res['status_code']=1;
         $res['message']="Holiday saved successfully";
         
-        return is_mobile($type, "leave-apply.index", $res, "redirect");
+        return is_mobile($type, "leave-apply.index", $res);
         // return response()->json(['message' => 'Holiday saved successfully !!'], 200);
     }
 
