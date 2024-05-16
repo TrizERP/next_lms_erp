@@ -87,6 +87,18 @@ Route::group([ 'middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::post('/show-early-going-hrms-attendance-report', [HrmsController::class, 'earlyGoingHrmsAttendanceReport'])->name('hrms.show_early_going_hrms_attendance_report');
     Route::get('hrms-general-setting',[HrmsController::Class,'generalSettingIndex'])->name('hrms_general_setting.index');
     Route::post('hrms-general-setting/store',[HrmsController::Class,'generalSettingStore'])->name('hrms_general_setting.store');
+    
+    Route::get('departmentwise-attendance-report',[HrmsController::Class,'departmentAttendanceReport'])->name('department_attendance_report.index');
+    Route::get('departmentwise-attendance-report/create',[HrmsController::Class,'departmentAttendanceReportCreate'])->name('department_attendance_report.create');
+
+    Route::get('departmentwise-emplist',[HrmsController::Class,'getDepEmployeeLists'])->name('departmentwise-emplist');
+
+    Route::get('departmentwise-emplist',[HrmsController::Class,'getDepEmployeeLists'])->name('departmentwise-emplist');
+
+    Route::get('get-holidays',[HrmsController::Class,'getHolidays']);
+    Route::get('get-present-days',[HrmsController::Class,'getPresentDays']);
+    Route::get('get-absent-days',[HrmsController::Class,'getAbsentDays']);
+    Route::get('get-half-day',[HrmsController::Class,'getHalfDays']);
 
 });
 

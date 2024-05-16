@@ -13,6 +13,7 @@ use App\Models\user\tbluserModel;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use function App\Helpers\is_mobile;
+use function App\Helpers\employeeDetails;
 use DB;
 
 
@@ -749,4 +750,172 @@ class HrmsController extends Controller
         //return view('HRMS.hrms_attendance_report.early_going_report', compact('employees', 'employee_id', 'date_formatted', 'hrmsList', 'type', 'departments', 'department_id'));
         return is_mobile($type, "HRMS/hrms_attendance_report/early_going_report", $res, "view");
     }
+
+    public function departmentAttendanceReport(Request $request){
+        $type = $request->type;
+        $res = session()->get('data');
+
+        $start_date = now()->startOfMonth();
+        $res['start_date'] = $start_date->format('Y-m-d');
+        $res['end_date'] = now();
+
+        $res['department'] = DB::table('hrms_departments')->where('status',1)->whereNull('deleted_at')->pluck('department','id');
+      
+        return is_mobile($type, "HRMS/hrms_attendance_report/departmentwiseReport", $res, "view");
+    }
+
+    public function departmentAttendanceReportCreate(Request $request){
+        $type = $request->type;
+        $sub_institute_id = session()->get('sub_institute_id');
+        if($type=="API"){
+            $sub_institute_id = $request->sub_institute_id;
+        }
+        $res['selDepartments'] = $department_ids = $request->department_ids;
+        $res['emp_id'] = $emp_id = $request->emp_id;
+        $res['selectedFromDate'] = $from_date = $request->from_date;
+        $res['selectedToDate'] = $to_date = $request->to_date;
+
+        $empData = DB::table('tbluser as tu')
+        ->join('tbluserprofilemaster as upm', 'upm.id', '=', 'tu.user_profile_id')
+        ->leftJoin('hrms_attendances as ha',function($join) use($from_date,$to_date,$sub_institute_id){
+            $join->on('tu.id', '=', 'ha.user_id')->whereBetween('ha.day',[$from_date,$to_date])->where(['ha.sub_institute_id'=>$sub_institute_id,"ha.status"=>1]);
+        })
+        ->leftJoin('hrms_emp_leaves as hel',function($join) use($from_date,$to_date,$sub_institute_id){
+            $join->on('hel.user_id','=','ha.user_id')->where('hel.from_date','>=',$from_date)->where('hel.to_date','<=',$to_date)->where('hel.sub_institute_id',$sub_institute_id)->where('hel.status','approved');
+        })
+        ->join('hrms_departments as hd','tu.department_id','=','hd.id')
+        ->leftJoin('hrms_holidays as hh',function($join) use($from_date,$to_date,$sub_institute_id){
+            $join->on('hh.department','=','hd.id')->where('hh.from_date','>=',$from_date)->where('hh.to_date','<=',$to_date)->where(['hh.sub_institute_id'=>$sub_institute_id]);
+        })
+        ->selectRaw('tu.id as user_id, tu.employee_no, CONCAT_WS(" ", COALESCE(tu.first_name, "-"), COALESCE(tu.last_name, "-")) as full_name, tu.sub_institute_id, IFNULL(upm.name, "-") as user_profile, hd.department, ha.user_code, COUNT(DISTINCT ha.id) as total_att_day, GROUP_CONCAT(DISTINCT ha.id) as worked_days, COUNT(DISTINCT hel.id) as total_ab_day, GROUP_CONCAT(DISTINCT hel.id) as ab_days, COUNT(DISTINCT hh.id) as total_holidays, GROUP_CONCAT(DISTINCT hh.id) as holidays,GROUP_CONCAT(DISTINCT hd.id) as department_id')
+        ->where('tu.sub_institute_id', $sub_institute_id)
+        ->whereIn('tu.department_id', [$department_ids])
+        ->where('tu.status', 1)
+        ->when($emp_id!=0,function($q) use($emp_id){
+            $q->where('tu.id',$emp_id);
+        })
+        ->orderBy('tu.first_name')
+        ->groupBy('tu.id')->get()->toArray();
+        
+        $newEmpData = [];
+        foreach ($empData as $key => $value) {
+            $newEmpData[] = $value;
+            // add half days 
+            $ab = $value->ab_days ?? 0;
+            $getHlafDays = DB::table('hrms_emp_leaves')->whereRaw('id in ('.$ab.')')->where('day_type','0.5')->count();
+            $newEmpData[$key]->half_day = $getHlafDays ?? 0;
+            // add late comes 
+            $wkDay = $value->worked_days ?? 0;
+            $getPunchTime = DB::table('hrms_attendances')->whereRaw('id in ('.$wkDay.')')->get()->toArray();
+
+            // get user working time 
+            $late = 0;
+            foreach ($getPunchTime as $punchkey => $punchvalue) {
+                $dayOfWeek = Carbon::parse($punchvalue->day)->dayOfWeek; 
+                $dayName = strtolower(Carbon::parse($punchvalue->day)->format('l'));
+                
+                $getUserInTime = DB::table('tbluser')->where('id',$value->user_id)->value($dayName.'_in_date') ?? 0;
+                $punchInTime = Carbon::parse($punchvalue->punchin_time)->toTimeString();
+
+                $punchInTimeCarbon = Carbon::createFromFormat('H:i:s', $punchInTime);
+                $getUserInTimeCarbon = Carbon::createFromFormat('H:i:s', $getUserInTime);
+
+                if($punchInTimeCarbon > $getUserInTimeCarbon){
+                    $late++;
+                }
+            }
+
+            $newEmpData[$key]->late = $late;
+
+             // week off days sunday 
+            $startDate = Carbon::parse($from_date);
+            $endDate = Carbon::parse($to_date);
+
+            $countSundays = $totalDays = 0;
+
+            for ($date = $startDate; $date->lte($endDate); $date->addDay()) {
+                $totalDays++;
+
+                if ($date->isSunday()) {
+                    $countSundays++;
+                }
+            }
+            $holidays = $value->holidays ?? 0;
+            $newEmpData[$key]->weekday_off = $countSundays;
+            $newEmpData[$key]->totalDays = $totalDays;
+            $newEmpData[$key]->workingDays = ($totalDays - $countSundays - $holidays);
+        }
+
+        if(!empty($newEmpData)){
+            $res['status_code'] = 1;
+            $res['message'] = "Success";
+        }else{
+            $res['status_code'] = 0;
+            $res['message'] = "No Employee Found";
+        }
+       
+        $res['empData'] = $newEmpData;
+        // echo "<pre>";print_r($newEmpData);exit;
+
+        return is_mobile($type, "department_attendance_report.index", $res);
+    }
+    // department wise emp 
+    public function getDepEmployeeLists(Request $request)
+    {
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $department_id = $request->get('department_id');
+    
+        $employees = tbluserModel::join('tbluserprofilemaster as upm', 'upm.id', '=', 'tbluser.user_profile_id')
+        ->selectRaw('tbluser.id,IfNULL(tbluser.first_name, "-") as first_name, IFNULL(tbluser.last_name, "-") as last_name, tbluser.sub_institute_id, IfNULL(upm.name,"-") as user_profile')
+        ->where('tbluser.sub_institute_id', $sub_institute_id)
+        ->whereIn('tbluser.department_id', [$department_id])
+        ->where('tbluser.status', 1)
+        ->orderBy('tbluser.first_name')
+        ->groupBy('tbluser.id')
+        ->get()
+        ->toArray();   
+
+        return $employees;
+    }
+
+    public function getHolidays(Request $request){
+        $sub_institute_id = session()->get('sub_institute_id');
+        $data = DB::table('hrms_holidays')->where('sub_institute_id',$sub_institute_id)->where(['department_id'=>$request->department_id,'from_date'=>$request->from_date,'to_date'=>$request->to_date])->get()->toArray();
+        return $data;
+    }
+
+    public function getPresentDays(Request $request){
+        $sub_institute_id = session()->get('sub_institute_id');
+        $data = DB::table('hrms_attendances as ha')
+        ->join('tbluser as tu','ha.user_id','=','tu.id')
+        ->join('hrms_departments as hd','tu.department_id','=','hd.id')
+        ->selectRaw('ha.*,hd.department,tu.employee_no,CONCAT_WS(" ", COALESCE(tu.first_name, "-"), COALESCE(tu.last_name, "-")) as full_name')
+        ->where('ha.user_id',$request->user_id)->whereBetween('ha.day',[$request->from_date,$request->to_date])->where(['ha.sub_institute_id'=>$sub_institute_id,"ha.status"=>1])->get()->toArray();
+        return $data;
+    }
+
+    public function getAbsentDays(Request $request){
+        $sub_institute_id = session()->get('sub_institute_id');
+        $data = DB::table('hrms_emp_leaves as hel')
+        ->join('tbluser as tu','hel.user_id','=','tu.id')
+        ->join('hrms_departments as hd','tu.department_id','=','hd.id')
+        ->join('hrms_leave_types as hlt','hel.leave_type_id','=','hlt.id')
+        ->selectRaw('hel.*,hd.department,tu.employee_no,CONCAT_WS(" ", COALESCE(tu.first_name, "-"), COALESCE(tu.last_name, "-")) as full_name,hel.day_type,hlt.leave_type')
+        ->where('hel.user_id',$request->user_id)->where('hel.from_date','>=',$request->from_date)->where('hel.to_date','<=',$request->to_date)->where('hel.sub_institute_id',$sub_institute_id)->where('hel.status','approved')->get()->toArray();
+        return $data;
+    }
+
+    public function getHalfDays(Request $request){
+        $sub_institute_id = session()->get('sub_institute_id');
+        $data = DB::table('hrms_emp_leaves as hel')
+        ->join('tbluser as tu','hel.user_id','=','tu.id')
+        ->join('hrms_departments as hd','tu.department_id','=','hd.id')
+        ->join('hrms_leave_types as hlt','hel.leave_type_id','=','hlt.id')
+        ->selectRaw('hel.*,hd.department,tu.employee_no,CONCAT_WS(" ", COALESCE(tu.first_name, "-"), COALESCE(tu.last_name, "-")) as full_name,hel.day_type,hlt.leave_type')
+        ->where('hel.user_id',$request->user_id)->where('hel.from_date','>=',$request->from_date)->where('hel.to_date','<=',$request->to_date)->where('hel.sub_institute_id',$sub_institute_id)->where('hel.status','approved')
+        ->where('hel.day_type','0.5')->get()->toArray();
+
+        return $data;
+    }
+
 }
