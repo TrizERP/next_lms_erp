@@ -64,6 +64,9 @@ $academicTerms = session()->get('academicTerms');
                       // }else{ -->
                            $col_md = "col-md-4";
                        // } -->
+                       if(session()->get('user_id')==1002 || session()->get('user_profile_name')=="Super Admin"){
+                        $col_md = "col-md-3";          
+                       }
                         if($school_logo != ""){
                         @endphp
                         <a class="navbar-brand" href="{{ route('dashboard') }}"><img
