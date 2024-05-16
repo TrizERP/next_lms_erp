@@ -2214,4 +2214,91 @@ if (!function_exists('get_string')) {
         }
     }
     
+    // hrms department with employees
+    if (!function_exists('HrmsDepartments')) {
+
+        function HrmsDepartments($col="",$depMultiple="",$dep_ids="",$empMultiple="",$emp_ids="",$inactive="")
+        {
+            $sub_institute_id= session()->get('sub_institute_id');
+            if($col==""){
+                $col=3;
+            }
+            $depname = "department_id";
+            $dep_idsArr = $emp_idsArr= [];
+            if($depMultiple!=""){
+                $depname = "department_id[]";
+                if($dep_ids!=''){
+                 $dep_idsArr = $dep_ids;
+                }
+            }
+            // dd($dep_idsArr);
+            //get all department Lists
+            $depLists =DB::table('hrms_departments')->where('status',1)->whereNull('deleted_at')->pluck('department','id');
+            // make select for department
+            $SelectDepartment ="<div class='col-md-".$col." form-group'>
+                <label>Select Department</label>
+                <select class='form-control' name='".$depname."' id='department_ids' ".$depMultiple.">
+                <option>Select</option>";
+                foreach ($depLists as $dep_id => $dep_name) {
+                    $selected = "";
+                    if($depMultiple!="" && $dep_idsArr!=''){
+                        if(in_array($dep_id,$dep_idsArr)){
+                            $selected="selected";
+                        }
+                    } 
+                    if(isset($dep_ids) && $dep_id == $dep_ids){
+                        $selected="selected";
+                    }
+                    $SelectDepartment .= "<option value=".$dep_id." ".$selected.">".$dep_name."</option>";
+                }
+            $SelectDepartment .="</select>
+            </div>";
+            
+            // for employee list
+            $empname = "emp_id";
+            if($empMultiple!=""){
+                $empname = "emp_id[]";
+                if($emp_ids!=''){
+                    $emp_idsArr = $emp_ids;
+                }
+            }else if($depMultiple=="" && isset($dep_ids)){
+                $dep_idsArr = [$dep_ids];
+            }
+            $empData = [];
+
+            if(isset($dep_ids)){
+                $empData =DB::table('tbluser')->join('tbluserprofilemaster as upm', 'upm.id', '=', 'tbluser.user_profile_id')
+                ->selectRaw('tbluser.id,CONCAT_WS(" ",COALESCE(tbluser.first_name, "-"),COALESCE(tbluser.last_name, "-")) as full_name,tbluser.sub_institute_id, IfNULL(upm.name,"-") as user_profile')
+                ->where('tbluser.sub_institute_id', $sub_institute_id)
+                ->whereIn('tbluser.department_id', $dep_idsArr)
+                ->where('tbluser.status', 1)
+                ->orderBy('tbluser.first_name')
+                ->groupBy('tbluser.id')
+                ->get()
+                ->toArray(); 
+            }
+            
+            $SelectDepartment .= "<div class='col-md-".$col." form-group'>
+            <label>Select Employee</label>
+            <select name='".$empname."' id='emp_id' class='form-control' ".$empMultiple.">
+               <option value=0>select emp</option>";
+               if(!empty($empData)){
+                foreach ($empData as $key => $value) {
+                    $selected = "";
+                    if($depMultiple!="" && $emp_idsArr!=''){
+                        if(in_array($value->id,$emp_idsArr)){
+                            $selected="selected";
+                        }
+                    } 
+                    if(isset($emp_ids) && $value->id == $emp_ids){
+                        $selected="selected";
+                    }
+                    $SelectDepartment .= "<option value=".$value->id."  ".$selected.">".$value->full_name." (".$value->user_profile.")</option>";
+                }
+               }
+               $SelectDepartment .= "</select>
+        </div>";
+            return $SelectDepartment;
+        }
+    }
 }

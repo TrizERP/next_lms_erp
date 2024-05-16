@@ -2281,4 +2281,24 @@ class AJAXController extends Controller
         return $analysis_data;
 
     }
+
+    // department wise emp 
+    public function getDepEmployeeLists(Request $request)
+    {
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $department_id = $request->get('department_id');
+
+        $employees = DB::table('tbluser')->join('tbluserprofilemaster as upm', 'upm.id', '=', 'tbluser.user_profile_id')
+        ->selectRaw('tbluser.id,CONCAT_WS(" ",COALESCE(tbluser.first_name, "-"),COALESCE(tbluser.last_name, "-")) as full_name, tbluser.sub_institute_id, IfNULL(upm.name,"-") as user_profile')
+        ->where('tbluser.sub_institute_id', $sub_institute_id)
+        ->whereIn('tbluser.department_id', [$department_id])
+        ->where('tbluser.status', 1)
+        ->orderBy('tbluser.first_name')
+        ->groupBy('tbluser.id')
+        ->get()
+        ->toArray();   
+
+        return $employees;
+    }
+
 }
