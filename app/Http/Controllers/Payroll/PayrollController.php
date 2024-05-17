@@ -792,7 +792,7 @@ class PayrollController extends Controller
 
         $employees = tbluserModel::where('sub_institute_id', $sub_institute_id)->where('status', 1)->get();
         
-        $payrollTypes = PayrollType::where('status', 1)->get();
+        $payrollTypes = PayrollType::where('status', 1)->orderBy('sort_order')->get();
 
         $employeeSalaryStructures = EmployeeSalaryStructure::where('year', (Carbon::now()->format('Y')))->get();
 
@@ -1023,7 +1023,7 @@ class PayrollController extends Controller
             ->where(['tum.sub_institute_id' => $sub_institute_id, 'ts.id' => $id])
             ->first();
 
-        $payrollTypes = PayrollType::where('status', 1)->get();
+        $payrollTypes = PayrollType::where('status', 1)->orderBy('sort_order')->get();
         if ($employeeSalaryData) {
             $employeeData = [];
             $employeeData['name'] = $employeeSalaryData->getUser['first_name'] . ' '. $employeeSalaryData->getUser['last_name'];

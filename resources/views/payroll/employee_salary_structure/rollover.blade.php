@@ -25,11 +25,11 @@
                             <table id="example" class="table table-striped">
                                 <thead>
                                 <tr>
-                                    <th>Emp Id</th>
+                                    <th>Emp.No</th>
                                     <th>Emp Name</th>
                                     <th>Gender</th>
                                     @foreach ($payrollTypes as $payrollType)
-                                        <th>{{$payrollType->payroll_name}}</th>
+                                        <th class="text-left">{{$payrollType->payroll_name}}</th>
                                     @endforeach
                                 </tr>
                                 </thead>
@@ -39,7 +39,7 @@
                                 @endphp
                                 @foreach($employees as $key => $data)
                                     <tr>
-                                        <td>{{$data->id}}</td>
+                                        <td>{{$data->employee_no}}</td>
                                         <td>{{$data->first_name .' '. $data->middle_name .' '.$data->last_name}}</td>
                                         <td>{{$data->gender}}</td><input type="hidden" name="emp[{{$key}}][]" value="{{$data->id}}">
                                         <input type="hidden" name="emp[{{$key}}][year] ?? ''" value="{{$employeeSalaryStructures[$key]['year'] ?? ''}}">
