@@ -78,7 +78,7 @@ class PayrollController extends Controller
         $status=$request->input('emp_status') ?? 1;
         $sub_institute_id=session()->get('sub_institute_id');
         $syear = session()->get('syear');
-        $employee_id=$request->employee_id ?? '';
+        $employee_id= ($request->employee_id!=0) ? $request->employee_id : '';
         if($type=="API"){
             try {
                 if (!$this->jwtToken()->validate()) {
@@ -94,8 +94,9 @@ class PayrollController extends Controller
             $sub_institute_id = $request->get('sub_institute_id');
             $syear = $request->get('syear');
         }
-        $employees = $employeeLists= employeeDetails($sub_institute_id,$employee_id,$status);
-    //    echo "<pre>";print_r($employees);exit;
+        $employees =employeeDetails($sub_institute_id,$employee_id,$status);
+        $employeeLists= employeeDetails($sub_institute_id,"",$status);
+    //    echo "<pre>";print_r($gender);exit;
         $payrollTypes = PayrollType::where('status', 1)->orderBy('sort_order')->get();
         
         $employeeSalaryStructures = EmployeeSalaryStructure::where('sub_institute_id',$sub_institute_id)->where('year',$syear)->get();
@@ -146,76 +147,155 @@ class PayrollController extends Controller
         // remove datas with value 0
         $empDetails =[];
         $totalAllowance = 0;
-        if (!empty($request->emp)){
-            $makeJson = [];
-            foreach ($request->emp as $emp_id => $salaryData) {
-                if($salaryData[2][1]!=0 || $salaryData[3][1]!=0){
-                    $empDetails[$emp_id]=$salaryData;
-                }
+        // if (!empty($request->emp)){
+        //     $makeJson = [];
+        //     foreach ($request->emp as $emp_id => $salaryData) {
+        //         if($salaryData[2][1]!=0 || $salaryData[3][1]!=0){
+        //             $empDetails[$emp_id]=$salaryData;
+        //         }
                
-            }
-        }
+        //     }
+        // }
         
-        if (!empty($empDetails)) {
-            foreach ($empDetails as $employee) {
-                $totalAllowance = 0;
-                $employeeDetails = [];
-                foreach ($employee as $key => $data) {
-                    if ($key == 0) $employeeDetails['id'] = $data;
-                    if ($key > 0) {
-                        $employeeDetails['data'][$data[0]] = ($data[1]!=0) ? $data[1] : 0;
-                        $emp_data = ($data[1]!=0) ? $data['3'] : '';
-                        if ($emp_data == 1 && $data[1]!=0) {
-                            $totalAllowance = $totalAllowance + $data[1];
-                        }
+        // if (!empty($empDetails)) {
+        //     foreach ($empDetails as $employee) {
+        //         $totalAllowance = 0;
+        //         $employeeDetails = [];
+        //         foreach ($employee as $key => $data) {
+        //             if ($key == 0) $employeeDetails['id'] = $data;
+        //             if ($key > 0) {
+        //                 $employeeDetails['data'][$data[0]] = ($data[1]!=0) ? $data[1] : 0;
+        //                 $emp_data = ($data[1]!=0) ? $data['3'] : '';
+        //                 if ($emp_data == 1 && $data[1]!=0) {
+        //                     $totalAllowance = $totalAllowance + $data[1];
+        //                 }
+        //             }
+        //         }
+        //          foreach ($employee as $key => $data) {
+        //             $check_pf = $data['2'] ?? '';
+        //             if ($check_pf == 'PF') {
+        //                 $employeeDetails['data'][$data[0]] = $totalAllowance > 0 ? (($totalAllowance * 12)/100 > 1800) ? 1800 :  round((($totalAllowance * 12)/100)) : 0;
+        //             }
+        //             if ($check_pf == 'Pro.Tax') {
+        //                 $employeeDetails['data'][$data[0]] = ($totalAllowance > 10000) ? 200 :0;
+        //             }
+        //         }
+        //         if(isset($employeeDetails['id'])){
+        //         $find = EmployeeSalaryStructure::where(['employee_id' => $employeeDetails['id'], 'year' => $year], [
+        //             'year' => $year,
+        //             'sub_institute_id' => $sub_institute_id
+        //         ])->get()->toArray();
+        //         if(!empty($find)){
+        //             if(!empty($employeeDetails['data'])){
+        //                 EmployeeSalaryStructure::where(['employee_id' => $employeeDetails['id'],'year' => $year,'sub_institute_id' => $sub_institute_id
+        //                 ])->update([
+        //                     'employee_id' => $employeeDetails['id'], 
+        //                     'employee_salary_data' => $employeeDetails['data'],
+        //                     'year' => $year,
+        //                     'sub_institute_id' => $sub_institute_id,
+        //                     'updated_at'=>now(),
+        //                 ]);
+        //                 $res['message']="Updated Successfully";
+        //             }
+        //         }
+        //         else{
+        //             if(!empty($employeeDetails['data'])){
+        //             EmployeeSalaryStructure::where(['employee_id' => $employeeDetails['id'], 'year' => $year], [
+        //                 'year' => $year,
+        //                 'sub_institute_id' => $sub_institute_id
+        //             ])->insert([
+        //                 'employee_id' => $employeeDetails['id'],
+        //                 'employee_salary_data' => json_encode($employeeDetails['data']),
+        //                 'year' => $year,
+        //                 'sub_institute_id' => $sub_institute_id,
+        //                 'created_at' => now(),
+        //             ]);
+        //             $res['message']="Added Successfully"; 
+        //             }                   
+        //         }
+        //         $res['status_code']=1;
+        //     }
+        //     }
+        // }     
+
+        if(!empty($request->emp)){
+            // foreach for employees 
+            foreach ($request->emp as $emp_ids => $emp_values) {
+                $gender="";
+                $totalAllowance =$totalSalary= 0;
+                $allData = $jsonData = [];
+                // payroll type details get head and amounts
+                foreach($emp_values as $key => $value){
+                    if($key ==0){
+                        $gender = $value;
+                    }
+                    if($key!=0){
+                       $payroll_type_id = $value[0];
+                       $amount = $value[1];
+                       $payroll_type_name = $value[2];
+                       $payroll_type = $value[3] ?? 0;
+                       if($payroll_type_name=="BASIC" || $payroll_type_name=="D.A" || $payroll_type_name=="GRADE PAY"){
+                        $totalAllowance += $amount;
+                       }
+                       $totalSalary+=$amount;
+                       $allData[$payroll_type_id] = [$payroll_type_name=>$amount];
                     }
                 }
-                 foreach ($employee as $key => $data) {
-                    $check_pf = $data['2'] ?? '';
-                    if ($check_pf == 'PF') {
-                        $employeeDetails['data'][$data[0]] = $totalAllowance > 0 ? (($totalAllowance * 12)/100 > 1800) ? 1800 :  round((($totalAllowance * 12)/100)) : 0;
-                    }
-                    if ($check_pf == 'Pro.Tax') {
-                        $employeeDetails['data'][$data[0]] = ($totalAllowance > 10000) ? 200 :0;
-                    }
+                // for contact emps 
+                $getIsCalculate = DB::table('tbluser as tu')->join('hrms_departments as hd','hd.id','=','tu.department_id')
+                ->where('tu.id',$emp_ids)->value('is_calculated');
+                
+                if($getIsCalculate==1){
+                    $getPF = $getPT = 0;
+                }else{
+                    $getPF = Helpers::getPF($totalAllowance);
+                    $getPT = Helpers::getPT($totalAllowance,$gender);
                 }
-                if(isset($employeeDetails['id'])){
-                $find = EmployeeSalaryStructure::where(['employee_id' => $employeeDetails['id'], 'year' => $year], [
-                    'year' => $year,
-                    'sub_institute_id' => $sub_institute_id
-                ])->get()->toArray();
-                if(!empty($find)){
-                    if(!empty($employeeDetails['data'])){
-                        EmployeeSalaryStructure::where(['employee_id' => $employeeDetails['id'],'year' => $year,'sub_institute_id' => $sub_institute_id
-                        ])->update([
-                            'employee_id' => $employeeDetails['id'], 
-                            'employee_salary_data' => $employeeDetails['data'],
-                            'year' => $year,
-                            'sub_institute_id' => $sub_institute_id,
-                            'updated_at'=>now(),
-                        ]);
-                        $res['message']="Updated Successfully";
-                    }
+              
+                // echo "<pre>";print_r($getPT);exit;
+                foreach ($allData as $key => $value) {
+                   if(isset($value['PF'])){
+                    $jsonData[$key] = $getPF;
+                   }else if(isset($value['PT'])){
+                    $jsonData[$key] = $getPT;
+                   }else{
+                    $otherData = array_values($value);
+                    $jsonData[$key] = intval($otherData[0]);
+                   }
                 }
-                else{
-                    if(!empty($employeeDetails['data'])){
-                    EmployeeSalaryStructure::where(['employee_id' => $employeeDetails['id'], 'year' => $year], [
-                        'year' => $year,
-                        'sub_institute_id' => $sub_institute_id
-                    ])->insert([
-                        'employee_id' => $employeeDetails['id'],
-                        'employee_salary_data' => json_encode($employeeDetails['data']),
+                // convert into json 
+                $encodeData = json_encode($jsonData);
+
+                $find = EmployeeSalaryStructure::where(['employee_id' => $emp_ids, 'year' => $year], ['year' => $year,'sub_institute_id' => $sub_institute_id])->get()->toArray();
+                // update data
+                $res['status_code']=1;
+                if(!empty($find) && $totalSalary!=0){
+                    EmployeeSalaryStructure::where(['employee_id' => $emp_ids,'year' => $year,'sub_institute_id' => $sub_institute_id])->update([
+                        'employee_id' => $emp_ids, 
+                        'employee_salary_data' => $encodeData,
                         'year' => $year,
                         'sub_institute_id' => $sub_institute_id,
-                        'created_at' => now(),
-                    ]);
-                    $res['message']="Added Successfully"; 
-                    }                   
+                        'updated_at'=>now(),
+                                    ]);
+                    $res['message']="Updated Successfully";
                 }
-                $res['status_code']=1;
+                // insert data 
+                else{
+                    if($totalSalary!=0){
+                        EmployeeSalaryStructure::insert([
+                            'employee_id' => $emp_ids, 
+                            'employee_salary_data' => $encodeData,
+                            'year' => $year,
+                            'sub_institute_id' => $sub_institute_id,
+                            'created_at'=>now(),
+                                        ]);
+                    }
+                    $res['message']="Added Successfully";
+                }
             }
-            }
-        }     
+        }
+        // echo "<pre>";print_r($request->all());exit;
+
         // return redirect('employee-salary-structure');
         return is_mobile($type, "employee_salary_structure.index", $res, "redirect");
         

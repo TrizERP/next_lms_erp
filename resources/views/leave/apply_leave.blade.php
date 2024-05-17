@@ -28,17 +28,17 @@
         </div>
 
         <div class="card">
-            @if ($message = session()->get('data'))
-                @if($message['status_code']==1)
-                    <div class="alert alert-success alert-block">
-                    @else
-                    <div class="alert alert-danger alert-block">
-                @endif                
-                    <button type="button" class="close" data-dismiss="alert">×</button>
-                    <strong>{{ $message['message'] }}</strong>
-                </div>
+            @if ($sessionData = Session::get('data')) @if($sessionData['status_code'] == 1)
+                <div class="alert alert-success alert-block">
+            @else
+            <div class="alert alert-danger alert-block">
+                @endif
+                <button type="button" class="close" data-dismiss="alert">×</button>
+                <strong>{{ $sessionData['message'] }}</strong>
+            </div>
             @endif
-            <div class="col-md-12 mt-2">
+            <div class="row">
+                <!-- apply leave start  -->
                 <div class="col-md-4">
                     <form action="" id="frmApplyLeave" method="post">
                         <div class="modal-body">
@@ -64,7 +64,7 @@
                                 <label for="">Department</label>
                                 <select name="department_id" id="department_id" class="form-control">
                                     <option value="">Select Department</option>
-                                    @foreach ($departments as $id => $department)
+                                    @foreach ($data['departments'] as $id => $department)
                                         <option value="{{ $id }}">{{ $department }}</option>
                                     @endforeach
                                 </select>
@@ -79,7 +79,7 @@
                                 <label for="">Leave Type</label>
                                 <select name="leave_type" id="leave_type" class="form-control">
                                     <option value="">Select Leave Type</option>
-                                    @foreach ($leave_types as $key => $row)
+                                    @foreach ($data['leave_types'] as $key => $row)
                                         <option value="{{ $row->id }}">{{ $row->leave_type }}</option>
                                     @endforeach
                                 </select>
@@ -138,7 +138,64 @@
                         </div>
                     </form>
                 </div>
+            <!-- div for apply end  -->
+            <!-- apply history start  -->
+                <div class="col-md-8">
+                    <h4>My Leave History</h4>
+                    <!-- table start  -->
+                    <div class="table-responsive mt-20 tz-report-table">
+                        <table id="example" class="table table-striped" style="width:100%">
+                            <thead>
+                                <tr>
+                                    <th>Sr No.</th>
+                                    <th>From Date</th>
+                                    <th>To Date</th>
+                                    <th>No of Days</th>
+                                    <th>Leave Type</th>
+                                    <th>Reasons</th>
+                                    <th>HOD Comment</th>
+                                    <th>HR Remarks</th>
+                                    <th>Approved By</th>
+                                    <th class="text-left">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if(!empty($data['leaveHistory']))
+                                    @foreach($data['leaveHistory'] as $key=>$value)
+                                    @php 
+                                        $Mfrom_date = \Carbon\Carbon::parse($value->from_date);
+                                        $from_date = \Carbon\Carbon::parse($value->from_date);
+                                        $to_date = \Carbon\Carbon::parse($value->to_date);
+                                        $countDays = 0;
+                                        for ($date = $from_date; $date->lte($to_date); $date->addDay()) {
+                                            if ($from_date->eq($date)) {
+                                                $countDays += $value->day_type;
+                                            }
+                                        }
+                                        $numberOfDays = $to_date->diffInDays($from_date);
+                                    @endphp
+                                    <tr>
+                                        <td>{{$key+1}}</td>
+                                        <td>{{$Mfrom_date->format('d-m-Y')}}</td>
+                                        <td>{{$to_date->format('d-m-Y')}}</td>
+                                        <td>{{($countDays>0) ? $countDays : 1}}</td>
+                                        <td>{{$value->leave_type_name}}</td>
+                                        <td>{{$value->comment}}</td>
+                                        <td>{{$value->hod_comment}}</td>
+                                        <td>{{$value->hr_remarks}}</td>
+                                        <td>{{$value->approved_by}}</td>
+                                        <td>{{$value->status}}</td>
+                                    </tr>
+                                    @endforeach
+                                @endif
+                            </tbody>
+                        </table>
+                    </div>  
+                    <!-- end start  -->
+                </div>
+            <!-- apply histroy end  -->
             </div>
+
         </div>
     </div>
 </div>
@@ -153,6 +210,50 @@
 </script>
 
 <script>
+     $(document).ready(function () {
+            var table = $('#example').DataTable({
+                ordering: false,
+                select: true,
+                lengthMenu: [
+                    [100, 500, 1000, -1],
+                    ['100', '500', '1000', 'Show All']
+                ],
+                dom: 'Bfrtip',
+                buttons: [
+                    {
+                        extend: 'pdfHtml5',
+                        title: 'Student Report',
+                        orientation: 'landscape',
+                        pageSize: 'LEGAL',
+                        pageSize: 'A0',
+                        exportOptions: {
+                            columns: ':visible'
+                        },
+                    },
+                    {extend: 'csv', text: ' CSV', title: 'Student Report'},
+                    {extend: 'excel', text: ' EXCEL', title: 'Student Report'},
+                    {extend: 'print', text: ' PRINT', title: 'Student Report'},
+                    'pageLength'
+                ],
+            });
+            //table.buttons().container().appendTo('#example_wrapper .col-md-6:eq(0)');
+
+            $('#example thead tr').clone(true).appendTo('#example thead');
+            $('#example thead tr:eq(1) th').each(function (i) {
+                var title = $(this).text();
+                $(this).html('<input type="text" placeholder="Search ' + title + '" />');
+
+                $('input', this).on('keyup change', function () {
+                    if (table.column(i).search() !== this.value) {
+                        table
+                            .column(i)
+                            .search(this.value)
+                            .draw();
+                    }
+                });
+            });
+        });
+
     $(document).ready(function() {
 
         $(document).on("submit", "#frmApplyLeave", function(e) {

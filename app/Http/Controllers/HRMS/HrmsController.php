@@ -770,7 +770,7 @@ class HrmsController extends Controller
         if($type=="API"){
             $sub_institute_id = $request->sub_institute_id;
         }
-        $res['selDepartments'] = $department_ids = $request->department_ids;
+        $res['selDepartments'] = $department_ids = $request->department_id;
         $res['emp_id'] = $emp_id = $request->emp_id;
         $res['selectedFromDate'] = $from_date = $request->from_date;
         $res['selectedToDate'] = $to_date = $request->to_date;
@@ -789,7 +789,7 @@ class HrmsController extends Controller
         })
         ->selectRaw('tu.id as user_id, tu.employee_no, CONCAT_WS(" ", COALESCE(tu.first_name, "-"), COALESCE(tu.last_name, "-")) as full_name, tu.sub_institute_id, IFNULL(upm.name, "-") as user_profile, hd.department, ha.user_code, COUNT(DISTINCT ha.id) as total_att_day, GROUP_CONCAT(DISTINCT ha.id) as worked_days, COUNT(DISTINCT hel.id) as total_ab_day, GROUP_CONCAT(DISTINCT hel.id) as ab_days, COUNT(DISTINCT hh.id) as total_holidays, GROUP_CONCAT(DISTINCT hh.id) as holidays,GROUP_CONCAT(DISTINCT hd.id) as department_id')
         ->where('tu.sub_institute_id', $sub_institute_id)
-        ->whereIn('tu.department_id', [$department_ids])
+        ->whereIn('tu.department_id', $department_ids)
         ->where('tu.status', 1)
         ->when($emp_id!=0,function($q) use($emp_id){
             $q->where('tu.id',$emp_id);
@@ -816,15 +816,17 @@ class HrmsController extends Controller
                 
                 $getUserInTime = DB::table('tbluser')->where('id',$value->user_id)->value($dayName.'_in_date') ?? 0;
                 $punchInTime = Carbon::parse($punchvalue->punchin_time)->toTimeString();
-
+                if(isset($getUserInTime) && $getUserInTime!=0){
+                   
                 $punchInTimeCarbon = Carbon::createFromFormat('H:i:s', $punchInTime);
                 $getUserInTimeCarbon = Carbon::createFromFormat('H:i:s', $getUserInTime);
 
                 if($punchInTimeCarbon > $getUserInTimeCarbon){
                     $late++;
                 }
+                }
             }
-
+            // exit;
             $newEmpData[$key]->late = $late;
 
              // week off days sunday 
@@ -858,24 +860,6 @@ class HrmsController extends Controller
         // echo "<pre>";print_r($newEmpData);exit;
 
         return is_mobile($type, "department_attendance_report.index", $res);
-    }
-    // department wise emp 
-    public function getDepEmployeeLists(Request $request)
-    {
-        $sub_institute_id = $request->session()->get('sub_institute_id');
-        $department_id = $request->get('department_id');
-    
-        $employees = tbluserModel::join('tbluserprofilemaster as upm', 'upm.id', '=', 'tbluser.user_profile_id')
-        ->selectRaw('tbluser.id,IfNULL(tbluser.first_name, "-") as first_name, IFNULL(tbluser.last_name, "-") as last_name, tbluser.sub_institute_id, IfNULL(upm.name,"-") as user_profile')
-        ->where('tbluser.sub_institute_id', $sub_institute_id)
-        ->whereIn('tbluser.department_id', [$department_id])
-        ->where('tbluser.status', 1)
-        ->orderBy('tbluser.first_name')
-        ->groupBy('tbluser.id')
-        ->get()
-        ->toArray();   
-
-        return $employees;
     }
 
     public function getHolidays(Request $request){

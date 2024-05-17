@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\HRMS\HrmsController;
 use App\Http\Controllers\HRMS\HrmsLeaveController;
 use App\Http\Controllers\Payroll\PayrollController;
-
+use App\Http\Controllers\AJAXController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -91,9 +91,7 @@ Route::group([ 'middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::get('departmentwise-attendance-report',[HrmsController::Class,'departmentAttendanceReport'])->name('department_attendance_report.index');
     Route::get('departmentwise-attendance-report/create',[HrmsController::Class,'departmentAttendanceReportCreate'])->name('department_attendance_report.create');
 
-    Route::get('departmentwise-emplist',[HrmsController::Class,'getDepEmployeeLists'])->name('departmentwise-emplist');
-
-    Route::get('departmentwise-emplist',[HrmsController::Class,'getDepEmployeeLists'])->name('departmentwise-emplist');
+    Route::get('departmentwise-emplist',[AJAXController::Class,'getDepEmployeeLists'])->name('departmentwise-emplist');
 
     Route::get('get-holidays',[HrmsController::Class,'getHolidays']);
     Route::get('get-present-days',[HrmsController::Class,'getPresentDays']);

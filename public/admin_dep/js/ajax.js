@@ -524,3 +524,33 @@ if ($("#ajax_PDF_Certificate").length != 0)
     });
 }
 /* End Open Student Certificate Bulk PDF instead of print receipt */
+
+
+// depratmewnt and emp lists 
+$('#department_ids').on('change',function(){
+    var department_ids = $('#department_ids').val();
+    var department_ids_str = department_ids.join(',');
+    getEmpList(department_ids_str);
+})
+
+function getEmpList(department_id){
+    $('#emp_id').empty(); 
+    $.ajax({
+        url: '/departmentwise-emplist',
+        data: { department_id: department_id },
+        type: 'GET',
+        success: function(result) {
+            if (Array.isArray(result)) {
+                 $('#emp_id').append(`<option value=0>select emp</option>`);
+                result.forEach(value => {
+                    $('#emp_id').append(`<option value="${value.id}">${value.full_name} (${value.user_profile})</option>`); // corrected the syntax here
+                });
+            } else {
+                $('#emp_id').append(`<option value=0>select emp</option>`);
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Error:', error);
+        }
+    });
+}
