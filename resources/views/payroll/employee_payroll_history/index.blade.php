@@ -72,7 +72,7 @@
                         <table id="example" class="table table-striped">
                             <thead>
                             <tr>
-                                <th>Emp Code</th>
+                                <th>Emp No</th>
                                 <th>Emp Name</th>
                                 <th>Month -Year </th>
                                 <th>Total Day</th>

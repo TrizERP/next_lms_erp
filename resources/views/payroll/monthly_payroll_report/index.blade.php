@@ -82,7 +82,7 @@
                             <table id="example" class="table table-striped">
                                 <thead>
                                 <tr>
-                                    <th>Employee Id</th>
+                                    <th>Emp No</th>
                                     <th>Employee Name</th>
                                     @foreach($data['header'] as $hkey => $col)
                                         <th class="text-left">{{$col}} </th>

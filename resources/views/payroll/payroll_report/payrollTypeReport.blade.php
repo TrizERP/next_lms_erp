@@ -59,7 +59,7 @@
                 <table id="example" class="table table-striped">
                     <thead>
                     <tr>
-                        <th>Employee Id</th>
+                        <th>Emp No</th>
                         <th>Employee Name</th>
                         @foreach($data['payrollHeads'] as $key=>$value)
                             <th>{{$value['payroll_name']}}</th>

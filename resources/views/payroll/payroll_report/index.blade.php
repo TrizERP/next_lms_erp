@@ -78,7 +78,7 @@
                         <table id="example" class="table table-striped">
                             <thead>
                             <tr>
-                                <th>Employee Id</th>
+                                <th>Emp No</th>
                                 <th>Employee Name</th>
                                 <th>Total Day</th>
                                 <th>Total</th>
@@ -91,7 +91,7 @@
                                 <tbody>
                                 @foreach($employees as $employeeDetail)
                                 <tr>
-                                    <td>{{$employeeDetail['employee_id']}}</td>
+                                    <td>{{$employeeDetail->getUser['employee_no']}}</td>
                                     <td>{{$employeeDetail->getUser['first_name'] .' '. $employeeDetail->getUser['last_name']}}</td>
                                     <td>{{$employeeDetail->total_day}}</td>
                                     <td>{{$employeeDetail->total_payment + $employeeDetail->total_deduction}}</td>
