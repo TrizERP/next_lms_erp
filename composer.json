@@ -10,7 +10,6 @@
         "aws/aws-sdk-php": "^3.298",
         "barryvdh/laravel-dompdf": "^2.0",
         "beyondcode/laravel-dump-server": "^1.9",
-        "botman/botman": "^2.8",
         "doctrine/dbal": "^3.8",
         "fideloper/proxy": "^4.4",
         "generationtux/jwt-artisan": "^1.3",
