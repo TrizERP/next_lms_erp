@@ -29,8 +29,8 @@
                                         <label>Employee List</label>
                                         <select id='employee_id' name="employee_id" class="form-control">
                                             <option value="0">Select Employee</option>
-                                            @foreach($employeeLists as $employee)
-                                                <option value="{{$employee['id']}}" @if(isset($list['employee_id']) && $list['employee_id']==$employee['id']) selected @endif>{{$employee['first_name'] .' '. $employee['last_name'] }} ({{$employee['user_profile']}}) </option>
+                                            @foreach($data['employeeLists'] as $employee)
+                                                <option value="{{$employee['id']}}" @if(isset($data['list']['employee_id']) && $data['list']['employee_id']==$employee['id']) selected @endif>{{$employee['first_name'] .' '. $employee['last_name'] }} ({{$employee['user_profile']}}) </option>
                                             @endforeach
 
                                         </select>
@@ -39,8 +39,8 @@
                                         <label>Select Year</label>
                                         <select id='year' name="year" class="form-control">
                                             <option value="0">Select Year</option>
-                                            @foreach($years as $year)
-                                                <option @if(isset($list['year']) && $list['year'] == $year) selected @endif>{{$year}}</option>
+                                            @foreach($data['years'] as $year)
+                                                <option @if(isset($data['list']['year']) && $data['list']['year'] == $year) selected @endif>{{$year}}</option>
                                             @endforeach
                                         </select>
                                     </div>
@@ -72,10 +72,11 @@
                         <table id="example" class="table table-striped">
                             <thead>
                             <tr>
+                                <th>Emp Code</th>
+                                <th>Emp Name</th>
                                 <th>Month -Year </th>
-                                <th>Employee Id</th>
                                 <th>Total Day</th>
-                                @foreach($header as $hkey => $col)
+                                @foreach($data['header'] as $hkey => $col)
                                     <th>{{$col}} </th>
                                 @endforeach
                                 <th>Total Deduction</th>
@@ -86,12 +87,13 @@
                                 @csrf
                                 <tbody>
 
-                                    @foreach($currentYearemployeeDetails as $employee)
+                                    @foreach($data['currentYearemployeeDetails'] as $employee)
                                         <tr>
-                                        <td>{{$employee['month'] .'/'. $employee['year']}}</td>
                                         <td>{{$employee['employee_no']}}</td>
+                                        <td>{{$employee['employee_name']}}</td>
+                                        <td>{{$employee['month'] .'/'. $employee['year']}}</td>
                                         <td>{{$employee['total_day']}}</td>
-                                        @foreach($header as $hkey => $col)
+                                        @foreach($data['header'] as $hkey => $col)
                                             <td>{{$employee['data'][$hkey] ?? '0' }}</td>
                                         @endforeach
                                         <td>{{$employee['total_deduction']}}</td>
@@ -100,12 +102,12 @@
                                     @endforeach
 
 
-                               {{--     @foreach($nextYearemployeeDetails as $employee)
+                               {{--     @foreach($data['nextYearemployeeDetails'] as $employee)
                                         <tr>
                                         <td>{{$employee['month'] .'/'. $employee['year']}}</td>
                                         <td>{{$employee['employee_id']}}</td>
                                         <td>{{$employee['total_day']}}</td>
-                                        @foreach($header as $hkey => $col)
+                                        @foreach($data['header'] as $hkey => $col)
                                             <td>{{$employee['data'][$hkey] ?? '0' }}</td>
                                         @endforeach
                                         <td>{{$employee['total_deduction']}}</td>

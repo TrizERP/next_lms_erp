@@ -1158,7 +1158,11 @@ class PayrollController extends Controller
     public function employeePayrollHistory(Request $request)
     {
         //return $request->all();
+        $type = $request->type;
         $sub_institute_id = $request->session()->get('sub_institute_id');
+        if($type=="API"){
+            $sub_institute_id = $request->get('sub_institute_id');
+        }
         $employeeLists = employeeDetails($sub_institute_id);
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $payrollTypes = PayrollType::where('status', 1)->orderBy('sort_order')->get();
@@ -1179,8 +1183,8 @@ class PayrollController extends Controller
             $currentYearemployeeDetails = EmployeeMonthlySalaryData::whereIn('month',['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'])->where([['year',$year],['employee_id',$request->employee_id],['sub_institute_id',$sub_institute_id]])->get();
             $currentYearemployeeDetails = $currentYearemployeeDetails->map(function($employee){
                 $data = [];
-                $data['employee_id'] = $employee->employee_id;
-                $data['employee_no'] = $employee->employee_no;
+                $data['employee_id'] = $employee->getUser->employee_id;
+                $data['employee_no'] = $employee->getUser->employee_no;
                 $data['employee_name'] = $employee->getUser->first_name . ' ' . $employee->getUser->middle_name . ' ' . $employee->getUser->last_name;
                 $data['data'] = json_decode($employee->employee_salary_data, true);
                 $data['total_day'] =$employee->total_day;
@@ -1208,8 +1212,11 @@ class PayrollController extends Controller
             $list['employee_id'] = $request->employee_id;
             //return $list;
         }
+        $res = ['employeeLists' => $employeeLists,'currentYearemployeeDetails' => $currentYearemployeeDetails,'header' => $header, 'list' => $list,'years' => $years];
 
-        return view('payroll.employee_payroll_history.index', ['employeeLists' => $employeeLists,'currentYearemployeeDetails' => $currentYearemployeeDetails,'header' => $header, 'list' => $list,'years' => $years]);
+        return is_mobile($type, "payroll.employee_payroll_history.index", $res, "view");
+
+        // return view('payroll.employee_payroll_history.index', ['employeeLists' => $employeeLists,'currentYearemployeeDetails' => $currentYearemployeeDetails,'header' => $header, 'list' => $list,'years' => $years]);
     }
 
     public function payrollTypeReport(Request $request){
