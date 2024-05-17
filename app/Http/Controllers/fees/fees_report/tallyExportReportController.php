@@ -108,10 +108,10 @@ class tallyExportReportController extends Controller
         foreach ($fees_heads as $key => $value) {
             if (strstr($value['fees_title'], "title")) {
                 $tuition_fees_head_sum .= " SUM(fc." . $value['fees_title'] . ") + ";
-                $concate_heads .= "CASE WHEN " . $value['fees_title'] . " != 0 THEN '" . $value['display_name'] . " ,' ELSE '' END,";
+                $concate_heads .= "CASE WHEN " . $value['fees_title'] . " != 0 THEN '" . $value['append_name'] . " ,' ELSE '' END,";
             } else {
                 $academic_fees_head_sum .= " SUM(fc." . $value['fees_title'] . ") + ";
-                $other_concate_heads .= "CASE WHEN " . $value['fees_title'] . " != 0 THEN '" . $value['display_name'] . " ,' ELSE '' END,";
+                $other_concate_heads .= "CASE WHEN " . $value['fees_title'] . " != 0 THEN '" . $value['append_name'] . " ,' ELSE '' END,";
             }
         }
         $tuition_fees_head_sum = rtrim($tuition_fees_head_sum, "+ ");
@@ -163,9 +163,13 @@ class tallyExportReportController extends Controller
             })->selectRaw("fc.id,fc.student_id,CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name) AS student_name,
                 ts.enrollment_no,ts.admission_year,ts.mobile,ts.email,date_format(ts.dob,'%d-%m-%Y') AS dob,a.title AS section,
                 s.name AS std_name,d.name AS div_name,sq.title AS stu_qouta,SUM(fc.fees_discount) AS tot_fees_discount,
-                GROUP_CONCAT(fc.receipt_no) AS vchno,fc.receiptdate,fc.cheque_no,fc.cheque_date,fc.bank_name,fc.bank_branch,
-                fc.remarks,$extra_tuition as tuition_fees,$extra_annual as annual_fees,$extra_concate AS tuition_fees_narration,
-                $extra_other_concate AS annual_fees_narration,SUM(fc.fine) AS total_fine")
+                GROUP_CONCAT(fc.receipt_no) AS vchno,fc.receiptdate,fc.cheque_no,fc.cheque_date,fc.cheque_bank_name,fc.bank_branch,
+                fc.remarks,$extra_tuition as tuition_fees,
+                $extra_annual as annual_fees,
+                $extra_concate AS tuition_fees_narration,
+                'Tuition_Fee, ' AS tf,
+                $extra_other_concate AS annual_fees_narration,
+                SUM(fc.fine) AS total_fine")
             ->whereRaw($extraSearchArrayRaw)
             ->where('se.syear', $syear)
             ->where('s.sub_institute_id', $sub_institute_id)

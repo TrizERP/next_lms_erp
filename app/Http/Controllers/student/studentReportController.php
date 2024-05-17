@@ -136,16 +136,21 @@ class studentReportController extends Controller
             ->join('academic_section', 'academic_section.id', '=', 'tblstudent_enrollment.grade_id')
             ->join('standard', 'standard.id', '=', 'tblstudent_enrollment.standard_id')
             ->join('division', 'division.id', '=', 'tblstudent_enrollment.section_id')
-            ->leftJoin('religion', 'religion.id', '=', 'tblstudent.religion')
-            ->leftJoin('house_master', 'house_master.id', '=', 'tblstudent_enrollment.house_id')
-            ->leftJoin('student_quota', 'student_quota.id', '=', 'tblstudent_enrollment.student_quota')
-            ->leftJoin('religion as r', 'r.id', '=', 'tblstudent.religion')
-            ->leftJoin('caste', 'caste.id', '=', 'tblstudent.cast')
-            ->leftJoin('blood_group', 'blood_group.id', '=', 'tblstudent.bloodgroup')
-            ->leftJoin('batch', 'tblstudent.studentbatch', '=', 'batch.id')
-            ->leftJoin('transport_map_student', 'transport_map_student.student_id', '=', 'tblstudent.id')
-            ->leftJoin('admission_enquiry', 'tblstudent.mobile', '=', 'admission_enquiry.mobile')
-            ->leftJoin('transport_vehicle', function($join) use ($sub_institute_id) {
+            ->leftjoin('religion', 'religion.id', '=', 'tblstudent.religion')
+            ->leftjoin('house_master', 'house_master.id', '=', 'tblstudent_enrollment.house_id')
+            ->leftjoin('student_quota', 'student_quota.id', '=', 'tblstudent_enrollment.student_quota')
+            ->leftjoin('caste', 'caste.id', '=', 'tblstudent.cast')
+            ->leftjoin('blood_group', 'blood_group.id', '=', 'tblstudent.bloodgroup')
+            ->leftjoin('batch', function($join) {
+                $join->on('tblstudent.studentbatch', '=', 'batch.id')
+                     ->where('batch.syear', '=', session()->get('syear'));
+            })
+            ->leftjoin('transport_map_student', function($join) {
+                $join->on('transport_map_student.student_id', '=', 'tblstudent.id')
+                     ->where('transport_map_student.syear', '=', session()->get('syear'));
+            })
+            //->leftjoin('transport_vehicle', 'transport_vehicle.id', '=', 'transport_map_student.from_bus_id')
+            ->leftjoin('transport_vehicle', function($join) {
                 $join->on('transport_vehicle.id', '=', 'transport_map_student.from_bus_id')
                     ->where('transport_vehicle.sub_institute_id', '=', $sub_institute_id);
             })
