@@ -1487,10 +1487,10 @@
 
     $(document).on("change", "#department_id", function(e) {
         var departmentId = $(this).val();
-        getEmpList(departmentId);
+        getEmpLists(departmentId);
     });
 
-    function getEmpList(departmentId){
+    function getEmpLists(departmentId){
         $('#employee_id').empty();
         $.ajax({
             type: "post",
