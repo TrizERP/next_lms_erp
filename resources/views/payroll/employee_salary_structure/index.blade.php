@@ -75,8 +75,8 @@
                                 <thead>
                                 <tr>
                                     <th>Sr No.</th>
-                                    <th>Emp Id</th>
-                                    <th>Emp Name</th>
+                                    <th>Emp.No</th>
+                                    <th>Emp.Name</th>
                                     <th>Gender</th>
                                     @foreach ($data['payrollTypes'] as $payrollType)
                                         <th class="text-left">{{$payrollType->payroll_name}}</th>

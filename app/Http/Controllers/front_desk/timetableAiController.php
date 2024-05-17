@@ -184,7 +184,7 @@ class timetableAiController extends Controller
         file_put_contents($file_path, $file_data);
         $content =  file_get_contents($file_path);
         // dd($content);exit;
-        $generated_timetable = shell_exec('python3 /home/timetable.py');
+        $generated_timetable = shell_exec('python3 /home/timetable_v1.py');
         $res['response'] = json_decode($generated_timetable, true); 
         // echo "<pre>";print_r($res['response']);exit;
 
