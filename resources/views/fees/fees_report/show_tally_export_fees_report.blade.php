@@ -118,7 +118,7 @@
                         @foreach($fees_data as $key => $fees_value)
                         @php
 
-                             $finalFees = ' (' .$fees_value['annual_fees_narration'] .$fees_value['tuition_fees_narration'] . ') ';
+                             $finalFees = ' (' .$fees_value['annual_fees_narration'] . $fees_value['tf'] . $fees_value['tuition_fees_narration'] . ') ';
                              $finalFees = rtrim($finalFees,' , )');
                              $finalFees .= ')';
 
@@ -126,31 +126,7 @@
                             $finalAmount = 0;
                             $showNarration = 0;
                         @endphp    
-                            @if($fees_value['annual_fees'] != '' && $fees_value['annual_fees'] > 0)
-                                @php  
-                                    $showLedger = 1;
-                                @endphp    
-                                <tr>
-                                    <td>Receipt</td>
-                                    <td>{{$fees_value['vchno']}}</td>
-                                    <td>{{date('d-M-y', strtotime($fees_value['receiptdate']))}}</td>
-                                    <td>Annual Fees</td>
-                                    <td>{{$fees_value['annual_fees']}}</td>
-                                    <td></td>
-                                    <td>{{$fees_value['cheque_no']}}</td>
-                                    <td>{{date('d-M-y', strtotime($fees_value['cheque_date']))}}</td>
-                                    <td>{{$fees_value['bank_name']}}</td>
-                                    <td>{{$fees_value['bank_branch']}}</td>
-                                    <td>
-                                        {{$fees_value['student_name']}}-{{$fees_value['std_name']}}-{{$fees_value['div_name']}}-{{$finalFees}}
-                                    </td>
-                                @php    
-                                    $showNarration = 1;
-                                    $finalAmount = $finalAmount + $fees_value['annual_fees'];
-                                @endphp    
-                                </tr> 
-                            @endif
-                                
+
                             @if($fees_value['tuition_fees'] != '' && $fees_value['tuition_fees'] > 0)
                                 @php 
                                     $showLedger = 1;  
@@ -159,24 +135,47 @@
                                         <td>Receipt</td>
                                         <td>{{$fees_value['vchno']}}</td>
                                         <td>{{date('d-M-y', strtotime($fees_value['receiptdate']))}}</td>
-                                        <td>tuition Fees</td>
+                                        <td>Tution Fees</td>
                                         <td>{{$fees_value['tuition_fees']}}</td>
                                         <td></td>
                                         <td>{{$fees_value['cheque_no']}}</td>
                                         <td>{{date('d-M-y', strtotime($fees_value['cheque_date']))}}</td>
-                                        <td>{{$fees_value['bank_name']}}</td>
+                                        <td>{{$fees_value['cheque_bank_name']}}</td>
                                         <td>{{$fees_value['bank_branch']}}</td>
-                                    @if($showNarration == 0)
-                            <td>{{$fees_value['student_name']}}-{{$fees_value['std_name']}}-{{$fees_value['div_name']}}-{{$finalFees}}</td>
-                                    @else
-                                <td></td>    
-                                    @endif
+                                        <td>{{$fees_value['student_name']}} - {{$fees_value['std_name']}} - {{$fees_value['div_name']}} - {{$finalFees}}</td>
                                 </tr>
                                 @php
+                                    $showNarration = 1;
                                     $finalAmount = $finalAmount + $fees_value['tuition_fees'];
                                 @endphp    
                             @endif
 
+                            @if($fees_value['annual_fees'] != '' && $fees_value['annual_fees'] > 0)
+                                @php  
+                                    $showLedger = 1;
+                                @endphp    
+                                <tr>
+                                    <td>Receipt</td>
+                                    <td>{{$fees_value['vchno']}}</td>
+                                    <td>{{date('d-M-y', strtotime($fees_value['receiptdate']))}}</td>
+                                    <td>Academic Fee</td>
+                                    <td>{{$fees_value['annual_fees']}}</td>
+                                    <td></td>
+                                    <td>{{$fees_value['cheque_no']}}</td>
+                                    <td>{{date('d-M-y', strtotime($fees_value['cheque_date']))}}</td>
+                                    <td>{{$fees_value['cheque_bank_name']}}</td>
+                                    <td>{{$fees_value['bank_branch']}}</td>
+                                    @if($showNarration == 0)
+                            <td>{{$fees_value['student_name']}} - {{$fees_value['std_name']}} - {{$fees_value['div_name']}} - {{$finalFees}}</td>
+                                    @else
+                                <td></td>    
+                                    @endif
+                                @php
+                                    $finalAmount = $finalAmount + $fees_value['annual_fees'];
+                                @endphp    
+                                </tr> 
+                            @endif
+                                
                             @if($fees_value['tot_fees_discount'] != '' && $fees_value['tot_fees_discount'] < 0)
                                 @php
                                     $showLedger = 1;  
@@ -204,7 +203,7 @@
                                     <td>Receipt</td>
                                     <td>{{$fees_value['vchno']}}</td>
                                     <td>{{date('d-M-y', strtotime($fees_value['receiptdate']))}}</td>
-                                    <td> AXIS BANK LTD.-259712 </td>
+                                    <td>AXIS BANK LTD.-259712</td>
                                     <td></td>
                                     <td>{{$finalAmount}}</td>
                                     <td></td>

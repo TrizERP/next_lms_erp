@@ -153,20 +153,20 @@ if (isset($_REQUEST['sub_institute_id']) && $_REQUEST['sub_institute_id'] != '')
 //PAYROLL SYSTEM
 Route::group([ 'middleware' => ['session', 'menu', 'logRoute']], function () {
     
-    Route::get('/whatsapp-user-details', [WhatsappController::class, 'whatsapp_user_details'])->name('whatsapp-user-details');;
+    Route::get('/whatsapp-user-details', [WhatsappController::class, 'whatsapp_user_details'])->name('whatsapp_user_details.index');
     Route::get('/whatsapp-user-details/create', [WhatsappController::class, 'whatsappUserDetailsCreate'])->name('whatsapp_user_details.create');
     Route::get('/whatsapp-user-details/create/{id}', [WhatsappController::class, 'whatsappUserDetailsCreate']);
     Route::post('/whatsapp-user-details/store', [WhatsappController::class, 'whatsappUserDetailsStore'])->name('whatsapp_user_details.store');
     Route::delete('/whatsapp-user-details/destroy/{id}', [WhatsappController::class, 'whatsappUserDetailsDestroy'])->name('whatsapp_user_details.destroy');
 
-    Route::get('/whatsapp-send-messages', [WhatsappController::class, 'whatsapp_send_messages'])->name('whatsapp-send-messages');
+    Route::get('/whatsapp-send-messages', [WhatsappController::class, 'whatsapp_send_messages'])->name('whatsapp_send_messages.index');
     Route::get('/whatsapp-send-messages/create', [WhatsappController::class, 'index'])->name('whatsapp_send_message.create');
     Route::get('/whatsapp-send-messages/add', [WhatsappController::class, 'create'])->name('send_whatsapp_message.create');
 
     Route::get('/whatsapp-send-messages/create/{id}', [WhatsappController::class, 'whatsappSendMessageCreate']);
     Route::post('/whatsapp-send-messages/store', [WhatsappController::class, 'whatsappSendMessageStore'])->name('send_whatsapp_message.store');
     Route::delete('/whatsapp-send-messages/destroy/{id}', [WhatsappController::class, 'whatsappSendMessageDestroy'])->name('whatsapp_send_message.destroy');
-    Route::get('/whatsapp-sent-generate-report', [WhatsappController::class, 'whatsappSentGenerateReport']);
+    Route::get('/whatsapp-sent-generate-report', [WhatsappController::class, 'whatsappSentGenerateReport'])->name('whatsapp_send_messages.generate_report');
     Route::post('/whatsapp-sent-generate-show-report', [WhatsappController::class, 'whatsappSentGenerateReportDetails'])->name('whatsapp_sent_generate_report_details');
 
     Route::resource('sqaa_master', sqaa_controller::class);

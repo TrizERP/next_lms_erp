@@ -226,7 +226,10 @@ class studentReportController extends Controller
             ->leftjoin('student_quota', 'student_quota.id', '=', 'tblstudent_enrollment.student_quota')
             ->leftjoin('caste', 'caste.id', '=', 'tblstudent.cast')
             ->leftjoin('blood_group', 'blood_group.id', '=', 'tblstudent.bloodgroup')
-            ->leftjoin('batch', 'tblstudent.studentbatch', '=', 'batch.id')
+            ->leftjoin('batch', function($join) {
+                $join->on('tblstudent.studentbatch', '=', 'batch.id')
+                     ->where('batch.syear', '=', session()->get('syear'));
+            })
             ->leftjoin('transport_map_student', function($join) {
                 $join->on('transport_map_student.student_id', '=', 'tblstudent.id')
                      ->where('transport_map_student.syear', '=', session()->get('syear'));
