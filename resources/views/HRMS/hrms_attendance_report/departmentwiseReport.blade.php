@@ -11,6 +11,13 @@
         @php 
             $fromdate = isset($data['selectedFromDate']) ? $data['selectedFromDate'] : $data['start_date'];
             $todate =isset($data['selectedToDate']) ? $data['selectedToDate'] : $data['end_date'];
+            $dep_id = $emp_id = "";
+            if(isset($data['selDepartments'])){
+                $dep_id = $data['selDepartments'];
+            }
+            if(isset($data['emp_id'])){
+                $emp_id = $data['emp_id'];
+            }
         @endphp
         <div class="card">
         @if ($sessionData = Session::get('data')) @if($sessionData['status_code'] == 1)
@@ -40,23 +47,8 @@
                         <span class="input-group-addon"><i class="icon-calender"></i></span>
                     </div>
                 </div>
-
-                <div class="col-md-3 form-group">
-                    <label>Select Department</label>
-                    <select name="department_ids[]" id="department_ids" class="form-control" multiple required>
-                        @foreach($data['department'] as $key=>$value)
-                            <option value="{{$key}}" {{ (isset($data['selDepartments']) && in_array($key,$data['selDepartments'])) ? 'selected' : '' }}>{{$value}}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div class="col-md-3 form-group">
-                    <label>Select Employee Lists</label>
-                    <select name="emp_id" id="emp_id" class="form-control">
-                       <option value=0>select emp</option>
-                    </select>
-                </div>
-
+                {!! App\Helpers\HrmsDepartments("","multiple",$dep_id,"",$emp_id,"") !!}
+                
                 <div class="col-md-12 form-group">
                     <center>
                         <input type="submit" value="Search" class="btn btn-primary">
@@ -144,44 +136,6 @@
 
     @include('includes.footerJs')
     <script>
-        @if(isset($data['emp_id']))
-        var department_ids = @json($data['selDepartments']);
-        var department_ids_str = department_ids.join(',');
-            getEmpList(department_ids_str);
-        @endif
-
-        $('#department_ids').on('change',function(){
-            var department_ids = $('#department_ids').val();
-            var department_ids_str = department_ids.join(',');
-            getEmpList(department_ids_str);
-        })
-
-        function getEmpList(department_id){
-            $('#emp_id').empty(); 
-            $.ajax({
-                url: '{{ route("departmentwise-emplist") }}',
-                data: { department_id: department_id },
-                type: 'GET',
-                success: function(result) {
-                    if (Array.isArray(result)) {
-                        var emp_id = 0;
-                        @if(isset($data['emp_id']))
-                            emp_id = "{{$data['emp_id']}}";
-                        @endif
-                        $('#emp_id').append(`<option value=0>select emp</option>`);
-                        result.forEach(value => {
-                            $('#emp_id').append(`<option value="${value.id}" ${emp_id == value.id ? 'selected' : ''}>${value.full_name} (${value.user_profile})</option>`); // corrected the syntax here
-                        });
-                    } else {
-                        $('#emp_id').append(`<option value=0>select emp</option>`);
-                    }
-                },
-                error: function(xhr, status, error) {
-                    console.error('Error:', error);
-                }
-            });
-        }
-
         $(document).ready(function () {
             $('#totalDaysModel').hide();
             var table = $('#example').DataTable({
@@ -195,7 +149,7 @@
                 buttons: [
                     {
                         extend: 'pdfHtml5',
-                        title: 'Student Report',
+                        title: 'Department Wise Attendance Report',
                         orientation: 'landscape',
                         pageSize: 'LEGAL',
                         pageSize: 'A0',
@@ -203,9 +157,9 @@
                             columns: ':visible'
                         },
                     },
-                    {extend: 'csv', text: ' CSV', title: 'Student Report'},
-                    {extend: 'excel', text: ' EXCEL', title: 'Student Report'},
-                    {extend: 'print', text: ' PRINT', title: 'Student Report'},
+                    {extend: 'csv', text: ' CSV', title: 'Department Wise Attendance Report'},
+                    {extend: 'excel', text: ' EXCEL', title: 'Department Wise Attendance Report'},
+                    {extend: 'print', text: ' PRINT', title: 'Department Wise Attendance Report'},
                     'pageLength'
                 ],
             });
@@ -230,9 +184,10 @@
     function getDetails(user_id,DayDetails) {
             var fromDate = new Date("{{$fromdate}}");
             var toDate = new Date("{{$todate}}");
-            var modalContent = '<table class="table table-border"><tr><th>Sr</th><th>Date</th><th>Days</th></tr>';
+            var modalContent = '<table class="table table-border">';
             var i = 1;
             if (DayDetails=="totalDays") {
+                modalContent += "<tr><th>Sr</th><th>Date</th><th>Days</th></tr>";
                 while (fromDate <= toDate) {
 
                     modalContent += '<tr><td>' + (i++) + '</td><td>' + formatDate(fromDate) + '</td><td>' + getDayName(fromDate.getDay()) + '</td></tr>';
@@ -244,6 +199,7 @@
                 $('#totalDaysModel').modal('show');
             }
             else if (DayDetails=="weekday_off") {
+                modalContent += "<tr><th>Sr</th><th>Date</th><th>Days</th></tr>";
                 while (fromDate <= toDate) {
                     if (fromDate.getDay() === 0) { 
                         modalContent += '<tr><td>' + (i++) + '</td><td>' + formatDate(fromDate) + '</td><td>' + getDayName(fromDate.getDay()) + '</td></tr>';
@@ -254,6 +210,7 @@
                 $('#dateRangeInfo').html(modalContent);
                 $('#totalDaysModel').modal('show');
             }else if (DayDetails=="workingDays") {
+                modalContent += "<tr><th>Sr</th><th>Date</th><th>Days</th></tr>";
                 while (fromDate <= toDate) {
                     if (fromDate.getDay() !== 0) { 
                         modalContent += '<tr><td>' + (i++) + '</td><td>' + formatDate(fromDate) + '</td><td>' + getDayName(fromDate.getDay()) + '</td></tr>';
@@ -279,6 +236,7 @@
                             type: 'Get',
                             success : function(result){
                                 if (Array.isArray(result)) {
+                                    modalContent += "<tr><th>Sr No.</th><th>Emp Code.</th><th>Emp Name</th><th>Department</th><th>Date</th><th>Day</th></tr>"
                                     var i =1;
                                     result.forEach(value=>{
                                         var fdate = new Date(value.day);
@@ -305,6 +263,7 @@
                             type: 'Get',
                             success : function(result){
                                 if (Array.isArray(result)) {
+                                    modalContent += "<tr><th>Sr No.</th><th>Emp Code.</th><th>Emp Name</th><th>Department</th><th>Leave Day Type</th><th>Leave Type</th><th>Date</th><th>Day</th></tr>"
                                     var i =1;
                                     result.forEach(value=>{
                                         var fdate = new Date(value.from_date);
@@ -330,6 +289,7 @@
                             type: 'Get',
                             success : function(result){
                                 if (Array.isArray(result)) {
+                                    modalContent += "<tr><th>Sr No.</th><th>Emp Code.</th><th>Emp Name</th><th>Department</th><th>Leave Day Type</th><th>Leave Type</th><th>Date</th><th>Day</th></tr>"
                                     var i =1;
                                     result.forEach(value=>{
                                         var fdate = new Date(value.from_date);
