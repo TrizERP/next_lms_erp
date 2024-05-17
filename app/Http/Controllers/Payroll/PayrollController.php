@@ -334,7 +334,7 @@ class PayrollController extends Controller
         $res['salaryStructure'] = EmployeeSalaryStructure::join('tbluser as u',function($join){
             $join->on('u.id','=','employee_salary_structures.employee_id')->where('u.status',1); // 23-04-24 by uma
         })
-        ->select('employee_salary_structures.*', DB::raw('CONCAT_ws(" ",COALESCE(u.first_name,"-"), COALESCE(u.last_name,"-")) as employee_name'))
+        ->select('employee_salary_structures.*', DB::raw('CONCAT_ws(" ",COALESCE(u.first_name,"-"), COALESCE(u.last_name,"-")) as employee_name'),'u.employee_no')
         ->where('employee_salary_structures.employee_id', $emp_id)
         ->where('employee_salary_structures.sub_institute_id', $sub_institute_id)
         ->when($year!=0, function($query) use($year) {

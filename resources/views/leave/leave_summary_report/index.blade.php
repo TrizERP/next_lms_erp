@@ -72,6 +72,7 @@
                         <thead style="text-align:center;">
                             <tr>
                                 <th rowspan="3" style="padding-top:40px;">Sr.No</th>
+                                <th rowspan="3" style="padding-top:40px;">Emp.No</th>
                                 <th rowspan="3" style="padding-top:40px;">Employee Name</th>
                                 <th rowspan="3" style="padding-top:40px;">Designation</th>
                                 <th rowspan="3" style="padding-top:40px;">Joining Date</th>
@@ -110,6 +111,7 @@
 
                                 <tr style="text-align:center; !importanat; {{ $att_status }}">
                                     <td>{{ $j++ }}</td>
+                                    <td>{{ $get_employee_leave_list->employee_no }}</td>
                                     <td>
                                         @if(is_array($get_employee_leave_list) && isset($get_employee_leave_list['employee_name']))
                                             {{ $get_employee_leave_list['employee_name'] }}
