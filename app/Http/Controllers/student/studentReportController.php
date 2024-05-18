@@ -115,7 +115,7 @@ class studentReportController extends Controller
             ->where('user_type','student')
             ->first();
 
-            if(!empty($customDetails) && !in_array($fielValue,["student_name"])){
+            if(!empty($customDetails) && !in_array($fielValue,["student_name","optional_subject"])){
                 $array[] = $customDetails->table_name.".".$fielValue." as ".str_ireplace(" ","_",$customDetails->field_label);
                 $makeKey = strtolower(str_replace(" ","_",$customDetails->field_label));
                 $header[$makeKey] = ucfirst(str_replace(['_'], [' '], str_replace($searchArr1, $replaceArr1, $customDetails->field_label)));
@@ -123,9 +123,19 @@ class studentReportController extends Controller
                 $array[] = "academic_section.title as academic_year";
                 $header[$fielValue] = ucfirst(str_replace(['_'], [' '], str_replace($searchArr1, $replaceArr1, $fielValue)));
             }
+            else if($fielValue=="optional_subject"){
+                $array[] = "GROUP_CONCAT(DISTINCT subject.subject_name) as optional_subject";
+                if($sub_institute_id==254){
+                    $header['optional_subject4']="Optional Subject 4";
+                    $header['optional_subject5']="Optional Subject 5";
+                    $header['optional_subject6']="Optional Subject 6";
+                }else{
+                    $header[$fielValue] = ucfirst(str_replace(['_'], [' '], str_replace($searchArr1, $replaceArr1, $fielValue)));
+                }
+            }
             
         }
-
+        
         // Additional conditions for ordering
         $orderField = $searchFieldsMapping[$order_by] ?? $defaultOrderBy;
         $extra_order_by = $orderField ?? $defaultOrderBy;
@@ -178,11 +188,49 @@ class studentReportController extends Controller
             ->orderByRaw($extra_order_by)
             ->groupBy('tblstudent.id')
             ->get();
+            $student_dataArr = [];
+            if($sub_institute_id==254){
+                foreach ($student_data as $key => $value) {
+                    // optional subject level wise 
+                    if(isset($value->optional_subject)){
+                        $explodeSub = explode(',',$value->optional_subject);
+                        $value->optional_subject4 =  $value->optional_subject5= $value->optional_subject6 = [];
+                        foreach ($explodeSub as $keys => $subName) {
+                            $getLevel = DB::table('subject as s')
+                                ->join('student_optional_subject as sos', 'sos.subject_id', '=', 's.id')
+                                ->where('sos.syear', session()->get('syear'))
+                                ->where('sos.student_id', $value->id)
+                                ->where('s.subject_name', $subName)
+                                ->first();
+                        
+                            if ($getLevel) {
+                                if ($getLevel->level == 4 || $getLevel->level==null || $getLevel->level=="") {
+                                    $value->optional_subject4[] = $getLevel->subject_name;
+                                } 
+                                if ($getLevel->level == 5) {
+                                    $value->optional_subject5[] = $getLevel->subject_name;
+                                }
+                                if ($getLevel->level == 6) {
+                                    $value->optional_subject6[] = $getLevel->subject_name;
+                                }
+                            }
+                        }
+                        // convert into string 
+                       $value->optional_subject4 = implode(',',$value->optional_subject4) ?? [];     
+                       $value->optional_subject5 = implode(',',$value->optional_subject5) ?? [];     
+                       $value->optional_subject6 = implode(',',$value->optional_subject6) ?? [];     
+                    }
+                    //  ends level
 
-            // echo "<pre>";print_r($header);exit;
+                 $student_dataArr[$key] = $value;
+                }
+            }else{
+                $student_dataArr = $student_data;
+            }
+
         $res['status_code'] = 1;
         $res['message'] = "Student List";
-        $res['student_data'] = $student_data;
+        $res['student_data'] = $student_dataArr;
         $res['grade_id'] = $grade_id;
         $res['standard_id'] = $standard_id;
         $res['division_id'] = $division_id;

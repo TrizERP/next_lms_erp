@@ -90,7 +90,7 @@
                                                 <div class="col-md-4"><h4><b>{{$header}}</b></h5></div>
                                                 <div class="col-md-2">Check All <input type="checkbox" onclick="checkAll('chkClass{{$i}}')" class="chkClass{{$i}}"></div>
                                              </div>
-                                             <div class="row"  style="width:80%">
+                                             <div class="row">
                                              @foreach($data['data'][$header] as $key => $value)
                                              @php $val = $value->field_name.'/'.$value->id; @endphp
                                              <div class="col-md-2 pb-2"><input type="checkbox" name="dynamicFields[]" class="chkClass{{$i}}" value="{{$val}}" @if(isset($data['dynamicFields']) && in_array($val,$data['dynamicFields'])) checked @endif> {{$value->field_label}}</div>
