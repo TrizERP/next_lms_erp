@@ -53,43 +53,29 @@
                                     </div>
                                 <!-- end by uma -->
 
-                                <div class="col-md-12 form-group">
-                                    <div class="checkbox checkbox-info">
-                                        <input id="checkall" onclick="checkedAll();" name="checkall" type="checkbox">
-                                        <label for="checkall"> Check All </label>
-                                    </div>
-                                </div>
-                                @if(isset($data['data']))
-                                    @php
-                                        $checkedArray = array();
+                                @php 
+                                    $i=0;
+                                 @endphp
+                                    @foreach($data['data'] as $header => $headerValue)
+
+                                    @if(isset($data['data'][$header]) && !empty($data['data'][$header]))
+                                          <div class="col-md-12 form-group py-8">
+                                             <div class="row mb-4"  style="border-bottom:1px solid black">
+                                                <div class="col-md-4"><h4><b>{{$header}}</b></h5></div>
+                                                <div class="col-md-2">Check All <input type="checkbox" onclick="checkAll('chkClass{{$i}}')" class="chkClass{{$i}}"></div>
+                                             </div>
+                                             <div class="row"  style="width:80%">
+                                             @foreach($data['data'][$header] as $key => $value)
+                                             @php $val = $value->field_name.'/'.$value->id; @endphp
+                                             <div class="col-md-2 pb-2"><input type="checkbox" name="dynamicFields[]" class="chkClass{{$i}}" value="{{$val}}" @if(isset($data['dynamicFields']) && in_array($val,$data['dynamicFields'])) checked @endif> {{$value->field_label}}</div>
+                                             @endforeach
+                                             </div>
+                                          </div>
+                                    @endif
+                                    @php 
+                                          $i++;
                                     @endphp
-                                    @foreach($data['data'] as $key => $value)
-                                        <div class="form-group col-md-2 ml-0 mr-0">
-                                            <div class="custom-control custom-checkbox d-flex align-items-center">
-                                                @php
-                                                    $checked = '';
-                                                    if(in_array($key,$checkedArray)){
-                                                        $checked = 'checked="checked"';
-                                                    }
-                                                    if(isset($data['headers'])){
-                                                        if(count($data['headers']) > 0){
-                                                            $headersChecked = array_keys($data['headers']);
-                                                        }
-                                                        $checked = '';
-                                                        if(in_array($key,$headersChecked)){
-                                                            $checked = 'checked="checked"';
-                                                        }
-                                                    }
-                                                @endphp
-                                                <input id="{{$value->field_name}}" {{$checked}} value="{{$value->field_name}}"
-                                                       class="custom-control-input" name="dynamicFields[]"
-                                                       type="checkbox">
-                                                <label class="custom-control-label mb-0 pt-1"
-                                                       for="{{$value->field_name}}"> {{$value->field_label}} </label>
-                                            </div>
-                                        </div>
                                     @endforeach
-                                @endif
                                 <div class="col-md-12 form-group">
                                     <input type="submit" name="submit" value="Search" class="btn btn-success">
                                 </div>
@@ -133,17 +119,22 @@
 
     @include('includes.footerJs')
     <script>
-        var checked = false;
+        // var checked = false;
 
-        function checkedAll() {
-            if (checked == false) {
-                checked = true
-            } else {
-                checked = false
-            }
-            for (var i = 0; i < document.getElementsByName('dynamicFields[]').length; i++) {
-                document.getElementsByName('dynamicFields[]')[i].checked = checked;
-            }
+        // function checkedAll() {
+        //     if (checked == false) {
+        //         checked = true
+        //     } else {
+        //         checked = false
+        //     }
+        //     for (var i = 0; i < document.getElementsByName('dynamicFields[]').length; i++) {
+        //         document.getElementsByName('dynamicFields[]')[i].checked = checked;
+        //     }
+        // }
+        function checkAll(chkName){
+            $('.'+chkName).each(function() {
+                    $(this).prop('checked', !$(this).prop('checked'));
+                });
         }
     </script>
     <script>

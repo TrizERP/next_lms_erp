@@ -47,9 +47,14 @@ class studentReportController extends Controller
         $tblcustoms = DB::table("tblcustom_fields")
         ->whereRaw("status=1 AND (common_to_all= 1 or sub_institute_id=$sub_institute_id) AND is_deleted != 'Y'")
         ->where('user_type','student')
+        ->orderByRaw('tab_sort_order,sort_order')
         ->get()->toArray();    
-
-        return $tblcustoms;
+        
+        $headerType =[];
+        foreach ($tblcustoms as $key => $value) {
+            $headerType[$value->column_header][]=$value;
+        }
+        return $headerType;
     }
 
     public function searchStudent(Request $request)
@@ -78,7 +83,7 @@ class studentReportController extends Controller
         $defaultOrderBy = 'tblstudent.first_name';
 
         // Map dynamic fields and headers
-        $dynamicFields = $request->input('dynamicFields') ?? [];
+        $res['dynamicFields'] = $dynamicFields = $request->input('dynamicFields') ?? [];
         $searchArr1 = ['first_name', 'last_name', 'place_of_birth', 'student_mobile','optional_subjects','admission_year'];
         $replaceArr1 = ['First Name', 'Surname', get_string('birthplace','request'), get_string('studentmobile','request'),'Optional Subjects','Fees Year'];
 
@@ -100,19 +105,25 @@ class studentReportController extends Controller
             // if (!in_array($field, ["bloodgroup", "van", "optional_subjects", "roll_no","student_name","academic_year","religion_name","father_name","gender","mobile","email"])) {
             //     $array[] = $field;
             // }
+            $seprateValue  = explode("/",$field);
+            $fielValue = $seprateValue[0];
+            $fieldId = $seprateValue[1];
+
           $customDetails = DB::table("tblcustom_fields")
             ->whereRaw("status=1 AND (common_to_all= 1 or sub_institute_id=$sub_institute_id) AND is_deleted != 'Y'")
-            ->where('field_name',$field)
+            ->where('id',$fieldId)
             ->where('user_type','student')
             ->first();
-            if(!empty($customDetails) && !in_array($field,["student_name"])){
-                $array[] = $customDetails->table_name.".".$field;
-            }
-            if($field=="academic_year"){
+
+            if(!empty($customDetails) && !in_array($fielValue,["student_name"])){
+                $array[] = $customDetails->table_name.".".$fielValue." as ".str_ireplace(" ","_",$customDetails->field_label);
+                $makeKey = strtolower(str_replace(" ","_",$customDetails->field_label));
+                $header[$makeKey] = ucfirst(str_replace(['_'], [' '], str_replace($searchArr1, $replaceArr1, $customDetails->field_label)));
+            }else if($fielValue=="academic_year"){
                 $array[] = "academic_section.title as academic_year";
+                $header[$fielValue] = ucfirst(str_replace(['_'], [' '], str_replace($searchArr1, $replaceArr1, $fielValue)));
             }
             
-            $header[$field] = ucfirst(str_replace(['_'], [' '], str_replace($searchArr1, $replaceArr1, $field)));
         }
 
         // Additional conditions for ordering
@@ -127,11 +138,9 @@ class studentReportController extends Controller
         // Concatenated student name
         $array[] = 'CONCAT_WS(" ", tblstudent.first_name, tblstudent.middle_name, tblstudent.last_name) AS student_name';
       
-        // echo "<pre>";print_r($array);exit;
-
         // Query
         $student_data = DB::table('tblstudent')
-            ->select(DB::raw(implode(',', $array)))
+            ->select(DB::raw(strtolower(implode(',', $array))))
             ->join('tblstudent_enrollment', 'tblstudent.id', '=', 'tblstudent_enrollment.student_id')
             ->join('academic_section', 'academic_section.id', '=', 'tblstudent_enrollment.grade_id')
             ->join('standard', 'standard.id', '=', 'tblstudent_enrollment.standard_id')
@@ -170,7 +179,7 @@ class studentReportController extends Controller
             ->groupBy('tblstudent.id')
             ->get();
 
-            // echo "<pre>";print_r($student_data);exit;
+            // echo "<pre>";print_r($header);exit;
         $res['status_code'] = 1;
         $res['message'] = "Student List";
         $res['student_data'] = $student_data;
