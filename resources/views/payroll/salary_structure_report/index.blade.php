@@ -70,6 +70,7 @@
                         <table id="example" class="table table-striped">
                             <thead>
                             <tr>
+                                <th>Emp No</th>
                                 <th>Employee Name</th>
                                 <th>Year</th>
                                 @foreach($data['headers'] as $hkey => $header)
@@ -80,6 +81,7 @@
                             <tbody>
                             @foreach($data['salaryStructure'] as $key => $value)
                                 <tr>
+                                    <td>{{$value['employee_no']}}</td>
                                     <td>{{$value['employee_name']}}</td>
                                     <td>{{$value['year']}}</td>
                                     @php $jsonData = json_decode($value['employee_salary_data'],true); @endphp

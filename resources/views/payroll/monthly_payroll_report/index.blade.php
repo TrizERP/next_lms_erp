@@ -29,8 +29,8 @@
                                         <label>Employee List</label>
                                         <select id='employee_id' name="employee_id" class="form-control">
                                             <option value="0">Select Employee</option>
-                                            @foreach($employees as $key => $employee)
-                                                    <option value="{{$employee['id']}}" @if(isset($employee_id) && $employee_id==$employee['id']) selected @endif>{{$employee['first_name'] .' '. $employee['last_name']}} ({{$employee['user_profile']}})</option>
+                                            @foreach($data['employees'] as $key => $employee)
+                                                    <option value="{{$employee['id']}}" @if(isset($data['employee_id']) && $data['employee_id']==$employee['id']) selected @endif>{{$employee['first_name'] .' '. $employee['last_name']}} ({{$employee['user_profile']}})</option>
                                             @endforeach
                                         </select>
                                     </div>
@@ -38,8 +38,8 @@
                                         <label>Select Month</label>
                                         <select id='year' name="month" class="form-control">
                                             <option value="0">Select Month</option>
-                                            @foreach($months as $month)
-                                                @if(isset($list['month']) && $list['month'] == $month)
+                                            @foreach($data['months'] as $month)
+                                                @if(isset($data['list']['month']) && $data['list']['month'] == $month)
                                                     <option selected>{{$month}}</option>
                                                 @else
                                                     <option>{{$month}}</option>
@@ -51,8 +51,8 @@
                                         <label>Select Year</label>
                                         <select id='year' name="year" class="form-control">
                                             <option value="0">Select Year</option>
-                                            @foreach($years as $year)
-                                                @if(isset($list['year']) && $list['year'] == $year)
+                                            @foreach($data['years'] as $year)
+                                                @if(isset($data['list']['year']) && $data['list']['year'] == $year)
                                                     <option selected>{{$year}}</option>
                                                 @else
                                                     <option>{{$year}}</option>
@@ -68,10 +68,10 @@
                             </form>
                         </div>
             </div>
-            @if(isset($list['employeeName']))
+            @if(isset($data['list']['employeeName']))
                 @php
-                    if(isset($list['employeeName'])){
-                        $employeeName = $list['employeeName'];
+                    if(isset($data['list']['employeeName'])){
+                        $employeeName = $data['list']['employeeName'];
                     }
 
                 @endphp
@@ -82,9 +82,9 @@
                             <table id="example" class="table table-striped">
                                 <thead>
                                 <tr>
-                                    <th>Employee Id</th>
+                                    <th>Emp No</th>
                                     <th>Employee Name</th>
-                                    @foreach($header as $hkey => $col)
+                                    @foreach($data['header'] as $hkey => $col)
                                         <th class="text-left">{{$col}} </th>
                                     @endforeach
                                 </tr>
@@ -96,33 +96,33 @@
                                     <td>{{$employeeName['employee_no']}}</td>
                                     <td>{{$employeeName['first_name'] .' '.$employeeName['last_name']}}</td>
                                     <input type="hidden" name="employee_id" value="{{$employeeName['id']}}">
-                                    <input type="hidden" name="month" value="{{$list['month']}}">
-                                    <input type="hidden" name="year" value="{{$list['year']}}">
-                                    @foreach($header as $hkey => $col)
+                                    <input type="hidden" name="month" value="{{$data['list']['month']}}">
+                                    <input type="hidden" name="year" value="{{$data['list']['year']}}">
+                                    @foreach($data['header'] as $hkey => $col)
                                         @if($hkey == 'total_day')
-                                            <td class="d-flex"><input type="text" name="total_day" value="{{$total_day}}" @if($total_day!='') readonly @endif>
-                                                @if($hide_button)
+                                            <td class="d-flex"><input type="text" name="total_day" value="{{$data['total_day']}}" @if($data['total_day']!='') readonly @endif>
+                                                @if($data['hide_button'])
                                                     <input type="submit" name="add" class="btn btn-primary" value="add">
-                                                    <p style="color: red">{{isset($message) ?$message : ''}}</p>
+                                                    <p style="color: red">{{isset($data['message']) ?$data['message'] : ''}}</p>
                                                 @endif 
-                                                @if(!$hide_button)
+                                                @if(!$data['hide_button'])
                                                     <input type="submit" name="delete" class="btn btn-danger" value="X" style="padding: 0px;font-size: 0.6rem;width:20px;height:20px">
                                                 @endif
                                             </td>
-                                        @elseif(isset($employeeSalaryDetails[$hkey]) && $hkey != 'total_deduction' && $hkey != 'total_payment' && $hkey != 'received_by')
+                                        @elseif(isset($data['employeeSalaryDetails'][$hkey]) && $hkey != 'total_deduction' && $hkey != 'total_payment' && $hkey != 'received_by')
                                             <input type="hidden" name="emp[id]" value="{{$employeeName['id']}}">
                                             <input type="hidden" name="emp[salary][{{$hkey}}]"
-                                                   value="{{$employeeSalaryDetails[$hkey]}}">
-                                            <td>{{$employeeSalaryDetails[$hkey]}}</td>
+                                                   value="{{$data['employeeSalaryDetails'][$hkey]}}">
+                                            <td>{{$data['employeeSalaryDetails'][$hkey]}}</td>
                                         @else
                                         
                                             @if($hkey == 'total_deduction')
-                                                <input type="hidden" name="emp[{{$hkey}}]" value="{{$totaldeduction}}">
-                                                <td>{{$totaldeduction}}</td>
+                                                <input type="hidden" name="emp[{{$hkey}}]" value="{{$data['totaldeduction']}}">
+                                                <td>{{$data['totaldeduction']}}</td>
                                             @elseif($hkey == 'total_payment')
                                                 <input type="hidden" name="emp[{{$hkey}}]"
-                                                       value="{{$totalallowance - $totaldeduction}}">
-                                                <td>{{$totalallowance - $totaldeduction}}</td>
+                                                       value="{{$data['totalallowance'] - $data['totaldeduction']}}">
+                                                <td>{{$data['totalallowance'] - $data['totaldeduction']}}</td>
                                                 @else
                                                 <td>0</td>
                                             @endif
@@ -133,12 +133,12 @@
 
 
                             </table>
-                            @if($hide_button)
+                            @if($data['hide_button'])
                                 <input type="submit" name="save" value="save" class="btn btn-success" >
                             @endif
-                            @if(!$hide_button)
-                                <a href="{{url('monthly-payroll-report/pdf').'/'.$employeeName['id'].'/'.$list['month'].'/'.$list['year']}}"
-                                   class="btn btn-primary">pdf</a>
+                            @if(!$data['hide_button'])
+                                <a href="{{url('monthly-payroll-report/pdf').'/'.$employeeName['id'].'/'.$data['list']['month'].'/'.$data['list']['year']}}"
+                                   class="btn btn-primary">pdf</a> 
                             @endif
                         </form>
                     </div>

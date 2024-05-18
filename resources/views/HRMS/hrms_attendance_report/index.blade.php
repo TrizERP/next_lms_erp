@@ -107,7 +107,7 @@
                         <tr>
                             <th>Sr No.</th>
                             <th>Date</th>
-                            <th>Employee Id</th>
+                            <th>Emp No</th>
                             <th>Employee Name</th>
                             <th>In Time</th>
                             <th>Out Time</th>
@@ -223,7 +223,7 @@
                                     <tr style="{{ $att_status }}">
                                         <td>{{ $j++ }}</td>
                                         <td>{{date('d-m-Y',strtotime($date))}}</td>
-                                        <td>{{ isset($hrmsAttendance->user_id) ? $hrmsAttendance->user_id : '' }}</td>
+                                        <td>{{ isset($hrmsAttendance->employee_no) ? $hrmsAttendance->employee_no : '' }}</td>
                                         <td>{{ isset($hrmsAttendance->employee_name) ? $hrmsAttendance->employee_name : '' }}</td>
                                         <td>{{ isset($hrmsAttendance->punchin_time) ? \Carbon\Carbon::parse($hrmsAttendance->punchin_time)->format('h:i A') : 'N/A' }}</td>
                                         <td>{{ isset($hrmsAttendance->punchout_time) ? \Carbon\Carbon::parse($hrmsAttendance->punchout_time)->format('h:i A') : 'N/A' }}</td>
