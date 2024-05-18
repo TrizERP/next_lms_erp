@@ -90,7 +90,8 @@
                             <th>Applied Date</th>
                             <th>From Date</th>
                             <th>To Date</th>
-                            <th>Employee Name</th>
+                            <th>Emp No</th>
+                            <th>Emp Name</th>
                             <th>No of Days</th>
                             <th>Leave Type</th>
                             <th>Status</th>
@@ -113,6 +114,7 @@
                                     <td>{{ \Carbon\Carbon::parse($get_employee_leave_list->created_at)->format('d-M-Y') }}</td>
                                     <td>{{ \Carbon\Carbon::parse($get_employee_leave_list->from_date)->format('d-M-Y') }}</td>
                                     <td>{{ \Carbon\Carbon::parse($get_employee_leave_list->to_date)->format('d-M-Y') }}</td>
+                                    <td>{{ $get_employee_leave_list->employee_no }}</td>
                                     <td>{{ $get_employee_leave_list->employee_name }}</td>
                                     <td>{{ $get_employee_leave_list->day_type }}</td>
                                     <td>{{ $get_employee_leave_list->leave_type }}</td>

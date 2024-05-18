@@ -50,27 +50,17 @@
                             <label>Select Year</label>
                             <select id='year' name="year" class="form-control" required>
                                 <option>Select Year</option>
-                                <option value="2020" @if(isset($data['year']) && $data['year'] == '2020') selected @endif>2020-2021</option>
-                                <option value="2021" @if(isset($data['year']) && $data['year'] == '2021') selected @endif>2021-2022</option>
-                                <option value="2022" @if(isset($data['year']) && $data['year'] == '2022') selected @endif>2022-2023</option>
-                                <option value="2023" @if(isset($data['year']) && $data['year'] == '2023') selected @endif>2023-2024</option>
+                               @foreach($data['years'] as $key=>$value)
+                               <option value="{{$value}}" {{ (isset($data['year']) && $data['year']==$value) ? 'Selected' : '' }}>{{$value}}</option>
+                               @endforeach
                             </select>
                         </div>
                         <div class="col-md-4 form-group">
                             <label>Month</label>
                             <select id='month_id' name="month_id[]" class="form-control" multiple required>
-                                <option value="1" selected>January</option>
-                                <option value="2">February</option>
-                                <option value="3">March</option>
-                                <option value="4">April</option>
-                                <option value="5">May</option>
-                                <option value="6">June</option>
-                                <option value="7">July</option>
-                                <option value="8">August</option>
-                                <option value="9">September</option>
-                                <option value="10">October</option>
-                                <option value="11">November</option>
-                                <option value="12">December</option>
+                                @foreach($data['month_ids'] as $key=>$value)
+                                <option value="{{$key}}" @if(isset($data['selMonths']) && in_array($key,$data['selMonths']))  Selected @elseif(!isset($data['selMonths']) && $key==1) Selected @endif>{{$value}}</option>
+                               @endforeach
                             </select>
                         </div>
                         <div class="col-md-4 form-group">
