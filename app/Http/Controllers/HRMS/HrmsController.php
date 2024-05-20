@@ -32,15 +32,15 @@ class HrmsController extends Controller
     {
         $type = $request->input('type');
         if ($id) {
-            $hrmsJobTitle = HrmsJobTitle::find($id);
-            return is_mobile($type, "HRMS.hrms_job_title.create", compact('hrmsJobTitle'), "view",'compact');
+            $res = HrmsJobTitle::find($id);
+            return is_mobile($type, "HRMS.hrms_job_title.create", $res, "view");
             //return view('HRMS.hrms_job_title.create', compact('hrmsJobTitle'));
         }
         $hrmsJobTitle['title'] = '';
         $hrmsJobTitle['description'] = '';
         $hrmsJobTitle['is_active'] = 1;
         $hrmsJobTitle['id'] = 0;
-        return is_mobile($type, "HRMS.hrms_job_title.create", compact('hrmsJobTitle'), "view",'compact');
+        return is_mobile($type, "HRMS.hrms_job_title.create", $hrmsJobTitle, "view");
         //return view('HRMS.hrms_job_title.create', compact('hrmsJobTitle'));
     }
 
@@ -66,7 +66,7 @@ class HrmsController extends Controller
         $hrmsJobTitle->client_id = $clientId;
         $hrmsJobTitle->is_active = $request->status;
         $hrmsJobTitle->save();
-        return is_mobile($type, "hrms-job-title", null, "redirect");
+        return is_mobile($type, "hrms_job_title.index", null, "redirect");
 //        return redirect('hrms-job-title');
     }
 

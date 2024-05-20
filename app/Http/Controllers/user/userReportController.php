@@ -41,13 +41,18 @@ class userReportController extends Controller
 
     public function customFields(Request $request)
     {
-        $sub_institute_id= session()->get('sub_institute_id');
+        $sub_institute_id = session()->get('sub_institute_id');
         $tblcustoms = DB::table("tblcustom_fields")
         ->whereRaw("status=1 AND (common_to_all= 1 or sub_institute_id=$sub_institute_id) AND is_deleted != 'Y'")
         ->where('user_type','staff')
-        ->get()->toArray();  
-
-        return $tblcustoms;
+        ->orderByRaw('tab_sort_order,sort_order')
+        ->get()->toArray();    
+        
+        $headerType =[];
+        foreach ($tblcustoms as $key => $value) {
+            $headerType[$value->column_header][]=$value;
+        }
+        return $headerType;
 
     }
 
@@ -73,19 +78,26 @@ class userReportController extends Controller
 
             return is_mobile($type, "user_report.index", $res);
         }
-        foreach ($request->input('dynamicFields') as $key => $value) {
+        foreach ($request->input('dynamicFields') as $key => $fieldValue) {
+            $seprateVal = explode('/',$fieldValue);
+            $value = $seprateVal[0];
+            $fieldId = $seprateVal[1];
             $value1 = str_replace($searchArr, $replaceArr, $value);
-            $header[$value] = ucfirst($value1);
             if($value=="user_name"){
                 $array[] = 'CONCAT_WS(" ", tbluser.first_name, tbluser.middle_name, tbluser.last_name) AS user_name';
+                $header[$value] = ucfirst($value1);
             }else{
                 $customDetails = DB::table("tblcustom_fields")
                 ->whereRaw("status=1 AND (common_to_all= 1 or sub_institute_id=$sub_institute_id) AND is_deleted != 'Y'")
-                ->where('field_name',$value)
+                ->where('id',$fieldId)
                 ->where('user_type','staff')
                 ->first();
                 if(!empty($customDetails) && !in_array($value,["user_name"])){
-                    $array[] = $customDetails->table_name.".".$value;
+                    $array[] = $customDetails->table_name.".".$value." as ".str_ireplace(" ","_",$customDetails->field_label);
+                    $makeKey = strtolower(str_replace(" ","_",$customDetails->field_label));
+                    $header[$makeKey] = ucfirst(str_replace(['_'], [' '], str_replace($searchArr, $replaceArr, $customDetails->field_label)));
+                }else{
+                    $header[$value] = ucfirst($value1);
                 }
             }
         }
@@ -94,10 +106,13 @@ class userReportController extends Controller
         $extraSearchArray['tbluser.status'] = $status;
         $extraSearchArray['tbluser.user_profile_id'] = $profile;
 
-        $user_data = tbluserModel::select(DB::raw(implode(',', $array)))
+        $user_data = tbluserModel::select(DB::raw(strtolower(implode(',', $array))))
             ->join('tbluserprofilemaster', 'tbluser.user_profile_id', '=', 'tbluserprofilemaster.id')
+            ->leftJoin('hrms_departments','hrms_departments.id','=','tbluser.department_id')
+            ->leftJoin('tbluser_past_education','tbluser_past_education.user_id','=','tbluser.id')
             ->where($extraSearchArray)
             ->get();
+            // echo "<pre>";print_r($header);exit;
         
         $res['status_code'] = 1;
         $res['message'] = "Student List";
@@ -107,6 +122,7 @@ class userReportController extends Controller
         $res['profiles'] = $tblProfiles;
         $res['profile'] = $profile;
         $res['status'] = $status;
+        $res['dynamicFields']= $request->input('dynamicFields');
 
         return is_mobile($type, "user/show_user_report", $res, "view");
 
