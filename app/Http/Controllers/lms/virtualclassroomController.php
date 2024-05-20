@@ -15,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
 use function App\Helpers\sendNotification;
+use Illuminate\Support\Facades\Storage;
 
 class virtualclassroomController extends Controller
 {
@@ -70,7 +71,7 @@ class virtualclassroomController extends Controller
     {
         $marking_period_id=session()->get('term_id');
         $breadcrum_data = DB::table('chapter_master as c')
-            ->join('sub_std_map as s', function ($join) use($main_topic_id){
+            ->join('sub_std_map as s', function ($join) use($topic_id){
                 $join->whereRaw('s.subject_id = c.subject_id AND s.standard_id = c.standard_id');
                 // ->when($marking_period_id,function($query) use($marking_period_id){
                 //     $query->where('s.marking_period_id',$marking_period_id);
@@ -205,7 +206,8 @@ class virtualclassroomController extends Controller
             $size = $img->getSize();
             $newfilename = 'lms_'.date('Y-m-d_h-i-s').'.'.$ext;
             //$img->move(public_path().'/lms_content_file/',$newfilename);
-            $img->storeAs('public/lms_content_file/', $newfilename);
+            // $img->storeAs('public/lms_content_file/', $newfilename); 20-05-24
+            Storage::disk('digitalocean')->putFileAs('public/lms_content_file/', $img, $newfilename, 'public');
 
             $image_data = array(
                 'file_folder' => '/lms_content_file',

@@ -67,7 +67,7 @@
                                             <td>{{$portfolio['title']}}</td>
                                             <td>{{$portfolio['description']}}</td>
                                             <td>{{$portfolio['type']}}</td>
-                                            <td>@if($portfolio['file_name'] != ""){{$portfolio['file_name']}}@else
+                                            <td>@if($portfolio['file_name'] != "")<a href="{{ Storage::disk('digitalocean')->url('public/lms_content_file/'.$portfolio['file_name'])}}" target="_blank">{{$portfolio['file_name']}}</s>@else
                                                     - @endif</td>
                                             <td>{{$portfolio['created_at']}}</td>
                                             <td>{{$portfolio['feedback']}} - {{$portfolio['teacher_name']}}</td>
