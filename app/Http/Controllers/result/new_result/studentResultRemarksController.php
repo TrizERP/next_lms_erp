@@ -29,7 +29,7 @@ class studentResultRemarksController extends Controller
         $term = $request->input('term');
 
         $get_students = DB::table('tblstudent_enrollment as te')
-            ->selectRaw('u.*, te.id as gr_number, rr.result_remarks')
+            ->selectRaw('u.*,te.roll_no, te.id as gr_number, rr.result_remarks')
             ->join('tblstudent as u', function ($join) {
                 $join->on('u.id', '=', 'te.student_id');
             })

@@ -31,7 +31,7 @@ class HrmsLeaveController extends Controller
                         ->join('hrms_leave_types as hlt','hlt.id','=','hla.leave_type_id')
                         ->where('hla.sub_institute_id',$sub_institute_id)->where('hla.year',$syear)->get()->toArray();
 
-        return is_mobile($type, "HRMS\hrms_leave\hrms_leave_allocation\show", $res, "view");
+        return is_mobile($type, "HRMS.hrms_leave.hrms_leave_allocation.show", $res, "view");
     }
 
     public function create(Request $request){
