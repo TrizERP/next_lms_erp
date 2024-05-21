@@ -222,7 +222,7 @@
                                 <input type="file" id='filename' name="filename" class="form-control" onChange='getFileNameWithExt(event)'>
 
                                 @if( isset($data['content_data']['filename']) && $data['content_data']['filename'] != "" && $data['content_data']['file_type'] != "link" )
-                                <a target="_blank" href="../../../storage{{$data['content_data']['file_folder']}}/{{$data['content_data']['filename']}}">{{$data['content_data']['filename']}}</a>
+                                <a target="_blank" href="{{Storage::disk('digitalocean')->url('public'.$data['content_data']['file_folder'].'/'.$data['content_data']['filename'])}}">{{$data['content_data']['filename']}}</a>
                                 <input type="hidden" name="hid_filename" id="hid_filename" value="{{$data['content_data']['file_folder']}}/{{$data['content_data']['filename']}}">
                                 @endif
                             </div>

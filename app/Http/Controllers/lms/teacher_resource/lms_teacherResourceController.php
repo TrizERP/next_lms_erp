@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use DB;
 use Illuminate\Http\Response;
 use function App\Helpers\is_mobile;
+use Illuminate\Support\Facades\Storage;
 
 class lms_teacherResourceController extends Controller
 {
@@ -111,7 +112,8 @@ class lms_teacherResourceController extends Controller
             $file_folder = '/lms_teacher_resource';
             $newfilename = 'lms_'.date('Y-m-d_h-i-s').'.'.$ext;                        
             //$img->move(public_path().'/lms_content_file/',$newfilename);
-            $img->storeAs('public'.$file_folder.'/',$newfilename);
+            // $img->storeAs('public'.$file_folder.'/',$newfilename); 20-05-24
+            Storage::disk('digitalocean')->putFileAs('public/lms_content_file/', $img, $newfilename, 'public');
         }         
 
         $TR_data = array(            

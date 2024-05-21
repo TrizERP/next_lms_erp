@@ -58,7 +58,7 @@
                                 <td>@if(isset($chdata->sub_topic_name)){{$chdata->sub_topic_name}}@else - @endif</td>
                                 <td>{{$chdata->title}}</td>
                                 <td>{{$chdata->content_category}}</td>
-                                <td><a target="_blank" href="../../../storage{{$chdata->file_folder}}/{{$chdata->filename}}">{{$chdata->filename}}</a></td>
+                                <td><a target="_blank" href="{{ Storage::disk('digitalocean')->url('public'.$chdata->file_folder.'/'.$chdata->filename)}}">{{$chdata->filename}}</a></td>
                                 <td>
                                     @if($chdata->show_hide == 1)
                                     Show
