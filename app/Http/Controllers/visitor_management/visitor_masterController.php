@@ -11,6 +11,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use function App\Helpers\is_mobile;
+use function App\Helpers\SearchStudent;
+use App\Http\Controllers\api\apiController;
 
 class visitor_masterController extends Controller
 {
@@ -98,17 +100,25 @@ class visitor_masterController extends Controller
     {
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
+        $syear = $request->session()->get('syear');
+        
         $data['visitor_type_data'] = visitor_typeModel::where(['sub_institute_id' => $sub_institute_id])->get();
         $data['to_meet_array'] = tbluserModel::select(
             'id', DB::raw('concat(first_name," ",middle_name," ",last_name) as staff_name')
         )
             ->where(['sub_institute_id' => $sub_institute_id, 'status' => 1])->get();
+        
+        $data['studentData'] = DB::table('tblstudent as ts')
+            ->join('tblstudent_enrollment as tse','tse.student_id','=','ts.id')
+            ->selectRaw('ts.id,ts.enrollment_no,CONCAT_WS(" ",COALESCE(ts.first_name,"-"),COALESCE(ts.middle_name,"-"),COALESCE(ts.last_name,"-")) as student_name,ts.mobile')
+            ->where(['ts.sub_institute_id'=>$sub_institute_id,'tse.syear'=>$syear])->get()->toArray();
 
         return is_mobile($type, 'visitor_management/add_visitor_master', $data, "view");
     }
 
     public function store(Request $request)
     {
+        // echo "<pre>";print_r($request->all());exit;
         $type = $request->get('type');
 
         if ($type != "API") {
@@ -340,6 +350,157 @@ class visitor_masterController extends Controller
                 }
             }
         }
+    }
+
+    public function getStudent(Request $request){
+        // echo "<pre>";print_r($request->all());exit;
+        $type = $request->get('type');
+        if ($type != "API") {
+            $sub_institute_id = $request->session()->get('sub_institute_id');
+        } else {
+            $sub_institute_id = $request->sub_institute_id;
+        }
+       
+        $res['student_name']=$NameEnroll = $request->student_name;
+        $res['mobile']=$MobileEnroll = $request->mobile;
+        
+        $explodeName = explode(' ',$NameEnroll);
+        $first_name = $explodeName[0] ?? '';
+        $res['studentData'] = SearchStudent("","","",$sub_institute_id,"","",$first_name, "", $MobileEnroll, "","", "");
+        // echo "<pre>";print_r($res['studentData']);exit;
+        if(empty($res['studentData'])){
+            $res['status_code'] = "0";
+            $res["message"]="Student Not Found";
+            return is_mobile($type, "add_visitor_master.index", $res, "redirect");
+        }else{
+            $res['status_code'] = "1";
+            $res["message"]="Student Found successfully";
+            return is_mobile($type, "visitor_management.sendOTP", $res, "view");
+        }
+    }
+
+    public function sendOTPVisitor(Request $request){
+        $type=$request->type;
+        $student_id = $request->student_id;
+        $mobile = $request->mobile;
+        $sub_institute_id = session()->get('sub_institute_id');
+
+        if($type=="API"){
+            $sub_institute_id = $request->sub_institute_id;
+        }
+
+        // send OTP
+        $dataOTP = DB::table("tblstudent")
+        ->where(['id'=>$student_id,'mobile'=>$mobile])
+        ->value("otp");
+
+        if($dataOTP == null || $dataOTP == ''){
+            $otp = rand(100000, 999999);
+        }else{
+            $otp = $dataOTP;
+        }
+        // echo "<pre>";print_r($otp);exit;
+        if ($sub_institute_id == 49 || $sub_institute_id == 232 || $sub_institute_id == 233) {
+            $text = "Dear Student Your Application Login OTP is ".$otp;
+        }
+        else if($sub_institute_id == 47){
+            $text = "Dear Parent, Your OTP is ".$otp.". MULJIM";
+        }
+        else {
+            $text = "OTP for login is ".$otp." and is valid for 5 minutes";
+        }
+
+        $apiController = new apiController;
+        $res = $apiController->sendSMS($mobile, $text, $sub_institute_id);
+        // echo "<pre>";print_r($res);exit;
+        if ($res["error"] == 1) {
+            $errorMessage = "Please add api details first.";
+            if ($res["error"] == $errorMessage) {
+                $otp = "123456";
+            }
+            $response['message'] = $res["message"];
+
+            $response['status'] = '0';
+            $response['otp'] = $otp;
+        }else{
+            $data = DB::table("tblstudent")
+            ->where(['id'=>$student_id,'mobile'=>$mobile])
+            ->update(["otp" => $otp]);
+
+            $response['status'] = '1';
+            $response['message'] = 'success';
+            $response['otp'] = $otp;
+        }
+
+        return $response;
+    }
+
+    public function confirmOTP(Request $request){
+        $type= $request->type;
+        $sub_institute_id=session()->get('sub_institute_id');
+        if($type=="API"){
+            try {
+                if (! $this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+
+                return response()->json($response, 401);
+            }
+            $sub_institute_id=$request->sub_institute_id;
+        }
+        $person_name = $request->person_name;
+        $relation = $request->relation;
+        $enteredOTP = implode(',',$request->enteredOTP);
+        $enteredOTP = str_ireplace(',','',$enteredOTP);
+        $student_id = $request->student_id;
+        // get opt from tblstudent
+        $studata = DB::table('tblstudent')->where('id',$student_id)->first();
+
+        if(isset($studata->otp) && $studata->otp==$enteredOTP){
+
+             $visitor = [
+                'appointment_type' => "pickup",
+                'visitor_type'     => 10, // parent
+                'name'             => $person_name,
+                'contact'          => $studata->mobile,
+                'email'            => $studata->email,
+                'coming_from'      => $studata->city ?? '-',
+                'to_meet'          => $studata->id,
+                'relation'         => $relation,
+                'purpose'          => "pickup",
+                'visitor_idcard'   => 0,
+                'sub_institute_id' => $sub_institute_id,
+                'exit_msg_sent'    => 'Y',
+                'created_at'       => now(),
+            ];
+    
+            $visitor_id = visitor_masterModel::insertGetId($visitor);
+            $res = [
+                "status_code" => 1,
+                "message"     => "Visitor details Added Successfully",
+            ];
+
+            return is_mobile($type, "add_visitor_master.index", $res, "redirect");
+        }else{
+        
+            if($type=="API"){
+                $res['status_code'] = 0;
+                $res['message'] = "Failed";
+                return is_mobile($type, "visitor_management.get_student", $res, "redirect");
+            }else{
+                $request->merge(['type'=>'API','sub_institute_id'=>$sub_institute_id,'radioType' => 'pickUp','student_name' => $request->student_name,'mobile' => $request->mobile,'error' => "error"]);
+                $data = $this->getStudent($request);
+                // echo "<pre>";print_r(json_decode($data,true));exit;
+                $res = json_decode($data,true);
+                $res['error'] = "error";
+                return is_mobile($type, "visitor_management.sendOTP", $res, "view");
+            }
+        }
+       
     }
 
     public function send_sms($url)
