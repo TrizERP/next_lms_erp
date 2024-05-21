@@ -255,10 +255,10 @@ use DB;
                         <div class="row chapter-content-box my-2 py-2 mx-0">
                             <div class="col-md-1 chapter-img-box">
                                 @php
-                                    if ( $single_content['url'] != '' ) {
+                                    if ($single_content['url'] != '' ) {
                                         $content_file_url = $single_content['url'];
                                     } else {
-                                        $content_file_url = url('storage'.$single_content['file_folder'].'/'.$single_content['filename']);
+                                        $content_file_url = Storage::disk('digitalocean')->url('public/'.$single_content['file_folder'].'/'.$single_content['filename']);
                                     }
                                     $icons = ['pdf'=> 'mdi mdi-file-pdf-box', 'mp4' => 'mdi mdi-video','link' => 'mdi mdi-file-link', 'html' => 'mdi mdi-language-html5', 'mov' => 'mdi mdi-movie', 'docx' => 'mdi mdi-file-document' ];
                                     $ext = pathinfo($single_content['title'], PATHINFO_EXTENSION);
