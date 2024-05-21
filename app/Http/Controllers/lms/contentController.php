@@ -568,10 +568,12 @@ class contentController extends Controller
         $image_data = [];
         if ($request->hasFile('filename')) {
             if ($request->has('hid_filename')) {
-                // if (file_exists($filePath.$request->hasFile('filename'))){
-                // unlink('storage'.$request->input('hid_filename'));
-                // }
+                /* if (file_exists($filePath.$request->hasFile('filename'))){
+                 unlink('storage'.$request->input('hid_filename'));
+                }*/
+
                 // delete file from digital ocean 
+                /*
                 $digiPath  = 'public/' . $request->has('hid_filename');
                 if (Storage::disk('digitalocean')->exists($digiPath)) {
                     Storage::disk('digitalocean')->delete($digiPath);
@@ -579,6 +581,7 @@ class contentController extends Controller
                         $message="file deleted";
                     }   
                 } 
+                */
             }
             $img = $request->file('filename');
             $filename = $img->getClientOriginalName();
