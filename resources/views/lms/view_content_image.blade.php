@@ -17,7 +17,7 @@
                 <div class="video-box mb-4">
                     <div class="embed-responsive embed-responsive-16by9">
                         <iframe id="main_div" autoplay="false" class="embed-responsive-item"
-                        src="../../../storage{{$data['content_data']['file_folder']}}/{{$data['content_data']['filename']}}#toolbar=0&navpanes=0"
+                        src="{{Storage::disk('digitalocean')->url('public'.$data['content_data']['file_folder'].'/'.$data['content_data']['filename'])}}#toolbar=0&navpanes=0"
                         allowfullscreen onload="injectJS();"></iframe>
                     </div>
                 </div>

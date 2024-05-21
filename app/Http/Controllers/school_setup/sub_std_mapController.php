@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
 use function App\Helpers\ValidateInsertData;
+use Illuminate\Support\Facades\Storage;
 
 class sub_std_mapController extends Controller
 {
@@ -97,7 +98,8 @@ class sub_std_mapController extends Controller
             $newfilename = 'SubStdMap_'.date('Y-m-d_h-i-s').'.'.$ext;
             $file_folder = '/SubStdMapping';
             //$img->move(public_path().'/lms_content_file/',$newfilename);
-            $img->storeAs('public/SubStdMapping/', $newfilename);
+            // $img->storeAs('public/SubStdMapping/', $newfilename); 20-05-24
+            Storage::disk('digitalocean')->putFileAs('public/lms_content_file/', $img, $newfilename, 'public');
         }
 
         foreach ($standard_id as $key => $stdval) {
@@ -178,7 +180,8 @@ class sub_std_mapController extends Controller
             $newfilename = 'SubStdMap_'.date('Y-m-d_h-i-s').'.'.$ext;
             $file_folder = '/SubStdMapping';
             //$img->move(public_path().'/lms_content_file/',$newfilename);
-            $img->storeAs('public/SubStdMapping/', $newfilename);
+            // $img->storeAs('public/SubStdMapping/', $newfilename); 20-05-24
+            Storage::disk('digitalocean')->putFileAs('public/lms_content_file/', $img, $newfilename, 'public');
 
             $data = [
                 'standard_id'      => $finalStdId,

@@ -6,7 +6,7 @@
 <!-- Content main Section -->
 <div class="content-main flex-fill">
     <div id="pdf-viewer"></div>
-    <input type="hidden" name="hid_url" id="hid_url" value="../../../storage{{$data['content_data']['file_folder']}}/{{$data['content_data']['filename']}}#toolbar=0&navpanes=0">
+    <input type="hidden" name="hid_url" id="hid_url" value="{{Storage::disk('digitalocean')->url('public'.$data['content_data']['file_folder'].'/'.$data['content_data']['filename'])}}#toolbar=0&navpanes=0">
 </div>
 <!-- <div class="content-main flex-fill">
     <h1 class="h4 mb-3">LMS</h1>
