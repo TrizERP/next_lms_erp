@@ -118,7 +118,7 @@
                         @foreach($fees_data as $key => $fees_value)
                         @php
 
-                             $finalFees = ' (' .$fees_value['annual_fees_narration'] . $fees_value['tf'] . $fees_value['tuition_fees_narration'] . ') ';
+                             $finalFees = ' (' .$fees_value['admission_fees_narration'] . $fees_value['academic_fees_narration'] . $fees_value['tf'] . $fees_value['tuition_fees_narration'] . ') ';
                              $finalFees = rtrim($finalFees,' , )');
                              $finalFees .= ')';
 
@@ -150,7 +150,7 @@
                                 @endphp    
                             @endif
 
-                            @if($fees_value['annual_fees'] != '' && $fees_value['annual_fees'] > 0)
+                            @if($fees_value['admission_fees'] != '' && $fees_value['admission_fees'] > 0)
                                 @php  
                                     $showLedger = 1;
                                 @endphp    
@@ -158,8 +158,8 @@
                                     <td>Receipt</td>
                                     <td>{{$fees_value['vchno']}}</td>
                                     <td>{{date('d-M-y', strtotime($fees_value['receiptdate']))}}</td>
-                                    <td>Academic Fee</td>
-                                    <td>{{$fees_value['annual_fees']}}</td>
+                                    <td>Admission Fee</td>
+                                    <td>{{$fees_value['admission_fees']}}</td>
                                     <td></td>
                                     <td>{{$fees_value['cheque_no']}}</td>
                                     <td>{{date('d-M-y', strtotime($fees_value['cheque_date']))}}</td>
@@ -171,7 +171,33 @@
                                 <td></td>    
                                     @endif
                                 @php
-                                    $finalAmount = $finalAmount + $fees_value['annual_fees'];
+                                    $finalAmount = $finalAmount + $fees_value['admission_fees'];
+                                @endphp    
+                                </tr> 
+                            @endif
+
+                            @if($fees_value['academic_fees'] != '' && $fees_value['academic_fees'] > 0)
+                                @php  
+                                    $showLedger = 1;
+                                @endphp    
+                                <tr>
+                                    <td>Receipt</td>
+                                    <td>{{$fees_value['vchno']}}</td>
+                                    <td>{{date('d-M-y', strtotime($fees_value['receiptdate']))}}</td>
+                                    <td>Academic Fee</td>
+                                    <td>{{$fees_value['academic_fees']}}</td>
+                                    <td></td>
+                                    <td>{{$fees_value['cheque_no']}}</td>
+                                    <td>{{date('d-M-y', strtotime($fees_value['cheque_date']))}}</td>
+                                    <td>{{$fees_value['cheque_bank_name']}}</td>
+                                    <td>{{$fees_value['bank_branch']}}</td>
+                                    @if($showNarration == 0)
+                            <td>{{$fees_value['student_name']}} - {{$fees_value['std_name']}} - {{$fees_value['div_name']}} - {{$finalFees}}</td>
+                                    @else
+                                <td></td>    
+                                    @endif
+                                @php
+                                    $finalAmount = $finalAmount + $fees_value['academic_fees'];
                                 @endphp    
                                 </tr> 
                             @endif
@@ -194,7 +220,7 @@
                                     <td></td>
                                 </tr>
                                 @php
-                                    $finalAmount = $finalAmount + $fees_value['tot_fees_discount'];
+                                    $finalAmount = $finalAmount - $fees_value['tot_fees_discount'];
                                 @endphp    
                             @endif 
 
