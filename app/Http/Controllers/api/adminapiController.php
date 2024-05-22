@@ -2670,7 +2670,7 @@ class adminapiController extends Controller
                 ->selectRaw('COUNT(*) AS total_record,group_concat(stu_image) as stu_images')
                 ->where('student_id', $student_id)
                 ->where('sub_institute_id', $sub_institute_id)
-                ->where('syear', $syear)->get()->toArray();
+                ->where('syear', $syear)->where('type_id',$request->type_id)->get()->toArray();
 
             if ($check_data[0]->total_record > 0) {
                 $files_array = explode(',', $check_data[0]->stu_images);
@@ -2686,7 +2686,7 @@ class adminapiController extends Controller
                 $delete_record = DB::table('student_capture_photos')
                     ->where('student_id', $student_id)
                     ->where('sub_institute_id', $sub_institute_id)
-                    ->where('syear', $syear)->delete();
+                    ->where('syear', $syear)->where('type_id',$request->type_id)->delete();
 
                 if ($request->hasFile('stu_image')) {
                     foreach ($request->file('stu_image') as $key => $file_data) {
@@ -2705,6 +2705,7 @@ class adminapiController extends Controller
                         $data['sub_institute_id'] = $sub_institute_id;
                         $data['student_id'] = $student_id;
                         $data['stu_image'] = $file_name;
+                        $data['type_id'] = $request->type_id ?? null;
                         $data['created_on'] = date('Y-m-d_h-i-s');
 
                         studentCapturePhotosModel::insert($data);
@@ -2730,6 +2731,7 @@ class adminapiController extends Controller
                         $data['sub_institute_id'] = $sub_institute_id;
                         $data['student_id'] = $student_id;
                         $data['stu_image'] = $file_name;
+                        $data['type_id'] = $request->type_id ?? null;
                         $data['created_on'] = date('Y-m-d_h-i-s');
 
                         studentCapturePhotosModel::insert($data);
@@ -2894,6 +2896,9 @@ class adminapiController extends Controller
                     CONCAT('http://".$_SERVER['SERVER_NAME']."/storage/capture_photos/".$student_id."/',s.stu_image)) as stu_image")
                 ->where('s.student_id', $student_id)
                 ->where('s.sub_institute_id', $sub_institute_id)
+                ->when($request->type_id,function($query) use($request){
+                    $query->where('type_id',$request->type_id);
+                })
                 ->where('s.syear', $syear)->get()->toArray();
 
             if (count($data) > 0) {
