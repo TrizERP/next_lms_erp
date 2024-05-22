@@ -583,6 +583,7 @@ class contentController extends Controller
                 } 
                 */
             }
+
             $img = $request->file('filename');
             $filename = $img->getClientOriginalName();
             $ext = $img->getClientOriginalExtension();
