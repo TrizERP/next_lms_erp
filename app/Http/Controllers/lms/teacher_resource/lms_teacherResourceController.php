@@ -113,7 +113,7 @@ class lms_teacherResourceController extends Controller
             $newfilename = 'lms_'.date('Y-m-d_h-i-s').'.'.$ext;                        
             //$img->move(public_path().'/lms_content_file/',$newfilename);
             // $img->storeAs('public'.$file_folder.'/',$newfilename); 20-05-24
-            Storage::disk('digitalocean')->putFileAs('public/lms_content_file/', $img, $newfilename, 'public');
+            Storage::disk('digitalocean')->putFileAs('public/lms_teacher_resource/', $img, $newfilename, 'public');
         }         
 
         $TR_data = array(            

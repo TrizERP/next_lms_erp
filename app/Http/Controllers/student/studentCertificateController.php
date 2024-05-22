@@ -690,6 +690,7 @@ class studentCertificateController extends Controller
         }
 
         $last_insert_ids = '';
+        $i=0;
         foreach ($data as $key => $value) {
             
        $certificate_no_result = DB::table('certificate_history as c')
@@ -709,12 +710,13 @@ class studentCertificateController extends Controller
                 $year = substr($syear,'-2');
                 $prefix = $year.'-'.($year+1);
                 $getLastNo = explode('/',$certificate_no_result->certificate_number ?? 0);
-                $cno =($getLastNo[1] ?? 0)+ 1;
+                
                 if($template=='Bonafide'){
                     $cno =($getLastNo[2] ?? 0)+ 1 + $i;
-                    $certificate_no1 = 'BC/'.$prefix.'/'.$cno;
+                    $certificate_no = 'BC/'.$prefix.'/'.$cno;
                 }else{
-                    $certificate_no1 = $prefix.'/'.$cno;
+                    $cno =($getLastNo[1] ?? 0)+ 1;
+                    $certificate_no = $prefix.'/'.$cno;
                 }
             }
             $html_content = $tData[0]['html_content'];

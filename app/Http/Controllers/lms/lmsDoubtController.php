@@ -99,7 +99,7 @@ class lmsDoubtController extends Controller
             $newfilename = 'lms_'.date('Y-m-d_h-i-s').'.'.$ext;
             //$img->move(public_path().'/lms_content_file/',$newfilename);
             // $img->storeAs('public/lms_doubts/', $newfilename); 20-05-24
-            Storage::disk('digitalocean')->putFileAs('public/lms_content_file/', $img, $newfilename, 'public');
+            Storage::disk('digitalocean')->putFileAs('public/lms_doubts/', $img, $newfilename, 'public');
 
         }
 

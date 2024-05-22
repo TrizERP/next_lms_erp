@@ -33,8 +33,11 @@ class visitor_masterController extends Controller
             DB::raw('concat(u.first_name," ",u.middle_name," ",u.last_name) as staff_name'),
             DB::raw('if(out_time = "00:00:00","green","") as status'),
             'vt.title as visitor_type_name')
-            ->join('tbluser as u',function($join){
+            ->leftjoin('tbluser as u',function($join){
                 $join->on('u.id', '=', 'visitor_master.to_meet')->where('u.status',1); // 23-04-24 by uma
+            })
+            ->leftjoin('tblstudent as t',function($join){
+                $join->on('t.id', '=', 'visitor_master.to_meet'); // 22-05-24 by rajesh
             })
             ->join('visitor_type as vt', 'vt.id', '=', 'visitor_master.visitor_type')
             ->where(['visitor_master.sub_institute_id' => $sub_institute_id, 'meet_date' => date('Y-m-d')])
@@ -78,8 +81,11 @@ class visitor_masterController extends Controller
         $data = visitor_masterModel::select('visitor_master.*',
             DB::raw('concat(u.first_name," ",u.middle_name," ",u.last_name) as staff_name'),
             'vt.title as visitor_type_name')
-            ->join('tbluser as u', function($join){
+            ->leftjoin('tbluser as u', function($join){
                 $join->on('u.id', '=', 'visitor_master.to_meet')->where('u.status',1); // 23-04-24 by uma
+            })
+            ->leftjoin('tblstudent1 as t', function($join){
+                $join->on('t.id', '=', 'visitor_master.to_meet'); // 22-05-24 by rajesh
             })
             ->join('visitor_type as vt', 'vt.id', '=', 'visitor_master.visitor_type')
             ->where(['visitor_master.sub_institute_id' => $sub_institute_id])
