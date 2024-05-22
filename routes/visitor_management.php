@@ -9,4 +9,9 @@ Route::group(['prefix' => 'visitor_management', 'middleware' => ['session', 'men
         ->name("show_visitor_report");
     Route::post('show_visitor_report_data', [visitor_masterController::Class, 'show_visitor_report_data'])
         ->name("show_visitor_report_data");
+
+    Route::get('get_student', [visitor_masterController::class, 'getStudent'])->name("get_student"); 
+    Route::get('sendOtpVisitor', [visitor_masterController::class, 'sendOTPVisitor'])->name("sendOtpVisitor"); //sendOtpVisitor
+    Route::post('confirmOtp', [visitor_masterController::Class, 'confirmOTP'])->name("confirmOtp");
+
 });

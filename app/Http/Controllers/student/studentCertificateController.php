@@ -133,18 +133,25 @@ class studentCertificateController extends Controller
                 ->where('syear', $syear)->get()->toArray();
             $certificate_no = $certificate_no_result[0]->certificate_no;
             
-            if ($template == 'Transfer Certificate' &&  $sub_institute_id==254) 
+            if (in_array($template,['Transfer Certificate','Bonafide']) &&  $sub_institute_id==254) 
             {
                 $certificate_no_result = DB::table('certificate_history as c')
                 ->selectRaw('c.certificate_number')
                 ->where('c.sub_institute_id', $sub_institute_id)
                 ->where('certificate_type', $template)
                 ->where('syear', $syear)->orderBy('id','DESC')->first();
+                
                 $year = substr($syear,'-2');
                 $prefix = $year.'-'.($year+1);
                 $getLastNo = explode('/',$certificate_no_result->certificate_number ?? 0);
-                $cno =($getLastNo[1] ?? 0)+ 1 + $i;
-                $certificate_no1 = $prefix.'/'.$cno;
+            //   echo "<pre>";print_r($getLastNo);exit;
+                if($template=='Bonafide'){
+                    $cno =($getLastNo[2] ?? 0)+ 1 + $i;
+                    $certificate_no1 = 'BC/'.$prefix.'/'.$cno;
+                }else{
+                    $cno =($getLastNo[1] ?? 0)+ 1 + $i;
+                    $certificate_no1 = $prefix.'/'.$cno;
+                }
                 $i++;
             }else{
                 $certificate_no1 = $certificate_no + $i;
@@ -693,7 +700,7 @@ class studentCertificateController extends Controller
 
             $certificate_no = $certificate_no_result[0]->certificate_no;
 
-            if($template=="Transfer Certificate" && $sub_institute_id==254){
+            if(in_array($template,['Transfer Certificate','Bonafide']) && $sub_institute_id==254){
                 $certificate_no_result = DB::table('certificate_history as c')
                 ->selectRaw('c.certificate_number')
                 ->where('c.sub_institute_id', $sub_institute_id)
@@ -703,7 +710,12 @@ class studentCertificateController extends Controller
                 $prefix = $year.'-'.($year+1);
                 $getLastNo = explode('/',$certificate_no_result->certificate_number ?? 0);
                 $cno =($getLastNo[1] ?? 0)+ 1;
-                $certificate_no = $prefix.'/'.$cno;
+                if($template=='Bonafide'){
+                    $cno =($getLastNo[2] ?? 0)+ 1 + $i;
+                    $certificate_no1 = 'BC/'.$prefix.'/'.$cno;
+                }else{
+                    $certificate_no1 = $prefix.'/'.$cno;
+                }
             }
             $html_content = $tData[0]['html_content'];
             
