@@ -464,4 +464,31 @@ class BookController extends Controller
         
         return $issuedBookDetails;
     }
+
+    public function allBookLists(Request $request){
+        try{
+            $type= $request->type;
+            $sub_institute_id = session()->get('sub_institute_id');
+            if($type=="API"){
+                $sub_institute_id = $request->sub_institute_id; 
+            }
+            $bookLists = DB::table('library_books as lb')
+            ->leftJoin('library_items as li', 'li.book_id', '=', 'lb.id')
+            ->select('lb.*', 'li.id as item_id', 'li.item_code')
+            ->where('lb.sub_institute_id', $sub_institute_id)
+            ->get()->toArray();
+
+            $res['status_code'] = 1;
+            $res['message'] ="Success";
+
+            if(empty($bookLists)){
+                $res['status_code'] = 0;
+                $res['message'] = "No Books Found for sub_institute_id ".$sub_institute_id;
+            }
+            $res['bookLists'] = $bookLists;
+            return $res;
+        } catch (Exception $e) {
+            return response()->json($e->getMessage(), 500);
+        }
+    }
 }

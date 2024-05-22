@@ -1140,19 +1140,34 @@ class PayrollController extends Controller
 
     public function payrollReport(Request $request)
     {
+        $type= $request->type;
         $sub_institute_id = $request->session()->get('sub_institute_id');
-        $months = Helpers::getMonths();
-        $years = Helpers::getYears();
-        $list = [];
+        if($type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->sub_institute_id;
+        }
+        $res['months'] = Helpers::getMonths();
+        $res['years']= Helpers::getYears();
+
         $employeeDetails = [];
 
         if ($request->year && $request->month) {
-            $employeeDetails = EmployeeMonthlySalaryData::with('getUser')->where([['month',$request->month],['year',$request->year],['sub_institute_id',$sub_institute_id]])->get();
-            $list['month'] = $request->month;
-            $list['year'] = $request->year;
+            $res['employeeDetails'] = EmployeeMonthlySalaryData::with('getUser')->where([['month',$request->month],['year',$request->year],['sub_institute_id',$sub_institute_id]])->get();
+            $res['month'] = $request->month;
+            $res['year'] = $request->year;
         }
-        return view('payroll.payroll_report.index', ['employees' => $employeeDetails, 'list' => $list,'months'=> $months,'years'=> $years]);
-
+        // return view('payroll.payroll_report.index', ['employees' => $employeeDetails, 'list' => $list,'months'=> $months,'years'=> $years]);
+        return is_mobile($type, "payroll.payroll_report.index", $res, "view");
     }
 
     public function employeePayrollHistory(Request $request)

@@ -692,46 +692,46 @@ class HrmsController extends Controller
         }else{
             $hrmsList = $hrmsList->where('day', $date_formatted)->get();
         }
-        
+        // echo "<pre>";print_r($hrmsList);exit;
         $hrmsList = $hrmsList->map(function ($e) use ($day)
         {
-            if($day =='Mon' && $e->getUser['monday']) {
+            if($day =='Mon' && $e->getUser['monday']==0) {
                 if($e->getUser['monday_out_date'] &&  $e->getUser['monday_out_date'] >  date('H:i:s',strtotime($e->punchout_time))) {
                     $e['is_late'] = 1;
                     $e['expected_time'] = $e->getUser['monday_out_date'];
                 }
             }
-            if($day =='Tue' && !$e->getUser['tuesday']) {
+            if($day =='Tue' && $e->getUser['tuesday']==0) {
                 if($e->getUser['tuesday_out_date'] &&  $e->getUser['tuesday_out_date'] >  date('H:i:s',strtotime($e->punchout_time))) {
                     $e['is_late'] = 1;
                     $e['expected_time'] = $e->getUser['tuesday_out_date'];
                 }
             }
-            if($day =='Wed' && $e->getUser['wednesday']) {
+            if($day =='Wed' && $e->getUser['wednesday']==0) {
                 if($e->getUser['wednesday_out_date'] &&  $e->getUser['wednesday_out_date'] >  date('H:i:s',strtotime($e->punchout_time))) {
                     $e['is_late'] = 1;
                     $e['expected_time'] = $e->getUser['wednesday_out_date'];
                 }
             }
-            if($day =='Thu' && $e->getUser['thursday']) {
+            if($day =='Thu' && $e->getUser['thursday']==0) {
                 if($e->getUser['thursday_out_date'] &&  $e->getUser['thursday_out_date'] >  date('H:i:s',strtotime($e->punchout_time))) {
                     $e['is_late'] = 1;
                     $e['expected_time'] = $e->getUser['saturday_out_date'];
                 }
             }
-            if($day =='Fri' && $e->getUser['friday']) {
+            if($day =='Fri' && $e->getUser['friday']==0) {
                 if($e->getUser['friday_out_date'] &&  $e->getUser['friday_out_date'] >  date('H:i:s',strtotime($e->punchout_time))) {
                     $e['is_late'] = 1;
                     $e['expected_time'] = $e->getUser['friday_out_date'];
                 }
             }
-            if($day =='Sat' && $e->getUser['saturday']) {
+            if($day =='Sat' && $e->getUser['saturday']==0) {
                 if($e->getUser['saturday_out_date'] &&  $e->getUser['saturday_out_date'] >  date('H:i:s',strtotime($e->punchout_time))) {
                     $e['is_late'] = 1;
                     $e['expected_time'] = $e->getUser['saturday_out_date'];
                 }
             }
-            if($day =='Sun' && $e->getUser['sunday']) {
+            if($day =='Sun' && $e->getUser['sunday']==0) {
                 if($e->getUser['sunday_out_date'] &&  $e->getUser['sunday_out_date'] >  date('H:i:s',strtotime($e->punchout_time))) {
                     $e['is_late'] = 1;
                     $e['expected_time'] = $e->getUser['sunday_out_date'];

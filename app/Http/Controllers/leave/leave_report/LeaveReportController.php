@@ -36,7 +36,7 @@ class LeaveReportController extends Controller
         $to_date_formatted = Carbon::now()->format('Y-m-d');
 
         $departments = HrmsDepartment::where('status', true)->pluck('department', 'id');
-
+        $res['leave_types'] = ["Approved_lwp"=>"Approved LWP","Cancelled"=>"Cancelled","Rejected"=>"Rejected","Pending"=>"Pending Approval","Approved"=>"Approved"];
         $res['departments'] = $departments;
         $res['from_date_formatted'] = $from_date_formatted;
         $res['to_date_formatted'] = $to_date_formatted;
@@ -100,12 +100,12 @@ class LeaveReportController extends Controller
         ->where('hel.user_id', $employee_id)
         // ->whereIn('hel.status', $get_leave_status)
         ->when($type == "API", function ($query) use ($get_leave_status) {
-            return $query->whereIn('hel.status', [$get_leave_status]);
+            return $query->whereIn('hel.status', $get_leave_status);
         }, function ($query) use ($get_leave_status) {
             return $query->whereIn('hel.status', $get_leave_status);
         })
         ->get()->toArray();
-
+        $res['leave_types'] = ["Approved_lwp"=>"Approved LWP","Cancelled"=>"Cancelled","Rejected"=>"Rejected","Pending"=>"Pending Approval","Approved"=>"Approved"];
         $res['employees'] = $employees;
         $res['from_date_formatted'] = $from_date_formatted;
         $res['to_date_formatted'] = $to_date_formatted;

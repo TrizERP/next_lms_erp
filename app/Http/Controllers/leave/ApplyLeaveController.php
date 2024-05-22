@@ -14,9 +14,12 @@ use Yajra\DataTables\Facades\DataTables;
 use function App\Helpers\is_mobile;
 use DB;
 use Carbon\Carbon;
+use GenTux\Jwt\GetsJwtToken;
 
 class ApplyLeaveController extends Controller
 {
+    use GetsJwtToken;
+
     /**
      * Display a listing of the resource.
      *
@@ -26,11 +29,13 @@ class ApplyLeaveController extends Controller
     {
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
+        $user_id= session()->get('user_id');
 
         $type = $request->type;
         if($type=="API"){
             $sub_institute_id=$request->sub_institute_id;
             $syear = $request->syear;
+            $user_id= $request->user_id;
         }
 
         try {
@@ -42,8 +47,9 @@ class ApplyLeaveController extends Controller
             
             $res['leaveHistory'] = DB::table('hrms_emp_leaves as hel')->selectRaw("hel.*, hlt.leave_type as leave_type_name")
             ->join('hrms_leave_types as hlt', 'hlt.id', '=', 'hel.leave_type_id')
-            ->where('hel.user_id', session()->get('user_id'))
+            ->where('hel.user_id', $user_id)
             ->whereYear('hel.from_date', $syear)
+            ->orderBy('hel.id','DESC')
             ->get()->toArray();
             // return view('leave.apply_leave', compact('departments', 'users', 'leave_types'));
             return is_mobile($type, "leave.apply_leave", $res, "view");
@@ -116,6 +122,25 @@ class ApplyLeaveController extends Controller
         $subInstituteId = $request->session()->get('sub_institute_id');
         $total_days = $request->get('total_days');
         $day_type= ($request->day_type=="full") ? 1 : "0.5";
+        $user_id = session()->get('user_id');
+      
+        if($type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+
+            $subInstituteId=$request->sub_institute_id;
+            $syear = $request->syear;
+            $user_id = $request->get('user_id');
+        }
 
         $request->validate([
             'type_leave' => 'required',
@@ -129,7 +154,7 @@ class ApplyLeaveController extends Controller
         ]);
 
         HrmsEmpLeave::updateOrCreate([
-                'user_id' => $request->employee_id ?? session()->get('user_id'),
+                'user_id' => $request->employee_id ?? $user_id,
                 'from_date' => $request->from_date,
             ],
             [
@@ -144,7 +169,7 @@ class ApplyLeaveController extends Controller
             ]);
 
         $res['status_code']=1;
-        $res['message']="Holiday saved successfully";
+        $res['message']="Leave Applied successfully";
         
         return is_mobile($type, "leave-apply.index", $res);
         // return response()->json(['message' => 'Holiday saved successfully !!'], 200);
@@ -249,10 +274,14 @@ class ApplyLeaveController extends Controller
     public function getYearwiseleave(Request $request)
     {
         $selectedYear = $request->input('year');
-
+        $type = $request->type;
+        $user_id = session()->get('user_id');
+        if($type=="API"){
+            $user_id=$request->user_id;
+        }
         $data = DB::table('hrms_emp_leaves as hel')->selectRaw("hel.*, hlt.leave_type as leave_type_name")
         ->join('hrms_leave_types as hlt', 'hlt.id', '=', 'hel.leave_type_id')
-        ->where('hel.user_id', session()->get('user_id'))
+        ->where('hel.user_id', $user_id)
         ->whereYear('hel.from_date', $selectedYear)
         ->get()->toArray();
         
