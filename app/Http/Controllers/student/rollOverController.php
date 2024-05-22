@@ -452,7 +452,7 @@ class rollOverController extends Controller
                         'payment_mode'=>$fee->payment_mode,
                         'bank_name'=>$fee->bank_name,
                         'cheque_bank_name'=>$fee->bank_name,
-                        'remark'=>$fee->remarks,
+                        'remarks'=>$fee->remarks,
                         'fees_discount'=>$fee->fees_discount,
                         'fine'=>$fee->fine,
                         'bank_branch'=>$fee->bank_branch,

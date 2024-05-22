@@ -51,7 +51,7 @@
 												@if(isset($data->appointment_type)) 
 													@if($data->appointment_type == 'Direct') checked @endif 
 												@endif >
-												<label for="direct">Direct Appointment</label>
+												<label for="direct">Direct</label>
 											</div>
 										</label>
 										<label class="radio-inline">
@@ -60,16 +60,16 @@
 												@if(isset($data->appointment_type)) 
 													@if($data->appointment_type == 'Prior') checked @endif 
 												@endif >
-												<label for="prior">Prior Appointment</label>
+												<label for="prior">Prior</label>
 											</div>
 										</label>
 										<label class="radio-inline">
 											<div class="radio radio-success">
 												<input type="radio" name="appointment_type" id="pickUp" value="pickUp" required onclick="show_date_time(this.value);"
 												@if(isset($data->appointment_type)) 
-													@if($data->appointment_type == 'pickUp') checked @endif 
+													@if($data->appointment_type == 'PickUp') checked @endif 
 												@endif >
-												<label for="pickUp">Pick-Up Appointment</label>
+												<label for="pickUp">Pick-Up Student</label>
 											</div>
 										</label>
 									</div>

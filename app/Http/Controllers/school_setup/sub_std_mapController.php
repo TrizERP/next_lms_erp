@@ -99,7 +99,7 @@ class sub_std_mapController extends Controller
             $file_folder = '/SubStdMapping';
             //$img->move(public_path().'/lms_content_file/',$newfilename);
             // $img->storeAs('public/SubStdMapping/', $newfilename); 20-05-24
-            Storage::disk('digitalocean')->putFileAs('public/lms_content_file/', $img, $newfilename, 'public');
+            Storage::disk('digitalocean')->putFileAs('public/SubStdMapping/', $img, $newfilename, 'public');
         }
 
         foreach ($standard_id as $key => $stdval) {
@@ -181,7 +181,7 @@ class sub_std_mapController extends Controller
             $file_folder = '/SubStdMapping';
             //$img->move(public_path().'/lms_content_file/',$newfilename);
             // $img->storeAs('public/SubStdMapping/', $newfilename); 20-05-24
-            Storage::disk('digitalocean')->putFileAs('public/lms_content_file/', $img, $newfilename, 'public');
+            Storage::disk('digitalocean')->putFileAs('public/SubStdMapping/', $img, $newfilename, 'public');
 
             $data = [
                 'standard_id'      => $finalStdId,
