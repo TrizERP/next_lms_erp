@@ -96,7 +96,7 @@
                                 @endphp
                                 <tr style="text-align:center;">
                                     <td>{{$j++}}</td>
-                                    <td>{{ $get_hrms_department->employee_no }}</td>
+                                    <td>{{ isset($hrmsAttendance['getUser']) ? $hrmsAttendance['getUser']['employee_no'] : '' }}</td>
                                     <td>{{isset($hrmsAttendance['getUser']) ? $hrmsAttendance['getUser']['first_name'] .'-'.$hrmsAttendance['getUser']['last_name'] : ''}}</td>
                                     <td>{{ $get_hrms_department->department }}</td>
                                     <td>{{ isset($hrmsAttendance->punchout_time) ? \Carbon\Carbon::parse($hrmsAttendance->punchout_time)->format('h:i A') : 'N/A' }}</td>

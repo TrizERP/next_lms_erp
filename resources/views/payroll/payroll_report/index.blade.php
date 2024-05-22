@@ -28,8 +28,8 @@
                                     <label>Select Month</label>
                                     <select id='year' name="month" class="form-control">
                                         <option value="0">Select Month</option>
-                                        @foreach($months as $month)
-                                            @if(isset($list['month']) && $list['month'] == $month)
+                                        @foreach($data['months'] as $month)
+                                            @if(isset($data['month']) && $data['month'] == $month)
                                                 <option selected>{{$month}}</option>
                                             @else
                                                 <option>{{$month}}</option>
@@ -41,8 +41,8 @@
                                     <label>Select Year</label>
                                     <select id='year' name="year" class="form-control">
                                         <option value="0">Select Year</option>
-                                        @foreach($years as $year)
-                                            @if(isset($list['year']) && $list['year'] == $year)
+                                        @foreach($data['years'] as $year)
+                                            @if(isset($data['year']) && $data['year'] == $year)
                                                 <option selected>{{$year}}</option>
                                             @else
                                                 <option>{{$year}}</option>
@@ -89,7 +89,7 @@
                             <form action="{{route('payroll.store_monthly_payroll_report')}}" method="post">
                                 @csrf
                                 <tbody>
-                                @foreach($employees as $employeeDetail)
+                                @foreach($data['employeeDetails'] as $employeeDetail)
                                 <tr>
                                     <td>{{$employeeDetail->getUser['employee_no']}}</td>
                                     <td>{{$employeeDetail->getUser['first_name'] .' '. $employeeDetail->getUser['last_name']}}</td>
