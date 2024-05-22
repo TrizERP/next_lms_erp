@@ -879,7 +879,7 @@ class dashboardController extends Controller
                     INNER JOIN tblstudent s ON s.id = se.student_id
                     INNER JOIN standard sd ON sd.id = se.standard_id
                     INNER JOIN division d ON d.id = se.section_id
-                    LEFT JOIN batch b ON b.id = s.studentbatch
+                    LEFT JOIN batch b ON (b.id = s.studentbatch AND se.syear=b.syear)
                     LEFT JOIN house_master hm ON hm.id = se.house_id                    
                     INNER JOIN fees_collect fc ON (
                         fc.student_id = se.student_id 

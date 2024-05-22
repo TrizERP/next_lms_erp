@@ -170,7 +170,7 @@ class feesTypewiseReportController extends Controller
             })->join('division as d', function ($join) {
                 $join->whereRaw('d.id = se.section_id');
             })->leftjoin('batch as b', function ($join) {
-                $join->whereRaw('b.id = ts.studentbatch');
+                $join->whereRaw('b.id = ts.studentbatch AND se.syear=b.syear');
             })
             ->selectRaw("fc.id,fc.student_id,CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name) AS student_name,
                 ts.enrollment_no,ts.admission_year,ts.mobile,ts.email,date_format(ts.dob,'%d-%m-%Y') AS dob,a.title AS section,

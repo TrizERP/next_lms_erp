@@ -82,6 +82,7 @@ class studentCertificateController extends Controller
             ->join('tblstudent as s','s.id','=','a.student_id')
             ->selectRaw('a.certificate_number')
             ->where(['a.sub_institute_id'=>$sub_institute_id,'a.syear'=>$syear])
+            ->where('a.certificate_type', $template)
             ->where('a.student_id',$value)
             ->first();
 

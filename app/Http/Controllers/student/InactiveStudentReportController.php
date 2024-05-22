@@ -81,6 +81,7 @@ class InactiveStudentReportController extends Controller
         $tblcustoms = DB::table("tblcustom_fields")
             ->where(["status" => "1", "table_name" => "tblstudent"])
             ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1)')
+            ->where('user_type',"")
             ->pluck("field_label", "field_name");
 
         $customfieldArray = [];

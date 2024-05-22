@@ -47,9 +47,14 @@ class studentReportController extends Controller
         $tblcustoms = DB::table("tblcustom_fields")
         ->whereRaw("status=1 AND (common_to_all= 1 or sub_institute_id=$sub_institute_id) AND is_deleted != 'Y'")
         ->where('user_type','student')
+        ->orderByRaw('tab_sort_order,sort_order')
         ->get()->toArray();    
-
-        return $tblcustoms;
+        
+        $headerType =[];
+        foreach ($tblcustoms as $key => $value) {
+            $headerType[$value->column_header][]=$value;
+        }
+        return $headerType;
     }
 
     public function searchStudent(Request $request)
@@ -78,7 +83,7 @@ class studentReportController extends Controller
         $defaultOrderBy = 'tblstudent.first_name';
 
         // Map dynamic fields and headers
-        $dynamicFields = $request->input('dynamicFields') ?? [];
+        $res['dynamicFields'] = $dynamicFields = $request->input('dynamicFields') ?? [];
         $searchArr1 = ['first_name', 'last_name', 'place_of_birth', 'student_mobile','optional_subjects','admission_year'];
         $replaceArr1 = ['First Name', 'Surname', get_string('birthplace','request'), get_string('studentmobile','request'),'Optional Subjects','Fees Year'];
 
@@ -100,21 +105,37 @@ class studentReportController extends Controller
             // if (!in_array($field, ["bloodgroup", "van", "optional_subjects", "roll_no","student_name","academic_year","religion_name","father_name","gender","mobile","email"])) {
             //     $array[] = $field;
             // }
+            $seprateValue  = explode("/",$field);
+            $fielValue = $seprateValue[0];
+            $fieldId = $seprateValue[1];
+
           $customDetails = DB::table("tblcustom_fields")
             ->whereRaw("status=1 AND (common_to_all= 1 or sub_institute_id=$sub_institute_id) AND is_deleted != 'Y'")
-            ->where('field_name',$field)
+            ->where('id',$fieldId)
             ->where('user_type','student')
             ->first();
-            if(!empty($customDetails) && !in_array($field,["student_name"])){
-                $array[] = $customDetails->table_name.".".$field;
-            }
-            if($field=="academic_year"){
+
+            if(!empty($customDetails) && !in_array($fielValue,["student_name","optional_subject"])){
+                $array[] = $customDetails->table_name.".".$fielValue." as ".str_ireplace(" ","_",$customDetails->field_label);
+                $makeKey = strtolower(str_replace(" ","_",$customDetails->field_label));
+                $header[$makeKey] = ucfirst(str_replace(['_'], [' '], str_replace($searchArr1, $replaceArr1, $customDetails->field_label)));
+            }else if($fielValue=="academic_year"){
                 $array[] = "academic_section.title as academic_year";
+                $header[$fielValue] = ucfirst(str_replace(['_'], [' '], str_replace($searchArr1, $replaceArr1, $fielValue)));
+            }
+            else if($fielValue=="optional_subject"){
+                $array[] = "GROUP_CONCAT(DISTINCT subject.subject_name) as optional_subject";
+                if($sub_institute_id==254){
+                    $header['optional_subject4']="Optional Subject 4";
+                    $header['optional_subject5']="Optional Subject 5";
+                    $header['optional_subject6']="Optional Subject 6";
+                }else{
+                    $header[$fielValue] = ucfirst(str_replace(['_'], [' '], str_replace($searchArr1, $replaceArr1, $fielValue)));
+                }
             }
             
-            $header[$field] = ucfirst(str_replace(['_'], [' '], str_replace($searchArr1, $replaceArr1, $field)));
         }
-
+        
         // Additional conditions for ordering
         $orderField = $searchFieldsMapping[$order_by] ?? $defaultOrderBy;
         $extra_order_by = $orderField ?? $defaultOrderBy;
@@ -127,11 +148,9 @@ class studentReportController extends Controller
         // Concatenated student name
         $array[] = 'CONCAT_WS(" ", tblstudent.first_name, tblstudent.middle_name, tblstudent.last_name) AS student_name';
       
-        // echo "<pre>";print_r($array);exit;
-
         // Query
         $student_data = DB::table('tblstudent')
-            ->select(DB::raw(implode(',', $array)))
+            ->select(DB::raw(strtolower(implode(',', $array))))
             ->join('tblstudent_enrollment', 'tblstudent.id', '=', 'tblstudent_enrollment.student_id')
             ->join('academic_section', 'academic_section.id', '=', 'tblstudent_enrollment.grade_id')
             ->join('standard', 'standard.id', '=', 'tblstudent_enrollment.standard_id')
@@ -169,11 +188,49 @@ class studentReportController extends Controller
             ->orderByRaw($extra_order_by)
             ->groupBy('tblstudent.id')
             ->get();
+            $student_dataArr = [];
+            if($sub_institute_id==254){
+                foreach ($student_data as $key => $value) {
+                    // optional subject level wise 
+                    if(isset($value->optional_subject)){
+                        $explodeSub = explode(',',$value->optional_subject);
+                        $value->optional_subject4 =  $value->optional_subject5= $value->optional_subject6 = [];
+                        foreach ($explodeSub as $keys => $subName) {
+                            $getLevel = DB::table('subject as s')
+                                ->join('student_optional_subject as sos', 'sos.subject_id', '=', 's.id')
+                                ->where('sos.syear', session()->get('syear'))
+                                ->where('sos.student_id', $value->id)
+                                ->where('s.subject_name', $subName)
+                                ->first();
+                        
+                            if ($getLevel) {
+                                if ($getLevel->level == 4 || $getLevel->level==null || $getLevel->level=="") {
+                                    $value->optional_subject4[] = $getLevel->subject_name;
+                                } 
+                                if ($getLevel->level == 5) {
+                                    $value->optional_subject5[] = $getLevel->subject_name;
+                                }
+                                if ($getLevel->level == 6) {
+                                    $value->optional_subject6[] = $getLevel->subject_name;
+                                }
+                            }
+                        }
+                        // convert into string 
+                       $value->optional_subject4 = implode(',',$value->optional_subject4) ?? [];     
+                       $value->optional_subject5 = implode(',',$value->optional_subject5) ?? [];     
+                       $value->optional_subject6 = implode(',',$value->optional_subject6) ?? [];     
+                    }
+                    //  ends level
 
-            // echo "<pre>";print_r($student_data);exit;
+                 $student_dataArr[$key] = $value;
+                }
+            }else{
+                $student_dataArr = $student_data;
+            }
+
         $res['status_code'] = 1;
         $res['message'] = "Student List";
-        $res['student_data'] = $student_data;
+        $res['student_data'] = $student_dataArr;
         $res['grade_id'] = $grade_id;
         $res['standard_id'] = $standard_id;
         $res['division_id'] = $division_id;

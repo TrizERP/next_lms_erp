@@ -118,7 +118,7 @@ class studentAttendanceController extends Controller
         $extraSearchArray = [];
         $extraSearchArray['tblstudent.sub_institute_id'] = $sub_institute_id;
         $extraSearchArray['tblstudent_enrollment.syear'] = $syear;
-        $extraSearchArray['tblstudent.status'] = 1;
+        //$extraSearchArray['tblstudent.status'] = 1;
         if ($standard != '') {
             $extraSearchArray['tblstudent_enrollment.standard_id'] = $standard;
         }

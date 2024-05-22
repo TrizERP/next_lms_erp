@@ -336,7 +336,39 @@ datalist {
                                         <div class="col-md-4">
                                             <label for="input-file-now">User Image</label>
                                             <input type="file" data-default-file="/storage/student/{{ $student_data->image }}" accept="image/png, image/jpg, image/jpeg" name="student_image" id="input-file-now" class="dropify" />
-                                        </div>                                          
+                                        </div>  
+                                        @if(session()->get('sub_institute_id')==254)
+                                        <div class="col-md-4 form-group">
+                                            <label>Optional Subject 4</label>
+                                            <select id='optional_subject' name="optional_subject4[]" multiple class="form-control">
+                                                @if(isset($data['optional_subject_data']))
+                                                    @foreach($data['optional_subject_data'] as $key => $value)
+                                                        <option @if( in_array($value['subject_id'],$data['student_optional_subject_data4']) ) selected @endif value="{{ $value['subject_id'] }}">{{ $value['subject_name'] }}</option>
+                                                    @endforeach
+                                                @endif                                                   
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4 form-group">
+                                            <label>Optional Subject 5</label>
+                                            <select id='optional_subject' name="optional_subject5[]" multiple class="form-control">
+                                                @if(isset($data['optional_subject_data']))
+                                                    @foreach($data['optional_subject_data'] as $key => $value)
+                                                        <option @if( in_array($value['subject_id'],$data['student_optional_subject_data5']) ) selected @endif value="{{ $value['subject_id'] }}">{{ $value['subject_name'] }}</option>
+                                                    @endforeach
+                                                @endif                                                   
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4 form-group">
+                                            <label>Optional Subject 6</label>
+                                            <select id='optional_subject' name="optional_subject6[]" multiple class="form-control">
+                                                @if(isset($data['optional_subject_data']))
+                                                    @foreach($data['optional_subject_data'] as $key => $value)
+                                                        <option @if( in_array($value['subject_id'],$data['student_optional_subject_data6']) ) selected @endif value="{{ $value['subject_id'] }}">{{ $value['subject_name'] }}</option>
+                                                    @endforeach
+                                                @endif                                                   
+                                            </select>
+                                        </div>
+                                        @else                                       
                                         <div class="col-md-4 form-group">
                                             <label>Optional Subject</label>
                                             <select id='optional_subject' name="optional_subject[]" multiple class="form-control">
@@ -347,7 +379,7 @@ datalist {
                                                 @endif                                                   
                                             </select>
                                         </div>
-                                        
+                                        @endif
                                         <div class="col-md-4 form-group">
                                             <label>Student Batch</label>
                                             <select id='studentbatch' name="studentbatch" class="form-control">

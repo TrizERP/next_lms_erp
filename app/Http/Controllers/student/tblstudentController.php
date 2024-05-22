@@ -76,6 +76,7 @@ class tblstudentController extends Controller
 
 		$dataCustomFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "tblstudent"])
 			->whereRaw('(sub_institute_id = ' . $sub_institute_id . ' OR common_to_all = 1)')
+            ->where('user_type',"")
 			->get();
 
 		$fieldsData = tblfields_dataModel::get()->toArray();
@@ -199,6 +200,7 @@ class tblstudentController extends Controller
         $dataCustomFields = tblcustomfieldsModel::select('field_name')
             ->where(['status' => "1", 'table_name' => "tblstudent", 'field_type' => "file"])
             ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1)')
+            ->where('user_type',"")
             ->get()
             ->toArray();
 
@@ -221,15 +223,67 @@ class tblstudentController extends Controller
 		$student_id = $data;
 
 		//START Save Optional Subject
-		if ($request->input('optional_subject')) {
-			$optional_subject['student_id'] = $student_id;
-			$optional_subject['sub_institute_id'] = $sub_institute_id;
-			$optional_subject['syear'] = $syear;
-			foreach ($request->input('optional_subject') as $key => $val) {
-				$optional_subject['subject_id'] = $val;
-				student_optional_subjectModel::insert($optional_subject);
-			}
-		}
+		// if ($request->input('optional_subject')) {
+		// 	$optional_subject['student_id'] = $student_id;
+		// 	$optional_subject['sub_institute_id'] = $sub_institute_id;
+		// 	$optional_subject['syear'] = $syear;
+		// 	foreach ($request->input('optional_subject') as $key => $val) {
+		// 		$optional_subject['subject_id'] = $val;
+		// 		student_optional_subjectModel::insert($optional_subject);
+		// 	}
+		// }
+        if(session()->get('sub_institute_id') != 254){
+            if ($request->input('optional_subject')) {
+                $optional_subject['student_id'] = $student_id;
+                $optional_subject['sub_institute_id'] = $sub_institute_id;
+                $optional_subject['syear'] = $syear;
+                foreach ($request->input('optional_subject') as $key => $val) {
+                    $optional_subject['subject_id'] = $val;
+                    student_optional_subjectModel::insert($optional_subject);
+                }
+            }
+        }else{
+            if ($request->input('optional_subject4')) {
+                $optional_subject4['student_id'] = $student_id;
+                $optional_subject4['sub_institute_id'] = $sub_institute_id;
+                $optional_subject4['syear'] = $syear;
+                foreach ($request->input('optional_subject4') as $key => $val) {
+                    $optional_subject4['subject_id'] = $val;
+                    $checkSubject = student_optional_subjectModel::where(["sub_institute_id" => $sub_institute_id, 'student_id' => $student_id, 'syear' => $syear])->where('subject_id',$optional_subject4['subject_id'])->first();
+                    if(empty($checkSubject)){
+                    $optional_subject4['level'] = 4;
+                    student_optional_subjectModel::insert($optional_subject4);
+                    }
+                }
+            }
+            if ($request->input('optional_subject5')) {
+                $optional_subject5['student_id'] = $student_id;
+                $optional_subject5['sub_institute_id'] = $sub_institute_id;
+                $optional_subject5['syear'] = $syear;
+                foreach ($request->input('optional_subject5') as $key => $val) {
+                    $optional_subject5['subject_id'] = $val;
+                    $checkSubject5 = student_optional_subjectModel::where(["sub_institute_id" => $sub_institute_id, 'student_id' => $student_id, 'syear' => $syear])->where('subject_id',$optional_subject5['subject_id'])->first();
+                    if(empty($checkSubject5)){
+                    $optional_subject5['level'] = 5;
+                    student_optional_subjectModel::insert($optional_subject5);
+                    }
+                }
+            }
+
+            if ($request->input('optional_subject6')) {
+                $optional_subject6['student_id'] = $student_id;
+                $optional_subject6['sub_institute_id'] = $sub_institute_id;
+                $optional_subject6['syear'] = $syear;
+                foreach ($request->input('optional_subject6') as $key => $val) {
+                    $optional_subject6['subject_id'] = $val;
+                    $checkSubject6 = student_optional_subjectModel::where(["sub_institute_id" => $sub_institute_id, 'student_id' => $student_id, 'syear' => $syear])->where('subject_id',$optional_subject6['subject_id'])->first();
+                    if(empty($checkSubject6)){
+                    $optional_subject6['level'] = 6;
+                    student_optional_subjectModel::insert($optional_subject6);
+                    }
+                }
+            }
+        }
 		//END Save Optional Subject
 
 		$studentEnrollment['standard_id'] = $request->input('standard');
@@ -358,7 +412,7 @@ class tblstudentController extends Controller
         foreach ($newRequest as $key => $value) {
             if ($key != '_method' && $key != '_token' && $key != 'submit' && $key != 'grade' && $key != 'standard'
                 && $key != 'division' && $key != 'student_quota' && $key != 'end_date' && $key != 'remarks' && $key != 'inactive_satus'
-                && $key != 'id' && $key != 'optional_subject' && $key != 'previous_school_gr_no' && $key != 'house'
+                && $key != 'id' && $key != 'optional_subject' && $key != 'optional_subject4' && $key != 'optional_subject5' && $key != 'optional_subject6' && $key != 'previous_school_gr_no' && $key != 'house'
                 && $key != 'father_occupation' && $key != 'father_qualification' && $key != 'mother_occupation'
                 && $key != 'mother_qualification' && $key != 'guardian_name' && $key != 'guardian_relation'
                 && $key != 'house_no' && $key != 'building_name_appratment_name_society_name' && $key != 'district_name' && $key != 'roll_no') { //&& $key != 'place_of_birth' && $key != 'previous_school_name'
@@ -529,6 +583,7 @@ class tblstudentController extends Controller
 		// RAJESH	->whereRaw('tblstudent_enrollment.end_date is NULL')
 		$dataCustomFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "tblstudent"])
 			->whereRaw('(sub_institute_id = ' . $sub_institute_id . ' OR common_to_all = 1)')
+            ->where('user_type',"")
 			->get();
 
         $fieldsData = tblfields_dataModel::get()->toArray();
@@ -543,7 +598,7 @@ class tblstudentController extends Controller
         $studentQuota = studentQuotaModel::where(['sub_institute_id' => $sub_institute_id])->get();
         $std_id = $student_data->standard_id ?? "";
         $div_id = $student_data->section_id ?? "";
-        $batchData = $optional_subject_data = $student_optional_subject_data = [];
+        $batchData = $optional_subject_data = $student_optional_subject_data = $student_optional_subject_data4 = $student_optional_subject_data5 = $student_optional_subject_data6 = [];
 
         if ($std_id != "" && $div_id != "") {
             $batchData = batchModel::where([
@@ -570,10 +625,25 @@ class tblstudentController extends Controller
                 ])
                 ->get()->toArray();
 
-            $student_optional_subject_data = student_optional_subjectModel::selectRaw('GROUP_CONCAT(subject_id) AS subject_ids')
-                ->where(['sub_institute_id' => $sub_institute_id, 'student_id' => $id, 'syear' => $syear])->get();
+                if(session()->get('sub_institute_id') != 254){
+                    $student_optional_subject_data = student_optional_subjectModel::selectRaw('GROUP_CONCAT(subject_id) AS subject_ids')
+                    ->where(['sub_institute_id' => $sub_institute_id, 'student_id' => $id, 'syear' => $syear])->get();
+    
+                    $student_optional_subject_data = explode(",", $student_optional_subject_data[0]->subject_ids);
+                }else{
+                    $student_optional_subject_data4 = student_optional_subjectModel::selectRaw('GROUP_CONCAT(subject_id) AS subject_ids')
+                    ->where(['sub_institute_id' => $sub_institute_id, 'student_id' => $id, 'syear' => $syear,"level"=>"4"])->get();
 
-            $student_optional_subject_data = explode(",", $student_optional_subject_data[0]->subject_ids);
+                    $student_optional_subject_data4 = explode(",", $student_optional_subject_data4[0]->subject_ids);
+    
+                    $student_optional_subject_data5 = student_optional_subjectModel::selectRaw('GROUP_CONCAT(subject_id) AS subject_ids')
+                    ->where(['sub_institute_id' => $sub_institute_id, 'student_id' => $id, 'syear' => $syear,"level"=>"5"])->get();
+                    $student_optional_subject_data5 = explode(",", $student_optional_subject_data5[0]->subject_ids);
+    
+                    $student_optional_subject_data6 = student_optional_subjectModel::selectRaw('GROUP_CONCAT(subject_id) AS subject_ids')
+                    ->where(['sub_institute_id' => $sub_institute_id, 'student_id' => $id, 'syear' => $syear,"level"=>"6"])->get();
+                    $student_optional_subject_data6 = explode(",", $student_optional_subject_data6[0]->subject_ids);
+                }
         }
 
         $pastEducation = tblstudentPastEducationModel::where([
@@ -860,7 +930,13 @@ die; */
 		$res['document_type_data'] = $document_type_data;
 		$res['batch_data'] = $batchData;
 		$res['optional_subject_data'] = $optional_subject_data;
-		$res['student_optional_subject_data'] = $student_optional_subject_data;
+		if(session()->get('sub_institute_id')!=254){
+		    $res['student_optional_subject_data'] = $student_optional_subject_data;
+        }else{
+            $res['student_optional_subject_data4'] = $student_optional_subject_data4;
+		    $res['student_optional_subject_data5'] = $student_optional_subject_data5;
+		    $res['student_optional_subject_data6'] = $student_optional_subject_data6;
+        }
 		$res['transport_map_student'] = $studentTransportMap;
 		$res['state_data'] = $stateData;
 		$res['city_data'] = $cityData;
@@ -1005,6 +1081,7 @@ die; */
         $dataCustomFields = tblcustomfieldsModel::select('field_name')
             ->where(['status' => "1", 'table_name' => "tblstudent", 'field_type' => "file"])
             ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1)')
+            ->where('user_type',"")
             ->get()
             ->toArray();
 
@@ -1026,16 +1103,59 @@ die; */
 		$data = $this->updateData($request);
 
 		//START Save Optional Subject
-		student_optional_subjectModel::where(["sub_institute_id" => $sub_institute_id, 'student_id' => $student_id, 'syear' => $syear])->delete();
-		if ($request->input('optional_subject')) {
-			$optional_subject['student_id'] = $student_id;
-			$optional_subject['sub_institute_id'] = $sub_institute_id;
-			$optional_subject['syear'] = $syear;
-			foreach ($request->input('optional_subject') as $key => $val) {
-				$optional_subject['subject_id'] = $val;
-				student_optional_subjectModel::insert($optional_subject);
-			}
-		}
+        student_optional_subjectModel::where(["sub_institute_id" => $sub_institute_id, 'student_id' => $student_id, 'syear' => $syear])->delete();
+		if(session()->get('sub_institute_id') != 254){
+            if ($request->input('optional_subject')) {
+                $optional_subject['student_id'] = $student_id;
+                $optional_subject['sub_institute_id'] = $sub_institute_id;
+                $optional_subject['syear'] = $syear;
+                foreach ($request->input('optional_subject') as $key => $val) {
+                    $optional_subject['subject_id'] = $val;
+                    student_optional_subjectModel::insert($optional_subject);
+                }
+            }
+        }else{
+            if ($request->input('optional_subject4')) {
+                $optional_subject4['student_id'] = $student_id;
+                $optional_subject4['sub_institute_id'] = $sub_institute_id;
+                $optional_subject4['syear'] = $syear;
+                foreach ($request->input('optional_subject4') as $key => $val) {
+                    $optional_subject4['subject_id'] = $val;
+                    $checkSubject = student_optional_subjectModel::where(["sub_institute_id" => $sub_institute_id, 'student_id' => $student_id, 'syear' => $syear])->where('subject_id',$optional_subject4['subject_id'])->first();
+                    if(empty($checkSubject)){
+                    $optional_subject4['level'] = 4;
+                    student_optional_subjectModel::insert($optional_subject4);
+                    }
+                }
+            }
+            if ($request->input('optional_subject5')) {
+                $optional_subject5['student_id'] = $student_id;
+                $optional_subject5['sub_institute_id'] = $sub_institute_id;
+                $optional_subject5['syear'] = $syear;
+                foreach ($request->input('optional_subject5') as $key => $val) {
+                    $optional_subject5['subject_id'] = $val;
+                    $checkSubject5 = student_optional_subjectModel::where(["sub_institute_id" => $sub_institute_id, 'student_id' => $student_id, 'syear' => $syear])->where('subject_id',$optional_subject5['subject_id'])->first();
+                    if(empty($checkSubject5)){
+                    $optional_subject5['level'] = 5;
+                    student_optional_subjectModel::insert($optional_subject5);
+                    }
+                }
+            }
+
+            if ($request->input('optional_subject6')) {
+                $optional_subject6['student_id'] = $student_id;
+                $optional_subject6['sub_institute_id'] = $sub_institute_id;
+                $optional_subject6['syear'] = $syear;
+                foreach ($request->input('optional_subject6') as $key => $val) {
+                    $optional_subject6['subject_id'] = $val;
+                    $checkSubject6 = student_optional_subjectModel::where(["sub_institute_id" => $sub_institute_id, 'student_id' => $student_id, 'syear' => $syear])->where('subject_id',$optional_subject6['subject_id'])->first();
+                    if(empty($checkSubject6)){
+                    $optional_subject6['level'] = 6;
+                    student_optional_subjectModel::insert($optional_subject6);
+                    }
+                }
+            }
+        }
 		//END Save Optional Subject
 
 		$studentEnrollment['standard_id'] = $request->input('standard');
