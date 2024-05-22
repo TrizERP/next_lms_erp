@@ -63,9 +63,19 @@
 												<label for="prior">Prior Appointment</label>
 											</div>
 										</label>
+										<label class="radio-inline">
+											<div class="radio radio-success">
+												<input type="radio" name="appointment_type" id="pickUp" value="pickUp" required onclick="show_date_time(this.value);"
+												@if(isset($data->appointment_type)) 
+													@if($data->appointment_type == 'pickUp') checked @endif 
+												@endif >
+												<label for="pickUp">Pick-Up Appointment</label>
+											</div>
+										</label>
 									</div>
 								</div> 
-																
+							</div>
+							<div class="row hideDiv">				
 								<div class="col-md-4 form-group">                   
 									<label class="control-label">Visitor Type</label>
 									<select class="form-control" name="visitor_type" required>
@@ -176,6 +186,37 @@
                         </form>
                     </div>
 
+					<!-- seacrh student   -->
+					<div class="col-md-12 studentForm">
+					<form enctype='multipart/form-data' action="{{route('get_student')}}" method="get">
+						<input type="hidden" name="radioType" value="pickUp">
+						<div class="row">
+							<div class="col-md-4 form-group">
+									<label for="">Student Name</label>
+									<input type="text" class="form-control" name="student_name" id="student_name" list="studentLists">
+									<datalist id="studentLists">
+										@foreach($data['studentData'] as $key=>$value)
+										<option>{{$value->student_name}}</option>
+										@endforeach
+									</datalist>
+								</div>
+							<div class="col-md-4 form-group">
+								<label for="">Mobile</label>
+								<input type="text" class="form-control" name="mobile" id="mobile" list="mobileLists">
+								<datalist id="mobileLists">
+									@foreach($data['studentData'] as $key=>$value)
+									<option>{{$value->mobile}}</option>
+									@endforeach
+								</datalist>
+							</div>
+						</div>
+						<div class="col-md-12 form-group">
+							<center>
+								<input type="submit" name="Search" value="Search" class="btn btn-success">
+							</center>
+	                    </div>
+					</form>
+					</div>
                     @if (count($errors) > 0)
                     <div class="alert alert-danger">
                         <strong>Whoops!</strong> There were some problems with your input.<br><br>
@@ -193,6 +234,8 @@
 
 @include('includes.footerJs')
 <script>
+		$('.studentForm').hide();
+
 function isNumber(evt) {
 	evt = (evt) ? evt : window.event;
 	var charCode = (evt.which) ? evt.which : evt.keyCode;
@@ -227,13 +270,20 @@ function ValidateNo() {
 
 function show_date_time(type)
 {
-    if(type == 'Direct')//Show Date and Time
+	if(type == 'Direct')//Show Date and Time
     {
+		$('.hideDiv').show();
+		$('.studentForm').hide();
 		//$('.clockpicker').clockpicker('hide');
         $("#meet_date").prop('disabled',true);        
         $("#in_time").prop('disabled',true);        
         $("#out_time").prop('disabled',true);        
-    }else{ //Hide Date And Time
+    }else if(type == 'pickUp'){
+		$('.hideDiv').hide();
+		$('.studentForm').show();
+	}else{ //Hide Date And Time
+		$('.hideDiv').show();
+		$('.studentForm').hide();
         $("#meet_date").prop('disabled',false);  
 		$("#in_time").prop('disabled',false);        
         $("#out_time").prop('disabled',false);        
