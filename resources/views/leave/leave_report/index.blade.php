@@ -66,11 +66,9 @@
                         <div class="col-md-3 form-group">
                             <label>Leave Status</label>
                             <select id='leave_status' name="leave_status[]" class="form-control" multiple required>
-                                <option value="Approved_lwp" @if(isset($data['get_leave_status']) && in_array("Approved_lwp",$data['get_leave_status']) ) selected @endif>Approved LWP</option>
-                                <option value="Cancelled" @if(isset($data['get_leave_status']) && in_array("Cancelled",$data['get_leave_status']) ) selected @endif>Cancelled</option>
-                                <option value="Rejected" @if(isset($data['get_leave_status']) && in_array("Rejected",$data['get_leave_status']) ) selected @endif>Rejected</option>
-                                <option value="Pending" @if(isset($data['get_leave_status']) && in_array("Pending",$data['get_leave_status']) ) selected @endif>Pending Approval</option>
-                                <option value="Approved" @if(isset($data['get_leave_status']) && in_array("Approved",$data['get_leave_status']) ) selected @endif>Approved</option>
+                                @foreach($data['leave_types'] as $leaveKey => $leaveValue)
+                                <option value="{{$leaveKey}}" @if(isset($data['get_leave_status']) && in_array($leaveKey,$data['get_leave_status']) ) selected @endif>{{$leaveValue}}</option>
+                                @endforeach
                             </select>
                         </div>
                         <div class="col-md-3 col-sm-offset-4 text-center form-group">
@@ -82,8 +80,8 @@
         </div>
         @if(isset($data['get_employee_leave_lists']))
             <div class="card">
-                <div class="table-responsive mt-20 tz-report-table">
-                    <table id="example" class="table table-striped">
+                <div class="table-responsive">
+                <table id="example" class="table table-box table-bordered">
                         <thead>
                         <tr>
                             <th>Sr No.</th>
@@ -150,8 +148,12 @@
                                             
                                             @if ($get_punch_in_out_time)
                                                 {{ \Carbon\Carbon::parse($get_punch_in_out_time->punchin_time)->format('h:i') }} - {{ \Carbon\Carbon::parse($get_punch_in_out_time->punchout_time)->format('h:i') }}
+                                            @else 
+                                            -
                                             @endif
                                         </td>
+                                        @else
+                                        <td>-</td>
                                     @endif
                                     <td>{{ $get_employee_leave_list->comment }}</td>
                                     <td>{{ $get_employee_leave_list->hr_remarks }}</td>
@@ -170,17 +172,16 @@
 <script>
     $(document).ready(function () {
         var table = $('#example').DataTable({
-            ordering: false,
             select: true,
             lengthMenu: [
                 [100, 500, 1000, -1],
-                ->100', '500', '1000', 'Show All
+                ['100', '500', '1000', 'Show All']
             ],
             dom: 'Bfrtip',
             buttons: [
                 {
                     extend: 'pdfHtml5',
-                    title: 'Student Report',
+                    title: 'Leave Report',
                     orientation: 'landscape',
                     pageSize: 'LEGAL',
                     pageSize: 'A0',
@@ -188,13 +189,12 @@
                         columns: ':visible'
                     },
                 },
-                {extend: 'csv', text: ' CSV', title: 'Student Report'},
-                {extend: 'excel', text: ' EXCEL', title: 'Student Report'},
-                {extend: 'print', text: ' PRINT', title: 'Student Report'},
+                {extend: 'csv', text: ' CSV', title: 'Leave Report'},
+                {extend: 'excel', text: ' EXCEL', title: 'Leave Report'},
+                {extend: 'print', text: ' PRINT', title: 'Leave Report'},
                 'pageLength'
             ],
         });
-        //table.buttons().container().appendTo('#example_wrapper .col-md-6:eq(0)');
 
         $('#example thead tr').clone(true).appendTo('#example thead');
         $('#example thead tr:eq(1) th').each(function (i) {
@@ -205,12 +205,12 @@
                 if (table.column(i).search() !== this.value) {
                     table
                         .column(i)
-                        .search(this.value)
+                        .search( this.value )
                         .draw();
                 }
-            });
-        });
-    });
+            } );
+        } );
+    } );
 </script>
 <script>
     $(document).on("change", "#department_id", function(e) {
