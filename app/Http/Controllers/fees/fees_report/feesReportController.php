@@ -225,6 +225,7 @@ class feesReportController extends Controller
         ->selectRaw('u.id, u.user_name')
         ->groupBy('fc.created_by')
         ->get()->toArray();
+        
         //echo "<pre>";print_r($collected_by);exit;
 
         $res['status_code'] = 1;
@@ -244,6 +245,8 @@ class feesReportController extends Controller
         $res['get_users'] = $get_users;
         $res['groupby'] = $groupby;        
         $res['months'] = FeeMonthId($syear,$sub_institute_id);
+        $res['seprateDetails'] =$request->input('seprateDetails');
+
         // echo "<pre>";print_r($res['fees_data']);exit;
         return is_mobile($type, "fees/fees_report/index", $res, "view");
     }
