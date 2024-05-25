@@ -211,12 +211,19 @@ class BookController extends Controller
     {
         try {
             $message ='';
+            $type=$request->type;
             $issue_status = $this->checkIssue($request->book_id);            
-            $sub_institute_id = session()->get('sub_institute_id');            
+            $sub_institute_id = $request->sub_institute_id ?? session()->get('sub_institute_id');            
             $details = tblstudentModel::where('enrollment_no', $enroll)->with('issuedBookItem')->first();
             $item_codes= DB::table('library_items')->where('book_id',$request->book_id)->where('sub_institute_id',$sub_institute_id)->get()->toArray();
-            $view = View::make('library.user_detail', compact('details','item_codes','message','issue_status'))->render();
-            return response()->json(['data' => $view], 200);
+            if($request->type!="API"){
+                $view = View::make('library.user_detail', compact('details','item_codes','message','issue_status'))->render();
+                return response()->json(['data' => $view], 200);
+            }else{
+                $res=['status'=>1,'data'=>$details];
+                return $res;
+            }
+           
         } catch (Exception $e) {
             return response()->json($e->getMessage(), 500);
         }
