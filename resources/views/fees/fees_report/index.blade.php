@@ -112,8 +112,12 @@
 						</select>
 					</div>
 					<div class="col-md-4 form-group">
-					<label>Seprate Bank Details</label>					
 					<input name="groupby" type="checkbox" @if(isset($data['groupby'])) checked @endif>
+					<label>Seprate Bank Details</label>					
+					<br>
+					<input name="seprateDetails" type="checkbox" @if(isset($data['seprateDetails'])) checked @endif>
+					<label>Seprate Details</label>					
+
 					</div>
 					<div class="col-md-12 form-group">
 						<center>
@@ -136,7 +140,13 @@
 								<th>Sr No.</th>
 								<th>{{App\Helpers\get_string('grno','request')}}</th>
 								<th>{{App\Helpers\get_string('studentname','request')}}</th>
+								@if(isset($data['seprateDetails']))
+								<th>{{App\Helpers\get_string('standard','request')}}</th>
+								<th>{{App\Helpers\get_string('division','request')}}</th>
+								<th>Batch</th>
+								@else
 								<th>{{App\Helpers\get_string('std/div','request')}}</th>
+								@endif
 								<th>{{App\Helpers\get_string('studentquota','request')}}</th>
 								<th>{{App\Helpers\get_string('uniqueid','request')}}</th>
 								<th>Month</th>
@@ -201,12 +211,15 @@
 								<td>{{$j}}</td>
 								<td>{{$value['enrollment_no']}}</td>
 								<td>{{$value['student_name']}}</td>
-								<td>{{$value['standard_name']}} - {{$value['division_name']}} {{$value['batch']}}
-								@if (Session::get('sub_institute_id') == '257')
-								{{$value['place_of_birth']}}
+								@if(isset($data['seprateDetails']))
+								<td>{{$value['standard_name']}}</td>
+								<td>{{$value['division_name']}}</td>
+								<td>{{$value['batch'] ?? "-" }} {{$value['place_of_birth']}}</td>
+								@else
+								<td>{{$value['standard_name']}} - {{$value['division_name']}} {{$value['batch']}} {{ (session()->get('sub_institute_id')==257) ?  $value['place_of_birth'] : '' }} 
 								@endif
 								</td>
-								<td>{{$value['quota']}}</td>
+								<td>{{$value['quota'] ?? "-"}}</td>
 								<td>{{$value['uniqueid']}}</td>
 								<td>{{ $monthNamesString}}</td>
 								<td>{{$value['receipt_no']}}</td>
@@ -243,7 +256,13 @@
 								<td></td>
 								<td></td>
 								<td></td>
+								@if(isset($data['seprateDetails']))
 								<td></td>
+								<td></td>
+								<td></td>
+								@else
+								<td></td>
+								@endif
 								<td></td>
 								@if(isset($data['groupby']))
 								<td></td>								

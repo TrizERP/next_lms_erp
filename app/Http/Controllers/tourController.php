@@ -12,6 +12,9 @@ use function App\Helpers\is_mobile;
 use App\Models\tblmenumasterModel;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use App\Http\Controllers\fees\map_year\map_year_controller;
+use App\Http\Controllers\fees\fees_title\fees_title_controller;
+use App\Http\Controllers\fees\fees_month_header\feesMonthHeadercontroller;
 
 class tourController extends Controller
 {
@@ -131,6 +134,7 @@ class tourController extends Controller
         $type = "";
         // return session();exit;
         $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
         $user_id = $request->session()->get('user_id');
 
         $rightsQuery = DB::table('tbluser as u')
@@ -235,16 +239,28 @@ class tourController extends Controller
             $res['userdata'] = $getUserData[0];
         }
 
+        // echo "<pre>";print_r($res['map_year']);exit;
         //get roles 
         $roles = DB::table('role_responsibility')->get()->toArray();
 
-$rolesRes = [];
+        $rolesRes = [];
 
-foreach ($roles as $key => $value) {
-    $rolesRes[$value->module_name][$value->profile_name] = $value;
-}
+        foreach ($roles as $key => $value) {
+            $rolesRes[$value->module_name][$value->profile_name] = $value;
+        }
+        $user_profile_id = session()->get('user_profile_id');
 
+        $request->merge(['type'=>"API",'sub_institute_id'=>$sub_institute_id ,'syear'=>$syear,'user_profile_id'=>$user_profile_id]);
 
+        $mapYearController = new map_year_controller;
+        $res['map_year'] = json_decode($mapYearController->create($request));
+
+        $feesTitleController = new fees_title_controller;
+        $res['feesTitle'] = json_decode($feesTitleController->create($request));
+
+        $feesMonthHeader = new feesMonthHeadercontroller;
+        $res['feesMonthHeader'] = json_decode($feesMonthHeader->index($request));
+        // echo "<pre>";print_r($res['feesMonthHeader']);exit;
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['head'] = $data;

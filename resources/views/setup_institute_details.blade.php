@@ -10,6 +10,8 @@
 	</script>
 	<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 	<title>Institute Data | TRIZ INNOVATION PVT LTD</title>
+	<link rel="stylesheet" href="{{asset('/fees_onboarding/styles.css')}}">
+	
 	<style>
 		.icon-right {
 			float: right;
@@ -244,7 +246,12 @@
 		</div>
 		</div>
 	</section>
-	@include('onboarding_model') @include('includes.footer') @include('includes.footerJs')
+	<!-- include modal files  -->
+	@include('onboarding_model')
+	@include('feesOnboardingModal') 
+
+	@include('includes.footer')
+	@include('includes.footerJs')
 
 	<!-- Option 1: jQuery and Bootstrap Bundle (includes Popper) -->
 	<script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"></script>

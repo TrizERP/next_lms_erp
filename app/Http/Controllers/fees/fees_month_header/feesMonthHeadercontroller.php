@@ -22,16 +22,25 @@ class feesMonthHeadercontroller extends Controller
      */
     public function index(Request $request)
     {
+        $type = $request->input('type');
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+
+        if($type=="API"){
+            $sub_institute_id = $request->sub_institute_id;
+            $syear = $request->syear;
+        }
+
         $data = map_year::where([
-            'sub_institute_id' => session()->get('sub_institute_id'),
-            'syear'            => session()->get('syear'),
+            'sub_institute_id' => $sub_institute_id,
+            'syear'            => $syear,
         ])->get()->toArray();
         
         $start_month = $data[0]['from_month'];
         $end_month = $data[0]['to_month'];
-if($start_month==6){
-    $plus_month=3;
-}
+        if($start_month==6){
+            $plus_month=3;
+        }
         $months = [
             1  => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'May', 6 => 'Jun', 7 => 'Jul', 8 => 'Aug', 9 => 'Sep',
             10 => 'Oct', 11 => 'Nov', 12 => 'Dec',
@@ -85,7 +94,7 @@ if($start_month==6){
 
         $result = array();
         $result = DB::table('fees_month_header')
-            ->where('sub_institute_id', session()->get('sub_institute_id'))->get()->toArray();
+            ->where('sub_institute_id',$sub_institute_id)->get()->toArray();
             
         /* for ($i = 1; $i <= 12; $i++) {
             $months_arr[$start_month.$syear] = $months[$start_month].'/'.$syear;
@@ -99,8 +108,6 @@ if($start_month==6){
         $res['data']['ddMonth'] = $months_arr;
         $res['month_header'] = $result;
     
-        $type = $request->input('type');
-
         return is_mobile($type, "fees/fees_month_header/fees_month_header", $res, "view");
     }
 
@@ -114,6 +121,16 @@ if($start_month==6){
      */
     public function store(Request $request)
     {
+        $type = $request->input('type');
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+        $user_profile_id = session()->get('user_profile_id');
+        if($type=="API"){
+            $sub_institute_id = $request->sub_institute_id;
+            $syear = $request->syear;
+            $user_profile_id = $request->user_profile_id;
+        }
+
         $month_values = $request->month_value;
         
         foreach ($month_values as $month_id => $header) 
@@ -122,8 +139,8 @@ if($start_month==6){
                 ['month_id' => $month_id],
                 [
                     'header' => $header,
-                    'sub_institute_id' => session()->get('sub_institute_id'),
-                    'created_by' => session()->get('user_profile_id'),
+                    'sub_institute_id' => $sub_institute_id,
+                    'created_by' => $user_profile_id,
                     'created_at' => now(),
                     'updated_at' => now()
                 ]
@@ -135,7 +152,6 @@ if($start_month==6){
             "message" => "Header Added/Updated Successfully",
         );
 
-        $type = $request->input('type');
 
         return is_mobile($type, "fees_month_header.index", $res, "redirect");
     }
