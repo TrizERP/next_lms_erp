@@ -105,7 +105,12 @@ if (isset($_REQUEST['submit'])) {
                 } else */
                 if ($valueFields['field'] == "SCHOOL_ID" || $valueFields['field'] == "school_id") {
                     $valueQuery .= "'" . $_SESSION['SUB_INSTITUTE_ID'] . "',";
-                } else if ($valueFields['field'] == "SUB_INSTITUTE_ID" || $valueFields['field'] == "sub_institute_id" || $valueFields['field'] == "sub_inst_id") {
+                } 
+                else if($valueFields['field']=="user_code"){
+                   $valueQuery.= PHPExcel_Style_NumberFormat::toFormattedString($value[$valueFields['field']], '0000'); 
+                //    echo "<pre>";print_r($valueQuery);
+                }
+                else if ($valueFields['field'] == "SUB_INSTITUTE_ID" || $valueFields['field'] == "sub_institute_id" || $valueFields['field'] == "sub_inst_id") {
                     $valueQuery .= "'" . $_SESSION['SUB_INSTITUTE_ID'] . "',";
                 } else if ($valueFields['field'] == "MARKING_PERIOD_ID" || $valueFields['field'] == "marking_period_id" || $valueFields['field'] == "term_id") {
                     $valueQuery .= "'5',";
@@ -217,6 +222,8 @@ if (isset($_REQUEST['submit'])) {
         // Remove trailing comma
         $valueQuery = rtrim($valueQuery, ',');
     }
+    // echo "<pre>";print_r($valueQuery);
+    // exit;
 // echo $valueQuery;exit;
         // echo  $valueQuery ."<br/><br/>"; 
        $query = mysqli_query($cn, $insertQuery . $fieldQuery . $valueQuery) or die(mysqli_error($cn));
@@ -232,19 +239,19 @@ if (isset($_REQUEST['submit'])) {
 $getTables = mysqli_query($cn, "SELECT * FROM import_table_fields where display_status=1 group by table_name order by id");
 ?>
 <form method="post" enctype="multipart/form-data">
-	<select name="table" id="table">
-		<option value=""> Select Module</option>
-		<?php
+    <select name="table" id="table">
+        <option value=""> Select Module</option>
+        <?php
         while ($value = mysqli_fetch_assoc($getTables)) {
             ?>
-		<option value="<?php echo $value['table_name'] ?>">
-			<?php echo $value['display_table_name'] ?>
-		</option>
-		<?php
+        <option value="<?php echo $value['table_name'] ?>">
+            <?php echo $value['display_table_name'] ?>
+        </option>
+        <?php
         }
         ?>
-	</select>
+    </select>
 
-	<input type="file" name="filename" id="filename">
-	<input type="submit" name="submit" class="btn_medium" value="UPLOAD">
+    <input type="file" name="filename" id="filename">
+    <input type="submit" name="submit" class="btn_medium" value="UPLOAD">
 </form>
