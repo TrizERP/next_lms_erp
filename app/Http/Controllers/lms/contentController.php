@@ -590,7 +590,7 @@ class contentController extends Controller
             $newfilename = 'lms_'.date('Y-m-d_h-i-s').'.'.$ext;
             //$img->move(public_path().'/lms_content_file/',$newfilename);
             // $img->storeAs('public/lms_content_file/', $newfilename);
-            Storage::disk('digitalocean')->putFileAs('public/lms_content_file/', $img, $filename, 'public');
+            Storage::disk('digitalocean')->putFileAs('public/lms_content_file/', $img, $newfilename, 'public');
 
             $image_data = [
                 'file_folder' => '/lms_content_file',

@@ -105,7 +105,12 @@ if (isset($_REQUEST['submit'])) {
                 } else */
                 if ($valueFields['field'] == "SCHOOL_ID" || $valueFields['field'] == "school_id") {
                     $valueQuery .= "'" . $_SESSION['SUB_INSTITUTE_ID'] . "',";
-                } else if ($valueFields['field'] == "SUB_INSTITUTE_ID" || $valueFields['field'] == "sub_institute_id" || $valueFields['field'] == "sub_inst_id") {
+                } 
+                else if($valueFields['field']=="user_code"){
+                   $valueQuery.= "'".PHPExcel_Style_NumberFormat::toFormattedString($value[$valueFields['field']], '0000'). "',";
+                //    echo "<pre>";print_r($valueQuery);
+                }
+                else if ($valueFields['field'] == "SUB_INSTITUTE_ID" || $valueFields['field'] == "sub_institute_id" || $valueFields['field'] == "sub_inst_id") {
                     $valueQuery .= "'" . $_SESSION['SUB_INSTITUTE_ID'] . "',";
                 } else if ($valueFields['field'] == "MARKING_PERIOD_ID" || $valueFields['field'] == "marking_period_id" || $valueFields['field'] == "term_id") {
                     $valueQuery .= "'5',";
@@ -217,6 +222,8 @@ if (isset($_REQUEST['submit'])) {
         // Remove trailing comma
         $valueQuery = rtrim($valueQuery, ',');
     }
+    // echo "<pre>";print_r($valueQuery);
+    // exit;
 // echo $valueQuery;exit;
         // echo  $valueQuery ."<br/><br/>"; 
        $query = mysqli_query($cn, $insertQuery . $fieldQuery . $valueQuery) or die(mysqli_error($cn));

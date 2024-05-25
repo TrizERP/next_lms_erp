@@ -222,7 +222,7 @@ class PayrollController extends Controller
             // foreach for employees 
             foreach ($request->emp as $emp_ids => $emp_values) {
                 $gender="";
-                $totalAllowance =$totalSalary= 0;
+                $totalAllowance = $totalSalary = $totalGrossSalary= 0;
                 $allData = $jsonData = [];
                 // payroll type details get head and amounts
                 foreach($emp_values as $key => $value){
@@ -237,6 +237,9 @@ class PayrollController extends Controller
                        if($payroll_type_name=="BASIC" || $payroll_type_name=="D.A" || $payroll_type_name=="GRADE PAY"){
                         $totalAllowance += $amount;
                        }
+                        if(!in_array($payroll_type_name,['TDS','PT','PF'])){
+                            $totalGrossSalary += $amount;
+                        }
                        $totalSalary+=$amount;
                        $allData[$payroll_type_id] = [$payroll_type_name=>$amount];
                     }
@@ -244,14 +247,14 @@ class PayrollController extends Controller
                 // for contact emps 
                 $getIsCalculate = DB::table('tbluser as tu')->join('hrms_departments as hd','hd.id','=','tu.department_id')
                 ->where('tu.id',$emp_ids)->value('is_calculated');
-                
+               
                 if($getIsCalculate==1){
                     $getPF = $getPT = 0;
                 }else{
                     $getPF = Helpers::getPF($totalAllowance);
-                    $getPT = Helpers::getPT($totalAllowance,$gender);
+                    $getPT = Helpers::getPT($totalGrossSalary,$gender);
                 }
-              
+           
                 // echo "<pre>";print_r($getPT);exit;
                 foreach ($allData as $key => $value) {
                    if(isset($value['PF'])){
