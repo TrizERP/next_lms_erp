@@ -2410,6 +2410,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
     public function studentFeesDetailAPI(Request $request)
     {
         // for api token is required
+/*        
         try {
             if (!$this->jwtToken()->validate()) {
                 $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
@@ -2421,7 +2422,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
 
             return response()->json($response, 401);
         }
-
+*/
         $student_id = $request->input("student_id");
         $type = $request->input("type");
         $sub_institute_id = $request->input("sub_institute_id");
@@ -2447,6 +2448,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                 $online_link = env('APP_URL') . "fees/online_fees_collect";
             }
             $array = [1,72];
+            $all_year_fees = [254];
             if(in_array($sub_institute_id, $array)){
                 $pay_link = DB::table('tblstudent_enrollment as se')
                     ->selectRaw('ac.payment_link')
@@ -2463,6 +2465,8 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             }
 
             $fees_data = $this->getBk($request, $student_id);
+            //echo "<pre>";
+            //print_r($fees_data);
             if (isset($fees_data['total_fees'])) {
                 foreach ($fees_data['total_fees'] as $key => $val) {
                     unset($val['bk']);
@@ -2477,7 +2481,6 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                 }
             }
 
-            $data['PENDING'] = $new_pending_arr;
             //END Get Fees pending array
 
             //START Get Fees paid array 03-04-24 by uma
@@ -2485,17 +2488,29 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                 ->selectRaw('c.receipt_no,c.receiptdate,c.payment_mode,c.bank_branch,c.bank_branch,c.bank_name,c.fees_html,
                     c.cheque_date,c.cheque_no,c.cheque_bank_name,SUM(amount) as paid_amount,c.syear')
                 ->where('c.student_id', $student_id)
-                // ->where('c.syear', $syear)
                 ->where('c.is_deleted', 'N')
                 ->where('c.sub_institute_id', $sub_institute_id)
+                ->when(!in_array($sub_institute_id, $all_year_fees), function ($query) use ($syear) {
+                        return $query->where('c.syear', $syear);
+                })
                 ->groupBy('receipt_no')->orderBy('syear','desc')->get()->toArray();
 
-            $data['PAID'] = $paid_data;
+
             //END Get Fees paid array
 
-            $res['status'] = 1;
-            $res['message'] = "Success";
-            $res['data'] = $data;
+            if(isset($fees_data['stu_data'])){
+                $data['STU_DATA'] = $fees_data['stu_data'];
+                $data['PENDING'] = $new_pending_arr;
+                $data['PAID'] = $paid_data;
+
+                $res['status'] = 1;
+                $res['message'] = "Success";
+                $res['data'] = $data;
+            }else{
+                $res['status'] = 0;
+                $res['message'] = "No Data Found";
+            }
+
         } else {
             $res['status'] = 0;
             $res['message'] = "Parameter Missing";
