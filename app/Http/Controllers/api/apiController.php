@@ -741,7 +741,6 @@ public function studentData($is_exist,$request,$student_id){
             $errorMessage = true;
 
             $text = urlencode($text);
-            $data['last_var'] = urlencode($data['last_var']);
 
 //Start added by rajesh OTP for CN all institute
 $templateid = '';
@@ -751,12 +750,14 @@ $mmis = array(47);
 if(in_array($sub_institute_id, $cn))
     $templateid = '&template_id=1507166607307092495';
 
-if(in_array($sub_institute_id, $mmis))
-    $templateid = '&templateid=1707166555566064422';
-
 //END added by rajesh OTP for CN all institute
-
-            $url = $data['url'].$data['pram'].$templateid.$data['mobile_var'].$mobile.$data['text_var'].$text.$data['last_var'];
+            if(in_array($sub_institute_id, $mmis)){
+                $url = $data['url'].$data['pram'].$data['last_var'].$data['mobile_var'].$mobile.$data['text_var'].$text;
+            }
+            else{
+                $data['last_var'] = urlencode($data['last_var']);
+                $url = $data['url'].$data['pram'].$templateid.$data['mobile_var'].$mobile.$data['text_var'].$text.$data['last_var'];
+            }
 
             $ch = curl_init();
 

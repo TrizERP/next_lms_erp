@@ -1962,4 +1962,11 @@ exit; */
             return \App\Helpers\is_mobile($type, "fees/online_fees_collect/show_error", $school_data, "view");
         }
     }
+
+    public function abcmapp_response_handler(Request $request)
+    {
+        $response = $_REQUEST;
+        print_r($response);
+        echo "ABCM APP";
+    }
 }
