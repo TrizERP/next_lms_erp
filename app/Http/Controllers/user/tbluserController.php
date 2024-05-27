@@ -45,7 +45,7 @@ class tbluserController extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $data = tbluserprofilemasterModel::where(['sub_institute_id' => $sub_institute_id, 'status' => '1'])->get()->toArray();
         $dataCustomFields = tblcustomfieldsModel::where([
-            'sub_institute_id' => $sub_institute_id, 'status' => "1", 'table_name' => "tbluser",
+            'sub_institute_id' => $sub_institute_id, 'status' => "1", 'table_name' => "tbluser", "user_type"=>"" 
         ])->get();
 
         $subject_data = subjectModel::where(['sub_institute_id' => $sub_institute_id])->get();
@@ -231,7 +231,7 @@ class tbluserController extends Controller
         }
 
         $dataCustomFields = tblcustomfieldsModel::where([
-            'sub_institute_id' => $sub_institute_id, 'status' => "1", 'table_name' => "tbluser",
+            'sub_institute_id' => $sub_institute_id, 'status' => "1", 'table_name' => "tbluser", "user_type"=>"" 
         ])
             ->get();
 

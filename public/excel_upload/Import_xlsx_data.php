@@ -239,19 +239,19 @@ if (isset($_REQUEST['submit'])) {
 $getTables = mysqli_query($cn, "SELECT * FROM import_table_fields where display_status=1 group by table_name order by id");
 ?>
 <form method="post" enctype="multipart/form-data">
-	<select name="table" id="table">
-		<option value=""> Select Module</option>
-		<?php
+    <select name="table" id="table">
+        <option value=""> Select Module</option>
+        <?php
         while ($value = mysqli_fetch_assoc($getTables)) {
             ?>
-		<option value="<?php echo $value['table_name'] ?>">
-			<?php echo $value['display_table_name'] ?>
-		</option>
-		<?php
+        <option value="<?php echo $value['table_name'] ?>">
+            <?php echo $value['display_table_name'] ?>
+        </option>
+        <?php
         }
         ?>
-	</select>
+    </select>
 
-	<input type="file" name="filename" id="filename">
-	<input type="submit" name="submit" class="btn_medium" value="UPLOAD">
+    <input type="file" name="filename" id="filename">
+    <input type="submit" name="submit" class="btn_medium" value="UPLOAD">
 </form>

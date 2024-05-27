@@ -32,14 +32,14 @@ class yearly_attendance_controller extends Controller
         $division_id = $request->input("division");
         // $selected_year = $request->input("year");
         $syear = $request->session()->get('syear');
-        $term_id = $request->session()->get('term_id');
         $sub_institute_id = $request->session()->get('sub_institute_id');
 
-        $student_data = SearchStudent($grade_id, $standard_id, $division_id);
-
-        // $from_date = $selected_year . "-" . $from_month . "-01";
-        // $to_date = date('Y-m-t', strtotime($selected_year . "-" . $to_month));
-
+        if($type=="API"){
+            $syear = $request->get('syear');
+            $sub_institute_id = $request->get('sub_institute_id');
+        }
+        
+        $student_data = SearchStudent($grade_id, $standard_id, $division_id,$sub_institute_id,$syear);
 
         $whereAtt['syear'] = $syear;
         $whereAtt['sub_institute_id'] = $sub_institute_id;

@@ -127,7 +127,7 @@ class admissionRegistrationController extends Controller
         $checkStudent = tblstudentModel::where(['admission_id' => $id])->where('sub_institute_id',$sub_institute_id)->get()->toArray();
 
         $dataCustomFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "admission_registration"])
-            ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1)')
+            ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1)  and user_type="" ')
             ->get();
 
         $fieldsData = tblfields_dataModel::get()->toArray();
