@@ -379,32 +379,37 @@ class ImportController extends Controller
 
                 if ($request->table_name == 'tblstudent') {
                     $student_enroll_data = [];
+                    $sub_institute_id = isset($prepareData['sub_institute_id']) ? $prepareData['sub_institute_id'] : session()->get('sub_institute_id');
                     if (isset($prepareData['grade_id'])) {
-                        $grade_id = DB::table('academic_section')->select('id')->where([['title', $prepareData['grade_id']], ['sub_institute_id', session()->get('sub_institute_id')]])->first();
+                        $grade_id = DB::table('academic_section')->select('id')->where([['title', $prepareData['grade_id']], ['sub_institute_id', $sub_institute_id]])->first();
                         if ($grade_id) $student_enroll_data['grade_id'] = $grade_id->id;
                     }
+                    if (isset($prepareData['roll_no'])) {
+                       $student_enroll_data['roll_no'] =  $prepareData['roll_no'];
+                    }
                     if (isset($prepareData['standard_id'])) {
-                        $standard_id = DB::table('standard')->select('id')->where([['name', $prepareData['standard_id']], ['sub_institute_id', session()->get('sub_institute_id')]])->first();
+                        $standard_id = DB::table('standard')->select('id')->where([['name', $prepareData['standard_id']], ['sub_institute_id', $sub_institute_id]])->first();
                         if ($standard_id) $student_enroll_data['standard_id'] = $standard_id->id;
                     }
                     if (isset($prepareData['section_id'])) {
-                        $section_id = DB::table('division')->select('id')->where([['name', $prepareData['section_id']], ['sub_institute_id', session()->get('sub_institute_id')]])->first();
+                        $section_id = DB::table('division')->select('id')->where([['name', $prepareData['section_id']], ['sub_institute_id', $sub_institute_id]])->first();
                         if ($section_id) $student_enroll_data['section_id'] = $section_id->id;
                     }
                     if (isset($prepareData['student_quota'])) {
-                        $student_quota = DB::table('student_quota')->select('id')->where([['title', $prepareData['student_quota']], ['sub_institute_id', session()->get('sub_institute_id')]])->first();
+                        $student_quota = DB::table('student_quota')->select('id')->where([['title', $prepareData['student_quota']], ['sub_institute_id', $sub_institute_id]])->first();
                         if ($student_quota) $student_enroll_data['student_quota'] = $student_quota->id;
                     }
                     if (isset($prepareData['house_id'])) {
-                        $house_id = DB::table('house_master')->select('id')->where([['house_name', $prepareData['house_id']], ['sub_institute_id', session()->get('sub_institute_id')]])->first();
+                        $house_id = DB::table('house_master')->select('id')->where([['house_name', $prepareData['house_id']], ['sub_institute_id',$sub_institute_id]])->first();
                         if ($house_id) $student_enroll_data['house_id'] = $house_id->id;
                     }
                     $student_enroll_data['syear'] = $prepareData['syear'] ?? session()->get('syear');
                     $student_enroll_data['start_date'] = $prepareData['start_date'] ?? date('Y-m-d');
                     $student_enroll_data['adhar'] = $prepareData['adhar'] ?? 0;
+                    // remove from tblstudent values
+                    unset($prepareData['student_id'], $prepareData['grade_id'], $prepareData['standard_id'], $prepareData['section_id'], $prepareData['student_quota'], $prepareData['house_id'], $prepareData['syear'], $prepareData['start_date'], $prepareData['term_id'], $prepareData['adhar'], $prepareData['roll_no']);
 
-                    unset($prepareData['student_id'], $prepareData['grade_id'], $prepareData['standard_id'], $prepareData['section_id'], $prepareData['student_quota'], $prepareData['house_id'], $prepareData['syear'], $prepareData['start_date'], $prepareData['term_id'], $prepareData['adhar']);
-                    $student_enroll_data['sub_institute_id'] = $prepareData['sub_institute_id'] = session()->get('sub_institute_id');
+                    $student_enroll_data['sub_institute_id'] = $prepareData['sub_institute_id'] = $sub_institute_id;
 
                     $found = false;
                     $student_id = DB::table($request->table_name)->where($condition)->where('sub_institute_id', $sub_institute_id)->first();

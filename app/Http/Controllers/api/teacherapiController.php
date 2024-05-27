@@ -27,6 +27,7 @@ use GenTux\Jwt\GetsJwtToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Storage;
 
 class teacherapiController extends Controller
 {
@@ -303,7 +304,8 @@ class teacherapiController extends Controller
                 $size = $img->getSize();
                 $newfilename = 'lms_'.date('Y-m-d_h-i-s').'.'.$ext;
                 $file_folder = '/lms_content_file';
-                $img->storeAs('public/lms_content_file/', $newfilename);
+                // $img->storeAs('public/lms_content_file/', $newfilename);
+                Storage::disk('digitalocean')->putFileAs('public/lms_content_file/', $img, $newfilename, 'public');
             }
 
             if ($request->get('file_type') == "link") {
@@ -1439,7 +1441,9 @@ class teacherapiController extends Controller
                 $size = $img->getSize();
                 $newfilename = 'lms_'.date('Y-m-d_h-i-s').'.'.$ext;
                 $file_folder = '/lms_content_file';
-                $img->storeAs('public/lms_content_file/', $newfilename);
+                // $img->storeAs('public/lms_content_file/', $newfilename);
+                Storage::disk('digitalocean')->putFileAs('public/lms_content_file/', $img, $newfilename, 'public');
+
             }
 
             if ($request->get('file_type') == "link") {

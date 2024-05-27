@@ -62,7 +62,7 @@
                                                         style="font-size: 28px;color: black;font-weight: bolder;">...</span>
                                                 </td>
                                                 <td>{{$portfolio['type']}}</td>
-                                                <td>@if($portfolio['file_name'] != ""){{$portfolio['file_name']}}@else
+                                                <td>@if($portfolio['file_name'] != "")<a href="{{ Storage::disk('digitalocean')->url('public/lms_portfolio/'.$portfolio['file_name'])}}" target="_blank">{{$portfolio['file_name']}}</a>@else
                                                         - @endif</td>
                                                 <td>{{$portfolio['created_at']}}</td>
                                                 <td>

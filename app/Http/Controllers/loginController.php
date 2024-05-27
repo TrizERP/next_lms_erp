@@ -241,7 +241,7 @@ class loginController extends Controller
                             $request->session()->put('multiSchool', $getMultiInst['0']->multischool);
                         }
                         if($user['is_admin']==2){
-                            $schools = SchoolModel::whereIn('client_id',[2,20,34,81])->get()->toArray();
+                            $schools = SchoolModel::whereIn('client_id',[2,11,20,34,81])->get()->toArray();
                         }else{
                             $schools = SchoolModel::where(['client_id' => $user['client_id']])->get()->toArray();
                         }
@@ -252,7 +252,7 @@ class loginController extends Controller
                             $request->session()->put('syear', $schools[0]['syear']);
                         }
                         if($user['is_admin']==2){
-                            $getTermId = academic_yearModel::whereIn('sub_institute_id',[254,195,47,72])
+                            $getTermId = academic_yearModel::whereIn('sub_institute_id',[254,195,47,72,1])
                             ->where('syear',session()->get('syear'))
                             ->get()->toArray();
                         
@@ -272,7 +272,7 @@ class loginController extends Controller
                         $given_hrms_rights = '';
                         $getAcademicTerms = $getAcademicYear = array();
                         if($user['is_admin']==2){
-                            $getInstitutes = DB::table('school_setup as ss')->whereIn('id',[254,195,47,72])->get()->toArray();
+                            $getInstitutes = DB::table('school_setup as ss')->whereIn('id',[254,195,47,72,1])->get()->toArray();
                         }else{
                             $getInstitutes = DB::table('school_setup')->where('client_id',
                             $user['client_id'])->get()->toArray();

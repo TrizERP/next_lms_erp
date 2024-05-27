@@ -32,12 +32,12 @@ class inwardController extends Controller
         if($type=="API"){
             try {
                 if (!$this->jwtToken()->validate()) {
-                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+                    $response = ['status' => 2, 'message' => 'Token Auth Failed', 'data' => []];
     
                     return response()->json($response, 401);
                 }
             } catch (\Exception $e) {
-                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+                $response = ['status' => 2, 'message' => $e->getMessage(), 'data' => []];
     
                 return response()->json($response, 401);
             }
@@ -52,7 +52,7 @@ class inwardController extends Controller
                 'physical_file_location.file_location as file_location_id')
             ->where(['inward.sub_institute_id' => $sub_institute_id, 'inward.syear' => $syear])->get();
 
-        $inward_data['status_code'] = 1;
+        $inward_data['status'] = 1;
         $inward_data['data'] = $inward;
 
         return is_mobile($type, "inward_outward/show_inward", $inward_data, "view");
@@ -61,19 +61,19 @@ class inwardController extends Controller
 
     public function create(Request $request)
     {
+        $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
-        $type = $request->input('type');
         
         if($type=="API"){
             try {
                 if (!$this->jwtToken()->validate()) {
-                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+                    $response = ['status' => 2, 'message' => 'Token Auth Failed', 'data' => []];
     
                     return response()->json($response, 401);
                 }
             } catch (\Exception $e) {
-                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+                $response = ['status' => 2, 'message' => $e->getMessage(), 'data' => []];
     
                 return response()->json($response, 401);
             }
@@ -106,12 +106,12 @@ class inwardController extends Controller
         if($type=="API"){
             try {
                 if (!$this->jwtToken()->validate()) {
-                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+                    $response = ['status' => 2, 'message' => 'Token Auth Failed', 'data' => []];
     
                     return response()->json($response, 401);
                 }
             } catch (\Exception $e) {
-                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+                $response = ['status' => 2, 'message' => $e->getMessage(), 'data' => []];
     
                 return response()->json($response, 401);
             }
@@ -147,11 +147,11 @@ class inwardController extends Controller
         $inward->save();
         
         if($inward->save()){
-            $message['status_code'] = "1";
-            $message['message']="Added Successfully";
+            $message['status'] = 1;
+            $message['message'] = "Added Successfully";
         }else{
-            $message['status_code'] = "0";
-            $message['message']="Failed To Add";
+            $message['status'] = 0;
+            $message['message'] = "Failed To Add";
         }
 //        $message = [
 //            "message" => "Inward Added Succesfully",
@@ -170,12 +170,12 @@ class inwardController extends Controller
         if($type=="API"){
             try {
                 if (!$this->jwtToken()->validate()) {
-                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+                    $response = ['status' => 2, 'message' => 'Token Auth Failed', 'data' => []];
     
                     return response()->json($response, 401);
                 }
             } catch (\Exception $e) {
-                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+                $response = ['status' => 2, 'message' => $e->getMessage(), 'data' => []];
     
                 return response()->json($response, 401);
             }
@@ -215,12 +215,12 @@ class inwardController extends Controller
         if($type=="API"){
             try {
                 if (!$this->jwtToken()->validate()) {
-                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+                    $response = ['status' => 2, 'message' => 'Token Auth Failed', 'data' => []];
     
                     return response()->json($response, 401);
                 }
             } catch (\Exception $e) {
-                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+                $response = ['status' => 2, 'message' => $e->getMessage(), 'data' => []];
     
                 return response()->json($response, 401);
             }
@@ -245,10 +245,8 @@ class inwardController extends Controller
         }
 
         inwardModel::where(["id" => $id])->update($data);
-        $message['status_code'] = "1";
-        $message = [
-            "message" => "Data Updated Successfully",
-        ];
+        $message["status"] = 1;
+        $message["message"] = "Data Updated Successfully";
 
 
         return is_mobile($type, "add_inward.index", $message, "redirect");
@@ -261,22 +259,20 @@ class inwardController extends Controller
         if($type=="API"){
             try {
                 if (!$this->jwtToken()->validate()) {
-                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+                    $response = ['status' => 2, 'message' => 'Token Auth Failed', 'data' => []];
     
                     return response()->json($response, 401);
                 }
             } catch (\Exception $e) {
-                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+                $response = ['status' => 2, 'message' => $e->getMessage(), 'data' => []];
     
                 return response()->json($response, 401);
             }
                       
         }
         inwardModel::where(["id" => $id])->delete();
-        $message['status_code'] = "1";
-        $message = [
-            "message" => "Data Deleted successfully",
-        ];
+        $message["status"] = 1;
+        $message["message"] = "Data Deleted successfully";
 
         return is_mobile($type, "add_inward.index", $message, "redirect");
     }

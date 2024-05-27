@@ -421,7 +421,7 @@ class studentHomeworkController extends Controller
                 })->join('subject as ss', function ($join) {
                     $join->on('ss.id', '=', 'h.subject_id')->on('ss.sub_institute_id', '=', 'h.sub_institute_id');
                 })->join('class_teacher as ct', function ($join) {
-                    $join->on('ct.standard_id', '=', 'h.standard_id')->on('ct.division_id', '=', 'h.division_id');
+                    $join->on('ct.standard_id', '=', 'h.standard_id')->on('ct.division_id', '=', 'h.division_id')->on('ct.syear', '=', 'h.syear');
                 })->selectRaw("h.id,h.title,h.description,h.date,if(h.image = '','',
                     concat('https://".$_SERVER['SERVER_NAME']."/storage/student/',h.image)) as file_name,s.name AS standard_name,
                     d.name AS division_name,ss.subject_name,CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name) AS student_name,

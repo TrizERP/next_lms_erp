@@ -17,7 +17,7 @@
                 <div class="video-box mb-4">
                     <div class="embed-responsive embed-responsive-16by9">
                         <video oncontextmenu="return false;" id="my-video-player" width="854" height="480" controls autoplay controlsList="nodownload">
-                            <source src="../../../storage{{$data['content_data']['file_folder']}}/{{$data['content_data']['filename']}}#toolbar=0&navpanes=0" type="video/mp4">
+                            <source src="{{Storage::disk('digitalocean')->url('public'.$data['content_data']['file_folder'].'/'.$data['content_data']['filename'])}}#toolbar=0&navpanes=0" type="video/mp4">
                         </video>
 
                     </div>

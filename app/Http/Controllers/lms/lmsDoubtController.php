@@ -12,6 +12,7 @@ use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use function App\Helpers\aut_token;
 use function App\Helpers\is_mobile;
+use Illuminate\Support\Facades\Storage;
 
 class lmsDoubtController extends Controller
 {
@@ -97,7 +98,9 @@ class lmsDoubtController extends Controller
             $size = $img->getSize();
             $newfilename = 'lms_'.date('Y-m-d_h-i-s').'.'.$ext;
             //$img->move(public_path().'/lms_content_file/',$newfilename);
-            $img->storeAs('public/lms_doubts/', $newfilename);
+            // $img->storeAs('public/lms_doubts/', $newfilename); 20-05-24
+            Storage::disk('digitalocean')->putFileAs('public/lms_doubts/', $img, $newfilename, 'public');
+
         }
 
         $content = array(

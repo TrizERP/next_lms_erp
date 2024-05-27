@@ -247,14 +247,14 @@ class PayrollController extends Controller
                 // for contact emps 
                 $getIsCalculate = DB::table('tbluser as tu')->join('hrms_departments as hd','hd.id','=','tu.department_id')
                 ->where('tu.id',$emp_ids)->value('is_calculated');
-                
+               
                 if($getIsCalculate==1){
                     $getPF = $getPT = 0;
                 }else{
                     $getPF = Helpers::getPF($totalAllowance);
                     $getPT = Helpers::getPT($totalGrossSalary,$gender);
                 }
-              
+           
                 // echo "<pre>";print_r($getPT);exit;
                 foreach ($allData as $key => $value) {
                    if(isset($value['PF'])){
