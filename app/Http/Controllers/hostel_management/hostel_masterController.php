@@ -22,7 +22,7 @@ class hostel_masterController extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
 
         $dataCustomFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "hostel_master"])
-            ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1)')
+            ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1)  and user_type="" ')
             ->get();
 
         $fieldsData = tblfields_dataModel::get()->toArray();
@@ -64,7 +64,7 @@ class hostel_masterController extends Controller
         $data = hosteltypemasterModel::where(['sub_institute_id' => $sub_institute_id])->get();
 
         $dataCustomFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "hostel_master"])
-            ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1)')
+            ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1) and user_type="" ')
             ->get();
 
         $fieldsData = tblfields_dataModel::get()->toArray();
@@ -117,7 +117,7 @@ class hostel_masterController extends Controller
                 'status'     => "1",
                 'table_name' => "hostel_master",
                 'field_type' => "file",
-            ])->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1)')
+            ])->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1) and user_type="" ')
             ->get()->toArray();
 
         foreach ($dataCustomFields as $key => $value) {

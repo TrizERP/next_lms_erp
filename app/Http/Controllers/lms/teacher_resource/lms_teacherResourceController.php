@@ -64,7 +64,7 @@ class lms_teacherResourceController extends Controller
 
         //START Columns from field setting
         $dataCustomFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "lms_teacher_resource"])
-                            ->whereRaw('(sub_institute_id = ' . $sub_institute_id . ' OR common_to_all = 1)')
+                            ->whereRaw('(sub_institute_id = ' . $sub_institute_id . ' OR common_to_all = 1)  and user_type="" ')
                             ->get();
 
         $data['custom_fields'] = $dataCustomFields; 
