@@ -113,7 +113,7 @@ class admissionEnquiryController extends Controller
         $category = castModel::get()->toArray();
 
         $dataCustomFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "admission_enquiry"])
-            ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1)')
+            ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1) and user_type="" ')
             ->get();
 
         $fieldsData = tblfields_dataModel::get()->toArray();
@@ -593,7 +593,7 @@ class admissionEnquiryController extends Controller
         $category = castModel::get()->toArray();
 
         $dataCustomFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "admission_enquiry"])
-            ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1)')
+            ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1)  and user_type="" ')
             ->get();
 
         $fieldsData = tblfields_dataModel::get()->toArray();
