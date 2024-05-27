@@ -376,22 +376,20 @@ class studentAttendanceController extends Controller
         $date = $request->input('date');
         $taken = $request->input('taken');
         $syear = $request->session()->get('syear');
-        $term_id = $request->session()->get('term_id');
         $sub_institute_id = $request->session()->get('sub_institute_id');
-        $marking_period_id=session()->get('term_id');
-
+        if($type=="API"){
+            $sub_institute_id=$request->sub_institute_id;
+            $syear = $request->syear;
+        }
         $data = DB::table('tblstudent as s')
             ->join('tblstudent_enrollment as se', function ($join) use ($syear) {
-                $join->whereRaw("s.id = se.student_id AND se.syear = '" . $syear . "' AND se.end_date IS NULL");
-            })->join('standard as sm', function ($join) use($marking_period_id) {
-                $join->whereRaw('se.standard_id = sm.id');
-                // ->when($marking_period_id,function($query) use($marking_period_id){
-                //     $query->where('sm.marking_period_id',$marking_period_id);
-                // });
+                $join->on("s.id", "=", "se.student_id")->whereRaw("se.syear = '" . $syear . "' AND se.end_date IS NULL");
+            })->join('standard as sm', function ($join) {
+                $join->on('se.standard_id', '=', 'sm.id');
             })->join('division as dm', function ($join) {
-                $join->whereRaw('se.section_id = dm.id');
+                $join->on('se.section_id', '=', 'dm.id');
             })->leftJoin('attendance_student as a', function ($join) use ($date, $syear) {
-                $join->whereRaw("s.id = a.student_id AND sm.id = a.standard_id AND dm.id = a.section_id
+                $join->on('s.id', '=', 'a.student_id')->whereRaw("sm.id = a.standard_id AND dm.id = a.section_id
                     AND s.sub_institute_id = a.sub_institute_id AND a.attendance_date = '" . $date . "' and a.syear = '" . $syear . "'");
             })->selectRaw("CONCAT_WS('/',sm.name,dm.name) AS standard_name, dm.name AS division_name,se.standard_id,
                 se.section_id,se.student_id,a.attendance_code,s.gender, SUM(CASE WHEN s.gender = 'M' THEN 1 ELSE 0 END) AS BOY,
@@ -438,10 +436,14 @@ class studentAttendanceController extends Controller
         $division_id = $res['division_id'] =  $request->input("division");
         $selected_year = $res['year'] = $request->input("year");
         $syear = $request->session()->get('syear');
-        $term_id = $request->session()->get('term_id');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $batch="";
-       
+
+        if($type=="API"){
+            $syear = $request->get('syear');
+            $sub_institute_id = $request->get('sub_institute_id');
+        }
+
         if($request->has('batch_sel')){
             $batchs = DB::table('batch')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear,'standard_id'=>$standard_id,'division_id'=>$division_id])->get()->toArray();
             $res['batch_id'] = $request->batch_sel;    
