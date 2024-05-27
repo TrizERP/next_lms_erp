@@ -32,12 +32,12 @@ class outwardController extends Controller
         if($type=="API"){
             try {
                 if (!$this->jwtToken()->validate()) {
-                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+                    $response = ['status' => 2, 'message' => 'Token Auth Failed', 'data' => []];
     
                     return response()->json($response, 401);
                 }
             } catch (\Exception $e) {
-                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+                $response = ['status' => 2, 'message' => $e->getMessage(), 'data' => []];
     
                 return response()->json($response, 401);
             }
@@ -52,7 +52,7 @@ class outwardController extends Controller
             ->where(['outward.sub_institute_id' => $sub_institute_id, 'outward.syear' => $syear])
             ->get();
 
-        $outward_data['status_code'] = 1;
+        $outward_data['status'] = 1;
         $outward_data['data'] = $outward;
 
         return is_mobile($type, "inward_outward/show_outward", $outward_data, "view");
@@ -67,12 +67,12 @@ class outwardController extends Controller
         if($type=="API"){
             try {
                 if (!$this->jwtToken()->validate()) {
-                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+                    $response = ['status' => 2, 'message' => 'Token Auth Failed', 'data' => []];
     
                     return response()->json($response, 401);
                 }
             } catch (\Exception $e) {
-                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+                $response = ['status' => 2, 'message' => $e->getMessage(), 'data' => []];
     
                 return response()->json($response, 401);
             }
@@ -105,12 +105,12 @@ class outwardController extends Controller
         if($type=="API"){
             try {
                 if (!$this->jwtToken()->validate()) {
-                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+                    $response = ['status' => 2, 'message' => 'Token Auth Failed', 'data' => []];
     
                     return response()->json($response, 401);
                 }
             } catch (\Exception $e) {
-                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+                $response = ['status' => 2, 'message' => $e->getMessage(), 'data' => []];
     
                 return response()->json($response, 401);
             }
@@ -145,10 +145,10 @@ class outwardController extends Controller
         $outward->save();
         
         if($outward->save()){
-            $message['status_code'] = "1";
+            $message['status'] = 1;
             $message['message']="Added Successfully";
         }else{
-            $message['status_code'] = "0";
+            $message['status'] = 0;
             $message['message']="Failed To Add";
         }
 
@@ -166,12 +166,12 @@ class outwardController extends Controller
         if($type=="API"){
             try {
                 if (!$this->jwtToken()->validate()) {
-                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+                    $response = ['status' => 2, 'message' => 'Token Auth Failed', 'data' => []];
     
                     return response()->json($response, 401);
                 }
             } catch (\Exception $e) {
-                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+                $response = ['status' => 2, 'message' => $e->getMessage(), 'data' => []];
     
                 return response()->json($response, 401);
             }
@@ -209,12 +209,12 @@ class outwardController extends Controller
         if($type=="API"){
             try {
                 if (!$this->jwtToken()->validate()) {
-                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+                    $response = ['status' => 2, 'message' => 'Token Auth Failed', 'data' => []];
     
                     return response()->json($response, 401);
                 }
             } catch (\Exception $e) {
-                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+                $response = ['status' => 2, 'message' => $e->getMessage(), 'data' => []];
     
                 return response()->json($response, 401);
             }
@@ -237,10 +237,8 @@ class outwardController extends Controller
         }
 
         outwardModel::where(["id" => $id])->update($data);
-        $message['status_code'] = "1";
-        $message = [
-            "message" => "Outward Updated Successfully",
-        ];
+        $message["status"] = 1;
+        $message["message"] = "Outward Updated Successfully";
         // $type = $request->input('type');
 
         return is_mobile($type, "add_outward.index", $message, "redirect");
@@ -253,22 +251,20 @@ class outwardController extends Controller
         if($type=="API"){
             try {
                 if (!$this->jwtToken()->validate()) {
-                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+                    $response = ['status' => 2, 'message' => 'Token Auth Failed', 'data' => []];
     
                     return response()->json($response, 401);
                 }
             } catch (\Exception $e) {
-                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+                $response = ['status' => 2, 'message' => $e->getMessage(), 'data' => []];
     
                 return response()->json($response, 401);
             }
                       
         }
         outwardModel::where(["id" => $id])->delete();
-        $message['status_code'] = "1";
-        $message = [
-            "message" => "Outward Deleted successfully",
-        ];
+        $message["status"] = 1;
+        $message["message"] = "Outward Deleted successfully";
 
         return is_mobile($type, "add_outward.index", $message, "redirect");
 
