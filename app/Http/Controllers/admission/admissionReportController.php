@@ -17,6 +17,10 @@ class admissionReportController extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
         $type = $request->input('type');
+        if($type=="API"){
+            $sub_institute_id=$request->sub_institute_id;
+            $syear=$request->syear;
+        }
         $report = $request->input('report');
         $from_date = $request->input('from_date');
         $to_date = $request->input('to_date');
@@ -58,7 +62,7 @@ class admissionReportController extends Controller
                     ai.gender, ai.mobile, ai.email, ai.address, DATE_FORMAT(ai.date_of_birth, '%d-%m-%Y') as date_of_birth, ai.age, ai.syear, ai.previous_school_name,s_previous.name as previous_standard,
                     s.name as admission_standard, ai.remarks,fu.status as enquiry_status, ai.source_of_enquiry, ai.created_by,
                     ai.counciler_name, ai.father_name,CONCAT_WS(' ',ts.first_name,ts.last_name) AS created_by, cs.caste_name $extra")
-                ->whereRaw("(DATE_FORMAT(ai.created_on, '%Y-%m-%d') BETWEEN '" . $from_date . "' AND '" . $to_date . "')
+                ->whereRaw("(ai.created_on BETWEEN '" . $from_date . "' AND '" . $to_date . "')
                     AND ai.sub_institute_id = '" . $sub_institute_id . "' AND ai.syear = '" . $syear . "'");
 
             if ($standard != '') {
