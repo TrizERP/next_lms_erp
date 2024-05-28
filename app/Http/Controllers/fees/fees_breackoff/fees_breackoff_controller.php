@@ -196,7 +196,7 @@ if($start_month==6){
         if (isset($_REQUEST['action']) && $_REQUEST['action'] == 'insert')
         {
             $all_data = $_REQUEST['NewValues'];
-
+          
             foreach ($all_data as $id => $arr) {
                 foreach ($arr as $ids => $val) {
                     if ($val == '' || $val == null) {
@@ -389,6 +389,7 @@ if($start_month==6){
             $school_data['data']['title_arr'] = $title_arr;
             $school_data['data']['quota_arr'] = $quota_arr;
             $type = $request->input('type');
+           
             // echo "<pre>";print_r($school_data);exit;
             return is_mobile($type, "fees/fees_breackoff/edit", $school_data, "view");
         }

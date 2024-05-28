@@ -15,6 +15,8 @@ use Illuminate\Support\Facades\Schema;
 use App\Http\Controllers\fees\map_year\map_year_controller;
 use App\Http\Controllers\fees\fees_title\fees_title_controller;
 use App\Http\Controllers\fees\fees_month_header\feesMonthHeadercontroller;
+use App\Http\Controllers\fees\feesReceiptBookMasterController;
+use App\Http\Controllers\fees\fees_breackoff\fees_breackoff_controller;
 
 class tourController extends Controller
 {
@@ -260,7 +262,18 @@ class tourController extends Controller
 
         $feesMonthHeader = new feesMonthHeadercontroller;
         $res['feesMonthHeader'] = json_decode($feesMonthHeader->index($request));
-        // echo "<pre>";print_r($res['feesMonthHeader']);exit;
+
+        $feesReceiptBook = new feesReceiptBookMasterController;
+        $res['feesReceiptBook'] = json_decode($feesReceiptBook->create($request));
+        set_time_limit(300);
+
+        $feesBk = new fees_breackoff_controller;
+        $res['feesBreakoff'] = json_decode($feesBk->create($request));
+
+        $res['importData']  = DB::table('import_table_fields')->groupBy('table_name')->orderBy('id')->get();
+        // get roles for users 
+      
+        // echo "<pre>";print_r($res['feesBreakoff']);exit;
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['head'] = $data;
