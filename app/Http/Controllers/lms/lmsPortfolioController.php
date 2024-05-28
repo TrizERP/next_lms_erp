@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use function App\Helpers\is_mobile;
+use Illuminate\Support\Facades\Storage;
 
 
 class lmsPortfolioController extends Controller
@@ -158,7 +159,9 @@ class lmsPortfolioController extends Controller
             $size = $img->getSize();
             $newfilename = 'lms_'.date('Y-m-d_h-i-s').'.'.$ext;
             //$img->move(public_path().'/lms_content_file/',$newfilename);
-            $img->storeAs('public/lms_portfolio/', $newfilename);
+            // $img->storeAs('public/lms_portfolio/', $newfilename); 20-05-24
+            Storage::disk('digitalocean')->putFileAs('public/lms_portfolio/', $img, $newfilename, 'public');
+
         }
 
         $content = [
@@ -251,7 +254,8 @@ class lmsPortfolioController extends Controller
             $size = $img->getSize();
             $newfilename = 'lms_'.date('Y-m-d_h-i-s').'.'.$ext;
             //$img->move(public_path().'/lms_content_file/',$newfilename);
-            $img->storeAs('public/lms_portfolio/', $newfilename);
+            // $img->storeAs('public/lms_portfolio/', $newfilename); 20-05-24
+            Storage::disk('digitalocean')->putFileAs('public/lms_portfolio/', $img, $newfilename, 'public');
 
             $image_data = [
                 'file_name' => $newfilename,

@@ -282,7 +282,7 @@
                                                         <video controls="true" width="220" height="140"
                                                                controlsList="nodownload">
                                                             <source
-                                                                src="../../../storage{{$cval['file_folder']}}/{{$cval['filename']}}"
+                                                                src="{{ Storage::disk('digitalocean')->url('public'.$cval['file_folder'].'/'.$cval['filename'])}}"
                                                                 type="video/mp4"/>
                                                         </video>
                                                     </div>
@@ -603,7 +603,7 @@
                                                         <div class="video-img-box">
                                                             <div class="video-img">
                                                                 <video controls="true" width="10" height="10" controlsList="nodownload">
-                                                                    <source src="../../../storage{{$cval['file_folder']}}/{{$cval['filename']}}" type="video/mp4"/>
+                                                                    <source src="{{ Storage::disk('digitalocean')->url('public'.$cval['file_folder'].'/'.$cval['filename'])}}"/>
                                                                 </video>
                                                             </div>
                                                             <a href="{{route('topic_master.show',$cval['id'])}}" target="_blank" class="view-box">

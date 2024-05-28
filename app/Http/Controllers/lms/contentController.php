@@ -12,6 +12,7 @@ use App\Models\school_setup\sub_std_mapModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
+use Illuminate\Support\Facades\Storage;
 
 class contentController extends Controller
 {
@@ -220,7 +221,9 @@ class contentController extends Controller
             $newfilename = 'lms_'.date('Y-m-d_h-i-s').'.'.$ext;             
             $file_folder = '/lms_content_file';
             //$img->move(public_path().'/lms_content_file/',$newfilename);
-            $img->storeAs('public/lms_content_file/',$newfilename);
+            // $img->storeAs('public/lms_content_file/',$newfilename); 20-05-2024
+            Storage::disk('digitalocean')->putFileAs('public/lms_content_file/', $img, $newfilename, 'public');
+
         }
 
         if($request->get('contentType') == "link")
@@ -326,7 +329,8 @@ class contentController extends Controller
             $newfilename = 'lms_'.date('Y-m-d_h-i-s').'.'.$ext;             
             $file_folder = '/lms_content_file';
             //$img->move(public_path().'/lms_content_file/',$newfilename);
-            $img->storeAs('public/lms_content_file/',$newfilename);
+            // $img->storeAs('public/lms_content_file/',$newfilename);  20-05-24
+            Storage::disk('digitalocean')->putFileAs('public/lms_content_file/', $img, $newfilename, 'public');
         }
 
         if($request->get('contentType') == "link")
@@ -564,18 +568,30 @@ class contentController extends Controller
         $image_data = [];
         if ($request->hasFile('filename')) {
             if ($request->has('hid_filename')) {
-                        if (file_exists($filePath.$request->hasFile('filename'))){
+                /* if (file_exists($filePath.$request->hasFile('filename'))){
+                 unlink('storage'.$request->input('hid_filename'));
+                }*/
 
-                unlink('storage'.$request->input('hid_filename'));
+                // delete file from digital ocean 
+                /*
+                $digiPath  = 'public/' . $request->has('hid_filename');
+                if (Storage::disk('digitalocean')->exists($digiPath)) {
+                    Storage::disk('digitalocean')->delete($digiPath);
+                    if (!Storage::disk('digitalocean')->exists($digiPath)) {
+                        $message="file deleted";
+                    }   
+                } 
+                */
             }
-            }
+
             $img = $request->file('filename');
             $filename = $img->getClientOriginalName();
             $ext = $img->getClientOriginalExtension();
             $size = $img->getSize();
             $newfilename = 'lms_'.date('Y-m-d_h-i-s').'.'.$ext;
             //$img->move(public_path().'/lms_content_file/',$newfilename);
-            $img->storeAs('public/lms_content_file/', $newfilename);
+            // $img->storeAs('public/lms_content_file/', $newfilename);
+            Storage::disk('digitalocean')->putFileAs('public/lms_content_file/', $img, $newfilename, 'public');
 
             $image_data = [
                 'file_folder' => '/lms_content_file',

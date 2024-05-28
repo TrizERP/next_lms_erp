@@ -193,6 +193,12 @@
                                                 $cheque_return_charges0 = $data['cheque_return_charges'][0] ?? 0; 
                                                 $cheque_return_charges = $data['fees_config_data'][0]['late_fees_amount'] ?? 0;
 									            $sub_institute_id=[257];
+                                                
+                                                // Get the current date
+                                                $currentDate = new DateTime();
+                                                $currentMonth = $currentDate->format('Y-m');
+                                                $thirdDateOfMonth = new DateTime($currentMonth . '-02');
+
                                                  foreach ($data['final_fee'] as $id => $val) { ?>
                                                     
                                                     <tr>
@@ -233,8 +239,8 @@
                                             <td>Fine</td>
                                             <td></td>
                                             <td>@if(in_array(session()->get('sub_institute_id'), $sub_institute_id))
-                                                <input type="text" name="fees_data[fine]" id="cheque_return_charges1" class="form-control cheque_return_charges1" value="@if(date('d') > 3 && isset($total_amt) && $total_amt!=0 && $data['admission_under'] == 'Old') {{ $data['fees_config_data'][0]['late_fees_amount'] }} @else {{ $cheque_return_charges0 ?? 0 }} @endif" readonly="readonly">
-                                                <input type="hidden" name="hidden_cheque_return_charges" id="hidden_cheque_return_charges" class="form-control cheque_return_charges1" value="@if(date('d') > 3 && isset($total_amt) && $total_amt!=0 && $data['admission_under'] == 'Old') {{  $data['fees_config_data'][0]['late_fees_amount'] }} @else {{ $cheque_return_charges0 ?? 0 }} @endif">
+                                                <input type="text" name="fees_data[fine]" id="cheque_return_charges1" class="form-control cheque_return_charges1" value="@if($currentDate > $thirdDateOfMonth && isset($total_amt) && $total_amt!=0 && $data['admission_under'] == 'Old') {{ $data['fees_config_data'][0]['late_fees_amount'] }} @else {{ $cheque_return_charges0 ?? 0 }} @endif" readonly="readonly">
+                                                <input type="hidden" name="hidden_cheque_return_charges" id="hidden_cheque_return_charges" class="form-control cheque_return_charges1" value="@if($currentDate > $thirdDateOfMonth && isset($total_amt) && $total_amt!=0 && $data['admission_under'] == 'Old') {{  $data['fees_config_data'][0]['late_fees_amount'] }} @else {{ $cheque_return_charges0 ?? 0 }} @endif">
                                             @else
                                                 <input type="text" name="fees_data[fine]" id="cheque_return_charges" class="form-control" value="@php if(isset($cheque_return_charges0)) echo $cheque_return_charges0; @endphp" readonly="readonly">
                                                 <input type="hidden" name="hidden_cheque_return_charges" id="hidden_cheque_return_charges" class="form-control" value="@if(isset($cheque_return_charges0)){{ $cheque_return_charges0 }}@endif">

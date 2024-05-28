@@ -107,7 +107,7 @@ if (isset($_REQUEST['submit'])) {
                     $valueQuery .= "'" . $_SESSION['SUB_INSTITUTE_ID'] . "',";
                 } 
                 else if($valueFields['field']=="user_code"){
-                   $valueQuery.= PHPExcel_Style_NumberFormat::toFormattedString($value[$valueFields['field']], '0000'); 
+                   $valueQuery.= "'".PHPExcel_Style_NumberFormat::toFormattedString($value[$valueFields['field']], '0000'). "',";
                 //    echo "<pre>";print_r($valueQuery);
                 }
                 else if ($valueFields['field'] == "SUB_INSTITUTE_ID" || $valueFields['field'] == "sub_institute_id" || $valueFields['field'] == "sub_inst_id") {

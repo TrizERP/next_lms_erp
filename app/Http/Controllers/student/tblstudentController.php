@@ -75,8 +75,7 @@ class tblstudentController extends Controller
 		$data = tblstudentModel::where(['sub_institute_id' => $sub_institute_id, 'status' => "1"])->get();
 
 		$dataCustomFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "tblstudent"])
-			->whereRaw('(sub_institute_id = ' . $sub_institute_id . ' OR common_to_all = 1)')
-            ->where('user_type',"")
+			->whereRaw('(sub_institute_id = ' . $sub_institute_id . ' OR common_to_all = 1) and user_type= "" ')
 			->get();
 
 		$fieldsData = tblfields_dataModel::get()->toArray();
@@ -199,8 +198,7 @@ class tblstudentController extends Controller
 
         $dataCustomFields = tblcustomfieldsModel::select('field_name')
             ->where(['status' => "1", 'table_name' => "tblstudent", 'field_type' => "file"])
-            ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1)')
-            ->where('user_type',"")
+            ->whereRaw('(sub_institute_id = ' . $sub_institute_id . ' OR common_to_all = 1) and user_type= "" ')
             ->get()
             ->toArray();
 
@@ -582,8 +580,7 @@ class tblstudentController extends Controller
         //echo "<pre>";print_r($student_data);exit;
 		// RAJESH	->whereRaw('tblstudent_enrollment.end_date is NULL')
 		$dataCustomFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "tblstudent"])
-			->whereRaw('(sub_institute_id = ' . $sub_institute_id . ' OR common_to_all = 1)')
-            ->where('user_type',"")
+        ->whereRaw('(sub_institute_id = ' . $sub_institute_id . ' OR common_to_all = 1) and user_type= "" ')
 			->get();
 
         $fieldsData = tblfields_dataModel::get()->toArray();
@@ -1080,8 +1077,7 @@ die; */
 
         $dataCustomFields = tblcustomfieldsModel::select('field_name')
             ->where(['status' => "1", 'table_name' => "tblstudent", 'field_type' => "file"])
-            ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1)')
-            ->where('user_type',"")
+            ->whereRaw('(sub_institute_id = ' . $sub_institute_id . ' OR common_to_all = 1) and user_type= "" ')
             ->get()
             ->toArray();
 

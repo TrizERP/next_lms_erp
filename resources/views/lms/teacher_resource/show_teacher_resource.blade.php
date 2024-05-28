@@ -147,7 +147,7 @@
                                 <td>{{$tdata['description']}}</td>
                                 <td>{{$tdata['activity']}}</td>
                                 <td>
-                                    <a href="<?php echo asset("storage".$tdata['file_folder']."/".$tdata['file_name']); ?>" target="_blank">View</a>
+                                    <a href="{{ Storage::disk('digitalocean')->url('public'.$tdata['file_folder'].'/'.$tdata['file_name'])}}" target="_blank">View</a>
                                 </td>
 
                                 @if(isset($data['data']['custom_fields']))
