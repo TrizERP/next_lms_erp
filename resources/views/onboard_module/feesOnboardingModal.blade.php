@@ -631,9 +631,9 @@
                 alert('Fees Map added successfully!');
             }, 
             error: function(xhr, status, error) {
-            console.error(xhr.responseText);
-            alert('Error adding fees title. Please check the console for details.');
-         }
+               console.error(xhr.responseText);
+               alert('Error adding fees title. Please check the console for details.');
+            }
         })
     }
 

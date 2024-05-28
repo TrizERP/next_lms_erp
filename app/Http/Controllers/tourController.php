@@ -17,6 +17,7 @@ use App\Http\Controllers\fees\fees_title\fees_title_controller;
 use App\Http\Controllers\fees\fees_month_header\feesMonthHeadercontroller;
 use App\Http\Controllers\fees\feesReceiptBookMasterController;
 use App\Http\Controllers\fees\fees_breackoff\fees_breackoff_controller;
+use App\Http\Controllers\transportation\add_vehicle\add_vehicle_controller;
 
 class tourController extends Controller
 {
@@ -285,4 +286,19 @@ class tourController extends Controller
         return is_mobile($type, "setup_institute_details", $res, 'view');
     }
 
+    public function transportOnboarding(Request $request){
+        $type = $request->type;
+        $res['sub_institute_id']=$sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+        $user_id = $request->session()->get('user_id');
+        $user_profile_id = session()->get('user_profile_id');
+
+        $request->merge(['type'=>"API",'sub_institute_id'=>$sub_institute_id ,'syear'=>$syear,'user_profile_id'=>$user_profile_id]);
+
+        $vehicleController = new add_vehicle_controller;
+        $res['vehicleData'] = json_decode($vehicleController->create($request));
+        // echo "<pre>";print_r($res['vehicleData']);exit;
+        return is_mobile($type, "onboard_module.transportOnboarding", $res, 'view');
+
+    }
 }
