@@ -556,8 +556,6 @@ function getEmpList(department_id){
                 result.forEach(value => {
                     $('#emp_id').append(`<option value="${value.id}">${value.full_name} (${value.user_profile})</option>`); // corrected the syntax here
                 });
-            } else {
-                $('#emp_id').append(`<option value=0>select emp</option>`);
             }
         },
         error: function(xhr, status, error) {
