@@ -1216,16 +1216,29 @@ class PayrollController extends Controller
             $header[$payrollType->id] = $payrollType->payroll_name;
         }
 
-        if ($request->employee_id && $request->year) {
+        if ($request->year) {
             $year = explode('-',$request->year);
             // $startYear = $year[0];
             // $endYear = $year[1];
-            $currentYearemployeeDetails = EmployeeMonthlySalaryData::whereIn('month',['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'])->where([['year',$year],['employee_id',$request->employee_id],['sub_institute_id',$sub_institute_id]])->get();
+            
+            $currentYearemployeeDetails = EmployeeMonthlySalaryData::join('tbluser as u',function($join) use($request){
+                $join->on('u.id','=','employee_monthly_salary_data.employee_id')
+                ->when($request->department_id!=0,function($q) use($request){
+                    $q->where('u.department_id',$request->department_id);
+                    });
+                })
+                ->when($request->emp_id!=0,function($q) use($request){
+                    $q->where('employee_monthly_salary_data.employee_id',$request->emp_id);
+                })
+                ->where([['employee_monthly_salary_data.year',$year],['employee_monthly_salary_data.sub_institute_id',$sub_institute_id]])
+                ->whereIn('employee_monthly_salary_data.month',['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'])
+            ->get();
+                // echo "<pre>";print_r($currentYearemployeeDetails);exit;
             $currentYearemployeeDetails = $currentYearemployeeDetails->map(function($employee){
                 $data = [];
-                $data['employee_id'] = $employee->getUser->employee_id;
-                $data['employee_no'] = $employee->getUser->employee_no;
-                $data['employee_name'] = $employee->getUser->first_name . ' ' . $employee->getUser->middle_name . ' ' . $employee->getUser->last_name;
+                $data['employee_id'] = $employee->employee_id;
+                $data['employee_no'] = $employee->employee_no;
+                $data['employee_name'] = $employee->first_name . ' ' . $employee->middle_name . ' ' . $employee->last_name;
                 $data['data'] = json_decode($employee->employee_salary_data, true);
                 $data['total_day'] =$employee->total_day;
                 $data['month'] =$employee->month;
@@ -1249,11 +1262,11 @@ class PayrollController extends Controller
             // }); 'nextYearemployeeDetails'=>$nextYearemployeeDetails, 
             $list['month'] = $request->month;
             $list['year'] = $request->year;
-            $list['employee_id'] = $request->employee_id;
+            $list['employee_id'] = $request->emp_id;
             //return $list;
         }
-        $res = ['employeeLists' => $employeeLists,'currentYearemployeeDetails' => $currentYearemployeeDetails,'header' => $header, 'list' => $list,'years' => $years];
-
+        $res = ['employeeLists' => $employeeLists,'currentYearemployeeDetails' => $currentYearemployeeDetails,'header' => $header, 'list' => $list,'years' => $years,'selEmp'=>$request->emp_id,'selDept'=>$request->department_id,'selYear'=>$request->year];
+        // echo "<pre>";print_r($res);exit;
         return is_mobile($type, "payroll.employee_payroll_history.index", $res, "view");
 
         // return view('payroll.employee_payroll_history.index', ['employeeLists' => $employeeLists,'currentYearemployeeDetails' => $currentYearemployeeDetails,'header' => $header, 'list' => $list,'years' => $years]);

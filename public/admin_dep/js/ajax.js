@@ -534,6 +534,11 @@ if ($("#ajax_PDF_Certificate").length != 0)
 // })
 $('#department_ids').on('change', function() {
     var department_ids = $(this).val();
+    
+    if (!Array.isArray(department_ids)) {
+        department_ids = [department_ids];
+    }
+
      if (department_ids.length > 1) {
          var department_ids_str = department_ids.join(',');
     } else {

@@ -25,22 +25,24 @@
                                   method="post">
                                 @csrf
                                 <div class="row">
-                                    <div class="col-md-3 form-group">
-                                        <label>Employee List</label>
-                                        <select id='employee_id' name="employee_id" class="form-control">
-                                            <option value="0">Select Employee</option>
-                                            @foreach($data['employeeLists'] as $employee)
-                                                <option value="{{$employee['id']}}" @if(isset($data['list']['employee_id']) && $data['list']['employee_id']==$employee['id']) selected @endif>{{$employee['first_name'] .' '. $employee['last_name'] }} ({{$employee['user_profile']}}) </option>
-                                            @endforeach
+                                @php 
+                                    $dep_id = $emp_id = '';
+                                    if(isset($data['selDept'])){
+                                        $dep_id = $data['selDept'];
+                                    }
 
-                                        </select>
-                                    </div>
+                                    if(isset($data['selEmp'])){
+                                        $emp_id = $data['selEmp'];
+                                    }
+                                @endphp
+
+                                {!! App\Helpers\HrmsDepartments("","",$dep_id,"",$emp_id,"") !!}
                                     <div class="col-md-3 form-group">
                                         <label>Select Year</label>
                                         <select id='year' name="year" class="form-control">
                                             <option value="0">Select Year</option>
                                             @foreach($data['years'] as $year)
-                                                <option @if(isset($data['list']['year']) && $data['list']['year'] == $year) selected @endif>{{$year}}</option>
+                                                <option @if(isset($data['selYear']) && $data['selYear'] == $year) selected @endif>{{$year}}</option>
                                             @endforeach
                                         </select>
                                     </div>
@@ -48,21 +50,7 @@
                                         <input type="submit" name="submit" value="Search" class="btn btn-success">
                                     </div>
                                 </div>
-                                <!-- Modal -->
-                                <div class="modal fade bd-example-modal-lg" id="exampleModal" tabindex="-1"
-                                     role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-                                    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-                                        <div class="modal-content">
-                                            <div class="modal-header">
-                                                <h5 class="modal-title" id="exampleModalLabel">Choose Field</h5>
-                                                <button type="button" class="close" data-dismiss="modal"
-                                                        aria-label="Close">
-                                                    <span aria-hidden="true">x</span>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                                
                             </form>
                         </div>
             </div>
