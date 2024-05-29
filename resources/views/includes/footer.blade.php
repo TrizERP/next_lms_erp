@@ -7,7 +7,7 @@
 			headerTextColor: "#333",
 			bubbleBackground: "#25bdea",
 			bubbleAvatarUrl: "",
-			desktopHeight: 350,
+			desktopHeight: 375,
 			desktopWidth: 300,
 			mobileHeight: "100%",
 			mobileWidth: "300px",
