@@ -1,4 +1,26 @@
-<!--<script src="https://miraibot.ai/embed@latest.js" id="687e1c179bbf486788f11fa77d33f82f"></script>-->
+<script>
+        var botmanWidget = {
+            title: "ScholarClone ChatBot",
+			introMessage: "Welcome to ScholarClone, How can I Help you?",
+			placeholderText: "Enter a message...",
+			mainColor: "#25bdea",
+			headerTextColor: "#333",
+			bubbleBackground: "#25bdea",
+			bubbleAvatarUrl: "",
+			desktopHeight: 350,
+			desktopWidth: 300,
+			mobileHeight: "100%",
+			mobileWidth: "300px",
+			videoHeight: 160,
+			aboutLink: "https://trizinnovation.com",
+			aboutText: "Powered by ScholarClone",
+			timeFormat: "HH:MM",
+			dateTimeFormat: "dd-mm-yyyy HH:MM"
+        };
+    </script>
+   
+    <script src='https://cdn.jsdelivr.net/npm/botman-web-widget@0/build/js/widget.js'></script>
+
 <div id="loading-overlay" style="display:none;">
 <center>
   <img src="/admin_dep/images/loader-man.gif" id="loading-gif" alt="loading-gif" >
