@@ -564,7 +564,7 @@ class contentController extends Controller
         $show_hide = $request->get('show_hide');
         $show_hide_val = $show_hide ?? '';
         $filePath = "public/lms_content_file/"; 
-
+        $url = $request->get('link');
         $image_data = [];
         if ($request->hasFile('filename')) {
             if ($request->has('hid_filename')) {
@@ -605,6 +605,7 @@ class contentController extends Controller
                 'filename'  => $request->get('link'),
                 'file_type' => "link",
             ];
+            $url='';
         }   
 
         $pre_topic = $post_topic = $cross_curriculum_topic = "";
@@ -633,7 +634,7 @@ class contentController extends Controller
             'content_category'             => $request->get('content_category'),
             'created_by'                   => $user_id,
             'sub_institute_id'             => $sub_institute_id,
-            'url'                          => $request->get('link'),
+            'url'                          => $url,
             'restrict_date'                => $request->get('restrict_date'),
             'pre_grade_topic'              => $pre_topic,
             'post_grade_topic'             => $post_topic,

@@ -62,9 +62,8 @@
                     <thead>
                     <tr>
                         <th>Sr No.</th>
-                        <th>Emp Id</th>
-                        <th>Department Name</th>
                         <th>Emp Code</th>
+                        <th>Department Name</th>
                         <th>Employee Name</th>
                         <th>Total Days</th>
                         <th>Week off</th>
@@ -88,7 +87,6 @@
                             <td>{{$key+1}}</td>
                             <td>{{$value->employee_no}}</td>
                             <td>{{$value->department}}</td>
-                            <td>{{$value->user_code}}</td>
                             <td>{{$value->full_name}}</td>
                             <td>@if($value->totalDays != 0) <a class="text-body" style="text-decoration:underline !important" onclick="getDetails('{{$value->user_id}}','totalDays')">{{$value->totalDays}}</a> @else 0 @endif</td>
 
