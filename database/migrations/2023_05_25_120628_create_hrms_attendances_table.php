@@ -16,7 +16,7 @@ class CreateHrmsAttendancesTable extends Migration
         Schema::create('hrms_attendances', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('user_id');
-            $table->string('user_code')->nullable();
+            $table->string('employee_no')->nullable();
             $table->date('day');
             $table->dateTime('punchin_time')->nullable();
             $table->dateTime('punchout_time')->nullable();

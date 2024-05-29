@@ -255,7 +255,7 @@ use DB;
                         <div class="row chapter-content-box my-2 py-2 mx-0">
                             <div class="col-md-1 chapter-img-box">
                                 @php
-                                    if ($single_content['url'] != '' && $single_content['filename']=='') {
+                                    if ($single_content['url'] != '' && $single_content['file_type']=='link') {
                                         $content_file_url = $single_content['url'];
                                     } else {
                                         $content_file_url = Storage::disk('digitalocean')->url('public'.$single_content['file_folder'].'/'.$single_content['filename']);
