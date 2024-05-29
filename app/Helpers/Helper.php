@@ -2266,11 +2266,12 @@ if (!function_exists('get_string')) {
             }
             $empData = [];
 
-            if(isset($dep_ids)){
+            if(isset($dep_ids) && $dep_ids!=0){
                 $empData =DB::table('tbluser')->join('tbluserprofilemaster as upm', 'upm.id', '=', 'tbluser.user_profile_id')
                 ->selectRaw('tbluser.id,CONCAT_WS(" ",COALESCE(tbluser.first_name, "-"),COALESCE(tbluser.last_name, "-")) as full_name,tbluser.sub_institute_id, IfNULL(upm.name,"-") as user_profile')
                 ->where('tbluser.sub_institute_id', $sub_institute_id)
                 ->whereIn('tbluser.department_id', $dep_idsArr)
+                ->where('tbluser.department_id','!=',0)
                 ->where('tbluser.status', 1)
                 ->orderBy('tbluser.first_name')
                 ->groupBy('tbluser.id')

@@ -311,19 +311,18 @@ class PayrollController extends Controller
     {
         $sub_institute_id = session()->get('sub_institute_id');
         $type = $request->type;
-        // $employeeDetails = EmployeeSalaryStructure::with('getUser')->where('sub_institute_id', $sub_institute_id)->groupBy('employee_id')->get();
-        $res['employeeDetails']=employeeDetails($sub_institute_id);
+     
         $res['years'] = Helpers::getPairYears();
         return is_mobile($type, "payroll/salary_structure_report/index", $res, "view");
-        // return view('payroll.salary_structure_report.index', ['employees' => $employeeDetails]);
     }
 
     public function showSalaryStructureReport(Request $request)
     {
-        // echo "<pre>";print_r($request->all());exit;
         $type = $request->type;
         $res['year'] = $year = $request->year;
-        $res['emp_id'] = $emp_id = $request->employee_id;
+        $res['selected_emp'] = $request->emp_id;
+        $res['department_id'] = $department_id = $request->department_id;
+        $emp_id = ($request->emp_id) ? implode(',',$request->emp_id) : 0;
 
         $sub_institute_id = session()->get('sub_institute_id');
         $payrollTypes = PayrollType::where('status', 1)->orderBy('sort_order')->get();
@@ -332,8 +331,7 @@ class PayrollController extends Controller
         foreach ($payrollTypes as $payrollType) {
             $header[$payrollType->id] = $payrollType->payroll_name;
         }
-        $res['employeeDetails']=employeeDetails($sub_institute_id);
-
+        
         $res['headers'] = $header;
         $res['years'] = Helpers::getPairYears();
 
@@ -341,7 +339,9 @@ class PayrollController extends Controller
             $join->on('u.id','=','employee_salary_structures.employee_id')->where('u.status',1); // 23-04-24 by uma
         })
         ->select('employee_salary_structures.*', DB::raw('CONCAT_ws(" ",COALESCE(u.first_name,"-"), COALESCE(u.last_name,"-")) as employee_name'),'u.employee_no')
-        ->where('employee_salary_structures.employee_id', $emp_id)
+        ->when($emp_id!=0,function($q) use($emp_id){
+            $q->whereRaw('employee_salary_structures.employee_id in ('.$emp_id.')');
+        })
         ->where('employee_salary_structures.sub_institute_id', $sub_institute_id)
         ->when($year!=0, function($query) use($year) {
             $query->where('employee_salary_structures.year', $year);
