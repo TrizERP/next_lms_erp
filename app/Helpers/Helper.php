@@ -2278,27 +2278,28 @@ if (!function_exists('get_string')) {
                 ->get()
                 ->toArray(); 
             }
-            
-            $SelectDepartment .= "<div class='col-md-".$col." form-group'>
-            <label>Select Employee</label>
-            <select name='".$empname."' id='emp_id' class='form-control' ".$empMultiple.">
-               <option value=0>select employee</option>";
-               if(!empty($empData)){
-                foreach ($empData as $key => $value) {
-                    $selected = "";
-                    if($depMultiple!="" && $emp_idsArr!=''){
-                        if(in_array($value->id,$emp_idsArr)){
+            if($empMultiple!="none"){
+                $SelectDepartment .= "<div class='col-md-".$col." form-group'>
+                <label>Select Employee</label>
+                <select name='".$empname."' id='emp_id' class='form-control' ".$empMultiple.">
+                <option value=0>select employee</option>";
+                if(!empty($empData)){
+                    foreach ($empData as $key => $value) {
+                        $selected = "";
+                        if($depMultiple!="" && $emp_idsArr!=''){
+                            if(in_array($value->id,$emp_idsArr)){
+                                $selected="selected";
+                            }
+                        } 
+                        if(isset($emp_ids) && $value->id == $emp_ids){
                             $selected="selected";
                         }
-                    } 
-                    if(isset($emp_ids) && $value->id == $emp_ids){
-                        $selected="selected";
+                        $SelectDepartment .= "<option value=".$value->id."  ".$selected.">".$value->full_name." (".$value->user_profile.")</option>";
                     }
-                    $SelectDepartment .= "<option value=".$value->id."  ".$selected.">".$value->full_name." (".$value->user_profile.")</option>";
                 }
-               }
-               $SelectDepartment .= "</select>
-        </div>";
+                $SelectDepartment .= "</select>
+            </div>";
+            }
             return $SelectDepartment;
         }
     }

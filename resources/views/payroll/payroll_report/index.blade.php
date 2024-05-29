@@ -22,8 +22,16 @@
                             @endif
                             <form action="{{route('payroll.show_payroll_report')}}"
                                   enctype="multipart/form-data"
-                                  method="post">
+                                  method="post" class="row">
                                 @csrf
+                                @php 
+                                $dep_id = '';
+                                if(isset($data['department_id']))
+                                {
+                                    $dep_id = $data['department_id'];
+                                }
+                                @endphp 
+                                {!! App\Helpers\HrmsDepartments("","",$dep_id,"none","","") !!}
                                 <div class="col-md-3 form-group">
                                     <label>Select Month</label>
                                     <select id='year' name="month" class="form-control">
@@ -54,25 +62,11 @@
                                         <input type="submit" name="submit" value="Search" class="btn btn-success">
                                     </div>
                                 </div>
-                                <!-- Modal -->
-                                <div class="modal fade bd-example-modal-lg" id="exampleModal" tabindex="-1"
-                                     role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-                                    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-                                        <div class="modal-content">
-                                            <div class="modal-header">
-                                                <h5 class="modal-title" id="exampleModalLabel">Choose Field</h5>
-                                                <button type="button" class="close" data-dismiss="modal"
-                                                        aria-label="Close">
-                                                    <span aria-hidden="true">x</span>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                                
                             </form>
                         </div>
             </div>
-
+            @if(isset($data['employeeDetails']) && !empty($data['employeeDetails']))
                 <div class="card">
                     <div class="table-responsive mt-20 tz-report-table">
                         <table id="example" class="table table-striped">
@@ -91,8 +85,8 @@
                                 <tbody>
                                 @foreach($data['employeeDetails'] as $employeeDetail)
                                 <tr>
-                                    <td>{{$employeeDetail->getUser['employee_no']}}</td>
-                                    <td>{{$employeeDetail->getUser['first_name'] .' '. $employeeDetail->getUser['last_name']}}</td>
+                                    <td>{{$employeeDetail->employee_no}}</td>
+                                    <td>{{$employeeDetail->first_name .' '. $employeeDetail->last_name}}</td>
                                     <td>{{$employeeDetail->total_day}}</td>
                                     <td>{{$employeeDetail->total_payment + $employeeDetail->total_deduction}}</td>
                                     <td>{{$employeeDetail->total_deduction}}</td>
@@ -104,6 +98,7 @@
                         </table>
                     </div>
                 </div>
+                @endif
         </div>
     </div>
 

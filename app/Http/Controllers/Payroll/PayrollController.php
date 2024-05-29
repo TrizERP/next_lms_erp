@@ -1178,9 +1178,18 @@ class PayrollController extends Controller
         $employeeDetails = [];
 
         if ($request->year && $request->month) {
-            $res['employeeDetails'] = EmployeeMonthlySalaryData::with('getUser')->where([['month',$request->month],['year',$request->year],['sub_institute_id',$sub_institute_id]])->get();
+            $res['employeeDetails'] = EmployeeMonthlySalaryData::join('tbluser as u',function($join) use($request){
+                $join->on('u.id','=','employee_monthly_salary_data.employee_id')
+                ->when($request->department_id!=0,function($q) use($request){
+                    $q->where('u.department_id',$request->department_id);
+                });
+            })->where([['employee_monthly_salary_data.month',$request->month],['employee_monthly_salary_data.year',$request->year],['employee_monthly_salary_data.sub_institute_id',$sub_institute_id]])
+           ->get();
+
             $res['month'] = $request->month;
             $res['year'] = $request->year;
+            $res['department_id'] = $request->department_id;
+
         }
         // return view('payroll.payroll_report.index', ['employees' => $employeeDetails, 'list' => $list,'months'=> $months,'years'=> $years]);
         return is_mobile($type, "payroll.payroll_report.index", $res, "view");
