@@ -41,7 +41,7 @@
                             </div>
                             <div class="col-md-4 form-group">
                                 <label>Type</label>
-                                <select name ="type" class="form-control" required>
+                                <select name ="driver_type" class="form-control" required>
                                     <option value="">--Select--</option>
                                     <option value="Driver">Driver</option>
                                     <option value="Conductor">Conductor</option>
