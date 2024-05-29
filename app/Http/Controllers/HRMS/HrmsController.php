@@ -674,7 +674,7 @@ class HrmsController extends Controller
         }
 
         $department_id = $request->get('department_id');
-	    $employee_id = $request->get('employee_id');
+	    $employee_id = $request->get('emp_id');
 	    $date = $request->get('date');
         
         $date_formatted = Carbon::createFromFormat('Y-m-d', $date)->format('Y-m-d');
@@ -685,10 +685,10 @@ class HrmsController extends Controller
 
         $employees = tbluserModel::where('sub_institute_id', $sub_institute_id)->where('department_id', $department_id)->where('status', 1)->get();
         
-        $hrmsList = HrmsAttendance::with('getUser');
+        $hrmsList = HrmsAttendance::join('tbluser as u','u.id','=','hrms_attendances.user_id');
         
         if($employee_id) {
-            $hrmsList = $hrmsList->where('day', $date_formatted)->where('user_id', $employee_id)->get();
+            $hrmsList = $hrmsList->where('day', $date_formatted)->whereRaw('user_id in ('.implode(',',$employee_id).')')->get();
         }else{
             $hrmsList = $hrmsList->where('day', $date_formatted)->get();
         }
@@ -744,6 +744,7 @@ class HrmsController extends Controller
         $res['date_formatted'] = $date_formatted;
         $res['hrmsList'] = $hrmsList;
         $res['employee_id'] = $employee_id;
+        $res['selEmp'] = $request->emp_id;
         $res['department_id'] = $department_id;
         $res['departments'] = $departments;
  

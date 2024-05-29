@@ -2260,6 +2260,7 @@ if (!function_exists('get_string')) {
                 $empname = "emp_id[]";
                 if($emp_ids!=''){
                     $emp_idsArr = $emp_ids;
+                    $dep_idsArr = [$dep_ids];
                 }
             }else if($depMultiple=="" && isset($dep_ids)){
                 $dep_idsArr = [$dep_ids];
@@ -2286,7 +2287,7 @@ if (!function_exists('get_string')) {
                 if(!empty($empData)){
                     foreach ($empData as $key => $value) {
                         $selected = "";
-                        if($depMultiple!="" && $emp_idsArr!=''){
+                        if($emp_idsArr!=''){
                             if(in_array($value->id,$emp_idsArr)){
                                 $selected="selected";
                             }
