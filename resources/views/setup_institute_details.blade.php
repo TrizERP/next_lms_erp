@@ -11,7 +11,7 @@
 	<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 	<title>Institute Data | TRIZ INNOVATION PVT LTD</title>
 	<link rel="stylesheet" href="{{asset('/fees_onboarding/styles.css')}}">
-	
+
 	<style>
 		.icon-right {
 			float: right;
@@ -246,9 +246,33 @@
 		</div>
 		</div>
 	</section>
+
+		<!-- transport Modal -->
+		<div class="modal fade" id="transportModel" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title" id="exampleModalLabel">Transportation</h5>
+				<button type="button" class="btn-close border-0" data-bs-dismiss="modal" aria-label="Close">X</button>
+				</button>
+			</div>
+			<div class="modal-body text-center">
+				<div class="transportData">
+					<img style="height: 35vh" src="{{asset('/transport_onboard/images/school bus-cuate 1.png')}}" />
+					<h2 style="font-weight: 400; margin-bottom: 2vh"></h2>
+					<br>
+					<a style=" font-family: 'Inter'; border: none; background-color: #5c4ac7; color: white; padding: 2vh 5vw; border-radius: 1vh; cursor: pointer; " href="{{route('transportOnboarding')}}" target="_blank">
+						Get Started
+				</a>
+				</div>
+			</div>
+			</div>
+		</div>
+		</div>
+
 	<!-- include modal files  -->
-	@include('onboarding_model')
-	@include('feesOnboardingModal') 
+	@include('onboard_module.onboarding_model')
+	@include('onboard_module.feesOnboardingModal') 
 
 	@include('includes.footer')
 	@include('includes.footerJs')
@@ -272,7 +296,9 @@
         if (menu_id == 6) {
             $('.finish').show();                        
             $('#exampleModal_fees').modal('show');
-        } else {
+        } else if (menu_id == 48){
+			$('#transportModel').modal('show');
+		}else {
             $('#all_model').empty();
             $('#roles_respo2').empty();           
             $('#allTitle').empty().append('<b> Step 1 :' + menu_title + '</b>');
@@ -393,10 +419,11 @@
 });
 
 
-		$(function() {
-			$('[data-toggle="tooltip"]').tooltip();
-		});
-	</script>
+	$(function() {
+		$('[data-toggle="tooltip"]').tooltip();
+	});
+	
+</script>
 </body>
 
 </html>
