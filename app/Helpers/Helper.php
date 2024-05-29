@@ -2194,9 +2194,9 @@ if (!function_exists('get_string')) {
             if($status!==0){
                 $empData->where('tbluser.status', 1);
             }
-
+           
             $empData = $empData->when($employee_id!='',function($query) use($employee_id){
-                $query->where('tbluser.id',$employee_id);
+                $query->whereRaw('tbluser.id IN ('.$employee_id.')');
             })
             ->orderBy('tbluser.first_name')
             // ->take(20)  
@@ -2238,7 +2238,7 @@ if (!function_exists('get_string')) {
             $SelectDepartment ="<div class='col-md-".$col." form-group'>
                 <label>Select Department</label>
                 <select class='form-control' name='".$depname."' id='department_ids' ".$depMultiple.">
-                <option>Select</option>";
+                <option value='0'>Select</option>";
                 foreach ($depLists as $dep_id => $dep_name) {
                     $selected = "";
                     if($depMultiple!="" && $dep_idsArr!=''){

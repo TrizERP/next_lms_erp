@@ -78,7 +78,7 @@ class PayrollController extends Controller
         $status=$request->input('emp_status') ?? 1;
         $sub_institute_id=session()->get('sub_institute_id');
         $syear = session()->get('syear');
-        $employee_id= ($request->employee_id!=0) ? $request->employee_id : '';
+        $employee_id= ($request->emp_id!=0) ? implode(',',$request->emp_id) : '';
         if($type=="API"){
             try {
                 if (!$this->jwtToken()->validate()) {
@@ -95,8 +95,10 @@ class PayrollController extends Controller
             $syear = $request->get('syear');
         }
         $employees =employeeDetails($sub_institute_id,$employee_id,$status);
+        // echo "<pre>";print_r($employees);exit;
+
         $employeeLists= employeeDetails($sub_institute_id,"",$status);
-    //    echo "<pre>";print_r($gender);exit;
+    //    echo "<pre>";print_r($employeeLists);exit;
         $payrollTypes = PayrollType::where('status', 1)->orderBy('sort_order')->get();
         
         $employeeSalaryStructures = EmployeeSalaryStructure::where('sub_institute_id',$sub_institute_id)->where('year',$syear)->get();
@@ -110,7 +112,8 @@ class PayrollController extends Controller
         $res['payrollTypes']=$payrollTypes;
         $res['employeeSalaryStructures']=$employeeSalaryStructures;
         $res['employeeLists']=$employeeLists;
-        $res['selected_emp']=$employee_id;
+        $res['selected_emp']=$request->emp_id;
+        $res['department_id']=$request->department_id;
         $res['emp_status'] = $status;
         // echo "<pre>";print_r($employeeSalaryStructures[7011]);exit;
         //return json_decode($employeeSalaryStructures[0]['employee_salary_data'], true);
