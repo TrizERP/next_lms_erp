@@ -341,7 +341,7 @@ class HrmsController extends Controller
         $from_date = $request->get('from_date');
         $to_date = $request->get('to_date');
         $department_id = $request->get('department_id');
-	    $employee_id = $request->get('employee_id');
+	    $employee_id = $request->get('emp_id');
 
         $from_date_formatted = Carbon::createFromFormat('Y-m-d', $from_date)->format('Y-m-d');
         $to_date_formatted = Carbon::createFromFormat('Y-m-d', $to_date)->format('Y-m-d');
