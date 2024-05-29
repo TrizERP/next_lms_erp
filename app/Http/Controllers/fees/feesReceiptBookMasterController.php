@@ -51,20 +51,28 @@ class feesReceiptBookMasterController extends Controller
     {
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
-        $feeHeadList = $this->feeHeadList($request);
+        $type= $request->type;
+        if($type=="API"){
+            $sub_institute_id = $request->sub_institute_id;
+            $syear = $request->syear;
+        }
+
+        $res['feeHeadList'] = $this->feeHeadList($request);
         $receiptId = feesReceiptBookMasterModel::selectRaw("MAX(CAST(receipt_id AS UNSIGNED))+1 AS newcode")->where([
             'sub_institute_id' => $sub_institute_id, 'syear' => $syear,
         ])->get()->toArray();
 
-        if (! isset($receiptId[0]['newcode'])) {
+        if (!isset($receiptId[0]['newcode'])) {
             $receiptId[0]['newcode'] = 1;
         }
 
-        view()->share('receipt_id', $receiptId[0]['newcode']);
+        $res['receipt_id'] = $receiptId[0]['newcode'];
+        // view()->share('receipt_id', $receiptId[0]['newcode']);
 
-        view()->share('feeHeadList', $feeHeadList);
+        // view()->share('feeHeadList', $feeHeadList);
+        return is_mobile($type, "fees/add_fees_receipt_book", $res, "view");
 
-        return view("fees/add_fees_receipt_book");
+        // return view("fees/add_fees_receipt_book");
     }
 
     public function standardList(Request $request)
@@ -98,7 +106,7 @@ class feesReceiptBookMasterController extends Controller
 
     public function store(Request $request)
     {
-        // dd($request);
+        // echo "<pre>";print_r($request->all());exit;
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
         $type = $request->input('type');
@@ -191,7 +199,7 @@ class feesReceiptBookMasterController extends Controller
 
     public function saveData(Request $request)
     {
-        $newRequest = $request->all();
+        $newRequest =  $request->except(['type']);
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
         $user_id = $request->session()->get('user_id');

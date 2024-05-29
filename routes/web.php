@@ -477,4 +477,5 @@ Route::any('python_timetable',[AJAXController::class, 'pythonTimetable'])->name(
 
 // to transfer files to digital ocean
 Route::post('transferDocs', [oldDocumentTransfer::class, 'storeImagesToDigitalOcean']);
-
+// transport onboard 
+Route::get('transport_Onboarding', [tourController::class, 'transportOnboarding'])->name('transportOnboarding');

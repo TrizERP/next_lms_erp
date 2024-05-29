@@ -35,6 +35,5 @@ while ($fetClients = mysqli_fetch_assoc($getClients)) {
 			mysqli_query($cn, $insertSchool) or die(mysqli_error($cn));
 		}
 	}
-
 }
 ?>
