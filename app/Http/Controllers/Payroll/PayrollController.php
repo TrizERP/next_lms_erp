@@ -353,6 +353,7 @@ class PayrollController extends Controller
     {
         $type = $request->input('type');
         $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
         if($type=="API"){
             try {
                 if (!$this->jwtToken()->validate()) {
@@ -366,20 +367,15 @@ class PayrollController extends Controller
                 return response()->json($response, 401);
             }
             $sub_institute_id = $request->get('sub_institute_id');
-        }
-        // $res['employeeDetails'] = EmployeeSalaryStructure::with('getUser')->get();
-
-        $res['employee_id'] = $request->get('employee_id');
-
-        $res['departments'] = $departments = HrmsDepartment::where('status', true)->pluck('department', 'id');
-
+            $syear = $request->get('syear');
+        }   
         $res['payrollTypes'] = PayrollType::where('status', 1)->get();
-        $res['academic_years'] = DB::table('academic_year')->where('sub_institute_id',$sub_institute_id)->groupBy('syear')->orderBy('id','DESC')->get()->pluck('syear');
         $res['allowance'] = $res['payrollTypes']->where('payroll_type', 1);
         $res['deduction'] = $res['payrollTypes']->where('payroll_type', 2);
         $res['years'] = Helpers::getPairYears();
-        return is_mobile($type, "payroll.form16.index", $res, "view");        
-        // return view('payroll.form16.index', ['employees' => $employeeDetails, 'payrollTypes' => $result]);
+        $res['DefaultYear'] =$syear;
+
+        return is_mobile($type, "payroll.form16.index", $res, "view");       
     }
 
     public function getEmployeeLists(Request $request)
@@ -402,16 +398,19 @@ class PayrollController extends Controller
 
     public function form16Report(Request $request)
     {
+        // echo "<pre>";print_r($request->all());exit;
         $type = $request->input('type');
         if ($type == 'API') {
             $sub_institute_id = $request->input('sub_institute_id');
+            $syear = $request->input('syear');
         } else {
             $sub_institute_id = $request->session()->get('sub_institute_id');
+            $syear = $request->session()->get('syear');
         }
 
         $department_id = $request->get('department_id');
-	    $employee_id = $request->get('employee_id');
-	    $syear = $request->get('syear');
+	    $employee_id = $request->get('emp_id');
+	    $year = $request->get('year');
 	    $allowances = $request->get('allowance');
 	    $deductions = $request->get('deduction');
 
@@ -440,15 +439,15 @@ class PayrollController extends Controller
 
         $employees = tbluserModel::where('sub_institute_id', $sub_institute_id)->where('department_id', $department_id)->where('status',1)->get()->toArray(); // 23-04-24 by uma
 
-        $get_map_year = DB::table('fees_map_years')->selectRaw('from_month, to_month')->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->first();
+        $get_map_year = DB::table('fees_map_years')->selectRaw('from_month, to_month')->where(['sub_institute_id' => $sub_institute_id, 'syear' => $year])->first();
 
         $from_month = $get_map_year->from_month;
         $to_month = $get_map_year->to_month;
 
         // Assuming $from_month and $to_month are integers
-        $from_date = Carbon::createFromDate($syear, $from_month, 1)->format('d/M/Y');
+        $from_date = Carbon::createFromDate($year, $from_month, 1)->format('d/M/Y');
 
-        $next_year = $syear + 1;
+        $next_year = $year + 1;
         $to_date = Carbon::createFromDate($next_year, $to_month, 1)->endOfMonth()->format('d/M/Y');
 
         $get_department_name = DB::table('hrms_departments as hd')
@@ -458,17 +457,20 @@ class PayrollController extends Controller
             ->where(['u.sub_institute_id' => $sub_institute_id, 'u.id' => $employee_id])
             ->first();
             
-        $res['get_employee_salary'] = DB::table('employee_salary_structures')->where(['employee_id' => $employee_id, 'sub_institute_id' => session()->get('sub_institute_id'),'year'=>$syear])->first();
-        $res['academic_years'] = DB::table('academic_year')->where('sub_institute_id',$sub_institute_id)->groupBy('syear')->orderBy('id','DESC')->get()->pluck('syear');
+        $res['get_employee_salary'] = DB::table('employee_salary_structures')->where(['employee_id' => $employee_id, 'sub_institute_id' => $sub_institute_id,'year'=>$year])->first();
+        // echo "<pre>";print_r($res['get_employee_salary']);exit;
+        $res['get_school_detail'] = DB::table('school_setup')->where('id', $sub_institute_id)->first();
+        $res['get_employee_detail'] = DB::table('tbluser')->where('id', $employee_id)->first();
+
         $res['years'] = Helpers::getPairYears();
-        $res['employees'] = $employees;
+        $res['search'] = 1;
         $res['employee_id'] = $employee_id;
         $res['department_id'] = $department_id;
-        $res['syear'] = $syear;
-        $res['departments'] = $departments;
+        $res['year'] = $year;
         $res['from_date'] = $from_date;
         $res['to_date'] = $to_date;
         $res['department_name'] = $get_department_name;
+        $res['DefaultYear'] =$syear;
 
         if(empty($res['get_employee_salary'])){
             $res['status_code'] = 0;

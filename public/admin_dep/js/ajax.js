@@ -527,11 +527,22 @@ if ($("#ajax_PDF_Certificate").length != 0)
 
 
 // depratmewnt and emp lists 
-$('#department_ids').on('change',function(){
-    var department_ids = $('#department_ids').val();
-    var department_ids_str = department_ids.join(',');
+// $('#department_ids').on('change',function(){
+//     var department_ids = $('#department_ids').val();
+//     var department_ids_str = department_ids.join(',');
+//     getEmpList(department_ids_str);
+// })
+$('#department_ids').on('change', function() {
+    var department_ids = $(this).val();
+     if (department_ids.length > 1) {
+         var department_ids_str = department_ids.join(',');
+    } else {
+      department_ids_str = department_ids[0]; 
+    }
+  
     getEmpList(department_ids_str);
-})
+  });
+  
 
 function getEmpList(department_id){
     $('#emp_id').empty(); 

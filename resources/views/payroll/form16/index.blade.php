@@ -261,38 +261,21 @@
                 <form action="{{ route('form16.report') }}" enctype="multipart/form-data" method="post">
                 @csrf
                     <div class="row">
-                        <div class="col-md-3 form-group">
-                            <label>Department List</label>
-                            <select id='department_id' name="department_id" class="form-control" required>
-                                <option value="">Select Department</option>
-                                @foreach($data['departments'] as $id => $department)
-                                    <option value="{{$id}}"
-                                    @if(isset($data['department_id']))
-                                        @if($data['department_id'] == $id)
-                                        selected='selected'
-                                        @endif
-                                    @endif
-                                    >{{ $department }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-md-3 form-group">
-                            <label>Employee List</label>
-                            <select id='employee_id' name="employee_id" class="form-control" required>
-                                <option value="">Select Employee</option>
-                                @if(!empty($data['employees']))
-                                    @foreach($data['employees'] as $key=>$value)
-                                        <option value="{{$value['id']}}" @if(isset($data['employee_id']) && $data['employee_id'] == $value['id']) selected @endif>{{$value['first_name'] ?? ''}} {{$value['last_name'] ?? ''}}</option>
-                                    @endforeach
-                                @endif
-                            </select>
-                        </div>
+                        @php 
+                            $dep_id = $emp_id='';
+                            if(isset($data['department_id'])){
+                                $dep_id=$data['department_id'];
+                            }
+                            if(isset($data['employee_id'])){
+                                $emp_id=$data['employee_id'];
+                            }
+                        @endphp 
+                    {!! App\Helpers\HrmsDepartments("","",$dep_id,"",$emp_id,"") !!}
                         <div class="col-md-3 form-group">
                             <label>Select Year</label>
-                            <select id='syear' name="syear" class="form-control">
-                            <option>Select Year</option>
+                            <select id='year' name="year" class="form-control">
                                 @foreach($data['years'] as $key => $value)
-                                <option value="{{$key}}" @if(isset($data['syear']) && $data['syear'] == $key) selected @endif>{{$value}}</option>
+                                <option value="{{$key}}" @if(isset($data['year']) && $data['year'] == $key) selected @elseif($data['DefaultYear']==$key) selected @endif>{{$value}}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -319,26 +302,12 @@
                             @endforeach
                         </div>
                     </div>
-                    <!-- Modal -->
-                    <div class="modal fade bd-example-modal-lg" id="exampleModal" tabindex="-1"
-                            role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-                        <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-                            <div class="modal-content">
-                                <div class="modal-header">
-                                    <h5 class="modal-title" id="exampleModalLabel">Choose Field</h5>
-                                    <button type="button" class="close" data-dismiss="modal"
-                                            aria-label="Close">
-                                        <span aria-hidden="true">x</span>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    
                 </form>
             </div>
         </div>
     </div>
-    @if($data['employee_id'] && !empty($data['get_employee_salary']))
+    @if(isset($data['search']) && $data['search']==1)
         <table style="border-collapse:collapse;" id="table_60" width="100%" cellspacing="0" cellpadding="0">
             <tbody><tr>
                 <td>
@@ -358,17 +327,14 @@
 							<th colspan="2" style="padding:2px 5px;text-align: center;" width="50%">Name and Address of the Employer</th>
 							<th colspan="3" style="padding:2px 5px;text-align: center;" width="50%">Name and Address of the Employee</th>
 						</tr>
-                        @php 
-                            $get_school_detail = DB::table('school_setup')->where('id', session()->get('sub_institute_id'))->first();
-                            $get_employee_detail = DB::table('tbluser')->where('id', $data['employee_id'])->first();
-                        @endphp
+                        
 						<tr>
-							<td colspan="2" style="padding:2px 5px; border-bottom: 1px solid transparent !important;">{{ $get_school_detail->ReceiptHeader }}</td>
-							<td colspan="3" style="padding:2px 5px; border-bottom: 1px solid transparent !important;">{{ $get_employee_detail->first_name }} {{ $get_employee_detail->middle_name }} {{ $get_employee_detail->last_name }}</td>
+							<td colspan="2" style="padding:2px 5px; border-bottom: 1px solid transparent !important;">{{ $data['get_school_detail']->ReceiptHeader ?? '' }}</td>
+							<td colspan="3" style="padding:2px 5px; border-bottom: 1px solid transparent !important;">{{ $data['get_employee_detail']->first_name ?? '' }} {{ $data['get_employee_detail']->middle_name ?? '' }} {{ $data['get_employee_detail']->last_name ?? '' }}</td>
 						</tr>
 						<tr>
-							<td colspan="2" style="padding:2px 5px;">{{ $get_school_detail->ReceiptAddress }}</td>
-							<td colspan="3" style="padding:2px 5px;">{{ $get_employee_detail->address }}</td>
+							<td colspan="2" style="padding:2px 5px;">{{ $data['get_school_detail']->ReceiptAddress ?? '' }}</td>
+							<td colspan="3" style="padding:2px 5px;">{{ $data['get_employee_detail']->address ?? ''}}</td>
 						</tr>
 						<tr>
 							<td style="padding:2px 5px;" align="center"><b>PAN of the Deductor</b></td>
@@ -378,7 +344,7 @@
 						<tr>
 							<td style="padding:2px 5px;" align="center"><b><b></b></b></td>
 							<td style="padding:2px 5px;" align="center"><b><b></b></b></td>
-							<td colspan="3" style="padding:2px 5px;" align="left"><b>{{ $get_employee_detail->pancard ?? '' }}</b></td>
+							<td colspan="3" style="padding:2px 5px;" align="left"><b>{{ $data['get_employee_detail']->pancard ?? '' }}</b></td>
 						</tr>
 						<tr>
 							<td colspan="2" style="padding:2px 5px;" align="center"><b>CIT(TDS)</b></td>
@@ -391,33 +357,26 @@
 						<tr>
 							<td style="padding:2px 5px;" colspan="2"></td>
 							<td rowspan="2" style="padding:2px 5px;" align="center"><b>
-                                @if($data['syear'] == 2020)
-                                    2021-2022 
-                                @elseif($data['syear'] == 2021)
-                                    2022-2023
-                                @elseif($data['syear'] == 2022)
-                                    2023-2024
-                                @elseif($data['syear'] == 2023)
-                                    2024-2025
-                                @endif</b></td>
+                               {{ $data['years'][$data['year']] ?? '-'}}
+                               </b></td>
 							<td style="padding:2px 5px;" align="center"><b>From</b></td>
 							<td style="padding:2px 5px;" align="center"><b>To</b></td>
 						</tr>
 						<tr>
 							<td colspan="2" style="padding:2px 5px;"><span>City</span>     <span>Pin code </span>   </td>
-							<td style="padding:2px 5px;" align="center">{{ $data['from_date'] }}</td>
-							<td style="padding:2px 5px;" align="center">{{ $data['to_date'] }}</td>
+							<td style="padding:2px 5px;" align="center">{{ $data['from_date'] ?? '' }}</td>
+							<td style="padding:2px 5px;" align="center">{{ $data['to_date'] ?? '' }}</td>
 						</tr>
 						</tbody>
 					</table>
                 </td>
             </tr>
             @php 
-                $amount = json_decode($data['get_employee_salary']->employee_salary_data, true);
+                $amount = !empty($data['get_employee_salary']) ? json_decode($data['get_employee_salary']->employee_salary_data, true) : [];
                 $total = $total_allowances = $tot_pf = $total_deductions = $total_ps = $total_pt = 0;
                 foreach($data['selected_allowances'] as $key => $allowances)
                 {
-                    $total +=  $amount[$allowances];
+                    $total +=  $amount[$allowances] ?? 0;
 
                     $total_allowances = $total * 12;
                 }
@@ -429,16 +388,16 @@
                     $deductions_titles[] = $get_payroll_names->payroll_name;
                     if($deductions == 1)
                     {
-                        $tot_pf += $amount[$deductions];
+                        $tot_pf += $amount[$deductions] ?? 0;
 
                         $total_deductions[] = $tot_pf * 12;
                     }
 
                     if($deductions == 2)
                     {
-                        $total_deductions[] = $amount[$deductions];
+                        $total_deductions[] = $amount[$deductions] ?? 0;
 
-                        $total_pt = $amount[$deductions];
+                        $total_pt = $amount[$deductions] ?? 0;
                     }
                 }
             @endphp
@@ -1405,7 +1364,7 @@
 						</tr>
 						<tr>
 						<td colspan="3" style="padding:2px 5px;" align="left">
-										I <b>{{ strtoupper($get_employee_detail->first_name) }} {{ strtoupper($get_employee_detail->last_name) }}</b> , son/daughter of {{ strtoupper($get_employee_detail->last_name) }} working in the capacity of {{ $data['department_name']->department_name }} (designation) do hereby certify that the information given above is true, complete and correct and is based on the books of account, documents, and other available records.
+										I <b>{{ strtoupper($data['get_employee_detail']->first_name ?? '') }} {{ strtoupper($data['get_employee_detail']->last_name ?? '') }}</b> , son/daughter of {{ strtoupper($data['get_employee_detail']->last_name ?? '') }} working in the capacity of {{ $data['department_name']->department_name ?? ''}} (designation) do hereby certify that the information given above is true, complete and correct and is based on the books of account, documents, and other available records.
 						  </td>
 						</tr>
 					  <tr>
@@ -1419,8 +1378,8 @@
 					  </tr>
 					   <tr>
 						<td style="padding:2px 5px;" align="left">Designation:</td>
-						<td style="padding:2px 5px;" align="right">{{ $data['department_name']->department_name }}</td>
-						<td style="padding:2px 5px;" align="left">Full Name: {{ strtoupper($get_employee_detail->first_name) }} {{ strtoupper($get_employee_detail->middle_name) }} {{ strtoupper($get_employee_detail->last_name) }}</td>
+						<td style="padding:2px 5px;" align="right">{{ $data['department_name']->department_name ?? '' }}</td>
+						<td style="padding:2px 5px;" align="left">Full Name: {{ strtoupper($data['get_employee_detail']->first_name ?? '') }} {{ strtoupper($data['get_employee_detail']->middle_name ?? '') }} {{ strtoupper($data['get_employee_detail']->last_name ?? '') }}</td>
 					  </tr>
 					</tbody></table>
 					

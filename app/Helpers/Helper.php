@@ -2281,7 +2281,7 @@ if (!function_exists('get_string')) {
             $SelectDepartment .= "<div class='col-md-".$col." form-group'>
             <label>Select Employee</label>
             <select name='".$empname."' id='emp_id' class='form-control' ".$empMultiple.">
-               <option value=0>select emp</option>";
+               <option value=0>select employee</option>";
                if(!empty($empData)){
                 foreach ($empData as $key => $value) {
                     $selected = "";
