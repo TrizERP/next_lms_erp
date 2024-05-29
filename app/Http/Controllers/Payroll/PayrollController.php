@@ -861,14 +861,17 @@ class PayrollController extends Controller
         $header['total_deduction'] = 'Total Deduction';
         $header['total_payment'] = 'Total Payment';
         $header['received_by'] = 'Received By';
-        if ($request->employee_id && $request->delete) {
-            $employeeSalaryData = EmployeeMonthlySalaryData::where(['employee_id'=> $request->employee_id,'month'=>$request->month,'year'=>$request->year,'sub_institute_id'=>$sub_institute_id])->delete();
+        $del = 0;
+        if ($request->emp_id && $request->delete) {
+            $employeeSalaryData = EmployeeMonthlySalaryData::where(['employee_id'=> $request->emp_id,'month'=>$request->month,'year'=>$request->year,'sub_institute_id'=>$sub_institute_id])->delete();
+        $del = 1;
+
         }
-        if ($request->employee_id && $request->year && $request->month) {
+        if ($request->emp_id && $request->year && $request->month) {
             
             // return $request->all();
-            $employeeName = tbluserModel::find($request->employee_id);
-            $employeeSalaryData = EmployeeMonthlySalaryData::where([['employee_id', $request->employee_id],['month', $request->month],['year',$request->year],[ 'sub_institute_id', $sub_institute_id]])->first();
+            $employeeName = tbluserModel::find($request->emp_id);
+            $employeeSalaryData = EmployeeMonthlySalaryData::where([['employee_id', $request->emp_id],['month', $request->month],['year',$request->year],[ 'sub_institute_id', $sub_institute_id]])->first();
             $totalDay = $request->total_day;
             $list['month'] = $request->month;
             $list['year'] = $request->year;
@@ -890,17 +893,17 @@ class PayrollController extends Controller
             //return $list;
         }
 
-        if ($request->employee_id && $request->month && $request->year && $request->total_day) {
-            $employeeSalaryData = EmployeeMonthlySalaryData::where([['employee_id', $request->employee_id],['month',$request->month],['year',$request->year],[ 'sub_institute_id', $sub_institute_id]])->first();
+        if ($request->emp_id && $request->month && $request->year && $request->total_day) {
+            $employeeSalaryData = EmployeeMonthlySalaryData::where([['employee_id', $request->emp_id],['month',$request->month],['year',$request->year],[ 'sub_institute_id', $sub_institute_id]])->first();
             if ($employeeSalaryData) {
                 $employeeSalaryDetails = json_decode($employeeSalaryData->employee_salary_data, true);
                 $totalDay = $employeeSalaryData->total_day;
 
             } else if(!$request->delete){
                 //return $request->all();
-                $employeeSalaryDetails = EmployeeSalaryStructure::where([['employee_id', $request->employee_id], ['sub_institute_id', $sub_institute_id]])->first();
+                $employeeSalaryDetails = EmployeeSalaryStructure::where([['employee_id', $request->emp_id], ['sub_institute_id', $sub_institute_id]])->first();
                 if(empty($employeeSalaryDetails)){
-                    $res=['employees' => $employeeDetails,'hide_button'=>$hide_button, 'header' => $header, 'list' => $list, 'total_day' => $totalDay, 'hideButton' => $hide_button,'totaldeduction'=> $totaldeduction,'totalallowance' => $totalallowance,'months' => $months,'years' => $years,'employee_id'=>$request->employee_id,'message' => 'Salary Structure Not Found For this User','employee_id'=>$request->employee_id];
+                    $res=['employees' => $employeeDetails,'hide_button'=>$hide_button, 'header' => $header, 'list' => $list, 'total_day' => $totalDay, 'hideButton' => $hide_button,'totaldeduction'=> $totaldeduction,'totalallowance' => $totalallowance,'months' => $months,'years' => $years,'employee_id'=>$request->emp_id,'message' => 'Salary Structure Not Found For this User','employee_id'=>$request->emp_id,'department_id'=>$request->department_id];
 
                     return is_mobile($type, "payroll.monthly_payroll_report.index", $res, "view");
                     // return view('payroll.monthly_payroll_report.index', ['employees' => $employeeDetails,'hide_button'=>$hide_button, 'header' => $header, 'list' => $list, 'total_day' => $totalDay, 'hideButton' => $hide_button,'totaldeduction'=> $totaldeduction,'totalallowance' => $totalallowance,'months' => $months,'years' => $years,'employee_id'=>$request->employee_id])->with(['message' => 'Salary Structure Not Found For this User','employee_id'=>$request->employee_id]);
@@ -940,29 +943,33 @@ class PayrollController extends Controller
                 }
                 $employeeSalaryDetails = $employeefinalDisplayData;
                 $totalDay = $request->total_day;
+
             }
             // return $employeeSalaryDetails;
         }
 
         if ($request->total_day > 31) {
-            $res =['employees' => $employeeDetails,'hide_button'=>$hide_button, 'header' => $header, 'list' => $list, 'employeeSalaryDetails' => $employeeSalaryDetails, 'total_day' => $totalDay, 'hideButton' => $hide_button,'totaldeduction'=> $totaldeduction,'totalallowance' => $totalallowance,'months' => $months,'years' => $years,'message' => 'please enter valid days','employee_id'=>$request->employee_id];
+            $res =['employees' => $employeeDetails,'hide_button'=>$hide_button, 'header' => $header, 'list' => $list, 'employeeSalaryDetails' => $employeeSalaryDetails, 'total_day' => $totalDay, 'hideButton' => $hide_button,'totaldeduction'=> $totaldeduction,'totalallowance' => $totalallowance,'months' => $months,'years' => $years,'message' => 'please enter valid days','employee_id'=>$request->emp_id,'department_id'=>$request->department_id];
 
             return is_mobile($type, "payroll.monthly_payroll_report.index", $res, "view");
 
             // return view('payroll.monthly_payroll_report.index', ['employees' => $employeeDetails,'hide_button'=>$hide_button, 'header' => $header, 'list' => $list, 'employeeSalaryDetails' => $employeeSalaryDetails, 'total_day' => $totalDay, 'hideButton' => $hide_button,'totaldeduction'=> $totaldeduction,'totalallowance' => $totalallowance,'months' => $months,'years' => $years])->with(['message' => 'please enter valid days','employee_id'=>$request->employee_id]);
         }
         if($user_profile=="Teacher"){
-            $employeeSalaryData = EmployeeMonthlySalaryData::where([['employee_id', $request->employee_id],['month', $request->month],['year',$request->year],[ 'sub_institute_id', $sub_institute_id]])->first();
+            $employeeSalaryData = EmployeeMonthlySalaryData::where([['employee_id', $request->emp_id],['month', $request->month],['year',$request->year],[ 'sub_institute_id', $sub_institute_id]])->first();
 
-            $res = ['months'=> $request->month,'year' => $request->year,'employee_id'=>$request->employee_id];
+            $res = ['months'=> $request->month,'year' => $request->year,'employee_id'=>$request->emp_id];
             if(!empty($employeeSalaryData)){
-                $res['pdf_link'] = env('APP_URL')."/monthly-payroll-report/pdf/".$request->employee_id."/".$request->month.'/'.$request->year;
+                $res['pdf_link'] = env('APP_URL')."/monthly-payroll-report/pdf/".$request->emp_id."/".$request->month.'/'.$request->year;
             }else{
                 $res["status_code"]=0;
                 $res['message']="No Slip Found for this Month and Year";
             }
         }else{
-            $res = ['employees' => $employeeDetails,'hide_button'=>$hide_button, 'header' => $header, 'list' => $list, 'employeeSalaryDetails' => $employeeSalaryDetails, 'total_day' => $totalDay, 'hideButton' => $hide_button,'totaldeduction'=> $totaldeduction,'totalallowance' => $totalallowance,'months' => $months,'years' => $years,'employee_id'=>$request->employee_id];
+            if(isset($request->total_day)){
+                $hide_button = false;
+            }
+            $res = ['employees' => $employeeDetails,'hide_button'=>$hide_button, 'header' => $header, 'list' => $list, 'employeeSalaryDetails' => $employeeSalaryDetails, 'total_day' => $totalDay, 'hideButton' => $hide_button,'totaldeduction'=> $totaldeduction,'totalallowance' => $totalallowance,'months' => $months,'years' => $years,'employee_id'=>$request->emp_id,'department_id'=>$request->department_id];
         }
 
         if ($request->emp && $request->save) {
@@ -983,11 +990,12 @@ class PayrollController extends Controller
                 ]);
                 $res['pdf_link'] = env('APP_URL')."/monthly-payroll-report/pdf/".$request->emp['id']."/".$request->month.'/'.$request->year;
             }
-            $hide_button = false;
+            $res['hide_button'] = false;
         }
     
-        if($request->delete){
-            $totalDay = '';
+        if($del==1){
+            $res['total_day'] = '';
+            $res['hide_button'] = true;
         }
 
         return is_mobile($type, "payroll.monthly_payroll_report.index", $res, "view");
