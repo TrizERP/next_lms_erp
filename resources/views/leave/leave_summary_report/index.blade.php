@@ -25,8 +25,8 @@
                     <div class="row">
                         <div class="col-md-4 form-group">
                             <label>Department List</label>
-                            <select id='department_id' name="department_id" class="form-control" required>
-                                <option value="">Select Department</option>
+                            <select id='department_id' name="department_id" class="form-control">
+                                <option value="">--Select Department--</option>
                                 @foreach($data['departments'] as $id => $department)
                                     <option value="{{$id}}"
                                     @if(isset($data['department_id']))
@@ -40,8 +40,8 @@
                         </div>
                         <div class="col-md-4 form-group">
                             <label>Employee List</label>
-                            <select id='employee_id' name="employee_id" class="form-control" required>
-                                <option value="">Select Employee</option>
+                            <select id='employee_id' name="employee_id" class="form-control">
+                                <option value="">--Select Employee--</option>
                                 @if(!empty($data['employees']))
                                     @foreach($data['employees'] as $key=>$value)
                                         <option value="{{$value['id']}}" @if(isset($data['employee_id']) && $data['employee_id'] == $value['id']) selected @endif>{{$value['first_name'] ?? ''}} {{$value['last_name'] ?? ''}}</option>
@@ -52,9 +52,10 @@
                         <div class="col-md-4 form-group">
                             <label>Year</label>
                             <select id='years' name="years" class="form-control">
-                                <option value="2021" @if(isset($data['years']) && "2021" == $data['years']) ) selected  @endif>2021-2022</option>
-                                <option value="2022" @if(isset($data['years']) && "2022" == $data['years']) ) selected  @endif>2022-2023</option>
+                                <option value="2024" @if(isset($data['years']) && "2024" == $data['years']) ) selected  @endif>2024-2025</option>
                                 <option value="2023" @if(isset($data['years']) && "2023" == $data['years']) ) selected  @endif>2023-2024</option>
+                                <option value="2022" @if(isset($data['years']) && "2022" == $data['years']) ) selected  @endif>2022-2023</option>
+                                <option value="2021" @if(isset($data['years']) && "2021" == $data['years']) ) selected  @endif>2021-2022</option>
                             </select>
                         </div>
                         <div class="col-md-3 col-sm-offset-4 text-center form-group">
@@ -76,7 +77,7 @@
                                 <th rowspan="3" style="padding-top:40px;">Employee Name</th>
                                 <th rowspan="3" style="padding-top:40px;">Designation</th>
                                 <th rowspan="3" style="padding-top:40px;">Joining Date</th>
-                                <th colspan="24" style="text-align:center; !importanat">Taken</th>
+                                <th colspan="{{count($data['get_hrms_leave_types']) * 3}}" style="text-align:center; !importanat">Taken</th>
                             </tr>
                             <tr>
                                 @foreach($data['get_hrms_leave_types'] as $get_hrms_leave_type)
@@ -142,9 +143,9 @@
                                                     {{ $total_op }}
                                                 @endif
                                             @else
-                                                @if(isset($data['op_data'][$get_hrms_leave_type->leave_type]) && $data['op_data'][$get_hrms_leave_type->leave_type] != '')
+                                                @if(isset($data['op_data'][$get_hrms_leave_type->leave_type][$get_employee_leave_list->department_id]) && $data['op_data'][$get_hrms_leave_type->leave_type][$get_employee_leave_list->department_id] != '')
                                                     @php 
-                                                        $total_op = $data['op_data'][$get_hrms_leave_type->leave_type];
+                                                        $total_op = $data['op_data'][$get_hrms_leave_type->leave_type][$get_employee_leave_list->department_id];
                                                     @endphp
 
                                                     {{ $total_op }}
@@ -156,7 +157,7 @@
                                         <td>
                                             @if(isset($data['new_data'][$get_hrms_leave_type->leave_type]) && $data['new_data'][$get_hrms_leave_type->leave_type] != '')
                                                 @php 
-                                                    $total_taken = $data['new_data'][$get_hrms_leave_type->leave_type]; 
+                                                    $total_taken = $data['new_data'][$get_hrms_leave_type->leave_type][$get_employee_leave_list->id] ?? 0; 
                                                 @endphp
 
                                                 {{ $total_taken }} 
@@ -230,7 +231,7 @@
 </script>
 <script>
 	$(document).on("change", "#department_id", function(e) {
-        $('#employee_id').empty();
+        $('#employee_id').empty().append('<option value="">--Select Employee--</option>');
         var departmentId = $(this).val();
         
         $.ajax({

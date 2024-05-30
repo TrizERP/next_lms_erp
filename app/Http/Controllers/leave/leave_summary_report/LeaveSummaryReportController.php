@@ -70,25 +70,42 @@ class LeaveSummaryReportController extends Controller
         
         $departments = HrmsDepartment::where('status', true)->pluck('department', 'id');
 
-        $employees = tbluserModel::where('sub_institute_id', $sub_institute_id)->where('status',1)->where('department_id', $department_id)->get()->toArray();   // 23-04-24 by uma
+        // employees
+        $employeesQuery = tbluserModel::where('sub_institute_id', $sub_institute_id)->where('status', 1);
+        if (isset($department_id)) {
+            $employeesQuery->where('department_id', $department_id);
+        }
+        $employees = $employeesQuery->get()->toArray();  // 23-04-24 by uma
 
         $get_hrms_leave_types = DB::table('hrms_leave_types')->get()->toArray();
         
-        $get_hrms_leave_allocations = DB::table('hrms_leave_allocation')->where('sub_institute_id', $sub_institute_id)->where('employee_id', $employee_id)->get()->toArray();
+        // get_hrms_leave_allocations
+        $leaveAllocationsQuery = DB::table('hrms_leave_allocation')->where('sub_institute_id', $sub_institute_id);
+        /*if (isset($employee_id)) {
+            $leaveAllocationsQuery->where('employee_id', $employee_id);
+        }*/
+        if (isset($department_id)) {
+            $leaveAllocationsQuery->where('department_id', $department_id);
+        }
+        $get_hrms_leave_allocations = $leaveAllocationsQuery->get()->toArray();
                    
         $get_employee_leave_lists = DB::table('hrms_emp_leaves as hel')
-        ->selectRaw("hel.*, u.*,CONCAT_WS(' ',u.first_name,u.last_name) AS employee_name, group_concat(hlt.leave_type) as leave_type, hlt.id as leave_id, hel.status as hel_status, group_concat(hel.day_type) as total_day_type, hd.department as department_name")
-        ->join('tbluser as u', 'u.id', '=', 'hel.user_id')
-        ->join('hrms_leave_types as hlt', 'hlt.id', '=', 'hel.leave_type_id')
-        ->join('hrms_departments as hd', 'hd.id', '=', 'u.department_id')
-        ->where('hel.sub_institute_id', $sub_institute_id)
-        ->where('hel.user_id', $employee_id)
-        ->where('u.status',1)   // 23-04-24 by uma
-        ->where(function ($query) use ($year1) {
-            $query->whereYear('hel.from_date', '=', $year1);
-        })
-        ->groupBy('hel.user_id')
-        ->get()->toArray();
+            ->selectRaw("hel.*, u.*,CONCAT_WS(' ',u.first_name,u.last_name) AS employee_name, group_concat(hlt.leave_type) as leave_type, hlt.id as leave_id, hel.status as hel_status, group_concat(hel.day_type) as total_day_type, hd.department as department_name,hd.id as department_id")
+            ->join('tbluser as u', 'u.id', '=', 'hel.user_id')
+            ->join('hrms_leave_types as hlt', 'hlt.id', '=', 'hel.leave_type_id')
+            ->join('hrms_departments as hd', 'hd.id', '=', 'u.department_id')
+            ->where('hel.sub_institute_id', $sub_institute_id)
+            ->where('u.status', 1)
+            ->whereYear('hel.from_date', '=', $year1)
+            ->when(isset($employee_id), function ($query) use ($employee_id) {
+                return $query->where('hel.user_id', $employee_id);
+            })
+            ->when(isset($department_id), function ($query) use ($department_id) {
+                return $query->where('u.department_id', $department_id);
+            })
+            ->groupBy('hel.user_id')
+            ->get()
+            ->toArray();
 
         $new_data = [];
         $op_data = [];
@@ -103,25 +120,29 @@ class LeaveSummaryReportController extends Controller
             {
                 $sum = $day_type[$key2];
                 $sum_exists[$value2][] = $day_type[$key2];
-                $new_data[$value2]= $sum;
+                $new_data[$value2][$value->id]= $sum;
                 
                 if(in_array($value2, $value_exits))
                 {
-                    $new_data[$value2]= array_sum($sum_exists[$value2]);
+                    $new_data[$value2][$value->id]= array_sum($sum_exists[$value2]);
                 }
                 else
                 {
                     $value_exits[] = $value2;
                 }
             }
+            foreach($get_hrms_leave_types as $key => $value2)
+            {
+                $op_datas = DB::table('hrms_leave_allocation')->where(['sub_institute_id'=>$sub_institute_id, 'leave_type_id'=>$value2->id])
+                ->where('department_id',$value->department_id ?? 0)
+                ->first();
+    
+                $op_data[$value2->leave_type][$value->department_id ?? 0] = $op_datas->value ?? 0;
+            } 
+
         }
 
-        foreach($get_hrms_leave_types as $key => $value)
-        {
-            $op_datas = DB::table('hrms_leave_allocation')->where(['sub_institute_id'=>$sub_institute_id, 'employee_id'=>$employee_id, 'leave_type_id'=>$value->id])->first();
-
-            $op_data[$value->leave_type] = $op_datas->value ?? 0;
-        } 
+      
 
         $res['employees']=$employees;
         $res['employee_id']=$employee_id;
@@ -133,7 +154,7 @@ class LeaveSummaryReportController extends Controller
         $res['op_data']=$op_data;
         $res['years']=$years;
         $res['employeget_hrms_leave_allocationses']=$get_hrms_leave_allocations;
-
+        // echo "<pre>";print_r($res);exit;
         return is_mobile($type,'leave/leave_summary_report/index',$res,'view');
      
         // return view('leave.leave_summary_report.index', compact('employees', 'employee_id', 'department_id', 'departments', 'get_employee_leave_lists', 'get_hrms_leave_types','new_data', 'get_hrms_leave_allocations'));
