@@ -26,15 +26,18 @@
                                   method="post">
                                 @csrf
                                 <div class="row">
-                                    <div class="col-md-3 form-group">
-                                        <label>Employee List</label>
-                                        <select id='employee_id' name="employee_id" class="form-control">
-                                            <option value="0">Select Employee</option>
-                                            @foreach($data['employeeLists'] as $key => $employeeList)
-                                            <option value="{{$employeeList['id']}}" @if(isset($data['selected_emp']) && $data['selected_emp']==$employeeList['id']) selected @endif>{{$employeeList['first_name'] .' '. $employeeList['last_name'] }} ({{$employeeList['department']}}) </option>                              
-                                            @endforeach
-                                        </select>
-                                    </div>
+                                @php 
+                                    $dep_id = $emp_id = '';
+                                    if(isset($data['department_id'])){
+                                        $dep_id = $data['department_id'];
+                                    }
+
+                                    if(isset($data['selected_emp'])){
+                                        $emp_id = $data['selected_emp'];
+                                    }
+                                @endphp
+
+                                {!! App\Helpers\HrmsDepartments("","multiple",$dep_id,"multiple",$emp_id,"") !!}
 
                                     <div class="col-md-3 form-group">
                                         <label>Employee Status</label>
