@@ -24,20 +24,22 @@
                                   method="post">
                                 @csrf
                                 <div class="row">
-                                    <div class="col-md-3 form-group">
-                                        <label>Employee List</label>
-                                        <select id='employee_id' name="employee_id" class="form-control" required>
-                                            <option value="0">Select Employee</option>
-                                            @foreach($data['employeeDetails'] as $employee)
-                                                <option value="{{$employee['id']}}" @if(isset($data['emp_id']) && $employee['id']==$data['emp_id']) selected @endif>{{$employee['first_name'] .' '. $employee['last_name'] }} ({{$employee['department']}})</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
+                                @php 
+                                    $dep_id = $emp_id = '';
+                                    if(isset($data['department_id'])){
+                                        $dep_id = $data['department_id'];
+                                    }
+
+                                    if(isset($data['selected_emp'])){
+                                        $emp_id = $data['selected_emp'];
+                                    }
+                                @endphp
+
+                                {!! App\Helpers\HrmsDepartments("","multiple",$dep_id,"multiple",$emp_id,"") !!}
                                     <div class="col-md-3 form-group">
                                         <label>Select Year</label>
                                         <select id='year' name="year" class="form-control">
-                                            <option value="0">Select Year</option>
-                                            @foreach($data['years'] as $key => $value)
+                                          @foreach($data['years'] as $key => $value)
                                                 <option value="{{$key}}" @if(isset($data['year']) && $key==$data['year']) selected @endif>{{$value}}</option>
                                             @endforeach
                                         </select>

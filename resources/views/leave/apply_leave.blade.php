@@ -61,19 +61,8 @@
                                 </select>
                             </div>
                             <div class="form-group div-emp d-none">
-                                <label for="">Department</label>
-                                <select name="department_id" id="department_id" class="form-control">
-                                    <option value="">Select Department</option>
-                                    @foreach ($data['departments'] as $id => $department)
-                                        <option value="{{ $id }}">{{ $department }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="form-group div-emp d-none">
-                                <label for="">Employee</label>
-                                <select name="employee_id" id="employee_id" class="form-control">
 
-                                                                   </select>
+                            {!! App\Helpers\HrmsDepartments("12","","","","","") !!}
                             </div>
                             <div class="form-group">
                                 <label for="">Leave Type</label>

@@ -2194,9 +2194,9 @@ if (!function_exists('get_string')) {
             if($status!==0){
                 $empData->where('tbluser.status', 1);
             }
-
+           
             $empData = $empData->when($employee_id!='',function($query) use($employee_id){
-                $query->where('tbluser.id',$employee_id);
+                $query->whereRaw('tbluser.id IN ('.$employee_id.')');
             })
             ->orderBy('tbluser.first_name')
             // ->take(20)  
@@ -2238,7 +2238,7 @@ if (!function_exists('get_string')) {
             $SelectDepartment ="<div class='col-md-".$col." form-group'>
                 <label>Select Department</label>
                 <select class='form-control' name='".$depname."' id='department_ids' ".$depMultiple.">
-                <option>Select</option>";
+                <option value='0'>Select</option>";
                 foreach ($depLists as $dep_id => $dep_name) {
                     $selected = "";
                     if($depMultiple!="" && $dep_idsArr!=''){
@@ -2260,44 +2260,47 @@ if (!function_exists('get_string')) {
                 $empname = "emp_id[]";
                 if($emp_ids!=''){
                     $emp_idsArr = $emp_ids;
+                    $dep_idsArr = [$dep_ids];
                 }
             }else if($depMultiple=="" && isset($dep_ids)){
                 $dep_idsArr = [$dep_ids];
             }
             $empData = [];
 
-            if(isset($dep_ids)){
+            if(isset($dep_ids) && $dep_ids!=0){
                 $empData =DB::table('tbluser')->join('tbluserprofilemaster as upm', 'upm.id', '=', 'tbluser.user_profile_id')
                 ->selectRaw('tbluser.id,CONCAT_WS(" ",COALESCE(tbluser.first_name, "-"),COALESCE(tbluser.last_name, "-")) as full_name,tbluser.sub_institute_id, IfNULL(upm.name,"-") as user_profile')
                 ->where('tbluser.sub_institute_id', $sub_institute_id)
                 ->whereIn('tbluser.department_id', $dep_idsArr)
+                ->where('tbluser.department_id','!=',0)
                 ->where('tbluser.status', 1)
                 ->orderBy('tbluser.first_name')
                 ->groupBy('tbluser.id')
                 ->get()
                 ->toArray(); 
             }
-            
-            $SelectDepartment .= "<div class='col-md-".$col." form-group'>
-            <label>Select Employee</label>
-            <select name='".$empname."' id='emp_id' class='form-control' ".$empMultiple.">
-               <option value=0>select emp</option>";
-               if(!empty($empData)){
-                foreach ($empData as $key => $value) {
-                    $selected = "";
-                    if($depMultiple!="" && $emp_idsArr!=''){
-                        if(in_array($value->id,$emp_idsArr)){
+            if($empMultiple!="none"){
+                $SelectDepartment .= "<div class='col-md-".$col." form-group'>
+                <label>Select Employee</label>
+                <select name='".$empname."' id='emp_id' class='form-control' ".$empMultiple.">
+                <option value=0>select employee</option>";
+                if(!empty($empData)){
+                    foreach ($empData as $key => $value) {
+                        $selected = "";
+                        if($emp_idsArr!=''){
+                            if(in_array($value->id,$emp_idsArr)){
+                                $selected="selected";
+                            }
+                        } 
+                        if(isset($emp_ids) && $value->id == $emp_ids){
                             $selected="selected";
                         }
-                    } 
-                    if(isset($emp_ids) && $value->id == $emp_ids){
-                        $selected="selected";
+                        $SelectDepartment .= "<option value=".$value->id."  ".$selected.">".$value->full_name." (".$value->user_profile.")</option>";
                     }
-                    $SelectDepartment .= "<option value=".$value->id."  ".$selected.">".$value->full_name." (".$value->user_profile.")</option>";
                 }
-               }
-               $SelectDepartment .= "</select>
-        </div>";
+                $SelectDepartment .= "</select>
+            </div>";
+            }
             return $SelectDepartment;
         }
     }

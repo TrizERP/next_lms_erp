@@ -527,26 +527,40 @@ if ($("#ajax_PDF_Certificate").length != 0)
 
 
 // depratmewnt and emp lists 
-$('#department_ids').on('change',function(){
-    var department_ids = $('#department_ids').val();
-    var department_ids_str = department_ids.join(',');
+// $('#department_ids').on('change',function(){
+//     var department_ids = $('#department_ids').val();
+//     var department_ids_str = department_ids.join(',');
+//     getEmpList(department_ids_str);
+// })
+$('#department_ids').on('change', function() {
+    var department_ids = $(this).val();
+    
+    if (!Array.isArray(department_ids)) {
+        department_ids = [department_ids];
+    }
+
+     if (department_ids.length > 1) {
+         var department_ids_str = department_ids.join(',');
+    } else {
+      department_ids_str = department_ids[0]; 
+    }
+
     getEmpList(department_ids_str);
-})
+  });
+  
 
 function getEmpList(department_id){
     $('#emp_id').empty(); 
+    $('#emp_id').append(`<option value=0>select emp</option>`);
     $.ajax({
         url: '/departmentwise-emplist',
         data: { department_id: department_id },
         type: 'GET',
         success: function(result) {
-            if (Array.isArray(result)) {
-                 $('#emp_id').append(`<option value=0>select emp</option>`);
+            if (Array.isArray(result) && department_id!=0) {
                 result.forEach(value => {
                     $('#emp_id').append(`<option value="${value.id}">${value.full_name} (${value.user_profile})</option>`); // corrected the syntax here
                 });
-            } else {
-                $('#emp_id').append(`<option value=0>select emp</option>`);
             }
         },
         error: function(xhr, status, error) {

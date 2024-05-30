@@ -25,15 +25,18 @@
                                   method="post">
                                 @csrf
                                 <div class="row">
-                                    <div class="col-md-3 form-group">
-                                        <label>Employee List</label>
-                                        <select id='employee_id' name="employee_id" class="form-control">
-                                            <option value="0">Select Employee</option>
-                                            @foreach($data['employees'] as $key => $employee)
-                                                    <option value="{{$employee['id']}}" @if(isset($data['employee_id']) && $data['employee_id']==$employee['id']) selected @endif>{{$employee['first_name'] .' '. $employee['last_name']}} ({{$employee['user_profile']}})</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
+                                @php 
+                                    $dep_id = $emp_id = '';
+                                    if(isset($data['department_id'])){
+                                        $dep_id = $data['department_id'];
+                                    }
+
+                                    if(isset($data['employee_id'])){
+                                        $emp_id = $data['employee_id'];
+                                    }
+                                @endphp
+
+                                {!! App\Helpers\HrmsDepartments("","",$dep_id,"",$emp_id,"") !!}
                                     <div class="col-md-3 form-group">
                                         <label>Select Month</label>
                                         <select id='year' name="month" class="form-control">
@@ -95,7 +98,8 @@
                                 <tr>
                                     <td>{{$employeeName['employee_no']}}</td>
                                     <td>{{$employeeName['first_name'] .' '.$employeeName['last_name']}}</td>
-                                    <input type="hidden" name="employee_id" value="{{$employeeName['id']}}">
+                                    <input type="hidden" name="emp_id" value="{{$employeeName['id']}}">
+                                    <input type="hidden" name="department_id" value="{{$data['department_id']}}">
                                     <input type="hidden" name="month" value="{{$data['list']['month']}}">
                                     <input type="hidden" name="year" value="{{$data['list']['year']}}">
                                     @foreach($data['header'] as $hkey => $col)
@@ -133,12 +137,12 @@
 
 
                             </table>
-                            @if($data['hide_button'])
-                                <input type="submit" name="save" value="save" class="btn btn-success" >
-                            @endif
-                            @if(!$data['hide_button'])
+                           
+                            @if(isset($data['pdf_link']))
                                 <a href="{{url('monthly-payroll-report/pdf').'/'.$employeeName['id'].'/'.$data['list']['month'].'/'.$data['list']['year']}}"
-                                   class="btn btn-primary">pdf</a> 
+                                   class="btn btn-primary">pdf</a>
+                            @else 
+                            <input type="submit" name="save" value="save" class="btn btn-success" >
                             @endif
                         </form>
                     </div>
