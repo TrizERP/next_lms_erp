@@ -450,8 +450,8 @@ class PayrollController extends Controller
 
         $get_map_year = DB::table('fees_map_years')->selectRaw('from_month, to_month')->where(['sub_institute_id' => $sub_institute_id, 'syear' => $year])->first();
 
-        $from_month = $get_map_year->from_month;
-        $to_month = $get_map_year->to_month;
+        $from_month = $get_map_year->from_month ?? date('m');
+        $to_month = $get_map_year->to_month ?? date('m');
 
         // Assuming $from_month and $to_month are integers
         $from_date = Carbon::createFromDate($year, $from_month, 1)->format('d/M/Y');
