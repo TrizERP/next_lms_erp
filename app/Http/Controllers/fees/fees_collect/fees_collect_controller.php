@@ -62,18 +62,18 @@ class fees_collect_controller extends Controller
      * @return void
      */
 
-    public function show_student()
+    public function show_student(Request $request)
     {
         $responce_arr = [];
-        $type = $_REQUEST['type'] ?? "";
+        $type = $request->type ?? "";
         $last_year = (session()->get('syear') - 1);
 
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
 
         if($type=="API"){
-            $sub_institute_id=$_REQUEST['sub_institute_id'];
-            $syear=$_REQUEST['syear'];
+            $sub_institute_id=$request->sub_institute_id;
+            $syear=$request->syear;
             $last_syear = ($syear-1);
         }
         // get month_id by month name
@@ -115,34 +115,33 @@ class fees_collect_controller extends Controller
         }
 
         $extra_where = "";
-        if (isset($_REQUEST['mobile']) && $_REQUEST['mobile'] != '') {
-            $responce_arr['mobile'] = $_REQUEST['mobile'];
+        if (isset($request->mobile) && $request->mobile != '') {
+            $responce_arr['mobile'] = $request->mobile;
         }
-        if (isset($_REQUEST['grno']) && $_REQUEST['grno'] != '') {
-            $responce_arr['grno'] = $_REQUEST['grno'];
+        if (isset($request->grno) && $request->grno != '') {
+            $responce_arr['grno'] = $request->grno;
         }
-        if (isset($_REQUEST['uniqueid']) && $_REQUEST['uniqueid'] != '') {
-            $responce_arr['uniqueid'] = $_REQUEST['uniqueid'];
+        if (isset($request->uniqueid) && $request->uniqueid != '') {
+            $responce_arr['uniqueid'] = $request->uniqueid;
         }
         if (isset($_REQUEST['grade']) && $_REQUEST['grade'] != '') {
             $grade_val = $_REQUEST['grade'];
             $responce_arr['grade'] = $_REQUEST['grade'];
 
         }
-        if (isset($_REQUEST['standard']) && $_REQUEST['standard'] != '') {
-            $responce_arr['standard'] = $_REQUEST['standard'];
+        if (isset($request->standard) && $request->standard != '') {
+            $responce_arr['standard'] = $request->standard;
         }
-        if (isset($_REQUEST['division']) && $_REQUEST['division'] != '') {
-            $responce_arr['division'] = $_REQUEST['division'];
+        if (isset($request->division) && $request->division != '') {
+            $responce_arr['division'] = $request->division;
         }
-        if (isset($_REQUEST['stu_name']) && $_REQUEST['stu_name'] != '') {
-            $responce_arr['stu_name'] = $_REQUEST['stu_name'];
+        if (isset($request->stu_name) && $request->stu_name != '') {
+            $responce_arr['stu_name'] = $request->stu_name;
         }
-        if (isset($_REQUEST['including_inactive']) && $_REQUEST['including_inactive'] != '') {
-            $responce_arr['including_inactive'] = $_REQUEST['including_inactive'];
+        if (isset($request->including_inactive) && $request->including_inactive != '') {
+            $responce_arr['including_inactive'] = $request->including_inactive;
         }
-        $request = $_REQUEST;
-
+        
         // get fees_breakoff of student by matching above conditions
         $result = DB::table('tblstudent as s')
             ->join('tblstudent_enrollment as se','se.student_id', '=' ,'s.id')
@@ -167,33 +166,33 @@ class fees_collect_controller extends Controller
             ->where('s.sub_institute_id', $sub_institute_id)
             ->where('se.syear', $syear)
             ->where(function ($q) use ($request) {
-                if (isset($request['mobile']) && $request['mobile'] != '') {
-                    $q->where('s.mobile', $request['mobile']);
+                if (isset($request->mobile) && $request->mobile != '') {
+                    $q->where('s.mobile', $request->mobile);
                 }
-                if (isset($request['grno']) && $request['grno'] != '') {
-                    $q->where('s.enrollment_no', $request['grno']);
+                if (isset($request->grno) && $request->grno != '') {
+                    $q->where('s.enrollment_no', $request->grno);
                 }
-                if (isset($request['uniqueid']) && $request['uniqueid'] != '') {
-                    $q->where('s.uniqueid', $request['uniqueid']);
+                if (isset($request->uniqueid) && $request->uniqueid != '') {
+                    $q->where('s.uniqueid', $request->uniqueid);
                 }
-                if (isset($request['grade']) && $request['grade'] != '') {
-                    $q->where('se.grade_id', $request['grade']);
+                if (isset($request->grade) && $request->grade != '') {
+                    $q->where('se.grade_id', $request->grade);
                 }
-                if (isset($request['standard']) && $request['standard'] != '') {
-                    $q->where('se.standard_id', $request['standard']);
+                if (isset($request->standard) && $request->standard != '') {
+                    $q->where('se.standard_id', $request->standard);
                 }
-                if (isset($request['division']) && $request['division'] != '') {
-                    $q->where('se.section_id', $request['division']);
+                if (isset($request->division) && $request->division != '') {
+                    $q->where('se.section_id', $request->division);
                 }
                 if (isset($request['stu_name']) && $request['stu_name'] != '') {
                     $q->where(function ($query) use ($request) {
-                        $query->where('s.first_name', 'like', '%' . $request['stu_name'] . '%')
-                            ->orWhere('s.middle_name', 'like', '%' . $request['stu_name'] . '%')
-                            ->orWhere('s.last_name', 'like', '%' . $request['stu_name'] . '%');
+                        $query->where('s.first_name', 'like', '%' . $request->stu_name . '%')
+                            ->orWhere('s.middle_name', 'like', '%' . $request->stu_name . '%')
+                            ->orWhere('s.last_name', 'like', '%' . $request->stu_name . '%');
                     });
                 }
-                if (isset($request['including_inactive']) && $request['including_inactive'] != '') {
-                    if ($request['including_inactive'] == 'Yes') {
+                if (isset($request->including_inactive) && $request->including_inactive != '') {
+                    if ($request->including_inactive == 'Yes') {
                         //$q->whereNotNull('se.end_date');
                     }
                 } else {
@@ -242,39 +241,38 @@ class fees_collect_controller extends Controller
                 se.standard_id,se.section_id,se.student_quota,sq.title AS stu_quota,se.start_date,
                 se.end_date, st.name standard_name, d.name as division_name,s.admission_year")
                 ->where(function ($q) use ($request) {
-                    if (isset($request['mobile']) && $request['mobile'] != '') {
-                        $q->where('s.mobile', $request['mobile']);
+                    if (isset($request->mobile) && $request->mobile != '') {
+                        $q->where('s.mobile', $request->mobile);
                     }
-                    if (isset($request['grno']) && $request['grno'] != '') {
-                        $q->where('s.enrollment_no', $request['grno']);
+                    if (isset($request->grno) && $request->grno != '') {
+                        $q->where('s.enrollment_no', $request->grno);
                     }
-                    if (isset($request['uniqueid']) && $request['uniqueid'] != '') {
-                        $q->where('s.uniqueid', $request['uniqueid']);
+                    if (isset($request->uniqueid) && $request->uniqueid != '') {
+                        $q->where('s.uniqueid', $request->uniqueid);
                     }
-                    if (isset($request['grade']) && $request['grade'] != '') {
-                        $q->where('se.grade_id', $request['grade']);
+                    if (isset($request->grade) && $request->grade != '') {
+                        $q->where('se.grade_id', $request->grade);
                     }
-                    if (isset($request['standard']) && $request['standard'] != '') {
-                        $q->where('se.standard_id', $request['standard']);
+                    if (isset($request->standard) && $request->standard != '') {
+                        $q->where('se.standard_id', $request->standard);
                     }
-                    if (isset($request['division']) && $request['division'] != '') {
-                        $q->where('se.section_id', $request['division']);
+                    if (isset($request->division) && $request->division != '') {
+                        $q->where('se.section_id', $request->division);
                     }
                     if (isset($request['stu_name']) && $request['stu_name'] != '') {
                         $q->where(function ($query) use ($request) {
-                            $query->where('s.first_name', 'like', '%' . $request['stu_name'] . '%')
-                                ->orWhere('s.middle_name', 'like', '%' . $request['stu_name'] . '%')
-                                ->orWhere('s.last_name', 'like', '%' . $request['stu_name'] . '%');
+                            $query->where('s.first_name', 'like', '%' . $request->stu_name . '%')
+                                ->orWhere('s.middle_name', 'like', '%' . $request->stu_name . '%')
+                                ->orWhere('s.last_name', 'like', '%' . $request->stu_name . '%');
                         });
                     }
-                    if (isset($request['including_inactive']) && $request['including_inactive'] != '') {
-                        if ($request['including_inactive'] == 'Yes') {
-                            $q->whereNotNull('se.end_date');
+                    if (isset($request->including_inactive) && $request->including_inactive != '') {
+                        if ($request->including_inactive == 'Yes') {
+                            //$q->whereNotNull('se.end_date');
                         }
                     } else {
                         $q->whereNull('se.end_date');
                     }
-
                 })->groupBy('s.id')->get()->toArray();
 
             if (!empty($check)) {
@@ -308,9 +306,9 @@ class fees_collect_controller extends Controller
             }
         }
         $responce_arr['stu_data'] = $result;
-        $responce_arr['grade_id'] = $_REQUEST['grade'];
-        $responce_arr['standard_id'] = $_REQUEST['standard'] ?? '';
-        $responce_arr['division_id'] =  $_REQUEST['division'] ?? '';
+        $responce_arr['grade_id'] = $request->grade;
+        $responce_arr['standard_id'] = $request->standard ?? '';
+        $responce_arr['division_id'] = $request->division ?? '';
             // echo "<pre>";print_r($responce_arr);exit;
         return is_mobile($type, "fees/fees_collect/show", $responce_arr, "view");
     }
