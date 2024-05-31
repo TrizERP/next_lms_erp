@@ -72,9 +72,9 @@ class LeaveSummaryReportController extends Controller
 
         // employees
         $employeesQuery = tbluserModel::where('sub_institute_id', $sub_institute_id)->where('status', 1);
-        if (isset($department_id)) {
+        if ($department_id!=0) {
             $employeesQuery->where('department_id', $department_id);
-        }
+                  }
         $employees = $employeesQuery->get()->toArray();  // 23-04-24 by uma
 
         $get_hrms_leave_types = DB::table('hrms_leave_types')->get()->toArray();
@@ -84,7 +84,7 @@ class LeaveSummaryReportController extends Controller
         /*if (isset($employee_id)) {
             $leaveAllocationsQuery->where('employee_id', $employee_id);
         }*/
-        if (isset($department_id)) {
+        if ($department_id!=0) {
             $leaveAllocationsQuery->where('department_id', $department_id);
         }
         $get_hrms_leave_allocations = $leaveAllocationsQuery->get()->toArray();
@@ -97,10 +97,10 @@ class LeaveSummaryReportController extends Controller
             ->where('hel.sub_institute_id', $sub_institute_id)
             ->where('u.status', 1)
             ->whereYear('hel.from_date', '=', $year1)
-            ->when(isset($employee_id), function ($query) use ($employee_id) {
+            ->when($employee_id!=0, function ($query) use ($employee_id) {
                 return $query->where('hel.user_id', $employee_id);
             })
-            ->when(isset($department_id), function ($query) use ($department_id) {
+            ->when($department_id!=0, function ($query) use ($department_id) {
                 return $query->where('u.department_id', $department_id);
             })
             ->groupBy('hel.user_id')
