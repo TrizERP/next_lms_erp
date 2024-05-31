@@ -790,7 +790,9 @@ class HrmsController extends Controller
         })
         ->selectRaw('tu.id as user_id, tu.employee_no, CONCAT_WS(" ", COALESCE(tu.first_name, "-"), COALESCE(tu.last_name, "-")) as full_name, tu.sub_institute_id, IFNULL(upm.name, "-") as user_profile, hd.department, COUNT(DISTINCT ha.id) as total_att_day, GROUP_CONCAT(DISTINCT ha.id) as worked_days, COUNT(DISTINCT hel.id) as total_ab_day, GROUP_CONCAT(DISTINCT hel.id) as ab_days, COUNT(DISTINCT hh.id) as total_holidays, GROUP_CONCAT(DISTINCT hh.id) as holidays,GROUP_CONCAT(DISTINCT hd.id) as department_id')
         ->where('tu.sub_institute_id', $sub_institute_id)
-        ->whereIn('tu.department_id', $department_ids)
+        ->when($department_ids != 0, function ($q) use ($department_ids) {
+            $q->whereRaw('tu.department_id in (' . implode(',', $department_ids) . ')');
+        })
         ->where('tu.status', 1)
         ->when($emp_id!=0,function($q) use($emp_id){
             $q->where('tu.id',$emp_id);

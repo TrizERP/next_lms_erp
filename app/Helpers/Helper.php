@@ -2184,7 +2184,7 @@ if (!function_exists('get_string')) {
 
     if (!function_exists('employeeDetails')) {
 
-        function employeeDetails($sub_institute_id='',$employee_id='',$status='')
+        function employeeDetails($sub_institute_id='',$employee_id='',$status='',$department_id='')
         {
             // return $status;exit;
             $empData= tbluserModel::join('tbluserprofilemaster as upm', 'upm.id', '=', 'tbluser.user_profile_id')
@@ -2197,6 +2197,9 @@ if (!function_exists('get_string')) {
            
             $empData = $empData->when($employee_id!='',function($query) use($employee_id){
                 $query->whereRaw('tbluser.id IN ('.$employee_id.')');
+            })
+            ->when($department_id!='',function($query) use($department_id){
+                $query->whereRaw('tbluser.department_id IN ('.$department_id.')');
             })
             ->orderBy('tbluser.first_name')
             // ->take(20)  

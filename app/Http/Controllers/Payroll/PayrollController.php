@@ -79,6 +79,8 @@ class PayrollController extends Controller
         $sub_institute_id=session()->get('sub_institute_id');
         $syear = session()->get('syear');
         $employee_id= ($request->emp_id!=0) ? implode(',',$request->emp_id) : '';
+        $department_id= ($request->department_id!=0) ? implode(',',$request->department_id) : '';
+
         if($type=="API"){
             try {
                 if (!$this->jwtToken()->validate()) {
@@ -94,10 +96,11 @@ class PayrollController extends Controller
             $sub_institute_id = $request->get('sub_institute_id');
             $syear = $request->get('syear');
         }
-        $employees =employeeDetails($sub_institute_id,$employee_id,$status);
+
+        $employees =employeeDetails($sub_institute_id,$employee_id,$status,$department_id);
         // echo "<pre>";print_r($employees);exit;
 
-        $employeeLists= employeeDetails($sub_institute_id,"",$status);
+        $employeeLists= employeeDetails($sub_institute_id,"",$status,$department_id);
     //    echo "<pre>";print_r($employeeLists);exit;
         $payrollTypes = PayrollType::where('status', 1)->orderBy('sort_order')->get();
         
@@ -341,6 +344,9 @@ class PayrollController extends Controller
         ->select('employee_salary_structures.*', DB::raw('CONCAT_ws(" ",COALESCE(u.first_name,"-"), COALESCE(u.last_name,"-")) as employee_name'),'u.employee_no')
         ->when($emp_id!=0,function($q) use($emp_id){
             $q->whereRaw('employee_salary_structures.employee_id in ('.$emp_id.')');
+        })
+        ->when($department_id!=0,function($q) use($department_id){
+            $q->whereRaw('u.department_id in ('.implode(',',$department_id).')');
         })
         ->where('employee_salary_structures.sub_institute_id', $sub_institute_id)
         ->when($year!=0, function($query) use($year) {
@@ -715,6 +721,7 @@ class PayrollController extends Controller
             1000000000000000000 => 'quintillion',
         ];
 
+      
         if (!is_numeric($number)) {
             return false;
         }
