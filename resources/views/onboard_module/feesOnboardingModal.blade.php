@@ -1,3 +1,8 @@
+<style>
+    .control-bar a:hover, .control-bar input:hover, [contenteditable]:focus, [contenteditable]:hover{
+        background : #fff !important;
+    }
+</style>
 <!-- fees Account Details Modal -->
 <div class="modal fade" id="exampleModal_fees" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
 <div class="modal-dialog">
@@ -107,6 +112,7 @@
                      <div class="d-flex">
                         <div class="d-flex flex-column align-items-center">
                            <div class="disc"></div>
+                           <div class="line"></div>
                         </div>
                         <div class="ml-2 mt-n1">
                            <p class="mb-1 main-p">Step 4</p>
@@ -120,6 +126,25 @@
                         <img src="{{asset('/fees_onboarding/done.png')}}" width="22px" alt="" />
                      </div>
                   </div>
+
+                  <div class="mt-3 mb-3 d-flex align-items-center justify-content-between" id="step-5" >
+                     <div class="d-flex">
+                        <div class="d-flex flex-column align-items-center">
+                           <div class="disc"></div>
+                        </div>
+                        <div class="ml-2 mt-n1">
+                           <p class="mb-1 main-p">Step 5</p>
+                           <p class="sub-p">Requirements & Process</p>
+                        </div>
+                     </div>
+                     <div class="arrow-img" style="display: none">
+                        <img src="{{asset('/fees_onboarding/icons8-arrow-26.png')}}" width="22px" alt="" />
+                     </div>
+                     <div class="done-img" style="display: none">
+                        <img src="{{asset('/fees_onboarding/done.png')}}" width="22px" alt="" />
+                     </div>
+                  </div>
+
                </div>
             </div>
             <div class="col-md-9">
@@ -590,6 +615,53 @@
                         </div>
                      </form>
                   </div>
+                  
+                   <!-- Screen 10 -->
+                   <div id="screen-10" class="card-body d-none">
+                     <h5 class="card-title">Requirements & Process</h5>
+                        <div class="card">
+                           <div class="row">
+                              <div class="col-md-6">
+                                 <div class="d-block">
+                                    <div class="divHead">
+                                       <h6>Add Your Requirements</h3>
+                                    </div>
+                                    <div class="divData">
+                                    @php
+                                       $sub_institute_id = session()->get('sub_institute_id');
+                                    @endphp
+                                    <textarea name="requirements" id="requirementText" contenteditable="true">
+                                    @isset($data['requirements']['Fees'][$sub_institute_id])
+                                       {!! $data['requirements']['Fees'][$sub_institute_id]->requirements !!}
+                                    @endisset
+                                    </textarea>
+
+                                       <input type="hidden" name="menu_id" id="requirementMenuId" value="6">
+                                       <input type="hidden" name="menu_name" id="requirementMenuName" value="Fees">
+                                    </div>
+                                 </div>
+                              </div>
+                              <div class="col-md-6">
+                                 <div class="d-block">
+                                    <div class="divHead">
+                                       <h6>Our Process</h3>
+                                    </div>
+                                    <div class="divData">
+                                       @if(isset($data['requirements']['Fees']) && isset($data['requirements']['Fees'][0]))
+                                       {!! $data['requirements']['Fees'][0]->requirements !!}
+                                       @endif
+                                    </div>
+                                 </div>
+                              </div>
+                              <div class="col-md-12 mt-2">
+                                 <center>
+                                    <input type="submit" value="Save" onclick="addRequirement()" class="btn btn-success">
+                                 </center>
+                              </div>
+                           </div>
+                        </div>                           
+                  </div>
+                  <!-- screen ends  -->
                </div>
             </div>
          </div>
@@ -838,6 +910,38 @@
         }
     });
 }
+
+function addRequirement(){
+   var menu_id =$('#requirementMenuId').val();
+   var menu_name =$('#requirementMenuName').val();
+   var requirements = CKEDITOR.instances.requirementText.getData();
+   var sub_institute_id = "{{session()->get('sub_institute_id')}}";
+   console.log(requirements);
+   $.ajax({
+        url: "{{ route('requirements.store') }}",
+        type: "POST",
+        data: {
+            type: "API",
+            sub_institute_id: sub_institute_id,
+            menu_id: menu_id,
+            menu_name: menu_name,
+            requirements: requirements,
+        },
+        success: function(response) {
+         console.log(response);
+         if (typeof response === 'string') {
+            response = JSON.parse(response);
+         }
+         alert(response.message);
+        },
+        error: function(xhr, status, error) {
+            console.error(xhr.responseText);
+            alert('Error submitting data. Please check the console for details.');
+        }
+    });
+
+}
+
 $('#responsabilities').on('change',function(){
    var selectedOption = $(this).find('option:selected');
    var dataVal = selectedOption.attr('data-val');
