@@ -35,6 +35,7 @@ class examWiseProgressReportController extends Controller
         $division = $request->input('division');
         $subject = $request->input('subject');
         $exams = $request->input('exam_id');
+        $exam_type = $request->input('exam_type');
         $type = $request->input('type');
         $marking_period_id = session()->get('term_id');
 
@@ -103,29 +104,40 @@ class examWiseProgressReportController extends Controller
                 $join->on('qp.standard_id', '=', 'se.standard_id')
                     ->on('qp.grade_id', '=', 'se.grade_id')
                     ->where('qp.sub_institute_id', '=', $sub_institute_id);
-            })
-            ->leftJoin('lms_online_exam as le', function ($join) {
-                $join->on('le.question_paper_id', '=', 'qp.id')
-                    ->on('le.student_id', '=', 's.id');
-            })
-            ->selectRaw("s.id, s.enrollment_no, CONCAT_WS(' ', s.first_name, s.middle_name, s.last_name) AS student_name,
-                st.name AS std_name, d.name AS div_name, se.standard_id, se.grade_id, qp.id AS question_paper_id, qp.paper_name,
+            });
+
+            if($exam_type==0){
+                $data->leftJoin('lms_online_exam as le', function ($join) {
+                    $join->on('le.question_paper_id', '=', 'qp.id')
+                        ->on('le.student_id', '=', 's.id');
+                });
+            }else{
+                $data->Join('lms_online_exam as le', function ($join) {
+                    $join->on('le.question_paper_id', '=', 'qp.id')
+                        ->on('le.student_id', '=', 's.id');
+                }); 
+            }
+        $data = $data->selectRaw("s.id, s.enrollment_no, CONCAT_WS(' ', s.first_name, s.middle_name, s.last_name) AS student_name,
+                st.name AS std_name, d.name AS div_name, se.standard_id, se.grade_id, group_concat(DISTINCT qp.id) AS question_paper_id, group_concat(DISTINCT qp.paper_name) as paper_name,
                 qp.total_marks, ifnull(MAX(le.total_right), '-') AS obtain_marks, GROUP_CONCAT(IFNULL(le.total_right, '-')) as all_marks")
             ->where('s.sub_institute_id', $sub_institute_id)
             ->where('se.grade_id', $grade)
             ->where('se.standard_id', $standard)
-            ->where('qp.id', $exams)
-            ->groupBy('s.id', 'qp.id')
+            ->whereIn('qp.id', $exams)
+            ->groupByRaw('s.id')
             ->orderBy('se.roll_no', 'ASC')
             ->get()->toArray();
 //dd(DB::getQueryLog());
 
         $data = json_decode(json_encode($data), true);
         foreach ($data as $k => $v) {
-            $marks_array[$v['id']][$v['question_paper_id']] = $v['obtain_marks'];
+            $explodeQuestion = explode(',',$v['question_paper_id']);
+            foreach ($explodeQuestion as $key => $value) {
+                $marks_array[$v['id']][$value] = $v['obtain_marks'];
+            }
         }
         $maxCount = 0;
-
+        
         foreach ($data as $k => $v) {
             $all_marks[$v['id']][$v['question_paper_id']] = $v['all_marks'];
             if (is_string($all_marks[$v['id']][$v['question_paper_id']])) {
@@ -149,7 +161,7 @@ class examWiseProgressReportController extends Controller
 
         $res['status_code'] = 1;
         $res['message'] = "Success";
-        $res['student_data'] = $student_data;
+        $res['student_data'] = $data;
         $res['marks_data'] = $marks_array;
         $res['all_marks_col']= $maxCount;
         $res['all_marks'] = $all_marks;
@@ -159,9 +171,10 @@ class examWiseProgressReportController extends Controller
         $res['division_id'] = $division;
         $res['subject_id'] = $subject;
         $res['exam_id'] = $exams;
+        $res['exam_type'] = $exam_type;
         $res['exams_data'] = $examData;
         $res['subject_data'] = $subject_data;
-
+            // echo "<pre>";print_r($res['student_data']);exit;
         return is_mobile($type, "lms/reports/show_examwise_progress_report", $res, "view");
     }
 
