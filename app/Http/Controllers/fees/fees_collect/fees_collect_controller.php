@@ -341,6 +341,7 @@ class fees_collect_controller extends Controller
             $sub_institute_id=$request->sub_institute_id;
             $syear = $request->syear;
             $user_id = $request->user_id;
+             $stu_arr[0] = $request->student_id;
         }
         // get all month name with month_id
         $month_arr = FeeMonthId($syear,$sub_institute_id);
@@ -728,7 +729,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
         // send sms to parent after fees paid
             $res['sms_sent'] = $this->send_sms_to_parents($res);
         }
-
+        
         return $res;
     }
 
@@ -1246,7 +1247,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                 }
             }
 
-            $image_path1 = "/storage/fees/" . $receipt_book_arr->receipt_logo;
+            $image_path1 = env('APP_URL')."/storage/fees/" . $receipt_book_arr->receipt_logo;
             $image_path = '<img class="logo" src="' . $image_path1 . '" alt="SCHOOL LOGO">';
 
             $syear2 = $syear + 1;
