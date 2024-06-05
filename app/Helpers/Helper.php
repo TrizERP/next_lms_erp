@@ -993,8 +993,8 @@ if (!function_exists('FeeBreakoffHeadWise')) {
 
             $request = $_REQUEST;
 
-            $paid_fees = $paid_fees = DB::table('fees_collect')
-                ->selectRaw("sum(ifnull($fees_title,0)) total_paid,receiptdate")
+            $paid_fees = $paid_fees = DB::table('fees_collect') // 03-06-24 by uma
+                ->selectRaw("sum(ifnull($fees_title,0)) total_paid,SUM(fees_discount) AS total_disc,receiptdate")
                 ->where([
                     'term_id' => $month_id,
                     'sub_institute_id' => $sub_institute_id,
@@ -1009,6 +1009,7 @@ if (!function_exists('FeeBreakoffHeadWise')) {
             // Start Added by 18/05/2021 for getting paid amount in Overall Fees Head Wise report
             if (isset($paid_fees[0]->total_paid) && $paid_fees[0]->total_paid != '') {
                 $data[$value->id][$value->month_id][$value->fees_title]['paid_amount'] = $paid_fees[0]->total_paid;
+                $data[$value->id][$value->month_id][$value->fees_title]['disc_amount'] = $paid_fees[0]->total_disc; // 03-06-24 by uma
             } else {
                 $data[$value->id][$value->month_id][$value->fees_title]['paid_amount'] = 0;
             }
