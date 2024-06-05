@@ -65,6 +65,9 @@ use App\Http\Controllers\leave\leave_summary_report\LeaveSummaryReportController
 use App\Http\Controllers\superAdminController;
 use App\Http\Controllers\WhatsappController;
 use App\Http\Controllers\oldDocumentTransfer;
+use App\Http\Controllers\BotManController;
+use App\Http\Controllers\reuirementController;
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -480,3 +483,7 @@ Route::post('transferDocs', [oldDocumentTransfer::class, 'storeImagesToDigitalOc
 
 // transport onboard 
 Route::get('transport_Onboarding', [tourController::class, 'transportOnboarding'])->name('transportOnboarding');
+Route::match(['get', 'post'], '/botman', 'App\Http\Controllers\BotManController@handle');
+// 03-06-24
+Route::resource('requirements', reuirementController::class);
+Route::get('customers_requirement', [reuirementController::class, 'ReportData'])->name('customers_requirement');

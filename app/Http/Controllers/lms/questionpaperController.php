@@ -19,6 +19,9 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Validator;
 use function App\Helpers\is_mobile;
+use function App\Helpers\SearchStudent;
+use function App\Helpers\sendNotification;
+use App\Models\school_setup\SchoolModel;
 
 class questionpaperController extends Controller
 {
@@ -241,6 +244,63 @@ class questionpaperController extends Controller
         // echo ('<pre>');print_r($questionpaper);die;
         $query = questionpaperModel::insertGetId($questionpaper);
         $questionpaper_id = DB::getPDO()->lastInsertId();
+        // send notification
+        if(isset($questionpaper_id) && $questionpaper_id!=0){
+            $student_data = SearchStudent($request['grade'], $request['standard']);
+
+            $schoolData = SchoolModel::where(['id' => $sub_institute_id])->get()->toArray();
+
+            $schoolName = $schoolData[0]['SchoolName'];
+            $schoolLogo = $_SERVER['APP_URL'].'/admin_dep/images/'.$schoolData[0]['Logo'];
+
+            foreach ($student_data as $id => $value) {
+                $text = "Reminder: ".$request['paper_name']." exam added on ".$open_date." and closing date of exam is ".$close_date." )";
+                $app_notification_content = [
+                    'NOTIFICATION_TYPE'        => 'Notification',
+                    'NOTIFICATION_DATE'        => now(),
+                    'STUDENT_ID'               => $value['id'],
+                    'NOTIFICATION_DESCRIPTION' => $text,
+                    'STATUS'                   => 0,
+                    'SUB_INSTITUTE_ID'         => $sub_institute_id,
+                    'SYEAR'                    => $syear,
+                    'SCREEN_NAME'              => 'general',
+                    'CREATED_BY'               => session()->get('user_id'),
+                    'CREATED_IP'               => $_SERVER['REMOTE_ADDR'],
+                ];
+
+                $gcm_data = DB::table('gcm_users')->where('mobile_no', $value['mobile'])
+                        ->where('sub_institute_id', $sub_institute_id)->get()->toArray();
+
+                    $gcmRegIds = [];
+                    if (count($gcm_data) > 0) {
+                        foreach ($gcm_data as $key1 => $val1) {
+                            $gcmRegIds[] = $val1->gcm_regid;
+                        }
+                    }
+
+                    $pushMessage = $text;
+
+                    $bunch_arr = array_chunk($gcmRegIds, 1000);
+                    sendNotification($app_notification_content);
+                    
+                    if (! empty($bunch_arr)) {
+                        foreach ($bunch_arr as $val) {
+                            if (isset($val, $pushMessage)) {
+                                $type1 = 'Notification';
+                                $message = [
+                                    'body'  => $pushMessage, 'TYPE' => $type1, 'USER_ID' => $value['id'],
+                                    'title' => $schoolName, 'image' => $schoolLogo,
+                                ];
+                                $pushStatus = send_FCM_Notification($val, $message, $sub_institute_id);
+                               
+                            }
+                        }
+                      
+                    }
+            }
+          
+        }
+        // notification ended 
 
         $res = array(
             "status_code" => 1,

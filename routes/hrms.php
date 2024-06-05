@@ -99,6 +99,13 @@ Route::group([ 'middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::get('get-absent-days',[HrmsController::Class,'getAbsentDays']);
     Route::get('get-half-day',[HrmsController::Class,'getHalfDays']);
 
+    // new monthly payroll report
+    Route::get('/monthly-payroll', [PayrollController::class, 'monthlyPayroll'])->name('monthly_payroll.index');
+    Route::get('/monthly-payroll/create', [PayrollController::class, 'monthlyPayrollCreate'])->name('monthly_payroll.create');
+    Route::post('/monthly-payroll-store', [PayrollController::class, 'monthlyPayrollStore'])->name('monthly_payroll.store');
+
+   // web.php
+   Route::get('/getMonthlyData', [PayrollController::class, 'getEmpMonthlyData'])->name('getMonthlyData');
 });
 
 Route::group(['prefix' => 'hrms', 'middleware' => ['session', 'menu', 'logRoute']], function () {
