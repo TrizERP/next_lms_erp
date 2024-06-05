@@ -79,6 +79,8 @@
         "optimize-autoloader": true,
         "preferred-install": "dist",
         "sort-packages": true,
+        "disable-tls": true,
+        "secure-http": false,
         "allow-plugins": {
             "php-http/discovery": true
         }

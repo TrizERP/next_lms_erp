@@ -394,11 +394,8 @@ class studentAttendanceController extends Controller
             ->join('tblstudent_enrollment as se', function ($join) use ($syear) {
                 $join->whereRaw("s.id = se.student_id AND se.syear = '" . $syear . "' AND s.sub_institute_id = se.sub_institute_id
                 AND se.end_date IS NULL");
-            })->join('standard as sm', function ($join) use($marking_period_id) {
+            })->join('standard as sm', function ($join) {
                 $join->whereRaw('se.standard_id = sm.id');
-                // ->when($marking_period_id,function($query) use($marking_period_id){
-                //     $query->where('sm.marking_period_id',$marking_period_id);
-                // });
             })->join('division as dm', function ($join) {
                 $join->on('se.section_id', '=', 'dm.id');
             })->leftJoin('attendance_student as a', function ($join) use ($date, $syear) {

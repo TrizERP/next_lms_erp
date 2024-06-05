@@ -760,7 +760,7 @@ if(in_array($sub_institute_id, $cn))
             }
 
             $ch = curl_init();
-
+//echo $url;
             // Ignore SSL certificate verification
             curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
@@ -769,9 +769,11 @@ if(in_array($sub_institute_id, $cn))
             $output = curl_exec($ch);
 
             //Print error if any
-            if (curl_errno($ch)) {
-                $isError = true;
-                $errorMessage = curl_error($ch);
+            if ($output === false) {
+                $error = curl_error($ch);
+                $errorCode = curl_errno($ch);
+                echo "cURL Error: $error\n";
+                echo "cURL Error Code: $errorCode\n";
             }
             curl_close($ch);
         } else {
