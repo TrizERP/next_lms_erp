@@ -2238,8 +2238,13 @@ class AJAXController extends Controller
     }
 
     public function lmsDataApi(Request $request){
-
-        if($request->table && $request->sub_institute_id){
+    	
+        if($request->table == 'lms_lesson_plan' && $request->sub_institute_id){
+        	$data = DB::table($request->table)->where('sub_institute_id', $request->sub_institute_id)
+                  ->limit(25)
+                  ->get()
+                  ->toArray();
+        }elseif($request->table && $request->sub_institute_id){
             $data = DB::table($request->table)->where('sub_institute_id', $request->sub_institute_id)->get()->toArray();
         }elseif($request->table){
             $data = DB::table($request->table)->get()->toArray();
