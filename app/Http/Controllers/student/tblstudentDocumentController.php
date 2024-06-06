@@ -7,6 +7,7 @@ use App\Models\student\tblstudentDocumentModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
+use function App\Helpers\is_mobile;
 
 class tblstudentDocumentController extends Controller
 {
@@ -39,6 +40,11 @@ class tblstudentDocumentController extends Controller
     public function store(Request $request)
     {
         $sub_institute_id = $request->session()->get('sub_institute_id');
+        $type = $request->type;
+        
+        if($type=="API"){
+            $sub_institute_id = $request->sub_institute_id;
+        }
 
         $file_name = "";
         if ($request->hasFile('file_name')) {
@@ -62,7 +68,7 @@ class tblstudentDocumentController extends Controller
         ];
 
         tblstudentDocumentModel::insert($data);
-
+     
         return "Document Uploaded";
     }
 

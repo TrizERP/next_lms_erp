@@ -2149,7 +2149,13 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                     ];
                 }
                 if (isset($arr['amount'])) {
-                    $reg_bk_month_wise[$arr['title']] += $arr['amount'];
+                      // 03-06-24 by uma for institute_id =248
+                    if(isset($arr['disc_amount']) && $arr['disc_amount']>0){
+                        $reg_bk_month_wise[$arr['title']] += ($arr['amount']-$arr['disc_amount']); 
+                    }else{
+                        $reg_bk_month_wise[$arr['title']] += $arr['amount'];
+                    }
+                    // $reg_bk_month_wise[$arr['title']] += $arr['amount'];
                     $reg_month_wise[$arr['title']] = [
                         'title' => $arr['title'],
                         'amount' => $reg_bk_month_wise[$arr['title']],

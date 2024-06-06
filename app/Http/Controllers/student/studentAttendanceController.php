@@ -383,9 +383,10 @@ class studentAttendanceController extends Controller
         }
         $data = DB::table('tblstudent as s')
             ->join('tblstudent_enrollment as se', function ($join) use ($syear) {
-                $join->on("s.id", "=", "se.student_id")->whereRaw("se.syear = '" . $syear . "' AND se.end_date IS NULL");
+                $join->whereRaw("s.id = se.student_id AND se.syear = '" . $syear . "' AND s.sub_institute_id = se.sub_institute_id
+                AND se.end_date IS NULL");
             })->join('standard as sm', function ($join) {
-                $join->on('se.standard_id', '=', 'sm.id');
+                $join->whereRaw('se.standard_id = sm.id');
             })->join('division as dm', function ($join) {
                 $join->on('se.section_id', '=', 'dm.id');
             })->leftJoin('attendance_student as a', function ($join) use ($date, $syear) {

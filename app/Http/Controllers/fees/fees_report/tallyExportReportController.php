@@ -194,6 +194,7 @@ class tallyExportReportController extends Controller
                 SUM(fc.fine) AS total_fine")
             ->whereRaw($extraSearchArrayRaw)
             ->where('se.syear', $syear)
+            ->where('fc.syear', $syear)
             ->where('s.sub_institute_id', $sub_institute_id)
             ->where('fc.is_deleted', '=', 'N')
             ->whereNull('se.end_date')

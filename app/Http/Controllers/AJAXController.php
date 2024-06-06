@@ -652,7 +652,7 @@ class AJAXController extends Controller
 
         $head_wise_fees = FeeBreakoffHeadWise($stu_arr); //for previous year
         $head_wise_fees2 = FeeBreakoffHeadWise($stu_arr,'','','',$last_syear);//for previous year
-
+     
         $till_now_breckoff = $till_now_breckoff2 = array();
         foreach ($search_ids as $id => $val) {
             foreach ($head_wise_fees as $temp_id => $arr) {
@@ -685,11 +685,17 @@ class AJAXController extends Controller
                     if (!isset($reg_bk_month_wise[$arr['title']])) {
                         $reg_bk_month_wise[$arr['title']] = 0;
                     }
-                    $reg_bk_month_wise[$arr['title']] += $arr['amount'];
+                    // 03-06-24 by uma for institute_id =248
+                    if(isset($arr['disc_amount']) && $arr['disc_amount']>0){
+                        $reg_bk_month_wise[$arr['title']] += ($arr['amount']-$arr['disc_amount']); 
+                    }else{
+                        $reg_bk_month_wise[$arr['title']] += ($arr['amount']);
+                    }
                     $final_bk_name[$arr['title']] = $head_name;
                 }
             }
         }
+        
         // return $final_bk_name;exit;
         foreach ($till_now_breckoff2 as $month_id => $fees_detail) {
             foreach ($fees_detail as $head_name => $arr) {
