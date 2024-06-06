@@ -455,6 +455,9 @@ class studentCertificateController extends Controller
             if(isset($months[$maxMonth])){
                 $month = $months[$maxMonth];    
             }
+        }else{
+            // (Hills) if RTE quota fees paid not getting data so print as per TC Info
+            $month = $value['month_up_paid_school_dues'];
         }
         // echo "<pre>";print_r($month);exit;
         // end 15-04-2024
@@ -561,7 +564,7 @@ class studentCertificateController extends Controller
         $html_content = str_replace(htmlspecialchars("<<date_on_which_pupil_name_was_struck_value>>"),
             date('d-m-Y', strtotime($value['date_on_which_pupil_name_was_struck'])), $html_content);
         $html_content = str_replace(htmlspecialchars("<<any_fees_concession_value>>"),
-            strtoupper($value['any_fees_concession']), $html_content);
+            strtoupper(isset($value['any_fees_concession']) && !empty($value['any_fees_concession']) ? $value['any_fees_concession'] : 'No'), $html_content);
         $html_content = str_replace(htmlspecialchars("<<whether_ncc_cadet_value>>"),
             strtoupper($value['whether_ncc_cadet']), $html_content);
         $html_content = str_replace(htmlspecialchars("<<any_other_remarks_value>>"),
