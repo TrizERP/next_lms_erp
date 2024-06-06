@@ -272,9 +272,15 @@ class tourController extends Controller
         $res['feesBreakoff'] = json_decode($feesBk->create($request));
 
         $res['importData']  = DB::table('import_table_fields')->groupBy('table_name')->orderBy('id')->get();
-        // get roles for users 
-      
-        // echo "<pre>";print_r($res['feesBreakoff']);exit;
+       //get process and requirements 
+       $requirementData = DB::table('requirement_gathering')->whereRaw('sub_institute_Id in (0,'.$sub_institute_id.')')->get()->toArray();
+
+        $requirements = [];
+        foreach ($requirementData as $key => $value) {
+            $requirements[$value->menu_name][$value->sub_institute_id] = $value;
+        }
+
+        // echo "<pre>";print_r($requirements);exit;
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['head'] = $data;
@@ -282,7 +288,8 @@ class tourController extends Controller
         $res['groupwisemenuMaster'] = $mastermenu;
         $res['groupwisesubmenuMaster'] = $finalSubMenu ?? [];
         $res['groupwiseSubsubmenuMaster'] = $finalSubChildMenu ?? [];
-        $res['roles'] = $rolesRes ?? [];        
+        $res['roles'] = $rolesRes ?? [];       
+        $res['requirements'] = $requirements ?? [];        
         return is_mobile($type, "setup_institute_details", $res, 'view');
     }
 

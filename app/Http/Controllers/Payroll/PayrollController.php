@@ -1315,4 +1315,182 @@ class PayrollController extends Controller
             // echo "<pre>";print_r($res['payrollData']);exit;
         return is_mobile($type, "payrollTypeReport.index", $res);
     }
+
+    public function monthlyPayroll(Request $request){
+        $type=$request->type;
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+        if($type=="API"){
+            $sub_institute_id = $request->sub_institute_id;
+            $syear = $request->syear;
+        }
+        $res['months'] = Helpers::getMonths();
+        $res['years'] = Helpers::getYears();
+
+        return is_mobile($type,'payroll.monthly_payroll_report.newIndex',$res,'view');
+    }
+
+    public function monthlyPayrollCreate(Request $request){
+        $type=$request->type;
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+
+        $res['department_id'] = $department_id = ($request->department_id!=0) ? $request->department_id : '';
+        $res['employee_id'] = $employee_id = ($request->emp_id!=0) ? $request->emp_id : '';
+
+        $res['selYear'] = $year = $request->year;
+        $res['selMonth'] = $month = $request->month;
+
+        if($type=="API"){
+            $sub_institute_id = $request->sub_institute_id;
+            $syear = $request->syear;
+        }
+
+        // get emp by search 
+        $employeeDetails = employeeDetails($sub_institute_id,$employee_id,'',$department_id);
+
+        // empData with val 
+        $newData = [];
+        foreach ($employeeDetails as $key => $value) {
+            # store all details of employee
+            $newData[$key] = $value;
+            // get monthly salary Data and add into newData array
+            $newData[$key]['monthlyData'] = DB::table('employee_monthly_salary_data')->where(['sub_institute_id'=>$sub_institute_id,'year'=>$year])->where('employee_id',$value['id'])->where('month',$month)->first();
+        }
+
+        $payrollTypes = PayrollType::where('status', 1)->orderBy('sort_order')->get();
+
+        $header = [];
+        foreach ($payrollTypes as $payrollType) {
+            $header[$payrollType->id] = $payrollType->payroll_name;
+        }
+
+        // echo "<pre>";print_r($newData);exit;
+        if(empty($newData)){
+            $res['status_code'] = 0;
+            $res['message'] = "Failed Find Employees";
+        }
+
+        if(empty($header)){
+            $res['status_code'] = 0;
+            $res['message'] = "Payroll Not Found";
+        }else{
+            $header['total_deduction'] = 'Total Deduction';
+            $header['total_payment'] = 'Total Payment';
+            $header['received_by'] = 'Received By';
+        }
+
+        $res['header'] =$header;
+        $res['employeeDetails'] = $newData;
+        $res['months'] = Helpers::getMonths();
+        $res['years'] = Helpers::getYears();
+        // echo "<pre>";print_r($newData);exit;
+        return is_mobile($type,'payroll.monthly_payroll_report.newIndex',$res,'view');
+    }
+
+    function getEmpMonthlyData(Request $request){
+        $sub_institute_id = session()->get('sub_institute_id');
+        $totalDay = $request->totalDay;
+        
+        $payrollTypes = PayrollType::where('status', 1)->orderBy('sort_order')->get();
+        $employeeSalaryDetails = EmployeeSalaryStructure::where(['employee_id'=> $request->emp_id, 'sub_institute_id'=>$sub_institute_id])->first();
+
+        if(empty($employeeSalaryDetails)){
+            $res['status_code']=0;
+            return $res;
+        }
+        $employeeSalaryDetails = json_decode($employeeSalaryDetails->employee_salary_data, true);
+
+        $preparPayrollType = [];
+        
+        $totaldeduction = $totalallowance = 0;
+        foreach ($payrollTypes as $payrollType) {
+            if(isset($employeeSalaryDetails[$payrollType->id]) && $payrollType->payroll_type == 1) {
+                $preparPayrollType[]['allowance'] = [$employeeSalaryDetails[$payrollType->id],$payrollType->amount_type,$payrollType->id,$payrollType->payroll_name];
+            } else if (isset($employeeSalaryDetails[$payrollType->id])) {
+                $preparPayrollType[]['deduction'] = [$employeeSalaryDetails[$payrollType->id],$payrollType->amount_type,$payrollType->id,$payrollType->payroll_name];
+            }
+        }
+        $employeefinalDisplayData = [];
+        foreach ($preparPayrollType as $value){
+            if(isset($value['allowance'])) {
+                $allowence =  $value['allowance'][0];
+                if($value['allowance'][1] == 1) $allowence = round( ($allowence / 30) * $request->totalDay);
+                if($value['allowance'][1] == 2) $allowence = (round(($allowence / 30) * $request->totalDay));
+                $employeefinalDisplayData[$value['allowance'][2]] = $allowence;
+                $totalallowance = $totalallowance + $allowence;
+            }
+
+            if(isset($value['deduction'])) {
+                $deduction =  $value['deduction'][0];
+                $deductionName=  (($value['deduction'][3] == 'Pro.Tax') ? 1 : 0);
+                if($value['deduction'][1] == 1 && !$deductionName) $deduction = round(($deduction / 30) * $request->totalDay);
+                if($value['deduction'][1] == 2 && !$deductionName) $deduction = round(($deduction / 30) * $request->totalDay);
+                $employeefinalDisplayData[$value['deduction'][2]] = $deduction;
+                $totaldeduction = $totaldeduction + $deduction;
+            }
+        
+        }
+        if(!empty($employeefinalDisplayData)){
+            $employeefinalDisplayData['total_deduction'] = $totaldeduction;
+            $employeefinalDisplayData['total_payment'] = ($totalallowance - $totaldeduction);
+        }
+
+        $res['salaryData'] = $employeefinalDisplayData;
+        $res['totalDay'] = $request->total_day;
+
+        return $res;
+    }
+
+    public function monthlyPayrollStore(Request $request){
+        $type=$request->type;
+        $sub_institute_id = session()->get('sub_institute_id');
+        $payrollVal = $request->payrollVal;
+        $jsonVal=[];
+        // make json
+        foreach ($payrollVal as $emp_id => $value) {
+           $jsonVal[$emp_id] = json_encode($value['payrollHead']); 
+        }
+        // add update value;
+        $i=0;
+        foreach ($payrollVal as $emp_id => $value) {
+            $employeeSalaryData = EmployeeMonthlySalaryData::where('employee_id', $emp_id)->where('month',$request->month)->where('year',$request->year)->where(['sub_institute_id'=> $sub_institute_id])->first();
+
+            $dataArr = [
+                'month' => $request->month,
+                'year' => $request->year,
+                'employee_id' => $emp_id,
+                'sub_institute_id' => $sub_institute_id,
+            ];
+
+            if(!empty($employeeSalaryData)){
+                $dataArr['total_deduction'] = $value['total_deduction'];
+                $dataArr['total_payment'] = $value['total_payment'];
+                $dataArr['received_by'] = $value['received_by'];
+                $dataArr['total_day'] = $value['total_day'];
+                $dataArr['employee_salary_data'] = $jsonVal[$emp_id];
+                $dataArr['updated_at'] = now();
+                $update = DB::table("employee_monthly_salary_data")->where('id',$employeeSalaryData->id)->update($dataArr);
+                $i++;
+            }else{
+                $dataArr['total_deduction'] = $value['total_deduction'];
+                $dataArr['total_payment'] = $value['total_payment'];
+                $dataArr['received_by'] = $value['received_by'];
+                $dataArr['total_day'] = $value['total_day'];
+                $dataArr['employee_salary_data'] = $jsonVal[$emp_id];
+                $dataArr['created_at'] = now();
+                $insert = DB::table("employee_monthly_salary_data")->insert($dataArr);
+                $i++;
+            }
+         }
+
+        if($i==0){
+            $res['status_code'] = 0;
+            $res['message'] = "Not able to add data";
+        }else{
+            $res['status_code'] = 1;
+            $res['message'] = "Inserted Successfully";
+        }
+        return is_mobile($type,'monthly_payroll.index',$res);
+    }
 }
