@@ -2484,7 +2484,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
 
             //START Get Fees paid array 03-04-24 by uma
             $paid_data = DB::table('fees_collect as c')
-                ->selectRaw('c.receipt_no,c.receiptdate,c.payment_mode,c.bank_branch,c.bank_branch,c.bank_name,c.fees_html,
+                ->selectRaw('c.term_id as month_id,c.receipt_no,c.receiptdate,c.payment_mode,c.bank_branch,c.bank_branch,c.bank_name,c.fees_html,
                     c.cheque_date,c.cheque_no,c.cheque_bank_name,SUM(amount) as paid_amount,c.syear')
                 ->where('c.student_id', $student_id)
                 ->where('c.is_deleted', 'N')
@@ -2492,12 +2492,23 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                 ->when(!in_array($sub_institute_id, $all_year_fees), function ($query) use ($syear) {
                         return $query->where('c.syear', $syear);
                 })
-                ->groupBy('receipt_no')->orderBy('syear','desc')->get()->toArray();
+                ->when($request->month_id,function($q) use($request) {
+                    $q->where('c.term_id',$request->month_id);
+                })
+                ->when($request->type,function($q){
+                    $q->groupBy('receipt_no')->orderBy('syear','desc')->latest('id')->first();
+                },function($q){
+                    $q->groupBy('receipt_no')->orderBy('syear','desc')->get()->toArray();
+                })->get()->toArray();
 
 
             //END Get Fees paid array
-
-            if(isset($fees_data['stu_data'])){
+            if(isset($request->type) || isset($request->month_id)){
+                $res['status'] = 1;
+                $res['message'] = "Success";
+                $res['data'] = $paid_data;
+            }
+            else if(isset($fees_data['stu_data'])){
                 $data['STU_DATA'] = $fees_data['stu_data'];
                 $data['PENDING'] = $new_pending_arr;
                 $data['PAID'] = $paid_data;
