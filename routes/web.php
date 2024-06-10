@@ -475,7 +475,7 @@ Route::any('check_access',[AJAXController::class, 'check_access'])->name('check_
 
 Route::any('chat',[AJAXController::class, 'chat'])->name('chat');
 Route::any('geminiAI',[AJAXController::class, 'geminiAI'])->name('geminiAI');
-Route::any('lms_data',[AJAXController::class, 'lmsDataApi'])->name('lms_data');
+Route::get('lms_data',[AJAXController::class, 'lmsDataApi'])->name('lms_data');
 Route::any('python_timetable',[AJAXController::class, 'pythonTimetable'])->name('python_timetable');
 
 // to transfer files to digital ocean
