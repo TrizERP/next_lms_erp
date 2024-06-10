@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "b8014e8f84f40d3e2e013dec341fce52",
+    "content-hash": "b9f450fe5c6cff2b3b3bf36799cb7d0a",
     "packages": [
         {
             "name": "aws/aws-crt-php",
@@ -62,16 +62,16 @@
         },
         {
             "name": "aws/aws-sdk-php",
-            "version": "3.308.6",
+            "version": "3.311.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/aws/aws-sdk-php.git",
-                "reference": "d119265faba226b3fab1514b6fa27a2986b91453"
+                "reference": "3e1cc8fe522eae7deca8b7753c573c2c69444705"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/aws/aws-sdk-php/zipball/d119265faba226b3fab1514b6fa27a2986b91453",
-                "reference": "d119265faba226b3fab1514b6fa27a2986b91453",
+                "url": "https://api.github.com/repos/aws/aws-sdk-php/zipball/3e1cc8fe522eae7deca8b7753c573c2c69444705",
+                "reference": "3e1cc8fe522eae7deca8b7753c573c2c69444705",
                 "shasum": ""
             },
             "require": {
@@ -151,9 +151,9 @@
             "support": {
                 "forum": "https://forums.aws.amazon.com/forum.jspa?forumID=80",
                 "issues": "https://github.com/aws/aws-sdk-php/issues",
-                "source": "https://github.com/aws/aws-sdk-php/tree/3.308.6"
+                "source": "https://github.com/aws/aws-sdk-php/tree/3.311.0"
             },
-            "time": "2024-05-30T18:08:56+00:00"
+            "time": "2024-06-05T18:07:37+00:00"
         },
         {
             "name": "barryvdh/laravel-dompdf",
@@ -376,6 +376,71 @@
                 "source": "https://github.com/botman/botman/tree/v2.8.3"
             },
             "time": "2024-03-13T07:59:56+00:00"
+        },
+        {
+            "name": "botman/driver-web",
+            "version": "v1.5.3",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/botman/driver-web.git",
+                "reference": "45b3bde9c5af0f52d9a893a3793740e3304015af"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/botman/driver-web/zipball/45b3bde9c5af0f52d9a893a3793740e3304015af",
+                "reference": "45b3bde9c5af0f52d9a893a3793740e3304015af",
+                "shasum": ""
+            },
+            "require": {
+                "botman/botman": ">=2.0",
+                "php": ">=7.0"
+            },
+            "require-dev": {
+                "botman/driver-facebook": "~2.0",
+                "botman/studio-addons": "~1.0",
+                "ext-curl": "*",
+                "illuminate/support": "~5.5.0",
+                "mockery/mockery": "^1.1",
+                "phpunit/phpunit": "~5.0"
+            },
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "2.0-dev"
+                },
+                "laravel": {
+                    "providers": [
+                        "BotMan\\Drivers\\Web\\Providers\\WebServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "BotMan\\Drivers\\Web\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Marcel Pociot",
+                    "email": "m.pociot@gmail.com"
+                }
+            ],
+            "description": "Web driver for BotMan",
+            "homepage": "http://github.com/botman/driver-web",
+            "keywords": [
+                "Botman",
+                "bot",
+                "web"
+            ],
+            "support": {
+                "issues": "https://github.com/botman/driver-web/issues",
+                "source": "https://github.com/botman/driver-web/tree/v1.5.3"
+            },
+            "time": "2022-05-01T20:39:28+00:00"
         },
         {
             "name": "brick/math",
@@ -4199,16 +4264,16 @@
         },
         {
             "name": "nesbot/carbon",
-            "version": "2.72.3",
+            "version": "2.72.5",
             "source": {
                 "type": "git",
                 "url": "https://github.com/briannesbitt/Carbon.git",
-                "reference": "0c6fd108360c562f6e4fd1dedb8233b423e91c83"
+                "reference": "afd46589c216118ecd48ff2b95d77596af1e57ed"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/briannesbitt/Carbon/zipball/0c6fd108360c562f6e4fd1dedb8233b423e91c83",
-                "reference": "0c6fd108360c562f6e4fd1dedb8233b423e91c83",
+                "url": "https://api.github.com/repos/briannesbitt/Carbon/zipball/afd46589c216118ecd48ff2b95d77596af1e57ed",
+                "reference": "afd46589c216118ecd48ff2b95d77596af1e57ed",
                 "shasum": ""
             },
             "require": {
@@ -4242,8 +4307,8 @@
             "type": "library",
             "extra": {
                 "branch-alias": {
-                    "dev-3.x": "3.x-dev",
-                    "dev-master": "2.x-dev"
+                    "dev-master": "3.x-dev",
+                    "dev-2.x": "2.x-dev"
                 },
                 "laravel": {
                     "providers": [
@@ -4302,7 +4367,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2024-01-25T10:35:09+00:00"
+            "time": "2024-06-03T19:18:41+00:00"
         },
         {
             "name": "nette/schema",
@@ -11859,9 +11924,5 @@
         "ext-curl": "*"
     },
     "platform-dev": [],
-<<<<<<< HEAD
     "plugin-api-version": "2.6.0"
-=======
-    "plugin-api-version": "2.0.0"
->>>>>>> 8b45e587578898c4f3d1efd424529217e61079e7
 }
