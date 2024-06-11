@@ -161,8 +161,14 @@ class studentReportController extends Controller
             ->leftJoin('religion as r', 'r.id', '=', 'tblstudent.religion')
             ->leftJoin('caste', 'caste.id', '=', 'tblstudent.cast')
             ->leftJoin('blood_group', 'blood_group.id', '=', 'tblstudent.bloodgroup')
-            ->leftJoin('batch', 'tblstudent.studentbatch', '=', 'batch.id')
-            ->leftJoin('transport_map_student', 'transport_map_student.student_id', '=', 'tblstudent.id')
+            ->leftJoin('batch', function($join) use ($syear) {
+                $join->on('tblstudent.studentbatch', '=', 'batch.id')
+                    ->where('batch.syear', '=', $syear);
+            })
+            ->leftJoin('transport_map_student', function($join) use ($syear) {
+                $join->on('transport_map_student.student_id', '=', 'tblstudent.id')
+                    ->where('transport_map_student.syear', '=', $syear);
+            })
             ->leftJoin('admission_enquiry', 'tblstudent.mobile', '=', 'admission_enquiry.mobile')
             ->leftJoin('transport_vehicle', function($join) use ($sub_institute_id) {
                 $join->on('transport_vehicle.id', '=', 'transport_map_student.from_bus_id')

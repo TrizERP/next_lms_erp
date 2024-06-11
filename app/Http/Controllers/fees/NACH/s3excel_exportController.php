@@ -108,7 +108,7 @@ class s3excel_exportController extends Controller {
                 INNER JOIN tblstudent_enrollment se ON se.student_id = s.id 
                 INNER JOIN tblstudent_bank_detail bd ON bd.student_id = se.student_id AND bd.sub_institute_id = '".$sub_institute_id."'
                 INNER JOIN fees_breackoff f ON f.standard_id = se.standard_id AND f.grade_id = se.grade_id AND f.admission_year = s.admission_year AND se.student_quota = f.quota AND f.sub_institute_id = '".$sub_institute_id."' AND f.syear = '".$syear."' 
-                INNER JOIN tblstudent_payment_method_mapping spm ON spm.student_id = se.student_id AND spm.sub_institute_id = '".$sub_institute_id."'
+                INNER JOIN tblstudent_payment_method_mapping spm ON spm.student_id = se.student_id AND spm.sub_institute_id = '".$sub_institute_id."' AND f.syear = '".$syear."' 
                 LEFT JOIN fees_collect fc ON fc.student_id = s.id AND fc.term_id = f.month_id
                 WHERE s.sub_institute_id = '".$sub_institute_id."' AND se.syear = '".$syear."' AND se.end_date IS NULL
                 AND f.month_id = '".$month_id."' AND spm.payment_method = 'NHCS'
@@ -117,7 +117,8 @@ class s3excel_exportController extends Controller {
                 HAVING fc.amount IS NULL
             ) 
             as M";           
-
+//echo $sql;
+//die();
         $studentData = DB::select($sql);
         $studentData = json_decode(json_encode($studentData),true);
 		$excelFile_path = $this->getExcelFile($studentData);
