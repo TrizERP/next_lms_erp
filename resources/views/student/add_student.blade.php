@@ -89,7 +89,7 @@
                             </div>-->
 
                             <div class="col-md-4 form-group text-left">
-                                <label>Student Name<span style="color: red;">*</span></label>
+                                <label>{{App\Helpers\get_string('studentname','request')}}<span style="color: red;">*</span></label>
                                 <input type="text" id='first_name' required name="first_name" class="form-control">
                             </div>
                             <div class="col-md-4 form-group text-left">

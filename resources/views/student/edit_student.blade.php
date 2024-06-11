@@ -129,7 +129,7 @@ datalist {
                                         {{ method_field("PUT") }}
                                             @csrf
                                         <div class="col-md-4 form-group">
-                                            <label>Student Name </label>
+                                            <label>{{App\Helpers\get_string('studentname','request')}} </label>
                                             <input type="text" id='first_name' required name="first_name" value="{{ $student_data->first_name }}" class="form-control">
                                         </div>
                                         <div class="col-md-4 form-group">
@@ -803,11 +803,11 @@ datalist {
                                             <thead>
                                                 <tr>
                                                     <th>Sr No.</th>                                                            
-                                                    <th>Gr No.</th>
-                                                    <th>Student Name</th>
-                                                    <th>Standard</th>
-                                                    <th>Division</th>
-                                                    <th>Mobile</th>
+                                                    <th>{{App\Helpers\get_string('grno','request')}}</th>
+                                                    <th>{{App\Helpers\get_string('studentname','request')}}</th>
+                                                    <th>{{App\Helpers\get_string('standard','request')}}</th>
+                                                    <th>{{App\Helpers\get_string('division','request')}}</th>
+                                                    <th class="text-left">Mobile</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
