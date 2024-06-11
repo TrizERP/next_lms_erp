@@ -63,7 +63,7 @@
                                 <td>{{date('d-m-Y',strtotime($data->meet_date))}}</td>
                                 <td>{{$data->in_time}}</td>
                                 <td>{{$data->out_time}}</td>
-                                <td>{{$data->appointment_type}} Appointment</td>
+                                <td>{{$data->appointment_type}}</td>
                                 <td>{{$data->visitor_type_name}}</td>
                                 <td>{{$data->name}}</td>
                                 <td>{{$data->contact}}</td>
