@@ -107,15 +107,15 @@ class examWiseProgressReportController extends Controller
             });
 
             if($exam_type==0){
-                $data->leftJoin('lms_online_exam as le', function ($join) {
-                    $join->on('le.question_paper_id', '=', 'qp.id')
-                        ->on('le.student_id', '=', 's.id');
-                });
-            }else{
                 $data->Join('lms_online_exam as le', function ($join) {
                     $join->on('le.question_paper_id', '=', 'qp.id')
                         ->on('le.student_id', '=', 's.id');
                 }); 
+            }else{
+                $data->leftJoin('lms_online_exam as le', function ($join) {
+                    $join->on('le.question_paper_id', '=', 'qp.id')
+                        ->on('le.student_id', '=', 's.id');
+                });
             }
         $data = $data->selectRaw("s.id, s.enrollment_no, CONCAT_WS(' ', s.first_name, s.middle_name, s.last_name) AS student_name,
                 st.name AS std_name, d.name AS div_name, se.standard_id, se.grade_id, group_concat(DISTINCT qp.id) AS question_paper_id, group_concat(DISTINCT qp.paper_name) as paper_name,
