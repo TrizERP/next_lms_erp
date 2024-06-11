@@ -13,6 +13,8 @@ use Illuminate\Support\Facades\Http;
 use App\Models\fees\tblfeesConfigModel;
 use Illuminate\Support\Str;
 use function App\Helpers\fees_config;
+use Illuminate\Support\Facades\Crypt;
+use Validator;
 
 class online_fees_collect_controller extends Controller
 {
@@ -1183,6 +1185,167 @@ exit; */
             $paid_fees = $controller->pay_fees($request);
             return $paid_fees;
         }
+    }
+
+    // gpay fees
+    public function OnlineReceipt(Request $request)
+    {
+        $student_id = $request->student_id;
+        $syear = $request->syear;
+        $sub_institute_id= $request->sub_institute_id;
+        $amount= $request->amount;
+        $cheque_no= $request->cheque_no;
+        $fine= $request->fine;  
+        $payment_mode= $request->payment_mode ?? 'GPAY';
+        
+        // validate requried fields 
+        $validate = Validator::make($request->all(), [
+            'student_id' => 'required',
+            'syear' => 'required',
+            'sub_institute_id' => 'required',
+            'amount' => 'required',
+            'token' => 'required',
+        ]);
+
+        if($validate->fails()){
+            $errorMessages = $validate->errors()->all();
+            return response()->json([
+                'status' => 0,
+                'message' => implode(' ', $errorMessages)
+            ]); 
+        }
+
+        // match token with student id 
+        $token = $request->token;
+        $token_json = base64_decode($token);
+        $token_data = json_decode($token_json, true);
+        $token_student_id = Crypt::decryptString($token_data['student_id']);
+        // $token_student_name = Crypt::decryptString($token['student_name']);
+        if(($token_student_id!=$student_id) || empty($token)){
+            $response = [
+                'status'=>0,
+                'message' => 'Token failed',
+            ];
+            return response()->json($response);
+        }else{
+            $controller = new fees_collect_controller;
+
+            $fees_bk_data = $controller->getOnlinebk($request, $sub_institute_id, $syear, $student_id);
+            
+            $ajx_controller = new AJAXController;
+    
+            $temp_amount = 0;
+            $pay_month = array();
+    
+            foreach ($fees_bk_data["total_fees"] as $id => $arr) {
+                if ($arr["month"] == "Total") {
+                    continue;
+                }
+                $temp_amount = $temp_amount + $arr["remain"];
+                $pay_month[$arr["month_id"]] = $arr["month_id"];
+                if ($amount <= $temp_amount) {
+                    break;
+                }
+            }
+    
+            $arr["student_id"] = $student_id;
+            $arr["months"] = $pay_month;
+            $final_fees_arr = array();
+            $temp_paid_amount = $amount;
+            foreach ($pay_month as $id => $month) {
+                $month_arr = array($month);
+                $arr["months"] = $month_arr;
+                $fees_data = $ajx_controller->getOnlineFeesMonth($arr);
+                unset($fees_data["Total"]);
+                foreach ($fees_data as $id => $val) {
+                    if ($temp_paid_amount > 0) {
+                        if ($temp_paid_amount >= $val) {
+                            if (isset($final_fees_arr[$fees_bk_data["final_fee_name"][$id]])) {
+                                $final_fees_arr[$fees_bk_data["final_fee_name"][$id]] = $final_fees_arr[$fees_bk_data["final_fee_name"][$id]] + $val;
+                            } else {
+                                $final_fees_arr[$fees_bk_data["final_fee_name"][$id]] = $val;
+                            }
+                        } else {
+                            if (isset($final_fees_arr[$fees_bk_data["final_fee_name"][$id]])) {
+                                $final_fees_arr[$fees_bk_data["final_fee_name"][$id]] = $final_fees_arr[$fees_bk_data["final_fee_name"][$id]] + $temp_paid_amount;
+                            } else {
+                                $final_fees_arr[$fees_bk_data["final_fee_name"][$id]] = $temp_paid_amount;
+                            }
+                        }
+                        $temp_paid_amount = $temp_paid_amount - $val;
+                    }
+                }
+            }
+    
+            $total_fees = 0;
+            foreach ($final_fees_arr as $id => $val) {
+                $total_fees = $total_fees + $val;
+            }
+            $final_fees_arr["fine"] = $fine;
+            
+            $discount_data_arr = array();
+            $fine_data_arr = array();
+            foreach ($final_fees_arr as $id => $val) {
+                $discount_data_arr[$id] = 0;
+                $fine_data_arr[$id] = 0;
+            }
+            
+                $send_sms ='';
+                if(isset($fees_config->send_sms) && $fees_config->send_sms == 1){
+                $send_sms = "on";
+            }
+            // creating final send arr
+            $send_arr = array(
+                "grade_id" => $fees_bk_data["stu_data"]["grade_id"],
+                "standard_id" => $fees_bk_data["stu_data"]["std_id"],
+                "div_id" => $fees_bk_data["stu_data"]["div_id"],
+                "student_id" => $fees_bk_data["stu_data"]["student_id"],
+                "std_div" => $fees_bk_data["stu_data"]["stddiv"],
+                "full_name" => $fees_bk_data["stu_data"]["name"],
+                "enrollment" => $fees_bk_data["stu_data"]["enrollment"],
+                "mobile" => $fees_bk_data["stu_data"]["mobile"],
+                "uniqueid" => $fees_bk_data["stu_data"]["uniqueid"],
+                "roll_no" => $fees_bk_data["stu_data"]["roll_no"],
+                "father_name" => $fees_bk_data["stu_data"]["father_name"],
+                "mother_name" => $fees_bk_data["stu_data"]["mother_name"],
+                "months" => $pay_month,
+                "fees_data" => $final_fees_arr,
+                "discount_data" => $discount_data_arr,
+                "fine_data" => $fine_data_arr,
+                "total" => $total_fees,
+                "fine" => $final_fees_arr["fine"],
+                "totalDis" => 0,
+                "totalFin" => 0,
+                "PAYMENT_MODE" => $payment_mode,
+                "receiptdate" => date("Y-m-d"),
+                "cheque_date" => "",
+                "cheque_no" => $cheque_no,
+                "bank_name" => $payment_mode,
+                "bank_branch" => "",
+                "send_sms"=>$send_sms,
+                "submit" => "Save",
+            );
+            
+            $_REQUEST = $send_arr;
+            $paid_fees = $controller->pay_fees($request);
+
+            if(isset($paid_fees['receipt_id_html']) && $paid_fees['receipt_id_html']!=''){
+                $response = [
+                    'status'=>1,
+                    'message'=>'success',
+                    'receipt_no'=>$paid_fees['receipt_id_html'],
+                    'receipt_html'=>$paid_fees['data'],
+                ];
+            }else{
+                $response = [
+                    'status'=>0,
+                    'message'=>'Failed to get payment data',
+                ];
+            }
+           
+            return response()->json($response);
+        }
+        
     }
 
     public function aggre_pay_for_request_hashCalculate($salt, $input)
