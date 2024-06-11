@@ -985,6 +985,7 @@ exit; */
         //echo '<pre>';
         //print_r($fees_bk_data);
         //exit;
+        $fees_config = DB::table('fees_config_master')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear])->first();
         $ajx_controller = new AJAXController;
         if ($payment_acsept_type == "fix") {
             // creating month arr
