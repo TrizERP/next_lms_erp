@@ -111,12 +111,12 @@ class s3excel_exportController extends Controller {
                 INNER JOIN tblstudent_payment_method_mapping spm ON spm.student_id = se.student_id AND spm.sub_institute_id = '".$sub_institute_id."' AND f.syear = '".$syear."' 
                 LEFT JOIN fees_collect fc ON fc.student_id = s.id AND fc.term_id = f.month_id
                 WHERE s.sub_institute_id = '".$sub_institute_id."' AND se.syear = '".$syear."' AND se.end_date IS NULL
-                AND f.month_id = '".$month_id."' AND spm.payment_method = 'NHCS'
+                AND f.month_id = '".$month_id."' AND spm.payment_method = 'NHCS' AND bd.UMRN IS NOT NULL
                 AND (CURRENT_DATE <= spm.payment_date OR spm.payment_date IS NULL) ".$extra."
                 GROUP BY s.id
                 HAVING fc.amount IS NULL
             ) 
-            as M";           
+            as M";
 //echo $sql;
 //die();
         $studentData = DB::select($sql);
