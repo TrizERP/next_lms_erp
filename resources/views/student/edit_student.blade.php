@@ -467,11 +467,12 @@ datalist {
                                             <label>Admission Docket No.</label>
                                             <input type="text" id='admission_docket_no' value="{{ $student_data->admission_docket_no }}"  name="admission_docket_no" class="form-control">
                                         </div>
+                                        @if(session()->get('sub_institute_id')!=257)
                                         <div class="col-md-4 form-group">
                                             <label>{{ App\Helpers\get_string('birthplace','request')}}<i class="mdi mdi-lead-pencil"></i></label>
                                             <input type="text" id='place_of_birth' value="{{ $student_data->place_of_birth }}"  name="place_of_birth" class="form-control">
                                         </div>
-
+                                        @endif
                                         <div class="col-md-4 form-group">
                                             <label>Registration No.</label>
                                             <input type="text" id='registration_no' value="{{ $student_data->registration_no }}"  name="registration_no" class="form-control">
