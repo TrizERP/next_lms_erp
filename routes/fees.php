@@ -253,6 +253,8 @@ Route::controller(online_fees_collect_controller::class)->group(function () {
 
     Route::post('fees/abcmapp/online_fees_abcmappResponseHandler', 'abcmapp_response_handler')->name("abcmapp_response_handler");
 
+    Route::post('fees/get_online_receipt', 'OnlineReceipt')->name("get_online_receipt");
+
 });
 
 Route::controller(AJAXController::class)->group(function () {

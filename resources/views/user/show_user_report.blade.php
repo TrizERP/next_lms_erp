@@ -66,7 +66,16 @@
                                              </div>
                                              <div class="row"  style="width:80%">
                                              @foreach($data['data'][$header] as $key => $value)
-                                             @php $val = $value->field_name.'/'.$value->id; @endphp
+                                             @php $val = $value->field_name.'/'.$value->id;
+                                                $joinVal = str_replace(' ','',$value->field_label);
+                                                $lowerCase = strtolower($joinVal);
+                                                // norm clature
+                                                $checkNorm = DB::table('app_language')->where('sub_institute_id',session()->get('sub_institute_id'))->where('string',$joinVal)->first(); 
+
+                                                   if(!empty($checkNorm)){
+                                                      $value->field_label = $checkNorm->value;
+                                                   }
+                                             @endphp
                                              <div class="col-md-2 pb-2"><input type="checkbox" name="dynamicFields[]" class="chkClass{{$i}}" value="{{$val}}" @if(isset($data['dynamicFields']) && in_array($val,$data['dynamicFields'])) checked @endif> {{$value->field_label}}</div>
                                              @endforeach
                                              </div>
@@ -94,6 +103,16 @@
                                 <thead>
                                 <tr>
                                     @foreach($data['headers'] as $hkey => $header)
+                                        @php 
+                                        $joinVal = str_replace(' ','',$header);
+                                        $lowerCase = strtolower($joinVal);
+                                        // norm clature
+                                        $checkNorm = DB::table('app_language')->where('sub_institute_id',session()->get('sub_institute_id'))->where('string',$joinVal)->first(); 
+
+                                            if(!empty($checkNorm)){
+                                                $header = $checkNorm->value;
+                                            }
+                                        @endphp
                                         <th class="text-left"> {{$header}} </th>
                                     @endforeach
                                 </tr>

@@ -31,6 +31,7 @@ use function Illuminate\Session\expired;
 use App\Models\fees\fees_breackoff\fees_breackoff;
 use App\Http\Controllers\easy_com\send_sms_parents\send_sms_parents_controller;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Crypt;
 
 class fees_collect_controller extends Controller
 {
@@ -2517,6 +2518,17 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                 $res['data'] = $paid_data;
             }
             else if(isset($fees_data['stu_data'])){
+                $encrypted_student_id = Crypt::encryptString($fees_data['stu_data']['student_id']);
+                $encrypted_student_name = Crypt::encryptString($fees_data['stu_data']['name']);
+
+                $token = [
+                    'student_id' => $encrypted_student_id,
+                    'student_name' => $encrypted_student_name,
+                ];
+                $token_json = json_encode($token);
+                $token_base64 = base64_encode($token_json);
+                
+                $fees_data['stu_data']['token'] = $token_base64;
                 $data['STU_DATA'] = $fees_data['stu_data'];
                 $data['PENDING'] = $new_pending_arr;
                 $data['PAID'] = $paid_data;

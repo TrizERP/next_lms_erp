@@ -1,10 +1,7 @@
-{{--@include('includes.headcss')
-@include('includes.header')
-@include('includes.sideNavigation')--}}
-@extends('layout')
-@section('container')
+@include('includes.headcss')
 <link rel="stylesheet" href="../../../plugins/bower_components/dropify/dist/css/dropify.min.css">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/css/select2.min.css" rel="stylesheet"/>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
 <style>
 .select2-dropdown.select2-dropdown--below {
@@ -51,45 +48,30 @@
     color: green;
     font-weight: bold;
 }
+
 </style>
-<div id="page-wrapper">
+<div id="page-wrapper" style="padding:70px !important;">
     <div class="container-fluid">
         <div class="row bg-title">
             <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
                 <h4 class="page-title">Add New Student</h4> </div>
         </div>
         <div class="card">
-            @if ($message = Session::get('success'))
+        @if (isset($_REQUEST['success']))
             <div class="alert alert-success alert-block">
                 <button type="button" class="close" data-dismiss="alert">×</button>
-                <strong>{{ $message }}</strong>
+                <strong>Added Successfully !!</strong>
             </div>
             @endif
-            <!-- <section> -->
-            <!-- <div class="sttabs tabs-style-linemove"> -->
-                    <!--  <nav>
-                        <ul>
-                            <li><a href="#section-linemove-1" class="sticon  ti-layout-media-overlay"><span>Student Information</span></a></li>
-                            <li><a href="#section-linemove-2" class="sticon  ti-new-window"><span>Past Education</span></a></li>
-                            <li><a href="#section-linemove-3" class="sticon  ti-stack-overflow"><span>Family History</span></a></li>
-                            <li><a href="#section-linemove-4" class="sticon ti-layout-tab"><span>Siblings Details</span></a></li>
-                            <li><a href="#section-linemove-5" class="sticon ti-star"><span>Parent Feedback</span></a></li>
-                                
-                        </ul>
-                    </nav> -->
+           
                     @if(Session::get('user_profile_name') != 'Student')
                     <div class="content-wrap text-center">
                         <!-- <section id="section-linemove-1"> -->
-                        <form action="{{ route('add_student.store') }}" enctype="multipart/form-data" class="row" method="post">
+                        <form action="{{ route('add_students.store') }}" enctype="multipart/form-data" class="row" method="post">
                         {{ method_field("POST") }}
                             @csrf
-                                    <!--  <div class="col-md-4 form-group text-left">
-                                <label>U ID </label>
-                                <input type="text" id='U ID' required name="U ID" class="form-control">
-                            </div>-->
-
                             <div class="col-md-4 form-group text-left">
-                                <label>{{App\Helpers\get_string('studentname','request')}}<span style="color: red;">*</span></label>
+                                <label>{{App\Helpers\get_string('studentname','request',$_REQUEST['sub_institute_id'])}}<span style="color: red;">*</span></label>
                                 <input type="text" id='first_name' required name="first_name" class="form-control">
                             </div>
                             <div class="col-md-4 form-group text-left">
@@ -105,7 +87,7 @@
                                 <input type="text" id='username' required name="username" class="form-control">
                             </div>
                             <div class="col-md-4 form-group text-left">
-                                <label>{{ App\Helpers\get_string('grno','request')}}<span style="color: red;">*</span></label>
+                                <label>{{ App\Helpers\get_string('grno','request',$_REQUEST['sub_institute_id'])}}<span style="color: red;">*</span></label>
                                 <input type="text" id='enrollment_no' required name="enrollment_no" class="form-control" value="@if(isset($data['new_enrollment_no'])){{$data['new_enrollment_no']}}@endif">
                             </div>
                             <div class="col-md-4 form-group text-left">
@@ -113,7 +95,7 @@
                                 <input type="text" id='mother_name' name="mother_name" class="form-control" require>
                             </div>
                             <div class="col-md-4 form-group text-left">
-                                <label>{{ App\Helpers\get_string('fathername','request')}}</label>
+                                <label>{{ App\Helpers\get_string('fathername','request',$_REQUEST['sub_institute_id'])}}</label>
                                 <input type="text" id='father_name' name="father_name" class="form-control">
                             </div>
                             <div class="col-md-4 form-group text-left">
@@ -121,12 +103,12 @@
                                 <input type="text" id='mobile' pattern="[1-9]{1}[0-9]{9}" required name="mobile" class="form-control">
                             </div>
                             <div class="col-md-4 form-group text-left">
-                                <label>{{ App\Helpers\get_string('studentmobile','request')}}</label>
+                                <label>{{ App\Helpers\get_string('studentmobile','request',$_REQUEST['sub_institute_id'])}}</label>
                                 <input type="text" id='student_mobile' pattern="[1-9]{1}[0-9]{9}" name="student_mobile" class="form-control">
                             </div>
                             <div class="col-md-4 form-group text-left">
                                 <label>Birthdate<span style="color: red;">*</span></label>
-                                <input type="text" id='dob' required name="dob" class="form-control mydatepicker birthdate_picker" autocomplete="off">
+                                <input type="date" id='dob' required name="dob" class="form-control mydatepicker birthdate_picker" autocomplete="off">
                             </div>
 
                            <!--  <div class="col-md-4 form-group text-left" >
@@ -213,32 +195,46 @@
                                 @endif
                                 </select>
                             </div>
-                            <!--<div class="col-md-4 form-group text-left">
-                                <label>City</label>
-                                <input type="text" id='city' name="city" class="form-control">
-                            </div>
-                             <div class="col-md-4 form-group text-left">
-                                <label>State</label>
-                                <input type="text" id='state' name="state" class="form-control">
-                            </div> -->                            
+                                                 
                             <div class="col-md-4 form-group text-left">
                                 <label>Pincode</label>
                                 <input type="text" id='pincode' name="pincode" class="form-control">
                             </div>
-                            
-                            {{ App\Helpers\SearchChain('4','single','grade,std,div') }}
-                            <div class="col-md-4 form-group">
-                                <span></span>
-                            </div>
-                            <div class="col-md-4 form-group">
-                                <span></span>
-                            </div> 
+                            <div class="col-md-4">
+                    <div class="form-group">
+                        <label>Search Section: </label>
+                        <select name="grade" id="grade1" class="form-control" required onchange="getStandard();">
+                            <option value="">Select</option>
+                            @foreach($data['grades'] as $key=>$value)
+                            <option value="{{$value->id}}">{{$value->title}}</option>
+                            @endforeach
+                        </select>
+
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label>Search Standard: </label>
+                        <select name="standard" id="standard1" class="form-control" required onchange="getDivision();">
+                       
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label>Search Division: </label>
+                        <select name="division" id="division1" class="form-control" required="required">
+                          
+                        </select>
+
+                    </div>
+                </div>
                             <div class="col-md-4 form-group">
                                 <span id="division_error_span"></span>
                             </div>  
                                
                             <div class="col-md-4 form-group text-left">
-                                <label>{{App\Helpers\get_string('studentquota','request')}}<span style="color: red;">*</span></label>
+                                <label>{{App\Helpers\get_string('studentquota','request',$_REQUEST['sub_institute_id'])}}<span style="color: red;">*</span></label>
                                 <select id='student_quota' required name="student_quota" class="form-control">
                                     <option value="">--Select--</option>
                                     @if(isset($data['student_quota']))
@@ -250,7 +246,7 @@
                             </div> 
 
                             <div class="col-md-4 form-group">
-                                <label>{{ App\Helpers\get_string('house','request')}} @if(session()->get('sub_institute_id')==257) <span style="color: red;">*</span>@endif</label>
+                                <label>{{ App\Helpers\get_string('house','request',$_REQUEST['sub_institute_id'])}} @if(session()->get('sub_institute_id')==257) <span style="color: red;">*</span>@endif</label>
                                 <select id='house' name="house" class="form-control" @if(session()->get('sub_institute_id')==257) required @endif>
                                     <option value="">--Select--</option>  
                                     @if(isset($data['house_data']))
@@ -355,7 +351,7 @@
                             </div>
                             
                             <div class="col-md-4 form-group text-left">
-                                <label>{{ App\Helpers\get_string('annualincome','request')}}</label>
+                                <label>{{ App\Helpers\get_string('annualincome','request',$_REQUEST['sub_institute_id'])}}</label>
                                 <input type="number" id='anuualincome' name="anuualincome" class="form-control">
                             </div>
                             
@@ -363,12 +359,12 @@
                         @if (Session::get('sub_institute_id') != '195')
                         
                             <div class="col-md-4 form-group text-left">
-                                <label>{{ App\Helpers\get_string('uniqueid','request')}}</label>
+                                <label>{{ App\Helpers\get_string('uniqueid','request',$_REQUEST['sub_institute_id'])}}</label>
                                 <input type="text" id='uniqueid' name="uniqueid" class="form-control">
                             </div>
                          @endif
                          <div class="col-md-4 form-group">
-                            <label>{{ App\Helpers\get_string('nationality','request')}}<i class="mdi mdi-lead-pencil"></i></label>
+                            <label>{{ App\Helpers\get_string('nationality','request',$_REQUEST['sub_institute_id'])}}<i class="mdi mdi-lead-pencil"></i></label>
                             <input type="text" id='nationality' name="nationality" class="form-control">
                         </div>    
                             @if(isset($data['custom_fields']))
@@ -412,72 +408,23 @@
                             </div>
                             @endforeach
                             @endif
+                            <input type="hidden" name="type" value="web">
                             <div class="col-md-12 form-group">
                                 <input type="submit" name="submit" id="Submit" value="Save" class="btn btn-success" >
                             </div>
                             </form>
-                        <!-- </section> -->
-                        <!-- <section id="section-linemove-2">
-                            <form action="{{ route('past_education.store') }}" enctype="multipart/form-data" method="post">
-            {{ method_field("POST") }}
-                @csrf       <div id="past_og">
-                                <div class="col-md-2 form-group">
-                                    <label>Course </label>
-                                    <input type="text" id='course'  name="courses[]" class="form-control">
-                                </div>
-                                <div class="col-md-1 form-group">
-                                    <label>Medium </label>
-                                    <input type="text" id='medium'  name="mediums[]" class="form-control">
-                                </div>
-                                <div class="col-md-2 form-group">
-                                    <label>Name of board </label>
-                                    <input type="text" id='name_of_board'  name="name_of_boards[]" class="form-control">
-                                </div>
-                                <div class="col-md-1 form-group">
-                                    <label>Year</label>
-                                    <input type="text" id='year_of_passing'  name="year_of_passings[]" class="form-control">
-                                </div>
-                                <div class="col-md-1 form-group">
-                                    <label>Percentage </label>
-                                    <input type="text" id='percentage'  name="percentages[]" class="form-control">
-                                </div>
-                                <div class="col-md-2 form-group">
-                                    <label>School Name </label>
-                                    <input type="text" id='school_name'  name="school_names[]" class="form-control">
-                                </div>
-                                <div class="col-md-1 form-group">
-                                    <label>Place </label>
-                                    <input type="text" id='place'  name="places[]" class="form-control">
-                                </div>
-                                <div class="col-md-1 form-group">
-                                    <label>Trial </label>
-                                    <input type="text" id='trial'  name="trials[]" class="form-control">
-                                </div>
-                            </div>
-                                <div class="col-md-1 form-group">
-                                    <label>Add </label>
-                                    <a href="javascript:void(0);" onclick="addNewRow();"><span class="circle circle-sm bg-success di form-control"><i class="ti-plus"></i></span></a>
-                                </div>
-                            <div id="past_add">
-                            </div>
-                                <div class="col-md-12 form-group">
-                                    <input type="submit" name="submit" value="Save" class="btn btn-success" >
-                                </div>
-                            
-                            
-                            </form>
-                        </section> -->                       
+                     
                     </div>
                 @endif    
-                    <!-- /content -->
-                <!-- </div> -->
-                <!-- /tabs -->
-            <!-- </section> -->
+              
         </div>
     </div>
 </div>
 
-@include('includes.footerJs')
+<script src="https://code.jquery.com/jquery-1.10.2.js"></script>
+<script src="{{ asset("/admin_dep/js/jquery-ui.js") }}" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/2.5.0/jszip.min.js" defer></script>
+
 <script src="../../../admin_dep/js/cbpFWTabs.js"></script>
 <script type="text/javascript">
     (function() {
@@ -545,11 +492,11 @@
             }
         })
     });
-    
+
     //START Bind Batch
-    $("#division").change(function(){
-        var div_id = $("#division").val();         
-        var std_id = $("#standard").val();              
+    $("#division1").change(function(){
+        var div_id = $("#division1").val();         
+        var std_id = $("#standard1").val();              
         var path = "{{ route('ajax_getBatch') }}";
         $('#studentbatch').find('option').remove().end();
         $.ajax({
@@ -566,8 +513,8 @@
     //END Bind Batch
     
     //START Bind Optional Subject
-    $("#standard").change(function(){       
-        var std_id = $("#standard").val();              
+    $("#standard1").change(function(){       
+        var std_id = $("#standard1").val();              
         var path = "{{ route('ajax_getOptionalSubject') }}";
         $('#optional_subject').find('option').remove().end();
         $.ajax({
@@ -583,7 +530,7 @@
     })
     //END Bind Optional Subject
 
-    $("#division").attr('required',true);
+    $("#division1").attr('required',true);
 
     $('document').ready(function(){
         //START Unique Email Validation        
@@ -613,8 +560,8 @@
         //START Check Division Capacity Validation - 18/11/2021
         var division_check = false;
         document.getElementById('division').addEventListener('change', function(){
-            var selected_division_id = $("#division").val();
-            var selected_std_id = $("#standard").val();
+            var selected_division_id = $("#division1").val();
+            var selected_std_id = $("#standard1").val();
             
             var path = "{{ route('ajax_checkDivisionCapacity') }}";
             $.ajax({
@@ -625,7 +572,7 @@
                     if(capacity[1] != 0)
                     {                                                
                         
-                        $("#division_error_span").removeClass().addClass("division_success").text('Total Capacity : '+capacity[0]+' / Remaining Capacity : '+capacity[1]);
+                        $("#division1_error_span").removeClass().addClass("division_success").text('Total Capacity : '+capacity[0]+' / Remaining Capacity : '+capacity[1]);
                         division_check = true;
                     }
                     else if(capacity[1] == '')
@@ -634,7 +581,7 @@
                     }
                     else
                     {
-                        $("#division_error_span").removeClass().addClass("division_error").text('Total Capacity : '+capacity[0]+' / Remaining Capacity : '+capacity[1]);
+                        $("#division1_error_span").removeClass().addClass("division_error").text('Total Capacity : '+capacity[0]+' / Remaining Capacity : '+capacity[1]);
                         division_check = false;
                     }
                 }
@@ -730,6 +677,65 @@
         return $result;
       }
     });
+
+    function getStandard(){
+        var grade = $('#grade1').val();
+        var allStandard = @json($data['standards']);
+        
+        if (allStandard.hasOwnProperty(grade)) {
+            $('#standard1').find('option').remove().end();
+            $("#standard1").append($("<option></option>").val('').html('Select'));
+            var standards = allStandard[grade];
+            $.each(standards, function(id, name) {
+                $("#standard1").append($("<option></option>").val(id).html(name));
+            });
+
+            var std_id = $("#standard1").val();              
+            var path = "{{ route('ajax_getOptionalSubject') }}";
+            $('#optional_subject').find('option').remove().end();
+            $.ajax({
+                url:path,
+                data:'std_id='+std_id,
+                success:function(result){               
+                    for(var i=0;i < result.length ;i++)
+                    {
+                        $("#optional_subject").append($("<option></option>").val(result[i]['subject_id']).html(result[i]['subject_name']));
+                    }
+                }
+            });
+
+        } else {
+            console.log("Grade not found");
+        }
+    }
+    function getDivision(){
+        var standard = $('#standard1').val();
+        var allDivision = @json($data['divisions']);
+        
+        if (allDivision.hasOwnProperty(standard)) {
+            $('#division1').find('option').remove().end();
+            $("#division1").append($("<option></option>").val('').html('Select'));
+            var division = allDivision[standard];
+            $.each(division, function(id, name) {
+                $("#division1").append($("<option></option>").val(id).html(name));
+            });
+        
+        var div_id = $("#division1").val();             
+        var path = "{{ route('ajax_getBatch') }}";
+        $('#studentbatch').find('option').remove().end();
+        $.ajax({
+            url:path,
+            data:'div_id='+div_id+'&std_id='+standard,
+            success:function(result){               
+                for(var i=0;i < result.length ;i++)
+                {
+                    $("#studentbatch").append($("<option></option>").val(result[i]['id']).html(result[i]['title']));
+                }
+            }
+        });
+
+        } else {
+            console.log("Division not found");
+        }
+    }
 </script>
-@include('includes.footer')
-@endsection

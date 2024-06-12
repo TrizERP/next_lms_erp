@@ -3422,7 +3422,7 @@ while ($current_date <= $post_end_date) {
                                 // all exam marks 
                                 foreach ($exam_marks as $index => $marks) {
                                     if ($title->id == $marks->exam_id) {
-                                        $to_marks[$title->exam_id][] = $title->points;
+                                        $to_marks[$title->exam_id][] = $title->weightage;
                                         // $to_weight[$title->exam_id] = $title->weightage;
                                         $to_weight[$title->exam_id] = $title->weightage;                                        
                                         // for AB,NA,EX
@@ -3455,13 +3455,9 @@ while ($current_date <= $post_end_date) {
                         if (!empty($title_exam)) {
                             foreach ($title_exam as $exam_id => $marksArray) {                                
                                 $w_m = $to_weight[$exam_id] ?? 0; // Check if the key exists
-                                $t_m = array_sum(array_intersect_key($to_marks[$exam_id] ?? [], $marksArray));
+                                $t_m = array_sum($to_marks[$exam_id] ?? []);
                                 $obtained_mark_arr = $obtained_marks[$exam_id] ?? [];
-                                // // Sort the array in descending order
-                                // rsort($obtained_mark_arr);
-                                // // get best 2 from array
-                                // $best_two = array_slice($obtained_mark_arr, 0, 2);
-                                // $obtained_mark_sum = array_sum($best_two);
+                                
                                 $obtained_mark_sum = array_sum($obtained_mark_arr);
                                 
                                 // convert marks if best of 2
