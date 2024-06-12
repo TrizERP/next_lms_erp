@@ -74,19 +74,18 @@ class student_certificate_reportController extends Controller
         // $result = $result->groupBy('sr.id')->get()->toArray();
 
         // 03-04-24 by uma 
-        $studentLists = SearchStudent($grade_id, $standard_id, $division_id, $sub_institute_id,$syear,"", $stu_name , $uniqueid, $mobile, $grno,"","");
-
+        $studentLists = SearchStudent($grade_id, $standard_id, $division_id, $sub_institute_id,$syear,"", $stu_name , $uniqueid, $mobile, $grno,"","",1);
         $studentArr = [];
         if(empty($studentLists)){
             $res['status_code'] = 0;
             $res['message'] = "No Student Found";
         }else{
             $studentIds = array_column($studentLists,'id');
-
+      
             $certificateLists = DB::table('certificate_history')
                                 ->selectRaw('*,id as certi_id')
                                 ->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear])
-                                ->whereIn('student_id',$studentIds)
+                                ->whereRaw('student_id in ('.implode(',',$studentIds).')')
                                 ->when($certificate_type,function($query) use($certificate_type){
                                     $query->where('certificate_type',$certificate_type);
                                 });

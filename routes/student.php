@@ -148,13 +148,12 @@ Route::group(['prefix' => 'student', 'middleware' => ['session', 'menu', 'logRou
     Route::post('student_certificate/show_student', ['as' => 'student_certificate.show_student', 'uses' => 'student\studentCertificateController@showStudent']);
 
     Route::post('student_certificate/show_student_certificate', [studentCertificateController::class, 'showStudentCertificate'])->name('show_student_certificate');
-    Route::get('ajax_getBatch', [tblstudentController::class, 'ajax_getBatch'])->name('ajax_getBatch');
-    Route::get('ajax_getOptionalSubject', [tblstudentController::class, 'ajax_getOptionalSubject'])->name('ajax_getOptionalSubject');
 
     Route::get('ajax_getHomeworkSubjects', [studentHomeworkController::class, 'ajax_getHomeworkSubjects'])->name('ajax_getHomeworkSubjects');
 
 });
-
+Route::get('ajax_getBatch', [tblstudentController::class, 'ajax_getBatch'])->name('ajax_getBatch');
+Route::get('ajax_getOptionalSubject', [tblstudentController::class, 'ajax_getOptionalSubject'])->name('ajax_getOptionalSubject');
 
 Route::get('ajax_saveData', 'student\studentCertificateController@ajax_saveData')->name('ajax_saveData');
 
@@ -223,6 +222,9 @@ Route::get('get_batch', [studentAttendanceController::class, 'get_batch'])->name
 
 Route::get('document_details', [studentTransferController::class, 'DocumentTypeDetails'])->name('document_details');
 
+// url with parameter http://127.0.0.1:8000/add_students?sub_institute_id=257&syear=2024&type=web
+Route::get('add_students', [tblstudentController::class,'index'])->name('add_students.index');
+Route::post('add_students/store', [tblstudentController::class,'store'])->name('add_students.store');
 // Route::post('front_desk/leave_application/add_leave_application', function(){
 //     echo "asds";
 // });
