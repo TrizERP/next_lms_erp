@@ -94,10 +94,12 @@
                                 <label>Mother Name<span style="color: red;">*</span></label>
                                 <input type="text" id='mother_name' name="mother_name" class="form-control" require>
                             </div>
+                            @if($_REQUEST['sub_institute_id']!=257)
                             <div class="col-md-4 form-group text-left">
                                 <label>{{ App\Helpers\get_string('fathername','request',$_REQUEST['sub_institute_id'])}}</label>
                                 <input type="text" id='father_name' name="father_name" class="form-control">
                             </div>
+                            @endif
                             <div class="col-md-4 form-group text-left">
                                 <label>SMS Number<span style="color: red;">*</span></label>
                                 <input type="text" id='mobile' pattern="[1-9]{1}[0-9]{9}" required name="mobile" class="form-control">
@@ -284,21 +286,21 @@
                                 <label for="input-file-now">User Image</label>
                                 <input type="file" accept="image/png, image/jpg, image/jpeg" name="student_image" id="input-file-now" class="dropify" /> 
                             </div>
-                            
+                            @if($_REQUEST['sub_institute_id']!=257)
                             <div class="col-md-4 form-group text-left">
                                 <label>Optional Subject</label>
                                 <select id='optional_subject' name="optional_subject[]" multiple class="form-control">
                                     <option value="">--Select--</option>                                                    
                                 </select>
                             </div>
-                            
+                            @endif
                             <div class="col-md-4 form-group text-left">
                                 <label>Student Batch</label>
                                 <select id='studentbatch' name="studentbatch" class="form-control">
                                     <option value="">--Select--</option>                                                    
                                 </select>
                             </div>
-                            
+                            @if($_REQUEST['sub_institute_id']!=257)
                             <div class="col-md-4 form-group text-left">
                                 <label>Student Religion</label>
                                 <select id='religion' name="religion" class="form-control">
@@ -310,7 +312,7 @@
                                     @endif                                                  
                                 </select>
                             </div>
-                            
+                          
                             <div class="col-md-4 form-group text-left">
                                 <label>Student Caste</label>
                                 <select id='cast' name="cast" class="form-control">
@@ -322,12 +324,12 @@
                                     @endif                                                  
                                 </select>
                             </div>
-
+                            
                             <div class="col-md-4 form-group text-left">
                                 <label>Sub Caste</label>
                                 <input type="text" id='subcast' name="subcast" class="form-control">
                             </div>
-
+                            @endif
                             <div class="col-md-4 form-group text-left">
                                 <label>Roll No.</label>
                                 <input type="text" id='roll_no' name="roll_no" class="form-control">
@@ -344,7 +346,7 @@
                                     @endif                                                  
                                 </select>
                             </div>
-                            
+                            @if($_REQUEST['sub_institute_id']!=257)
                             <div class="col-md-4 form-group text-left">
                                 <label>Aadhar Number</label>
                                 <input type="text" id='adharnumber' name="adharnumber" class="form-control" onblur="AadharValidate();">
@@ -354,7 +356,7 @@
                                 <label>{{ App\Helpers\get_string('annualincome','request',$_REQUEST['sub_institute_id'])}}</label>
                                 <input type="number" id='anuualincome' name="anuualincome" class="form-control">
                             </div>
-                            
+                            @endif
                              {{--  For Euro School --}}
                         @if (Session::get('sub_institute_id') != '195')
                         

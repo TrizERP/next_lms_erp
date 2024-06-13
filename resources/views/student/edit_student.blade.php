@@ -152,10 +152,12 @@ datalist {
                                             <label>Mother Name</label>
                                             <input type="text" value="{{ $student_data->mother_name ? $student_data->mother_name : '-' }}" id='mother_name' name="mother_name" class="form-control" require>
                                         </div>
+                                        @if(session()->get('sub_institute_id')!=257)
                                         <div class="col-md-4 form-group">
                                             <label>{{ App\Helpers\get_string('fathername','request')}}<i class="mdi mdi-lead-pencil"></i></label>
                                             <input type="text" id='father_name' name="father_name" value="{{ $student_data->father_name }}" class="form-control">
                                         </div>
+                                        @endif
                                         <div class="col-md-4 form-group">
                                             <label>Mobile</label>
                                             <input type="text" id='mobile' required  pattern="[1-9]{1}[0-9]{9}" name="mobile" value="{{ $student_data->mobile }}" class="form-control">
@@ -368,7 +370,7 @@ datalist {
                                                 @endif                                                   
                                             </select>
                                         </div>
-                                        @else                                       
+                                        @elseif(session()->get('sub_institute_id')!=257)                                  
                                         <div class="col-md-4 form-group">
                                             <label>Optional Subject</label>
                                             <select id='optional_subject' name="optional_subject[]" multiple class="form-control">
@@ -391,7 +393,7 @@ datalist {
                                                 @endif                                                    
                                             </select>
                                         </div>
-                                        
+                                        @if(session()->get('sub_institute_id')!=257)
                                         <div class="col-md-4 form-group">
                                             <label>Student Religion</label>
                                             <select id='religion' name="religion" class="form-control">
@@ -403,7 +405,7 @@ datalist {
                                                 @endif                                                  
                                             </select>
                                         </div>
-                                        
+
                                         <div class="col-md-4 form-group">
                                             <label>Student Caste Category</label>
                                             <select id='cast' name="cast" class="form-control">
@@ -415,17 +417,18 @@ datalist {
                                                 @endif                                                  
                                             </select>
                                         </div>
+                                        @endif
 
                                         <div class="col-md-4 form-group">
                                             <label>{{ App\Helpers\get_string('nationality','request')}}<i class="mdi mdi-lead-pencil"></i></label>
                                             <input type="text" value="{{ $student_data->nationality }}" id='nationality' name="nationality" class="form-control">
                                         </div>
-
+                                        @if(session()->get('sub_institute_id')!=257)
                                         <div class="col-md-4 form-group">
                                             <label>{{ App\Helpers\get_string('cast','request')}}<i class="mdi mdi-lead-pencil"></i></label>
                                             <input type="text" id='subcast' value="{{ $student_data->subcast }}" name="subcast" class="form-control">
                                         </div>
-
+                                        @endif
                                         <div class="col-md-4 form-group">
                                             <label>Roll Number</label>
                                             <input type="text" id='roll_no' value="{{ $student_data->roll_no }}" name="roll_no" class="form-control">
@@ -442,16 +445,17 @@ datalist {
                                                 @endif                                                  
                                             </select>
                                         </div>
-                                        
+                                        @if(session()->get('sub_institute_id')!=257)
                                         <div class="col-md-4 form-group">
                                             <label>Aadhar Number</label>
                                             <input type="text" id='adharnumber' value="{{ $student_data->adharnumber }}"  name="adharnumber" class="form-control" onblur="AadharValidate();">
                                         </div>
-                                        
+                                      
                                         <div class="col-md-4 form-group">
                                             <label>{{ App\Helpers\get_string('annualincome','request')}}<i class="mdi mdi-lead-pencil"></i></label>
                                             <input type="number" id='anuualincome' value="{{ $student_data->anuualincome }}" name="anuualincome" class="form-control">
                                         </div>
+                                        @endif
                                         {{--  For Euro School --}}
                                         @if (Session::get('sub_institute_id') != '195')
                                          <div class="col-md-4 form-group">
