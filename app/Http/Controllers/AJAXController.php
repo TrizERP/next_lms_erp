@@ -1262,8 +1262,11 @@ class AJAXController extends Controller
 
             $html = '';
             $html .= $fees_receipt_html;
-            $path = 'src="https://' . $_SERVER['HTTP_HOST'];
-            $html = str_replace('src="', $path, $html);
+            
+            //Hide By Rajesh display Logo proper but in PDF not see = 11-06-2024
+            //$path = 'src="https://' . $_SERVER['HTTP_HOST'];
+            //$html = str_replace('src="', $path, $html);
+
             $html = str_replace('##HTML_SEC##', $html, $dom);
 
             $html_file_path = $save_path . '/' . $html_filename;
@@ -1361,8 +1364,11 @@ class AJAXController extends Controller
 
                 $html = '';
                 $html .= $fees_receipt_html;
-                $path = 'src="https://' . $_SERVER['HTTP_HOST'];
-                $html = str_replace('src="', $path, $html);
+                
+                //Hide By Rajesh display Logo proper but in PDF not see = 11-06-2024
+                //$path = 'src="https://' . $_SERVER['HTTP_HOST'];
+                //$html = str_replace('src="', $path, $html);
+                
                 $html = str_replace('##HTML_SEC##', $html, $dom);
 
                 $html_file_path = $save_path . '/' . $html_filename;
@@ -1496,8 +1502,9 @@ class AJAXController extends Controller
             }
 
             if ($action != 'certificate_re_receipt') {
-                $path = 'src="https://' . $_SERVER['HTTP_HOST'];
-                $html = str_replace('src="', $path, $html);
+                //Hide By Rajesh display Logo proper but in PDF not see = 11-06-2024
+                //$path = 'src="https://' . $_SERVER['HTTP_HOST'];
+                //$html = str_replace('src="', $path, $html);
             }
 
             $html = str_replace('##HTML_SEC##', $html, $dom);
