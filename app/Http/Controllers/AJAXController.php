@@ -1262,7 +1262,7 @@ class AJAXController extends Controller
 
             $html = '';
             $html .= $fees_receipt_html;
-            
+
             //Hide By Rajesh display Logo proper but in PDF not see = 11-06-2024
             //$path = 'src="https://' . $_SERVER['HTTP_HOST'];
             //$html = str_replace('src="', $path, $html);
@@ -1364,7 +1364,7 @@ class AJAXController extends Controller
 
                 $html = '';
                 $html .= $fees_receipt_html;
-                
+
                 //Hide By Rajesh display Logo proper but in PDF not see = 11-06-2024
                 //$path = 'src="https://' . $_SERVER['HTTP_HOST'];
                 //$html = str_replace('src="', $path, $html);
@@ -2245,8 +2245,13 @@ class AJAXController extends Controller
     }
 
     public function lmsDataApi(Request $request){
-
-        if($request->table && $request->sub_institute_id){
+    	
+        if($request->table == 'lms_lesson_plan' && $request->sub_institute_id){
+        	$data = DB::table($request->table)->where('sub_institute_id', $request->sub_institute_id)
+                  ->limit(25)
+                  ->get()
+                  ->toArray();
+        }elseif($request->table && $request->sub_institute_id){
             $data = DB::table($request->table)->where('sub_institute_id', $request->sub_institute_id)->get()->toArray();
         }elseif($request->table){
             $data = DB::table($request->table)->get()->toArray();

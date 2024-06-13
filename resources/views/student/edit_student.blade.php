@@ -129,7 +129,7 @@ datalist {
                                         {{ method_field("PUT") }}
                                             @csrf
                                         <div class="col-md-4 form-group">
-                                            <label>Student Name </label>
+                                            <label>{{App\Helpers\get_string('studentname','request')}} </label>
                                             <input type="text" id='first_name' required name="first_name" value="{{ $student_data->first_name }}" class="form-control">
                                         </div>
                                         <div class="col-md-4 form-group">
@@ -467,11 +467,12 @@ datalist {
                                             <label>Admission Docket No.</label>
                                             <input type="text" id='admission_docket_no' value="{{ $student_data->admission_docket_no }}"  name="admission_docket_no" class="form-control">
                                         </div>
+                                        @if(session()->get('sub_institute_id')!=257)
                                         <div class="col-md-4 form-group">
                                             <label>{{ App\Helpers\get_string('birthplace','request')}}<i class="mdi mdi-lead-pencil"></i></label>
                                             <input type="text" id='place_of_birth' value="{{ $student_data->place_of_birth }}"  name="place_of_birth" class="form-control">
                                         </div>
-
+                                        @endif
                                         <div class="col-md-4 form-group">
                                             <label>Registration No.</label>
                                             <input type="text" id='registration_no' value="{{ $student_data->registration_no }}"  name="registration_no" class="form-control">
@@ -803,11 +804,11 @@ datalist {
                                             <thead>
                                                 <tr>
                                                     <th>Sr No.</th>                                                            
-                                                    <th>Gr No.</th>
-                                                    <th>Student Name</th>
-                                                    <th>Standard</th>
-                                                    <th>Division</th>
-                                                    <th>Mobile</th>
+                                                    <th>{{App\Helpers\get_string('grno','request')}}</th>
+                                                    <th>{{App\Helpers\get_string('studentname','request')}}</th>
+                                                    <th>{{App\Helpers\get_string('standard','request')}}</th>
+                                                    <th>{{App\Helpers\get_string('division','request')}}</th>
+                                                    <th class="text-left">Mobile</th>
                                                 </tr>
                                             </thead>
                                             <tbody>

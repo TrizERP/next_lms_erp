@@ -62,6 +62,7 @@ class tblstudentController extends Controller
      */
     public function index(Request $request)
     {
+		$type = $request->input('type');
 
         if (session()->has('data')) { // check if it exists
             $data_arr = session('data'); // to retrieve value
@@ -72,6 +73,10 @@ class tblstudentController extends Controller
 
 		$sub_institute_id = $request->session()->get('sub_institute_id');
 		$syear = $request->session()->get('syear');
+        if(in_array($type,['API','web'])){
+            $sub_institute_id = $request->sub_institute_id;
+            $syear = $request->syear;
+        }
 		$data = tblstudentModel::where(['sub_institute_id' => $sub_institute_id, 'status' => "1"])->get();
 
 		$dataCustomFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "tblstudent"])
@@ -136,9 +141,36 @@ class tblstudentController extends Controller
 		$res['city_data'] = $cityData;
 		$res['new_enrollment_no'] = $new_enrollment_no;
 
-		$type = $request->input('type');
-
-		return is_mobile($type, "student/add_student", $res, "view");
+        if($type=='web'){
+            $res['grades'] = DB::table('academic_section')->where(['sub_institute_id'=>$sub_institute_id])->get()->toArray();
+            
+            $res['standards'] = DB::table('standard')
+            ->where(['sub_institute_id' => $sub_institute_id])
+            ->get(['id', 'name', 'grade_id'])
+            ->groupBy('grade_id')
+            ->map(function ($items) {
+                return $items->mapWithKeys(function ($item) {
+                    return [$item->id => $item->name];
+                });
+            })
+            ->toArray();
+            
+            $res['divisions'] = DB::table('std_div_map as sdm')
+            ->join('division as d', 'd.id', '=', 'sdm.division_id')
+            ->where(['sdm.sub_institute_id' => $sub_institute_id])
+            ->get(['d.id as id', 'd.name as name', 'sdm.standard_id as standard_id'])
+            ->groupBy('standard_id')
+            ->map(function ($items) {
+                return $items->mapWithKeys(function ($item) {
+                    return [$item->id => $item->name];
+                });
+            })
+            ->toArray();        
+        
+            return is_mobile($type, "student/add_student_cn", $res, "view");
+        }else{
+		    return is_mobile($type, "student/add_student", $res, "view");  
+        }     
 	}
 
     /**
@@ -159,6 +191,7 @@ class tblstudentController extends Controller
      */
 	public function store(Request $request)
 	{
+        // echo "<pre>";print_r($request->all());exit;
 		$sub_institute_id = $request->session()->get('sub_institute_id');
 		$term_id = $request->session()->get('term_id');
 		$syear = $request->session()->get('syear');
@@ -302,8 +335,11 @@ class tblstudentController extends Controller
 		$res['status_code'] = 1;
 		$res['message'] = "Student successfully created.";
 		$res['data'] = $data;
-
-		return is_mobile($type, "search_student.index", $res);
+        if($type=='web'){
+            return redirect('add_students?sub_institute_id='.$sub_institute_id.'&syear='.$syear.'&type=web&success');
+        }else{
+            return is_mobile($type, "search_student.index", $res);
+        }
 	}
 
 	public function saveData(Request $request)
@@ -323,7 +359,7 @@ class tblstudentController extends Controller
 		unset($newRequest['student_image']);
 
 		foreach ($newRequest as $key => $value) {
-            if ($key != '_method' && $key != '_token' && $key != 'submit' && $key != 'grade' && $key != 'standard'
+            if ($key != '_method' && $key != '_token' && $key != 'type' && $key != 'submit' && $key != 'grade' && $key != 'standard'
                 && $key != 'division' && $key != 'student_quota' && $key != 'optional_subject' && $key != 'previous_school_gr_no'
                 && $key != 'house' && $key != 'father_occupation' && $key != 'father_qualification' && $key != 'mother_occupation'
                 && $key != 'mother_qualification' && $key != 'guardian_name' && $key != 'guardian_relation' && $key != 'house_no'
@@ -408,7 +444,7 @@ class tblstudentController extends Controller
         unset($newRequest['student_image']);
 
         foreach ($newRequest as $key => $value) {
-            if ($key != '_method' && $key != '_token' && $key != 'submit' && $key != 'grade' && $key != 'standard'
+            if ($key != '_method' && $key != '_token' && $key != 'type' && $key != 'submit' && $key != 'grade' && $key != 'standard'
                 && $key != 'division' && $key != 'student_quota' && $key != 'end_date' && $key != 'remarks' && $key != 'inactive_satus'
                 && $key != 'id' && $key != 'optional_subject' && $key != 'optional_subject4' && $key != 'optional_subject5' && $key != 'optional_subject6' && $key != 'previous_school_gr_no' && $key != 'house'
                 && $key != 'father_occupation' && $key != 'father_qualification' && $key != 'mother_occupation'
@@ -1529,5 +1565,5 @@ END as color_code
         $state_name = $request->input("state_name");
 
         return tblcityModel::where(['state_name' => $state_name])->get()->toArray();
-    }
+    }   
 }

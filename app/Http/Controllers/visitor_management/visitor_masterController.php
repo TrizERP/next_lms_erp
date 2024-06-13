@@ -30,7 +30,13 @@ class visitor_masterController extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
 
         $data = visitor_masterModel::select('visitor_master.*',
-            DB::raw('concat(u.first_name," ",u.middle_name," ",u.last_name) as staff_name'),
+            DB::raw('
+                CASE 
+                WHEN vt.title = "Parent" 
+                    THEN concat_ws(" ", t.first_name, t.middle_name, t.last_name) 
+                ELSE 
+                    concat_ws(" ", u.first_name, u.middle_name, u.last_name) 
+                END as staff_name'),
             DB::raw('if(out_time = "00:00:00","green","") as status'),
             'vt.title as visitor_type_name')
             ->leftjoin('tbluser as u',function($join){
@@ -79,12 +85,18 @@ class visitor_masterController extends Controller
 
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $data = visitor_masterModel::select('visitor_master.*',
-            DB::raw('concat(u.first_name," ",u.middle_name," ",u.last_name) as staff_name'),
+            DB::raw('
+                CASE 
+                WHEN vt.title = "Parent" 
+                    THEN concat_ws(" ", t.first_name, t.middle_name, t.last_name) 
+                ELSE 
+                    concat_ws(" ", u.first_name, u.middle_name, u.last_name) 
+                END as staff_name'),
             'vt.title as visitor_type_name')
             ->leftjoin('tbluser as u', function($join){
                 $join->on('u.id', '=', 'visitor_master.to_meet')->where('u.status',1); // 23-04-24 by uma
             })
-            ->leftjoin('tblstudent1 as t', function($join){
+            ->leftjoin('tblstudent as t', function($join){
                 $join->on('t.id', '=', 'visitor_master.to_meet'); // 22-05-24 by rajesh
             })
             ->join('visitor_type as vt', 'vt.id', '=', 'visitor_master.visitor_type')
@@ -477,8 +489,11 @@ class visitor_masterController extends Controller
                 'coming_from'      => $studata->city ?? '-',
                 'to_meet'          => $studata->id,
                 'relation'         => $relation,
-                'purpose'          => "pickup",
+                'purpose'          => "pickup student",
                 'visitor_idcard'   => 0,
+                'meet_date'        => date('Y-m-d'),
+                'in_time'          => date('h:i:s'),
+                'out_time'         => date('h:i:s'),
                 'sub_institute_id' => $sub_institute_id,
                 'exit_msg_sent'    => 'Y',
                 'created_at'       => now(),
@@ -498,7 +513,7 @@ class visitor_masterController extends Controller
                 $res['message'] = "Failed";
                 return is_mobile($type, "visitor_management.get_student", $res, "redirect");
             }else{
-                $request->merge(['type'=>'API','sub_institute_id'=>$sub_institute_id,'radioType' => 'pickUp','student_name' => $request->student_name,'mobile' => $request->mobile,'error' => "error"]);
+                $request->merge(['type'=>'API','sub_institute_id'=>$sub_institute_id,'radioType' => 'pickup','student_name' => $request->student_name,'mobile' => $request->mobile,'error' => "error"]);
                 $data = $this->getStudent($request);
                 // echo "<pre>";print_r(json_decode($data,true));exit;
                 $res = json_decode($data,true);
@@ -506,7 +521,6 @@ class visitor_masterController extends Controller
                 return is_mobile($type, "visitor_management.sendOTP", $res, "view");
             }
         }
-       
     }
 
     public function send_sms($url)

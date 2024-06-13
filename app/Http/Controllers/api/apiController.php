@@ -769,11 +769,9 @@ if(in_array($sub_institute_id, $cn))
             $output = curl_exec($ch);
 
             //Print error if any
-            if ($output === false) {
-                $error = curl_error($ch);
-                $errorCode = curl_errno($ch);
-                echo "cURL Error: $error\n";
-                echo "cURL Error Code: $errorCode\n";
+            if (curl_errno($ch)) {
+                $isError = true;
+                $errorMessage = curl_error($ch);
             }
             curl_close($ch);
         } else {

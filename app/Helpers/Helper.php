@@ -675,7 +675,7 @@ if (!function_exists('TermDD')) {
 }
 if (!function_exists('SearchStudent')) {
 
-    function SearchStudent($grade = "", $standard = "", $div = "", $sub_institute_id = "", $syear = "", $roll_no = "", $stu_name = "", $uniqueid = "", $mobile = "", $grno = "", $stud_id = "", $batch = "")
+    function SearchStudent($grade = "", $standard = "", $div = "", $sub_institute_id = "", $syear = "", $roll_no = "", $stu_name = "", $uniqueid = "", $mobile = "", $grno = "", $stud_id = "", $batch = "",$status="")
     {
         if ($sub_institute_id == '') {
             $sub_institute_id = session()->get('sub_institute_id');
@@ -736,9 +736,8 @@ if (!function_exists('SearchStudent')) {
         $where = array(
             'se.syear' => $syear,
             'ts.sub_institute_id' => $sub_institute_id,
-            'se.end_date' => null,
         );
-
+       
         $query = tblstudentModel::from('tblstudent as ts');
 
         // $query->when($marking_period_id, function ($join) use ($marking_period_id) {
@@ -772,7 +771,10 @@ if (!function_exists('SearchStudent')) {
             // Now, you can safely use the whereIn function with $stud_id
             $query->whereIn('ts.id', $stud_id);
         }
-
+        if($status==""){
+            $query->whereNull('se.end_date');
+        }
+        
         $columns = explode(',', $select_fields);
         $columns[] = "s.name as standard_name";
         $columns[] = "s.medium as medium";
@@ -916,6 +918,7 @@ if (!function_exists('FeeBreackoff')) {
                     CAST(SUBSTRING(fb.month_id, 1, CHAR_LENGTH(fb.month_id) - 4) as signed) as sort_month")
             ->where('s.sub_institute_id', $sub_institute_id)
             ->where('se.syear', $syear)
+            ->whereNull('se.end_date')
             ->whereIn('s.id', $student_ids)
             ->groupBy('s.id', 'fb.month_id')
             ->orderByRaw('sort_year, sort_month')
@@ -978,6 +981,7 @@ if (!function_exists('FeeBreakoffHeadWise')) {
             ->havingRaw("sum(fb.amount) != 0")
             ->where('s.sub_institute_id', $sub_institute_id)
             ->where('se.syear', $syear)
+            ->whereNull('se.end_date')
             ->whereRaw($extra_where)            
             ->whereIn('s.id', $student_ids)
             ->groupBy('s.id', 'fb.month_id', 'fb.fee_type_id')
