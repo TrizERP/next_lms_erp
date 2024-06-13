@@ -463,24 +463,25 @@ datalist {
                                             <input type="text" id='uniqueid' value="{{ $student_data->uniqueid }}" name="uniqueid" class="form-control">
                                         </div> 
                                         @endif  
+                                        @if(session()->get('sub_institute_id')!=257)
                                         <div class="col-md-4 form-group">
                                             <label>Dise Uid</label>
                                             <input type="text" id='dise_uid' value="{{ $student_data->dise_uid }}" name="dise_uid" class="form-control">
-                                        </div>                                                          
+                                        </div>  
                                         <div class="col-md-4 form-group">
                                             <label>Admission Docket No.</label>
                                             <input type="text" id='admission_docket_no' value="{{ $student_data->admission_docket_no }}"  name="admission_docket_no" class="form-control">
                                         </div>
-                                        @if(session()->get('sub_institute_id')!=257)
+                                       
                                         <div class="col-md-4 form-group">
                                             <label>{{ App\Helpers\get_string('birthplace','request')}}<i class="mdi mdi-lead-pencil"></i></label>
                                             <input type="text" id='place_of_birth' value="{{ $student_data->place_of_birth }}"  name="place_of_birth" class="form-control">
                                         </div>
-                                        @endif
                                         <div class="col-md-4 form-group">
                                             <label>Registration No.</label>
                                             <input type="text" id='registration_no' value="{{ $student_data->registration_no }}"  name="registration_no" class="form-control">
                                         </div> 
+                                        @endif
 
                                         <div class="col-md-4 form-group">
                                             <label>Admission under</label>
@@ -491,7 +492,7 @@ datalist {
                                                 <option value="RTE" @if(isset($student_data->admission_under) && $student_data->admission_under == 'RTE') selected="selected" @endif>RTE</option>
                                             </select>
                                         </div>
-
+                                        @if(session()->get('sub_institute_id')!=257)
                                         <div class="col-md-4 form-group">
                                             <label>Distance From School</label>
                                             <select id='distance_from_school' name="distance_from_school" class="form-control">
@@ -503,7 +504,7 @@ datalist {
                                                 @endif                                                  
                                             </select>
                                         </div>
-
+                                        @endif
                                         <div class="col-md-4 form-group">
                                             <label>Inactive Status</label>
                                             <select id='inactive_satus' name="inactive_satus" onchange="showInactive(this.value);" class="form-control">
