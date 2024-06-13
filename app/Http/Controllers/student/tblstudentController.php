@@ -1482,7 +1482,10 @@ END as color_code
 		$std_id = $request->input("std_id");
 		$sub_institute_id = $request->session()->get("sub_institute_id");
         $syear = $request->session()->get("syear");
-
+        if($request->has('type') && $request->type=="API"){
+            $sub_institute_id = $request->sub_institute_id;
+            $syear = $request->syear;
+        }
 		$batchData = batchModel::where(['sub_institute_id' => $sub_institute_id, 'standard_id' => $std_id, 'division_id' => $div_id, 'syear' => $syear])
 			->get()->toArray();
 
@@ -1493,7 +1496,9 @@ END as color_code
     {
         $std_id = $request->input("std_id");
         $sub_institute_id = $request->session()->get("sub_institute_id");
-
+        if($request->has('type') && $request->type=="API"){
+            $sub_institute_id = $request->sub_institute_id;
+        }
         return sub_std_mapModel::select('sub_std_map.*', 'subject.subject_name', 'subject.subject_code')
             ->join('subject', 'subject.id', '=', 'sub_std_map.subject_id')
             ->where([
@@ -1566,4 +1571,30 @@ END as color_code
 
         return tblcityModel::where(['state_name' => $state_name])->get()->toArray();
     }   
+
+    public function checkExists(Request $request){
+       
+        $sub_institute_id = session()->get('sub_institute_id');
+        if($request->has('type') && $request->type=="API"){
+            $sub_institute_id = $request->sub_institute_id;
+        }
+
+        $response = DB::table('tblstudent as ts')
+        ->join('tblstudent_enrollment as se', function ($join) {
+            $join->whereRaw("se.student_id = ts.id AND se.sub_institute_id = ts.sub_institute_id AND se.end_date IS null");
+        })
+        ->join('academic_section as g','g.id','=','se.grade_id')
+        ->join('standard as s', function ($join) {
+            $join->whereRaw("se.standard_id = s.id AND se.sub_institute_id = s.sub_institute_id AND s.grade_id=se.grade_id");
+        })->join('division as d', function ($join) {
+            $join->whereRaw("d.id = se.section_id AND d.sub_institute_id = se.sub_institute_id");
+        })
+        ->leftJoin('student_quota as q','q.id','=','se.student_quota')
+        ->leftJoin('batch as b','b.id','=','ts.studentbatch')
+        ->selectRaw("ts.id,concat_ws(' ',COALESCE(ts.first_name,'-'),COALESCE(ts.last_name,'-')) as student_name,ts.mobile,ts.dob,ts.enrollment_no,IFNULL(ts.house,'-') as house,IFNULL(b.title,'-') as batch,g.title as grade,s.name as standard,d.name as division,IFNULL(q.title,'-') as quota,IFNULL(ts.uniqueid,'-') as uniqueid,IFNULL(ts.nationality,'-') as nationality,(CASE WHEN se.end_date IS NULL THEN 'active' ELSE 'inactive' END) AS status")
+        ->where('ts.sub_institute_id', $sub_institute_id)
+        ->where(['ts.first_name'=>$request->first_name,'ts.last_name'=>$request->last_name,'ts.mobile'=>$request->mobile])->latest('se.created_on')->first();
+
+        return  response()->json($response);
+    }
 }

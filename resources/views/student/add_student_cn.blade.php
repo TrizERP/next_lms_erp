@@ -2,7 +2,7 @@
 <link rel="stylesheet" href="../../../plugins/bower_components/dropify/dist/css/dropify.min.css">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/css/select2.min.css" rel="stylesheet"/>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
 <style>
 .select2-dropdown.select2-dropdown--below {
   width: 460px !important;
@@ -423,11 +423,31 @@
     </div>
 </div>
 
+<!-- check student Model  -->
+<div class="modal fade" id="studentModal" tabindex="-1" role="dialog" aria-labelledby="studentModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="studentModalLabel">Student Details</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <table class="table table-bordered">
+                    <tbody id="studentData"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
 <script src="{{ asset("/admin_dep/js/jquery-ui.js") }}" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/2.5.0/jszip.min.js" defer></script>
 
 <script src="../../../admin_dep/js/cbpFWTabs.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 <script type="text/javascript">
     (function() {
         [].slice.call(document.querySelectorAll('.sttabs')).forEach(function(el) {
@@ -498,12 +518,14 @@
     //START Bind Batch
     $("#division1").change(function(){
         var div_id = $("#division1").val();         
-        var std_id = $("#standard1").val();              
+        var std_id = $("#standard1").val();  
+        var sub_institute_id = "{{$_REQUEST['sub_institute_id']}}";
+        var syear = "{{$_REQUEST['syear']}}";
         var path = "{{ route('ajax_getBatch') }}";
         $('#studentbatch').find('option').remove().end();
         $.ajax({
             url:path,
-            data:'div_id='+div_id+'&std_id='+std_id,
+            data:'div_id='+div_id+'&std_id='+std_id+'&type=API&sub_institute_id='+sub_institute_id+'&syear='+syear,
             success:function(result){               
                 for(var i=0;i < result.length ;i++)
                 {
@@ -513,15 +535,26 @@
         });
     })
     //END Bind Batch
-    
+     // check student lists
+     $("#mobile").change(function(){
+      checkStudentExists();
+    })
+    $('#first_name').change(function(){
+      checkStudentExists();
+    })
+    $('#last_name').change(function(){
+      checkStudentExists();
+    })
     //START Bind Optional Subject
     $("#standard1").change(function(){       
         var std_id = $("#standard1").val();              
         var path = "{{ route('ajax_getOptionalSubject') }}";
+        var sub_institute_id = "{{$_REQUEST['sub_institute_id']}}";
+        var syear = "{{$_REQUEST['syear']}}";     
         $('#optional_subject').find('option').remove().end();
         $.ajax({
             url:path,
-            data:'std_id='+std_id,
+            data:'std_id='+std_id+'&type=API&sub_institute_id='+sub_institute_id+'&syear='+syear,
             success:function(result){               
                 for(var i=0;i < result.length ;i++)
                 {
@@ -692,20 +725,6 @@
                 $("#standard1").append($("<option></option>").val(id).html(name));
             });
 
-            var std_id = $("#standard1").val();              
-            var path = "{{ route('ajax_getOptionalSubject') }}";
-            $('#optional_subject').find('option').remove().end();
-            $.ajax({
-                url:path,
-                data:'std_id='+std_id,
-                success:function(result){               
-                    for(var i=0;i < result.length ;i++)
-                    {
-                        $("#optional_subject").append($("<option></option>").val(result[i]['subject_id']).html(result[i]['subject_name']));
-                    }
-                }
-            });
-
         } else {
             console.log("Grade not found");
         }
@@ -713,7 +732,9 @@
     function getDivision(){
         var standard = $('#standard1').val();
         var allDivision = @json($data['divisions']);
-        
+        var sub_institute_id = "{{$_REQUEST['sub_institute_id']}}";
+            var syear = "{{$_REQUEST['syear']}}";   
+
         if (allDivision.hasOwnProperty(standard)) {
             $('#division1').find('option').remove().end();
             $("#division1").append($("<option></option>").val('').html('Select'));
@@ -722,22 +743,68 @@
                 $("#division1").append($("<option></option>").val(id).html(name));
             });
         
-        var div_id = $("#division1").val();             
-        var path = "{{ route('ajax_getBatch') }}";
-        $('#studentbatch').find('option').remove().end();
-        $.ajax({
-            url:path,
-            data:'div_id='+div_id+'&std_id='+standard,
-            success:function(result){               
-                for(var i=0;i < result.length ;i++)
-                {
-                    $("#studentbatch").append($("<option></option>").val(result[i]['id']).html(result[i]['title']));
-                }
-            }
-        });
-
         } else {
             console.log("Division not found");
         }
     }
+    function checkStudentExists(){
+        var first_name = $('#first_name').val();
+        var last_name = $('#last_name').val();
+        var mobile = $('#mobile').val();
+        var sub_institute_id = "{{$_REQUEST['sub_institute_id']}}";
+        // alert(first_name);
+       $.ajax({
+        url : "{{route('checkExists')}}",
+        data : {first_name:first_name,last_name:last_name,mobile:mobile,type:'API',sub_institute_id:sub_institute_id},
+        type:'GET',
+        success: function (response) {
+            console.log(response);
+
+            if (response && Object.keys(response).length !== 0) {
+                $('#studentData').empty();
+
+                var grno = "{{ App\Helpers\get_string('grno','request',$_REQUEST['sub_institute_id'])}}";
+                var house = "{{ App\Helpers\get_string('house','request',$_REQUEST['sub_institute_id'])}}";
+                var grade = "{{ App\Helpers\get_string('searchsection','request',$_REQUEST['sub_institute_id'])}}";
+                var std = "{{ App\Helpers\get_string('searchstandard','request',$_REQUEST['sub_institute_id'])}}";
+                var div = "{{ App\Helpers\get_string('searchdivision','request',$_REQUEST['sub_institute_id'])}}";
+                var uniqueid = "{{ App\Helpers\get_string('uniqueid','request',$_REQUEST['sub_institute_id'])}}";
+                var nationality = "{{ App\Helpers\get_string('nationality','request',$_REQUEST['sub_institute_id'])}}";
+
+                var dobParts = response.dob.split('-');
+                var formattedDate = dobParts[2] + '-' + dobParts[1] + '-' + dobParts[0];
+
+                $('#studentData').append(`
+                    <tr>
+                        <td><b>Full Name : </b>${response.student_name}</td>
+                        <td><b>SMS Number : </b>${response.mobile}</td>
+                        <td><b>Birthdate : </b>${formattedDate}</td>
+                    </tr>
+                    <tr>
+                        <td><b>${grno} : </b>${response.enrollment_no}</td>
+                        <td><b>${house} : </b>${response.house}</td>
+                        <td><b>Batch : </b>${response.batch}</td>
+                    </tr>
+                    <tr>
+                        <td><b>${grade} : </b>${response.grade}</td>
+                        <td><b>${std} : </b>${response.standard}</td>
+                        <td><b>${div} : </b>${response.division}</td>
+                    </tr>
+                    <tr>
+                        <td><b>${uniqueid} : </b>${response.uniqueid}</td>
+                        <td><b>${nationality} : </b>${response.nationality}</td>
+                        <td><b>Status : </b>${response.status}</td>
+                    </tr>`);
+                    
+                $('#studentModal').modal('show');
+            } else {
+                console.error("Student not found");
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error(xhr.responseText);
+         }
+       })
+ }
+
 </script>

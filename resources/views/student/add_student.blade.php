@@ -479,6 +479,26 @@
     </div>
 </div>
 
+
+<!-- check student Model  -->
+<div class="modal fade" id="studentModal" tabindex="-1" role="dialog" aria-labelledby="studentModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="studentModalLabel">Student Details</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <table class="table table-bordered">
+                    <tbody id="studentData"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
 @include('includes.footerJs')
 <script src="../../../admin_dep/js/cbpFWTabs.js"></script>
 <script type="text/javascript">
@@ -562,8 +582,20 @@
                 {
                     $("#studentbatch").append($("<option></option>").val(result[i]['id']).html(result[i]['title']));
                 }
+            },error: function(xhr, status, error) {
+                 alert(JSON.parse(xhr.responseText).message);
             }
         });
+    })
+    // check student lists
+    $("#mobile").change(function(){
+      checkStudentExists();
+    })
+    $('#first_name').change(function(){
+      checkStudentExists();
+    })
+    $('#last_name').change(function(){
+      checkStudentExists();
     })
     //END Bind Batch
     
@@ -732,6 +764,65 @@
         return $result;
       }
     });
+ function checkStudentExists(){
+        var first_name = $('#first_name').val();
+        var last_name = $('#last_name').val();
+        var mobile = $('#mobile').val();
+        // alert(first_name);
+       $.ajax({
+        url : "{{route('checkExists')}}",
+        data : {first_name:first_name,last_name:last_name,mobile:mobile},
+        type:'GET',
+        success: function (response) {
+            console.log(response);
+
+            if (response && Object.keys(response).length !== 0) {
+                $('#studentData').empty();
+
+                var grno = "{{ App\Helpers\get_string('grno','request')}}";
+                var house = "{{ App\Helpers\get_string('house','request')}}";
+                var grade = "{{ App\Helpers\get_string('searchsection','request')}}";
+                var std = "{{ App\Helpers\get_string('searchstandard','request')}}";
+                var div = "{{ App\Helpers\get_string('searchdivision','request')}}";
+                var uniqueid = "{{ App\Helpers\get_string('uniqueid','request')}}";
+                var nationality = "{{ App\Helpers\get_string('nationality','request')}}";
+
+                var dobParts = response.dob.split('-');
+                var formattedDate = dobParts[2] + '-' + dobParts[1] + '-' + dobParts[0];
+
+                $('#studentData').append(`
+                    <tr>
+                        <td><b>Full Name : </b>${response.student_name}</td>
+                        <td><b>SMS Number : </b>${response.mobile}</td>
+                        <td><b>Birthdate : </b>${formattedDate}</td>
+                    </tr>
+                    <tr>
+                        <td><b>${grno} : </b>${response.enrollment_no}</td>
+                        <td><b>${house} : </b>${response.house}</td>
+                        <td><b>Batch : </b>${response.batch}</td>
+                    </tr>
+                    <tr>
+                        <td><b>${grade} : </b>${response.grade}</td>
+                        <td><b>${std} : </b>${response.standard}</td>
+                        <td><b>${div} : </b>${response.division}</td>
+                    </tr>
+                    <tr>
+                        <td><b>${uniqueid} : </b>${response.uniqueid}</td>
+                        <td><b>${nationality} : </b>${response.nationality}</td>
+                        <td><b>Status : </b>${response.status}</td>
+                    </tr>`);
+
+                $('#studentModal').modal('show');
+                console.log(response.student_name); // Assuming 'student_name' is a field in your 'students' table
+            } else {
+                console.error("Student not found");
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error(xhr.responseText);
+         }
+       })
+ }
 </script>
 @include('includes.footer')
 @endsection
