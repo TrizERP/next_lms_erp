@@ -316,7 +316,10 @@ class AJAXController extends Controller
             '7' => 'question_paper',
             '8' => 'co_scholastic_marks_entry',            
         ];
-
+        // search student want divisions timetable wise 14-06-2024
+        if(in_array(session()->get('sub_institute_id'),[61])){
+            $module_array["9"]="search_student";
+        }
        // menu_ids to get class teacher class only
        if(session()->get('sub_institute_id')==195){
             $menu_ids = [80,102];
@@ -379,11 +382,11 @@ class AJAXController extends Controller
                 if(in_array(session()->get('right_menu_id'),$menu_ids) && session()->get('user_profile_name')=="Teacher"){
                     $query->where('division.id',$getClass->division_id);
                 }else{
-                $query->whereIn('division.id', function ($sub_query) use ($standard_id) {
+                $query->whereIn('division.id', function ($sub_query) use ($subjectTeacherDivArr) {
                     $sub_query->select('division_id')
                         ->from('timetable')
                         ->where('teacher_id', session()->get('user_id'))
-                        ->where('standard_id', $standard_id)
+                        ->whereIn('division_id', $subjectTeacherDivArr)
                         ->where('syear',session()->get('syear'));
                 });
                 }
