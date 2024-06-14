@@ -319,6 +319,7 @@ class AJAXController extends Controller
         // search student want divisions timetable wise 14-06-2024
         if(in_array(session()->get('sub_institute_id'),[61])){
             $module_array["9"]="search_student";
+            $module_array["10"]="show_search_student";
         }
        // menu_ids to get class teacher class only
        if(session()->get('sub_institute_id')==195){
