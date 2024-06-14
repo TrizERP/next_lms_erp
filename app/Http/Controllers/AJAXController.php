@@ -382,10 +382,11 @@ class AJAXController extends Controller
                 if(in_array(session()->get('right_menu_id'),$menu_ids) && session()->get('user_profile_name')=="Teacher"){
                     $query->where('division.id',$getClass->division_id);
                 }else{
-                $query->whereIn('division.id', function ($sub_query) use ($subjectTeacherDivArr) {
+                $query->whereIn('division.id', function ($sub_query) use ($subjectTeacherDivArr,$standard_id) {
                     $sub_query->select('division_id')
                         ->from('timetable')
                         ->where('teacher_id', session()->get('user_id'))
+                        ->where('standard_id',$standard_id)
                         ->whereIn('division_id', $subjectTeacherDivArr)
                         ->where('syear',session()->get('syear'));
                 });
