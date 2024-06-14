@@ -478,14 +478,17 @@ class HrmsController extends Controller
         
         $get_timetable_ai = DB::table('general_data')->where(['fieldname' => 'timetable_ai', 'sub_institute_id' => $sub_institute_id])->first();
 
+        $get_bulkDiscount = DB::table('general_data')->where(['fieldname' => 'fees_bulk_discount', 'sub_institute_id' => $sub_institute_id])->first();
+
         $res['get_sandwich_leave_data'] = $get_sandwich_leave_data;
         $res['get_casual_leave_data'] = $get_casual_leave_data;
         $res['get_parent_communication']=$get_parent_communication;
         $res['get_multi_login']=$get_multi_login;
         $res['get_timetable_teacher']=$get_timetable_teacher;
         $res['get_timetable_ai']=$get_timetable_ai;
-        
-        // echo "<pre>";print_r($res);exit; 
+        $res['get_bulkDiscount']=$get_bulkDiscount;
+         
+        // echo "<pre>";print_r($res);exit;  
 
         return is_mobile($type, "HRMS/general_setting/general_setting", $res, "view");
     }
@@ -508,7 +511,9 @@ class HrmsController extends Controller
         $casual_leave_at_one_time = $request->input('casual_leave_at_one_time');
         $parent_communication = $request->input('parent_communication');
         $multi_login = $request->input('multi_login');   
-        $timetable_teacher = $request->input('timetable_teacher');                     
+        $timetable_teacher = $request->input('timetable_teacher'); 
+        $bulkDiscount = $request->input('bulkDiscount');    
+        $bulkDiscountAmt = isset($request->bulkDiscountAmt) ? $request->bulkDiscountAmt : 0;                     
         
         if ($sandwich_leave !== null) {
             // Check if a record with fieldname 'sandwich_leave' and sub_institute_id exists
@@ -624,6 +629,26 @@ class HrmsController extends Controller
          }else{
              $general_data->fieldname = 'timetable_ai';
              $general_data->fieldvalue = $request->timetable_ai;
+             $general_data->sub_institute_id = $subInstituteId;
+             $general_data->client_id = $clientId;
+             $general_data->type = 'hrms';
+             $general_data->save();        
+         }
+
+         // Fees Bulk Discount
+         $existingTimetableTeacher = general_dataModel::where('fieldname', 'fees_bulk_discount')
+         ->where('sub_institute_id', $subInstituteId)
+         ->first();
+         $general_data = new general_dataModel();
+         
+         if($existingTimetableTeacher){
+             $existingTimetableTeacher->fieldvalue = $bulkDiscount;
+             $existingTimetableTeacher->extra_field1 = $bulkDiscountAmt;
+             $existingTimetableTeacher->save();
+         }else{
+             $general_data->fieldname = 'fees_bulk_discount';
+             $general_data->fieldvalue = $bulkDiscount;
+             $general_data->extra_field1 = $bulkDiscountAmt;
              $general_data->sub_institute_id = $subInstituteId;
              $general_data->client_id = $clientId;
              $general_data->type = 'hrms';

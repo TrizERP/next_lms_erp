@@ -112,6 +112,10 @@ class online_fees_collect_controller extends Controller
         $data["fees_type"] = $all_student[0]->fees_type;
         $data["syear"] = $year;
         $data["admission_under"] = $admission_under;
+
+        $data["discountData"] = DB::table('general_data')->where('sub_institute_id',$all_student[0]->sub_institute_id)->where('fieldname','fees_bulk_discount')->first();
+
+        $data["currentMonth"] = date('n').date('Y');
         return $data;
     }
 
@@ -320,7 +324,7 @@ class online_fees_collect_controller extends Controller
     public function icici(Request $request)
     {
         $data = $this->get_fees($request);
-       //dd($data);
+    //    dd($data);exit;
         $type = "web";
         return \App\Helpers\is_mobile($type, "fees/online_fees_collect/show_icici_fees", $data, "view");
     }
@@ -330,6 +334,7 @@ class online_fees_collect_controller extends Controller
         // echo '<pre>'; print_r($_REQUEST); exit;
         $student_id = $_REQUEST["student_id"];
         $fine = isset($_REQUEST["fees_data"]["fine"]) ? $_REQUEST["fees_data"]["fine"] : 0;
+        $discount = isset($_REQUEST["totalDis"]) ? $_REQUEST["totalDis"] : 0;
         //echo '<pre>'; print_r($fine); exit;
         $medium_data = DB::select("SELECT a.*,e.grade_id,s.name AS standard, d.name AS division,CONCAT_WS('_',t.first_name,t.middle_name,t.last_name) AS student_name, t.mobile, t.enrollment_no, t.email,ifnull(b.title,0) AS batch FROM tblstudent_enrollment e
             inner join academic_section a on e.grade_id = a.id
@@ -439,13 +444,15 @@ class online_fees_collect_controller extends Controller
 
         // Assuming $amount and $fine are supposed to be numeric values
         $amount = intval($amount); // Convert $amount to int
-        $fine = intval($fine);     // Convert $fine to int
+        $fine = intval($fine);
+        $discount = intval($discount);  
 
         $in_arr = array(
             "student_id" => $_REQUEST["student_id"],
             "syear" => session()->get("syear"),
             "amount" => ($amount - $fine),
             "fine" => $fine,
+            "discount" => $discount,
             "icici_order_id" => $orderId,
             "icici_plain_request" => $simple_action_url,
             "icici_encrypt_request" => $action_url,
@@ -475,7 +482,7 @@ class online_fees_collect_controller extends Controller
 //$ids = [61,244,246,247,248];
 
         $payment_data = DB::table('fees_payment AS fp')
-            ->select('fp.id', 'fp.student_id', 'fi.merchant_id', 'fi.enc_key', 'fp.icici_order_id', 'tse.syear', 'fp.sub_institute_id', 'fp.amount', 'fp.fine','fp.icici_bank_res')
+            ->select('fp.id', 'fp.student_id', 'fi.merchant_id', 'fi.enc_key', 'fp.icici_order_id', 'tse.syear', 'fp.sub_institute_id', 'fp.amount', 'fp.fine','fp.discount','fp.icici_bank_res')
             ->join('tblstudent_enrollment AS tse', function ($join) {
                 $join->on('tse.student_id', '=', 'fp.student_id')
                     ->on('tse.syear', '=', 'fp.syear')
@@ -516,6 +523,7 @@ class online_fees_collect_controller extends Controller
                 $student_id = $data->student_id;
                 $amount = $data->amount;
                 $fine = $data->fine;
+                $discount = $data->discount;
                 $res = $data->icici_bank_res;
                 // initial icici status api
                 $url = "https://eazypay.icicibank.com/EazyPGVerify?merchantid=".$key_id."&pgreferenceno=".$payment_id."&dstatus=Y";
@@ -565,8 +573,9 @@ exit; */
 //                    echo "<pre>"; print_r($request->all()); exit;
                     if($status == 'Success'){
                         $check = DB::table('fees_collect')->whereRaw('cheque_no='.$payment_id.' AND student_id='.$student_id.' AND syear='.$data->syear.' AND sub_institute_id='.$data->sub_institute_id)->get()->toArray();
+
                         if(count($check) == 0){
-                            $schooldata = $this->pay_fees($request, $data->student_id, $data->syear, $data->sub_institute_id, $amount, $payment_id,$fine,$PaymentMode);
+                            $schooldata = $this->pay_fees($request, $data->student_id, $data->syear, $data->sub_institute_id, $amount, $payment_id,$fine,$PaymentMode,$discount);
                         }
                     }
                 }
@@ -972,7 +981,7 @@ exit; */
         // echo '<pre>'; print_r($data); exit;
     }
 
-    public function pay_fees(Request $request, $student_id, $syear, $sub_institute_id, $amount, $cheque_no = "",$fine="",$payment_mode = "")
+    public function pay_fees(Request $request, $student_id, $syear, $sub_institute_id, $amount, $cheque_no = "",$fine="",$payment_mode = "",$discount="")
     {
         //echo "<pre>"; print_r($request->all()); exit;
         $get_map_bank_data = DB::table("fees_online_maping")
@@ -1058,7 +1067,7 @@ exit; */
                 "discount_data" => $discount_data_arr,
                 "fine_data" => $fine_data_arr,
                 "total" => $total_fees,
-                "totalDis" => 0,
+                "totalDis" => $discount,
                 "totalFin" => 0,
                 "PAYMENT_MODE" => "Online",
                 "receiptdate" => date("Y-m-d"),
@@ -1168,7 +1177,7 @@ exit; */
                 "fine_data" => $fine_data_arr,
                 "total" => $total_fees,
                 "fine" => $final_fees_arr["fine"],
-                "totalDis" => 0,
+                "totalDis" => $discount,
                 "totalFin" => 0,
                 "PAYMENT_MODE" => "Online",
                 "receiptdate" => date("Y-m-d"),
