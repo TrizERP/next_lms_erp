@@ -12,6 +12,7 @@
             </div>
         @php
         $grade_id = $standard_id = $division_id = $order_by = $subject_id = '';
+        $action = ['Not-attempt','Attempt'];
 
             if(isset($data['grade_id'])){
                 $grade_id = $data['grade_id'];
@@ -25,125 +26,62 @@
         <div class="card">
             <div class="card-body">
                 @if ($sessionData = Session::get('data'))
-                    @if($sessionData['status_code'] == 1)
-                        <div class="alert alert-success alert-block">
-                            @else
-                                <div class="alert alert-danger alert-block">
-                                    @endif
-                                    <button type="button" class="close" data-dismiss="alert">×</button>
-                                    <strong>{{ $sessionData['message'] }}</strong>
-                                </div>
-                            @endif
-                            <form action="{{ route('show_question_wise_report') }}" enctype="multipart/form-data"
-                                  method="post">
-                                @csrf
-                                <div class="row">
-                                    {{ App\Helpers\SearchChain('4','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
-
-                                    <div class="col-md-3 form-group">
+                @if($sessionData['status_code'] == 1)
+                <div class="alert alert-success alert-block">
+                    @else
+                    <div class="alert alert-danger alert-block">
+                        @endif
+                        <button type="button" class="close" data-dismiss="alert">×</button>
+                        <strong>{{ $sessionData['message'] }}</strong>
+                    </div>
+                    @endif
+                    <form action="{{ route('show_question_wise_report') }}" enctype="multipart/form-data"
+                        method="post">
+                        @csrf
+                        <div class="row">
+                            {{ App\Helpers\SearchChain('4','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
+                            <div class="col-md-3 form-group">
                                 <label for="subject">Select Subject</label>
                                 <select name="subject" id="subject" class="cust-select form-control mb-0">
                                     @if(empty($data['subject_data']))
-                                        <option value="">Select Subject</option>
+                                    <option value="">Select Subject</option>
                                     @endif
-
                                     @if(!empty($data['subject_data']))
-                                        @foreach($data['subject_data'] as $k1 => $v1)
-                                            <option
-                                                value="{{$v1['subject_id']}}" @if(isset($data['subject_id'])){{$data['subject_id'] == $v1['subject_id'] ? 'selected=selected' : '' }} @endif>{{$v1['display_name']}} </option>
-                                        @endforeach
+                                    @foreach($data['subject_data'] as $k1 => $v1)
+                                    <option
+                                    value="{{$v1['subject_id']}}" @if(isset($data['subject_id'])){{$data['subject_id'] == $v1['subject_id'] ? 'selected=selected' : '' }} @endif>{{$v1['display_name']}} </option>
+                                    @endforeach
                                     @endif
                                 </select>
                             </div>
                             <div class="col-md-3 form-group">
                                 <label for="exam">Select Exam</label>
                                 <select class="cust-select form-control mb-0" name="exam"
-                                        required="required">
-                                    @if(!empty($data['exams_data']))
-                                        @foreach($data['exams_data'] as $k => $v)
-                                            <option
-                                                value="{{$v->id}}" @if(isset($data->exam_id)){{$data->exam_id == $v->id ? 'selected=selected' : '' }} @endif>{{$v->paper_name}}</option>
-                                        @endforeach
-                                    @endif
+                                    required="required">
+                                @if(!empty($data['exams_data']))
+                                @foreach($data['exams_data'] as $k => $v)
+                                <option
+                                value="{{$v->id}}" @if(isset($data->exam_id)){{$data->exam_id == $v->id ? 'selected=selected' : '' }} @endif>{{$v->paper_name}}</option>
+                                @endforeach
+                                @endif
                                 </select>
                             </div>
-                                    {{-- <div class="col-md-4 form-group">
-                                       <label>Order By</label>
-                                       <select id='order_by' name="order_by" class="form-control">
-                                           <option>Select Order By Field</option>
-                                           <option @if($order_by == 'student_name') selected="selected" @endif value="student_name">{{App\Helpers\get_string('studentname','request')}}</option>
-                                           <option @if($order_by == 'standard_id') selected="selected" @endif value="standard_id">{{App\Helpers\get_string('standard','request')}}</option>
-                                           <option @if($order_by == 'enrollment_no') selected="selected" @endif value="enrollment_no">{{App\Helpers\get_string('grno','request')}}</option>
-                                           <option @if($order_by == 'roll_no') selected="selected" @endif value="roll_no">Roll No</option>
-                                       </select>
-                                   </div> --}}
-                                    <div class="col-md-12 col-sm-offset-4 text-center form-group">
-                                        <input type="submit" name="submit" value="Search" class="btn btn-success">
-                                        <button type="button" class="btn btn-info" data-toggle="modal"
-                                                data-target="#exampleModal"><i class="mdi mdi-tune"></i></button>
-                                    </div>
-                                </div>
-                                <!-- Modal -->
-                                <div class="modal fade bd-example-modal-lg" id="exampleModal" tabindex="-1"
-                                     role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-                                    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-                                        <div class="modal-content">
-                                            <div class="modal-header">
-                                                <h5 class="modal-title" id="exampleModalLabel">Choose Field</h5>
-                                                <button type="button" class="close" data-dismiss="modal"
-                                                        aria-label="Close">
-                                                    <span aria-hidden="true">x</span>
-                            </button>
-                          </div>
-                          <div class="modal-body">
-                                <div class="slimscrollright">
-                                    <div class="rpanel-title"><span><i class="ti-close right-side-toggle"></i></span> </div>
-                                    <div class="row">
-                                        <div class="col-md-12 form-group mb-2">
-                                            <div class="checkbox checkbox-info">
-                                                <input id="checkall" onclick="checkedAll();" name="checkall" type="checkbox">
-                                                <label for="checkall"> Check All </label>
-                                                <input type="hidden" name="page" value="bulk">
-                                            </div>
-                                        </div>
-
-                                    @if(isset($data['data']))
-                                            @php
-                                        //$checkedArray = array('enrollment_no','first_name','middle_name','last_name','mobile');
-                                        $checkedArray = array();
-                                        @endphp
-                                        @foreach($data['data'] as $key => $value)
-                                        <div class="col-md-4 form-group mt-1">
-                                            <div class="custom-control custom-checkbox">
-                                                @php
-                                                $checked = '';
-                                                if(in_array($key,$checkedArray)){
-                                                    $checked = 'checked="checked"';
-                                                }
-                                                if(isset($data['headers'])){
-                                                    if(count($data['headers']) > 0){
-                                                        $headersChecked = array_keys($data['headers']);
-                                                    }
-                                                    $checked = '';
-                                                    if(in_array($key,$headersChecked)){
-                                                        $checked = 'checked="checked"';
-                                                    }
-                                                }
-                                                @endphp
-                                                <input id="{{$key}}" {{$checked}} value="{{$key}}" class="custom-control-input" name="dynamicFields[]" type="checkbox">
-                                                <label for="{{$key}}" class="custom-control-label"> {{$value}} </label>
-                                            </div>
-                                        </div>
-                                        @endforeach
-                                    @endif
-                                    </div>
-                                </div>
-                          </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </form>
+                            <div class="col-md-3 form-group">
+                                <label for="exam">Attempt / Not-attempt</label>
+                                <select class="cust-select form-control mb-0" name="action">
+                                @foreach($action as $k => $v)
+                                    <option value="{{$k}}" {{(isset($data['action']) && $data['action']==$k) ? 'Selected' : ''}}>{{$v}}</option>
+                                @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-12 col-sm-offset-4 text-center form-group">
+                                <input type="submit" name="submit" value="Search" class="btn btn-success">
+                            </div>
+                            </div>
                         </div>
+                
+            </form>
+            </div>
             </div>
 
             {{-- get question wise repost data --}}
@@ -189,19 +127,7 @@
                         @endphp
                     @endforeach
                 @endforeach
-                    @php
-                        // @foreach ($examResult as $student)
-                    //     $stu_rollno = '';
-                    //     $stu_name = '';
-                    //     if ( $countQuestion > 0 ) {
-                    //         $stu_rollno = $studentValue[0]->roll_no;
-                    //         $stu_name = $studentValue[0]->student_name;
-
-                    //     }
-
-
-                        // echo "<pre>"; print_r($examResults); exit;
-                    @endphp
+                  
                 <div class="table-responsive mt-20 tz-report-table">
                     <table id="" class="table table-striped">
                         <thead>
@@ -209,12 +135,12 @@
                             <th>Roll No</th>
                             <th>{{App\Helpers\get_string('studentname','request')}}</th>
                             @for ($i = 1; $i <= $countQuestion; $i++)
-                                            <th>Q{{ $i }}</th>
-                                        @endfor
+                                <th>Q{{ $i }}</th>
+                            @endfor
                             <th>Obtain</th>
                             <th>Total</th>
                             <th>Per(%)</th>
-                            <th>Status</th>
+                            <th class="text-left">Status</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -222,15 +148,8 @@
                             $no_of_student = 0;
                         @endphp
                         @foreach ( $examResult as $studentKey1 => $studentValue1 )
-                            {{-- @php
-                            // echo "<pre>"; print_r($student); exit;
-                                $row = 1;
-                                $totalRightAns = 0;
-                                $attempted = false;
-                            @endphp --}}
+                          
                             @foreach ($studentValue1 as $keyNew => $student)
-
-
                                 @php
                                     // echo "<pre>"; print_r($studentValue1); exit;
                                         $row = 1;
@@ -240,8 +159,7 @@
                                 @endphp
 
                                 <tr>
-                                    {{-- <td>{{ $stu_rollno }}</td>
-                                    <td>{{ $stu_name }}</td> --}}
+                                  
                                     <td>{{ $student[0]->roll_no }}</td>
                                     <td>{{ $student[0]->student_name }}</td>
                                     @foreach( $student as $key => $value )
@@ -285,9 +203,7 @@
                                 </tr>
                             @endforeach
                         @endforeach
-                                    @php
-                                        // array_pop($colCountAns);
-                                    @endphp
+                                 
                                     <tr>
                                         <td colspan="2" class="text-right font-weight-bold" style="background-color: #ffe699;">Question Wise Total</td>
                                         @php
@@ -309,9 +225,8 @@
                                             
                                             $fullPer = number_format( ( $calTrueAnsCount * 100 ) / $total_marks, 2 ) . '%';
                                         @endphp
-                                        <td colspan="2" rowspan="2" class="text-center font-weight-bold" style="background-color: #a9d08e;">{{ $fullPer }}</td>
+                                        <td colspan="3" rowspan="2" class="text-center font-weight-bold" style="background-color: #a9d08e;">{{ $fullPer }}</td>
                                     </tr>
-
                                     <tr>
                                         <td colspan="2" class="text-right font-weight-bold" style="background-color: #ffe699;">Total Student</td>
                                         @for ($i = 1; $i <= $countQuestion; $i++)
@@ -321,16 +236,8 @@
                                     </tr>
                                 </tbody>
                             </table>
-                            {{-- @php
-                                echo "<pre>"; print_r($colCountAns);
-                            @endphp --}}
-                            {{-- @php
-                                die('one table complate');
-                            @endphp --}}
                         </div>
-                    {{-- @endforeach --}}
                 </div>
-            {{-- @endforeach --}}
         @endforeach
     </div>
     @endif
