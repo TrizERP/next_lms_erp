@@ -73,7 +73,7 @@
                         <tbody>
                         @foreach($data['data'] as $key => $data)
                             <tr>
-                                <td>{{$data->appointment_type}} Appointment</td>
+                                <td>{{$data->appointment_type}}</td>
                                 <td>{{$data->visitor_type_name}}</td>
                                 <td>{{$data->name}}</td>
                                 <td>{{$data->contact}}</td>
