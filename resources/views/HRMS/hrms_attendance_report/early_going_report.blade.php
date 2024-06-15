@@ -85,8 +85,8 @@
                                     <td>{{ isset($hrmsAttendance['getUser']) ? $hrmsAttendance['getUser']['employee_no'] : '' }}</td>
                                     <td>{{isset($hrmsAttendance['getUser']) ? $hrmsAttendance['getUser']['first_name'] .'-'.$hrmsAttendance['getUser']['last_name'] : ''}}</td>
                                     <td>{{ $get_hrms_department->department }}</td>
-                                    <td>{{ isset($hrmsAttendance->punchout_time) ? \Carbon\Carbon::parse($hrmsAttendance->punchout_time)->format('h:i A') : 'N/A' }}</td>
-                                    <td>{{ isset($hrmsAttendance['getUser']['monday_out_date']) ? \Carbon\Carbon::parse($hrmsAttendance['getUser']['monday_out_date'])->format('h:i A') : 'N/A' }}</td>
+                                    <td>{{ isset($hrmsAttendance->punchout_time) ? \Carbon\Carbon::parse($hrmsAttendance->punchout_time)->format('h:i A') : '-' }}</td>
+                                    <td>{{ isset($hrmsAttendance['getUser']['monday_out_date']) ? \Carbon\Carbon::parse($hrmsAttendance['getUser']['monday_out_date'])->format('h:i A') : '-' }}</td>
                                 </tr>
                             @endforeach
                             </tbody>

@@ -122,6 +122,7 @@
                      <th>{{App\Helpers\get_string('division','request')}}</th>
                      <th>Certificate No.</th>
                      <th class="text-left">Certificate Type</th>
+                     <th class="text-left">Created at</th>
                   </tr>
                </thead>
                <tbody>
@@ -144,6 +145,7 @@
                         <input type="hidden" name="certificate_html_{{$value['certi_id']}}" id="certificate_html_{{$value['certi_id']}}" value="{{$value['certificate_html']}}">
                      </td>
                      <td>{{$value['certificate_type']}}</td>
+                     <td>{{$value['created_at']}}</td>
                   </tr>
                   @endforeach
                </tbody>
