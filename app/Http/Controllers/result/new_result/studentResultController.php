@@ -401,7 +401,7 @@ class studentResultController extends Controller
             $grade_ids = [851,852];
             if(in_array($grade_id,$grade_ids)){
                 $atten = $this->get_attendance($standard_id, $value['id'], $format, "attendance_hills");
-                $html_content = str_replace(htmlspecialchars("<<attendance_hills_simple>>"), $atten['table'], $html_content);                
+                $html_content = str_replace(htmlspecialchars("<<attendance_hills_simple>>"), $atten['table'], $html_content);
             }else{
                 $atten = $this->get_attendance($standard_id, $value['id'], $format, "simple");  
                 $html_content = str_replace(htmlspecialchars("<<attendance_hills_simple>>"),$atten['attendance'], $html_content);

@@ -388,12 +388,21 @@ class HrmsController extends Controller
             $hrmsList[$value->day][]=$value;
             
             $punchin_time = $value->punchin_time;
-            $punchin_time = Carbon::createFromFormat('Y-m-d H:i:s', $punchin_time);
-            $punchin_time = strtolower($punchin_time->format('H:i:s'));
+            if (!is_null($punchin_time)) {
+                $punchin_time = Carbon::createFromFormat('Y-m-d H:i:s', $punchin_time);
+                $punchin_time = strtolower($punchin_time->format('H:i:s'));
+            } else {
+                $punchin_time = 'null'; // Or handle as needed
+            }
 
             $punchout_time = $value->punchout_time;
-            $punchout_time = Carbon::createFromFormat('Y-m-d H:i:s', $punchout_time);
-            $punchout_time = strtolower($punchout_time->format('H:i:s'));
+            if (!is_null($punchout_time)) {
+                $punchout_time = Carbon::createFromFormat('Y-m-d H:i:s', $punchout_time);
+                $punchout_time = strtolower($punchout_time->format('H:i:s'));
+            } else {
+                $punchout_time = 'null'; // Or handle as needed
+            }
+
 
             $user_day_in = $day_name.'_in_date';
             $user_in_set_time = $value->$user_day_in;

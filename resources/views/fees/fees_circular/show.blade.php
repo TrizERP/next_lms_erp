@@ -101,6 +101,7 @@
                                 @endphp
                                 @if(isset($data['data']))
                                     @foreach($data['data'] as $key => $value)
+                                        @if(!empty($value['stu_data']))
                                     <tr>
                                         <td><input id="{{$value['stu_data']['student_id']}}" value="{{$value['stu_data']['student_id']}}" name="students[]" type="checkbox"></td>
                                         <td>{{$value['stu_data']['enrollment']}}</td>
@@ -124,6 +125,8 @@
                                 @php
                                 $j++;
                                 @endphp
+                                @endif
+
                                     @endforeach
                                 @endif
                                 </tbody>
