@@ -170,6 +170,7 @@ class studentReportController extends Controller
                     ->where('transport_map_student.syear', '=', $syear);
             })
             ->leftJoin('admission_enquiry', 'tblstudent.mobile', '=', 'admission_enquiry.mobile')
+            ->leftJoin('student_height_weight', 'tblstudent.id', '=', 'student_height_weight.student_id')
             ->leftJoin('transport_vehicle', function($join) use ($sub_institute_id) {
                 $join->on('transport_vehicle.id', '=', 'transport_map_student.from_bus_id')
                     ->where('transport_vehicle.sub_institute_id', '=', $sub_institute_id);

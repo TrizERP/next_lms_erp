@@ -44,7 +44,8 @@
                                 <th data-toggle="tooltip" title="Coming From">Coming From</th>
                                 <th data-toggle="tooltip" title="To Meet">To Meet</th>
                                 <th data-toggle="tooltip" title="Relation">Relation</th>
-								<th data-toggle="tooltip" title="Purpose">Purpose</th>                                
+								<th data-toggle="tooltip" title="Purpose">Purpose</th>  
+								<th data-toggle="tooltip" title="Purpose">Created By</th>                                
                             </tr>
                         </thead>
                         <tbody>
@@ -73,7 +74,8 @@
                                 <td>{{$data->coming_from}}</td>
                                 <td>{{$data->staff_name}}</td>
                                 <td>{{$data->relation}}</td>
-                                <td>{{$data->purpose}}</td>                                
+                                <td>{{$data->purpose}}</td> 
+                                <td>{{$data->created_by}}</td>                                
                             </tr>
                             @endforeach
 

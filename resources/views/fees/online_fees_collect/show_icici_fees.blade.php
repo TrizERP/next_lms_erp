@@ -236,6 +236,13 @@
                                     <?php if ($data["fees_type"] != "fix") { ?>
                                         <tr>
                                             <td></td>
+                                            <td>Discount</td>
+                                            <td></td>
+                                            <td><input type="text" name="totalDis" id="totalDiscount"></td>
+                                            
+                                        </tr>
+                                        <tr>
+                                            <td></td>
                                             <td>Fine</td>
                                             <td></td>
                                             <td>@if(in_array(session()->get('sub_institute_id'), $sub_institute_id))
@@ -367,7 +374,7 @@
                 sum += amount; // Or this.innerHTML, this.innerText
             });
 
-            $("#totalDis").val(sum);
+            // $("#totalDis").val(sum);
             calculateTotal();
         });
         $('#fees_head').on('change', '.allFinField', function() {
@@ -384,34 +391,34 @@
         });
 
         function calculateTotal() {
-            tot = parseFloat($("#totalVal").val());
-            fin = parseFloat($("#totalFin").val());
-            dis = parseFloat($("#totalDis").val());
-            console.log('tot '+tot);
-            console.log('fin '+fin);
-            console.log('dis '+dis);
+            tot =  isNaN($("#totalVal").val()) ? 0 : parseFloat($("#totalVal").val());
+            fin =  isNaN($("#totalFin").val()) ? 0 : parseFloat($("#totalFin").val());
+            dis =  isNaN($("#totalDiscount").val()) ? 0 : parseFloat($("#totalDiscount").val());
+            // console.log('tot '+tot);
+            // console.log('fin '+fin);
+            // console.log('dis '+dis);
             
             if({{session()->get('sub_institute_id')}} == 257){
-					cheque_return_charges = $("#cheque_return_charges1").val();
+					cheque_return_charges = isNaN($("#cheque_return_charges1").val()) ? 0 : parseFloat($("#cheque_return_charges1").val());
 				}else{
-					cheque_return_charges = $("#hidden_cheque_return_charges").val();
+					cheque_return_charges = isNaN($("#hidden_cheque_return_charges").val()) ? 0 : parseFloat($("#hidden_cheque_return_charges").val());
 				}
 
 				if (dis > tot && dis != 0) {
 					alert("Discount Can Not Be More Then Total Amount.");
-					$("#discount").val(0);
-					$("#totalDis").val(0)
+					$("#totalDiscount").val(0);
+					// $("#totalDis").val(0)
 				} else {
-					if (isNaN(dis)) {} else {
-						tot = (tot - dis) + fin;
-					}
-					tot = tot + parseFloat(cheque_return_charges);
+					if (!isNaN(dis)) {
+                        tot = (tot - dis) + fin;
+                    }
+                    tot = tot + cheque_return_charges;
                    
 					$("#pay_amount").val(tot);
 				}
         }
-        $(document).on('change', '.cheque_return_charges1', function() {
 
+        $(document).on('change', '.cheque_return_charges1', function() {
         calculateTotal();
         });
         
@@ -494,7 +501,7 @@
                         $("#fees_head").empty();
                     $("#fees_head").html(data);
                     tot = $("#totalVal").val();
-                    $("#discount").val(0);
+                    // $("#totalDiscount").val(0);
                     $("#pay_amount").val(tot);//grandTotal
 
                     fin = parseFloat($("#totalFin").val());
@@ -517,6 +524,25 @@
 						// 26/08/2021 END Added for The Millennium School for Advanced Imprest Collection payment
 					}
 				});
+
+                // get discount amount 14-06-2024
+                var general_setting  = @json($data['discountData']);
+                var currentMonth = "{{$data['currentMonth']}}";
+                
+                if(general_setting && Object.keys(general_setting).length > 0){
+                    if (checkedMonths.length > 0) {
+                        lastMonth = checkedMonths[checkedMonths.length - 1];
+                        console.log(checkedMonths.length);
+                        if(lastMonth >= 42024 && checkedMonths.length>=3){
+                            $('#totalDiscount').val(general_setting.extra_field1);
+                        }else{
+                            $('#totalDiscount').val(0);
+                        }
+                    }else{
+                        $('#totalDiscount').val(0);
+                    }
+                }
+                // end discount amount 14-06-2024
 			}
     </script>
     @if(app('request')->input('implementation') == 1)
