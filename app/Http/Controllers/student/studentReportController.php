@@ -164,6 +164,7 @@ class studentReportController extends Controller
             ->leftJoin('batch', 'tblstudent.studentbatch', '=', 'batch.id')
             ->leftJoin('transport_map_student', 'transport_map_student.student_id', '=', 'tblstudent.id')
             ->leftJoin('admission_enquiry', 'tblstudent.mobile', '=', 'admission_enquiry.mobile')
+            ->leftJoin('student_height_weight', 'tblstudent.id', '=', 'student_height_weight.student_id')
             ->leftJoin('transport_vehicle', function($join) use ($sub_institute_id) {
                 $join->on('transport_vehicle.id', '=', 'transport_map_student.from_bus_id')
                     ->where('transport_vehicle.sub_institute_id', '=', $sub_institute_id);
