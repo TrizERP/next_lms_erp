@@ -1,7 +1,8 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">
             <div class="row bg-title">
@@ -68,7 +69,7 @@
                     <div class="col-md-4 form-group">
                         <label>Mobile No.</label>
                         <input type="text" id="mobile_no" value="{{$mobile_no}}" name="mobile_no" class="form-control">
-                    </div>                    
+                    </div>
                     <div class="col-md-4 form-group">
                         <label>{{ App\Helpers\get_string('uniqueid','request')}}</label>
                         <input type="text" id="uniqueid" value="{{$uniqueid}}" name="uniqueid" class="form-control">
@@ -87,7 +88,7 @@
             if(isset($data['fees_data'])){
                 $fees_data = $data['fees_data'];
             }
-            
+
         @endphp
         <div class="card">
             <div class="table-responsive">
@@ -100,26 +101,27 @@
                             <th>{{ App\Helpers\get_string('std/div','request')}}</th>
                             <th>Mobile No.</th>
                             <th>{{ App\Helpers\get_string('uniqueid','request')}}</th>
+                            <th>Status</th>
                             <th style="background-color:#7befef;">Total Breakoff</th>
                             @if(isset($data['month_arr']))
                                  @foreach($data['month_arr'] as $month_id => $month_val)
                                     <th>{{$month_val}} Paid</th>
                                  @endforeach
-                            <th>Total Fine</th>     
-                            <th>Total Discount</th>     
-                            <th style="background-color:#7befef;">Total Paid</th>     
+                            <th>Total Fine</th>
+                            <th>Total Discount</th>
+                            <th style="background-color:#7befef;">Total Paid</th>
                                  @foreach($data['month_arr'] as $month_id => $month_val)
                                     <th>{{$month_val}} Un-Paid</th>
                                  @endforeach
-                            <th style="background-color:#7befef;">Total Unpaid</th>     
-                            @endif                                                          
+                            <th style="background-color:#7befef;">Total Unpaid</th>
+                            @endif
                         </tr>
                     </thead>
                     <tbody>
                     @php
                     $j=1;
                     $total_breakoff = $total_paid = $total_unpaid = $total_fine = $total_discount = 0;
-                    foreach($data['month_arr'] as $month_id => $month_val)                        
+                    foreach($data['month_arr'] as $month_id => $month_val)
                     {
                         $var = "amount_paid_".$month_id;
                         $$var = 0;
@@ -128,9 +130,12 @@
                     }
 
                     @endphp
-                                           
+
                     @if(isset($data['fees_data']))
-                        @foreach($fees_data as $key => $fees_value)                  
+                        @foreach($fees_data as $key => $fees_value)
+                        @if(isset($fees_value['-']['paid']) && $fees_value['-']['paid']==0 && $fees_value['status']=="In-active")
+                         <!-- do not show in-active who didn't paid fees for curremt year -->
+                        @else
                         <tr>
                             <td>{{$j}}</td>
                             <td>{{$fees_value['enrollment']}}</td>
@@ -138,6 +143,7 @@
                             <td>{{$fees_value['stddiv']}}</td>
                             <td>{{$fees_value['mobile']}}</td>
                             <td>{{$fees_value['uniqueid']}}</td>
+                            <td>{{$fees_value['status']}}</td>
                             <td style="background-color:#7befef;">{{$fees_value['-']['bk'] ?? 0 }}</td>
                             @foreach($data['month_arr'] as $month_id => $month_val)
                                 @php
@@ -145,14 +151,14 @@
                                 {
                                     echo "<td>".$fees_value[$month_id]['paid']."</td>";
                                     $var = "amount_paid_".$month_id;
-                                    $$var += $fees_value[$month_id]['paid'];                                    
+                                    $$var += $fees_value[$month_id]['paid'];
                                 }
                                 else
                                 {
                                     echo "<td>0</td>";
-                                }                                                                                                   
+                                }
                                 @endphp
-                            @endforeach 
+                            @endforeach
                             @php
                             $total_paid += $fees_value['-']['paid'] ?? 0;
                             $total_breakoff += $fees_value['-']['bk'] ?? 0;
@@ -164,41 +170,44 @@
                                 $fine = 0;
                             }
                             if(isset($fees_value['discount']))
-                            {    
+                            {
                                 $total_discount += $fees_value['discount'];
                                 $discount = $fees_value['discount'];
                             }else{
                                 $discount = 0;
                             }
                             @endphp
-                            <td>{{$fine}}</td>                          
-                            <td>{{$discount}}</td>                          
-                            <td style="background-color:#7befef;">{{$fees_value['-']['paid'] ?? 0 }}</td>                          
+                            <td>{{$fine}}</td>
+                            <td>{{$discount}}</td>
+                            <td style="background-color:#7befef;">{{$fees_value['-']['paid'] ?? 0 }}</td>
                             @foreach($data['month_arr'] as $month_id => $month_val)
                                 @php
-                                if(isset($fees_value[$month_id]['remain']))
+                                if(isset($fees_value[$month_id]['remain']) &&  $fees_value['status'] != "In-active")
                                 {
                                     echo "<td>".$fees_value[$month_id]['remain']."</td>";
                                     $var1 = "amount_unpaid_".$month_id;
-                                    $$var1 += $fees_value[$month_id]['remain'];                                    
+                                    $$var1 += $fees_value[$month_id]['remain'];
                                 }
                                 else
                                 {
                                     echo "<td>0</td>";
-                                }                                                                                                   
-                                @endphp                                                        
+                                }
+                                @endphp
+
                             @endforeach
-                            <td style="background-color:#7befef;">{{$fees_value['-']['remain'] ?? 0}}</td>  
+                            <td style="background-color:#7befef;">{{ ($fees_value['status'] != "In-active" && isset($fees_value['-']['remain'])) ? $fees_value['-']['remain'] : 0}}</td>
                             @php
-                            $total_unpaid += $fees_value['-']['remain'] ?? 0;
-                            @endphp                            
+                            $total_unpaid += ($fees_value['status'] != "In-active" && isset($fees_value['-']['remain'])) ? $fees_value['-']['remain'] : 0;
+                            @endphp
                         </tr>
                     @php
                     $j++;
                     @endphp
+                    @endif
                         @endforeach
                         <tr class="font-weight-bold">
                             <td>{{$j++}}</td>
+                            <td></td>
                             <td></td>
                             <td></td>
                             <td></td>
@@ -208,7 +217,7 @@
                             @foreach($data['month_arr'] as $month_id => $month_val)
                             @php
                                 $var = "amount_paid_".$month_id;
-                                echo "<td>".$$var."</td>";                                    
+                                echo "<td>".$$var."</td>";
                             @endphp
                             @endforeach
                             <td>{{$total_fine}}</td>
@@ -217,12 +226,13 @@
                             @foreach($data['month_arr'] as $month_id => $month_val)
                             @php
                                 $var1 = "amount_unpaid_".$month_id;
-                                echo "<td>".$$var1."</td>";                                    
+                                echo "<td>".$$var1."</td>";
                             @endphp
+
                             @endforeach
                             <td>{{$total_unpaid}}</td>
-                        </tr>                       
-                        
+                        </tr>
+
                     @endif
                     </tbody>
                 </table>
@@ -239,7 +249,7 @@
        // $('#grade').attr('required', 'required');
 //$('#standard').attr('required', 'required');
     //});
-   
+
     function checkAll(ele) {
          var checkboxes = document.getElementsByTagName('input');
          if (ele.checked) {
@@ -260,32 +270,32 @@
 </script>
 <script>
     $(document).ready(function() {
-    // Setup - add a text input to each footer cell    
+    // Setup - add a text input to each footer cell
 
      var table = $('#example').DataTable( {
-         select: true,          
-         lengthMenu: [ 
-                        [100, 500, 1000, -1], 
-                        ['100', '500', '1000', 'Show All'] 
+         select: true,
+         lengthMenu: [
+                        [100, 500, 1000, -1],
+                        ['100', '500', '1000', 'Show All']
         ],
-        dom: 'Bfrtip', 
-        buttons: [ 
-            { 
+        dom: 'Bfrtip',
+        buttons: [
+            {
                 extend: 'pdfHtml5',
                 title: 'Fees Overall Report',
                 orientation: 'landscape',
-                pageSize: 'LEGAL',                
+                pageSize: 'LEGAL',
                 pageSize: 'A0',
-                exportOptions: {                   
-                     columns: ':visible'                             
+                exportOptions: {
+                     columns: ':visible'
                 },
-            }, 
-            { extend: 'csv', text: ' CSV', title: 'Fees Overall Report' }, 
-            { extend: 'excel', text: ' EXCEL', title: 'Fees Overall Report' }, 
-            { extend: 'print', text: ' PRINT', title: 'Fees Overall Report' },             
-            'pageLength' 
-        ], 
-        }); 
+            },
+            { extend: 'csv', text: ' CSV', title: 'Fees Overall Report' },
+            { extend: 'excel', text: ' EXCEL', title: 'Fees Overall Report' },
+            { extend: 'print', text: ' PRINT', title: 'Fees Overall Report' },
+            'pageLength'
+        ],
+        });
         //table.buttons().container().appendTo('#example_wrapper .col-md-6:eq(0)');
 
 
@@ -310,3 +320,4 @@
 } );
 </script>
 @include('includes.footer')
+@endsection

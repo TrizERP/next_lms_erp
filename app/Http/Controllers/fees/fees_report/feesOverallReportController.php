@@ -81,18 +81,15 @@ class feesOverallReportController extends Controller
         if ($last_name != '') {
             $extraSearchArrayRaw .= "  AND tblstudent.last_name like '%" . $last_name . "%' ";
         }
-        $extraSearchArrayRaw .= "  AND tblstudent_enrollment.end_date IS NULL ";
+        // $extraSearchArrayRaw .= "  AND tblstudent_enrollment.end_date IS NULL ";
         $extraSearchArray['tblstudent_enrollment.syear'] = $syear;
         $extraSearchArray['tblstudent.sub_institute_id'] = $sub_institute_id;
 
-        $feesData = tblstudentModel::selectRaw("tblstudent.id,CONCAT_WS(' ',tblstudent.first_name,tblstudent.middle_name,tblstudent.last_name) AS student_name,academic_section.title as grade,standard.name as standard_name,division.name as division_name,tblstudent.enrollment_no,tblstudent.mobile,tblstudent.uniqueid")
+        $feesData = tblstudentModel::selectRaw("tblstudent.id,CONCAT_WS(' ',tblstudent.first_name,tblstudent.middle_name,tblstudent.last_name) AS student_name,academic_section.title as grade,standard.name as standard_name,division.name as division_name,tblstudent.enrollment_no,tblstudent.mobile,tblstudent.uniqueid,(CASE WHEN tblstudent_enrollment.end_date IS null THEN 'active' ELSE 'In-active' END) AS status")
             ->join('tblstudent_enrollment', 'tblstudent.id', '=', 'tblstudent_enrollment.student_id')
             ->join('academic_section', 'academic_section.id', '=', 'tblstudent_enrollment.grade_id')
             ->join('standard', function($join) use($marking_period_id){
                 $join->on('standard.id', '=', 'tblstudent_enrollment.standard_id');
-                // ->when($marking_period_id,function($query) use($marking_period_id){
-                //     $query->where('standard.marking_period_id',$marking_period_id);
-                // });
             })
             ->join('division', 'division.id', '=', 'tblstudent_enrollment.section_id')
             ->where($extraSearchArray)
@@ -120,7 +117,7 @@ class feesOverallReportController extends Controller
 
         $final_array = array();
 
-
+        // set_time_limit(300); // to prevent maximum execution error
         foreach ($feesData as $key => $value) {
             $bk_data = $controller->getBk($request, $value['id']);
             if (count($bk_data) > 0) {
@@ -129,9 +126,15 @@ class feesOverallReportController extends Controller
                 $final_array[$value['id']]['stddiv'] = $bk_data['stu_data']['stddiv'];
                 $final_array[$value['id']]['admission'] = $bk_data['stu_data']['admission'];
                 $final_array[$value['id']]['email'] = $bk_data['stu_data']['email'];
-                $final_array[$value['id']]['pending'] = $bk_data['stu_data']['pending'];
+                if($value['status']=="In-active"){
+                    $final_array[$value['id']]['pending'] = 0;
+                }else{
+                    $final_array[$value['id']]['pending'] = $bk_data['stu_data']['pending'];
+                }
                 $final_array[$value['id']]['mobile'] = $bk_data['stu_data']['mobile'];
                 $final_array[$value['id']]['uniqueid'] = $bk_data['stu_data']['uniqueid'];
+                $final_array[$value['id']]['status'] = $value['status'];
+
                 $total_fees_array = array();
                 foreach ($bk_data as $stu_id => $total_fees) {
                     $total_fees_array[] = $total_fees;

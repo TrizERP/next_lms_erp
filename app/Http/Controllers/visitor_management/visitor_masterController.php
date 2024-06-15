@@ -38,6 +38,7 @@ class visitor_masterController extends Controller
                     concat_ws(" ", u.first_name, u.middle_name, u.last_name) 
                 END as staff_name'),
             DB::raw('if(out_time = "00:00:00","green","") as status'),
+            DB::raw('(SELECT CONCAT_WS(" ",COALESCE(first_name,"-"),COALESCE(middle_name,"-"),COALESCE(last_name,"-")) from tbluser where id=visitor_master.created_by) as created_by'),
             'vt.title as visitor_type_name')
             ->leftjoin('tbluser as u',function($join){
                 $join->on('u.id', '=', 'visitor_master.to_meet')->where('u.status',1); // 23-04-24 by uma
@@ -48,7 +49,7 @@ class visitor_masterController extends Controller
             ->join('visitor_type as vt', 'vt.id', '=', 'visitor_master.visitor_type')
             ->where(['visitor_master.sub_institute_id' => $sub_institute_id, 'meet_date' => date('Y-m-d')])
             ->get();
-
+            // echo "<pre>";print_r($data);exit;
         $visitor_data['status_code'] = 1;
         $visitor_data['data'] = $data;
         $type = $request->input('type');
@@ -141,6 +142,7 @@ class visitor_masterController extends Controller
 
         if ($type != "API") {
             $sub_institute_id = $request->session()->get('sub_institute_id');
+            $created_by = $request->session()->get('user_id');
         } else {
             try {
                 if (! $this->jwtToken()->validate()) {
@@ -155,6 +157,7 @@ class visitor_masterController extends Controller
             }
 
             $sub_institute_id = $request->input('sub_institute_id');
+            $created_by = $request->input('user_id');
             $appointment_type = $request->input('appointment_type');
             $visitor_type = $request->input('visitor_type');
             $name = $request->input('name');
@@ -205,6 +208,7 @@ class visitor_masterController extends Controller
             'photo'            => $newfilename,
             'file_size'        => $size,
             'file_type'        => $ext,
+            'created_by'       => $created_by,
             'meet_date'        => $meet_date,
             'in_time'          => $in_time,
             'sub_institute_id' => $sub_institute_id,
@@ -229,7 +233,7 @@ class visitor_masterController extends Controller
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $data = visitor_masterModel::find($id);
-
+        // set_time_limit(300); // to prevent maximum execution error
         $data['visitor_type_data'] = visitor_typeModel::where(['sub_institute_id' => $sub_institute_id])->get();
         $data['to_meet_array'] = tbluserModel::select(
             'id', DB::raw('concat(first_name," ",middle_name," ",last_name) as staff_name'))
@@ -241,6 +245,7 @@ class visitor_masterController extends Controller
     public function update(Request $request, $id)
     {
         $sub_institute_id = $request->session()->get('sub_institute_id');
+        $created_by = $request->session()->get('user_id');
 
         $visitor = [
             'appointment_type' => $request->get('appointment_type'),
@@ -256,6 +261,7 @@ class visitor_masterController extends Controller
             'sub_institute_id' => $sub_institute_id,
             'exit_msg_sent'    => 'Y',
             'updated_at'       => now(),
+            'created_by'      => $created_by,
         ];
 
         if ($request->get('hid_out_time') == "00:00:00") {
@@ -456,6 +462,7 @@ class visitor_masterController extends Controller
     public function confirmOTP(Request $request){
         $type= $request->type;
         $sub_institute_id=session()->get('sub_institute_id');
+        $created_by=session()->get('user_id');
         if($type=="API"){
             try {
                 if (! $this->jwtToken()->validate()) {
@@ -469,6 +476,7 @@ class visitor_masterController extends Controller
                 return response()->json($response, 401);
             }
             $sub_institute_id=$request->sub_institute_id;
+            $created_by=$request->user_id;
         }
         $person_name = $request->person_name;
         $relation = $request->relation;
@@ -497,6 +505,7 @@ class visitor_masterController extends Controller
                 'sub_institute_id' => $sub_institute_id,
                 'exit_msg_sent'    => 'Y',
                 'created_at'       => now(),
+                'created_by'       => $created_by,
             ];
     
             $visitor_id = visitor_masterModel::insertGetId($visitor);

@@ -225,6 +225,7 @@ Route::get('document_details', [studentTransferController::class, 'DocumentTypeD
 // url with parameter http://127.0.0.1:8000/add_students?sub_institute_id=257&syear=2024&type=web
 Route::get('add_students', [tblstudentController::class,'index'])->name('add_students.index');
 Route::post('add_students/store', [tblstudentController::class,'store'])->name('add_students.store');
+Route::get('checkExists', [tblstudentController::class,'checkExists'])->name('checkExists');
 // Route::post('front_desk/leave_application/add_leave_application', function(){
 //     echo "asds";
 // });

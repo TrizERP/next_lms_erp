@@ -16,7 +16,8 @@
                     $field = Session::get('data');
                     $parent_communication = ['N'=>"Subject Wise","Y"=>"Class Teacher wise"];
                     $timetable_ai = ["0"=>"Standard Wise","1"=>"Teacher wise"];
-                    $sandwich_leave = $multi_login =$timeTableTeacher = ["Yes","No"];
+                    $sandwich_leave = $multi_login =$timeTableTeacher= ["Yes","No"];
+                    $bulkDiscount = ["No","Yes"];
                     $casual_leave = [0,1,2,3,4,5];                    
                 @endphp 
                 @if ($sessionData = Session::get('data'))
@@ -133,7 +134,28 @@
                                     </div>
                                 </td>
                             </tr>
-
+                            <!-- 3 month fees bulk discount-->
+                            <tr>
+                                <th>If students pay 3 months fees at once, should we give a discount?<br>And if yes, how much should we give?</th>
+                                <td>
+                                    <div class="row">
+                                        <div class="col-md-4 form-group" style="margin-left: 0px !important">
+                                            <label for="" style="margin-left: 50px;">Select Discount</label>
+                                            <select id='bulkDiscount' name="bulkDiscount" class="form-control" style="margin-left: 50px;" onchange="makeAmountReq()">
+                                            @foreach($bulkDiscount as $key=>$value)
+                                                <option value="{{ $value }}" @if(isset($data['get_bulkDiscount']->fieldvalue) && $data['get_bulkDiscount']->fieldvalue == $value) selected @endif >
+                                                    {{ $value }}
+                                                </option>
+                                            @endforeach
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4 form-group" style="margin-left: 0px !important">
+                                           <label for="">Discount Amount</label>
+                                           <input type="text" name="bulkDiscountAmt" id="bulkDiscountAmt" class="form-control" @if(isset($data['get_bulkDiscount']->extra_field1)) value="{{$data['get_bulkDiscount']->extra_field1}}" @endif>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -146,6 +168,15 @@
         </div>
     </div>
 </div>
-
+<script>
+    function makeAmountReq(){
+        var bulkDiscount =$('#bulkDiscount').val();
+        if(bulkDiscount==='Yes'){
+            $('#bulkDiscountAmt').prop('required',true);
+        }else{
+            $('#bulkDiscountAmt').prop('required',true);
+        }
+    }
+</script>
 @include('includes.footerJs')
 @include('includes.footer')
