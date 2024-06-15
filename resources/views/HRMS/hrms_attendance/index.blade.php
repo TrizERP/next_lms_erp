@@ -182,8 +182,8 @@
                             <td>{{ $j++ }}</td>
                             <td>{{ $data['hrms_attendance']->day ?? '' }}</td>
                             <td>{{ $get_employe_name->first_name ?? ''}} {{ $get_employe_name->last_name ?? ''}}</td>
-                            <td>{{ isset($data['hrms_attendance']->punchin_time) ? \Carbon\Carbon::parse($data['hrms_attendance']->punchin_time)->format('h:i A') : 'N/A' }}</td>
-                            <td>{{ isset($data['hrms_attendance']->punchout_time) ? \Carbon\Carbon::parse($data['hrms_attendance']->punchout_time)->format('h:i A') : 'N/A' }}</td>
+                            <td>{{ isset($data['hrms_attendance']->punchin_time) ? \Carbon\Carbon::parse($data['hrms_attendance']->punchin_time)->format('h:i A') : '-' }}</td>
+                            <td>{{ isset($data['hrms_attendance']->punchout_time) ? \Carbon\Carbon::parse($data['hrms_attendance']->punchout_time)->format('h:i A') : '-' }}</td>
                         </tr>
                     </tbody>
                 </table>

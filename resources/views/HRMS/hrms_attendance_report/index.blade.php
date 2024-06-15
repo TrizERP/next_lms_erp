@@ -211,9 +211,9 @@
                                         <td>{{date('d-m-Y',strtotime($date))}}</td>
                                         <td>{{ isset($hrmsAttendance->employee_no) ? $hrmsAttendance->employee_no : '' }}</td>
                                         <td>{{ isset($hrmsAttendance->employee_name) ? $hrmsAttendance->employee_name : '' }}</td>
-                                        <td>{{ isset($hrmsAttendance->punchin_time) ? \Carbon\Carbon::parse($hrmsAttendance->punchin_time)->format('h:i A') : 'N/A' }}</td>
-                                        <td>{{ isset($hrmsAttendance->punchout_time) ? \Carbon\Carbon::parse($hrmsAttendance->punchout_time)->format('h:i A') : 'N/A' }}</td>
-                                        <td>{{ isset($hrmsAttendance->timestamp_diff) ? \Carbon\Carbon::parse($hrmsAttendance->timestamp_diff)->format('H:i') : '00:00' }}</td>
+                                        <td>{{ isset($hrmsAttendance->punchin_time) ? \Carbon\Carbon::parse($hrmsAttendance->punchin_time)->format('h:i A') : '-' }}</td>
+                                        <td>{{ isset($hrmsAttendance->punchout_time) ? \Carbon\Carbon::parse($hrmsAttendance->punchout_time)->format('h:i A') : '-' }}</td>
+                                        <td>{{ isset($hrmsAttendance->timestamp_diff) ? \Carbon\Carbon::parse($hrmsAttendance->timestamp_diff)->format('H:i') : '-' }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>
