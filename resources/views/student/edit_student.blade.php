@@ -746,6 +746,10 @@ datalist {
                                                     <label>Relation With Student </label>
                                                     <input type="text" id='relation_with_student' placeholder="Relation With Student" value="{{$fvalue['relation_with_student']}}" name="relation_with_students[]" class="form-control">
                                                 </div>
+                                                <div class="col-md-4 form-group">
+                                                    <label>Annual Income</label>
+                                                    <input type="text" id='annual_income' placeholder="Annual Income" value="{{$fvalue['annual_income']}}" name="annual_income[]" class="form-control">
+                                                </div>
                                                 <div style="height:60px; width:100%; clear:both;"></div>
                                             </div>
                                     </div>
@@ -776,6 +780,10 @@ datalist {
                                             <div class="col-md-4 form-group">
                                                 <label>Relation With Student </label>
                                                 <input type="text" id='relation_with_student' placeholder="Relation With Student" name="relation_with_students[]" class="form-control">
+                                            </div>
+                                            <div class="col-md-4 form-group">
+                                                <label>Annual Income</label>
+                                                <input type="text" id='annual_income' placeholder="Annual Income" name="annual_income[]" class="form-control">
                                             </div>
                                             <div class="clearfix"></div>
                                         </div>
