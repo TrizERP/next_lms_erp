@@ -15,6 +15,7 @@ use App\Http\Controllers\front_desk\timetableController;
 use App\Http\Controllers\front_desk\timetableAiController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\school_setup\timetableController as oldtimetableController;
+use App\Http\Controllers\front_desk\castController;
 
 Route::group(['prefix' => 'frontdesk', 'middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::resource('frontdesk', frontdeskController::class);
@@ -45,4 +46,6 @@ Route::group(['prefix' => 'front_desk', 'middleware' => ['session', 'menu', 'log
     Route::get('add_remove_Batch_Timetable', [oldtimetableController::class, 'getBatchTimetable'])->name('add_remove_Batch_Timetable');
 	Route::get('Delete_Timetable', [oldtimetableController::class, 'deleteTimetable'])->name('Delete_Timetable');
     Route::get('add_new_stdandardDiv', [oldtimetableController::class, 'addNewStdandardDiv'])->name('add_new_stdandardDiv');	
+	Route::resource('add_cast', castController::class);
+
 });
