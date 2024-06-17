@@ -55,6 +55,7 @@ use App\Http\Controllers\fees\fees_month_header\feesMonthHeadercontroller;
 use App\Http\Controllers\fees\fees_report\studentBreakoffReportController;
 use App\Http\Controllers\fees\fees_reconciliation\fees_reconciliation_upload_sheet_controller;
 use App\Http\Controllers\fees\feesAIController;
+use App\Http\Controllers\fees\fees_report\monthwiseReceiptPdfController;
 use Illuminate\Support\Facades\Route;
 
 Route::group(['prefix' => 'fees', 'middleware' => ['session', 'menu', 'logRoute']], function () {
@@ -87,7 +88,7 @@ Route::group(['prefix' => 'fees', 'middleware' => ['session', 'menu', 'logRoute'
     Route::resource('fees_overall_report', feesOverallReportController::class);
     Route::resource('fees_defaulter_report', feesDefaulterReportController::class);
     Route::resource('fees_status_report', feesStatusController::class);
-
+    Route::resource('monthly_receipt_pdf',monthwiseReceiptPdfController::class);
     // Remain fees send SMS
     Route::post('fees_remain_sms', [feesStatusController::class, 'ajaxRemainFeesSMSsend'])->name('remainFeesNotification');
 
