@@ -493,6 +493,10 @@ datalist {
                                             </select>
                                         </div>
                                         @if(session()->get('sub_institute_id')!=257)
+                                        <div class="col-md-4 form-group text-left" >
+                                            <label>Mother Tongue<span style="color: red;">*</span></label>
+                                            <input type="text" name="mother_tongue" id='mother_tongue' class="form-control" value="{{ $student_data->mother_tongue }}">
+                                        </div>
                                         <div class="col-md-4 form-group">
                                             <label>Distance From School</label>
                                             <select id='distance_from_school' name="distance_from_school" class="form-control">
