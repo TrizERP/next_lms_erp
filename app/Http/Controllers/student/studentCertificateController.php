@@ -252,7 +252,7 @@ class studentCertificateController extends Controller
         else
             $display_year = $syear."-".($syear + 1);
 
-        if($sub_institute_id == 254)
+        if($sub_institute_id == 254 && $template!='Transfer Certificate')
             $logo_height = 'style="height: 50px !important;"';
         else
             $logo_height = 'style="width: 100px !important;height: 100px !important;"';
