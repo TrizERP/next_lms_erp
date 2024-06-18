@@ -280,7 +280,7 @@ $route = ['dashboard'];
   jQuery('.mydatepicker, #datepicker').datepicker({
     changeMonth: true,
     changeYear: true,
-    yearRange: "-40:+10",
+    yearRange: "-74:+10",
     inline: true,
     autoclose: true,
     format: 'dd-mm-yyyy',

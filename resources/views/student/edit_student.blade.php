@@ -493,6 +493,10 @@ datalist {
                                             </select>
                                         </div>
                                         @if(session()->get('sub_institute_id')!=257)
+                                        <div class="col-md-4 form-group text-left" >
+                                            <label>Mother Tongue<span style="color: red;">*</span></label>
+                                            <input type="text" name="mother_tongue" id='mother_tongue' class="form-control" value="{{ $student_data->mother_tongue }}">
+                                        </div>
                                         <div class="col-md-4 form-group">
                                             <label>Distance From School</label>
                                             <select id='distance_from_school' name="distance_from_school" class="form-control">
@@ -742,6 +746,10 @@ datalist {
                                                     <label>Relation With Student </label>
                                                     <input type="text" id='relation_with_student' placeholder="Relation With Student" value="{{$fvalue['relation_with_student']}}" name="relation_with_students[]" class="form-control">
                                                 </div>
+                                                <div class="col-md-4 form-group">
+                                                    <label>Annual Income</label>
+                                                    <input type="text" id='annual_income' placeholder="Annual Income" value="{{$fvalue['annual_income']}}" name="annual_income[]" class="form-control">
+                                                </div>
                                                 <div style="height:60px; width:100%; clear:both;"></div>
                                             </div>
                                     </div>
@@ -772,6 +780,10 @@ datalist {
                                             <div class="col-md-4 form-group">
                                                 <label>Relation With Student </label>
                                                 <input type="text" id='relation_with_student' placeholder="Relation With Student" name="relation_with_students[]" class="form-control">
+                                            </div>
+                                            <div class="col-md-4 form-group">
+                                                <label>Annual Income</label>
+                                                <input type="text" id='annual_income' placeholder="Annual Income" name="annual_income[]" class="form-control">
                                             </div>
                                             <div class="clearfix"></div>
                                         </div>

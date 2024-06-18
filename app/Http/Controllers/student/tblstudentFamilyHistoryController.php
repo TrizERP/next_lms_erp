@@ -49,6 +49,7 @@ class tblstudentFamilyHistoryController extends Controller
         $years = $request['years'];
         $percentages = $request['percentages'];
         $relation_with_students = $request['relation_with_students'];
+        $annual_income = $request['annual_income'];
 
         tblstudentFamilyHistoryModel::where(["student_id"       => $request->input('student_id'),
                                              "sub_institute_id" => $sub_institute_id,
@@ -59,6 +60,7 @@ class tblstudentFamilyHistoryController extends Controller
         $request->request->remove('percentages');
         $request->request->remove('years');
         $request->request->remove('relation_with_students');
+        $request->request->remove('annual_income');
 
         foreach ($names as $key => $value) {
             if ($value == '') {
@@ -70,6 +72,7 @@ class tblstudentFamilyHistoryController extends Controller
             $request->request->set('year', $years[$key]);
             $request->request->set('percentage', $percentages[$key]);
             $request->request->set('relation_with_student', $relation_with_students[$key]);
+            $request->request->set('annual_income', $annual_income[$key]);
             $data = $this->saveData($request);
         }
         

@@ -373,6 +373,13 @@
                             <label>{{ App\Helpers\get_string('nationality','request')}}<i class="mdi mdi-lead-pencil"></i></label>
                             <input type="text" id='nationality' name="nationality" class="form-control">
                         </div>    
+                        @if(session()->get('sub_institute_id')!=257)
+                            <div class="col-md-4 form-group text-left" >
+                                <label>Mother Tongue<span style="color: red;">*</span></label>
+                                <input type="text" name="mother_tongue" id='mother_tongue' class="form-control">
+                            </div>
+                        @endif
+
                             @if(isset($data['custom_fields']))
                             @foreach($data['custom_fields'] as $key => $value)
                             <div class="col-md-4 form-group text-left">
