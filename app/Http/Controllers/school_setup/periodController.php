@@ -55,7 +55,7 @@ class periodController extends Controller
 
     public function store(Request $request)
     {
-        ValidateInsertData('period', 'insert');
+        //ValidateInsertData('period', 'insert');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $length = $this->gettime_diff($request->get('start_time'), $request->get('end_time'));
         $marking_period_id = session()->get('term_id');
@@ -127,7 +127,7 @@ class periodController extends Controller
 
     public function update(Request $request, $id)
     {
-        ValidateInsertData('period', 'update');
+        //ValidateInsertData('period', 'update');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $length = $this->gettime_diff($request->get('start_time'), $request->get('end_time'));
         $marking_period_id = session()->get('term_id');
