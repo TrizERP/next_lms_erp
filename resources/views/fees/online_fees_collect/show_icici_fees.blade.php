@@ -532,9 +532,17 @@
                 if(general_setting && Object.keys(general_setting).length > 0){
                     if (checkedMonths.length > 0) {
                         lastMonth = checkedMonths[checkedMonths.length - 1];
-                        console.log(checkedMonths.length);
-                        if(lastMonth >= 42024 && checkedMonths.length>=3){
-                            $('#totalDiscount').val(general_setting.extra_field1);
+                        console.log(general_setting);
+                        // get months greater then equal to current month
+                        let greaterMonths = checkedMonths.filter(month => month >= currentMonth);
+
+                        // if(lastMonth >= currentMonth && checkedMonths.length>=3){
+                        if (lastMonth >= currentMonth && greaterMonths.length >= 3) {
+                            var totalVal = parseFloat($('#totalVal').val());
+                            var dicountPer = general_setting.extra_field1;
+                            var perVal = (dicountPer/100) * totalVal; 
+                        
+                            $('#totalDiscount').val(perVal);
                         }else{
                             $('#totalDiscount').val(0);
                         }
