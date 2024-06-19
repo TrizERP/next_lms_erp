@@ -1204,9 +1204,9 @@ exit; */
         $syear = $request->syear;
         $sub_institute_id= $request->sub_institute_id;
         $amount= $request->amount;
-        $cheque_no= $request->cheque_no;
+        $transactionid= $request->transactionid;
         $fine= $request->fine;  
-        $payment_mode= $request->payment_mode ?? 'GPAY';
+        $bank_name= $request->bank_name ?? 'GPAY';
         
         // validate requried fields 
         $validate = Validator::make($request->all(), [
@@ -1326,11 +1326,11 @@ exit; */
                 "fine" => $final_fees_arr["fine"],
                 "totalDis" => 0,
                 "totalFin" => 0,
-                "PAYMENT_MODE" => $payment_mode,
+                "PAYMENT_MODE" => 'Online',
                 "receiptdate" => date("Y-m-d"),
                 "cheque_date" => "",
-                "cheque_no" => $cheque_no,
-                "bank_name" => $payment_mode,
+                "cheque_no" => $transactionid,
+                "bank_name" => $bank_name,
                 "bank_branch" => "",
                 "send_sms"=>$send_sms,
                 "submit" => "Save",
