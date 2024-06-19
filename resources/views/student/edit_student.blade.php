@@ -465,7 +465,7 @@ datalist {
                                         @endif  
                                         @if(session()->get('sub_institute_id')!=257)
                                         <div class="col-md-4 form-group">
-                                            <label>Dise Uid</label>
+                                            <label>{{ App\Helpers\get_string('udise_id','request')}}</label>
                                             <input type="text" id='dise_uid' value="{{ $student_data->dise_uid }}" name="dise_uid" class="form-control">
                                         </div>  
                                         <div class="col-md-4 form-group">
