@@ -77,8 +77,8 @@
                             <td>{{$value->standard}} / {{$value->division}}</td>
                             <td>{{$value->amount}}</td>
                         </tr>
-                        <input type="hidden" name="studentData[{{$value->student_id}}][receipt_no]" value="{{$value->receipt_no}}">
-                        <textarea name="studentData[{{$value->student_id}}][fees_html]" id="fees_html" class="d-none">{{$value->fees_html}}</textarea>
+                        <input type="hidden" name="receipt_no[{{$value->student_id}}]" value="{{$value->receipt_no}}">
+                        <textarea name="studentData[{{$value->student_id}}]" id="fees_html" class="d-none">{{$value->fees_html}}</textarea>
                         @endforeach
                     </tbody>
                 </table>

@@ -2893,7 +2893,7 @@ class adminapiController extends Controller
 
             $data = DB::table('student_capture_photos as s')
                 ->selectRaw("s.syear,s.sub_institute_id,s.student_id,if(s.stu_image = '','',
-                    CONCAT('http://".$_SERVER['SERVER_NAME']."/storage/capture_photos/".$student_id."/',s.stu_image)) as stu_image")
+                    CONCAT('https://".$_SERVER['SERVER_NAME']."/storage/capture_photos/".$student_id."/',s.stu_image)) as stu_image")
                 ->where('s.student_id', $student_id)
                 ->where('s.sub_institute_id', $sub_institute_id)
                 ->when($request->type_id,function($query) use($request){
