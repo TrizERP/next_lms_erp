@@ -66,46 +66,58 @@ class monthwiseReceiptPdfController extends Controller
         $fees_receipt_css = "<style>" . $getFeesCss . "</style>";
         
         $files = [];
-
+        $i=1;
+        echo "<pre>";print_r($request->receipt_no);exit;
         foreach($request->studentData as $key => $value){
-            $receipt_no = str_replace('/','_',$value['receipt_no']).'.pdf';
+            $receipt_no = isset($value['receipt_no']) ? str_replace('/','_',$value['receipt_no']).'.pdf' : $i.'.pdf';
             $fees_html = $value['fees_html'];
             $pdfFilePath = $directoryPath . '/'.$receipt_no;
             $files[]=$pdfFilePath;
 
-            $dom = '<!DOCTYPE html>
-                    <html>
-                        <head>
-                        <title></title>
-                        <meta charset="UTF-8">
-                        <meta name="viewport" content="width=erpice-width, initial-scale=1.0">';
-            $dom .= $fees_receipt_css; // for css 
-            $dom .='</head>
-                        <body>'.$fees_html.'</body>
-                </html>';
+            if(isset($fees_html)){
+                $dom = '<!DOCTYPE html>
+                <html>
+                    <head>
+                    <title></title>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=erpice-width, initial-scale=1.0">';
+                    $dom .= $fees_receipt_css; // for css 
+                    $dom .='</head>
+                                <body>'.$fees_html ?? 'No data' .'</body>
+                        </html>';
 
-            set_time_limit(300);
-            // Generate the PDF
-            $pdf = PDF::loadHTML($dom);
-            // echo "<pre>";print_r($dom);exit;
+                    set_time_limit(300);
+                    // Generate the PDF
+                    $pdf = PDF::loadHTML($dom);
+                    // echo "<pre>";print_r($dom);exit;
+                    
+                    // Save the PDF to the specified path
+                    $pdf->save($pdfFilePath);
+                    $i++;
+            }
             
-            // Save the PDF to the specified path
-            $pdf->save($pdfFilePath);
         }
        
-        $zipFileName = 'bulk_receipt.zip';
+            $zipFileName = 'bulk_receipt.zip';
 
-        $zip = new ZipArchive;
+            $zip = new ZipArchive;
+            if(!empty($files)){
+                if ($zip->open(public_path($zipFileName), ZipArchive::CREATE) === TRUE) {
+                    foreach ($files as $file) {
+                        if (file_exists($file)) {
+                            $zip->addFile($file, basename($file));
+                        }
+                    }
+                    $zip->close();
+        
+                    return response()->download(public_path($zipFileName))->deleteFileAfterSend(true);
+            }else{
+                $res['status_code']=0;
+                $res['message']='Failed to download files';
 
-        if ($zip->open(public_path($zipFileName), ZipArchive::CREATE) === TRUE) {
-            foreach ($files as $file) {
-                if (file_exists($file)) {
-                    $zip->addFile($file, basename($file));
-                }
+                return is_mobile($type, "monthly_receipt_pdf.index", $res);
             }
-            $zip->close();
-
-            return response()->download(public_path($zipFileName))->deleteFileAfterSend(true);
+       
         } else {
             $res['status_code']=0;
             $res['message']='Failed to download files';

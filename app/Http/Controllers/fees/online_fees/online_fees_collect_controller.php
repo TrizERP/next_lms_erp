@@ -159,19 +159,49 @@ class online_fees_collect_controller extends Controller
             ->get();
         $amount = 0;
         if ($payment_acsept_type == "fix") {
-            $amount = number_format(floatval($_REQUEST["total"]), 0, '.', '');
+            $amount = number_format(floatval($_REQUEST["total"]), 2, '.', '');
         } else {
-            $amount = number_format(floatval($_REQUEST["pay_amount"]), 0, '.', '');
+            $amount = number_format(floatval($_REQUEST["pay_amount"]), 2, '.', '');
         }
 
         $txnid = substr(hash('sha256', mt_rand() . microtime()), 0, 20);
         $orderId = $_REQUEST["student_id"] . (mt_rand(10, 10000000000));
+        
+        $working_key = $get_map_bank_detail[0]->working_code; //Shared by CCAVENUES
+        // $working_key = "94C918B28626FB1A085AAB522E32A402"; //Shared by CCAVENUES
+        $access_code = $get_map_bank_detail[0]->access_code;
+        // $access_code = "AVPL86GG59BJ25LPJB";
+        $return_url = $this->site_name() . "fees/hdfc/online_fees_hdfcResponseHandler";
+        $send_arr = array(
+            "merchant_id" => $get_map_bank_detail[0]->merchant_id,
+            "order_id" => $orderId,
+            "currency" => "INR",
+            "amount" => $amount,
+            "redirect_url" => $return_url,
+            "cancel_url" => $return_url,
+            "language" => "en",
+            "merchant_param1" => $_REQUEST["student_id"],
+            "merchant_param2" => session()->get("syear"),
+            "merchant_param3" => $txnid,                                                                        
+            "merchant_param4" => session()->get("sub_institute_id"),
+            "merchant_param5" => session()->get("sub_institute_id"),
+            "tid" => strtotime(date('Y-m-d H:i:s')),
+        );
+        $merchant_data = "";
+        foreach ($send_arr as $key => $value) {
+            $merchant_data .= $key . '=' . $value . '&';
+        }
+        $encrypted_data = $this->hdfc_encrypt($merchant_data, $working_key); // Method for encrypting the data.
+
+        //Insert Raw data in fees_payment table
         $in_arr = array(
             "student_id" => $_REQUEST["student_id"],
             "syear" => session()->get("syear"),
             "amount" => $amount,
             "hdfc_order_id" => $orderId,
             "hdfc_transaction_id" => $txnid,
+            "hdfc_plain_request" => $merchant_data,
+            "hdfc_encrypt_request" => $encrypted_data,
             "hdfc_payment_status" => "PR",
             "hdfc_payment_date" => now(),
             "sub_institute_id" => session()->get("sub_institute_id"),
@@ -180,30 +210,7 @@ class online_fees_collect_controller extends Controller
         );
         DB::table("fees_payment")
             ->insert($in_arr);
-        $working_key = $get_map_bank_detail[0]->working_code; //Shared by CCAVENUES
-        // $working_key = "94C918B28626FB1A085AAB522E32A402"; //Shared by CCAVENUES
-        $access_code = $get_map_bank_detail[0]->access_code;
-        // $access_code = "AVPL86GG59BJ25LPJB";
-        $return_url = $this->site_name() . "fees/hdfc/online_fees_hdfcResponseHandler";
-        $send_arr = array(
-            "tid" => strtotime(date('Y-m-d H:i:s')),
-            "sub_institute_id" => session()->get("sub_institute_id"),
-            "merchant_id" => $get_map_bank_detail[0]->merchant_id,
-            "language" => "EN",
-            "order_id" => $orderId,
-            "amount" => $amount,
-            "currency" => "INR",
-            "redirect_url" => $return_url,
-            "cancel_url" => $return_url,
-            "merchant_param1" => $_REQUEST["student_id"],
-            "merchant_param2" => session()->get("syear"),
-            "merchant_param3" => $txnid,
-        );
-        $merchant_data = "";
-        foreach ($send_arr as $key => $value) {
-            $merchant_data .= $key . '=' . $value . '&';
-        }
-        $encrypted_data = $this->hdfc_encrypt($merchant_data, $working_key); // Method for encrypting the data.
+        
         $type = "web";
         $data = array(
             "merchant_data" => $encrypted_data,
