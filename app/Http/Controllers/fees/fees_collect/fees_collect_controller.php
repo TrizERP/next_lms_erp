@@ -728,7 +728,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
         }
         // echo "<pre>";print_r($receipt_html);exit;
 
-        if(isset($res['data']) && !empty($receipt_html) && isset($_REQUEST['send_sms']) && $_REQUEST['send_sms']!=''){
+        if(isset($res['data']) && !empty($receipt_html) && isset($_REQUEST['send_sms']) && $_REQUEST['send_sms']=='on'){
         // send sms to parent after fees paid
             $res['sms_sent'] = $this->send_sms_to_parents($res);
         }

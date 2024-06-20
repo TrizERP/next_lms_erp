@@ -312,7 +312,7 @@ class studentCertificateController extends Controller
             $subject_names = implode(',',$subject_names);
         }
         $get_standard_subjects = DB::table('sub_std_map as ssm')
-      ->select(DB::raw('GROUP_CONCAT(IFNULL(ssm.display_name, "-")) as subject_name'))
+      ->select(DB::raw('GROUP_CONCAT(IFNULL(ssm.display_name, "-")) as subject_name'),DB::raw('GROUP_CONCAT(IFNULL(ssm.elective_subject, "-")) as elective_subject'))
         ->join('standard as s', 's.id', '=', 'ssm.standard_id')
         ->where('ssm.sub_institute_id', session()->get('sub_institute_id'))
         ->where('ssm.standard_id', $value['standard_id'])
@@ -320,7 +320,29 @@ class studentCertificateController extends Controller
         ->groupBy('ssm.standard_id')
         ->orderBy('ssm.sort_order')
         ->first();
+        $mainSub = $optionalSub = [];
+        // mmis optional and main subject in different lines
+        if($sub_institute_id==47){
+            if(isset($get_standard_subjects->elective_subject)){
 
+                $electiveExplode = explode(',',$get_standard_subjects->elective_subject);
+                $subjectExplode = explode(',',$get_standard_subjects->subject_name);
+
+                foreach($electiveExplode as $key=>$val){
+                    if($val=='Yes'){
+                        $optionalSub[] = $subjectExplode[$key]; 
+                    }else{
+                        $mainSub[] = $subjectExplode[$key]; 
+                    }
+                }
+            }
+            $optionalImplode = implode(',',$optionalSub);
+            $subjectImplode = implode(',',$mainSub);
+            $tdOptionalData = $subjectImplode.'<br>'.$optionalImplode;
+        }else{
+            $tdOptionalData = optional($get_standard_subjects)->subject_name ?? '-';
+        }
+        // echo "<pre>";print_r($tdOptionalData);exit;
         $get_student_attendances = DB::table('attendance_student')
         ->select(DB::raw('COUNT(id) as total_att_days,sum(CASE WHEN attendance_code = "P" THEN 1 ELSE 0 END) as present_att_days'))
         ->where('sub_institute_id', session()->get('sub_institute_id'))
@@ -417,7 +439,7 @@ class studentCertificateController extends Controller
         if($sub_institute_id==254){
             $html_content = str_replace(htmlspecialchars("<<subjects_studied_system>>"),strtoupper($subject_names),$html_content);
         }else{
-            $html_content = str_replace(htmlspecialchars("<<subjects_studied_system>>"),strtoupper(optional($get_standard_subjects)->subject_name ?? '-'),$html_content);
+            $html_content = str_replace(htmlspecialchars("<<subjects_studied_system>>"),strtoupper($tdOptionalData),$html_content);
         }
        
         $html_content = str_replace(htmlspecialchars("<<subjects_studied_value>>"),strtoupper($value['subjects_studied']), $html_content);

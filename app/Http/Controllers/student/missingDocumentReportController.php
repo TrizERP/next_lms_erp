@@ -80,8 +80,11 @@ class missingDocumentReportController extends Controller
             $res['message'] = "User Type Not Selected";
         }
 
-
-        $docment_type_data = documentTypeModel::select('*')->where('user_type',$user_type)->get()->toArray();
+        $docment_type_data = documentTypeModel::select('student_document_type.*')->when($standard_id!='',function($query) use($standard_id){
+            $query->join('tblstudent_doc_std_mapping','student_document_type.id','=','tblstudent_doc_std_mapping.document_type_id')->where('tblstudent_doc_std_mapping.standard_id',$standard_id);
+        })
+        ->where('student_document_type.user_type',$user_type)
+        ->get()->toArray();
 
         $res['status_code'] = 1;
         $res['message'] = "Success";

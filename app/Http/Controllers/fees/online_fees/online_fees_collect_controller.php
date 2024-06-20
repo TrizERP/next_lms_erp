@@ -1002,6 +1002,7 @@ exit; */
         //print_r($fees_bk_data);
         //exit;
         $fees_config = DB::table('fees_config_master')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear])->first();
+
         $ajx_controller = new AJAXController;
         if ($payment_acsept_type == "fix") {
             // creating month arr
@@ -1302,13 +1303,15 @@ exit; */
             
             $discount_data_arr = array();
             $fine_data_arr = array();
+
+            $fees_config = DB::table('fees_config_master')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear])->first();
             foreach ($final_fees_arr as $id => $val) {
                 $discount_data_arr[$id] = 0;
                 $fine_data_arr[$id] = 0;
             }
             
-                $send_sms ='';
-                if(isset($fees_config->send_sms) && $fees_config->send_sms == 1){
+            $send_sms ='';
+            if(isset($fees_config->send_sms) && $fees_config->send_sms == 1){
                 $send_sms = "on";
             }
             // creating final send arr
