@@ -150,8 +150,8 @@
                                             </select>
                                         </div>
                                         <div class="col-md-4 form-group" style="margin-left: 0px !important">
-                                           <label for="">Discount Amount</label>
-                                           <input type="text" name="bulkDiscountAmt" id="bulkDiscountAmt" class="form-control" @if(isset($data['get_bulkDiscount']->extra_field1)) value="{{$data['get_bulkDiscount']->extra_field1}}" @endif>
+                                           <label for="">Discount Percentage</label>
+                                           <input type="number" name="bulkDiscountAmt" id="bulkDiscountAmt" class="form-control" @if(isset($data['get_bulkDiscount']->extra_field1)) value="{{$data['get_bulkDiscount']->extra_field1}}" @endif>
                                         </div>
                                     </div>
                                 </td>

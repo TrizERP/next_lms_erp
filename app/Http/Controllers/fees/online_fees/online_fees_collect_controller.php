@@ -1043,6 +1043,7 @@ exit; */
         //print_r($fees_bk_data);
         //exit;
         $fees_config = DB::table('fees_config_master')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear])->first();
+
         $ajx_controller = new AJAXController;
         if ($payment_acsept_type == "fix") {
             // creating month arr
@@ -1252,9 +1253,9 @@ exit; */
         $syear = $request->syear;
         $sub_institute_id= $request->sub_institute_id;
         $amount= $request->amount;
-        $cheque_no= $request->cheque_no;
+        $transactionid= $request->transactionid;
         $fine= $request->fine;  
-        $payment_mode= $request->payment_mode ?? 'GPAY';
+        $bank_name= $request->bank_name ?? 'GPAY';
         
         // validate requried fields 
         $validate = Validator::make($request->all(), [
@@ -1343,13 +1344,15 @@ exit; */
             
             $discount_data_arr = array();
             $fine_data_arr = array();
+
+            $fees_config = DB::table('fees_config_master')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear])->first();
             foreach ($final_fees_arr as $id => $val) {
                 $discount_data_arr[$id] = 0;
                 $fine_data_arr[$id] = 0;
             }
             
-                $send_sms ='';
-                if(isset($fees_config->send_sms) && $fees_config->send_sms == 1){
+            $send_sms ='';
+            if(isset($fees_config->send_sms) && $fees_config->send_sms == 1){
                 $send_sms = "on";
             }
             // creating final send arr
@@ -1374,11 +1377,11 @@ exit; */
                 "fine" => $final_fees_arr["fine"],
                 "totalDis" => 0,
                 "totalFin" => 0,
-                "PAYMENT_MODE" => $payment_mode,
+                "PAYMENT_MODE" => 'Online',
                 "receiptdate" => date("Y-m-d"),
                 "cheque_date" => "",
-                "cheque_no" => $cheque_no,
-                "bank_name" => $payment_mode,
+                "cheque_no" => $transactionid,
+                "bank_name" => $bank_name,
                 "bank_branch" => "",
                 "send_sms"=>$send_sms,
                 "submit" => "Save",
