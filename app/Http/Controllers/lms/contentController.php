@@ -76,7 +76,7 @@ class contentController extends Controller
         $breadcrum_data = $breadcrum_data->get()->toArray();
         // dd($breadcrum_data);
         if(isset($breadcrum_data[0]) && $breadcrum_data != " "){
-        return $breadcrum_data[0];
+        return $breadcrum_data[0] ?? [];
         }
         else{
             return back();
@@ -235,7 +235,7 @@ class contentController extends Controller
         $chapter_data = chapterModel::select('*')        
         ->where(['chapter_master.sub_institute_id'=>$sub_institute_id,'chapter_master.id'=>$request->get('hid_chapter_id')])         
         ->get()->toArray(); 
-        $chapter_data = $chapter_data[0]; 
+        $chapter_data = $chapter_data[0] ?? []; 
 
         $pre_topic = $post_topic = $cross_curriculum_topic = "";
         if($request->get('prechapter') != "")
@@ -342,7 +342,7 @@ class contentController extends Controller
         $chapter_data = chapterModel::select('*')        
         ->where(['chapter_master.sub_institute_id'=>$sub_institute_id,'chapter_master.id'=>$request->get('hid_chapter_id')])         
         ->get()->toArray(); 
-        $chapter_data = $chapter_data[0]; 
+        $chapter_data = $chapter_data[0] ?? []; 
 
         $pre_topic = $post_topic = $cross_curriculum_topic = "";
         if($request->get('prechapter') != "")
@@ -464,8 +464,8 @@ class contentController extends Controller
         $data['pretopicData'] = [];
         if ($data['content_data']['pre_grade_topic'] != "") {
             $pre_arr = explode("####", $data['content_data']['pre_grade_topic']);
-            $pre_arr_chapter_id = $pre_arr[0];
-            $pre_arr_topic_id = $pre_arr[1];
+            $pre_arr_chapter_id = $pre_arr[0] ?? '-';
+            $pre_arr_topic_id = $pre_arr[1] ?? '-';
 
             //If both chapter and topic are mapped
             if ($pre_arr_chapter_id != "" && $pre_arr_topic_id != "") {
@@ -486,7 +486,7 @@ class contentController extends Controller
             }
 
             $pretopicData = json_decode(json_encode($pretopicData), true);
-            $data['pretopicData'] = $pretopicData[0];            
+            $data['pretopicData'] = $pretopicData[0] ?? [];            
         }
         //END Get Pre Topic  
 
@@ -495,8 +495,8 @@ class contentController extends Controller
         if($data['content_data']['post_grade_topic'] != "")
         {
             $post_arr = explode("####",$data['content_data']['post_grade_topic']);
-            $post_arr_chapter_id = $post_arr[0];
-            $post_arr_topic_id = $post_arr[1];
+            $post_arr_chapter_id = $post_arr[0] ?? '-';
+            $post_arr_topic_id = $post_arr[1] ?? '-';
 
             //If both chapter and topic are mapped
             if($post_arr_chapter_id != "" && $post_arr_topic_id != "" ) {
@@ -514,7 +514,7 @@ class contentController extends Controller
 
             }           
             $posttopicData = json_decode(json_encode($posttopicData),true);
-            $data['posttopicData'] = $posttopicData[0];            
+            $data['posttopicData'] = $posttopicData[0] ?? [];            
         }
         //END Get Post Topic 
 

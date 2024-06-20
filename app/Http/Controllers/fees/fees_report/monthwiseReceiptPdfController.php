@@ -51,6 +51,8 @@ class monthwiseReceiptPdfController extends Controller
     public function store(Request $request){
         $type = $request->type;
         $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+        
         // Define the directory and file paths
         $directoryPath = public_path('zip_pdf/'.$sub_institute_id);
 
@@ -64,36 +66,47 @@ class monthwiseReceiptPdfController extends Controller
         $AJAXController = new AJAXController;
         $getFeesCss = $AJAXController->get_FeesCss('fees_receipt');
         $fees_receipt_css = "<style>" . $getFeesCss . "</style>";
-        
+        $pageSize = DB::table('fees_config_master')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear])->value('fees_receipt_template');
+
         $files = [];
         $i=1;
-        echo "<pre>";print_r($request->receipt_no);exit;
         foreach($request->studentData as $key => $value){
-            $receipt_no = isset($value['receipt_no']) ? str_replace('/','_',$value['receipt_no']).'.pdf' : $i.'.pdf';
-            $fees_html = $value['fees_html'];
-            $pdfFilePath = $directoryPath . '/'.$receipt_no;
-            $files[]=$pdfFilePath;
-
+            $receipt_no = isset($value[0]) ? str_replace('/','_',$value[0]) : $i;
+            $fees_html = $value[1];
+            // echo "1 <pre>";dd($fees_html);exit;
+   
             if(isset($fees_html)){
                 $dom = '<!DOCTYPE html>
-                <html>
-                    <head>
-                    <title></title>
-                    <meta charset="UTF-8">
-                    <meta name="viewport" content="width=erpice-width, initial-scale=1.0">';
-                    $dom .= $fees_receipt_css; // for css 
-                    $dom .='</head>
-                                <body>'.$fees_html ?? 'No data' .'</body>
-                        </html>';
+                    <html>
+                        <head>
+                           <title></title>
+                           <meta charset="UTF-8">
+                           <meta name="viewport" content="width=erpice-width, initial-scale=1.0">
+                           <style>@font-face {font-family: "Aakar";src: url("' . asset("fonts/Aakar.ttf") . '") format("truetype");}
+                            body {font-family: "Aakar", sans-serif; // Use the defined font-family}</style>';
+            $dom .= $fees_receipt_css;
+            $dom .= '</head>
+                        <body>';
+            $dom .= $AJAXController->get_PageSetup($pageSize);
+            $dom .= '</body>
+                </html>';
 
-                    set_time_limit(300);
-                    // Generate the PDF
-                    $pdf = PDF::loadHTML($dom);
-                    // echo "<pre>";print_r($dom);exit;
-                    
-                    // Save the PDF to the specified path
-                    $pdf->save($pdfFilePath);
-                    $i++;
+            $save_path = $_SERVER['DOCUMENT_ROOT'] . '/zip_pdf/'.$sub_institute_id;
+
+            $CUR_TIME = date('YmdHis');
+            $html_filename = $receipt_no. '_' . $CUR_TIME . ".html";
+            $pdf_filename = $receipt_no . '_' . $CUR_TIME . ".pdf";
+
+            $html = $fees_html ?? 'No data';
+
+            $html = str_replace('##HTML_SEC##', $html, $dom);
+
+            $html_file_path = $save_path . '/' . $html_filename;
+            $pdf_file_path = $save_path . '/' . $pdf_filename;
+            file_put_contents($html_file_path, $html);
+            $files[] = $pdf_file_path;
+            $htmlToPDF = $AJAXController->htmlToPDF_making('A4', $html_file_path, $pdf_file_path);
+            unlink($html_file_path);
             }
             
         }
