@@ -343,10 +343,13 @@
                                 $all_student=0;
                                 @endphp 
                                 @foreach($data['cn_monthwise_active'] as $key => $value)
+                                    @php 
+                                    $thisMonth =isset($data['months_name'][$value->term_id]) ? $data['months_name'][$value->term_id] : $month_syear[$value->term_id]
+                                    @endphp
                                 <tr>
                                 <td>{{$i++}}</td>
-                                <td>{{ isset($data['months_name'][$value->term_id]) ? $data['months_name'][$value->term_id] : $month_syear[$value->term_id] }}</td>
-                                <td><a href="#" class="get-details-link" data-details="{{ json_encode($data['cn_monthwise_active'][$key]) }}">{{$value->student_count}}</a></td>
+                                <td>{{ $thisMonth }}</td>
+                                <td><a href="#" class="get-details-link" data-modelName="active_student" data-thismonth="{{$thisMonth}}" data-details="{{ json_encode($data['cn_monthwise_active'][$key]) }}">{{$value->student_count}}</a></td>
                                 </tr>
                                 @php 
                                 $all_student+=$value->student_count;
@@ -396,7 +399,7 @@
                                 <td>{{$value->sport}}</td>   
                                 <td>{{$value->coach}}</td>   
                                 <td>{{$value->batch}}</td>                                   
-                               <td><a href="#" class="get-details-link" data-details="{{ json_encode($data['cn_payout'][$key]) }}">{{$value->tot_stu}}</a></td>
+                               <td><a href="#" class="get-details-link" data-modelName="coach&bacth" data-thismonth="{{$value->coach.'/'.$value->batch}}" data-details="{{ json_encode($data['cn_payout'][$key]) }}">{{$value->tot_stu}}</a></td>
                                 </tr>
                                 @endforeach
                                 <tr>
@@ -478,10 +481,13 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <table class="table">
+                    <div class="row">
+                        </div>
+                        <table class="table" id="monthwiseTable">
                             <thead>
+                                <tr><th colspan="6" id="getMonthName" style="text-align:center"></th></tr>
                                 <tr>
-                                <th>Sr No.</th>
+                                    <th>Sr No.</th>
                                     <th>Student Name</th>
                                     <th>Sport</th>
                                     <th>Coach</th>
@@ -491,6 +497,11 @@
                             </thead>
                             <tbody id="studentDetailsBody"></tbody>
                         </table>
+                        <div class="row mt-2">
+                            <div class="col-md-12" id="exportButton">
+                           
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -813,40 +824,18 @@ $(document).ready(function(){
     window.history.replaceState({}, document.title, baseUrl);
 }
     $('[data-toggle="tooltip"]').tooltip();  
-// for modal box 
-//     $('.get-details-link').on('click', function() {
-//     var details = JSON.parse($(this).attr('data-details'));
-
-//     $('#studentDetailsBody').empty();
-
-//     var students = details.students.split(',').map(function(student, index) {
-//         return {
-//             name: details.name.split(',')[index],
-//             sport: details.standard_name.split(',')[index],
-//             coach: details.coach_name.split(',')[index],
-//             batch: details.batch_name.split(',')[index],
-//             mobile: details.mobile.split(',')[index]
-//         };
-//     });
-
-//     students.sort(function(a, b) {
-//         var standardComparison = a.sport.localeCompare(b.sport);
-//         return standardComparison === 0 ? a.coach.localeCompare(b.coach) : standardComparison;
-//     });
-
-//     var j = 1;
-//     students.forEach(function(student) {
-//         $('#studentDetailsBody').append('<tr><td>' + (j++) + '<td>' + student.name + '</td><td>' + student.sport + '</td><td>' + student.coach + '</td><td>' + student.batch + '</td><td>' + student.mobile + '</td></tr>');
-//     });
-
-//     $('#studentDetailModal').modal('show');
-// });
-
+// student model
     $('.get-details-link').on('click', function() {
     var details = JSON.parse($(this).attr('data-details'));
-  
-    $('#studentDetailsBody').empty();
+    var monthName = $(this).attr('data-thismonth');
+    var modelName = $(this).attr('data-modelName');
+    
+    var filename = monthName.replace('/', '-');
 
+    $('#getMonthName').empty().text(monthName);
+    $('#studentDetailsBody').empty();
+    $('#exportButton').empty();
+    
     var students = details.students.split(',').map(function(student, index) {
         return {
             name: details.name.split(',')[index],
@@ -897,10 +886,56 @@ $(document).ready(function(){
     });
 
     $('#studentDetailModal').modal('show');
+    if(modelName==='active_student'){
+        $('#exportButton').append(`<center><button onclick="exportTableToCSV('${filename}.csv')" class="btn btn-primary">Export to CSV</button></center>`);
+    }
 });
 
 
 });
+function downloadCSV(csv, filename) {
+        let csvFile;
+        let downloadLink;
+
+        // CSV file
+        csvFile = new Blob([csv], {type: 'text/csv'});
+
+        // Download link
+        downloadLink = document.createElement('a');
+
+        // File name
+        downloadLink.download = filename;
+
+        // Create a link to the file
+        downloadLink.href = window.URL.createObjectURL(csvFile);
+
+        // Hide download link
+        downloadLink.style.display = 'none';
+
+        // Add the link to the DOM
+        document.body.appendChild(downloadLink);
+
+        // Click download link
+        downloadLink.click();
+    }
+
+    function exportTableToCSV(filename) {
+        let csv = [];
+        let rows = document.querySelectorAll('#monthwiseTable tr');
+
+        for (let i = 0; i < rows.length; i++) {
+            let row = [], cols = rows[i].querySelectorAll('td, th');
+
+            for (let j = 0; j < cols.length; j++) {
+                row.push(cols[j].innerText);
+            }
+
+            csv.push(row.join(','));
+        }
+
+        // Download CSV file
+        downloadCSV(csv.join('\n'), filename);
+    }
 </script>
 
 @if(isset($data['standardsJson']))

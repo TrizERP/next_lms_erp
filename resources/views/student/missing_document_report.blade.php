@@ -145,7 +145,24 @@
 
 @include('includes.footerJs')
 <script>
+
 $(document).ready(function() {
+
+    $('#grade').prop('required',true);
+    $('#standard').prop('required',true);
+
+    $('#user_type').on('change',function(){
+        var val = $(this).val();
+        if(val==='staff'){
+            $('#grade').prop('required',false);
+            $('#standard').prop('required',false);
+        }else{
+            $('#grade').prop('required',true);
+            $('#standard').prop('required',true);
+        }
+        // alert(val);
+    })
+
     var table = $('#example').DataTable( {
          select: true,          
          lengthMenu: [ 

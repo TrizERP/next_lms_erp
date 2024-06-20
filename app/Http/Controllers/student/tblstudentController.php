@@ -643,7 +643,10 @@ class tblstudentController extends Controller
         $religionData = religionModel::select()->get();
         $houseData = houseModel::where(['sub_institute_id' => $sub_institute_id])->get();
         $casteData = casteModel::select()->get();
-        $document_type_data = documentTypeModel::select()->get();
+        $document_type_data = documentTypeModel::select('student_document_type.*')->join('tblstudent_doc_std_mapping','student_document_type.id','=','tblstudent_doc_std_mapping.document_type_id')->where(['tblstudent_doc_std_mapping.standard_id'=>$std_id,'tblstudent_doc_std_mapping.sub_institute_id'=>$sub_institute_id])
+        ->where('student_document_type.user_type','student')
+        ->get();
+
         $transport_kilometer_data = add_transport_kilometer_rate::where([
             'sub_institute_id' => $sub_institute_id, 'syear' => $syear,
         ])->get();
