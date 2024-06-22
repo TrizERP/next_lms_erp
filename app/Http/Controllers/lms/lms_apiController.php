@@ -367,7 +367,7 @@ class lms_apiController extends Controller
                             if (isset($tval['id'])) {
                                 $contentData = DB::select("SELECT *, 
                                     if(filename = '', '',
-                                        if(file_type = 'link', filename, concat('https://".$_SERVER['SERVER_NAME']."/storage', file_folder, '/', filename))) as full_path 
+                                        if(file_type = 'link', filename, concat('".env('DO_PATH')."public', file_folder, '/', filename))) as full_path 
                                     FROM content_master 
                                     WHERE sub_institute_id = '".$sub_institute_id."' AND chapter_id = '".$chapter_id."'  
                                     AND topic_id = '".$tval['id']."' 
@@ -379,7 +379,7 @@ class lms_apiController extends Controller
                             {
                                 $contentData = DB::select("SELECT *, 
                                     if(filename = '', '',
-                                        if(file_type = 'link', filename, concat('https://".$_SERVER['SERVER_NAME']."/storage', file_folder, '/', filename))) as full_path 
+                                        if(file_type = 'link', filename, concat('".env('DO_PATH')."public', file_folder, '/', filename))) as full_path 
                                     FROM content_master 
                                     WHERE sub_institute_id = '".$sub_institute_id."' AND chapter_id = '".$chapter_id."'  
                                     AND content_category = '".$tval['name']."'  AND subject_id = '".$subject_id."' AND show_hide = '1'");
