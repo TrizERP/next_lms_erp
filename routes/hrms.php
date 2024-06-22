@@ -6,6 +6,7 @@ use App\Http\Controllers\HRMS\HrmsLeaveController;
 use App\Http\Controllers\Payroll\PayrollController;
 use App\Http\Controllers\AJAXController;
 use App\Http\Controllers\leave\leaveEncashmentController;
+use App\Http\Controllers\HRMS\departmentController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -111,4 +112,6 @@ Route::group([ 'middleware' => ['session', 'menu', 'logRoute']], function () {
 Route::group(['prefix' => 'hrms', 'middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::resource('designation_leave', HrmsLeaveController::class);
     Route::resource('leave_encashment', leaveEncashmentController::class);
+    Route::resource('add_department', departmentController::class);
+    route::get('department-Emp-Lists',[departmentController::class, 'departmentEmpLists'])->name('departmentEmpLists');
 });
