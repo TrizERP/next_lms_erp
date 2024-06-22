@@ -142,23 +142,29 @@ class InactiveStudentReportController extends Controller
 
         $array = [
             'standard.name as standard', 'division.name as division', 'academic_section.title as grade',
+            'batch.title as batch',
             'tblstudent.id as id',
         ];
         $header = [
-            'standard'     => 'Standard', 'division' => 'Division', 'grade' => 'Academic Section',
             'student_name' => 'Student Name',
+            'standard'     => 'Standard', 'division' => 'Division', 'grade' => 'Academic Section','batch'=>'Batch',
         ];
         $searchArr = ['_'];
         $replaceArr = [' '];
-
+       
         if ($request->input('dynamicFields') == '') {
+             
             $array = [
-                'standard.name as "'.get_string('standard' , 'request').'"', 'division.name as "'.get_string('division' , 'request').'"', 'academic_section.title as grade',
+                'concat_ws(" ",tblstudent.first_name,tblstudent.middle_name,tblstudent.last_name) AS "'.get_string('studentname' , 'request').'"',
+                'academic_section.title as grade',
+                'standard.name as "'.get_string('standard' , 'request').'"', 
+                'division.name as "'.get_string('division' , 'request').'"', 
+                'batch.title as batch',
                 'tblstudent.id as id',
             ];
             $header = [
-                'standard'     => 'Standard', 'division' => 'Division', 'grade' => 'Academic Section',
                 'student_name' => 'Student Name',
+                'standard'     => 'Standard', 'division' => 'Division', 'grade' => 'Academic Section','batch'=>'Batch',
             ];
             // $res['status_code'] = 0;
             // $res['message'] = "Please select one checkbox atlease to view report";
@@ -183,7 +189,7 @@ class InactiveStudentReportController extends Controller
             $array[] = 'blood_group.bloodgroup as bloodgroup';
             $array[] = 'transport_vehicle.title as van';
         }
-        $array[] = 'concat_ws(" ",tblstudent.first_name,tblstudent.middle_name,tblstudent.last_name) AS "'.get_string('studentname' , 'request').'"';
+
 
         $result = DB::table('tblstudent')
             ->select(DB::raw(implode(',', $array)))
@@ -196,6 +202,7 @@ class InactiveStudentReportController extends Controller
                 // });
             })
             ->join('division', 'division.id', '=', 'tblstudent_enrollment.section_id')
+            ->leftjoin('batch', 'batch.id', '=', 'tblstudent.studentbatch')
             ->leftjoin('religion', 'religion.id', '=', 'tblstudent.religion')
             ->leftjoin('house_master', 'house_master.id', '=', 'tblstudent_enrollment.house_id')
             ->leftjoin('student_quota', 'student_quota.id', '=', 'tblstudent_enrollment.student_quota')
@@ -207,15 +214,14 @@ class InactiveStudentReportController extends Controller
             ->whereRaw('tblstudent_enrollment.end_date IS NOT NULL')
             ->orderByRaw('tblstudent.id')
             ->get();
-        
-
+         
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['result_report'] = $result;
         $res['grade_id'] = $grade_id;
         $res['standard_id'] = $standard_id;
         $res['division_id'] = $division_id;
-// return $res;exit;
+// echo "<pre>";print_r($res['result_report']);exit;
         return is_mobile($type, "student/inactive_student_report", $res, "view");
     }
 

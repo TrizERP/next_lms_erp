@@ -124,7 +124,7 @@
                             <th>Standard</th>
                             <th>Division</th> -->
                             @foreach($result_report[0] as $heads=>$value)
-                                <th class="text-left">{{$heads}}</th>
+                                <th class="text-left">{{strtoupper($heads)}}</th>
                             @endforeach
                         </tr>
                     </thead>
