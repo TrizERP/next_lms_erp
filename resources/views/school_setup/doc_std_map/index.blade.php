@@ -51,11 +51,11 @@
                                 <td>{{$value->standard}}</td>
                                 <td>
                                     <div class="d-inline">                                        
-                                        <a href="{{ route('document_standard_mapping.edit',$value->id)}}" class="btn btn-info btn-outline">
+                                        <a href="{{ route('document_standard_mapping.edit',$value->document_type_id)}}" class="btn btn-info btn-outline">
                                             <i class="ti-pencil-alt"></i>
                                         </a>                                                                                          
                                     </div>
-                                    <form action="{{ route('document_standard_mapping.destroy', $value->id)}}" method="post" class="d-inline">
+                                    <form action="{{ route('document_standard_mapping.destroy', $value->document_type_id)}}" method="post" class="d-inline">
                                     @csrf
                                     @method('DELETE')
                                         <button onclick="return confirmDelete();" type="submit" class="btn btn-info btn-outline-danger">

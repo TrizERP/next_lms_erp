@@ -11,7 +11,7 @@
         </div>
        
         <!-- form start  -->
-        <form action="{{route('document_standard_mapping.update',$data['editData']->id)}}" class="card" method="post">
+        <form action="{{route('document_standard_mapping.update',$data['editData']->document_type_id)}}" class="card" method="post">
             {{method_field('PUT')}}
         @csrf 
             <div class="row">
@@ -25,8 +25,17 @@
                         @endforeach
                     </select>
                 </div>
+                @php 
+                $grd = $std = [];
+                if(isset($data['editData']->all_grade)){
+                    $grd = explode(',',$data['editData']->all_grade);
+                }
+                if(isset($data['editData']->all_std)){
+                    $std = explode(',',$data['editData']->all_std);
+                }
+                @endphp
                 <!-- grade standard select  -->
-                {{ App\Helpers\SearchChain('4','single','grade,std',$data['editData']->grade_id,$data['editData']->standard_id) }}
+                {{ App\Helpers\SearchChain('4','multiple','grade,std',$grd,$std) }}
                 <!-- add button  -->
                 <div class="col-md-12">
                     <center>
