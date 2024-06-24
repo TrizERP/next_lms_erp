@@ -47,6 +47,9 @@ class studentReportController extends Controller
         $tblcustoms = DB::table("tblcustom_fields")
         ->whereRaw("status=1 AND (common_to_all= 1 or sub_institute_id=$sub_institute_id) AND is_deleted != 'Y'")
         ->where('user_type','student')
+        ->when($sub_institute_id==257,function($q) use($sub_institute_id){
+            $q->whereRaw('field_message NOT IN ('.$sub_institute_id.')');
+        })
         ->orderByRaw('tab_sort_order,sort_order')
         ->get()->toArray();    
         
@@ -113,6 +116,9 @@ class studentReportController extends Controller
             ->whereRaw("status=1 AND (common_to_all= 1 or sub_institute_id=$sub_institute_id) AND is_deleted != 'Y'")
             ->where('id',$fieldId)
             ->where('user_type','student')
+            ->when($sub_institute_id=257,function($q) use($sub_institute_id){
+                $q->whereRaw('field_message NOT IN ('.$sub_institute_id.')');
+            })
             ->first();
 
             if(!empty($customDetails) && !in_array($fielValue,["student_name","optional_subject"])){

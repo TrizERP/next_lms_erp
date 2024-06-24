@@ -897,6 +897,7 @@ if (!function_exists('FeeBreackoff')) {
             })
             ->leftJoin('division as d', 'd.id', '=', 'se.section_id')
             ->leftJoin('student_quota as sq', 'sq.id', '=', 'se.student_quota')
+            ->leftJoin('batch as b', 'b.id', '=', 's.studentbatch') // 2024-06-24 by uma
             ->join('fees_breackoff as fb', function ($join) use ($syear, $sub_institute_id, $standard) {
                 $join->on('fb.syear', '=', DB::raw("'" . $syear . "'"))
                     ->on('fb.admission_year', '=', 's.admission_year')
@@ -914,7 +915,7 @@ if (!function_exists('FeeBreackoff')) {
                     se.start_date, se.end_date, se.enrollment_code, se.drop_code, se.drop_remarks, se.drop_remarks,
                     se.term_id, se.remarks, se.admission_fees, se.house_id, se.lc_number, sum(fb.amount) as bkoff,
                     st.name as standard_name, d.name as division_name, fb.month_id,
-                    RIGHT(fb.month_id, 4) as sort_year,
+                    RIGHT(fb.month_id, 4) as sort_year,IFNULL(b.title,'-') as student_batch,
                     CAST(SUBSTRING(fb.month_id, 1, CHAR_LENGTH(fb.month_id) - 4) as signed) as sort_month")
             ->where('s.sub_institute_id', $sub_institute_id)
             ->where('se.syear', $syear)
