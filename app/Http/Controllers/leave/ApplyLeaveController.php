@@ -148,7 +148,6 @@ class ApplyLeaveController extends Controller
 
         $request->validate([
             'type_leave' => 'required',
-            'emp_id' => 'required_if:type_leave,employee|nullable|exists:tbluser,id',
             'leave_type' => 'required|exists:hrms_leave_types,id',
             'day_type' => 'required|in:full,half',
             'from_date' => 'required|date',
@@ -158,7 +157,7 @@ class ApplyLeaveController extends Controller
         ]);
 
         HrmsEmpLeave::updateOrCreate([
-                'user_id' => $request->emp_id ?? $user_id,
+                'user_id' => ($request->emp_id!=0) ? $request->emp_id : $user_id,
                 'from_date' => $request->from_date,
             ],
             [
