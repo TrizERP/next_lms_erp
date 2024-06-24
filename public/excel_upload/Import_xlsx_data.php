@@ -110,10 +110,14 @@ if (isset($_REQUEST['submit'])) {
                    $valueQuery.= "'".PHPExcel_Style_NumberFormat::toFormattedString($value[$valueFields['field']], '0000'). "',";
                 //    echo "<pre>";print_r($valueQuery);
                 }
+<<<<<<< HEAD
                 else if($valueFields['field']=="user_id" && $relationTable[$valueFields['field']]['main_table']==="hrms_emp_leaves"){
                     $valueQuery.= "'".PHPExcel_Style_NumberFormat::toFormattedString($value[$valueFields['field']], '0000'). "',";
                  //    echo "<pre>";print_r($valueQuery);
                  }
+=======
+               
+>>>>>>> 0b3bb7a5ea67f655b34dc857186ea62052f918f8
                 else if ($valueFields['field'] == "SUB_INSTITUTE_ID" || $valueFields['field'] == "sub_institute_id" || $valueFields['field'] == "sub_inst_id") {
                     $valueQuery .= "'" . $_SESSION['SUB_INSTITUTE_ID'] . "',";
                 } else if ($valueFields['field'] == "MARKING_PERIOD_ID" || $valueFields['field'] == "marking_period_id" || $valueFields['field'] == "term_id") {
@@ -144,10 +148,19 @@ if (isset($_REQUEST['submit'])) {
                         if($relationTable[$valueFields['field']]['main_table']==="fees_breakoff_other"){
                         $relationQuery = "SELECT " . strtoupper($relationTable[$valueFields['field']]['INSERT_FIELD']) . " FROM " . $relationTable[$valueFields['field']]['TABLE_NAME'] . "  WHERE  " . $relationTable[$valueFields['field']]['TABLE_FIELD'] . " = '" . mysqli_real_escape_string($cn, $value[$valueFields['field']]) . "' AND sub_institute_id = '" . $_SESSION['SUB_INSTITUTE_ID'] . "'"; 
                          
-                        }else{
+                        }
+                       else{
                            
                         // $relationQuery = "SELECT " . strtoupper($relationTable[$valueFields['field']]['INSERT_FIELD']) . " FROM " . $relationTable[$valueFields['field']]['TABLE_NAME'] . "  WHERE  " . $relationTable[$valueFields['field']]['TABLE_FIELD'] . " = '" . mysqli_real_escape_string($cn, $value[$valueFields['field']]) . "' AND sub_institute_id = '" . $_SESSION['SUB_INSTITUTE_ID'] . "'"; 
-                             $relationQuery = "SELECT " . strtoupper($relationTable[$valueFields['field']]['INSERT_FIELD']) . " FROM " . $relationTable[$valueFields['field']]['TABLE_NAME'] . " WHERE " . $relationTable[$valueFields['field']]['TABLE_FIELD'] . " = '" . mysqli_real_escape_string($cn, $value[$valueFields['field']]) . "'";
+                            
+                             if($valueFields['field']=='user_id' && $relationTable[$valueFields['field']]['main_table']=="hrms_emp_leaves"){
+
+                                $relationQuery = "SELECT " . strtoupper($relationTable[$valueFields['field']]['INSERT_FIELD']) . " FROM " . $relationTable[$valueFields['field']]['TABLE_NAME'] . " WHERE " . $relationTable[$valueFields['field']]['TABLE_FIELD'] . " = '" . mysqli_real_escape_string($cn, PHPExcel_Style_NumberFormat::toFormattedString($value[$valueFields['field']], '0000')) . "'";
+ 
+                             }else{
+                                $relationQuery = "SELECT " . strtoupper($relationTable[$valueFields['field']]['INSERT_FIELD']) . " FROM " . $relationTable[$valueFields['field']]['TABLE_NAME'] . " WHERE " . $relationTable[$valueFields['field']]['TABLE_FIELD'] . " = '" . mysqli_real_escape_string($cn, $value[$valueFields['field']]) . "'";
+ 
+                             }
                         }
                       
 
@@ -162,7 +175,7 @@ if (isset($_REQUEST['submit'])) {
                         }
                         
                         $getRelationValue = mysqli_fetch_assoc(mysqli_query($cn, $relationQuery));
-
+                        // ECHO "<pre>";print_r($getRelationValue);
                         $keyId = strtoupper($relationTable[$valueFields['field']]['INSERT_FIELD']);
                         // print_r($getRelationValue);
                         //|| $relationTable[$valueFields['field']]['main_table']=="library_book_circulations"
