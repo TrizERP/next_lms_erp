@@ -858,7 +858,7 @@ class dashboardController extends Controller
                 ->where('a.sub_institute_id', '=', $sub_institute_id)
                 ->where('a.is_deleted','N')
                 ->groupBy('a.term_id')
-                ->orderBy('standard_name')
+                ->orderBy('a.term_id')
                 ->get();
                 // dd(db::getQueryLog($cn_active_students));
                 // echo "<pre>";print_r($cn_active_students);exit;
@@ -903,7 +903,9 @@ class dashboardController extends Controller
             $req = new Request($req);  // Assuming $req is your array
             $monthlyFeesController = new feesMonthlyReportController();
             $monthlyFeesCollection = $monthlyFeesController->getfeesMonthlyReportCN($req);
-            $res['cn_monthwise_active'] = $cn_active_students; 
+            $res['cn_monthwise_active'] = $cn_active_students;
+        //    echo "<pre>";print_r($res['cn_monthwise_active']);exit;
+
             $res['cn_payout'] = $cn_payout;                                                                                                               
             $res['cn_monthwise_collect'] = json_decode($monthlyFeesCollection, true);
         }
@@ -911,7 +913,7 @@ class dashboardController extends Controller
                 $res['status_code'] = 1;
                 $res['message'] = "Success";
                 $res['months_name'] = FeeMonthId();
-        //    echo "<pre>";print_r($res['months_name']);exit;
+        //    echo "<pre>";print_r($res['cn_monthwise_active']);exit;
                
                 $res['totalUser'] = $users[0]['users'];
                 $res['totalStudent'] = $students[0]->students;
