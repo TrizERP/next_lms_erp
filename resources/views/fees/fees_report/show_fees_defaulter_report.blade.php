@@ -211,7 +211,6 @@
                                 <td></td>
                                 <td></td>
                                 <td></td>
-                                <td></td>
                                @foreach($data['fees_titles'] as $key => $value)
                                <td></td>                               
                                @endforeach
@@ -269,7 +268,7 @@
         buttons: [
             {
                 extend: 'pdfHtml5',
-                title: 'Fees Overall Report',
+                title: 'Fees Defaulter Report',
                 orientation: 'landscape',
                 pageSize: 'LEGAL',
                 pageSize: 'A0',
@@ -277,9 +276,12 @@
                      columns: ':visible'
                 },
             },
-            { extend: 'csv', text: ' CSV', title: 'Fees Overall Report' },
-            { extend: 'excel', text: ' EXCEL', title: 'Fees Overall Report' },
-            { extend: 'print', text: ' PRINT', title: 'Fees Overall Report' },
+            { extend: 'csv', text: ' CSV', title: 'Fees Defaulter Report' },
+            { extend: 'excel', text: ' EXCEL', title: 'Fees Defaulter Report' },
+            { extend: 'print', text: ' PRINT', title: 'Fees Defaulter Report',orientation: 'landscape',pageSize: 'LEGAL',exportOptions: {
+                     columns: ':visible'
+                },
+            },
             'pageLength'
         ],
         });
