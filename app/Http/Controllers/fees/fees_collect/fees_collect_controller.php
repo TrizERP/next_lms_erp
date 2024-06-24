@@ -1404,6 +1404,9 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                 $_REQUEST['full_name'],
                 $html_content
             );
+            // 2024-06-24 by uma
+            $html_content = str_replace(htmlspecialchars("<<student_batch>>"),$_REQUEST['student_batch'],$html_content);
+
             $html_content = str_replace(htmlspecialchars("<<student_enrollment_value>>"), $enrollment, $html_content);
             $html_content = str_replace(htmlspecialchars("<<student_roll_value>>"), $roll_no, $html_content);
             $html_content = str_replace(htmlspecialchars("<<student_father_name>>"), $father_name, $html_content);
@@ -2108,6 +2111,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             "grade_id" => $reg_bk_off[0]->grade_id,
             "div_id" => $reg_bk_off[0]->section_id,
             "student_quota" => $reg_bk_off[0]->stu_quota,
+            'student_batch' => $reg_bk_off[0]->student_batch,
             "previous_year_imprest_balance" => $previous_year_imprest_balance,
         ];
 
