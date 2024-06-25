@@ -1188,7 +1188,7 @@ class PayrollController extends Controller
             $res['employeeDetails'] = EmployeeMonthlySalaryData::join('tbluser as u',function($join) use($request){
                 $join->on('u.id','=','employee_monthly_salary_data.employee_id')
                 ->when($request->department_id!=0,function($q) use($request){
-                    $q->where('u.department_id',$request->department_id);
+                    $q->whereIn('u.department_id',$request->department_id);
                 });
             })->where([['employee_monthly_salary_data.month',$request->month],['employee_monthly_salary_data.year',$request->year],['employee_monthly_salary_data.sub_institute_id',$sub_institute_id]])
            ->get();
@@ -1335,9 +1335,9 @@ class PayrollController extends Controller
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
 
-        $res['department_id'] = $department_id = ($request->department_id!=0) ? $request->department_id : '';
-        $res['employee_id'] = $employee_id = ($request->emp_id!=0) ? $request->emp_id : '';
-
+        $res['employee_id'] = $employee_id= ($request->emp_id!=0) ? implode(',',$request->emp_id) : '';
+        $res['department_id'] = $department_id= ($request->department_id!=0) ? implode(',',$request->department_id) : '';
+        
         $res['selYear'] = $year = $request->year;
         $res['selMonth'] = $month = $request->month;
 
@@ -1384,6 +1384,8 @@ class PayrollController extends Controller
         $res['employeeDetails'] = $newData;
         $res['months'] = Helpers::getMonths();
         $res['years'] = Helpers::getYears();
+        $res['selected_emp']=$request->emp_id;
+        $res['department_id']=$request->department_id;
         // echo "<pre>";print_r($newData);exit;
         return is_mobile($type,'payroll.monthly_payroll_report.newIndex',$res,'view');
     }

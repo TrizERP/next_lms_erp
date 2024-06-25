@@ -35,7 +35,7 @@
                             }
                         @endphp
 
-                        {!! App\Helpers\HrmsDepartments("","",$dep_id,"multiple",$emp_id,"") !!}
+                        {!! App\Helpers\HrmsDepartments("","multiple",$dep_id,"multiple",$emp_id,"") !!}
                         <div class="col-md-3 form-group">
                             <label>Date</label>
                             <div class="input-daterange input-group" id="date-range">

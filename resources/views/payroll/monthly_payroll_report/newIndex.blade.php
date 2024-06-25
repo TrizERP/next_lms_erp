@@ -24,21 +24,23 @@
                 @csrf
                 <div class="row">
                 @php 
+                $currentMonth = date('M');
                 $dep_id = $emp_id = '';
+            
                 if(isset($data['department_id'])){
-                $dep_id = $data['department_id'];
+                    $dep_id = $data['department_id'];
                 }
-                if(isset($data['employee_id'])){
-                $emp_id = $data['employee_id'];
+                if(isset($data['selected_emp'])){
+                    $emp_id = $data['selected_emp'];
                 }
                 @endphp
-                {!! App\Helpers\HrmsDepartments("","",$dep_id,"",$emp_id,"") !!}
+                {!! App\Helpers\HrmsDepartments("","multiple",$dep_id,"multiple",$emp_id,"") !!}
                 <div class="col-md-3 form-group">
                     <label>Select Month</label>
                     <select id='year' name="month" class="form-control">
                         <option value="0">Select Month</option>
                         @foreach($data['months'] as $month)
-                        <option @if(isset($data['selMonth']) && $data['selMonth'] == $month) selected @endif>{{$month}}</option>
+                        <option @if(isset($data['selMonth']) && $data['selMonth'] == $month) selected @elseif($currentMonth == $month) Selected @endif>{{$month}}</option>
                         @endforeach
                     </select>
                 </div>
@@ -118,7 +120,7 @@
                             @endif
                             @endforeach
 
-                            <td>@if(isset($value['monthlyData']->total_day))<a href="{{ env('APP_URL')."/monthly-payroll-report/pdf/".$value['id']."/".$data['selMonth'].'/'.$data['selYear'] }}" class="btn btn-primary">PDF</a> @else - @endif </td>
+                            <td>@if(isset($value['monthlyData']->total_day))<a href="{{ env('APP_URL')."monthly-payroll-report/pdf/".$value['id']."/".$data['selMonth'].'/'.$data['selYear'] }}" class="btn btn-primary">PDF</a> @else - @endif </td>
                           
                         </tr>
                         @endforeach
