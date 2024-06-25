@@ -792,14 +792,96 @@ class PayrollController extends Controller
 
     public function payrollDeduction(Request $request)
     {
+        $type = $request->type;
+        $sub_institute_id = session()->get('sub_institute_id');
         $payrollTypes = [];
-        if ($request->type) {
-            $payrollTypes = PayrollType::where([['status', 1], ['payroll_type', $request->type]])->get();
+        // process to get all emp create
+        if($request->has('submit')){
+            // return $request->all();
+            
+            $res['selDeduction'] =  $deduction_type= $request->deduction_type;
+            $res['selType'] =  $payroll_type= $request->payroll_type;
+            $res['selMonth'] = $month= $request->month;
+            $res['selYear'] = $year= $request->year;
+
+            $checkArr = [
+                "month"=>$month,
+                "year"=>$year,
+                "deduction_type"=>$payroll_type,
+                "sub_institute_id"=>$sub_institute_id,
+            ];
+
+            $getDeduction = DB::table('hrms_emp_payroll_deduction')->where($checkArr)->get()->toArray();
+            $deductionArr= [];
+            foreach($getDeduction as $key=>$value){
+                $deductionArr[$value->employee_id]=$value->deduction_amount;
+            }
+           $res['all_emp'] = employeeDetails($sub_institute_id,'','','');
+           $res['deductionArr'] = $deductionArr;
         }
-        $result['payrollTypes'] = $payrollTypes;
-        return view('payroll.payroll_deduction.index', $result);
+        // end process  get all emp
+
+        $payrollType = PayrollType::where('status', 1)->get()->toArray();
+        $payrollTypeArr=[];
+        foreach($payrollType as $key=>$value){
+            $payrollTypeArr[$value['payroll_type']][]=[
+                "id"=>$value['id'],
+                "payroll_name"=>$value['payroll_name'],
+            ];
+        }
+        $res['payrollTypes'] =  $payrollTypeArr;
+        $res['months'] = Helpers::getMonths();
+        $res['years'] = Helpers::getYears();
+        // echo "<pre>";print_r($res['deductionArr']);exit;
+        // return view('payroll.payroll_deduction.index', $result);
+        return is_mobile($type, "payroll.payroll_deduction.index", $res, "view");
     }
 
+    public function payrollDeductionStore(Request $request)
+    {
+        $type = $request->type;
+        $sub_institute_id = session()->get('sub_institute_id');
+        $created_by = session()->get('user_id');
+        $payroll_type = $request->payroll_type;
+        $month = $request->month;
+        $year = $request->year;
+        $deductAmt = $request->deductAmt;
+        $i=0;
+        foreach ($deductAmt as $emp_id => $amount) {
+            $checkArr = [
+                "month"=>$month,
+                "year"=>$year,
+                "employee_id"=>$emp_id,
+                "deduction_type"=>$payroll_type,
+                "sub_institute_id"=>$sub_institute_id,
+            ];
+            $check = DB::table('hrms_emp_payroll_deduction')->where($checkArr)->first();
+            if(empty($check)){
+                $checkArr['created_by']=$created_by;
+                $checkArr['deduction_amount']=$amount ?? 0;
+                $checkArr['created_at']=now();
+
+                $insert = DB::table('hrms_emp_payroll_deduction')->insert($checkArr);
+                $i++;
+            }else{
+                $checkArr['created_by']=$created_by;
+                $checkArr['deduction_amount']=$amount ?? 0;
+                $checkArr['updated_at']=now();
+                
+                $update = DB::table('hrms_emp_payroll_deduction')->where('id',$check->id)->update($checkArr);
+                $i++;
+            }
+        }
+        // echo "<pre>";print_r($request->all());exit;
+        if($i>0){
+            $res['status_code'] = 1;
+            $res['message']='Added Successfully !!';
+        }else{
+            $res['status_code'] = 0;
+            $res['message']='Failed To Add !!';
+        }
+        return is_mobile($type, "payroll_deduction.index", $res);
+    }
 
     public function rollOver(Request $request)
     {
