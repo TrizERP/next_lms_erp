@@ -35,6 +35,20 @@
                                 <label>Working Code</label>
                                 <input type="text" id='working_code' required name="working_code" class="form-control">
                             </div>
+                            <div class="col-md-4 form-group">
+                                <label>Medium</label>
+                                <div class="radio radio-info mt-2">
+                                    <input type="radio" name="medium" value="CBSE" checked><label for="CBSE"> CBSE </label>
+                                    <input type="radio" name="medium" value="GSEB"><label for="GSEB"> GSEB </label>
+                                </div>
+                            </div>
+                            <div class="col-md-4 form-group">
+                                <label>Fees Collect Type</label>
+                                <div class="radio radio-info mt-2">
+                                    <input type="radio" name="fees_type" value="fix" checked><label for="Fix"> Fix </label>
+                                    <input type="radio" name="fees_type" value="dynamic"><label for="Dynamic"> Dynamic </label>
+                                </div>
+                            </div> 
                             <div class="col-md-12 form-group">
                                 <center>
                                     <input type="submit" name="submit" value="Save" class="btn btn-success" >
