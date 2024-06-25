@@ -1473,6 +1473,7 @@ class PayrollController extends Controller
     }
 
     function getEmpMonthlyData(Request $request){
+        // echo "<pre>";print_r($request->all());exit;
         $sub_institute_id = session()->get('sub_institute_id');
         $totalDay = $request->totalDay;
         
@@ -1489,14 +1490,32 @@ class PayrollController extends Controller
         
         $totaldeduction = $totalallowance = 0;
         foreach ($payrollTypes as $payrollType) {
+            // for allowance
             if(isset($employeeSalaryDetails[$payrollType->id]) && $payrollType->payroll_type == 1) {
-                $preparPayrollType[]['allowance'] = [$employeeSalaryDetails[$payrollType->id],$payrollType->amount_type,$payrollType->id,$payrollType->payroll_name];
-            } else if (isset($employeeSalaryDetails[$payrollType->id])) {
-                $preparPayrollType[]['deduction'] = [$employeeSalaryDetails[$payrollType->id],$payrollType->amount_type,$payrollType->id,$payrollType->payroll_name];
+
+                $checkAllowance = DB::table('hrms_emp_payroll_deduction')->where('employee_id',$request->emp_id)->where(['sub_institute_id'=>$sub_institute_id,'month'=>$request->month,'year'=>$request->year,'deduction_type'=>$payrollType->id])->first();
+                $payrollAmount=$employeeSalaryDetails[$payrollType->id];
+                if(isset($checkAllowance->deduction_amount)){
+                    $payrollAmount = ($payrollAmount - $checkAllowance->deduction_amount);
+                }
+
+                $preparPayrollType[]['allowance'] = [$payrollAmount,$payrollType->amount_type,$payrollType->id,$payrollType->payroll_name];
+            }
+            // for deduction
+             else if (isset($employeeSalaryDetails[$payrollType->id])) {
+
+                $checkDeduction = DB::table('hrms_emp_payroll_deduction')->where('employee_id',$request->emp_id)->where(['sub_institute_id'=>$sub_institute_id,'month'=>$request->month,'year'=>$request->year,'deduction_type'=>$payrollType->id])->first();
+                $payrollAmount=$employeeSalaryDetails[$payrollType->id];
+                if(isset($checkDeduction->deduction_amount)){
+                    $payrollAmount = ($payrollAmount - $checkAllowance->deduction_amount);
+                }
+
+                $preparPayrollType[]['deduction'] = [$payrollAmount,$payrollType->amount_type,$payrollType->id,$payrollType->payroll_name];
             }
         }
         $employeefinalDisplayData = [];
         foreach ($preparPayrollType as $value){
+            // for allowance
             if(isset($value['allowance'])) {
                 $allowence =  $value['allowance'][0];
                 if($value['allowance'][1] == 1) $allowence = round( ($allowence / 30) * $request->totalDay);
@@ -1504,7 +1523,7 @@ class PayrollController extends Controller
                 $employeefinalDisplayData[$value['allowance'][2]] = $allowence;
                 $totalallowance = $totalallowance + $allowence;
             }
-
+            // for deduction
             if(isset($value['deduction'])) {
                 $deduction =  $value['deduction'][0];
                 $deductionName=  (($value['deduction'][3] == 'Pro.Tax') ? 1 : 0);

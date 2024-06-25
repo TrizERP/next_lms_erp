@@ -37,7 +37,7 @@
                 {!! App\Helpers\HrmsDepartments("","multiple",$dep_id,"multiple",$emp_id,"") !!}
                 <div class="col-md-3 form-group">
                     <label>Select Month</label>
-                    <select id='year' name="month" class="form-control">
+                    <select id='month' name="month" class="form-control">
                         <option value="0">Select Month</option>
                         @foreach($data['months'] as $month)
                         <option @if(isset($data['selMonth']) && $data['selMonth'] == $month) selected @elseif($currentMonth == $month) Selected @endif>{{$month}}</option>
@@ -187,10 +187,12 @@
    
    function getData(inputElement, emp_id) {
         var inputValue = inputElement.value;
+        var month = $('#month').val();
+        var year = $('#year').val();
 
         $.ajax({
             url: "{{ route('getMonthlyData') }}",
-            data: { totalDay: inputValue, emp_id: emp_id },
+            data: { totalDay: inputValue, emp_id: emp_id, month:month, year:year},
             type: 'GET',
             success: function (response) {
                 // Check if salaryData is not empty
