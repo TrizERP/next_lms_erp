@@ -121,27 +121,9 @@ class online_fees_collect_controller extends Controller
 
     public function hdfc(Request $request)
     {
-        // echo '<pre>'; print_r($_REQUEST); exit;
-        $all_student = DB::table("tblstudent as s")
-            ->join('fees_online_maping as fo', 'fo.sub_institute_id', '=', 's.sub_institute_id')
-            ->select(
-                DB::raw("CONCAT(s.first_name,' ',s.last_name) AS name"),
-                's.id',
-                'fo.bank_name',
-                's.sub_institute_id',
-                'fo.fees_type'
-            )
-            ->where("s.id", $_REQUEST["student_id"])
-            ->get();
-        $year = date("Y");
-        $controller = new fees_collect_controller;
-        // $data = $controller->getOnlinebk($request,$all_student[0]->,2020,16849);
-        $data = $controller->getOnlinebk($request, $all_student[0]->sub_institute_id, $year, $_REQUEST["student_id"]);
-        $data["fees_type"] = $all_student[0]->fees_type;
+        $data = $this->get_fees($request);
         $type = "web";
-        // echo '<pre>'; print_r(session()->all()); exit;
         return \App\Helpers\is_mobile($type, "fees/online_fees_collect/show_fees", $data, "view");
-        // echo '<pre>'; print_r($data); exit;
     }
 
     public function hdfc_request_handler(Request $request)

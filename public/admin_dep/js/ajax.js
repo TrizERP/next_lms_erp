@@ -551,13 +551,14 @@ $('#department_ids').on('change', function() {
 
 function getEmpList(department_id){
     $('#emp_id').empty(); 
-    $('#emp_id').append(`<option value=0>select emp</option>`);
     $.ajax({
         url: '/departmentwise-emplist',
         data: { department_id: department_id },
         type: 'GET',
         success: function(result) {
             if (Array.isArray(result) && department_id!=0) {
+                $('#emp_id').empty(); 
+                $('#emp_id').append(`<option value=0>select emp</option>`);
                 result.forEach(value => {
                     $('#emp_id').append(`<option value="${value.id}">${value.full_name} (${value.user_profile})</option>`); // corrected the syntax here
                 });
