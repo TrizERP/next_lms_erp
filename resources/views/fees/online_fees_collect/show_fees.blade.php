@@ -216,7 +216,7 @@
                                     <div class="col-md-6 form-group">
                                         <input type="submit" name="submit" value="Pay Now" class="btn btn-success" >    
                                     </div>
-                                </div>
+                                </div><br/><br/><br/>
                             </form>
                         </div>
                     </div>
