@@ -69,8 +69,8 @@ class LeaveReportController extends Controller
 
         $from_date = $request->get('from_date');
         $to_date = $request->get('to_date');
-        $department_id = $request->get('department_id');
-	    $employee_id = $request->input('employee_id');
+        $department_id = ($request->get('department_id')!=0) ? implode(',',$request->get('department_id')) : 0;
+	    $employee_id = ($request->input('emp_id')!=0) ? implode(',',$request->input('emp_id')) : 0;
 	    $get_leave_status = $request->input('leave_status');
         
         /* echo("<pre>");
@@ -88,7 +88,7 @@ class LeaveReportController extends Controller
 
         $departments = HrmsDepartment::where('status', true)->pluck('department', 'id');
 
-        $employees = tbluserModel::where('sub_institute_id', $sub_institute_id)->where('department_id', $department_id)->get()->toArray();
+        $employees = tbluserModel::where('sub_institute_id', $sub_institute_id)->whereRaw('department_id in ('.$department_id.')')->get()->toArray();
 
         $get_employee_leave_lists = DB::table('hrms_emp_leaves as hel')
         ->selectRaw("hel.*, u.*,CONCAT_WS(' ',u.first_name,u.last_name) AS employee_name, hlt.leave_type, hlt.id as leave_id, hel.status as hel_status")
@@ -97,7 +97,7 @@ class LeaveReportController extends Controller
         ->where('hel.sub_institute_id', $sub_institute_id)
         ->where('hel.from_date', '>=', $from_date_formatted)
         ->where('hel.to_date', '<=', $to_date_formatted)
-        ->where('hel.user_id', $employee_id)
+        ->whereRaw('hel.user_id IN ('.$employee_id.')')
         // ->whereIn('hel.status', $get_leave_status)
         ->when($type == "API", function ($query) use ($get_leave_status) {
             return $query->whereIn('hel.status', $get_leave_status);
@@ -105,15 +105,18 @@ class LeaveReportController extends Controller
             return $query->whereIn('hel.status', $get_leave_status);
         })
         ->get()->toArray();
+
         $res['leave_types'] = ["Approved_lwp"=>"Approved LWP","Cancelled"=>"Cancelled","Rejected"=>"Rejected","Pending"=>"Pending Approval","Approved"=>"Approved"];
+        
         $res['employees'] = $employees;
         $res['from_date_formatted'] = $from_date_formatted;
         $res['to_date_formatted'] = $to_date_formatted;
         $res['get_leave_status'] = $get_leave_status;
-        $res['departments'] = $departments;
+        $res['departments'] = $request->get('department_id');
         $res['get_employee_leave_lists'] = $get_employee_leave_lists;
-        $res['employee_id'] = $employee_id;
-        $res['department_id'] = $department_id;
+        $res['employee_id'] = $request->input('emp_id');
+        $res['selected_emp']=$request->emp_id;
+        $res['department_id']=$request->department_id;
 
         //return view('leave.leave_report.index', compact('employees', 'from_date_formatted', 'to_date_formatted', 'get_leave_status', 'employee_id', 'department_id', 'departments', 'get_employee_leave_lists'));
         return is_mobile($type, "leave/leave_report/index", $res, "view");

@@ -98,6 +98,7 @@ class docStdMappingController extends Controller
         $res['editData'] = DB::table('tblstudent_doc_std_mapping as dsm')
         ->join('standard as s', 's.id', '=', 'dsm.standard_id')
         ->where('dsm.document_type_id', $id)
+        ->where('dsm.sub_institute_id', $sub_institute_id)
         ->select(
             'dsm.*',
             DB::raw('GROUP_CONCAT(DISTINCT dsm.standard_id) as all_std'),
