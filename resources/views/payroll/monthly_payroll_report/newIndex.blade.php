@@ -87,7 +87,7 @@
                             <td>{{$key+1}}</td>
                             <td>{{$value['employee_no']}}</td>
                             <td>{{$value['full_name'] ?? '-' .'('.$value['user_profile'] ?? '-' .')'}}</td>
-                            <td><input type="number" name="payrollVal[{{$value['id']}}][total_day]" onkeyup="getData(this,{{$value['id']}})" class="form-control" @if(isset($value['monthlyData']->total_day)) value="{{$value['monthlyData']->total_day}}" @endif></td>
+                            <td><input type="number" id="totalDay_{{$value['id']}}" name="payrollVal[{{$value['id']}}][total_day]" onkeyup="getData(this,{{$value['id']}})" class="form-control" value="{{ isset($value['monthlyData']->total_day) ? $value['monthlyData']->total_day : $value['totalDay'] }}" ></td>
                             @foreach($data['header'] as $hkey => $col)
                                 @if(!empty($value['monthlyData']))
                                     @php 
@@ -121,7 +121,15 @@
                             @endforeach
 
                             <td>@if(isset($value['monthlyData']->total_day))<a href="{{ env('APP_URL')."monthly-payroll-report/pdf/".$value['id']."/".$data['selMonth'].'/'.$data['selYear'] }}" class="btn btn-primary">PDF</a> @else - @endif </td>
-                          
+                                
+                            @if(!isset($value['monthlyData']->total_day))
+                                 <script>
+                                    $(document).ready(function(){
+                                        getData({{$value['totalDay']}},{{$value['id']}})
+                                    })
+                                 </script>
+                            @endif
+                                
                         </tr>
                         @endforeach
                     </tbody>
@@ -184,20 +192,19 @@
            });
        });
    });
-   
-   function getData(inputElement, emp_id) {
-        var inputValue = inputElement.value;
+
+    function getData(inputElement, emp_id) {
+        // var inputValue = inputElement.value;
+        var inputValue=$('#totalDay_'+emp_id).val();
         var month = $('#month').val();
         var year = $('#year').val();
 
         $.ajax({
             url: "{{ route('getMonthlyData') }}",
-            data: { totalDay: inputValue, emp_id: emp_id, month:month, year:year},
+            data: { totalDay: inputValue, emp_id: emp_id, month: month, year: year },
             type: 'GET',
-            success: function (response) {
-                // Check if salaryData is not empty
+            success: function(response) {
                 if (response.salaryData && Object.keys(response.salaryData).length > 0) {
-                    // console.log(response.salaryData);
                     Object.entries(response.salaryData).forEach(([index, element]) => {
                         $('#' + emp_id + '_' + index).text(element);
                         $('#input_' + emp_id + '_' + index).val(element);
@@ -207,7 +214,7 @@
                     console.log('salaryData is empty');
                 }
             },
-            error: function (xhr, status, error) {
+            error: function(xhr, status, error) {
                 console.error(xhr.responseText);
             }
         });

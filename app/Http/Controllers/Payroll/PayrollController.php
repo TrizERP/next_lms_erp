@@ -1433,11 +1433,33 @@ class PayrollController extends Controller
 
         // empData with val 
         $newData = [];
+        $daysCount = $this->countWeekdaysExcludingSundays($year, $month);
+
         foreach ($employeeDetails as $key => $value) {
             # store all details of employee
             $newData[$key] = $value;
             // get monthly salary Data and add into newData array
             $newData[$key]['monthlyData'] = DB::table('employee_monthly_salary_data')->where(['sub_institute_id'=>$sub_institute_id,'year'=>$year])->where('employee_id',$value['id'])->where('month',$month)->first();
+            if(isset($newData[$key]['monthlyData']->total_day)){
+                $newData[$key]['totalDay'] = $newData[$key]['monthlyData']->total_day;
+            }else{
+                $year = $year ?? Carbon::now()->year;
+                $month = $month ?? Carbon::now()->format('M');
+
+                $monthNumber = date('n', strtotime($month));
+
+                $startDate = Carbon::createFromDate($year, $monthNumber, 1);
+                $endDate = $startDate->copy()->endOfMonth();
+                $emp_att = DB::table('hrms_attendances')->whereBetween('day',[$startDate,$endDate])->where('user_id',$value['id'])->count();
+
+                $holidays = DB::table('hrms_holidays')
+                ->where('department', '=', $value['department_id'])
+                ->where('from_date', '>=', $startDate)
+                ->where('to_date', '<=', $endDate)
+                ->count();
+
+                $newData[$key]['totalDay'] = ($holidays+$emp_att);
+            }
         }
 
         $payrollTypes = PayrollType::where('status', 1)->orderBy('sort_order')->get();
@@ -1461,14 +1483,13 @@ class PayrollController extends Controller
             $header['total_payment'] = 'Total Payment';
             $header['received_by'] = 'Received By';
         }
-
         $res['header'] =$header;
         $res['employeeDetails'] = $newData;
         $res['months'] = Helpers::getMonths();
         $res['years'] = Helpers::getYears();
         $res['selected_emp']=$request->emp_id;
         $res['department_id']=$request->department_id;
-        // echo "<pre>";print_r($newData);exit;
+        // echo "<pre>";print_r($daysCount);exit;
         return is_mobile($type,'payroll.monthly_payroll_report.newIndex',$res,'view');
     }
 
@@ -1595,5 +1616,25 @@ class PayrollController extends Controller
             $res['message'] = "Inserted Successfully";
         }
         return is_mobile($type,'monthly_payroll.index',$res);
+    }
+    public function countWeekdaysExcludingSundays($year = null, $month = null)
+    {
+        $year = $year ?? Carbon::now()->year;
+        $month = $month ?? Carbon::now()->format('M');
+
+        $monthNumber = date('n', strtotime($month));
+
+        $startDate = Carbon::createFromDate($year, $monthNumber, 1);
+        $endDate = $startDate->copy()->endOfMonth();
+
+        $totalDays = 0;
+
+        for ($date = $startDate; $date->lte($endDate); $date->addDay()) {
+            if (!$date->isSunday()) {
+                $totalDays++;
+            }
+        }
+
+        return $totalDays;
     }
 }
