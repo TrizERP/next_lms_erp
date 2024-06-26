@@ -64,6 +64,7 @@
                                     @endforeach                                
                                 </select>
                             </div> -->
+                            <!--
                             <div class="col-md-6 form-group">
                                 <label>Academic Year</label>                            
                                 <select class="form-control" data-style="form-control" name="academic_year_id" id="academic_year_id">
@@ -93,6 +94,7 @@
                                     <span class="input-group-addon"><span class="glyphicon glyphicon-time"></span></span>
                                 </div>
                             </div> 
+                        -->
                             <div class="col-md-6 form-group">
                                 <div class="checkbox checkbox-info checkbox-circle">
                                     <br><input @if(isset($data['period_data']['used_for_attendance']) && $data['period_data']['used_for_attendance'] == "Yes"){{'checked'}}@endif type="checkbox" id="used_for_attendance" name="used_for_attendance" value="Yes">
@@ -101,7 +103,8 @@
                             </div>                       
                             <div class="col-md-12 form-group">
                                 <center>
-                                    <input type="submit" name="submit" value="Save" class="btn btn-success" onclick="return validate();">
+                                    <input type="submit" name="submit" value="Save" class="btn btn-success">
+                                    <!--onclick="return validate();"-->
                                 </center>
                             </div>
                         </div>    

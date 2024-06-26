@@ -733,7 +733,7 @@ class AJAXController extends Controller
         
         $previous = array_sum($full_bk2);
 
-        if ($previous > 0 && session()->get('sub_institute_id')!=48) {
+        if ($previous > 0 && session()->get('sub_institute_id')!=48 && session()->get('sub_institute_id')!=61) {
         // if ($previous > 0) {            
             $full_bk['Previous Fees'] = $previous;
             $final_bk_name["Previous Fees"] = "previous_fees";

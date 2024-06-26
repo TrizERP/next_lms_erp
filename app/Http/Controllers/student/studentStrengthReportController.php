@@ -138,7 +138,7 @@ class studentStrengthReportController extends Controller
         // Retrieve the results
         $res['result'] = $query->get();
 
-        // return $request->one_date;exit;
+        // return $res['result'];exit;
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['one_date'] = $request->one_date;

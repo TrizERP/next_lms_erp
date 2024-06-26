@@ -110,7 +110,10 @@ if (isset($_REQUEST['submit'])) {
                    $valueQuery.= "'".PHPExcel_Style_NumberFormat::toFormattedString($value[$valueFields['field']], '0000'). "',";
                 //    echo "<pre>";print_r($valueQuery);
                 }
-               
+                else if($valueFields['field']=="user_id" && $relationTable[$valueFields['field']]['main_table']==="hrms_emp_leaves"){
+                    $valueQuery.= "'".PHPExcel_Style_NumberFormat::toFormattedString($value[$valueFields['field']], '0000'). "',";
+                 //    echo "<pre>";print_r($valueQuery);
+                 }
                 else if ($valueFields['field'] == "SUB_INSTITUTE_ID" || $valueFields['field'] == "sub_institute_id" || $valueFields['field'] == "sub_inst_id") {
                     $valueQuery .= "'" . $_SESSION['SUB_INSTITUTE_ID'] . "',";
                 } else if ($valueFields['field'] == "MARKING_PERIOD_ID" || $valueFields['field'] == "marking_period_id" || $valueFields['field'] == "term_id") {

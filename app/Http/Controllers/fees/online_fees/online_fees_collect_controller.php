@@ -121,27 +121,9 @@ class online_fees_collect_controller extends Controller
 
     public function hdfc(Request $request)
     {
-        // echo '<pre>'; print_r($_REQUEST); exit;
-        $all_student = DB::table("tblstudent as s")
-            ->join('fees_online_maping as fo', 'fo.sub_institute_id', '=', 's.sub_institute_id')
-            ->select(
-                DB::raw("CONCAT(s.first_name,' ',s.last_name) AS name"),
-                's.id',
-                'fo.bank_name',
-                's.sub_institute_id',
-                'fo.fees_type'
-            )
-            ->where("s.id", $_REQUEST["student_id"])
-            ->get();
-        $year = date("Y");
-        $controller = new fees_collect_controller;
-        // $data = $controller->getOnlinebk($request,$all_student[0]->,2020,16849);
-        $data = $controller->getOnlinebk($request, $all_student[0]->sub_institute_id, $year, $_REQUEST["student_id"]);
-        $data["fees_type"] = $all_student[0]->fees_type;
+        $data = $this->get_fees($request);
         $type = "web";
-        // echo '<pre>'; print_r(session()->all()); exit;
         return \App\Helpers\is_mobile($type, "fees/online_fees_collect/show_fees", $data, "view");
-        // echo '<pre>'; print_r($data); exit;
     }
 
     public function hdfc_request_handler(Request $request)
@@ -150,6 +132,33 @@ class online_fees_collect_controller extends Controller
         // print_r($_REQUEST);
         // print_r(session()->all());
         // exit;
+        $searchArr = array(' ','"',"\'",',',"'");
+        $replaceArr = array('','',"",' ',"");
+        $student_id = $_REQUEST["student_id"];
+        $fine = isset($_REQUEST["fees_data"]["fine"]) ? $_REQUEST["fees_data"]["fine"] : 0;
+        $discount = isset($_REQUEST["totalDis"]) ? $_REQUEST["totalDis"] : 0;
+        $medium_data = DB::select("SELECT a.*,e.grade_id,s.name AS standard, d.name AS division,CONCAT_WS('_',t.first_name,t.middle_name,t.last_name) AS student_name,t.address,t.state,t.city,t.pincode,t.mobile,t.enrollment_no, t.email,ifnull(b.title,0) AS batch 
+            FROM tblstudent_enrollment e
+            inner join academic_section a on e.grade_id = a.id
+            inner join standard s on e.standard_id = s.id
+            inner join division d on e.section_id = d.id
+            INNER JOIN tblstudent t ON t.id=e.student_id
+            LEFT JOIN batch b ON b.id=t.studentbatch
+            INNER JOIN fees_online_maping fom ON fom.syear=e.syear AND fom.sub_institute_id=e.sub_institute_id
+            WHERE e.student_id = '" . $student_id . "' ORDER BY e.syear DESC LIMIT 1");
+
+        $billing_name = str_replace($searchArr, $replaceArr, $medium_data[0]->student_name);
+
+        $billing_address = isset($medium_data[0]->address) ? $medium_data[0]->address : 'NA';
+        $billing_address = str_replace($searchArr, $replaceArr, $billing_address);
+        
+        $billing_city = isset($medium_data[0]->city) ? $medium_data[0]->city : 'NA';
+        $billing_state = isset($medium_data[0]->state) ? $medium_data[0]->state : 'GJ';
+        $billing_zip = isset($medium_data[0]->pincode) ? $medium_data[0]->pincode : 'NA';
+        $billing_country = 'India';
+        $billing_tel = isset($medium_data[0]->mobile) ? $medium_data[0]->mobile : '9999999999';
+        $billing_email = isset($medium_data[0]->email) ? $medium_data[0]->email : $student_id.'@gmail.com';
+
         $get_map_bank_data = DB::table("fees_online_maping")
             ->where(["sub_institute_id" => session()->get("sub_institute_id")])
             ->get();
@@ -157,6 +166,7 @@ class online_fees_collect_controller extends Controller
         $get_map_bank_detail = DB::table("fees_hdffc")
             ->where(["sub_institute_id" => session()->get("sub_institute_id")])
             ->get();
+
         $amount = 0;
         if ($payment_acsept_type == "fix") {
             $amount = number_format(floatval($_REQUEST["total"]), 0, '.', '');
@@ -166,12 +176,53 @@ class online_fees_collect_controller extends Controller
 
         $txnid = substr(hash('sha256', mt_rand() . microtime()), 0, 20);
         $orderId = $_REQUEST["student_id"] . (mt_rand(10, 10000000000));
+        
+        $working_key = $get_map_bank_detail[0]->working_code; //Shared by CCAVENUES
+        // $working_key = "94C918B28626FB1A085AAB522E32A402"; //Shared by CCAVENUES
+        $access_code = $get_map_bank_detail[0]->access_code;
+        // $access_code = "AVPL86GG59BJ25LPJB";
+        $return_url = $this->site_name() . "fees/hdfc/online_fees_hdfcResponseHandler";
+        $send_arr = array(
+            "merchant_id" => $get_map_bank_detail[0]->merchant_id,
+            "order_id" => $orderId,
+            "currency" => "INR",
+            "amount" => $amount,
+            "redirect_url" => $return_url,
+            "cancel_url" => $return_url,
+            "language" => "en",
+            "billing_name" => $billing_name,
+            "billing_address" => $billing_address,
+            "billing_city" => $billing_city,
+            "billing_state" => $billing_state,
+            "billing_zip" => $billing_zip,
+            "billing_country" => $billing_country,
+            "billing_tel" => $billing_tel,
+            "billing_email" => $billing_email,
+            "merchant_param1" => $_REQUEST["student_id"],
+            "merchant_param2" => session()->get("syear"),
+            "merchant_param3" => $txnid,                                                                        
+            "merchant_param4" => session()->get("sub_institute_id"),
+            "merchant_param5" => $fine,
+            "tid" => strtotime(date('Y-m-d H:i:s')),
+        );
+        $merchant_data = "";
+        foreach ($send_arr as $key => $value) {
+            $merchant_data .= $key . '=' . $value . '&';
+        }
+        $merchant_data = rtrim($merchant_data, '&');
+        $encrypted_data = $this->hdfc_encrypt($merchant_data, $working_key); // Method for encrypting the data.
+
+        //Insert Raw data in fees_payment table
         $in_arr = array(
             "student_id" => $_REQUEST["student_id"],
             "syear" => session()->get("syear"),
             "amount" => $amount,
+            "fine" => $fine,
+            "discount" => $discount,
             "hdfc_order_id" => $orderId,
             "hdfc_transaction_id" => $txnid,
+            "hdfc_plain_request" => $merchant_data,
+            "hdfc_encrypt_request" => $encrypted_data,
             "hdfc_payment_status" => "PR",
             "hdfc_payment_date" => now(),
             "sub_institute_id" => session()->get("sub_institute_id"),
@@ -180,30 +231,7 @@ class online_fees_collect_controller extends Controller
         );
         DB::table("fees_payment")
             ->insert($in_arr);
-        $working_key = $get_map_bank_detail[0]->working_code; //Shared by CCAVENUES
-        // $working_key = "94C918B28626FB1A085AAB522E32A402"; //Shared by CCAVENUES
-        $access_code = $get_map_bank_detail[0]->access_code;
-        // $access_code = "AVPL86GG59BJ25LPJB";
-        $return_url = $this->site_name() . "fees/hdfc/online_fees_hdfcResponseHandler";
-        $send_arr = array(
-            "tid" => strtotime(date('Y-m-d H:i:s')),
-            "sub_institute_id" => session()->get("sub_institute_id"),
-            "merchant_id" => $get_map_bank_detail[0]->merchant_id,
-            "language" => "EN",
-            "order_id" => $orderId,
-            "amount" => $amount,
-            "currency" => "INR",
-            "redirect_url" => $return_url,
-            "cancel_url" => $return_url,
-            "merchant_param1" => $_REQUEST["student_id"],
-            "merchant_param2" => session()->get("syear"),
-            "merchant_param3" => $txnid,
-        );
-        $merchant_data = "";
-        foreach ($send_arr as $key => $value) {
-            $merchant_data .= $key . '=' . $value . '&';
-        }
-        $encrypted_data = $this->hdfc_encrypt($merchant_data, $working_key); // Method for encrypting the data.
+        
         $type = "web";
         $data = array(
             "merchant_data" => $encrypted_data,
@@ -214,7 +242,7 @@ class online_fees_collect_controller extends Controller
         // echo '<pre>'; print_r($data); exit;
     }
 
-    public function hdfc_responce_handler(Request $request)
+    public function hdfc_response_handler(Request $request)
     {
         // echo '<pre>';
         // print_r($_REQUEST);
@@ -223,15 +251,16 @@ class online_fees_collect_controller extends Controller
         $searchArr = array('"', "'");
         $replaceArr = array('\"', "\'");
         $get_map_bank_detail = DB::table("fees_hdffc")
-            ->where(["sub_institute_id" => session()->get("sub_institute_id")])
-            ->get();
-        // $working_key = "94C918B28626FB1A085AAB522E32A402"; //Shared by CCAVENUES
+            ->where(["sub_institute_id" => 48])
+            ->get();//session()->get("sub_institute_id")
+        //$working_key = "585414BED625F7D522B38C014074BE28"; //Shared by CCAVENUES 48 CMA
         $working_key = $get_map_bank_detail[0]->working_code; //Shared by CCAVENUES
         // $access_code = "AVPL86GG59BJ25LPJB";
         // $workingKey = WORKING_CODE; //Working Key should be provided here.
         $encResponse = $_POST["encResp"]; //This is the response sent by the CCAvenue Server
-        $rcvdString = hdfc_decrypt($encResponse, $working_key); //Crypto Decryption used as per the specified working key.
+        $rcvdString = $this->hdfc_decrypt($encResponse, $working_key); //Crypto Decryption used as per the specified working key.
         $order_status = "";
+
         $decryptValues = explode('&', $rcvdString);
         $dataSize = sizeof($decryptValues);
         for ($i = 0; $i < $dataSize; $i++) {
@@ -259,11 +288,11 @@ class online_fees_collect_controller extends Controller
             } else if ($i == 27) {
                 $syear = $information[1];
             } else if ($i == 28) {
-                $curMp = $information[1];
-            } else if ($i == 29) {
-                $student_name = $information[1];
-            } else if ($i == 30) {
                 $txnid = $information[1];
+            } else if ($i == 29) {
+                $sub_institute_id = $information[1];
+            } else if ($i == 30) {
+                $fine = $information[1];
             } else if ($i == 35) {
                 $mer_amount = $information[1];
             }
@@ -280,12 +309,13 @@ class online_fees_collect_controller extends Controller
             "amount" => $amount,
             "student_id" => $student_id,
             "syear" => $syear,
-            "curMp" => $curMp,
-            "student_name" => $student_name,
             "txnid" => $txnid,
+            "sub_institute_id" => $sub_institute_id,
+            "fine" => $fine,
             "mer_amount" => $mer_amount,
         );
         $res_josn = json_encode($res_arr);
+
         $get_all_data = DB::table("fees_payment")
             ->where(["hdfc_order_id" => $order_id])
             ->get();
@@ -301,14 +331,14 @@ class online_fees_collect_controller extends Controller
         $where_arr = array(
             "sub_institute_id" => $get_all_data[0]->sub_institute_id,
             "syear" => $get_all_data[0]->syear,
-            "hdfc_order_id" => $res_arr["RID"]
+            "hdfc_order_id" => $order_id
         );
         // echo '<pre>'; print_r($where_arr); exit;
         DB::table("fees_payment")
             ->where($where_arr)
             ->update($update_arr);
         if ($order_status == "Success") {
-            $data = $this->pay_fees($request, $get_all_data[0]->student_id, $get_all_data[0]->syear, $get_all_data[0]->sub_institute_id, $res_arr["AMT"], $order_id);
+            $data = $this->pay_fees($request, $get_all_data[0]->student_id, $get_all_data[0]->syear, $get_all_data[0]->sub_institute_id, $mer_amount, $tracking_id);
             $type = $request->input('type');
             // return is_mobile($type, "fees/fees_collect/add", $res, "view");
             return \App\Helpers\is_mobile($type, "fees/online_fees_collect/receipt_view", $data, "view");
@@ -1205,9 +1235,9 @@ exit; */
         $syear = $request->syear;
         $sub_institute_id= $request->sub_institute_id;
         $amount= $request->amount;
-        $cheque_no= $request->cheque_no;
+        $transactionid= $request->transactionid;
         $fine= $request->fine;  
-        $payment_mode= $request->payment_mode ?? 'GPAY';
+        $bank_name= $request->bank_name ?? 'GPAY';
         
         // validate requried fields 
         $validate = Validator::make($request->all(), [
@@ -1329,11 +1359,11 @@ exit; */
                 "fine" => $final_fees_arr["fine"],
                 "totalDis" => 0,
                 "totalFin" => 0,
-                "PAYMENT_MODE" => $payment_mode,
+                "PAYMENT_MODE" => 'Online',
                 "receiptdate" => date("Y-m-d"),
                 "cheque_date" => "",
-                "cheque_no" => $cheque_no,
-                "bank_name" => $payment_mode,
+                "cheque_no" => $transactionid,
+                "bank_name" => $bank_name,
                 "bank_branch" => "",
                 "send_sms"=>$send_sms,
                 "submit" => "Save",

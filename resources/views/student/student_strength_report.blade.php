@@ -302,7 +302,18 @@
                                 @foreach ($data['strength'] as $gender)
                                     @php
                                         $genderTotal = $value->$gender ?? 0;
-                                        $genderIndex = ($gender == 'M') ? 0 : 1;
+                                        if(count($data['strength']) > 2){
+                                            $genderIndex = ($gender == 'M') ? 0 : 1;
+                                        }else{
+                                            if($gender=="M"){
+                                                $genderIndex = ($gender == 'M') ? 0 : 1;
+                                            }
+                                            else if($gender=="F"){
+                                                $genderIndex = ($gender == 'F') ? 0 : 1;
+                                            }else{
+                                                $genderIndex = 0;
+                                            }
+                                        }
                                         $strengthTotals[$genderIndex] += $genderTotal;
                                     @endphp
                                     <td>{{$genderTotal}}</td>
