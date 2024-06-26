@@ -27,10 +27,10 @@
                                 <tr>
                                     <th>Title</th>
                                     <th>Short Name</th>
-                                    <th>Start Time</th>
+                                    <!--<th>Start Time</th>
                                     <th>End Time</th>
                                     <th>Academic Year</th>
-                                    <th>Academic Section</th>
+                                    <th>Academic Section</th>-->
                                     <th>Used for Attendance</th>
                                     <th>Action</th>
                                 </tr>
@@ -40,7 +40,7 @@
                                 <tr>    
                                     <td>{{$data->title}}</td>
                                     <td>{{$data->short_name}}</td>                 
-                                    <td>{{$data->start_time}}</td>                 
+                                    <!--<td>{{$data->start_time}}</td>                 
                                     <td>{{$data->end_time}}</td>     
                                     <td>{{$data->academic_year_name}}</td>                                         
                                     <td>
@@ -49,7 +49,7 @@
                                     @else
                                         {{"-"}}
                                     @endif
-                                    </td>
+                                    </td>-->
                                     <td>
                                     @if($data->used_for_attendance != "")
                                         {{$data->used_for_attendance}}

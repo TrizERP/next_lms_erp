@@ -296,7 +296,7 @@
                             @endif
                             <div class="col-md-4 form-group text-left">
                                 <label>Student Batch</label>
-                                <select id='studentbatch' name="studentbatch" class="form-control">
+                                <select id='studentbatch' name="studentbatch" class="form-control" required="required">
                                     <option value="">--Select--</option>                                                    
                                 </select>
                             </div>
