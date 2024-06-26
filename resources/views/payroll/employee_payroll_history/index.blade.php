@@ -27,6 +27,7 @@
                                 <div class="row">
                                 @php 
                                     $dep_id = $emp_id = '';
+                                    $currentYear = date('Y');
                                     if(isset($data['selDept'])){
                                         $dep_id = $data['selDept'];
                                     }
@@ -36,13 +37,13 @@
                                     }
                                 @endphp
 
-                                {!! App\Helpers\HrmsDepartments("","",$dep_id,"",$emp_id,"") !!}
+                                {!! App\Helpers\HrmsDepartments("","multiple",$dep_id,"multiple",$emp_id,"") !!}
                                     <div class="col-md-3 form-group">
                                         <label>Select Year</label>
                                         <select id='year' name="year" class="form-control">
                                             <option value="0">Select Year</option>
                                             @foreach($data['years'] as $year)
-                                                <option @if(isset($data['selYear']) && $data['selYear'] == $year) selected @endif>{{$year}}</option>
+                                                <option @if(isset($data['selYear']) && $data['selYear'] == $year) selected @elseif($year==$currentYear) Selected @endif>{{$year}}</option>
                                             @endforeach
                                         </select>
                                     </div>

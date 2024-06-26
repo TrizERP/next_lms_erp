@@ -792,14 +792,96 @@ class PayrollController extends Controller
 
     public function payrollDeduction(Request $request)
     {
+        $type = $request->type;
+        $sub_institute_id = session()->get('sub_institute_id');
         $payrollTypes = [];
-        if ($request->type) {
-            $payrollTypes = PayrollType::where([['status', 1], ['payroll_type', $request->type]])->get();
+        // process to get all emp create
+        if($request->has('submit')){
+            // return $request->all();
+            
+            $res['selDeduction'] =  $deduction_type= $request->deduction_type;
+            $res['selType'] =  $payroll_type= $request->payroll_type;
+            $res['selMonth'] = $month= $request->month;
+            $res['selYear'] = $year= $request->year;
+
+            $checkArr = [
+                "month"=>$month,
+                "year"=>$year,
+                "deduction_type"=>$payroll_type,
+                "sub_institute_id"=>$sub_institute_id,
+            ];
+
+            $getDeduction = DB::table('hrms_emp_payroll_deduction')->where($checkArr)->get()->toArray();
+            $deductionArr= [];
+            foreach($getDeduction as $key=>$value){
+                $deductionArr[$value->employee_id]=$value->deduction_amount;
+            }
+           $res['all_emp'] = employeeDetails($sub_institute_id,'','','');
+           $res['deductionArr'] = $deductionArr;
         }
-        $result['payrollTypes'] = $payrollTypes;
-        return view('payroll.payroll_deduction.index', $result);
+        // end process  get all emp
+
+        $payrollType = PayrollType::where('status', 1)->get()->toArray();
+        $payrollTypeArr=[];
+        foreach($payrollType as $key=>$value){
+            $payrollTypeArr[$value['payroll_type']][]=[
+                "id"=>$value['id'],
+                "payroll_name"=>$value['payroll_name'],
+            ];
+        }
+        $res['payrollTypes'] =  $payrollTypeArr;
+        $res['months'] = Helpers::getMonths();
+        $res['years'] = Helpers::getYears();
+        // echo "<pre>";print_r($res['deductionArr']);exit;
+        // return view('payroll.payroll_deduction.index', $result);
+        return is_mobile($type, "payroll.payroll_deduction.index", $res, "view");
     }
 
+    public function payrollDeductionStore(Request $request)
+    {
+        $type = $request->type;
+        $sub_institute_id = session()->get('sub_institute_id');
+        $created_by = session()->get('user_id');
+        $payroll_type = $request->payroll_type;
+        $month = $request->month;
+        $year = $request->year;
+        $deductAmt = $request->deductAmt;
+        $i=0;
+        foreach ($deductAmt as $emp_id => $amount) {
+            $checkArr = [
+                "month"=>$month,
+                "year"=>$year,
+                "employee_id"=>$emp_id,
+                "deduction_type"=>$payroll_type,
+                "sub_institute_id"=>$sub_institute_id,
+            ];
+            $check = DB::table('hrms_emp_payroll_deduction')->where($checkArr)->first();
+            if(empty($check)){
+                $checkArr['created_by']=$created_by;
+                $checkArr['deduction_amount']=$amount ?? 0;
+                $checkArr['created_at']=now();
+
+                $insert = DB::table('hrms_emp_payroll_deduction')->insert($checkArr);
+                $i++;
+            }else{
+                $checkArr['created_by']=$created_by;
+                $checkArr['deduction_amount']=$amount ?? 0;
+                $checkArr['updated_at']=now();
+                
+                $update = DB::table('hrms_emp_payroll_deduction')->where('id',$check->id)->update($checkArr);
+                $i++;
+            }
+        }
+        // echo "<pre>";print_r($request->all());exit;
+        if($i>0){
+            $res['status_code'] = 1;
+            $res['message']='Added Successfully !!';
+        }else{
+            $res['status_code'] = 0;
+            $res['message']='Failed To Add !!';
+        }
+        return is_mobile($type, "payroll_deduction.index", $res);
+    }
 
     public function rollOver(Request $request)
     {
@@ -1188,7 +1270,7 @@ class PayrollController extends Controller
             $res['employeeDetails'] = EmployeeMonthlySalaryData::join('tbluser as u',function($join) use($request){
                 $join->on('u.id','=','employee_monthly_salary_data.employee_id')
                 ->when($request->department_id!=0,function($q) use($request){
-                    $q->where('u.department_id',$request->department_id);
+                    $q->whereIn('u.department_id',$request->department_id);
                 });
             })->where([['employee_monthly_salary_data.month',$request->month],['employee_monthly_salary_data.year',$request->year],['employee_monthly_salary_data.sub_institute_id',$sub_institute_id]])
            ->get();
@@ -1335,9 +1417,9 @@ class PayrollController extends Controller
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
 
-        $res['department_id'] = $department_id = ($request->department_id!=0) ? $request->department_id : '';
-        $res['employee_id'] = $employee_id = ($request->emp_id!=0) ? $request->emp_id : '';
-
+        $res['employee_id'] = $employee_id= ($request->emp_id!=0) ? implode(',',$request->emp_id) : '';
+        $res['department_id'] = $department_id= ($request->department_id!=0) ? implode(',',$request->department_id) : '';
+        
         $res['selYear'] = $year = $request->year;
         $res['selMonth'] = $month = $request->month;
 
@@ -1351,11 +1433,33 @@ class PayrollController extends Controller
 
         // empData with val 
         $newData = [];
+        $daysCount = $this->countWeekdaysExcludingSundays($year, $month);
+
         foreach ($employeeDetails as $key => $value) {
             # store all details of employee
             $newData[$key] = $value;
             // get monthly salary Data and add into newData array
             $newData[$key]['monthlyData'] = DB::table('employee_monthly_salary_data')->where(['sub_institute_id'=>$sub_institute_id,'year'=>$year])->where('employee_id',$value['id'])->where('month',$month)->first();
+            if(isset($newData[$key]['monthlyData']->total_day)){
+                $newData[$key]['totalDay'] = $newData[$key]['monthlyData']->total_day;
+            }else{
+                $year = $year ?? Carbon::now()->year;
+                $month = $month ?? Carbon::now()->format('M');
+
+                $monthNumber = date('n', strtotime($month));
+
+                $startDate = Carbon::createFromDate($year, $monthNumber, 1);
+                $endDate = $startDate->copy()->endOfMonth();
+                $emp_att = DB::table('hrms_attendances')->whereBetween('day',[$startDate,$endDate])->where('user_id',$value['id'])->count();
+
+                $holidays = DB::table('hrms_holidays')
+                ->where('department', '=', $value['department_id'])
+                ->where('from_date', '>=', $startDate)
+                ->where('to_date', '<=', $endDate)
+                ->count();
+
+                $newData[$key]['totalDay'] = ($holidays+$emp_att);
+            }
         }
 
         $payrollTypes = PayrollType::where('status', 1)->orderBy('sort_order')->get();
@@ -1379,16 +1483,18 @@ class PayrollController extends Controller
             $header['total_payment'] = 'Total Payment';
             $header['received_by'] = 'Received By';
         }
-
         $res['header'] =$header;
         $res['employeeDetails'] = $newData;
         $res['months'] = Helpers::getMonths();
         $res['years'] = Helpers::getYears();
-        // echo "<pre>";print_r($newData);exit;
+        $res['selected_emp']=$request->emp_id;
+        $res['department_id']=$request->department_id;
+        // echo "<pre>";print_r($daysCount);exit;
         return is_mobile($type,'payroll.monthly_payroll_report.newIndex',$res,'view');
     }
 
     function getEmpMonthlyData(Request $request){
+        // echo "<pre>";print_r($request->all());exit;
         $sub_institute_id = session()->get('sub_institute_id');
         $totalDay = $request->totalDay;
         
@@ -1405,14 +1511,32 @@ class PayrollController extends Controller
         
         $totaldeduction = $totalallowance = 0;
         foreach ($payrollTypes as $payrollType) {
+            // for allowance
             if(isset($employeeSalaryDetails[$payrollType->id]) && $payrollType->payroll_type == 1) {
-                $preparPayrollType[]['allowance'] = [$employeeSalaryDetails[$payrollType->id],$payrollType->amount_type,$payrollType->id,$payrollType->payroll_name];
-            } else if (isset($employeeSalaryDetails[$payrollType->id])) {
-                $preparPayrollType[]['deduction'] = [$employeeSalaryDetails[$payrollType->id],$payrollType->amount_type,$payrollType->id,$payrollType->payroll_name];
+
+                $checkAllowance = DB::table('hrms_emp_payroll_deduction')->where('employee_id',$request->emp_id)->where(['sub_institute_id'=>$sub_institute_id,'month'=>$request->month,'year'=>$request->year,'deduction_type'=>$payrollType->id])->first();
+                $payrollAmount=$employeeSalaryDetails[$payrollType->id];
+                if(isset($checkAllowance->deduction_amount)){
+                    $payrollAmount = ($payrollAmount - $checkAllowance->deduction_amount);
+                }
+
+                $preparPayrollType[]['allowance'] = [$payrollAmount,$payrollType->amount_type,$payrollType->id,$payrollType->payroll_name];
+            }
+            // for deduction
+             else if (isset($employeeSalaryDetails[$payrollType->id])) {
+
+                $checkDeduction = DB::table('hrms_emp_payroll_deduction')->where('employee_id',$request->emp_id)->where(['sub_institute_id'=>$sub_institute_id,'month'=>$request->month,'year'=>$request->year,'deduction_type'=>$payrollType->id])->first();
+                $payrollAmount=$employeeSalaryDetails[$payrollType->id];
+                if(isset($checkDeduction->deduction_amount)){
+                    $payrollAmount = ($payrollAmount - $checkAllowance->deduction_amount);
+                }
+
+                $preparPayrollType[]['deduction'] = [$payrollAmount,$payrollType->amount_type,$payrollType->id,$payrollType->payroll_name];
             }
         }
         $employeefinalDisplayData = [];
         foreach ($preparPayrollType as $value){
+            // for allowance
             if(isset($value['allowance'])) {
                 $allowence =  $value['allowance'][0];
                 if($value['allowance'][1] == 1) $allowence = round( ($allowence / 30) * $request->totalDay);
@@ -1420,7 +1544,7 @@ class PayrollController extends Controller
                 $employeefinalDisplayData[$value['allowance'][2]] = $allowence;
                 $totalallowance = $totalallowance + $allowence;
             }
-
+            // for deduction
             if(isset($value['deduction'])) {
                 $deduction =  $value['deduction'][0];
                 $deductionName=  (($value['deduction'][3] == 'Pro.Tax') ? 1 : 0);
@@ -1492,5 +1616,25 @@ class PayrollController extends Controller
             $res['message'] = "Inserted Successfully";
         }
         return is_mobile($type,'monthly_payroll.index',$res);
+    }
+    public function countWeekdaysExcludingSundays($year = null, $month = null)
+    {
+        $year = $year ?? Carbon::now()->year;
+        $month = $month ?? Carbon::now()->format('M');
+
+        $monthNumber = date('n', strtotime($month));
+
+        $startDate = Carbon::createFromDate($year, $monthNumber, 1);
+        $endDate = $startDate->copy()->endOfMonth();
+
+        $totalDays = 0;
+
+        for ($date = $startDate; $date->lte($endDate); $date->addDay()) {
+            if (!$date->isSunday()) {
+                $totalDays++;
+            }
+        }
+
+        return $totalDays;
     }
 }

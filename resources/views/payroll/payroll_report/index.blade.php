@@ -25,19 +25,21 @@
                                   method="post" class="row">
                                 @csrf
                                 @php 
+                                $currentMonth = date('M');
+                                $currentYear = date('Y');
                                 $dep_id = '';
                                 if(isset($data['department_id']))
                                 {
                                     $dep_id = $data['department_id'];
                                 }
                                 @endphp 
-                                {!! App\Helpers\HrmsDepartments("","",$dep_id,"none","","") !!}
+                                {!! App\Helpers\HrmsDepartments("","multiple",$dep_id,"none","","") !!}
                                 <div class="col-md-3 form-group">
                                     <label>Select Month</label>
                                     <select id='year' name="month" class="form-control">
                                         <option value="0">Select Month</option>
                                         @foreach($data['months'] as $month)
-                                            @if(isset($data['month']) && $data['month'] == $month)
+                                            @if((isset($data['month']) && $data['month'] == $month) || $month==$currentMonth)
                                                 <option selected>{{$month}}</option>
                                             @else
                                                 <option>{{$month}}</option>
@@ -50,7 +52,7 @@
                                     <select id='year' name="year" class="form-control">
                                         <option value="0">Select Year</option>
                                         @foreach($data['years'] as $year)
-                                            @if(isset($data['year']) && $data['year'] == $year)
+                                            @if((isset($data['year']) && $data['year'] == $year) || ($year == $currentYear))
                                                 <option selected>{{$year}}</option>
                                             @else
                                                 <option>{{$year}}</option>

@@ -43,9 +43,8 @@ Route::group([ 'middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::post('/form16-get-employees-list', [PayrollController::class, 'getEmployeeLists'])->name('form16.get.employees.list');
     Route::post('/form16-report', [PayrollController::class, 'form16Report'])->name('form16.report');
 
-    /*Route::get('/payroll-deduction', [PayrollController::class, 'payrollDeduction']);
-    Route::post('/payroll-deduction', [PayrollController::class, 'payrollDeductionReport']);
-    Route::get('/payroll-deduction/{id}', [PayrollController::class, 'payrollDeduction']);*/
+    Route::get('/payroll-deduction', [PayrollController::class, 'payrollDeduction'])->name('payroll_deduction.index');
+    Route::post('/payroll-deduction/store', [PayrollController::class, 'payrollDeductionStore'])->name('payroll_deduction.store');
 
     Route::get('/monthly-payroll-report', [PayrollController::class, 'monthlyPayrollReport'])->name('monthly_payroll_report.index');
     Route::post('/monthly-payroll-report', [PayrollController::class, 'monthlyPayrollReport'])->name('payroll.store_monthly_payroll_report');
