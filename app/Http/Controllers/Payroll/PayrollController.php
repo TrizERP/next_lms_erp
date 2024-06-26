@@ -8,6 +8,7 @@ use App\Models\EmployeeSalaryStructure;
 use App\Models\PayrollType;
 use App\Models\HrmsDepartment;
 use App\Models\user\tbluserModel;
+use App\Http\Controllers\HRMS\HrmsController;
 use App\Traits\Helpers;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -1433,8 +1434,7 @@ class PayrollController extends Controller
 
         // empData with val 
         $newData = [];
-        $daysCount = $this->countWeekdaysExcludingSundays($year, $month);
-
+ 
         foreach ($employeeDetails as $key => $value) {
             # store all details of employee
             $newData[$key] = $value;
@@ -1447,20 +1447,30 @@ class PayrollController extends Controller
                 $month = $month ?? Carbon::now()->format('M');
 
                 $monthNumber = date('n', strtotime($month));
+                $currentMonth = date('n');
 
-                $startDate = Carbon::createFromDate($year, $monthNumber, 1);
-                $endDate = $startDate->copy()->endOfMonth();
-                $emp_att = DB::table('hrms_attendances')->whereBetween('day',[$startDate,$endDate])->where('user_id',$value['id'])->count();
+                $from_date = Carbon::createFromDate($year, $monthNumber, 1);
+                if($currentMonth==$monthNumber){
+                    $to_date = now();
+                }else{
+                    $to_date = $from_date->copy()->endOfMonth();
+                }
+                // $emp_att = DB::table('hrms_attendances')->whereBetween('day',[$from_date,$to_date])->where('user_id',$value['id'])->count();
 
-                $holidays = DB::table('hrms_holidays')
-                ->where('department', '=', $value['department_id'])
-                ->where('from_date', '>=', $startDate)
-                ->where('to_date', '<=', $endDate)
-                ->count();
+                $request2 = new Request(['type'=>"API",'sub_institute_id'=>$sub_institute_id ,'syear'=>$syear,'from_date'=>$from_date,'to_date'=>$to_date,'department_id'=>[$value['department_id']],'emp_id'=>$value['id']]);
+                $hrmsController = new HrmsController;
+                $attResponse = json_decode($hrmsController->departmentAttendanceReportCreate($request2),true);
+                $AttTotalDays = isset($attResponse['empData'][0]['totalDays']) ? $attResponse['empData'][0]['totalDays'] : 0;
+                $AttTotalAb = isset($attResponse['empData'][0]['total_ab_day']) ? $attResponse['empData'][0]['total_ab_day'] : 0;
 
-                $newData[$key]['totalDay'] = ($holidays+$emp_att);
+                $emp_att = ($AttTotalDays - $AttTotalAb);
+                // echo "<pre>";print_r($attResponse);
+
+                $newData[$key]['totalDay'] = $emp_att;
             }
         }
+                // echo "<pre>";print_r($newData);
+                // exit;
 
         $payrollTypes = PayrollType::where('status', 1)->orderBy('sort_order')->get();
 
@@ -1483,12 +1493,13 @@ class PayrollController extends Controller
             $header['total_payment'] = 'Total Payment';
             $header['received_by'] = 'Received By';
         }
+        $res['selected_emp']=$request->emp_id;
+        $res['department_id']=$request->department_id;
         $res['header'] =$header;
         $res['employeeDetails'] = $newData;
         $res['months'] = Helpers::getMonths();
         $res['years'] = Helpers::getYears();
-        $res['selected_emp']=$request->emp_id;
-        $res['department_id']=$request->department_id;
+      
         // echo "<pre>";print_r($daysCount);exit;
         return is_mobile($type,'payroll.monthly_payroll_report.newIndex',$res,'view');
     }
@@ -1547,7 +1558,7 @@ class PayrollController extends Controller
             // for deduction
             if(isset($value['deduction'])) {
                 $deduction =  $value['deduction'][0];
-                $deductionName=  (($value['deduction'][3] == 'Pro.Tax') ? 1 : 0);
+                $deductionName=  (($value['deduction'][3] == 'PT') ? 1 : 0);
                 if($value['deduction'][1] == 1 && !$deductionName) $deduction = round(($deduction / 30) * $request->totalDay);
                 if($value['deduction'][1] == 2 && !$deductionName) $deduction = round(($deduction / 30) * $request->totalDay);
                 $employeefinalDisplayData[$value['deduction'][2]] = $deduction;
@@ -1616,25 +1627,5 @@ class PayrollController extends Controller
             $res['message'] = "Inserted Successfully";
         }
         return is_mobile($type,'monthly_payroll.index',$res);
-    }
-    public function countWeekdaysExcludingSundays($year = null, $month = null)
-    {
-        $year = $year ?? Carbon::now()->year;
-        $month = $month ?? Carbon::now()->format('M');
-
-        $monthNumber = date('n', strtotime($month));
-
-        $startDate = Carbon::createFromDate($year, $monthNumber, 1);
-        $endDate = $startDate->copy()->endOfMonth();
-
-        $totalDays = 0;
-
-        for ($date = $startDate; $date->lte($endDate); $date->addDay()) {
-            if (!$date->isSunday()) {
-                $totalDays++;
-            }
-        }
-
-        return $totalDays;
     }
 }
