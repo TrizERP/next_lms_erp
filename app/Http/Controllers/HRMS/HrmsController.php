@@ -455,8 +455,8 @@ class HrmsController extends Controller
         $res['from_date_formatted'] = $from_date_formatted;
         $res['to_date_formatted'] = $to_date_formatted;
         $res['report_data'] = $report_data;
-        $res['employee_id'] = $employee_id;
-        $res['department_id'] = $department_id;
+        $res['selEmp'] = $employee_id;
+        $res['selDept'] = $department_id;
         $res['departments'] = $departments;
  
         //return view('HRMS.hrms_attendance_report.index', compact('employees', 'from_date_formatted', 'to_date_formatted', 'report_data', 'employee_id', 'department_id', 'departments'));
@@ -717,7 +717,7 @@ class HrmsController extends Controller
 
         $departments = HrmsDepartment::where('status', true)->pluck('department', 'id');
 
-        $employees = tbluserModel::where('sub_institute_id', $sub_institute_id)->where('department_id', $department_id)->where('status', 1)->get();
+        $employees = tbluserModel::where('sub_institute_id', $sub_institute_id)->whereIn('department_id', $department_id)->where('status', 1)->get();
         
         $hrmsList = HrmsAttendance::join('tbluser as u','u.id','=','hrms_attendances.user_id');
         

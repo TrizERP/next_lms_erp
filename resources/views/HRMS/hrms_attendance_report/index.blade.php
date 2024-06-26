@@ -53,7 +53,7 @@
                                     }
                                 @endphp
 
-                                {!! App\Helpers\HrmsDepartments("","",$dep_id,"",$emp_id,"") !!}
+                                {!! App\Helpers\HrmsDepartments("","multiple",$dep_id,"",$emp_id,"") !!}
                         <div class="col-md-3 form-group">
                             <label>From Date</label>
                             <div class="input-daterange input-group" id="date-range">
@@ -69,7 +69,7 @@
                             </div>
                         </div>
                         <div class="col-md-3 col-sm-offset-4 text-center form-group">
-                            <input type="submit" name="submit" value="Search" class="btn btn-success">
+                            <input type="submit" name="submit" value="Search" class="btn btn-success" onclick="checkEmp()">
                         </div>
                     </div>
                 </form>
@@ -232,15 +232,15 @@
     $(document).ready(function() {
         $('[data-toggle="tooltip"]').tooltip();
 
+    });
 
-<script>
     $(document).ready(function () {
         var table = $('#example').DataTable({
             ordering: false,
             select: true,
             lengthMenu: [
                 [100, 500, 1000, -1],
-                ->100', '500', '1000', 'Show All
+                ['100', '500', '1000', 'Show All']
             ],
             dom: 'Bfrtip',
             buttons: [
@@ -279,6 +279,17 @@
     });
 </script>
 <script>
+    function checkEmp(){
+        var emp_id  = $('#emp_id').val();
+        // alert(emp_id);
+        if(emp_id===0){
+            $('#emp_id').val('');
+            alert('Please Select Atleast 1 Employee');
+            return false;
+        }else{
+            return true;
+        }
+    }
 $(document).ready(function () {
     // Ajax call to get employees based on the selected department
     $(document).on("change", "#department_id", function(e) {
