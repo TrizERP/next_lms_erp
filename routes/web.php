@@ -415,6 +415,7 @@ Route::get('upload_create_result', 'result\MarkUploadController@store')->name('u
 
 Route::get('fetch_payment_status', 'fees\online_fees\online_fees_collect_controller@razorpay_fetch_payment_status');
 Route::get('icici_fetch_payment_status', 'fees\online_fees\online_fees_collect_controller@icici_fetch_payment_status');
+Route::get('hdfc_fetch_payment_status', 'fees\online_fees\online_fees_collect_controller@hdfc_fetch_payment_status');
 Route::get('payphi_fetch_payment_status', 'fees\online_fees\online_fees_collect_controller@payphi_fetch_payment_status');
 
 Route::group(['middleware' => ['session', 'menu', 'logRoute']], function () {
