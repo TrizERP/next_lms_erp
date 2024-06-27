@@ -354,6 +354,8 @@
 												<input type="text" name="fees_data[fine]" id="cheque_return_charges1" class="form-control cheque_return_charges1" value="@if(date('d') >= 3 && $total_amt!=0) {{$data['fees_config_data']['late_fees_amount']}} @else {{$cheque_return_charges0}} @endif" >
 											
 												<input type="hidden" name="hidden_cheque_return_charges" id="hidden_cheque_return_charges" class="form-control cheque_return_charges1" value="{{$data['fees_config_data']['late_fees_amount']}}"> 
+
+												<input type="hidden" name="for_cn_only" id="hidden_cheque_return_charges2" value="{{$data['fees_config_data']['late_fees_amount']}}"> 
 											@else
 												<input type="text" name="fees_data[fine]" id="{{$inputId}}" class="form-control hillsFine" value="@php if(isset($cheque_return_charges0)) echo $cheque_return_charges0; @endphp"
 												{{$readable}}>
@@ -749,23 +751,26 @@ function checkForm() {
 
 			function monthCheck() {
 				var checkedMonths = new Array();
+
 					var j = 0;
 					var TotalFin = 0;
-				for (var i = 0; i < document.getElementsByClassName('months').length; i++) {
-					if (document.getElementsByClassName('months')[i].checked) {
-						checkedMonths[j] = document.getElementsByClassName('months')[i].value;
-						@if(session()->get('sub_institute_id')==254 && !empty($data['hillsFine']) )
-							@if($data['hillsFine']!=0)
-								var hillsFine = @json($data['hillsFine']);
-								if(!isNaN(hillsFine[checkedMonths[j]])){
-									var fineVal = hillsFine[checkedMonths[j]];
-									TotalFin += fineVal;
-								}
+					for (var i = 0; i < document.getElementsByClassName('months').length; i++) {
+						if (document.getElementsByClassName('months')[i].checked) {
+							checkedMonths[j] = document.getElementsByClassName('months')[i].value;
+							@if(session()->get('sub_institute_id')==254 && !empty($data['hillsFine']) )
+								@if($data['hillsFine']!=0)
+									var hillsFine = @json($data['hillsFine']);
+									if(!isNaN(hillsFine[checkedMonths[j]])){
+										var fineVal = hillsFine[checkedMonths[j]];
+										TotalFin += fineVal;
+									}
+								@endif
 							@endif
-						@endif
-						j = j + 1;
+							j = j + 1;
+						}
 					}
-				}
+				
+
 				$('#cheque_return_charges').val(TotalFin);
 				$.ajax({
 					type: "POST",
@@ -792,15 +797,6 @@ function checkForm() {
 
 						tot = $("#totalVal").val();
 
-						// START 30-12-2021 Added for total fine box value display wrong
-						fin = parseFloat($("#totalFin").val());
-						cheque_return_charges = $("#hidden_cheque_return_charges").val();
-						sum = fin + parseFloat(cheque_return_charges);
-						$("#cheque_return_charges").val(sum);
-						calculateTotal();
-						// $("#grandTotal").val(tot);
-						// END 30-12-2021 Added for total fine box value display wrong
-
 						// 26/08/2021 Start Added for The Millennium School for Advanced Imprest Collection payment
 						$('.allField1').each(function() {
 							var new_name = $(this).attr('name');
@@ -809,9 +805,54 @@ function checkForm() {
 								$(this).attr('readonly', true);
 							}
 						});
-						// 26/08/2021 END Added for The Millennium School for Advanced Imprest Collection payment
+
+						@if(session()->get('sub_institute_id') == 257)
+							var k = 0;
+							var checkedTitle = new Array();
+
+								$('.allField1').each(function() {
+									checkedTitle[k] = $(this).attr('id');
+									k= k+1;
+								});
+								console.log(checkedTitle);
+
+								// uniform and recovery fees 
+								if (checkedTitle.length > 0 && !checkedTitle.includes('tution_fee') && !checkedTitle.includes('3')) {
+									fineZero(0);
+								}
+								// advance fees 
+								else if(checkedMonths.length > 0 && checkedTitle.length > 0 && checkedTitle.includes('3')){
+									lastMonth = checkedMonths[checkedMonths.length - 1];
+									var currentMonth = "{{date('n')}}{{date('Y')}}";
+									
+									let greaterMonths = checkedMonths.filter(month => month > currentMonth);
+
+									if (!greaterMonths.includes(currentMonth) && greaterMonths.length > 0) {
+									// console.log(greaterMonths);
+										fineZero(0);
+									}
+								}
+								else{
+									var charge = $('#hidden_cheque_return_charges2').val();
+									var fine = parseFloat(charge);
+									fineZero(fine);
+								}
+							@endif
+							// START 30-12-2021 Added for total fine box value display wrong
+								fin = parseFloat($("#totalFin").val());
+								cheque_return_charges = $("#hidden_cheque_return_charges").val();
+								sum = fin + parseFloat(cheque_return_charges);
+								$("#cheque_return_charges").val(sum);
+								calculateTotal();
+							// $("#grandTotal").val(tot);
+						
 					}
 				});
+			}
+
+			function fineZero(cheque_return_charges){
+				$('#cheque_return_charges1').val(cheque_return_charges);
+				$('#hidden_cheque_return_charges').val(cheque_return_charges);
 			}
 
 			$(document).on('blur', '#totalVal', function() {

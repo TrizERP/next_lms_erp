@@ -113,4 +113,6 @@ Route::group(['prefix' => 'hrms', 'middleware' => ['session', 'menu', 'logRoute'
     Route::resource('leave_encashment', leaveEncashmentController::class);
     Route::resource('add_department', departmentController::class);
     route::get('department-Emp-Lists',[departmentController::class, 'departmentEmpLists'])->name('departmentEmpLists');
+    route::get('sub-department-list',[departmentController::class, 'subDepartmentList'])->name('subDepartmentList');
+    route::get('department-employee-list',[departmentController::class, 'departmentEmployeeList'])->name('departmentEmployeeList');
 });
