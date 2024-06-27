@@ -350,6 +350,127 @@ class online_fees_collect_controller extends Controller
             // return \App\Helpers\is_mobile($type, "fees/online_fees_collect/axis_RequestHandler", $data, "view");
         }
     }
+    public function hdfc_fetch_payment_status(Request $request)
+    {
+        $payment_data = DB::table('fees_payment AS fp')
+            ->select('fp.id', 'fp.student_id', 'fi.merchant_id', 'fi.access_code', 'fi.working_code', 'fp.hdfc_order_id', 'tse.syear', 'fp.sub_institute_id', 'fp.amount', 'fp.fine', 'fp.discount', 'fp.hdfc_bank_res')
+            ->join('tblstudent_enrollment AS tse', function ($join) {
+                $join->on('tse.student_id', '=', 'fp.student_id')
+                    ->on('tse.syear', '=', 'fp.syear')
+                    ->on('tse.sub_institute_id', '=', 'fp.sub_institute_id');
+            })
+            ->join('academic_section AS a', 'a.id', '=', 'tse.grade_id')
+            ->join('fees_hdffc AS fi', function ($join) {
+                $join->on('fi.medium', '=', 'a.medium')
+                    ->on('fi.sub_institute_id', '=', 'tse.sub_institute_id');
+            })
+            ->where(function ($query) {
+                $query->where('fp.hdfc_payment_status', '!=', 'PS')
+                    ->where(function ($query) {
+                        $query->whereNotIn('fp.axis_payment_status', ['Successful'])
+                            ->orWhereNull('fp.axis_payment_status');
+                    });
+            })
+            ->whereNotNull('fp.hdfc_order_id')
+            ->whereBetween('fp.created_at', [now()->subDays(3), now()->subMinutes(30)])
+            ->groupBy('fp.id')
+            ->get();
+
+        if (!empty($payment_data)) {
+            foreach ($payment_data as $data) {
+                $id = $data->id;
+                $merchant_id = $data->merchant_id;
+                $access_code = $data->access_code;
+                $working_code = $data->working_code;
+                $order_no = $data->hdfc_order_id;
+
+                $send_arr = [
+                    'order_no' => $order_no,
+                    'reference_no' => $order_no,
+                ];
+
+                $request_payload = http_build_query($send_arr);
+                $enc_request = $this->hdfc_encrypt($request_payload, $working_code);
+
+                // Initialize cURL session
+                $ch = curl_init();
+
+                // Set the URL
+                curl_setopt($ch, CURLOPT_URL, 'https://api.ccavenue.com/apis/servlet/DoWebTrans');
+
+                // Set the cURL options
+                curl_setopt($ch, CURLOPT_POST, true);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query([
+                    'enc_request' => $enc_request,
+                    'access_code' => $access_code,
+                    'request_type' => 'JSON',
+                    'command' => 'orderStatusTracker',
+                    'reference_no' => $order_no,
+                    'order_no' => $order_no,
+                ]));
+
+                // Execute the cURL request
+                $response = curl_exec($ch);
+
+                // Check for errors
+                if (curl_errno($ch)) {
+                    $error_msg = curl_error($ch);
+                    Log::error("cURL error: " . $error_msg);
+                    continue;
+                }
+
+                // Close the cURL session
+                curl_close($ch);
+
+                // Process the response
+                if ($response !== false) {
+                    parse_str($response, $response_data);
+
+                    if (isset($response_data['status']) && $response_data['status'] == '0') {
+                        $dec_response = $this->hdfc_decrypt($response_data['enc_response'], $working_code);
+
+                        $status = $dec_response['order_status'];
+                        $paydate = strtotime($dec_response['order_status_date_time']);
+                        $trandate = date("Y-m-d", $paydate);
+
+                        $update_arr = [
+                            "axis_encrypt_request" => "cron",
+                            "axis_payment_status" => $status,
+                            "axis_bank_res" => $trandate,
+                            "hdfc_bank_res" => json_encode($dec_response),
+                            "updated_at" => now()
+                        ];
+
+                        DB::table("fees_payment")
+                            ->where('id', $id)
+                            ->update($update_arr);
+
+                        $request->merge([
+                            '_key' => csrf_token(),
+                            'student_id' => $data->student_id,
+                            'inserted_id' => $id,
+                            'hdfc_payment_id' => $order_no,
+                            'syear' => $data->syear,
+                            'sub_institute_id' => $data->sub_institute_id
+                        ]);
+
+                        if ($status == 'Successful') {
+                            $check = DB::table('fees_collect')->whereRaw('cheque_no='.$order_no.' AND student_id='.$data->student_id.' AND syear='.$data->syear.' AND sub_institute_id='.$data->sub_institute_id)->get()->toArray();
+
+                            if (count($check) == 0) {
+                                $this->pay_fees($request, $data->student_id, $data->syear, $data->sub_institute_id, $data->amount, $order_no);
+                            }
+                        }
+                    } else {
+                        echo "<br/>CCAvenue API Error: " . $response_data['enc_response'];
+                    }
+                } else {
+                    echo "<br/>CCAvenue API Request Failed";
+                }
+            }
+        }
+    }
 
     public function icici(Request $request)
     {
