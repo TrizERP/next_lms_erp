@@ -103,13 +103,17 @@ class taskController extends Controller
      */
     public function store(Request $request)
     {
+        // echo "<pre>";print_r($request->all());exit;
         $type = $request->input("type");
         $sub_institute_id = $request->session()->get("sub_institute_id");
         $syear = $request->session()->get("syear");
         $term_id = $request->session()->get("term_id");
         $user_id = $request->session()->get("user_id");
         $TASK_ALLOCATED_TO = $request->input("TASK_ALLOCATED_TO");
-        $data = $request->except(['_method', '_token', 'submit', 'TASK_ATTACHMENT']);
+        $KRA = $request->input("KRA");
+        $KPA = $request->input("KPA");
+        $task_type = $request->input("selType");
+        $data = $request->except(['_method', '_token', 'submit', 'TASK_ATTACHMENT','formName','selDepartment','selSubDepartment','selType','add','type','syear','sub_institute_id']);
 
         $file_name = $ext = $file_size = "";
         if ($request->hasFile('TASK_ATTACHMENT')) {
@@ -123,6 +127,10 @@ class taskController extends Controller
         }
 
         foreach ($TASK_ALLOCATED_TO as $key => $value) {
+            $data['KRA'] = $KRA;
+            $data['KPA'] = $KPA;
+            $data['task_type'] = $task_type;
+
             $data['SYEAR'] = $syear;
             $data['MARKING_PERIOD_ID'] = $term_id;
             $data['CREATED_BY'] = $user_id;
