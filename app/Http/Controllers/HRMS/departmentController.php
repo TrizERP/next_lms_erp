@@ -195,4 +195,37 @@ class departmentController extends Controller
         ->get()
         ->toArray();
     }
+
+    public function subDepartmentList(Request $request){
+        $sub_institute_id = session()->get('sub_institute_id');
+        $depIds = implode(',',$request->depId);
+
+         return DB::table('hrms_departments_mapping')
+        ->whereRaw('parent_id in ('.$depIds.')')
+        ->whereIn('sub_institute_id',[0,$sub_institute_id])
+        ->groupBy('id')
+        ->get()
+        ->toArray();
+    }
+
+    public function departmentEmployeeList(Request $request){
+        $sub_institute_id = session()->get('sub_institute_id');
+        $depIds = implode(',',$request->depId);
+        $where = "(department_id in ($depIds)";
+        
+        if($request->has('subDepId')){
+            $subDepIds = implode(',',$request->depId);
+            $where .= " OR department_id in ($subDepIds))";
+        }else{
+            $where .= " AND 1=1)";
+        }
+         return DB::table('tbluser')
+         ->selectRaw('id,CONCAT_WS(" ",COALESCE(first_name,"-"),COALESCE(middle_name,"-"),COALESCE(last_name,"-")) as name,mobile')
+        ->whereRaw($where)
+        ->where('sub_institute_id',$sub_institute_id)
+        ->where('status',1)
+        ->groupBy('id')
+        ->get()
+        ->toArray();
+    }
 }
