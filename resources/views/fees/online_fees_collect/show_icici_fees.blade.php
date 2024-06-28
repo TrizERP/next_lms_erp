@@ -202,9 +202,9 @@
                                                  foreach ($data['final_fee'] as $id => $val) { ?>
                                                     
                                                     <tr>
-                                                        <td style="width: 20%"><?php echo $id; ?></td>
+                                                        <td style="width: 20%" class="allField1" id="{{$id}}">{{$id}}</td>
                                                         
-                                                        <td style="width: 20%"><?php echo $val; ?></td>
+                                                        <td style="width: 20%">{{$val}}</td>
 
                                                         <?php
                                                         //echo "<pre>";print_r($id);
@@ -248,6 +248,9 @@
                                             <td>@if(in_array(session()->get('sub_institute_id'), $sub_institute_id))
                                                 <input type="text" name="fees_data[fine]" id="cheque_return_charges1" class="form-control cheque_return_charges1" value="@if($currentDate > $thirdDateOfMonth && isset($total_amt) && $total_amt!=0 && $data['admission_under'] == 'Old') {{ $data['fees_config_data'][0]['late_fees_amount'] }} @else {{ $cheque_return_charges0 ?? 0 }} @endif" readonly="readonly">
                                                 <input type="hidden" name="hidden_cheque_return_charges" id="hidden_cheque_return_charges" class="form-control cheque_return_charges1" value="@if($currentDate > $thirdDateOfMonth && isset($total_amt) && $total_amt!=0 && $data['admission_under'] == 'Old') {{  $data['fees_config_data'][0]['late_fees_amount'] }} @else {{ $cheque_return_charges0 ?? 0 }} @endif">
+
+                                                <input type="hidden" name="for_cn_only" id="hidden_cheque_return_charges2" value="@if($currentDate > $thirdDateOfMonth && isset($total_amt) && $total_amt!=0 && $data['admission_under'] == 'Old') {{  $data['fees_config_data'][0]['late_fees_amount'] }} @else {{ $cheque_return_charges0 ?? 0 }} @endif"> 
+
                                             @else
                                                 <input type="text" name="fees_data[fine]" id="cheque_return_charges" class="form-control" value="@php if(isset($cheque_return_charges0)) echo $cheque_return_charges0; @endphp" readonly="readonly">
                                                 <input type="hidden" name="hidden_cheque_return_charges" id="hidden_cheque_return_charges" class="form-control" value="@if(isset($cheque_return_charges0)){{ $cheque_return_charges0 }}@endif">
@@ -504,14 +507,7 @@
                     // $("#totalDiscount").val(0);
                     $("#pay_amount").val(tot);//grandTotal
 
-                    fin = parseFloat($("#totalFin").val());
-                    cheque_return_charges = $("#hidden_cheque_return_charges").val();
-                    sum = fin + parseFloat(cheque_return_charges);
-                    if(isNaN(sum)){
-                    $("#cheque_return_charges").val(0);                        
-                    }else{
-                    $("#cheque_return_charges").val(sum);
-                    }
+                    
                     calculateTotal();
 						// 26/08/2021 Start Added for The Millennium School for Advanced Imprest Collection payment
 						$('.allField1').each(function() {
@@ -522,8 +518,53 @@
 							}
 						});
 						// 26/08/2021 END Added for The Millennium School for Advanced Imprest Collection payment
-					}
+                        @if(session()->get('sub_institute_id') == 257)
+							var k = 0;
+							var checkedTitle = new Array();
+
+								$('.allField1').each(function() {
+									checkedTitle[k] = $(this).attr('id');
+									k= k+1;
+								});
+								console.log(checkedTitle);
+
+								// uniform and recovery fees 
+								if (checkedTitle.length > 0 && !checkedTitle.includes('Sports Fees') && !checkedTitle.includes('3')) {
+									fineZero(0);
+								}
+								// advance fees 
+								else if(checkedMonths.length > 0 && checkedTitle.length > 0 && checkedTitle.includes('Advance Fees')){
+									lastMonth = checkedMonths[checkedMonths.length - 1];
+									var currentMonth = "{{date('n')}}{{date('Y')}}";
+									
+									let greaterMonths = checkedMonths.filter(month => month > currentMonth);
+
+									if (!greaterMonths.includes(currentMonth) && greaterMonths.length > 0) {
+									// console.log(greaterMonths);
+										fineZero(0);
+									}
+								}
+								else{
+									var charge = $('#hidden_cheque_return_charges2').val();
+									var fine = parseFloat(charge);
+									fineZero(fine);
+								}
+							@endif
+                            fin = parseFloat($("#totalFin").val());
+                            cheque_return_charges = $("#hidden_cheque_return_charges").val();
+                            sum = fin + parseFloat(cheque_return_charges);
+                            if(isNaN(sum)){
+                                $("#cheque_return_charges").val(0);                        
+                            }else{
+                                $("#cheque_return_charges").val(sum);
+                            }
+                    }
 				});
+
+            function fineZero(cheque_return_charges){
+				$('#cheque_return_charges1').val(cheque_return_charges);
+				$('#hidden_cheque_return_charges').val(cheque_return_charges);
+			}
 
                 // get discount amount 14-06-2024
                 var general_setting  = @json($data['discountData']);
