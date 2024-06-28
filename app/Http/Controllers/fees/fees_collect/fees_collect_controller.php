@@ -63,8 +63,11 @@ class fees_collect_controller extends Controller
      * @return void
      */
 
-    public function show_student()
+    public function show_student(Request $request)
     {
+        echo "<pre>";
+        print_r($request);
+        exit();
         $responce_arr = [];
         $type = $_REQUEST['type'] ?? "";
         $last_year = (session()->get('syear') - 1);
@@ -309,7 +312,7 @@ class fees_collect_controller extends Controller
             }
         }
         $responce_arr['stu_data'] = $result;
-        $responce_arr['grade_id'] = $_REQUEST['grade'];
+        $responce_arr['grade_id'] = $_REQUEST['grade'] ?? '';
         $responce_arr['standard_id'] = $_REQUEST['standard'] ?? '';
         $responce_arr['division_id'] =  $_REQUEST['division'] ?? '';
             // echo "<pre>";print_r($responce_arr);exit;
