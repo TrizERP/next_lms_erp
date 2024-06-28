@@ -63,11 +63,8 @@ class fees_collect_controller extends Controller
      * @return void
      */
 
-    public function show_student(Request $request)
+    public function show_student()
     {
-        echo "<pre>";
-        print_r($request);
-        exit();
         $responce_arr = [];
         $type = $_REQUEST['type'] ?? "";
         $last_year = (session()->get('syear') - 1);
