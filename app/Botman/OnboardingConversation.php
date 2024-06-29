@@ -62,7 +62,7 @@ class OnboardingConversation extends Conversation{
             if (isset($feesData->stu_data) && !empty($feesData->stu_data)) {
                 $details = 'Fees Details';
                 foreach ($feesData->stu_data as $key => $value) {
-                    $details .= '<br><br><p><b>Student Name : </b>' . $value->first_name . ' ' . $value->middle_name . ' ' . $value->last_name . '<br><b>GR No. : </b>' . $value->enrollment_no . '<br><b>pending : </b>' . $value->bkoff . '</p>';
+                    $details .= '<br><br><p><b>Student Name : </b>' . $value->first_name . ' ' . $value->middle_name . ' ' . $value->last_name . '<br><b>GR No. : </b>' . $value->enrollment_no . '<br><b>Pending Fees : </b>' . $value->bkoff . '</p>';
                 }
                 $this->say($details);
             } else {
