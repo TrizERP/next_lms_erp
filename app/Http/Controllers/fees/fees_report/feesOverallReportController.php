@@ -120,7 +120,7 @@ class feesOverallReportController extends Controller
         // set_time_limit(300); // to prevent maximum execution error
         foreach ($feesData as $key => $value) {
             $bk_data = $controller->getBk($request, $value['id']);
-            if (count($bk_data) > 0) {
+            if (count($bk_data) > 0 && isset($bk_data['stu_data'])) {
                 $final_array[$value['id']]['enrollment'] = $bk_data['stu_data']['enrollment'];
                 $final_array[$value['id']]['name'] = $bk_data['stu_data']['name'];
                 $final_array[$value['id']]['stddiv'] = $bk_data['stu_data']['stddiv'];
@@ -146,27 +146,28 @@ class feesOverallReportController extends Controller
                         }
                     }
                 }
-            }
-            if (isset($fees_fine_discount_data[$value['id']])) {
-                $final_array[$value['id']]['fine'] = $fees_fine_discount_data[$value['id']]['total_fine'];
-                $final_array[$value['id']]['discount'] = $fees_fine_discount_data[$value['id']]['total_disc'];
-            } 
+                if (isset($fees_fine_discount_data[$value['id']])) {
+                    $final_array[$value['id']]['fine'] = $fees_fine_discount_data[$value['id']]['total_fine'];
+                    $final_array[$value['id']]['discount'] = $fees_fine_discount_data[$value['id']]['total_disc'];
+                } 
 
-        if (isset($final_array[$value['id']])) {
-            $student_data = $final_array[$value['id']];
-            $total_paid_student =  $total_remain_student =  $total_bk_student = 0;
+                if (isset($final_array[$value['id']])) {
+                    $student_data = $final_array[$value['id']];
+                    $total_paid_student =  $total_remain_student =  $total_bk_student = 0;
 
-            foreach ($student_data as $key => $data) {
-                if ($key !== 'total_bk' && is_array($data) && isset($data['bk']) ||  isset($data['paid']) ||  isset($data['remain']) ) {
-                    $total_paid_student += $data['paid'];
-                    $total_remain_student += $data['remain'];
-                    $total_bk_student += $data['bk'];            
-                    $final_array[$value['id']]['-']['paid'] = $total_paid_student;
-                    $final_array[$value['id']]['-']['remain'] = $total_remain_student; 
-                    $final_array[$value['id']]['-']['bk'] = $total_bk_student; 
-                }
+                    foreach ($student_data as $key => $data) {
+                        if ($key !== 'total_bk' && is_array($data) && isset($data['bk']) ||  isset($data['paid']) ||  isset($data['remain']) ) {
+                            $total_paid_student += $data['paid'];
+                            $total_remain_student += $data['remain'];
+                            $total_bk_student += $data['bk'];            
+                            $final_array[$value['id']]['-']['paid'] = $total_paid_student;
+                            $final_array[$value['id']]['-']['remain'] = $total_remain_student; 
+                            $final_array[$value['id']]['-']['bk'] = $total_bk_student; 
+                        }
+                    }
+                } 
             }
-        } 
+
         }
 
         $res['status_code'] = 1;
