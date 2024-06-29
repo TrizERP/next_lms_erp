@@ -278,9 +278,22 @@
             },
             { extend: 'csv', text: ' CSV', title: 'Fees Defaulter Report' },
             { extend: 'excel', text: ' EXCEL', title: 'Fees Defaulter Report' },
-            { extend: 'print', text: ' PRINT', title: 'Fees Defaulter Report',orientation: 'landscape',pageSize: 'LEGAL',exportOptions: {
+            { 
+                extend: 'print', 
+                text: ' PRINT', 
+                title: 'Fees Defaulter Report',
+                orientation: 'landscape',
+                pageSize: 'LEGAL',
+                exportOptions: {
                      columns: ':visible'
                 },
+                customize: function (win) {
+                $(win.document.body)
+                    .append(
+                        '<style>' +
+                        '@page { size: legal landscape; }</style>'
+                    );
+                }
             },
             'pageLength'
         ],

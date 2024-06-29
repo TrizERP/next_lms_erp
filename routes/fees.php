@@ -215,7 +215,7 @@ Route::get('payphi', function ($id = null) {
 
 });
 
-Route::post('api/get-online-fees-list', [AJAXController::class, 'getOnlineFees'])->name('get-online-fees-list');
+Route::post('api/', [AJAXController::class, 'getOnlineFees'])->name('get-online-fees-list');
 Route::post('fees/PaidUnpaid', [fees_collect_controller::class, 'PaidUnpaid']);
 Route::post('fees/PaidUnpaidTeacher', [fees_collect_controller::class, 'PaidUnpaidTeacher']);
 Route::group(['prefix' => 'report', 'middleware' => ['session', 'menu', 'logRoute']], function () {

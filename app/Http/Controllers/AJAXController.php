@@ -870,7 +870,7 @@ class AJAXController extends Controller
             $response .= "
                  <tr>
 
-                    <td style='width: 20%'>$id</td>
+                    <td style='width: 20%' class='allField1' id='".$id."'>$id</td>
                     <td style='width: 20%'>$val</td>
             ";
             if ($id == 'Total') {
