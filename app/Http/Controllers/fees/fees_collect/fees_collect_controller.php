@@ -307,6 +307,7 @@ class fees_collect_controller extends Controller
             }
         }
         $responce_arr['stu_data'] = $result;
+
         $responce_arr['grade_id'] = $request->grade ?? '';
         $responce_arr['standard_id'] = $request->standard ?? '';
         $responce_arr['division_id'] = $request->division ?? '';

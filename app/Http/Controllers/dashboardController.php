@@ -435,6 +435,8 @@ class dashboardController extends Controller
                 $final_chart1_data = rtrim($final_chart1_data, ",");
                 $final_chart1_data .= '];';
                 // db::enableQueryLog();
+                //Rajesh 26-06-2024 Dashboard LOAD much time below query
+                /*
                 $fees_chart2_bkoff_data = DB::table('tblstudent as s')
                 ->join('tblstudent_enrollment as se', 'se.student_id', '=', 's.id')
                 ->join('standard as st', 'st.id', '=', 'se.standard_id')
@@ -453,6 +455,8 @@ class dashboardController extends Controller
                 ->orderBy('st.id')
                 ->get()
                 ->toArray();
+                */
+                $fees_chart2_bkoff_data = [];
                 // dd(DB::getQueryLog($fees_chart2_bkoff_data));
                 $unpaid_data = "[";
                 $std_data = "[";
@@ -1836,7 +1840,9 @@ class dashboardController extends Controller
             }
             $final_chart1_data = rtrim($final_chart1_data, ",");
             $final_chart1_data .= '];';
-
+			
+			//Rajesh 26-06-2024 Dashboard LOAD much time below query
+			/*
             $fees_chart2_bkoff_data = DB::table('tblstudent as s')
                 ->join('tblstudent_enrollment as se', function ($join) use ($syear) {
                     $join->on("se.student_id", "=", "s.id");
@@ -1857,6 +1863,8 @@ class dashboardController extends Controller
                 ->where('s.sub_institute_id', $sub_institute_id)
                 ->where('se.syear', $syear)->groupBy('st.id')->orderBy('st.id')
                 ->get()->toArray();
+			*/
+            $fees_chart2_bkoff_data = [];
 
             $unpaid_data = "[";
             $std_data = "[";
