@@ -214,8 +214,8 @@ class fees_collect_controller extends Controller
 
                 if ($previous < 0) {
                     $arr->bkoff = ($remain - $previous);
-                }else if($previous > 0 && $sub_institute_id==48 && $sub_institute_id==61){
-                    $arr->bkoff = ($remain - $previous);                    
+                }else if($previous > 0){
+                    $arr->bkoff = ($remain - $previous);
                 } else {
                     if ($remain > 0){
                     $arr->bkoff = $remain;
@@ -1936,7 +1936,9 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
         // get fees breakoff of all years
         $reg_bk_off = FeeBreackoff($stu_arr, $request->standard,$syear,$sub_institute_id); //for current year
 
-        $reg_bk_off2 = FeeBreackoff($stu_arr, $request->standard,$last_syear,$sub_institute_id); // for previous year
+        if($sub_institute_id != 48 && $sub_institute_id != 61){//Previous Year Fees Not Display in Current Year - Rajesh 01-07-2024
+            $reg_bk_off2 = FeeBreackoff($stu_arr, $request->standard,$last_syear,$sub_institute_id); // for previous year
+        }
 
         $reg_bk_off_count = is_array($reg_bk_off) ? count($reg_bk_off) : $reg_bk_off->count();
 

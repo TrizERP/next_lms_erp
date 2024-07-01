@@ -643,20 +643,21 @@ class AJAXController extends Controller
                 $search_ids2[] = $id;
             }
         }
-        $other_bk_off_month_wise2 = OtherBreackOfMonth($stu_arr,$last_syear); //for previous year
 
         $search_ids = $months;
         $reg_bk_off = FeeBreackoff($stu_arr); // for current year
         $other_bk_off = OtherBreackOff($stu_arr, $search_ids); // for current year
         $other_bk_off_month_wise = OtherBreackOfMonth($stu_arr);// for current year
         $year_arr = FeeMonthId();// for current year
+        $head_wise_fees = FeeBreakoffHeadWise($stu_arr); //for current year
 
-        $reg_bk_off2 = FeeBreackoff($stu_arr,'',$last_syear);
-        $other_bk_off2 = OtherBreackOff($stu_arr, $search_ids2,'','','',$last_syear);
-
-
-        $head_wise_fees = FeeBreakoffHeadWise($stu_arr); //for previous year
-        $head_wise_fees2 = FeeBreakoffHeadWise($stu_arr,'','','',$last_syear);//for previous year
+        $other_bk_off_month_wise2 = $reg_bk_off2 = $other_bk_off2 = $head_wise_fees2 = array();
+        if(session()->get('sub_institute_id')!=48 && session()->get('sub_institute_id')!=61){
+            $other_bk_off_month_wise2 = OtherBreackOfMonth($stu_arr,$last_syear); //for previous year
+            $reg_bk_off2 = FeeBreackoff($stu_arr,'',$last_syear); //for previous year
+            $other_bk_off2 = OtherBreackOff($stu_arr, $search_ids2,'','','',$last_syear); //for previous year
+            $head_wise_fees2 = FeeBreakoffHeadWise($stu_arr,'','','',$last_syear);//for previous year
+        }
      
         $till_now_breckoff = $till_now_breckoff2 = array();
         foreach ($search_ids as $id => $val) {
@@ -733,7 +734,7 @@ class AJAXController extends Controller
         
         $previous = array_sum($full_bk2);
 
-        if ($previous > 0 && session()->get('sub_institute_id')!=48 && session()->get('sub_institute_id')!=61) {
+        if ($previous > 0) {
         // if ($previous > 0) {            
             $full_bk['Previous Fees'] = $previous;
             $final_bk_name["Previous Fees"] = "previous_fees";

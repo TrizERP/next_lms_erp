@@ -62,7 +62,9 @@ class online_fees_collect_controller extends Controller
         $admission_under = $get_syear['0']->admission_under; 
         $controller = new fees_collect_controller;
         // echo '<pre>'; print_r($_REQUEST); exit;
-        $OldData = $controller->getOnlinebk($request, $all_student[0]->sub_institute_id, $year - 1, $_REQUEST["student_id"]);
+        if($all_student[0]->sub_institute_id != 48 && $all_student[0]->sub_institute_id != 61){
+            $OldData = $controller->getOnlinebk($request, $all_student[0]->sub_institute_id, $year - 1, $_REQUEST["student_id"]);
+        }
         $data = $controller->getOnlinebk($request, $all_student[0]->sub_institute_id, $year, $_REQUEST["student_id"]);
         
         // echo $year;
