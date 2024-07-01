@@ -238,7 +238,7 @@
                                             <td></td>
                                             <td>Discount</td>
                                             <td></td>
-                                            <td><input type="text" name="totalDis" id="totalDiscount"></td>
+                                            <td><input type="text" name="totalDis" id="totalDiscount" readonly></td>
                                             
                                         </tr>
                                         <tr>
@@ -484,12 +484,14 @@
 			function monthCheck() {
 				var checkedMonths = new Array();
 					var j = 0;
-				for (var i = 0; i < document.getElementsByClassName('months').length; i++) {
-					if (document.getElementsByClassName('months')[i].checked) {
-						checkedMonths[j] = document.getElementsByClassName('months')[i].value;
-						j = j + 1;
-					}
-				}
+                    for (var i = 0; i < document.getElementsByClassName('months').length; i++) {
+                        var monthElement = document.getElementsByClassName('months')[i];
+                        
+                        if (monthElement.checked && !monthElement.disabled) {
+                            checkedMonths[j] = monthElement.value;
+                            j = j + 1;
+                        }
+                    }
 
 				$.ajax({
 					type: "POST",
@@ -509,7 +511,7 @@
 
                     
                     calculateTotal();
-						// 26/08/2021 Start Added for The Millennium School for Advanced Imprest Collection payment
+						// 26/08/2021 Start Added for The Millennium School for Advanced Imprest Collection payment .prop('disabled')
 						$('.allField1').each(function() {
 							var new_name = $(this).attr('name');
 							amount = $('input[name="' + new_name + '"]').val();
@@ -526,22 +528,21 @@
 									checkedTitle[k] = $(this).attr('id');
 									k= k+1;
 								});
-								console.log(checkedTitle);
+								// console.log(checkedTitle);
 
 								// uniform and recovery fees 
 								if (checkedTitle.length > 0 && !checkedTitle.includes('Sports Fees') && !checkedTitle.includes('3')) {
 									fineZero(0);
 								}
 								// advance fees 
-								else if(checkedMonths.length > 0 && checkedTitle.length > 0 && checkedTitle.includes('Advance Fees')){
+								else if(checkedMonths.length > 0){
 									lastMonth = checkedMonths[checkedMonths.length - 1];
 									var currentMonth = "{{date('n')}}{{date('Y')}}";
 									
 									let greaterMonths = checkedMonths.filter(month => month > currentMonth);
 
 									if (!greaterMonths.includes(currentMonth) && greaterMonths.length > 0) {
-									// console.log(greaterMonths);
-										fineZero(0);
+									    fineZero(0);
 									}
 								}
 								else{
@@ -549,6 +550,7 @@
 									var fine = parseFloat(charge);
 									fineZero(fine);
 								}
+                                CalDis();
 							@endif
                             fin = parseFloat($("#totalFin").val());
                             cheque_return_charges = $("#hidden_cheque_return_charges").val();
@@ -567,30 +569,36 @@
 			}
 
                 // get discount amount 14-06-2024
+            function CalDis(){  
                 var general_setting  = @json($data['discountData']);
                 var currentMonth = "{{$data['currentMonth']}}";
                 
                 if(general_setting && Object.keys(general_setting).length > 0){
                     if (checkedMonths.length > 0) {
                         lastMonth = checkedMonths[checkedMonths.length - 1];
-                        console.log(general_setting);
                         // get months greater then equal to current month
-                        let greaterMonths = checkedMonths.filter(month => month >= currentMonth);
-
+                        let greaterMonthsdis = checkedMonths.filter(month => month >= currentMonth);
+                        console.log(greaterMonthsdis);
                         // if(lastMonth >= currentMonth && checkedMonths.length>=3){
-                        if (lastMonth >= currentMonth && greaterMonths.length >= 3) {
+                        if (lastMonth >= currentMonth && greaterMonthsdis.length >= 3) {
                             var totalVal = parseFloat($('#totalVal').val());
                             var dicountPer = general_setting.extra_field1;
-                            var perVal = (dicountPer/100) * totalVal; 
-                        
+                            var perVal = Math.round((dicountPer/100) * totalVal); 
+
                             $('#totalDiscount').val(perVal);
+                            var totalAmt = parseFloat($('#pay_amount').val());
+                            var NewTot = (totalAmt - perVal);
+                            $('#pay_amount').val(NewTot);
                         }else{
                             $('#totalDiscount').val(0);
+                            var totalVal = parseFloat($('#totalVal').val());
+                            $('#pay_amount').val(totalVal);
                         }
                     }else{
                         $('#totalDiscount').val(0);
                     }
                 }
+            }
                 // end discount amount 14-06-2024
 			}
     </script>
