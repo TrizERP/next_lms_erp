@@ -968,7 +968,14 @@ exit; */
     {
         $data = $this->get_fees($request);
         $type = "web";
-        return \App\Helpers\is_mobile($type, "fees/online_fees_collect/show_aggre_pay_fees", $data, "view");
+        // echo "<pre>";print_r($data);exit;
+        if(isset($data['stu_data']) && !empty($data['stu_data'])){
+            return \App\Helpers\is_mobile($type, "fees/online_fees_collect/show_aggre_pay_fees", $data, "view");
+        }else{
+            $res['status_code'] = 0;
+            $res['message'] = "Failed to find Breakoff";
+            return \App\Helpers\is_mobile($type, "online_fees_collect.index", $res);
+        }
         // echo '<pre>'; print_r($data); exit;
     }
 
