@@ -118,7 +118,7 @@
                             </tr>
                             <!-- timetable AI-->
                             <tr>
-                                <th>Display all teachers in creating timetable? </th>
+                                <th>Display all teachers in AI timetable? </th>
                                 <td>
                                     <div class="row">
                                         <div class="col-md-4 form-group" style="margin-left: 0px !important">
