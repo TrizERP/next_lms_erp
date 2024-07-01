@@ -2258,7 +2258,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
         foreach ($other_fee_title as $id => $arr) {
             foreach ($full_bk as $title => $val) {
                 if ($title == $arr->display_name) {
-                    $final_bk_name[$title] = $arr->other_fee_id;
+                    $final_bk_name[$title] = ($arr->other_fee_id > 0) ? $arr->other_fee_id : 0;
                 }
 
             }
@@ -2275,8 +2275,8 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
         print_r($left_bk_table);
         echo("</pre>");
         die; */
-        $full_bk["Total"] = $total;
-        $full_bk_new["Total"] = $total;
+        $full_bk["Total"] = ($total > 0 ) ? $total : 0;
+        $full_bk_new["Total"] = ($total > 0 ) ? $total : 0;
 
         $type = "web";
         $res['total_fees'] = $left_bk_table ?? [];
