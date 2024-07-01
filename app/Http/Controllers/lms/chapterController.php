@@ -532,6 +532,7 @@ class chapterController extends Controller
             ->selectRaw("*,SUBSTRING(q.question_title,1,20) as ques_title")
             ->where('q.sub_institute_id', $sub_institute_id)
             ->where('q.topic_id', $topic_id)
+            ->where('status',1)
             ->get()->toArray();
 
         $question_arr = json_decode(json_encode($questions), true);
@@ -572,6 +573,7 @@ class chapterController extends Controller
             })
             ->selectRaw("c.*,SUBSTRING(CONCAT_WS(' ',t1.name,' => ',t2.name),1,35) as mapping_value")
             ->where('q.questionmaster_id', $question_id)
+            ->where('q.status',1)
             ->get()->toArray();
 
         $questionMapping_arr = json_decode(json_encode($questionMappings), true);
