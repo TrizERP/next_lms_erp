@@ -192,8 +192,10 @@ class fees_collect_controller extends Controller
                             ->orWhere('s.last_name', 'like', '%' . $request->stu_name . '%');
                     });
                 }
-                if (isset($request['including_inactive']) && $request['including_inactive'] != '' && $request['including_inactive'] == 'Yes') {
+                if (isset($request->including_inactive) && $request->including_inactive != '') {
+                    if ($request->including_inactive == 'Yes') {
                         $q->whereNotNull('se.end_date');
+                    }
                 } else {
                     $q->whereNull('se.end_date');
                 }
@@ -205,22 +207,20 @@ class fees_collect_controller extends Controller
             $bk_stu_id = $arr->id;
             // get paid and unpiad history of student by his/her id
             $paid_result = $this->getBk($request, $bk_stu_id);
-            if(isset($paid_result) && !empty($paid_result)){
-                $pd_stu_id = $paid_result['stu_data']['student_id'];
-                $remain = $paid_result['final_fee']['Total'];
-                $previous = isset($paid_result['final_fee']['Previous Fees']) ? $paid_result['final_fee']['Previous Fees'] : 0;
-                if ($bk_stu_id == $pd_stu_id) {
+            $pd_stu_id = $paid_result['stu_data']['student_id'];
+            $remain = $paid_result['final_fee']['Total'];
+            $previous = isset($paid_result['final_fee']['Previous Fees']) ? $paid_result['final_fee']['Previous Fees'] : 0;
+            if ($bk_stu_id == $pd_stu_id) {
 
-                    if ($previous < 0) {
-                        $arr->bkoff = ($remain - $previous);
-                    }else if($previous > 0 && $sub_institute_id==48){
-                        $arr->bkoff = ($remain - $previous);                    
-                    } else {
-                        if ($remain > 0){
-                        $arr->bkoff = $remain;
-                        }else{
-                            $arr->bkoff = 0;
-                        }
+                if ($previous < 0) {
+                    $arr->bkoff = ($remain - $previous);
+                }else if($previous > 0){
+                    $arr->bkoff = ($remain - $previous);
+                } else {
+                    if ($remain > 0){
+                    $arr->bkoff = $remain;
+                    }else{
+                        $arr->bkoff = 0;
                     }
                 }
             }
@@ -307,6 +307,7 @@ class fees_collect_controller extends Controller
             }
         }
         $responce_arr['stu_data'] = $result;
+
         $responce_arr['grade_id'] = $request->grade ?? '';
         $responce_arr['standard_id'] = $request->standard ?? '';
         $responce_arr['division_id'] = $request->division ?? '';
@@ -1935,7 +1936,9 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
         // get fees breakoff of all years
         $reg_bk_off = FeeBreackoff($stu_arr, $request->standard,$syear,$sub_institute_id); //for current year
 
-        $reg_bk_off2 = FeeBreackoff($stu_arr, $request->standard,$last_syear,$sub_institute_id); // for previous year
+        if($sub_institute_id != 48 && $sub_institute_id != 61){//Previous Year Fees Not Display in Current Year - Rajesh 01-07-2024
+            $reg_bk_off2 = FeeBreackoff($stu_arr, $request->standard,$last_syear,$sub_institute_id); // for previous year
+        }
 
         $reg_bk_off_count = is_array($reg_bk_off) ? count($reg_bk_off) : $reg_bk_off->count();
 
