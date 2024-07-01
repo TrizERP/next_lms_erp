@@ -1051,7 +1051,7 @@ class lms_apiController extends Controller
                 LEFT JOIN answer_master lam ON lam.question_id = loem.question_id AND lam.id = loem.answer_id
                 WHERE loem.online_exam_id = '".$online_exam_id."' AND loem.student_id = '".$student_id."'
                 GROUP BY loem.question_id) AS a
-                INNER JOIN lms_question_master q ON q.id = a.question_id
+                INNER JOIN lms_question_master q ON q.id = a.question_id and q.status = 1
                 LEFT JOIN answer_master am ON a.question_id = am.question_id AND correct_answer = 1
                 GROUP BY am.question_id,a.question_id
             ");

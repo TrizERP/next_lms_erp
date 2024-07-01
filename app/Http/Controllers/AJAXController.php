@@ -68,8 +68,8 @@ class AJAXController extends Controller
             })->join('question_paper as qp', function ($join) {
                 $join->whereRaw('qp.subject_id = ssm.subject_id and qp.standard_id = sdm.standard_id');
             })->join('lms_question_master as lqm', function ($join) {
-                $join->whereRaw('lqm.subject_id = ssm.subject_id and lqm.standard_id = sdm.standard_id and lqm.id in
-                (SELECT lqm.id FROM lms_question_master as lqm,question_paper as qp2 WHERE qp.id = qp2.id AND FIND_IN_SET(lqm.id, qp.question_ids))');
+                $join->whereRaw('lqm.subject_id = ssm.subject_id and lqm.standard_id = sdm.standard_id and lqm.id in and lqm.status = 1
+                (SELECT lqm.id FROM lms_question_master as lqm,question_paper as qp2 WHERE qp.id = qp2.id AND status = 1 AND FIND_IN_SET(lqm.id, qp.question_ids))');
             })->join('lms_online_exam_answer as am', function ($join) {
                 $join->whereRaw('am.question_paper_id = qp.id and am.student_id = ts.id and am.question_id = lqm.id');
             })
@@ -2115,7 +2115,7 @@ class AJAXController extends Controller
             if(isset($request->topic_id) && $request->topic_id!=''){
                 $topics = " and topic_id ='".$request->topic_id."'";
             }
-           $getAllQuestion = DB::table('lms_question_master')->whereRaw('sub_institute_id = '.$sub_institute_id.' and standard_id='.$standard.' and chapter_id ='.$request->chapter_id.$topics.' ')->pluck('question_title');
+           $getAllQuestion = DB::table('lms_question_master')->whereRaw('sub_institute_id = '.$sub_institute_id.' and standard_id='.$standard.' and chapter_id ='.$request->chapter_id.$topics.' ')->where('status',1)->pluck('question_title');
             $message=array($request->question_prompt,"search only 1 question from mentioned standard and subject and chapter and topic and get different question which are not in this '".$getAllQuestion."'");
             // return $message;exit;
         }else if(isset($request->search) && $request->search=="summernote"){
@@ -2222,7 +2222,7 @@ class AJAXController extends Controller
             if(isset($request->topic_id) && $request->topic_id!=''){
                 $topics = " and topic_id ='".$request->topic_id."'";
             }
-           $getAllQuestion = DB::table('lms_question_master')->whereRaw('sub_institute_id = '.$sub_institute_id.' and standard_id='.$standard.' and chapter_id ='.$request->chapter_id.$topics.' ')->pluck('question_title');
+           $getAllQuestion = DB::table('lms_question_master')->whereRaw('sub_institute_id = '.$sub_institute_id.' and standard_id='.$standard.' and chapter_id ='.$request->chapter_id.$topics.' ')->where('status',1)->pluck('question_title');
             
            $message=array($request->question_prompt,"search only 1 question from mentioned standard and subject and chapter and topic and get different question which are not in this '".$getAllQuestion."'");
             // return $message;exit;
