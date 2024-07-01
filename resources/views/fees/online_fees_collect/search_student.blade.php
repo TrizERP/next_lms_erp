@@ -64,6 +64,11 @@
         <!-- </div> -->
         <form method="POST" id="changeAction" action="{{route('icici_fees_collect')}}">
             {{csrf_field()}}
+            @if ($sessionData = Session::get('data'))
+                @if($sessionData['status_code'] == 0)
+                <p style="color:red;text-align:center;">{{ $sessionData['message'] }}</p>
+                @endif
+            @endif
             <p style="color:red;text-align:center;" id="errorMessage"></p>
             <h3>Make An Online Payment</h3>
             <div class="form-row">

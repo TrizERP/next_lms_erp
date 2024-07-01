@@ -224,7 +224,7 @@ Route::group(['prefix' => 'report', 'middleware' => ['session', 'menu', 'logRout
 //online routes
 Route::get('/fees/feesDetails/getDetails/{id}/{stud}', [fees_collect_controller::class, 'retrieveDataByUserId']);
 Route::controller(online_fees_collect_controller::class)->group(function () {
-    Route::get('fees/online_fees_collect', 'index');
+    Route::get('fees/online_fees_collect', 'index')->name('online_fees_collect.index');
 
     Route::post('fees/hdfc/online_fees_collect', 'hdfc')->name("hdfc_fees_collect");
     Route::post('fees/hdfc/online_fees_hdfcRequestHandler', 'hdfc_request_handler')->name("hdfc_request_handler");

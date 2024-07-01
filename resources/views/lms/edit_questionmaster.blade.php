@@ -76,7 +76,10 @@ br {
 
 
                         @if(isset($data['question_mapping_data']))
-                            @php $j = 1; @endphp
+                            @php 
+                                $j = 1;
+                                $editType = isset($_REQUEST['question_type']) ? $_REQUEST['question_type'] : 0;
+                            @endphp
                             @foreach($data['question_mapping_data'] as $mkey => $mval)
                                 <div class="addButtonCheckbox_old" id="old_data_{{$j}}">
                                     <div class="row align-items-center">
@@ -348,9 +351,12 @@ br {
                                         $types = "radio";
                                     }
                                     @endphp
-                                    <input type="{{$types}}" name="correct_answer[]" class="form-control radio_checkbox" value="{{$val['id']}}" style="height:30%;width: 15px;"
+                                    <input type="{{$types}}" name="correct_answer[]" class="form-control radio_checkbox {{$editType}}" value="{{$val['id']}}" style="height:30%;width: 15px;"
                                     @if( $val['correct_answer'] == 1)
                                     checked
+                                    @endif 
+                                    @if($editType===1)
+                                    style="pointer-events: none;"
                                     @endif>
                                     </div>
                                 </div>
