@@ -1,8 +1,7 @@
-@include('includes.headcss')
+@extends('layout')
+@section('container')
 <link rel="stylesheet" href="../../../plugins/bower_components/dropify/dist/css/dropify.min.css">
 <link href="/plugins/bower_components/clockpicker/dist/jquery-clockpicker.min.css" rel="stylesheet">
-@include('includes.header')
-@include('includes.sideNavigation')
 
 <div id="page-wrapper">
     <div class="container-fluid">
@@ -26,11 +25,13 @@
                     @endif
 
                 <div class="col-lg-12 col-sm-12 col-xs-12">
-                    <form action="{{ route('task.store') }}" enctype="multipart/form-data" method="post">
+                    <form action="{{ route('task.store') }}" enctype="multipart/form-data" method="post" id="emailForm">
 
                         {{ method_field("POST") }}
                         @csrf
-
+                        @php 
+                            $taskType = ['Daily Task','Weekly Task','Monthly Task','Yearly Task'];
+                        @endphp
                         <div class="row">
                             <div class="col-md-3 form-group">
                                 <label>Title </label>
@@ -49,7 +50,7 @@
 
                             <div class="col-md-3 form-group">
                                 <label>User </label>                                
-                                <select id="TASK_ALLOCATED_TO[]" name="TASK_ALLOCATED_TO[]" class="form-control" multiple="multiple">
+                                <select id="TASK_ALLOCATED_TO" name="TASK_ALLOCATED_TO[]" class="form-control" multiple="multiple">
                                     @if(isset($data['userList']))
                                         @foreach($data['userList'] as $key => $value)
                                             <option value="{{$value['id']}}"> {{$value['first_name']." ".$value['last_name']}} </option>
@@ -57,7 +58,47 @@
                                     @endif
                                 </select>
                             </div> 
-
+                            <!-- add KRA -->
+                            <div class="col-md-4  form-group">
+                                <label for="task">Add KRA</label>
+                                <input type="text" name="KRA" id="KRA" class="form-control" data-val="0" required autocomplete="off" >
+                            </div>
+                            <!--add KPA -->
+                            <div class="col-md-4  form-group">
+                                <label for="task">Add KPA</label>
+                                <input type="text" name="KPA" id="KPA" class="form-control" data-val="0" required autocomplete="off" >
+                            </div>
+                            <!-- add Type -->
+                            <div class="col-md-4  form-group">
+                                <label for="task">Add Type</label>
+                                <select name="selType" id="selType" class="form-control selType" data-val="0" >
+                                    <option value="">Select Type</option>
+                                    @foreach($taskType as $key=>$value)
+                                    <option value="{{$value}}">{{$value}}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <!-- add manageby -->
+                            <div class="col-md-4  form-group">
+                                <label for="manageby">Manage By</label>
+                                <select name="manageby" id="manageby" class="form-control manageby" data-val="0" required>
+                                    <option value="">Select Manager</option>
+                                    @if(isset($data['userList']))
+                                        @foreach($data['userList'] as $key => $value)
+                                            <option value="{{$value['id']}}"> {{$value['first_name']." ".$value['last_name']}} </option>
+                                        @endforeach
+                                    @endif
+                                </select>
+                            </div>
+                            <div class="col-md-4 form-group">
+                                <label>Skills </label>
+                                <input type="text" id='skill' list="dataLists" name="skills" class="form-control skillInput" multiple  autocomplete="off" >
+                                <datalist id="dataLists">
+                                  @foreach($data['skillLists'] as $k=>$val)
+                                  <option value="{{$val->skills}}"><option>
+                                  @endforeach
+                                </datalist>
+                            </div>
                             <!-- <div class="col-md-3 form-group">
                                 <label>User </label>
                                 <input type="text" id='TASK_ALLOCATED_TO' list="userAllocatedList" name="TASK_ALLOCATED_TO" class="form-control">
@@ -122,7 +163,7 @@
                                 </textarea>
                             </div>
                             <div class="col-md-12 form-group">
-                                <input type="submit" name="submit" value="Save" class="btn btn-success" >
+                                <input type="submit" name="submit" id="submitbtn" value="Save" class="btn btn-success" >
                             </div>
                         </div>
                     </form>
@@ -133,8 +174,10 @@
 
 
 @include('includes.footerJs')
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
-<script type="text/javascript">
+<script>
+
     function getStudents(value)
     {
         var URL = "{{route('search_student_name')}}";
@@ -156,7 +199,6 @@
           });
         }
     }
-
 
 </script>
 <script src="../../../plugins/bower_components/dropify/dist/js/dropify.min.js"></script>
@@ -195,6 +237,9 @@
             }
         })
     });
+
+ 
     </script>
 
 @include('includes.footer')
+@endsection
