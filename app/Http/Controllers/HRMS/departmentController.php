@@ -64,15 +64,15 @@ class departmentController extends Controller
                 ->toArray();
         // echo "<pre>";print_r($res['userDepartmentList']);exit;
         $res['SubDepartmentList'] = DB::table('hrms_departments_mapping as sub')
-        ->join('hrms_departments_mapping as main', 'sub.parent_id', '=', 'main.parent_id')
         ->select(
             'sub.*',
-            'main.department as mainDepartment',
+            DB::raw('(CASE WHEN sub.parent_id!=0 THEN (SELECT department FROM hrms_departments_mapping WHERE id = sub.parent_id) ELSE "-" END) as mainDepartment'),
+            DB::raw('(CASE WHEN sub.parent_id=0 THEN (SELECT count(id) FROM hrms_departments_mapping WHERE parent_id = sub.id group by parent_id) ELSE "0" END) total_subDep'),
             DB::Raw('IFNULL((select count(DISTINCT id) from tbluser where department_id = sub.id and sub_institute_id='.$sub_institute_id.' and status=1),"-") as total_emp'),
             DB::Raw('IFNULL((select group_concat(DISTINCT id) from tbluser where department_id = sub.id and sub_institute_id='.$sub_institute_id.' and status=1),"-") as emp_ids')
         )
         ->where('sub.status', 1)
-        ->where('sub.parent_id', '!=', 0)
+        // ->where('sub.parent_id', '!=', 0)
         ->whereIn('sub.sub_institute_id', [0, $sub_institute_id])
         ->groupBy('sub.id')
         ->get()
@@ -106,7 +106,7 @@ class departmentController extends Controller
         $task = $request->tasks;
         $i=$parent_id=0;
 
-        if($request->has('parentDiv')){
+        if($request->has('parentDiv') && $request->parentDiv!=''){
             $parent_id = $request->parentDiv;
             $check = DB::table('hrms_departments_mapping')->where(['department'=>$department_name,'parent_id'=>$parent_id])->get()->toArray();
         }else{
@@ -137,6 +137,7 @@ class departmentController extends Controller
 
     public function Update(Request $request,$id)
     {
+        // echo "<pre>";print_r($request->all());exit;
         $type = $request->input('type');
         $sub_institute_id = session()->get('sub_institute_id');
 
@@ -146,7 +147,7 @@ class departmentController extends Controller
         $task = $request->tasks;
         $parent_id=0;
 
-        if($request->has('parentDiv')){
+        if($request->has('parentDiv') && $request->parentDiv!=''){
             $parent_id = $request->parentDiv;
         }
 
@@ -198,7 +199,7 @@ class departmentController extends Controller
 
     public function subDepartmentList(Request $request){
         $sub_institute_id = session()->get('sub_institute_id');
-        $depIds = implode(',',$request->depId);
+        $depIds = $request->depId;
 
          return DB::table('hrms_departments_mapping')
         ->whereRaw('parent_id in ('.$depIds.')')
@@ -210,11 +211,11 @@ class departmentController extends Controller
 
     public function departmentEmployeeList(Request $request){
         $sub_institute_id = session()->get('sub_institute_id');
-        $depIds = implode(',',$request->depId);
+        $depIds = $request->depId;
         $where = "(department_id in ($depIds)";
         
         if($request->has('subDepId')){
-            $subDepIds = implode(',',$request->depId);
+            $subDepIds = $request->subDepId;
             $where .= " OR department_id in ($subDepIds))";
         }else{
             $where .= " AND 1=1)";
