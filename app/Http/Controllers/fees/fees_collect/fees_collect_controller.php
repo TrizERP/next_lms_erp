@@ -2187,7 +2187,13 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                     ];
                 }
                 if (isset($arr['amount'])) {
-                    $reg_bk_month_wise2[$arr['title']] += $arr['amount'];
+
+                    if(isset($arr['disc_amount']) && $arr['disc_amount']>0 && $arr['amount']>=$arr['disc_amount']){
+                        $reg_bk_month_wise2[$arr['title']] += ($arr['amount']-$arr['disc_amount']); 
+                    }else{
+                        $reg_bk_month_wise2[$arr['title']] += ($arr['amount']);
+                    }
+                    // $reg_bk_month_wise2[$arr['title']] += $arr['amount'];
                     $reg_month_wise2[$arr['title']] = [
                         'title' => $arr['title'],
                         'amount' => $reg_bk_month_wise2[$arr['title']],
@@ -2205,12 +2211,14 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             $full_bk2 = array_merge($reg_bk_month_wise2, $other_bk_off2);
             $full_bk_new2 = array_merge($reg_month_wise2, $other_bk_off2);
             $previous = array_sum($full_bk2);
+            if($previous > 0){
             $full_bk['Previous Fees'] = $previous;
             $full_bk_new['Previous Fees'] = array(
                 'title' => 'Previous Fees',
                 'amount' => $previous,
                 'mandatory' => 1,
             );
+            }
         }
      //24-04-2021 START Check Cheque Return charges
 
