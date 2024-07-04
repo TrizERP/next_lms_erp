@@ -22,7 +22,7 @@
                             <thead>
                                 <tr>
                                     @foreach($data['tbl_heading'] as $key => $val)
-                                    <th>{!! $val !!}</th>
+                                    <th class="text-left">{!! $val !!}</th>
                                     @endforeach
                                 </tr>
                             </thead>

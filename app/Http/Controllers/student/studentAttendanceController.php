@@ -12,6 +12,8 @@ use function App\Helpers\getCountDays;
 use function App\Helpers\is_mobile;
 use function App\Helpers\SearchStudent;
 use function Symfony\Component\HttpKernel\Profiler\read;
+use function App\Helpers\send_FCM_Notification;
+use function App\Helpers\sendNotification;
 
 class studentAttendanceController extends Controller
 {
@@ -295,6 +297,8 @@ class studentAttendanceController extends Controller
             } else {
                 DB::table("attendance_student")->insert($attendanceArray);
             }
+            $sendRequest = new Request(['student_id'=>$student_id,'attendance'=>$attendance,'date'=>$date,'created_by'=>$user_id,'syear'=>$syear,'sub_institute_id'=>$sub_institute_id]);
+            $sendNotification= $this->sendNotificationAtt($sendRequest);
         }
 
         $res['status_code'] = 1;
@@ -727,5 +731,69 @@ class studentAttendanceController extends Controller
         }
 
         return json_encode($res);
+    }
+
+    public function sendNotificationAtt(Request $request){
+        $sub_institute_id = $request->sub_institute_id;
+        $syear = $request->syear;
+
+        $getStudent = DB::table('tblstudent')->select('*',DB::raw('CONCAT_WS(" ",COALESCE(first_name,"-"),COALESCE(middle_name,"-"),COALESCE(last_name,"-")) as student_name'))->where('id',$request->student_id)->where('sub_institute_id',$sub_institute_id)->first();
+        // echo "<pre>";print_r($getStudent);exit;
+        $getCreatedBy = DB::table('tbluser')->select('*',DB::raw('CONCAT_WS(" ",COALESCE(first_name,"-"),COALESCE(middle_name,"-"),COALESCE(last_name,"-")) as full_name'))->where('id',$request->created_by)->where('sub_institute_id',$sub_institute_id)->first();
+
+        if($request->attendance=="P"){
+            $text= $getStudent->student_name." is present on ".$request->date.', Attendance Taken by '.$getCreatedBy->full_name;
+        }else{
+            $text= $getStudent->student_name." is absent on ".$request->date.', Attendance Taken by '.$getCreatedBy->full_name;
+        }
+
+           $app_notification_content = [
+                'NOTIFICATION_TYPE'        => 'Notification',
+                'NOTIFICATION_DATE'        => now(),
+                'STUDENT_ID'               => $request->student_id,
+                'NOTIFICATION_DESCRIPTION' => $text,
+                'STATUS'                   => 0,
+                'SUB_INSTITUTE_ID'         => $sub_institute_id,
+                'SYEAR'                    => $syear,
+                'SCREEN_NAME'              => 'general',
+                'CREATED_BY'               => session()->get('user_id'),
+                'CREATED_IP'               => $_SERVER['REMOTE_ADDR'],
+            ];
+
+            $gcm_data = DB::table('gcm_users')->where('mobile_no', $getStudent->mobile)
+                ->where('sub_institute_id', $sub_institute_id)->get()->toArray();
+
+            $gcmRegIds = [];
+            if (count($gcm_data) > 0) {
+                foreach ($gcm_data as $key1 => $val1) {
+                    $gcmRegIds[] = $val1->gcm_regid;
+                }
+            }
+
+            $pushMessage = $text;
+
+            $bunch_arr = array_chunk($gcmRegIds, 1000);
+
+            $res = 0;
+            
+            if (! empty($bunch_arr)) {
+                foreach ($bunch_arr as $val) {
+                    if (isset($val, $pushMessage)) {
+                        $type1 = 'Notification';
+                        $message = [
+                            'body'  => $pushMessage, 'TYPE' => $type1, 'USER_ID' => $student_id,
+                            'title' => $schoolName, 'image' => $schoolLogo,
+                        ];
+                        $pushStatus = send_FCM_Notification($val, $message, $sub_institute_id);
+
+                        if($request->attendance!="P"){
+                            sendNotification($app_notification_content);
+                        }
+                    }
+                }
+                
+              $res = 1;
+            }
+        return $res;
     }
 }

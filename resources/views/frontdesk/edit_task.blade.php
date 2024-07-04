@@ -25,11 +25,13 @@
                     @endif
 
                 <div class="col-lg-12 col-sm-12 col-xs-12">
-                    <form action="{{ route('task.update',$data['ID']) }}" enctype="multipart/form-data" method="post">
+                    <form action="{{ route('task.update',$data['ID']) }}" enctype="multipart/form-data" method="post" id="emailForm" novalidate>
 
                         {{ method_field("PUT") }}
                         @csrf
-
+                        @php 
+                            $taskType = ['Daily Task','Weekly Task','Monthly Task','Yearly Task'];
+                        @endphp
                         <div class="row">
                             <div class="col-md-4 form-group">
                                 <label>Title </label>
@@ -63,7 +65,39 @@
                                     @endif
                                 </select>
                             </div> 
-
+                             <!-- add KRA -->
+                             <div class="col-md-4  form-group">
+                                <label for="task">Add KRA</label>
+                                <input type="text" name="KRA" id="KRA" class="form-control" value="@if(isset($data['KRA'])){{ $data['KRA'] }}@endif" autocomplete="off" >
+                            </div>
+                            <!--add KPA -->
+                            <div class="col-md-4  form-group">
+                                <label for="task">Add KPA</label>
+                                <input type="text" name="KPA" id="KPA" class="form-control" value="@if(isset($data['KPA'])){{ $data['KPA'] }}@endif" autocomplete="off" >
+                            </div>
+                            <!-- add Type -->
+                            <div class="col-md-4  form-group">
+                                <label for="task">Add Type</label>
+                                <select name="selType" id="selType" class="form-control selType">
+                                    <option value="">Select Type</option>
+                                    @foreach($taskType as $key=>$value)
+                                    <option value="{{$value}}" @if(isset($data['task_type']) && $data['task_type'] == $value) selected @endif >{{$value}}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <!-- add manageby -->
+                            <div class="col-md-4 form-group">
+                                <label>Manage By </label>                                
+                                <select id="manageby" name="manageby" class="form-control" readonly>
+                                    @if(isset($data))
+                                        <option value="{{$data['manageby']}}"> {{$data['manageby']}} </option>
+                                    @endif
+                                </select>
+                            </div> 
+                            <div class="col-md-4 form-group">
+                                <label>Skills </label>
+                                <input type="text" id='skill' name="skills" class="form-control skillInput" @if(isset($data['required_skill'])) value="{{$data['required_skill']}}" @endif>
+                            </div>
                             <!-- <div class="col-md-4 form-group">
                                 <label>User </label>
                                 <input type="text" id='TASK_ALLOCATED_TO' value="@if(isset($data['ALLOCATED_TO'])){{ $data['ALLOCATED_TO'] . ' - '. $data['TASK_ALLOCATED_TO'] }}@endif" list="userAllocatedList" name="TASK_ALLOCATED_TO" class="form-control">
