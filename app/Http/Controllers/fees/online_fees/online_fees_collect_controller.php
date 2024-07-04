@@ -340,7 +340,7 @@ class online_fees_collect_controller extends Controller
             ->where($where_arr)
             ->update($update_arr);
         if ($order_status == "Success") {
-            $data = $this->pay_fees($request, $get_all_data[0]->student_id, $get_all_data[0]->syear, $get_all_data[0]->sub_institute_id, $amount, $tracking_id);
+            $data = $this->pay_fees($request, $get_all_data[0]->student_id, $get_all_data[0]->syear, $get_all_data[0]->sub_institute_id, $amount, $order_id);
             $type = $request->input('type');
             // return is_mobile($type, "fees/fees_collect/add", $res, "view");
             return \App\Helpers\is_mobile($type, "fees/online_fees_collect/receipt_view", $data, "view");
@@ -465,7 +465,7 @@ class online_fees_collect_controller extends Controller
                             }
                         }
                     } else {
-                        echo "<br/>CCAvenue API Error: " . $response_data['enc_response'];
+                        echo "<br/>CCAvenue API ".$response;
                     }
                 } else {
                     echo "<br/>CCAvenue API Request Failed";

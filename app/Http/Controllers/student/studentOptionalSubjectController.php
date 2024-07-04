@@ -229,16 +229,24 @@ class studentOptionalSubjectController extends Controller
                     ->where('student_id', $student_id)
                     ->where('sub_institute_id', $sub_institute_id)
                     ->where('syear', $syear)
+                    ->when($sub_institute_id==254,function($q){
+                        $q->where('level',4);
+                    })
                     ->first();
-    
+                
+                $inData = [
+                    'subject_id' => $subject,
+                    'student_id' => $student_id,
+                    'sub_institute_id' => $sub_institute_id,
+                    'syear' => $syear,
+                ];
+
+                if($sub_institute_id==254){
+                    $inData['level'] = 4; 
+                }
                 // If the record does not exist, insert it
                 if (!$data) {
-                    DB::table('student_optional_subject')->insert([
-                        'subject_id' => $subject,
-                        'student_id' => $student_id,
-                        'sub_institute_id' => $sub_institute_id,
-                        'syear' => $syear,
-                    ]);
+                    DB::table('student_optional_subject')->insert($inData);
                 }
             }
         }

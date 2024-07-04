@@ -54,6 +54,9 @@
                         <option @if($order_by == 'roll_no') selected="selected"
                         @endif value="roll_no">Roll No
                         </option>
+                        <option @if($order_by == 'last_name') selected="selected"
+                        @endif value="last_name">Last name
+                        </option>
                      </select>
                   </div>
 

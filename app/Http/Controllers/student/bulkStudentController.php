@@ -240,6 +240,8 @@ class bulkStudentController extends Controller
             $extra_order_by = 'CONVERT(tblstudent.enrollment_no, SIGNED)';
         } elseif ($order_by != '' && $order_by == 'roll_no') {
             $extra_order_by = 'CAST(tblstudent_enrollment.roll_no AS INT)';
+        } elseif ($order_by != '' && $order_by == 'last_name') {
+            $extra_order_by = 'tblstudent.last_name';
         } else {
             $extra_order_by = 'tblstudent.first_name';
         }

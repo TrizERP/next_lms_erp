@@ -650,7 +650,10 @@ class AJAXController extends Controller
         $other_bk_off_month_wise = OtherBreackOfMonth($stu_arr);// for current year
         $year_arr = FeeMonthId();// for current year
         $head_wise_fees = FeeBreakoffHeadWise($stu_arr); //for current year
-
+//   if($student_id==95642){
+//             echo "<pre>";print_r($head_wise_fees);exit;
+//         }
+        
         $other_bk_off_month_wise2 = $reg_bk_off2 = $other_bk_off2 = $head_wise_fees2 = array();
         if(session()->get('sub_institute_id')!=48 && session()->get('sub_institute_id')!=61){
             $other_bk_off_month_wise2 = OtherBreackOfMonth($stu_arr,$last_syear); //for previous year
@@ -692,7 +695,7 @@ class AJAXController extends Controller
                         $reg_bk_month_wise[$arr['title']] = 0;
                     }
                     // 03-06-24 by uma for institute_id =248
-                    if(isset($arr['disc_amount']) && $arr['disc_amount']>0){
+                    if(isset($arr['disc_amount']) && $arr['disc_amount']>0 && $arr['amount']>=$arr['disc_amount']){
                         $reg_bk_month_wise[$arr['title']] += ($arr['amount']-$arr['disc_amount']); 
                     }else{
                         $reg_bk_month_wise[$arr['title']] += ($arr['amount']);
@@ -701,17 +704,23 @@ class AJAXController extends Controller
                 }
             }
         }
-        
+      
         // return $final_bk_name;exit;
         foreach ($till_now_breckoff2 as $month_id => $fees_detail) {
             foreach ($fees_detail as $head_name => $arr) {
                 if (!isset($reg_bk_month_wise2[$arr['title']])) {
                     $reg_bk_month_wise2[$arr['title']] = 0;
                 }
-                $reg_bk_month_wise2[$arr['title']] += $arr['amount'];
+                if(isset($arr['disc_amount']) && $arr['disc_amount']>0 && $arr['amount']>=$arr['disc_amount']){
+                    $reg_bk_month_wise2[$arr['title']] += ($arr['amount']-$arr['disc_amount']); 
+                }else{
+                    $reg_bk_month_wise2[$arr['title']] += ($arr['amount']);
+                }
+                // $reg_bk_month_wise2[$arr['title']] += $arr['amount'];
                 $final_bk_name[$arr['title']] = $head_name;
             }
         }
+        
         // echo "<pre>";print_r($other_bk_off);exit;
 
         $full_bk = array_merge($reg_bk_month_wise, $other_bk_off);
@@ -943,12 +952,12 @@ class AJAXController extends Controller
         foreach ($other_fee_title as $id => $arr) {
             foreach ($full_bk as $title => $val) {
                 if ($title == $arr->display_name) {
-                    $final_bk_name[$title] = $arr->other_fee_id;
+                    $final_bk_name[$title] = ($arr->other_fee_id>0) ? $arr->other_fee_id : 0;
                 }
             }
         }
 
-        $full_bk["Total"] = $total;
+        $full_bk["Total"] = ($total>0) ? $total : 0;
 
         return $full_bk;
     }
