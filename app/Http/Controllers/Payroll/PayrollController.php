@@ -1099,14 +1099,15 @@ class PayrollController extends Controller
         $list = [];
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $employeeSalaryData = [];
-        if($request->month && $request  ->year) {
+        if($request->month && $request->year) {
             $list['month'] = $request->month;
             $list['year'] = $request->year;
             // $employeeSalaryData = EmployeeMonthlySalaryData::with('getUser')->where([['month',$request->month],['year', $request->year],['sub_institute_id', $sub_institute_id]])->get();
             $employeeSalaryData = DB::table('employee_monthly_salary_data as emd')->join('tbluser as u','u.id','=','emd.employee_id')->where([['emd.month',$request->month],['emd.year', $request->year],['emd.sub_institute_id', $sub_institute_id]])->where('u.status',1)->get();
         }
+        $currentYear = date('Y');
         // echo "<pre>";print_r($employeeSalaryData);exit;
-        return view('payroll.payroll_bankwise_report.index', ['employees' => $employeeSalaryData,'list'=>$list,'months' => $months,'years' => $years]);
+        return view('payroll.payroll_bankwise_report.index', ['employees' => $employeeSalaryData,'list'=>$list,'months' => $months,'years' => $years,'currentYear'=>$currentYear]);
 
 
     }
