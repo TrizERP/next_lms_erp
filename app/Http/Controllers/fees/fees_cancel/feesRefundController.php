@@ -567,7 +567,7 @@ class feesRefundController extends Controller
         $feesRefundLog['cheque_no'] = $cheque_no;
         $feesRefundLog['bank_name'] = $bank_name;
         $feesRefundLog['bank_branch'] = $bank_branch;
-        $feesRefundLog['refund_remarks'] = $refund_remarks;
+        $feesRefundLog['remarks'] = $refund_remark;
 
         foreach ($fees_title as $fees_title_name => $fees_title_id) {
             $feesRefundLog[$fees_title_id] = $refund_amount[$fees_title_id];

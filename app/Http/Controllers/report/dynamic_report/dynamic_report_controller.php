@@ -752,7 +752,10 @@ class dynamic_report_controller extends Controller
                                 $this->query->Leftjoin('tblstudent_bank_detail as tsbd',function($q) {
                                     $q->on('tsbd.UMRN','=','sl.UMRN_NO')->where('tsbd.sub_institute_id',session()->get('sub_institute_id'));
                                 });
-                                $this->query->Leftjoin('tblstudent_enrollment as se','se.student_id','=','tsbd.student_id');
+                                $this->query->leftJoin('tblstudent_enrollment as se', function($q) {
+                                    $q->on('se.student_id', '=', 'tsbd.student_id')
+                                      ->where('se.syear', session()->get('syear'));
+                                });
                                 $this->query->Leftjoin('standard as st', 'st.id','=','se.standard_id');
                                 $this->query->groupBy('sl.id');
                             }

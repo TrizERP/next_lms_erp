@@ -14,6 +14,7 @@ use function App\Helpers\SearchStudent;
 use function Symfony\Component\HttpKernel\Profiler\read;
 use function App\Helpers\send_FCM_Notification;
 use function App\Helpers\sendNotification;
+use App\Models\school_setup\SchoolModel;
 
 class studentAttendanceController extends Controller
 {
@@ -754,13 +755,17 @@ class studentAttendanceController extends Controller
             $bunch_arr = array_chunk($gcmRegIds, 1000);
 
             $res = 0;
-            
-            if (! empty($bunch_arr)) {
+            $schoolData = SchoolModel::where(['id' => $sub_institute_id])->get()->toArray();
+
+            $schoolName = $schoolData[0]['SchoolName'];
+            $schoolLogo = $_SERVER['APP_URL'].'/admin_dep/images/'.$schoolData[0]['Logo'];
+
+            if (!empty($bunch_arr)) {
                 foreach ($bunch_arr as $val) {
                     if (isset($val, $pushMessage)) {
                         $type1 = 'Notification';
                         $message = [
-                            'body'  => $pushMessage, 'TYPE' => $type1, 'USER_ID' => $student_id,
+                            'body'  => $pushMessage, 'TYPE' => $type1, 'USER_ID' => $request->student_id,
                             'title' => $schoolName, 'image' => $schoolLogo,
                         ];
                         $pushStatus = send_FCM_Notification($val, $message, $sub_institute_id);
