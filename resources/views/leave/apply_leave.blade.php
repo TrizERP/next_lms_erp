@@ -159,6 +159,7 @@
                                         for ($date = $from_date; $date->lte($to_date); $date->addDay()) {
                                             if ($from_date->eq($date)) {
                                                 $countDays += $value->day_type;
+                                                $dayCount++;    
                                             }
                                         }
                                         $numberOfDays = $to_date->diffInDays($from_date);
@@ -168,7 +169,7 @@
                                         <td>{{$Mfrom_date->format('d-m-Y')}}</td>
                                         <td>{{$to_date->format('d-m-Y')}}</td>
                                         <td>{{($dayCount>0) ? $dayCount : 1}}</td>
-                                        <td>{{ ($employee_leave_lists->day_type=="0.5") ? 'Half Day' : 'Full Day' }}</td>
+                                        <td>{{ ($value->day_type=="0.5") ? 'Half Day' : 'Full Day' }}</td>
                                         <td>{{$value->leave_type_name}}</td>
                                         <td>{{$value->comment}}</td>
                                         <td>{{$value->hod_comment}}</td>
