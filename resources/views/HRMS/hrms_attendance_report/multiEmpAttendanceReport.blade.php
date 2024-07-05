@@ -93,8 +93,8 @@
                             <th>Sr No.</th>
                             <th>Date</th>
                             <th>Department</th>
-                            <th>Emp No</th>
                             <th>Employee Name</th>
+                            <th>Emp No</th>
                             <th>In Time</th>
                             <th>Out Time</th>
                             <th class="text-left">Duration</th>
@@ -106,21 +106,22 @@
                                 @php $i=1; @endphp
                                 @foreach($empArr as $empId=>$value)
                                 @php
-                                    $att_status=$get_format_punchin_time=$day_name='';
+                                    $att_status=$day_name='';
+                                    $get_format_punchin_time=$get_format_punchout_time='-';
                                     $holidays=$cl_leave=$on_duty_leave=[];
                                     if (isset($value['punchin_time']) && !empty($value)) 
                                     {
                                         $hrmsAttendance = $value;
 
-                                        $get_format_punchin_time = \Carbon\Carbon::parse($hrmsAttendance['punchin_time'])->format('H:i:s');
+                                        $get_format_punchin_time =($hrmsAttendance['punchin_time']!='') ? \Carbon\Carbon::parse($hrmsAttendance['punchin_time'])->format('H:i A') : '-';
 
-                                        $get_format_punchout_time = \Carbon\Carbon::parse($hrmsAttendance['punchout_time'])->format('H:i:s');
+                                        $get_format_punchout_time = ($hrmsAttendance['punchout_time']!='') ? \Carbon\Carbon::parse($hrmsAttendance['punchout_time'])->format('H:i A') : '-';
 
                                         if ($get_format_punchin_time == $get_format_punchout_time) 
                                         {
                                             $att_status = 'background-color: red;';
                                         }
-                                        else if ($hrmsAttendance['timestamp_diff'] <= "04:00:00") 
+                                        else if ($hrmsAttendance['timestamp_diff'] <= "04:00:00" && $get_format_punchin_time > $hrmsAttendance['in_time']) 
                                         {
                                             $att_status = 'background-color: yellow;';
                                         }
@@ -129,6 +130,8 @@
                                             $att_status = 'background-color: orange;';
                                         }
                                             
+                                    }else if($get_format_punchin_time=='-'){
+                                        $att_status = 'background-color: #FFB2B2;';
                                     }
                                     else if(isset($hrmsAttendance['leave'][0]) && !empty($hrmsAttendance['leave'][0]))
                                     {
@@ -194,12 +197,12 @@
                                 @endphp
                                 <tr style="{{ $att_status }}">
                                     <td>{{$i++}}</td>
-                                    <td>{{$date}}</td>
-                                    <td>{{$value['depName'] ?? '-'}}</td>
+                                    <td>{{\Carbon\Carbon::parse($date)->format('d-m-Y')}}</td>
                                     <td>{{$value['employee_no'] ?? '-'}}</td>
+                                    <td>{{$value['depName'] ?? '-'}}</td>
                                     <td>{{$value['full_name']  ?? '-'}}</td>
-                                    <td>{{$value['in_time']  ?? '-'}}</td>
-                                    <td>{{$value['out_time']  ?? '-'}}</td>
+                                    <td>{{$get_format_punchin_time  ?? '-'}}</td>
+                                    <td>{{$get_format_punchout_time  ?? '-'}}</td>
                                     <td class="text-left">{{ isset($value['timestamp_diff']) ? \Carbon\Carbon::parse($value['timestamp_diff'])->format('H:i') : '-' }}</td>
                                 </tr>
                                 @endforeach
