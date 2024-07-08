@@ -101,9 +101,16 @@
                                                                 $checked = 'checked="checked"';
                                                             }
                                                         }
+                                                        $id = $key;
+                                                        if($key=="division"){
+                                                            $id = "division_id";
+                                                        }
+                                                        if($key=="standard"){
+                                                            $id = "standard_id";
+                                                        }
                                                         @endphp
-                                                        <input id="{{$key}}" {{$checked}} value="{{$key}}" class="custom-control-input" name="dynamicFields[]" type="checkbox">
-                                                        <label class="custom-control-label mb-0 pt-1" for="{{$key}}">{{$value['name']}}</label>
+                                                        <input id="{{$id}}" {{$checked}} value="{{$key}}" class="custom-control-input" name="dynamicFields[]" type="checkbox">
+                                                        <label class="custom-control-label mb-0 pt-1" for="{{$id}}">{{$value['name']}}</label>
                                                     </div>
                                                 </div>
                                                 @endforeach
