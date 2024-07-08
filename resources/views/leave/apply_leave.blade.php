@@ -140,6 +140,7 @@
                                     <th>From Date</th>
                                     <th>To Date</th>
                                     <th>No of Days</th>
+                                    <th>Day type</th>
                                     <th>Leave Type</th>
                                     <th>Reasons</th>
                                     <th>HOD Comment</th>
@@ -155,10 +156,11 @@
                                         $Mfrom_date = \Carbon\Carbon::parse($value->from_date);
                                         $from_date = \Carbon\Carbon::parse($value->from_date);
                                         $to_date = \Carbon\Carbon::parse($value->to_date);
-                                        $countDays = 0;
+                                        $countDays = $dayCount = 0;
                                         for ($date = $from_date; $date->lte($to_date); $date->addDay()) {
                                             if ($from_date->eq($date)) {
                                                 $countDays += $value->day_type;
+                                                $dayCount++;    
                                             }
                                         }
                                         $numberOfDays = $to_date->diffInDays($from_date);
@@ -167,7 +169,8 @@
                                         <td>{{$key+1}}</td>
                                         <td>{{$Mfrom_date->format('d-m-Y')}}</td>
                                         <td>{{$to_date->format('d-m-Y')}}</td>
-                                        <td>{{($countDays>0) ? $countDays : 1}}</td>
+                                        <td>{{($dayCount>0) ? $dayCount : 1}}</td>
+                                        <td>{{ ($value->day_type=="0.5") ? 'Half Day' : 'Full Day' }}</td>
                                         <td>{{$value->leave_type_name}}</td>
                                         <td>{{$value->comment}}</td>
                                         <td>{{$value->hod_comment}}</td>
@@ -211,7 +214,7 @@
                 buttons: [
                     {
                         extend: 'pdfHtml5',
-                        title: 'Student Report',
+                        title: 'Leave Apply Report',
                         orientation: 'landscape',
                         pageSize: 'LEGAL',
                         pageSize: 'A0',
@@ -219,9 +222,9 @@
                             columns: ':visible'
                         },
                     },
-                    {extend: 'csv', text: ' CSV', title: 'Student Report'},
-                    {extend: 'excel', text: ' EXCEL', title: 'Student Report'},
-                    {extend: 'print', text: ' PRINT', title: 'Student Report'},
+                    {extend: 'csv', text: ' CSV', title: 'Leave Apply Report'},
+                    {extend: 'excel', text: ' EXCEL', title: 'Leave Apply Report'},
+                    {extend: 'print', text: ' PRINT', title: 'Leave Apply Report'},
                     'pageLength'
                 ],
             });
