@@ -45,7 +45,7 @@
                       <div>
                         <span class="heading">Schedule</span>
                         <span class="sub-heading">{{$value->title}} on {{$startTime}} to {{$endTime}} in {{$value->standard}}/{{$value->division}} go to for expert lecture</span>
-                        <div class="link"><a href="{{route('classwisetimetable.index')}}">View Now</a><a href="">View Now</a></div>
+                        <div class="link"><a href="{{route('classwisetimetable.index')}}">View Now</a></div>
                       </div>
                     </div>
                   @endforeach
@@ -68,7 +68,7 @@
                       <div>
                         <span class="heading">Homework</span>
                         <span class="sub-heading">Homework Submission {{$value->title}} in {{$value->standard}}/{{$value->division}}</span>
-                        <div class="link"><a href="{{route('student_homework_report_index')}}">View Now</a><a href="">View Now</a></div>
+                        <div class="link"><a href="{{route('student_homework_report_index')}}">View Now</a></div>
                       </div>
                     </div>
                   @endforeach
@@ -91,7 +91,7 @@
                       <div>
                         <span class="heading">Events & Calender</span>
                         <span class="sub-heading">{{$value->title}} on {{$startDate}}</span>
-                        <div class="link"><a href="{{route('calendar.index')}}">View Now</a><a href="">View Now</a></div>
+                        <div class="link"><a href="{{route('calendar.index')}}">View Now</a></div>
                       </div>
                     </div>
                   @endforeach
@@ -114,7 +114,7 @@
                       <div>
                         <span class="heading">Announcement & Notice</span>
                         <span class="sub-heading">{{$value->title}} on {{$startDate}}</span>
-                        <div class="link"><a href="{{route('announcements.index')}}">View Now</a><a href="">View Now</a></div>
+                        <div class="link"><a href="{{route('announcements.index')}}">View Now</a></div>
                       </div>
                     </div>
                   @endforeach
@@ -137,7 +137,7 @@
                       <div>
                         <span class="heading">Due Books</span>
                         <span class="sub-heading">"{{$value->book_name}}" due date is on {{$startDate}}</span>
-                        <div class="link"><a href="{{route('book_issue_report.index')}}">View Now</a><a href="">View Now</a></div>
+                        <div class="link"><a href="{{route('book_issue_report.index')}}">View Now</a></div>
                       </div>
                     </div>
                   @endforeach
@@ -160,7 +160,7 @@
                       <div>
                         <span class="heading">Student Progress</span>
                         <span class="sub-heading">Check Student Progress {{$value->name}}/{{$value->division}}</span>
-                        <div class="link"><a href="{{route('lmsStudent_report.index')}}">View Now</a><a href="">View Now</a></div>
+                        <div class="link"><a href="{{route('lmsStudent_report.index')}}">View Now</a></div>
                       </div>
                     </div>
                   @endforeach
@@ -184,7 +184,7 @@
                       <div>
                         <span class="heading">PTM</span>
                         <span class="sub-heading">PTM is on {{$startDate}} at {{$startDate}} - {{$endTime}} of {{$value->standard}}/{{$value->division}}</span>
-                        <div class="link"><a href="{{route('add_ptm_time_slot_master.index')}}">View Now</a><a href="">View Now</a></div>
+                        <div class="link"><a href="{{route('add_ptm_time_slot_master.index')}}">View Now</a></div>
                       </div>
                     </div>
                   @endforeach
@@ -207,7 +207,7 @@
                       <div>
                         <span class="heading">Lesson Plan</span>
                         <span class="sub-heading">Lesson Plan for {{$value->chapter_name}} for {{$value->standard}}</span>
-                        <div class="link"><a href="{{route('lessonplanning.index')}}">View Now</a><a href="">View Now</a></div>
+                        <div class="link"><a href="{{route('lessonplanning.index')}}">View Now</a></div>
                       </div>
                     </div>
                   @endforeach
@@ -231,7 +231,7 @@
                       <div>
                         <span class="heading">Punch In/Out</span>
                         <span class="sub-heading">Your {{$value->user_name}} time Punch In {{$startTime}} and Punch Out {{$endTime}}</span>
-                        <div class="link"><a href="{{route('hrms_attendance_report.index')}}">View Now</a><a href="">View Now</a></div>
+                        <div class="link"><a href="{{route('hrms_attendance_report.index')}}">View Now</a></div>
                       </div>
                     </div>
                   @endforeach
@@ -255,7 +255,7 @@
                       <div>
                         <span class="heading">Proxy Lecture</span>
                         <span class="sub-heading">Proxy Lecture of {{$value->user_name}} on {{$startTime}}-{{$endTime}} in {{$value->standard}}/{{$value->division}}</span>
-                        <div class="link"><a href="{{route('proxy_report.index')}}">View Now</a><a href="">View Now</a></div>
+                        <div class="link"><a href="{{route('proxy_report.index')}}">View Now</a></div>
                       </div>
                     </div>
                   @endforeach
@@ -278,7 +278,7 @@
                       <div>
                         <span class="heading">Exam Marks</span>
                         <span class="sub-heading">Add exam Marks For {{$value->standard}}</span>
-                        <div class="link"><a href="{{route('marks_entry.index')}}">View Now</a><a href="">View Now</a></div>
+                        <div class="link"><a href="{{route('marks_entry.index')}}">View Now</a></div>
                       </div>
                     </div>
                   @endforeach
@@ -301,7 +301,7 @@
                       <div>
                         <span class="heading">Student Attendance</span>
                         <span class="sub-heading">Take Attendance for {{$value->standard}}</span>
-                        <div class="link"><a href="{{route('student_attendance.index')}}">View Now</a><a href="">View Now</a></div>
+                        <div class="link"><a href="{{route('student_attendance.index')}}">View Now</a></div>
                       </div>
                     </div>
                   @endforeach
@@ -324,7 +324,7 @@
                       <div>
                         <span class="heading">Task Assigned</span>
                         <span class="sub-heading">Task {{$value->TASK_TITLE}} Assigned to {{$value->task_user_name}}</span>
-                        <div class="link"><a href="{{route('task.index')}}">View Now</a><a href="">View Now</a></div>
+                        <div class="link"><a href="{{route('task.index')}}">View Now</a></div>
                       </div>
                     </div>
                   @endforeach
@@ -347,7 +347,7 @@
                       <div>
                         <span class="heading">Parent Communication</span>
                         <span class="sub-heading">Send Replay on parent communication {{$value->title}} </span>
-                        <div class="link"><a href="{{route('parent_communication.index')}}">View Now</a><a href="">View Now</a></div>
+                        <div class="link"><a href="{{route('parent_communication.index')}}">View Now</a></div>
                       </div>
                     </div>
                   @endforeach
@@ -370,7 +370,7 @@
                       <div>
                         <span class="heading">Student Leave</span>
                         <span class="sub-heading">Student Leave {{$value->title}} for {{$value->standard}}</span>
-                        <div class="link"><a href="{{route('leave_application.index')}}">View Now</a><a href="">View Now</a></div>
+                        <div class="link"><a href="{{route('leave_application.index')}}">View Now</a></div>
                       </div>
                     </div>
                   @endforeach
@@ -411,7 +411,7 @@
                       <div>
                         <span class="heading">Schedule</span>
                         <span class="sub-heading">{{$value->title}} on {{$startTime}} to {{$endTime}} in {{$value->standard}}/{{$value->division}} go to for expert lecture</span>
-                        <div class="link"><a href="{{route('classwisetimetable.index')}}">View Now</a><a href="">View Now</a></div>
+                        <div class="link"><a href="{{route('classwisetimetable.index')}}">View Now</a></div>
                       </div>
                     </div>
                   @endforeach
@@ -430,7 +430,7 @@
                       <div>
                         <span class="heading">Schedule</span>
                         <span class="sub-heading">Homework Submission {{$value->title}} in {{$value->standard}}/{{$value->division}} </span>
-                        <div class="link"><a href="{{route('student_homework_report_index')}}">View Now</a><a href="">View Now</a></div>
+                        <div class="link"><a href="{{route('student_homework_report_index')}}">View Now</a></div>
                       </div>
                     </div>
                   @endforeach
@@ -453,7 +453,7 @@
                       <div>
                         <span class="heading">Events & Calender</span>
                         <span class="sub-heading">{{$value->title}} on {{$startDate}}</span>
-                        <div class="link"><a href="{{route('calendar.index')}}">View Now</a><a href="">View Now</a></div>
+                        <div class="link"><a href="{{route('calendar.index')}}">View Now</a></div>
                       </div>
                     </div>
                   @endforeach
@@ -472,7 +472,7 @@
                       <div>
                         <span class="heading">Announcement & Notice</span>
                         <span class="sub-heading">{{$value->title}} on {{$startDate}}</span>
-                        <div class="link"><a href="{{route('announcements.index')}}">View Now</a><a href="">View Now</a></div>
+                        <div class="link"><a href="{{route('announcements.index')}}">View Now</a></div>
                       </div>
                     </div>
                   @endforeach
@@ -492,7 +492,7 @@
                       <div>
                         <span class="heading">Due Books</span>
                         <span class="sub-heading">"{{$value->book_name}}" due date is on {{$startDate}}</span>
-                        <div class="link"><a href="{{route('book_issue_report.index')}}">View Now</a><a href="">View Now</a></div>
+                        <div class="link"><a href="{{route('book_issue_report.index')}}">View Now</a></div>
                       </div>
                     </div>
                   @endforeach
@@ -512,7 +512,7 @@
                       <div>
                         <span class="heading">Student Progress</span>
                         <span class="sub-heading">Check Student Progress {{$value->name}}/{{$value->division}}</span>
-                        <div class="link"><a href="{{route('lmsStudent_report.index')}}">View Now</a><a href="">View Now</a></div>
+                        <div class="link"><a href="{{route('lmsStudent_report.index')}}">View Now</a></div>
                       </div>
                     </div>
                   @endforeach
@@ -533,7 +533,7 @@
                       <div>
                         <span class="heading">PTM</span>
                         <span class="sub-heading">PTM is on {{$startDate}} at {{$startDate}} - {{$endTime}} of {{$value->standard}}/{{$value->division}}</span>
-                        <div class="link"><a href="{{route('add_ptm_time_slot_master.index')}}">View Now</a><a href="">View Now</a></div>
+                        <div class="link"><a href="{{route('add_ptm_time_slot_master.index')}}">View Now</a></div>
                       </div>
                     </div>
                   @endforeach
@@ -553,7 +553,7 @@
                       <div>
                         <span class="heading">Lesson Plan</span>
                         <span class="sub-heading">Lesson Plan for {{$value->chapter_name}} for {{$value->standard}}</span>
-                        <div class="link"><a href="{{route('lessonplanning.index')}}">View Now</a><a href="">View Now</a></div>
+                        <div class="link"><a href="{{route('lessonplanning.index')}}">View Now</a></div>
                       </div>
                     </div>
                   @endforeach
@@ -574,7 +574,7 @@
                       <div>
                         <span class="heading">Punch In/Out</span>
                         <span class="sub-heading">Your {{$value->user_name}} time Punch In {{$startTime}} and Punch Out {{$endTime}}</span>
-                        <div class="link"><a href="{{route('hrms_attendance_report.index')}}">View Now</a><a href="">View Now</a></div>
+                        <div class="link"><a href="{{route('hrms_attendance_report.index')}}">View Now</a></div>
                       </div>
                     </div>
                   @endforeach
@@ -595,7 +595,7 @@
                       <div>
                         <span class="heading">Proxy Lecture</span>
                         <span class="sub-heading">Proxy Lecture of {{$value->user_name}} on {{$startTime}}-{{$endTime}} in {{$value->standard}}/{{$value->division}}</span>
-                        <div class="link"><a href="{{route('proxy_report.index')}}">View Now</a><a href="">View Now</a></div>
+                        <div class="link"><a href="{{route('proxy_report.index')}}">View Now</a></div>
                       </div>
                     </div>
                   @endforeach
@@ -615,7 +615,7 @@
                       <div>
                         <span class="heading">Exam Marks</span>
                         <span class="sub-heading">Add exam Marks For {{$value->standard}}</span>
-                        <div class="link"><a href="{{route('marks_entry.index')}}">View Now</a><a href="">View Now</a></div>
+                        <div class="link"><a href="{{route('marks_entry.index')}}">View Now</a></div>
                       </div>
                     </div>
                   @endforeach
@@ -635,7 +635,7 @@
                       <div>
                         <span class="heading">Student Attendance</span>
                         <span class="sub-heading">Take Attendance for {{$value->standard}}</span>
-                        <div class="link"><a href="{{route('student_attendance.index')}}">View Now</a><a href="">View Now</a></div>
+                        <div class="link"><a href="{{route('student_attendance.index')}}">View Now</a></div>
                       </div>
                     </div>
                   @endforeach
@@ -655,7 +655,7 @@
                       <div>
                         <span class="heading">Task Assigned</span>
                         <span class="sub-heading">Task {{$value->TASK_TITLE}} Assigned to {{$value->task_user_name}}</span>
-                        <div class="link"><a href="{{route('task.index')}}">View Now</a><a href="">View Now</a></div>
+                        <div class="link"><a href="{{route('task.index')}}">View Now</a></div>
                       </div>
                     </div>
                   @endforeach
@@ -675,7 +675,7 @@
                       <div>
                         <span class="heading">Parent Communication</span>
                         <span class="sub-heading">Send Replay on parent communication {{$value->title}} </span>
-                        <div class="link"><a href="{{route('parent_communication.index')}}">View Now</a><a href="">View Now</a></div>
+                        <div class="link"><a href="{{route('parent_communication.index')}}">View Now</a></div>
                       </div>
                     </div>
                   @endforeach
@@ -695,7 +695,7 @@
                       <div>
                         <span class="heading">Student Leave</span>
                         <span class="sub-heading">Student Leave {{$value->title}} for {{$value->standard}}</span>
-                        <div class="link"><a href="{{route('leave_application.index')}}">View Now</a><a href="">View Now</a></div>
+                        <div class="link"><a href="{{route('leave_application.index')}}">View Now</a></div>
                       </div>
                     </div>
                   @endforeach
@@ -737,7 +737,7 @@
                       <div>
                         <span class="heading">Schedule</span>
                         <span class="sub-heading">{{$value->title}} on {{$startTime}} to {{$endTime}} in {{$value->standard}}/{{$value->division}} go to for expert lecture</span>
-                        <div class="link"><a href="{{route('classwisetimetable.index')}}">View Now</a><a href="">View Now</a></div>
+                        <div class="link"><a href="{{route('classwisetimetable.index')}}">View Now</a></div>
                       </div>
                     </div>
                   @endforeach
@@ -760,7 +760,7 @@
                       <div>
                         <span class="heading">Homework</span>
                         <span class="sub-heading">Homework Submission {{$value->title}} in {{$value->standard}}/{{$value->division}} </span>
-                        <div class="link"><a href="{{route('student_homework_report_index')}}">View Now</a><a href="">View Now</a></div>
+                        <div class="link"><a href="{{route('student_homework_report_index')}}">View Now</a></div>
                       </div>
                     </div>
                   @endforeach
@@ -783,7 +783,7 @@
                       <div>
                         <span class="heading">Events & Calender</span>
                         <span class="sub-heading">{{$value->title}} on {{$startDate}}</span>
-                        <div class="link"><a href="{{route('calendar.index')}}">View Now</a><a href="">View Now</a></div>
+                        <div class="link"><a href="{{route('calendar.index')}}">View Now</a></div>
                       </div>
                     </div>
                   @endforeach
@@ -806,7 +806,7 @@
                       <div>
                         <span class="heading">Announcement & Notice</span>
                         <span class="sub-heading">{{$value->title}} on {{$startDate}}</span>
-                        <div class="link"><a href="{{route('announcements.index')}}">View Now</a><a href="">View Now</a></div>
+                        <div class="link"><a href="{{route('announcements.index')}}">View Now</a></div>
                       </div>
                     </div>
                   @endforeach
@@ -829,7 +829,7 @@
                       <div>
                         <span class="heading">Due Books</span>
                         <span class="sub-heading">"{{$value->book_name}}" due date is on {{$startDate}}</span>
-                        <div class="link"><a href="{{route('book_issue_report.index')}}">View Now</a><a href="">View Now</a></div>
+                        <div class="link"><a href="{{route('book_issue_report.index')}}">View Now</a></div>
                       </div>
                     </div>
                   @endforeach
@@ -852,7 +852,7 @@
                       <div>
                         <span class="heading">Student Progress</span>
                         <span class="sub-heading">Check Student Progress {{$value->name}}/{{$value->division}}</span>
-                        <div class="link"><a href="{{route('lmsStudent_report.index')}}">View Now</a><a href="">View Now</a></div>
+                        <div class="link"><a href="{{route('lmsStudent_report.index')}}">View Now</a></div>
                       </div>
                     </div>
                   @endforeach
@@ -876,7 +876,7 @@
                       <div>
                         <span class="heading">PTM</span>
                         <span class="sub-heading">PTM is on {{$startDate}} at {{$startDate}} - {{$endTime}} of {{$value->standard}}/{{$value->division}}</span>
-                        <div class="link"><a href="{{route('add_ptm_time_slot_master.index')}}">View Now</a><a href="">View Now</a></div>
+                        <div class="link"><a href="{{route('add_ptm_time_slot_master.index')}}">View Now</a></div>
                       </div>
                     </div>
                   @endforeach
@@ -899,7 +899,7 @@
                       <div>
                         <span class="heading">Lesson Plan</span>
                         <span class="sub-heading">Lesson Plan for {{$value->chapter_name}} for {{$value->standard}}</span>
-                        <div class="link"><a href="{{route('lessonplanning.index')}}">View Now</a><a href="">View Now</a></div>
+                        <div class="link"><a href="{{route('lessonplanning.index')}}">View Now</a></div>
                       </div>
                     </div>
                   @endforeach
@@ -923,7 +923,7 @@
                       <div>
                         <span class="heading">Punch In/Out</span>
                         <span class="sub-heading">Your {{$value->user_name}} time Punch In {{$startTime}} and Punch Out {{$endTime}}</span>
-                        <div class="link"><a href="{{route('hrms_attendance_report.index')}}">View Now</a><a href="">View Now</a></div>
+                        <div class="link"><a href="{{route('hrms_attendance_report.index')}}">View Now</a></div>
                       </div>
                     </div>
                   @endforeach
@@ -947,7 +947,7 @@
                       <div>
                         <span class="heading">Proxy Lecture</span>
                         <span class="sub-heading">Proxy Lecture of {{$value->user_name}} on {{$startTime}}-{{$endTime}} in {{$value->standard}}/{{$value->division}}</span>
-                        <div class="link"><a href="{{route('proxy_report.index')}}">View Now</a><a href="">View Now</a></div>
+                        <div class="link"><a href="{{route('proxy_report.index')}}">View Now</a></div>
                       </div>
                     </div>
                   @endforeach
@@ -970,7 +970,7 @@
                       <div>
                         <span class="heading">Exam Marks</span>
                         <span class="sub-heading">Add exam Marks For {{$value->standard}}</span>
-                        <div class="link"><a href="{{route('marks_entry.index')}}">View Now</a><a href="">View Now</a></div>
+                        <div class="link"><a href="{{route('marks_entry.index')}}">View Now</a></div>
                       </div>
                     </div>
                   @endforeach
@@ -993,7 +993,7 @@
                       <div>
                         <span class="heading">Student Attendance</span>
                         <span class="sub-heading">Take Attendance for {{$value->standard}}</span>
-                        <div class="link"><a href="{{route('student_attendance.index')}}">View Now</a><a href="">View Now</a></div>
+                        <div class="link"><a href="{{route('student_attendance.index')}}">View Now</a></div>
                       </div>
                     </div>
                   @endforeach
@@ -1039,7 +1039,7 @@
                       <div>
                         <span class="heading">Parent Communication</span>
                         <span class="sub-heading">Send Replay on parent communication {{$value->title}} </span>
-                        <div class="link"><a href="{{route('parent_communication.index')}}">View Now</a><a href="">View Now</a></div>
+                        <div class="link"><a href="{{route('parent_communication.index')}}">View Now</a></div>
                       </div>
                     </div>
                   @endforeach
@@ -1062,7 +1062,7 @@
                       <div>
                         <span class="heading">Student Leave</span>
                         <span class="sub-heading">Student Leave {{$value->title}} for {{$value->standard}}</span>
-                        <div class="link"><a href="{{route('leave_application.index')}}">View Now</a><a href="">View Now</a></div>
+                        <div class="link"><a href="{{route('leave_application.index')}}">View Now</a></div>
                       </div>
                     </div>
                   @endforeach
