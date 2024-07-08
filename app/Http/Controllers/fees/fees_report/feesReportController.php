@@ -100,8 +100,8 @@ class feesReportController extends Controller
             $syear = $request->get('syear');            
         }
         
-        $extra_fp = "  AND fp.sub_institute_id = '" . $sub_institute_id . "' AND fp.is_deleted = 'N' ";
-        $extra_fo = "  AND fo.sub_institute_id = '" . $sub_institute_id . "' AND fo.is_deleted = 'N' ";
+        $extra_fp = "  AND fp.sub_institute_id = '" . $sub_institute_id . "' AND fp.syear = '" . $syear . "' AND fp.is_deleted = 'N' ";
+        $extra_fo = "  AND fo.sub_institute_id = '" . $sub_institute_id . "' AND fo.syear = '" . $syear . "' AND fo.is_deleted = 'N' ";
       
         if (!empty($grade)) {
             $extra_fp .= " AND te.grade_id IN ('" . implode("','", $grade) . "')"; 

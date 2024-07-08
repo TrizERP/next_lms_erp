@@ -453,7 +453,8 @@ class parentCommunicationController extends Controller
                 $res['data'] = $data;
             } else {
                 $res['status'] = 0;
-                $res['message'] = "You are not a class teacher.";
+                $res['message'] = "No record found";
+                //$res['message'] = "You are not a class teacher.";
             }
         } else {
             $res['status_code'] = 0;
