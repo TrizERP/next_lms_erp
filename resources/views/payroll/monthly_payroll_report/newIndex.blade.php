@@ -87,7 +87,7 @@
                             <td>{{$key+1}}</td>
                             <td>{{$value['employee_no']}}</td>
                             <td>{{$value['full_name'] ?? '-' .'('.$value['user_profile'] ?? '-' .')'}}</td>
-                            <td><input type="number" id="totalDay_{{$value['id']}}" name="payrollVal[{{$value['id']}}][total_day]" onkeyup="getData(this,{{$value['id']}})" class="form-control" value="{{ isset($value['monthlyData']->total_day) ? $value['monthlyData']->total_day : $value['totalDay'] }}" ></td>
+                            <td><input type="text" id="totalDay_{{$value['id']}}" name="payrollVal[{{$value['id']}}][total_day]" onkeyup="getData(this,{{$value['id']}})" class="form-control" value="{{ isset($value['monthlyData']->total_day) ? $value['monthlyData']->total_day : $value['totalDay'] }}" ></td>
                             @foreach($data['header'] as $hkey => $col)
                                 @if(!empty($value['monthlyData']))
                                     @php 
@@ -110,7 +110,7 @@
 
                             @else 
                                 @php 
-                                    $name = "payrollVal[".$value['id']."][payrollHead][".$hkey."]";
+                                $name = "payrollVal[".$value['id']."][payrollHead][".$hkey."]";
                                  if(in_array($hkey,["total_deduction","total_payment","received_by"])){
                                     $name="payrollVal[".$value['id']."][".$hkey."]";
                                  }
