@@ -73,7 +73,7 @@
                             </div>
                              <div class="col-md-4 form-group ml-0 mr-0">
                                 <label>Item Setting for Requisition Form</label>
-                                <select name="ITEM_SETTING_FOR_REQUISITION" id="ITEM_SETTING_FOR_REQUISITION" class="form-control" disabled>                                    
+                                <select name="ITEM_SETTING_FOR_REQUISITION" id="ITEM_SETTING_FOR_REQUISITION" class="form-control" style="pointer-events:none;background:#ddd">                                    
                                     <option value="items_with_chain" @if(isset($data->ITEM_SETTING_FOR_REQUISITION) && $data->ITEM_SETTING_FOR_REQUISITION == 'items_with_chain') selected @endif>Items With Category/Sub-category</option>
                                     <option value="items_without_chain" @if(isset($data->ITEM_SETTING_FOR_REQUISITION) && $data->ITEM_SETTING_FOR_REQUISITION == 'items_without_chain') selected @endif>Items Without Category/Sub-category</option>
                                                                         
