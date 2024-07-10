@@ -235,3 +235,7 @@ Route::group(['prefix' => 'bazar', 'middleware' => ['session', 'menu', 'logRoute
     Route::post('show_bazar_report', [bulkUploadedReportController::class, 'show_bazar_report'])->name('show_bazar_report');
 });
 
+Route::get('/upcoming', [lmsActivityStreamController::class, 'upcomingActivity'])->name('upcoming');
+Route::get('/today', [lmsActivityStreamController::class, 'todayActivity'])->name('today');
+Route::get('/recent', [lmsActivityStreamController::class, 'recentActivity'])->name('recent');
+
