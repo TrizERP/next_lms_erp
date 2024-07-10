@@ -97,8 +97,13 @@
                                             if(isset($rval[$hname]) )
                                             {
                                                 echo "<th>".$rval[$hname]."</th>";
-                                                $total += $rval[$hname];
-                                                $$hkey += $rval[$hname];
+                                                if($hkey == 'discount'){
+                                                    $total -= $rval[$hname];
+                                                    $$hkey -= $rval[$hname];
+                                                }else{
+                                                    $total += $rval[$hname];
+                                                    $$hkey += $rval[$hname];
+                                                }
                                             }
                                             else
                                             {
@@ -116,7 +121,7 @@
                                 @php
                                     foreach($data['heading_arr'] as $h1key => $h1val)
                                     {
-                                        echo "<td><b>".$$h1key."</b></td>";
+                                        echo "<td><b>".abs($$h1key)."</b></td>";
                                     }
                                 @endphp
                                 <td><b>{{$grand_total}}</b></td>

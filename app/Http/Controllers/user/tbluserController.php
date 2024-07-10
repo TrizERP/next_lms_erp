@@ -51,7 +51,11 @@ class tbluserController extends Controller
         $subject_data = subjectModel::where(['sub_institute_id' => $sub_institute_id])->get();
         $employees = tbluserModel::where('sub_institute_id',$sub_institute_id)->where('status',1)->get();
         $job_titles = HrmsJobTitle::where('sub_institute_id',$sub_institute_id)->get();
-        $departments = DB::table('hrms_departments')->where('status',1)->get()->toArray();
+        if(in_array($sub_institute_id,[47,195])){
+            $departments = DB::table('hrms_departments')->where('status',1)->get()->toArray();
+        }else{
+            $departments = DB::table('hrms_departments_mapping')->where('sub_institute_id',$sub_institute_id)->where('status',1)->get()->toArray();
+        }
         $fieldsData = tblfields_dataModel::get()->toArray();
         $i = 0;
         $finalfieldsData = [];
@@ -275,7 +279,12 @@ class tbluserController extends Controller
         ->get()
         ->toArray();
         // end  20-04-24
-        $res['departments'] = DB::table('hrms_departments')->where('status',1)->get()->toArray();
+        if(in_array($sub_institute_id,[47,195])){
+            $departments = DB::table('hrms_departments')->where('status',1)->get()->toArray();
+        }else{
+            $departments = DB::table('hrms_departments_mapping')->where('sub_institute_id',$sub_institute_id)->where('status',1)->get()->toArray();
+        }
+        $res['departments'] = $departments;
         $res['employees'] = tbluserModel::where('sub_institute_id',$sub_institute_id)->get();
         $res['job_titles'] = HrmsJobTitle::where('sub_institute_id',$sub_institute_id)->get();
         $res['custom_fields'] = $dataCustomFields;
