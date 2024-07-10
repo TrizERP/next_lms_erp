@@ -1596,7 +1596,12 @@ END as color_code
         ->leftJoin('batch as b','b.id','=','ts.studentbatch')
         ->selectRaw("ts.id,concat_ws(' ',COALESCE(ts.first_name,'-'),COALESCE(ts.last_name,'-')) as student_name,ts.mobile,ts.dob,ts.enrollment_no,IFNULL(ts.house,'-') as house,IFNULL(b.title,'-') as batch,g.title as grade,s.name as standard,d.name as division,IFNULL(q.title,'-') as quota,IFNULL(ts.uniqueid,'-') as uniqueid,IFNULL(ts.nationality,'-') as nationality,(CASE WHEN se.end_date IS NULL THEN 'active' ELSE 'inactive' END) AS status")
         ->where('ts.sub_institute_id', $sub_institute_id)
-        ->where(['ts.first_name'=>$request->first_name,'ts.last_name'=>$request->last_name,'ts.mobile'=>$request->mobile])->latest('se.created_on')->first();
+        ->when($request->quota,function($query) use($sub_institute_id,$request){
+            $query->where(['ts.first_name'=>$request->first_name,'ts.enrollment_no'=>$request->enrollment,'se.student_quota'=>$request->quota]);
+        }, function($query) use($sub_institute_id,$request){
+            $query->where(['ts.first_name'=>$request->first_name,'ts.last_name'=>$request->last_name,'ts.mobile'=>$request->mobile]);
+        })
+       ->first();
 
         return  response()->json($response);
     }

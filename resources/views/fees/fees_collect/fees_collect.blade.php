@@ -82,7 +82,7 @@
 						</div>
 						<div class="row">
 							<div class="col-md-12 text-center mt-4">
-								<button type="button" class="btn btn-info" data-toggle="modal" id="add_data" onclick="javascript:add_data({{ $data['stu_data']['enrollment']}},{{$data['stu_data']['student_id']}});">
+								<button type="button" class="btn btn-info" data-toggle="modal" id="add_data" onclick="javascript:add_data('{{ $data['stu_data']['enrollment']}}',{{$data['stu_data']['student_id']}});">
 									Paid History
 								</button>
 							</div>
