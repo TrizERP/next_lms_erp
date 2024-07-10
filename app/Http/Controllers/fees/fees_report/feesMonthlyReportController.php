@@ -103,13 +103,13 @@ class feesMonthlyReportController extends Controller
 
         $extra_query = "";
         if ($grade != "") {
-            $extra_query = " AND s.grade_id = '" . $grade . "'";
+            $extra_query .= " AND s.grade_id = '" . $grade . "'";
         }
         if ($standard != "") {
-            $extra_query = " AND s.standard_id = '" . $standard . "'";
+            $extra_query .= " AND s.standard_id = '" . $standard . "'";
         }
         if ($division != "") {
-            $extra_query = " AND s.section_id = '" . $division . "'";
+            $extra_query .= " AND s.section_id = '" . $division . "'";
         }
 
         $final_data = array();
