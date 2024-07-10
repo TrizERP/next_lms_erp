@@ -13,14 +13,14 @@
                @if ($sessionData = Session::get('data'))
                     @if (isset($sessionData['status_code']))
                         <div class="alert alert-{{ $sessionData['status_code'] == 1 ? 'success' : 'danger' }} alert-block">
-                            <button type="button" class="close" data-dismiss="alert">×</button>
+                            <button type="button" class="close" data-dismiss="alert">ï¿½</button>
                             <strong>{!! $sessionData['message'] !!}</strong>
                         </div>
                     @endif
                 @endif
          <div class="row">                
                 <div class="col-lg-3 col-sm-3 col-xs-3">
-                    <a href="{{ route("add_requisition.create") }}" class="btn btn-info add-new"><i class="fa fa-plus"></i> Add Requisition Form</a>
+                    <a href="{{ route('add_requisition.create') }}" class="btn btn-info add-new"><i class="fa fa-plus"></i> Add Requisition Form</a>
                 </div>
                 <div class="col-lg-12 col-sm-12 col-xs-12">
                     <div class="table-responsive">                        

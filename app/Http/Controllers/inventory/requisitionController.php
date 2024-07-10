@@ -15,7 +15,6 @@ class requisitionController extends Controller
 {
     public function index(Request $request)
     {
-        
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
         $user_id = $request->session()->get('user_id');
@@ -87,7 +86,7 @@ class requisitionController extends Controller
 
         $item_setting_data = inventory_master_setupModel::where([
             'sub_institute_id' => $sub_institute_id, 'syear' => $syear,
-        ])->get()->toArray();
+        ])->whereNotNull('ITEM_SETTING_FOR_REQUISITION')->get()->toArray();
 
         if (count($item_setting_data) == 0) {
             $res['status_code'] = "0";
@@ -99,9 +98,7 @@ class requisitionController extends Controller
 
         $item_setting_data_value = '';
 
-         if (isset($item_setting_data[0]['ITEM_SETTING_FOR_REQUISITION']) &&
-            $item_setting_data[0]['ITEM_SETTING_FOR_REQUISITION'] != '' && $item_setting_data[0]['ITEM_SETTING_FOR_REQUISITION'] != 0) {
-
+        if (isset($item_setting_data[0]['ITEM_SETTING_FOR_REQUISITION']) && $item_setting_data[0]['ITEM_SETTING_FOR_REQUISITION'] != '') {
             $item_setting_data_value = $item_setting_data[0]['ITEM_SETTING_FOR_REQUISITION'];
         }else {
             $res['status_code'] = "0";
