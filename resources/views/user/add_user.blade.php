@@ -122,7 +122,7 @@
                     <div class="col-md-4 form-group">
                         <label>User Profile</label>
                         <select name="user_profile_id" required id="user_profile_id" class="form-control">
-                            <option value="0"> Select Parent Profile</option>
+                            <option value=""> Select Parent Profile</option>
 
                             @if(!empty($user_profiles))
                                 @foreach($user_profiles as $key => $value)
@@ -136,10 +136,12 @@
                         <label>Total Lectures</label>
                         <input type="number" id='total_lecture' name="total_lecture" class="form-control">
                     </div>
+                    @if(session()->get('sub_institute_id')!=47)
                     <div class="col-md-4 form-group">
                         <label>Join Year</label>
                         <input type="number" id='join_year' required name="join_year" class="form-control">
                     </div>
+                    @endif
                     <div class="col-md-4 form-group">
                         <label>Password</label>
                         <input type="password" id='password' required name="password" class="form-control">
@@ -552,10 +554,11 @@
         document.getElementById("user_name").value = username;
     }
 
+    var email_state = false;
 
     //START Unique Email Validation
-    var email_state = false;
     $("#email").on("change", function (event) {
+
         email_val = this.value;
         var path = "{{ route('ajax_checkEmailExist') }}";
         $.ajax({
