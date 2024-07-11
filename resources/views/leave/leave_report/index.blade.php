@@ -53,7 +53,7 @@
                             <label>Leave Status</label>
                             <select id='leave_status' name="leave_status[]" class="form-control" multiple required>
                                 @foreach($data['leave_types'] as $leaveKey => $leaveValue)
-                                <option value="{{$leaveKey}}" @if(isset($data['get_leave_status']) && in_array($leaveKey,$data['get_leave_status']) ) selected @endif>{{$leaveValue}}</option>
+                                <option value="{{$leaveKey}}" @if(isset($data['get_leave_status']) && in_array($leaveKey,$data['get_leave_status']) ) selected @elseif(!isset($data['get_leave_status'])) selected @endif>{{$leaveValue}}</option>
                                 @endforeach
                             </select>
                         </div>
