@@ -238,7 +238,9 @@ class studentAttendanceController extends Controller
 
     public function saveStudentAttendance(Request $request)
     {
-        $date = $request->input('date');
+        $dateTime = new \DateTime($request->input('date'));
+        $date = $dateTime->format('Y-m-d');
+        //$date = $request->input('date');
         $type = $request->input('type');
         $students = $request->input('student');
 
@@ -297,9 +299,13 @@ class studentAttendanceController extends Controller
                 DB::table("attendance_student")->where(['id' => $data[0]->id])->update($attendanceArray);
             } else {
                 DB::table("attendance_student")->insert($attendanceArray);
+
+                $sendRequest = new Request(['student_id'=>$student_id,'attendance'=>$attendance,'date'=>$date,'created_by'=>$user_id,'syear'=>$syear,'sub_institute_id'=>$sub_institute_id]);
+            
+                if($date == date('Y-m-d')){
+                    $sendNotification= $this->sendNotificationAtt($sendRequest);
+                }
             }
-            $sendRequest = new Request(['student_id'=>$student_id,'attendance'=>$attendance,'date'=>$date,'created_by'=>$user_id,'syear'=>$syear,'sub_institute_id'=>$sub_institute_id]);
-            $sendNotification= $this->sendNotificationAtt($sendRequest);
         }
 
         $res['status_code'] = 1;
@@ -742,14 +748,15 @@ class studentAttendanceController extends Controller
         // echo "<pre>";print_r($getStudent);exit;
         $getCreatedBy = DB::table('tbluser')->select('*',DB::raw('CONCAT_WS(" ",COALESCE(first_name,"-"),COALESCE(middle_name,"-"),COALESCE(last_name,"-")) as full_name'))->where('id',$request->created_by)->where('sub_institute_id',$sub_institute_id)->first();
 
-        if($request->attendance=="P"){
-            $text= $getStudent->student_name." is present on ".$request->date.', Attendance Taken by '.$getCreatedBy->full_name;
-        }else{
-            $text= $getStudent->student_name." is absent on ".$request->date.', Attendance Taken by '.$getCreatedBy->full_name;
+        $text = '';
+        if($request->attendance == "P"){
+            $text .= $getStudent->student_name." is present on ".$request->date.', Attendance Taken by '.$getCreatedBy->full_name;
+        }elseif($request->attendance == "A"){
+            $text .= $getStudent->student_name." is absent on ".$request->date.', Attendance Taken by '.$getCreatedBy->full_name;
         }
 
            $app_notification_content = [
-                'NOTIFICATION_TYPE'        => 'Notification',
+                'NOTIFICATION_TYPE'        => 'TakeAttendance',
                 'NOTIFICATION_DATE'        => now(),
                 'STUDENT_ID'               => $request->student_id,
                 'NOTIFICATION_DESCRIPTION' => $text,
@@ -789,11 +796,14 @@ class studentAttendanceController extends Controller
                             'body'  => $pushMessage, 'TYPE' => $type1, 'USER_ID' => $request->student_id,
                             'title' => $schoolName, 'image' => $schoolLogo,
                         ];
-                        $pushStatus = send_FCM_Notification($val, $message, $sub_institute_id);
 
-                        if($request->attendance!="P"){
-                            sendNotification($app_notification_content);
+                        if($request->date == date('Y-m-d')){
+                            $pushStatus = send_FCM_Notification($val, $message, $sub_institute_id);
                         }
+
+                        if($request->attendance == "A"){
+                            sendNotification($app_notification_content);
+                        }                        
                     }
                 }
                 
