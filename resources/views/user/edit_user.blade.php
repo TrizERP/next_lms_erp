@@ -149,10 +149,12 @@ br {
                                 <label>Total Lectures</label>
                                 <input type="number" id='total_lecture' name="total_lecture" class="form-control" value="@if(isset($data['total_lecture'])){{$data['total_lecture']}}@endif">
                             </div>
+                            @if(session()->get('sub_institute_id')!=47)
                             <div class="col-md-4 form-group">
                                 <label>Join Year</label>
                                 <input type="number" value="@if(isset($data['join_year'])){{$data['join_year']}}@endif" id='join_year' required name="join_year" class="form-control">
                             </div>
+                            @endif
                             <div class="col-md-4 form-group">
                                 <label>Password</label>
                                 <input type="password" value="@if(isset($data['password'])){{ $data['password'] }}@endif" id='password' required name="password" class="form-control">

@@ -97,7 +97,9 @@ class LeaveReportController extends Controller
         ->where('hel.sub_institute_id', $sub_institute_id)
         ->where('hel.from_date', '>=', $from_date_formatted)
         ->where('hel.to_date', '<=', $to_date_formatted)
-        ->whereRaw('hel.user_id IN ('.$employee_id.')')
+        ->when($employee_id!=0,function($q) use($employee_id){
+            $q->whereRaw('hel.user_id IN ('.$employee_id.')');
+        })
         // ->whereIn('hel.status', $get_leave_status)
         ->when($type == "API", function ($query) use ($get_leave_status) {
             return $query->whereIn('hel.status', $get_leave_status);
