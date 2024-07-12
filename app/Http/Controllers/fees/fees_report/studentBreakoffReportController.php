@@ -88,7 +88,7 @@ class studentBreakoffReportController extends Controller
             $final_array[] = FeeBreakoffHeadWise($stu_arr,"","","","",$month); //for current year
             $final_array[$id][$arr['id']]['quota'] = $arr['student_quota'];
             $final_array[$id][$arr['id']]['uniqueid'] = $arr['uniqueid']; 
-            $final_array[$id][$arr['id']]['otherfees'] = OtherBreackOff($stu_arr,$search_ids);                                   
+            $final_array[$id][$arr['id']]['otherfees'] = OtherBreackOff($stu_arr,$search_ids,'Yes');                                   
        
         }
         $get_fees_titles = DB::table('fees_title')
