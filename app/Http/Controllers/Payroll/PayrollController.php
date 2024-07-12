@@ -529,7 +529,7 @@ class PayrollController extends Controller
     public function hrmsSalaryCertificateIndex(Request $request)
     {
         $type = $request->input('type');
-
+        $sub_institute_id = session()->get('sub_institute_id');
         $res['employee_id'] = $request->get('employee_id');
         $res['month_ids'] = [1=>"Jan",2=>"Feb",3=>"Mar",4=>"Apr",5=>"May",6=>"Jun",7=>"Jul",8=>"Aug",9=>"Sep",10=>"Oct",11=>"Nov",12=>"Dec"];
 
@@ -1400,6 +1400,8 @@ class PayrollController extends Controller
 
     public function payrollTypeReport(Request $request){
         $type=$request->type;
+        $sub_institute_id=session()->get('sub_institute_id');
+
         $res=session()->get('data');
         $res['months'] = Helpers::getMonths();
         $res['years'] = Helpers::getYears();
@@ -1410,6 +1412,8 @@ class PayrollController extends Controller
 
     public function payrollTypeReportCreate(Request $request){
         $type=$request->type;
+        $sub_institute_id=session()->get('sub_institute_id');
+
         // echo "<pre>";print_r($request->all());exit;
         $res['selectedMonth']=$month=$request->month;
         $res['selectedYear']=$year=$request->year;
