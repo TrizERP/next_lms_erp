@@ -717,7 +717,9 @@ class HrmsController extends Controller
 
         $departments = HrmsDepartment::where('status', true)->pluck('department', 'id');
 
-        $employees = tbluserModel::where('sub_institute_id', $sub_institute_id)->whereIn('department_id', $department_id)->where('status', 1)->get();
+        $employees = tbluserModel::where('sub_institute_id', $sub_institute_id)->when($department_id!=0,function($q) use($department_id){
+            $q->whereIn('department_id', $department_id);
+        })->where('status', 1)->get();
         
         $hrmsList = HrmsAttendance::join('tbluser as u','u.id','=','hrms_attendances.user_id');
         

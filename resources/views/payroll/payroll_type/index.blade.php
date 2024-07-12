@@ -28,7 +28,7 @@
                                 <th>Type</th>
                                 <th>Payroll Name</th>
                                 <th>Amount Type</th>
-                                <th>Percentage (%)</th>
+                                <th>Percentage (%) / Flat</th>
                                 <th>Status</th>
                                 <th>Action</th>
                             </tr>
