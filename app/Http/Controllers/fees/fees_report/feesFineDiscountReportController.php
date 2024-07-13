@@ -132,7 +132,7 @@ class feesFineDiscountReportController extends Controller
                 // });
             })->join('division as SS', function ($join) {
                 $join->whereRaw('SE.section_id = SS.id');
-            })->join('fees_collect as FP', function ($join) {
+            })->join('fees_collect1 as FP', function ($join) {
                 $join->whereRaw('SE.student_id = FP.student_id');
             })->selectRaw("'' AS SR_NO, CONCAT_WS(' ',S.first_name,S.middle_name,S.last_name) AS STUDENT_NAME,
                 SUM(FP.fees_discount) AS FEES_MAFI,SUM(FP.fine) AS FINE, CS.name as std, S.enrollment_no, SS.name as div_name,

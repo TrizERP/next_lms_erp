@@ -1485,6 +1485,11 @@ class AJAXController extends Controller
                 return json_encode($message,JSON_PRETTY_PRINT);
         }
         if ($fees_receipt_html != '') {
+            if (is_array($fees_receipt_html) == 1 && $sub_institute_id==49) {
+             $print = 2;
+            } else {
+             $print = 1;
+            }
             $dom = '<!DOCTYPE html>
                     <html>
                         <head>
@@ -1496,7 +1501,7 @@ class AJAXController extends Controller
             $dom .= $fees_receipt_css;
             $dom .= '</head>
                         <body>';
-            $dom .= $this->get_PageSetup($paper_size);
+            $dom .= $this->get_PageSetup($paper_size,$print);
 
             $dom .= '</body>
                 </html>';
@@ -1871,10 +1876,15 @@ class AJAXController extends Controller
         return $fees_receipt_css;
     }
 
-    public function get_PageSetup($paper_size)
+    public function get_PageSetup($paper_size,$print='')
     {
         $sub_institute_id = session()->get('sub_institute_id');
-        $four_res = [239];
+        if($print==2){
+            $four_res = [239,49];
+        }else{
+            $four_res = [239];
+        }
+        
         $syear = session()->get('syear');
 
         $extra_html = '';
