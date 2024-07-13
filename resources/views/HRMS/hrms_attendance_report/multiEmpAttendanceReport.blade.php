@@ -49,13 +49,22 @@
                             if(isset($data['selEmp'])){
                                 $emp_id = $data['selEmp'];
                             }
+
+                            $from_date = $to_date = now();
+                            if(isset($data['from_date'])){
+                                $from_date = $data['from_date'];
+                            }
+
+                            if(isset($data['to_date'])){
+                                $to_date = $data['to_date'];
+                            }
                         @endphp
 
                         {!! App\Helpers\HrmsDepartments("","multiple",$dep_id,"multiple",$emp_id,"") !!}
                         <div class="col-md-3 form-group">
                             <label>From Date</label>
                             <div class="input-daterange input-group" id="date-range">
-                                <input type="text" class="form-control mydatepicker" name="from_date" id="from_date" @if(isset($data['from_date'])) value="{{$data['from_date']}}" @endif autocomplete="off">
+                                <input type="text" class="form-control mydatepicker" name="from_date" id="from_date" value="{{$from_date}}" autocomplete="off" require>
                                 <span class="input-group-addon"><i class="icon-calender"></i></span>
                             </div>
                         </div>
@@ -63,7 +72,7 @@
                         <div class="col-md-3 form-group">
                             <label>To Date</label>
                             <div class="input-daterange input-group" id="date-range">
-                                <input type="text" class="form-control mydatepicker" name="to_date" id="to_date" @if(isset($data['to_date'])) value="{{$data['to_date']}}" @endif autocomplete="off">
+                                <input type="text" class="form-control mydatepicker" name="to_date" id="to_date" value="{{$to_date}}" autocomplete="off" require>
                                 <span class="input-group-addon"><i class="icon-calender"></i></span>
                             </div>
                         </div>
@@ -219,7 +228,7 @@
 @include('includes.footerJs')
 <script>
     $(document).ready(function () {
-        $('#department_ids').prop('required',true);
+        // $('#department_ids').prop('required',true);
         var table = $('#example').DataTable({
             ordering: false,
             select: true,

@@ -699,7 +699,7 @@ class HrmsController extends Controller
     }
 
     public function earlyGoingHrmsAttendanceReport(Request $request) {
-        $employee_id = 0;
+        // echo "<pre>";print_r($request->all());exit; 
         $type = $request->input('type');
         if ($type == 'API') {
             $sub_institute_id = $request->input('sub_institute_id');
@@ -707,9 +707,9 @@ class HrmsController extends Controller
             $sub_institute_id = $request->session()->get('sub_institute_id');
         }
 
-        $department_id = $request->get('department_id');
-	    $employee_id = $request->get('emp_id');
-	    $date = $request->get('date');
+        $department_id = ($request->department_id!=0) ? implode(',',$request->department_id) : 0;
+	    $employee_id = ($request->emp_id!=0) ? implode(',',$request->emp_id) : 0;
+	    $date = $request->date;
         
         $date_formatted = Carbon::createFromFormat('Y-m-d', $date)->format('Y-m-d');
         $timestamp = strtotime($date_formatted);
@@ -717,17 +717,28 @@ class HrmsController extends Controller
 
         $departments = HrmsDepartment::where('status', true)->pluck('department', 'id');
 
-        $employees = tbluserModel::where('sub_institute_id', $sub_institute_id)->when($department_id!=0,function($q) use($department_id){
-            $q->whereIn('department_id', $department_id);
-        })->where('status', 1)->get();
+        $employeeDep = DB::table('tbluser')->where('sub_institute_id', $sub_institute_id)->when($department_id!=0,function($q) use($department_id){
+            $q->whereRaw('department_id in ('.$department_id.')');
+        })->where('status', 1)->selectRaw('GROUP_CONCAT(DISTINCT id) as user_id')->groupBy('sub_institute_id')->first();
+        // echo "<pre>";print_r($employeeDep->user_id);exit;  
+
+        $hrmsList = HrmsAttendance::join('tbluser as u','u.id','=','hrms_attendances.user_id')->where('hrms_attendances.sub_institute_id',$sub_institute_id);
         
-        $hrmsList = HrmsAttendance::join('tbluser as u','u.id','=','hrms_attendances.user_id');
-        
-        if($employee_id) {
-            $hrmsList = $hrmsList->where('day', $date_formatted)->whereRaw('user_id in ('.implode(',',$employee_id).')')->get();
-        }else{
-            $hrmsList = $hrmsList->where('day', $date_formatted)->get();
+        if($employee_id!=0){
+            echo $employee_id;
+            $hrmsList = $hrmsList->when(isset($employee_id),function($q) use($employee_id){
+                $q->whereRaw('user_id in ('.$employee_id.')');
+            });
         }
+        else if($department_id!=0) {
+            echo "else";
+
+            $hrmsList = $hrmsList->when(isset($employeeDep->user_id),function($q) use($employeeDep){
+                $q->whereRaw('user_id in ('.$employeeDep->user_id.')');
+            });
+        }
+
+        $hrmsList = $hrmsList->where('day', $date_formatted)->whereNotNull('punchout_time')->get();
         // echo "<pre>";print_r($hrmsList);exit;
         $hrmsList = $hrmsList->map(function ($e) use ($day)
         {
@@ -776,12 +787,12 @@ class HrmsController extends Controller
             return $e;
         })->where('is_late',1);
 
-        $res['employees'] = $employees;
+        $res['employees'] = $employeeDep;
         $res['date_formatted'] = $date_formatted;
         $res['hrmsList'] = $hrmsList;
         $res['employee_id'] = $employee_id;
         $res['selEmp'] = $request->emp_id;
-        $res['department_id'] = $department_id;
+        $res['department_id'] = $request->department_id;
         $res['departments'] = $departments;
  
         //return view('HRMS.hrms_attendance_report.early_going_report', compact('employees', 'employee_id', 'date_formatted', 'hrmsList', 'type', 'departments', 'department_id'));
@@ -953,8 +964,8 @@ class HrmsController extends Controller
         $type= $request->type;
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
-        $department_id = ($request->department_id !=0) ? implode(',',$request->department_id) : '';
-        $employee_id = ($request->emp_id !=0) ? implode(',',$request->emp_id) : '';
+        $department_id = ($request->department_id !=0) ? implode(',',$request->department_id) : 0;
+        $employee_id = ($request->emp_id !=0) ? implode(',',$request->emp_id) : 0;
         $from_date = $request->from_date;
         $to_date = $request->to_date;
         $currentMonth = '';
@@ -971,10 +982,10 @@ class HrmsController extends Controller
         })
         ->where(['ha.sub_institute_id'=>$sub_institute_id,'ha.status'=>1])
         ->whereBetween('day',[$from_date_formatted,$to_date_formatted])
-        ->when($department_id!='',function($query) use($department_id){
+        ->when($department_id!=0,function($query) use($department_id){
             $query->whereRaw('u.department_id in ('.$department_id.')');
         })
-        ->when($employee_id!='',function($query) use($employee_id){
+        ->when($employee_id!=0,function($query) use($employee_id){
             $query->whereRaw('u.id in ('.$employee_id.')');
         })
         ->selectRaw("ha.*,u.id AS empId,CONCAT_WS(' ',COALESCE(u.first_name,'-'),COALESCE(u.middle_name,'-'),COALESCE(u.last_name,'-')) AS full_name,COALESCE(hd.department,'-') AS depName,u.monday,u.tuesday,u.wednesday,u.thursday,u.friday,u.saturday,u.sunday,u.monday_in_date,u.tuesday_in_date,u.wednesday_in_date,u.thursday_in_date,u.friday_in_date,u.saturday_in_date,u.sunday_in_date,u.monday_out_date,u.tuesday_out_date,u.wednesday_out_date,u.thursday_out_date,u.friday_out_date,u.saturday_out_date,u.sunday_out_date")
@@ -992,7 +1003,7 @@ class HrmsController extends Controller
         ->where('hel.from_date','>=',$from_date_formatted)
         ->where('hel.to_date','<=',$to_date_formatted)
         // ->where('hel.user_id', $employee_id)
-        ->when($employee_id!='',function($query) use($employee_id){
+        ->when($employee_id!=0,function($query) use($employee_id){
             $query->whereRaw('hel.user_id in ('.$employee_id.')');
         })
         ->where('u.status',1)  // 23-04-24 by uma
@@ -1059,10 +1070,10 @@ class HrmsController extends Controller
             })
             ->selectRaw("u.*,CONCAT_WS(' ',COALESCE(u.first_name,'-'),COALESCE(u.middle_name,'-'),COALESCE(u.last_name,'-')) AS full_name,COALESCE(hd.department,'-') AS depName")
             ->where(['u.sub_institute_id'=>$sub_institute_id,'u.status'=>1])
-            ->when($department_id!='',function($query) use($department_id){
+            ->when($department_id!=0,function($query) use($department_id){
                 $query->whereRaw('u.department_id in ('.$department_id.')');
             })
-            ->when($employee_id!='',function($query) use($employee_id){
+            ->when($employee_id!=0,function($query) use($employee_id){
                 $query->whereRaw('u.id in ('.$employee_id.')');
             })
             ->groupBy('u.id')->orderBy('u.first_name')->get()->toArray();

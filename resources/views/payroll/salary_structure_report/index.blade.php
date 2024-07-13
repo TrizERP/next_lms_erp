@@ -40,7 +40,7 @@
                                         <label>Select Year</label>
                                         <select id='year' name="year" class="form-control">
                                           @foreach($data['years'] as $key => $value)
-                                                <option value="{{$key}}" @if(isset($data['year']) && $key==$data['year']) selected @endif>{{$value}}</option>
+                                                <option value="{{$key}}" @if(isset($data['year']) && $key==$data['year']) selected @elseif($key==date('Y')) selected @endif>{{$value}}</option>
                                             @endforeach
                                         </select>
                                     </div>
