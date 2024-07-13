@@ -189,7 +189,7 @@ if (!function_exists('SearchChain')) {
                 ->where('t.teacher_id', $teacher_id)
                 ->where('t.syear', $syear)
                 ->where('t.sub_institute_id', $sub_institute_id)
-                ->groupByRaw('s.id,t.standard_id,t.academic_section_id')
+                ->groupByRaw('s.id,t.standard_id,t.academic_section_id,t.division_id')
                 ->orderBy('s.subject_name')->get()->toArray();
 
             $subjectTeacherGrdArr = $subjectTeacherStdArr = $subjectTeacherDivArr = array();
