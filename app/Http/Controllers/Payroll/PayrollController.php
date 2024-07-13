@@ -359,8 +359,9 @@ class PayrollController extends Controller
         $type = $request->type;
         $res['year'] = $year = $request->year;
         $res['selected_emp'] = $request->emp_id;
-        $res['department_id'] = $department_id = $request->department_id;
-        $emp_id = ($request->emp_id) ? implode(',',$request->emp_id) : 0;
+        $res['department_id'] = $request->department_id;
+        $emp_id = ($request->emp_id!=0) ? implode(',',$request->emp_id) : 0;
+        $department_id = ($request->department_id!=0) ? implode(',',$request->department_id) : 0;
 
         $sub_institute_id = session()->get('sub_institute_id');
         $payrollTypes = PayrollType::where('sub_institute_id',$sub_institute_id)->where('status', 1)->orderBy('sort_order')->get();
@@ -381,7 +382,7 @@ class PayrollController extends Controller
             $q->whereRaw('employee_salary_structures.employee_id in ('.$emp_id.')');
         })
         ->when($department_id!=0,function($q) use($department_id){
-            $q->whereRaw('u.department_id in ('.implode(',',$department_id).')');
+            $q->whereRaw('u.department_id in ('.$department_id.')');
         })
         ->where('employee_salary_structures.sub_institute_id', $sub_institute_id)
         ->when($year!=0, function($query) use($year) {
@@ -528,7 +529,7 @@ class PayrollController extends Controller
     public function hrmsSalaryCertificateIndex(Request $request)
     {
         $type = $request->input('type');
-
+        $sub_institute_id = session()->get('sub_institute_id');
         $res['employee_id'] = $request->get('employee_id');
         $res['month_ids'] = [1=>"Jan",2=>"Feb",3=>"Mar",4=>"Apr",5=>"May",6=>"Jun",7=>"Jul",8=>"Aug",9=>"Sep",10=>"Oct",11=>"Nov",12=>"Dec"];
 
@@ -1399,6 +1400,8 @@ class PayrollController extends Controller
 
     public function payrollTypeReport(Request $request){
         $type=$request->type;
+        $sub_institute_id=session()->get('sub_institute_id');
+
         $res=session()->get('data');
         $res['months'] = Helpers::getMonths();
         $res['years'] = Helpers::getYears();
@@ -1409,6 +1412,8 @@ class PayrollController extends Controller
 
     public function payrollTypeReportCreate(Request $request){
         $type=$request->type;
+        $sub_institute_id=session()->get('sub_institute_id');
+
         // echo "<pre>";print_r($request->all());exit;
         $res['selectedMonth']=$month=$request->month;
         $res['selectedYear']=$year=$request->year;

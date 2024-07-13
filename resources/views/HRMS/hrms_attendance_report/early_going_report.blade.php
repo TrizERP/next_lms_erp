@@ -33,13 +33,17 @@
                             if(isset($data['selEmp'])){
                                 $emp_id = $data['selEmp'];
                             }
+                            $date = now();
+                            if(isset($data['date_formatted'])){
+                                $date = $data['date_formatted'];
+                            }
                         @endphp
 
                         {!! App\Helpers\HrmsDepartments("","multiple",$dep_id,"multiple",$emp_id,"") !!}
                         <div class="col-md-3 form-group">
                             <label>Date</label>
                             <div class="input-daterange input-group" id="date-range">
-                                <input type="text" required class="form-control mydatepicker" placeholder="YYYY/MM/DD" name="date" id="date" value="{{ $data['date_formatted'] }}" autocomplete="off" required>
+                                <input type="text" required class="form-control mydatepicker" placeholder="YYYY/MM/DD" name="date" id="date" value="{{ $date }}" autocomplete="off" required>
                                 <span class="input-group-addon"><i class="icon-calender"></i></span>
                             </div>
                         </div>
@@ -84,7 +88,7 @@
                                     <td>{{$j++}}</td>
                                     <td>{{ isset($hrmsAttendance['getUser']) ? $hrmsAttendance['getUser']['employee_no'] : '' }}</td>
                                     <td>{{isset($hrmsAttendance['getUser']) ? $hrmsAttendance['getUser']['first_name'] .'-'.$hrmsAttendance['getUser']['last_name'] : ''}}</td>
-                                    <td>{{ $get_hrms_department->department }}</td>
+                                    <td>{{ isset($get_hrms_department->department) ? $get_hrms_department->department : '-' }}</td>
                                     <td>{{ isset($hrmsAttendance->punchout_time) ? \Carbon\Carbon::parse($hrmsAttendance->punchout_time)->format('h:i A') : '-' }}</td>
                                     <td>{{ isset($hrmsAttendance['getUser']['monday_out_date']) ? \Carbon\Carbon::parse($hrmsAttendance['getUser']['monday_out_date'])->format('h:i A') : '-' }}</td>
                                 </tr>

@@ -22,27 +22,57 @@
                     <div class="col-md-3 form-group">
                         <label>Select Month</label>
                         <select id='year' name="month" class="form-control" required>
-                            <option value="0">Select Month</option>
                             @foreach($data['months'] as $month)
-                                <option {{(isset($data['selectedMonth']) && $data['selectedMonth']==$month) ? 'Selected' : ''}}>{{$month}}</option>
+                            @php
+                                $selected = '';
+                                if(isset($data['selectedMonth'])) {
+                                    if($data['selectedMonth']==$month) {
+                                    $selected = 'selected'; 
+                                    }
+                                }
+                                elseif($month==date('M')) {
+                                    $selected = 'selected'; 
+                                }
+                            @endphp
+                                <option {{$selected}}>{{$month}}</option>
                             @endforeach
                         </select>
                     </div>
                     <div class="col-md-3 form-group">
                         <label>Select Year</label>
                         <select id='year' name="year" class="form-control" required>
-                            <option value="0">Select Year</option>
                             @foreach($data['years'] as $year)
-                                    <option {{(isset($data['selectedYear']) && $data['selectedYear']==$year) ? 'Selected' : ''}}>{{$year}}</option>
+                            @php
+                                $selected = '';
+                                if(isset($data['selectedYear'])) {
+                                    if($data['selectedYear']==$year) {
+                                    $selected = 'selected'; 
+                                    }
+                                }
+                                elseif($year==date('Y')) {
+                                    $selected = 'selected'; 
+                                }
+                            @endphp
+                                <option {{$selected}}>{{$year}}</option>
                             @endforeach
                         </select>
                     </div>
                     <div class="col-md-3 form-group">
                         <label>Select Type</label>
                         <select id='payroll_type' name="payroll_type[]" class="form-control" multiple>
-                            <option value="0">Select Type</option>
                             @foreach($data['py_types'] as $key=>$value)
-                                <option value="{{$value['id']}}" {{(isset($data['selectedPayrollType']) && in_array($value['id'],$data['selectedPayrollType'])) ? 'Selected' : ''}}>{{$value['payroll_name']}}</option>
+                            @php
+                                $selected = '';
+                                if(isset($data['selectedPayrollType'])) {
+                                    if(in_array($value['id'],$data['selectedPayrollType'])) {
+                                    $selected = 'selected'; 
+                                    }
+                                }
+                                else{
+                                    $selected = 'selected'; 
+                                }
+                            @endphp
+                                <option value="{{$value['id']}}" {{$selected}}>{{$value['payroll_name']}}</option>
                             @endforeach
                         </select>
                     </div>
