@@ -81,7 +81,7 @@
                                         <td>{{$employee['employee_no']}}</td>
                                         <td>{{$employee['employee_name']}}</td>
                                         <td>{{$employee['month'] .'/'. $employee['year']}}</td>
-                                        <td>{{$employee['total_day']}}</td>
+                                        <td>{{round($employee['total_day'],2)}}</td>
                                         @foreach($data['header'] as $hkey => $col)
                                             <td>{{$employee['data'][$hkey] ?? '0' }}</td>
                                         @endforeach
