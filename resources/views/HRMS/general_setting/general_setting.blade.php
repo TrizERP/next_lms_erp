@@ -64,6 +64,21 @@
                                     </div>
                                 </td>
                             </tr>
+                            <!-- causual leave  -->
+                            <tr>
+                                <th>How Many days allowed for Earned Leave at one time?</th>
+                                <td>
+                                    <div class="row">
+                                        <div class="col-md-4 form-group" style="margin-left: 0px !important">
+                                            <select id='earned_leave_days' name="earned_leave_days" class="form-control" style="margin-left: 50px;">
+                                            @foreach($casual_leave as $key=>$value)
+                                                    <option value="{{$value}}" @if(isset($data['get_earned_leave_data']->fieldvalue) && $data['get_earned_leave_data']->fieldvalue === $value) selected @endif>{{$value}}</option>
+                                            @endforeach
+                                            </select>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
                             <!-- parent communication  -->
                             <tr>
                                 <th>System to display parent communication class-teacher wise</th>
