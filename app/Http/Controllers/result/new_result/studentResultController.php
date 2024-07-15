@@ -2536,7 +2536,9 @@ while ($current_date <= $post_end_date) {
                                     if($obtained_mark_arr[0]!='N.A.' || $obtained_mark_arr[0]!='EX'){
                                         $total_marks += $w_m;
                                     }
-                                    $table .= '<td class="data_center" '. $exam_id . '-'.$val->subject_id.'-'.$standard_id.'>' . number_format((float)$obtained_mark_arr[0], 2) .'</td>';
+                                    /* (Hills) Hide by rajesh std-1 display without convert marks */
+                                    //$table .= '<td class="data_center" '. $exam_id . '-'.$val->subject_id.'-'.$standard_id.'>' . number_format((float)$obtained_mark_arr[0], 2) .'</td>';
+                                    $table .= '<td class="data_center" ' . $underline . ' ' . $exam_id . '-'.$val->subject_id.'-'.$standard_id.'>' . number_format($convert_mark, 2) . '</td>';
                                 }
                                 
                         // echo $exam_id;echo "<pre>";print_r($obtained_mark_sum);
