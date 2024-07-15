@@ -30,11 +30,11 @@
                     <form action="{{ route('student_homework.create') }}">
                         @csrf
                         <div class="row">
-                            {{ App\Helpers\SearchChain('3','multiple','grade,std,div',$grade_id,$standard_id,$division_id) }}
+                            {{ App\Helpers\SearchChain('3','required','grade,std,div',$grade_id,$standard_id,$division_id) }}
 
                             <div class="col-md-3 form-group">
                                 <label for="subject">Select Subject:</label>
-                                <select name="subject" id="subject" class="form-control">
+                                <select name="subject" id="subject" class="form-control" required="required">
                                     <option value="">Select Subject</option>
                                     <!-- @foreach($data['subjects'] as $key => $value)
                                     <option value="{{$value['id']}}" @if(isset($data['subject'])) @if($data['subject']==$value['id']) selected='selected' @endif @endif>{{$value['subject_name']}}</option>
@@ -118,17 +118,17 @@
                                 <div class="col-md-12 form-group">
                                     <center>
                                       
-                                        @if(isset($finalData['division_id'])) 
-                                            @foreach($finalData['division_id'] as $id=>$value) 
-                                               <input type="hidden" name="division_id[]" value="{{$value}}">
+                                        @if(isset($finalData['division_id']) && is_array($finalData['division_id']))
+                                            @foreach($finalData['division_id'] as $id => $value)
+                                                <input type="hidden" name="division_id[]" value="{{ $value }}">
                                             @endforeach
                                         @endif
-                                        @if(isset($finalData['standard_id'])) 
+                                        @if(isset($finalData['standard_id']) && is_array($finalData['standard_id'])) 
                                             @foreach($finalData['standard_id'] as $id=>$value) 
                                              <input type="hidden" name="standard_id[]" value="{{$value}}">
                                             @endforeach
                                         @endif
-                                        @if(isset($finalData['standard_id']))
+                                        @if(isset($finalData['standard_id']) && is_array($finalData['standard_id']))
                                             @foreach($finalData['standard_id'] as $id=>$value)
                                                <input type="hidden" name="standard_id[]" id="sid" value="{{$value}}">
                                             @endforeach
