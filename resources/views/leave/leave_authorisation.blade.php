@@ -18,6 +18,7 @@
                 @endif
                 @php 
                     $leave_status = ['Approved_lwp','Cancelled','Rejected','Pending','Approved'];
+                    $year = date('Y', strtotime($data['from_date_formatted']));
                 @endphp
                 <form action="{{ route('leave.authorisation.index') }}" enctype="multipart/form-data" method="post">
                 @csrf
@@ -103,7 +104,7 @@
                                     <td>{{ \Carbon\Carbon::parse($employee_leave_lists->created_at)->format('d-M-Y') }}</td>
                                     <td>{{ \Carbon\Carbon::parse($employee_leave_lists->from_date)->format('d-M-Y') }}</td>
                                     <td>{{ \Carbon\Carbon::parse($employee_leave_lists->to_date)->format('d-M-Y') }}</td>
-                                    <td>{{ $employee_leave_lists->employee_name }}</td>
+                                    <td><a style="text-decoration:underline !important" onclick="getEmpLeaveHistory('{{$employee_leave_lists->user_id}}','{{$employee_leave_lists->department_id}}')">{{ $employee_leave_lists->employee_name }}</a></td>
                                     <td>{{ ($dayCount!=0) ? $dayCount : 1 }}</td>
                                     <td>{{ ($employee_leave_lists->day_type=="0.5") ? 'Half Day' : 'Full Day' }}</td>
                                     <td>{{ $employee_leave_lists->leave_type }}</td>
@@ -140,6 +141,7 @@
     </div>
 </div>
 
+<!-- end data modal  -->
 @include('includes.footerJs')
 <script>
     $(document).ready(function () {
@@ -185,5 +187,11 @@
             });
         });
     });
+
+    // leave.summary.report.show
+    function getEmpLeaveHistory(user_id,dep_id) {
+        var year = "{{$year}}";
+        window.open('leave-summary-report/create?department_id=' + dep_id + '&emp_id=' + user_id + '&years=' + year, '_blank', 'scrollbars=yes,resizable=no,status=no,location=no,toolbar=no,menubar=no,width=1200,height=1200,left=100,top=100');
+    }
 </script>
 @include('includes.footer')

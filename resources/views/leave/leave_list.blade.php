@@ -12,20 +12,34 @@
         </div>
 
         <div class="card">
+            
             <div class="col-md-12 mt-2">
+            @if ($sessionData = Session::get('data'))
+                @if($sessionData['status_code'] == 1)
+                <div class="alert alert-success alert-block">
+                @else
+                <div class="alert alert-danger alert-block">
+                @endif
+                    <button type="button" class="close" data-dismiss="alert">×</button>
+                    <strong>{{ $sessionData['message'] }}</strong>
+                </div>
+            @endif
+            @php 
+                $currentYear = date('Y');
+            @endphp
                 <div class="col-lg-12 col-sm-3 col-xs-3 row">
                     <div class="col-md-3 pull-right">
                         <select id="cmbyear" class="form-control" name="cmbyear"
                         onchange="getYearwiseLeave(this.value);">
-                            <option value="">Select Year</option>
-                            <option value="2024">2024-2025</option>
-                            <option value="2023">2023-2024</option>
-                            <option value="2022">2022-2023</option>
-                            <option value="2021">2021-2022</option>
+                            @foreach($data['allyears'] as $key=>$value)
+                            <option value="{{$key}}">{{$value}}</option>
+                            @endforeach
                         </select>
                     </div>
                 </div>
-                <div class="col-lg-12 col-sm-12 col-xs-12">
+                <form action="{{route('my_leave_update')}}" method="post">
+                @csrf
+                <div class="col-lg-12 col-sm-12 col-xs-12 mt-4">
                     <div class="table-responsive">
                         <table id="tblLeaves" class="table table-striped table-bordered" style="width:100%">
                             <thead>
@@ -46,10 +60,15 @@
                             </thead>
                             <tbody>
                             </tbody>
-
                         </table>
-                    </div>
+                    </div>                    
                 </div>
+                <div class="col-md-12">
+                        <center>
+                            <input type="submit" value="Save" id="save" class="btn btn-success hide">
+                        </center>
+                    </div>
+                    </form>
             </div>
             <!-- Tabs content -->
         </div>
@@ -66,13 +85,14 @@
 
 <script>
     $(document).ready(function() {
-        var table = $('#tblLeaves').DataTable({
-        });
+        var CurrentYear = "{{$currentYear}}";
+        getYearwiseLeave(CurrentYear);
     });
 </script>
 <script>
     function getYearwiseLeave(selectedYear) {
         // Make an Ajax request
+        $('#cmbyear').val(selectedYear);
         $.ajax({
             type: 'GET',
             url: '/get-leave',
@@ -88,11 +108,30 @@
     }
 
     function updateTableBody(data) {
+        $('#save').removeClass('show');
+        $('#save').addClass('hide');
         var tableBody = $('#tblLeaves tbody');
         tableBody.empty(); // Clear existing rows
 
         if (data.length > 0) {
             $.each(data, function(index, item) {
+                var comment  = (item.comment!==null) ? item.comment : '-';
+                var hod_comment  = (item.hod_comment!==null) ? item.hod_comment : '-';
+                var hod_comment_date  = (item.hod_comment_date!==null) ? item.hod_comment_date : '-';
+                var hr_remarks  = (item.hr_remarks!==null) ? item.hr_remarks : '-';
+                var hr_remark_date  = (item.hr_remark_date!==null) ? item.hr_remark_date : '-';
+                var approved_by  = (item.approved_by!==null) ? item.approved_by : '-';
+                var status  = (item.status!==null) ? item.status : '-';
+
+                if(item.status=="pending"){
+                    $('#save').removeClass('hide');
+                    $('#save').addClass('show');
+                    comment = '<input class="form-control" name="LeaveUpdate['+item.id+'][comment]">';
+                    hod_comment = '<input class="form-control" name="LeaveUpdate['+item.id+'][hod_comment]">';
+                    hr_remarks = '<input class="form-control" name="LeaveUpdate['+item.id+'][hr_remarks]">';
+                    status = '<select class="form-control" name="LeaveUpdate['+item.id+'][status]"><option value="pending">Pending</option><option value="cancelled">Cancelled</option></select>';
+
+                }
                 // Append a new row for each item in the data
                 var row = '<tr>' +
                     '<td>' + (index + 1) + '</td>' +
@@ -100,13 +139,13 @@
                     '<td>' + item.to_date + '</td>' +
                     '<td>' + item.day_type + '</td>' +
                     '<td>' + item.leave_type_name + '</td>' +
-                    '<td>' + item.comment + '</td>' +
-                    '<td>' + item.hod_comment + '</td>' +
-                    '<td>' + item.hod_comment_date + '</td>' +
-                    '<td>' + item.hr_remarks + '</td>' +
-                    '<td>' + item.hr_remark_date + '</td>' +
+                    '<td>' + comment + '</td>' +
+                    '<td>' + hod_comment + '</td>' +
+                    '<td>' + hod_comment_date + '</td>' +
+                    '<td>' + hr_remarks + '</td>' +
+                    '<td>' + hr_remark_date + '</td>' +
                     '<td>' + item.approved_by + '</td>' +
-                    '<td>' + item.status + '</td>' +
+                    '<td>' + status + '</td>' +
                     '</tr>';
 
                 tableBody.append(row);

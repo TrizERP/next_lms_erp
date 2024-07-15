@@ -116,27 +116,25 @@
                                                         $total_amount = 0;
                                                         if(isset($data['paid_data_title_wise']))
                                                         {
-                                                        foreach ($data['paid_data_title_wise'] as $fees_title_name => $paid_amount)
+                                                        foreach ($data['paid_data_title_wise'] as $key => $value)
                                                         {
-
-                                                        $explod_amt = explode('/', $paid_amount);
-                                                        $paid_amt = $explod_amt[0];
-                                                        $fees_title = $explod_amt[1];
-
-                                                        $total_amount = $total_amount + $paid_amt;
+                                                            foreach ($value as $fees_title_name => $paid_amount)
+                                                            {
+                                                            $total_amount = $total_amount + $paid_amount;
                                                        @endphp
                                                         <tr>
-                                                            <td>{{$fees_title}}</td>
-                                                            <td>{{$paid_amt}}</td>
+                                                            <td>{{$fees_title_name}}</td>
+                                                            <td>{{$paid_amount}}</td>
                                                             <td>
                                                                 <input type="number" min=0
-                                                                       max={{$paid_amt}} value={{$paid_amt}} name='refund_amount[{{$fees_title_name}}]'
+                                                                       max={{$paid_amount}} value={{$paid_amount}} name='refund_amount[{{$key}}]'
                                                                        id='refund_amount' class='form-control'
                                                                        onchange="calculate_total(this.value);"
-                                                                       data-value='refund_amount[{{$fees_title_name}}]'>
+                                                                       data-value='refund_amount[{{$key}}]'>
                                                             </td>
                                                         </tr>
                                                         @php
+                                                            }
                                                         }
                                                         }
                                                         @endphp
