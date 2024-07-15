@@ -41,7 +41,7 @@
                             </div>
                             <div class="col-md-6 form-group">
                                 <label>GP Value</label>
-                                <input type="text" required name="gp" value="@if(isset($data->gp)) {{ $data->gp }} @endif" class="form-control">
+                                <input type="text" name="gp" value="@if(isset($data->gp)) {{ $data->gp }} @endif" class="form-control">
                             </div>
                             <div class="col-md-6 form-group">
                                 <label>Sort Order</label>
@@ -49,7 +49,7 @@
                             </div>
                             <div class="col-md-6 form-group">
                                 <label>Comment</label>
-                                <input type="text" required name="comment" value="@if(isset($data->comment)) {{ $data->comment }} @endif" class="form-control">
+                                <input type="text" name="comment" value="@if(isset($data->comment)) {{ $data->comment }} @endif" class="form-control">
                             </div>
                             <div class="col-md-6 form-group">
                                 <input type="hidden" name="grade_id" value="@if(isset($data['grade_id'])) {{ $data['grade_id'] }} @endif" class="form-control">
