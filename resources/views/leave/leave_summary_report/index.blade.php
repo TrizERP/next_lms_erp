@@ -23,18 +23,42 @@
                 <form action="{{route('leave.summary.report.show')}}" enctype="multipart/form-data" method="post">
                 @csrf
                     <div class="row">
-                        @php
-                            $dep_id = $emp_id = '';
+                        {{-- <div class="col-md-4 form-group">
+                            <label>Department List</label>
+                            <select id='department_id' name="department_id" class="form-control">
+                                <option value="">--Select Department--</option>
+                                @foreach($data['departments'] as $id => $department)
+                                    <option value="{{$id}}"
+                                    @if(isset($data['department_id']))
+                                        @if($data['department_id'] == $id)
+                                        selected='selected'
+                                        @endif
+                                    @endif
+                                    >{{ $department }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-4 form-group">
+                            <label>Employee List</label>
+                            <select id='employee_id' name="employee_id" class="form-control">
+                                <option value="">--Select Employee--</option>
+                                @if(!empty($data['employees']))
+                                    @foreach($data['employees'] as $key=>$value)
+                                        <option value="{{$value['id']}}" @if(isset($data['employee_id']) && $data['employee_id'] == $value['id']) selected @endif>{{$value['first_name'] ?? ''}} {{$value['last_name'] ?? ''}}</option>
+                                    @endforeach
+                                @endif
+                            </select>
+                        </div> --}}
+                        @php 
+                        $department_id = $emp_id = '';
                             if(isset($data['department_id'])){
-                                $dep_id = $data['department_id'];
+                                $department_id = $data['department_id'];
                             }
-
                             if(isset($data['employee_id'])){
                                 $emp_id = $data['employee_id'];
                             }
-                        @endphp
-
-                        {!! App\Helpers\HrmsDepartments("","",$dep_id,"",$emp_id,"") !!}
+                        @endphp 
+                        {!! App\Helpers\HrmsDepartments("4","",$department_id,"",$emp_id,"") !!}
 
                         <div class="col-md-4 form-group">
                             <label>Year</label>
