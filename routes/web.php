@@ -424,6 +424,7 @@ Route::group(['middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::resource('leave-apply', ApplyLeaveController::class);
     Route::post('/get-employees', [ApplyLeaveController::class, 'getEmployees'])->name('get-employees');
     Route::get('my-leave', [ApplyLeaveController::class,'myLeave'])->name('my-leave');
+    Route::post('my-leave-update', [ApplyLeaveController::class,'updateLeave'])->name('my_leave_update');
     Route::get('get-leave', [ApplyLeaveController::class,'getYearwiseleave'])->name('get-leave');
     Route::get('import-leave', [ApplyLeaveController::class,'importLeave'])->name('import-leave');
     Route::post('import-leave', [ApplyLeaveController::class,'importOldLeave'])->name('import-leave');
@@ -447,6 +448,8 @@ Route::group(['middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::get('leave-summary-report', [LeaveSummaryReportController::class,'leaveSummaryReport'])->name('leave.summary.report');
     Route::post('leave-summary-report-show', [LeaveSummaryReportController::class,'leaveSummaryReportShow'])->name('leave.summary.report.show');
     Route::post('/emp-list', [LeaveSummaryReportController::class, 'EmpLists'])->name('emp-list');
+    Route::get('leave-summary-report/create', [LeaveSummaryReportController::class,'leaveSummaryReportShow'])->name('leavesummary.create');
+    Route::get('leave-list', [LeaveSummaryReportController::class,'leaveLists'])->name('leavelist');
 
     Route::resource('books', BookController::class);
     Route::get('books/{id}/barcode', [BookController::class,'generateBarcode'])->name('books.barcode');
