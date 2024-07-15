@@ -1133,6 +1133,8 @@ class PayrollController extends Controller
         $years = Helpers::getYears();
         $list = [];
         $sub_institute_id = $request->session()->get('sub_institute_id');
+        $list['month'] = date('M');
+        $list['year'] = date('Y');
         $employeeSalaryData = [];
         if($request->month && $request->year) {
             $list['month'] = $request->month;

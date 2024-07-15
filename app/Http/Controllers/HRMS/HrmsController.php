@@ -479,6 +479,9 @@ class HrmsController extends Controller
 
         $get_casual_leave_data = DB::table('general_data')->where(['fieldname' => 'casual_leave_apply', 'sub_institute_id' => $sub_institute_id])->first();
 
+        $get_earned_leave_data = DB::table('general_data')->where(['fieldname' => 'earned_leave_apply', 'sub_institute_id' => $sub_institute_id])->first();
+
+
         $get_parent_communication = DB::table('general_data')->where(['fieldname' => 'parent_communication', 'sub_institute_id' => $sub_institute_id])->first();
 
         $get_multi_login = DB::table('general_data')->where(['fieldname' => 'multi_login', 'sub_institute_id' => $sub_institute_id])->first();
@@ -491,6 +494,7 @@ class HrmsController extends Controller
 
         $res['get_sandwich_leave_data'] = $get_sandwich_leave_data;
         $res['get_casual_leave_data'] = $get_casual_leave_data;
+        $res['get_earned_leave_data'] = $get_earned_leave_data;
         $res['get_parent_communication']=$get_parent_communication;
         $res['get_multi_login']=$get_multi_login;
         $res['get_timetable_teacher']=$get_timetable_teacher;
@@ -518,6 +522,7 @@ class HrmsController extends Controller
         
         $sandwich_leave = $request->input('sandwich_leave');
         $casual_leave_at_one_time = $request->input('casual_leave_at_one_time');
+        $earned_leave_days = $request->input('earned_leave_days');
         $parent_communication = $request->input('parent_communication');
         $multi_login = $request->input('multi_login');   
         $timetable_teacher = $request->input('timetable_teacher'); 
@@ -561,6 +566,28 @@ class HrmsController extends Controller
                 $general_data = new general_dataModel();
                 $general_data->fieldname = 'casual_leave_apply';
                 $general_data->fieldvalue = $casual_leave_at_one_time ?? 0;
+                $general_data->sub_institute_id = $subInstituteId;
+                $general_data->client_id = $clientId;
+                $general_data->type = 'hrms';
+                $general_data->save();
+            }
+        }
+        // earned_leave_days
+        if ($earned_leave_days !== null) {
+            // Check if a record with fieldname 'earned_leave_apply' and sub_institute_id exists
+            $existingearnedLeaveApply = general_dataModel::where('fieldname', 'earned_leave_apply')
+                ->where('sub_institute_id', $subInstituteId)
+                ->first();
+        
+            if ($existingearnedLeaveApply) {
+                // If exists, update the record
+                $existingearnedLeaveApply->fieldvalue = $earned_leave_days;
+                $existingearnedLeaveApply->save();
+            } else {
+                // If not exists, insert a new record
+                $general_data = new general_dataModel();
+                $general_data->fieldname = 'earned_leave_apply';
+                $general_data->fieldvalue = $earned_leave_days ?? 0;
                 $general_data->sub_institute_id = $subInstituteId;
                 $general_data->client_id = $clientId;
                 $general_data->type = 'hrms';

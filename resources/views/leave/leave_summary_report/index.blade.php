@@ -23,7 +23,7 @@
                 <form action="{{route('leave.summary.report.show')}}" enctype="multipart/form-data" method="post">
                 @csrf
                     <div class="row">
-                        <div class="col-md-4 form-group">
+                        {{-- <div class="col-md-4 form-group">
                             <label>Department List</label>
                             <select id='department_id' name="department_id" class="form-control">
                                 <option value="">--Select Department--</option>
@@ -48,7 +48,18 @@
                                     @endforeach
                                 @endif
                             </select>
-                        </div>
+                        </div> --}}
+                        @php 
+                        $department_id = $emp_id = '';
+                            if(isset($data['department_id'])){
+                                $department_id = $data['department_id'];
+                            }
+                            if(isset($data['employee_id'])){
+                                $emp_id = $data['employee_id'];
+                            }
+                        @endphp 
+                        {!! App\Helpers\HrmsDepartments("4","",$department_id,"",$emp_id,"") !!}
+
                         <div class="col-md-4 form-group">
                             <label>Year</label>
                             <select id='years' name="years" class="form-control">

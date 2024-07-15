@@ -46,7 +46,7 @@
                                                 @if(isset($list['year']) && $list['year'] == $year)
                                                     <option selected>{{$year}}</option>
                                                 @else
-                                                    <option @if($currentYear==$year) selected @endif>{{$year}}</option>
+                                                    <option>{{$year}}</option>
                                                 @endif
                                             @endforeach
                                         </select>
@@ -103,6 +103,7 @@
                             $empTotal = ($key+1);
                         @endphp
                         @endforeach
+                        @if(!empty($employees))
                         <tr>
                             <td><b>Total</b></td>
                             <td><b>{{$empTotal}}</b></td>
@@ -111,6 +112,7 @@
                             <td></td>
                             <td><b>{{$allTotal}}</b></td>
                         </tr>
+                        @endif  
                         </tbody>
                     </table>
 
