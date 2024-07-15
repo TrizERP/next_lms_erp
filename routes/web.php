@@ -447,6 +447,8 @@ Route::group(['middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::get('leave-summary-report', [LeaveSummaryReportController::class,'leaveSummaryReport'])->name('leave.summary.report');
     Route::post('leave-summary-report-show', [LeaveSummaryReportController::class,'leaveSummaryReportShow'])->name('leave.summary.report.show');
     Route::post('/emp-list', [LeaveSummaryReportController::class, 'EmpLists'])->name('emp-list');
+    Route::get('leave-summary-report/create', [LeaveSummaryReportController::class,'leaveSummaryReportShow'])->name('leavesummary.create');
+    Route::get('leave-list', [LeaveSummaryReportController::class,'leaveLists'])->name('leavelist');
 
     Route::resource('books', BookController::class);
     Route::get('books/{id}/barcode', [BookController::class,'generateBarcode'])->name('books.barcode');
