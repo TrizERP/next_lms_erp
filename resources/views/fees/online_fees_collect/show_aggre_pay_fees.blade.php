@@ -408,6 +408,9 @@
 								$(this).attr('readonly', true);
 							}
 						});
+
+                        var totalVal = $('#totalVal').val();
+                        $('#pay_amount').val(totalVal);
 						// 26/08/2021 END Added for The Millennium School for Advanced Imprest Collection payment
 					}
 				});
