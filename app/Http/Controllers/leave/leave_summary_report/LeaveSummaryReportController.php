@@ -63,7 +63,7 @@ class LeaveSummaryReportController extends Controller
         $from_date = $request->get('from_date');
         $to_date = $request->get('to_date');
         $department_id = $request->get('department_id');
-	    $employee_id = $request->input('emp_id');
+	    $employee_id = $request->get('emp_id');
 	    $years = $request->input('years');
         $both_years = explode(" ", $years);
         $year1 = $both_years[0];
