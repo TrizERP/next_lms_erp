@@ -1,5 +1,5 @@
 <!-- Modal -->
-<div class="modal fade" id="documentModel" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+<!-- <div class="modal fade" id="documentModel" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
   <div class="modal-dialog" role="document" style="max-width:1000px !important">
     <div class="modal-content">
       <div class="modal-header">
@@ -8,7 +8,7 @@
           <span aria-hidden="true">&times;</span>
         </button>
       </div>
-      <div class="modal-body">
+      <div class="modal-body"> -->
         <form action="{{route('user_document', $data['id'])}}" class="card" method="POST" enctype="multipart/form-data">
             @csrf
             <div class="row">
@@ -30,16 +30,16 @@
                     <input type="file" id="document" name="document" id="document" class="form-control">
                 </div>  
 
-                <div class="col-md-4">
+                <div class="col-md-12">
                     <center>
-                        <input type="submit" class="btn btn-primary form-control" value="Save" onclick="saveDocument()">
+                        <input type="submit" class="btn btn-primary" value="Save" onclick="saveDocument()">
                     </center>
                 </div>
             </div>
         </form>
 
         @if(!empty($documentLists))
-            <div class="card">
+            <div class="card" style="margin-top:10px !important">
                 <div class="table-responsive">
                     <table id="example" class="table table-striped">
                         <thead>
@@ -47,7 +47,7 @@
                                 <th>Sr No.</th>
                                 <th>Document Type</th>
                                 <th>Document Title</th>
-                                <th class="text-center">File</th>
+                                <th class="text-left">File</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -65,11 +65,11 @@
             </div>
         @endif
 
-      </div>
+      <!-- </div>
      
     </div>
-  </div>
-</div>
+  </div> -->
+<!-- </div> -->
 
 <script>
     function saveDocument(){
