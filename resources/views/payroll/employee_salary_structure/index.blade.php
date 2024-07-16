@@ -96,7 +96,7 @@
                                         <td>{{$value['gender']}}<input type="hidden" name="emp[{{$value['id']}}][]" value="{{$value['gender']}}"></td>
                                          
                                         @foreach ($data['payrollTypes'] as $payrollType)
-                                            @if($payrollType->payroll_name == 'PF' || $payrollType->payroll_name == 'PT')
+                                            @if(($payrollType->payroll_name == 'PF' || $payrollType->payroll_name == 'PT') && Session::get('sub_institute_id') != '195')
                                                 
                                                 <td>
                                                     <input type="hidden" name="emp[{{$value['id']}}][{{$payrollType->id}}][]"

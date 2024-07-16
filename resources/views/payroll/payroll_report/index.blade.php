@@ -89,7 +89,7 @@
                                 <tr>
                                     <td>{{$employeeDetail->employee_no}}</td>
                                     <td>{{$employeeDetail->first_name .' '. $employeeDetail->last_name}}</td>
-                                    <td>{{$employeeDetail->total_day}}</td>
+                                    <td>{{ round($employeeDetail->total_day,2) }}</td>
                                     <td>{{$employeeDetail->total_payment + $employeeDetail->total_deduction}}</td>
                                     <td>{{$employeeDetail->total_deduction}}</td>
                                     <td>{{$employeeDetail->total_payment}}</td>

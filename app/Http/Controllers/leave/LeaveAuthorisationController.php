@@ -37,9 +37,20 @@ class LeaveAuthorisationController extends Controller
         $from_date_formatted = Carbon::now()->format('Y-m-d');
         $to_date_formatted = Carbon::now()->format('Y-m-d');
 
+        $get_employee_leave_lists = DB::table('hrms_emp_leaves as hel')
+        ->selectRaw("hel.*, CONCAT_WS(' ',u.first_name,u.last_name) AS employee_name, hlt.leave_type,u.department_id")
+        ->join('tbluser as u', 'u.id', '=', 'hel.user_id')
+        ->join('hrms_leave_types as hlt', 'hlt.id', '=', 'hel.leave_type_id')
+        ->where('hel.sub_institute_id', $sub_institute_id)
+        ->where('hel.from_date', '>=', $from_date_formatted)
+        ->where('hel.to_date', '<=', $to_date_formatted)
+       ->where('hel.status','Pending')
+        ->get()->toArray();
+
+        $res['get_employee_leave_lists'] = $get_employee_leave_lists;
         $res['from_date_formatted'] = $from_date_formatted;
         $res['to_date_formatted'] = $to_date_formatted;
-
+        // echo "<pre>";print_r($get_employee_leave_lists);exit;
         // return view('leave.leave_authorisation', compact('from_date_formatted', 'to_date_formatted'));
         return is_mobile($type, "leave/leave_authorisation", $res, "view");
     }
@@ -67,7 +78,7 @@ class LeaveAuthorisationController extends Controller
         $to_date_formatted = Carbon::createFromFormat('Y-m-d', $to_date)->format('Y-m-d');
 
         $get_employee_leave_lists = DB::table('hrms_emp_leaves as hel')
-        ->selectRaw("hel.*, CONCAT_WS(' ',u.first_name,u.last_name) AS employee_name, hlt.leave_type")
+        ->selectRaw("hel.*, CONCAT_WS(' ',u.first_name,u.last_name) AS employee_name, hlt.leave_type,u.department_id")
         ->join('tbluser as u', 'u.id', '=', 'hel.user_id')
         ->join('hrms_leave_types as hlt', 'hlt.id', '=', 'hel.leave_type_id')
         ->where('hel.sub_institute_id', $sub_institute_id)
@@ -85,7 +96,8 @@ class LeaveAuthorisationController extends Controller
         $res['from_date_formatted'] = $from_date_formatted;
         $res['to_date_formatted'] = $to_date_formatted;
         $res['get_leave_status'] = $get_leave_status;
-        
+        // echo "<pre>";print_r($get_employee_leave_lists);exit;
+
         // return view('leave.leave_authorisation', compact('get_employee_leave_lists', 'from_date_formatted', 'to_date_formatted', 'get_leave_status'));
         return is_mobile($type, "leave/leave_authorisation", $res, "view");
     }

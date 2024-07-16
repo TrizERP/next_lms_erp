@@ -62,7 +62,9 @@ class online_fees_collect_controller extends Controller
         $admission_under = $get_syear['0']->admission_under; 
         $controller = new fees_collect_controller;
         // echo '<pre>'; print_r($_REQUEST); exit;
-        $OldData = $controller->getOnlinebk($request, $all_student[0]->sub_institute_id, $year - 1, $_REQUEST["student_id"]);
+        if($all_student[0]->sub_institute_id != 48 && $all_student[0]->sub_institute_id != 61){
+            $OldData = $controller->getOnlinebk($request, $all_student[0]->sub_institute_id, $year - 1, $_REQUEST["student_id"]);
+        }
         $data = $controller->getOnlinebk($request, $all_student[0]->sub_institute_id, $year, $_REQUEST["student_id"]);
         
         // echo $year;
@@ -338,7 +340,7 @@ class online_fees_collect_controller extends Controller
             ->where($where_arr)
             ->update($update_arr);
         if ($order_status == "Success") {
-            $data = $this->pay_fees($request, $get_all_data[0]->student_id, $get_all_data[0]->syear, $get_all_data[0]->sub_institute_id, $mer_amount, $tracking_id);
+            $data = $this->pay_fees($request, $get_all_data[0]->student_id, $get_all_data[0]->syear, $get_all_data[0]->sub_institute_id, $mer_amount, $order_id);
             $type = $request->input('type');
             // return is_mobile($type, "fees/fees_collect/add", $res, "view");
             return \App\Helpers\is_mobile($type, "fees/online_fees_collect/receipt_view", $data, "view");
@@ -463,7 +465,7 @@ class online_fees_collect_controller extends Controller
                             }
                         }
                     } else {
-                        echo "<br/>CCAvenue API Error: " . $response_data['enc_response'];
+                        echo "<br/>CCAvenue API ".$response;
                     }
                 } else {
                     echo "<br/>CCAvenue API Request Failed";
@@ -968,7 +970,14 @@ exit; */
     {
         $data = $this->get_fees($request);
         $type = "web";
-        return \App\Helpers\is_mobile($type, "fees/online_fees_collect/show_aggre_pay_fees", $data, "view");
+        // echo "<pre>";print_r($data);exit;
+        if(isset($data['stu_data']) && !empty($data['stu_data'])){
+            return \App\Helpers\is_mobile($type, "fees/online_fees_collect/show_aggre_pay_fees", $data, "view");
+        }else{
+            $res['status_code'] = 0;
+            $res['message'] = "Failed to find Breakoff";
+            return \App\Helpers\is_mobile($type, "online_fees_collect.index", $res);
+        }
         // echo '<pre>'; print_r($data); exit;
     }
 

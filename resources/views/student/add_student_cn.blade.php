@@ -105,7 +105,7 @@
                                 <input type="text" id='mobile' pattern="[1-9]{1}[0-9]{9}" required name="mobile" class="form-control">
                             </div>
                             <div class="col-md-4 form-group text-left">
-                                <label>{{ App\Helpers\get_string('studentmobile','request',$_REQUEST['sub_institute_id'])}}</label>
+                                <label>Father Number</label>
                                 <input type="text" id='student_mobile' pattern="[1-9]{1}[0-9]{9}" name="student_mobile" class="form-control">
                             </div>
                             <div class="col-md-4 form-group text-left">
@@ -202,36 +202,27 @@
                                 <label>Pincode</label>
                                 <input type="text" id='pincode' name="pincode" class="form-control">
                             </div>
-                            <div class="col-md-4">
-                    <div class="form-group">
-                        <label>Search Section: </label>
-                        <select name="grade" id="grade1" class="form-control" required onchange="getStandard();">
-                            <option value="">Select</option>
-                            @foreach($data['grades'] as $key=>$value)
-                            <option value="{{$value->id}}">{{$value->title}}</option>
-                            @endforeach
-                        </select>
-
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="form-group">
-                        <label>Search Standard: </label>
-                        <select name="standard" id="standard1" class="form-control" required onchange="getDivision();">
-                       
-                        </select>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="form-group">
-                        <label>Search Division: </label>
-                        <select name="division" id="division1" class="form-control" required="required">
-                          
-                        </select>
-
-                    </div>
-                </div>
-                            <div class="col-md-4 form-group">
+                            <div class="col-md-4 form-group  text-left">
+                                    <label>{{App\Helpers\get_string('searchsection','request',$_REQUEST['sub_institute_id'])}}</label>
+                                    <select name="grade" id="grade1" class="form-control" required>
+                                        @foreach($data['grades'] as $key=>$value)
+                                        <option value="{{$value->id}}">{{$value->title}}</option>
+                                        @endforeach
+                                    </select>
+                            </div>
+                            <div class="col-md-4 form-group  text-left">
+                                    <label>{{App\Helpers\get_string('searchstandard','request',$_REQUEST['sub_institute_id'])}}</label>
+                                    <select name="standard" id="standard1" class="form-control" required onchange="getDivision();">
+                                
+                                    </select>
+                            </div>
+                            <div class="col-md-4 form-group  text-left">
+                                    <label>{{App\Helpers\get_string('searchdivision','request',$_REQUEST['sub_institute_id'])}}</label>
+                                    <select name="division" id="division1" class="form-control" required="required">
+                                    
+                                    </select>                    
+                            </div>
+                            <div class="col-md-4 form-group  text-left">
                                 <span id="division_error_span"></span>
                             </div>  
                                
@@ -330,34 +321,7 @@
                                 <input type="text" id='subcast' name="subcast" class="form-control">
                             </div>
                             @endif
-                            <div class="col-md-4 form-group text-left">
-                                <label>Roll No.</label>
-                                <input type="text" id='roll_no' name="roll_no" class="form-control">
-                            </div>                                          
-                            
-                            <div class="col-md-4 form-group text-left">
-                                <label>Student Blood Group</label>
-                                <select id='bloodgroup' name="bloodgroup" class="form-control">
-                                    <option value="">--Select--</option>
-                                    @if(isset($data['bloodgroup_data']))
-                                        @foreach($data['bloodgroup_data'] as $key => $value)
-                                            <option value="{{ $value['id'] }}">{{ $value['bloodgroup'] }}</option>
-                                        @endforeach
-                                    @endif                                                  
-                                </select>
-                            </div>
-                            @if($_REQUEST['sub_institute_id']!=257)
-                            <div class="col-md-4 form-group text-left">
-                                <label>Aadhar Number</label>
-                                <input type="text" id='adharnumber' name="adharnumber" class="form-control" onblur="AadharValidate();">
-                            </div>
-                            
-                            <div class="col-md-4 form-group text-left">
-                                <label>{{ App\Helpers\get_string('annualincome','request',$_REQUEST['sub_institute_id'])}}</label>
-                                <input type="number" id='anuualincome' name="anuualincome" class="form-control">
-                            </div>
-                            @endif
-                             {{--  For Euro School --}}
+                          
                         @if (Session::get('sub_institute_id') != '195')
                         
                             <div class="col-md-4 form-group text-left">
@@ -454,9 +418,28 @@
             new CBPFWTabs(el);
         });
     })();
-    
+   $(document).ready(function(){
+      // get all standards 
+      var grade = $('#grade1').val();
+        var allStandard = @json($data['standards']);
+        console.log(allStandard);
+        if (allStandard.hasOwnProperty(grade)) {
+            $('#standard1').find('option').remove().end();
+            $("#standard1").append($("<option></option>").val('').html('Select'));
+            var standards = allStandard[grade];
+        console.log(standards);
+
+            $.each(standards, function(id, name) {
+                $("#standard1").append($("<option></option>").val(id).html(name));
+            });
+
+        } else {
+            console.log("Grade not found");
+        }   
+   }) 
     $(document).ready(function() {      
-        $('#dob').datepicker('setEndDate', new Date());     
+        $('#dob').datepicker('setEndDate', new Date());  
+       
     });
     
 </script>
@@ -513,6 +496,7 @@
                 drDestroy.init();
             }
         })
+       
     });
 
     //START Bind Batch
@@ -544,6 +528,9 @@
     })
     $('#last_name').change(function(){
       checkStudentExists();
+    })
+    $('#student_quota').change(function(){
+      checkStudentEnrollQuotaExists();
     })
     //START Bind Optional Subject
     $("#standard1").change(function(){       
@@ -713,22 +700,7 @@
       }
     });
 
-    function getStandard(){
-        var grade = $('#grade1').val();
-        var allStandard = @json($data['standards']);
-        
-        if (allStandard.hasOwnProperty(grade)) {
-            $('#standard1').find('option').remove().end();
-            $("#standard1").append($("<option></option>").val('').html('Select'));
-            var standards = allStandard[grade];
-            $.each(standards, function(id, name) {
-                $("#standard1").append($("<option></option>").val(id).html(name));
-            });
-
-        } else {
-            console.log("Grade not found");
-        }
-    }
+    
     function getDivision(){
         var standard = $('#standard1').val();
         var allDivision = @json($data['divisions']);
@@ -756,6 +728,66 @@
        $.ajax({
         url : "{{route('checkExists')}}",
         data : {first_name:first_name,last_name:last_name,mobile:mobile,type:'API',sub_institute_id:sub_institute_id},
+        type:'GET',
+        success: function (response) {
+            console.log(response);
+
+            if (response && Object.keys(response).length !== 0) {
+                $('#studentData').empty();
+
+                var grno = "{{ App\Helpers\get_string('grno','request',$_REQUEST['sub_institute_id'])}}";
+                var house = "{{ App\Helpers\get_string('house','request',$_REQUEST['sub_institute_id'])}}";
+                var grade = "{{ App\Helpers\get_string('searchsection','request',$_REQUEST['sub_institute_id'])}}";
+                var std = "{{ App\Helpers\get_string('searchstandard','request',$_REQUEST['sub_institute_id'])}}";
+                var div = "{{ App\Helpers\get_string('searchdivision','request',$_REQUEST['sub_institute_id'])}}";
+                var uniqueid = "{{ App\Helpers\get_string('uniqueid','request',$_REQUEST['sub_institute_id'])}}";
+                var nationality = "{{ App\Helpers\get_string('nationality','request',$_REQUEST['sub_institute_id'])}}";
+
+                var dobParts = response.dob.split('-');
+                var formattedDate = dobParts[2] + '-' + dobParts[1] + '-' + dobParts[0];
+
+                $('#studentData').append(`
+                    <tr>
+                        <td><b>Full Name : </b>${response.student_name}</td>
+                        <td><b>SMS Number : </b>${response.mobile}</td>
+                        <td><b>Birthdate : </b>${formattedDate}</td>
+                    </tr>
+                    <tr>
+                        <td><b>${grno} : </b>${response.enrollment_no}</td>
+                        <td><b>${house} : </b>${response.house}</td>
+                        <td><b>Batch : </b>${response.batch}</td>
+                    </tr>
+                    <tr>
+                        <td><b>${grade} : </b>${response.grade}</td>
+                        <td><b>${std} : </b>${response.standard}</td>
+                        <td><b>${div} : </b>${response.division}</td>
+                    </tr>
+                    <tr>
+                        <td><b>${uniqueid} : </b>${response.uniqueid}</td>
+                        <td><b>${nationality} : </b>${response.nationality}</td>
+                        <td><b>Status : </b>${response.status}</td>
+                    </tr>`);
+                    
+                $('#studentModal').modal('show');
+            } else {
+                console.error("Student not found");
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error(xhr.responseText);
+         }
+       })
+ }
+//  chek student with enrollment and quota 
+ function checkStudentEnrollQuotaExists(){
+    var first_name = $('#first_name').val();
+    var enrollment = $('#enrollment_no').val();
+    var quota = $('#student_quota').val();  
+    var sub_institute_id = "{{$_REQUEST['sub_institute_id']}}";
+
+    $.ajax({
+        url : "{{route('checkExists')}}",
+        data : {first_name:first_name,enrollment:enrollment,type:'API',sub_institute_id:sub_institute_id,quota:quota},
         type:'GET',
         success: function (response) {
             console.log(response);

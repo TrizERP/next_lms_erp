@@ -479,6 +479,9 @@ class HrmsController extends Controller
 
         $get_casual_leave_data = DB::table('general_data')->where(['fieldname' => 'casual_leave_apply', 'sub_institute_id' => $sub_institute_id])->first();
 
+        $get_earned_leave_data = DB::table('general_data')->where(['fieldname' => 'earned_leave_apply', 'sub_institute_id' => $sub_institute_id])->first();
+
+
         $get_parent_communication = DB::table('general_data')->where(['fieldname' => 'parent_communication', 'sub_institute_id' => $sub_institute_id])->first();
 
         $get_multi_login = DB::table('general_data')->where(['fieldname' => 'multi_login', 'sub_institute_id' => $sub_institute_id])->first();
@@ -491,6 +494,7 @@ class HrmsController extends Controller
 
         $res['get_sandwich_leave_data'] = $get_sandwich_leave_data;
         $res['get_casual_leave_data'] = $get_casual_leave_data;
+        $res['get_earned_leave_data'] = $get_earned_leave_data;
         $res['get_parent_communication']=$get_parent_communication;
         $res['get_multi_login']=$get_multi_login;
         $res['get_timetable_teacher']=$get_timetable_teacher;
@@ -518,6 +522,7 @@ class HrmsController extends Controller
         
         $sandwich_leave = $request->input('sandwich_leave');
         $casual_leave_at_one_time = $request->input('casual_leave_at_one_time');
+        $earned_leave_days = $request->input('earned_leave_days');
         $parent_communication = $request->input('parent_communication');
         $multi_login = $request->input('multi_login');   
         $timetable_teacher = $request->input('timetable_teacher'); 
@@ -561,6 +566,28 @@ class HrmsController extends Controller
                 $general_data = new general_dataModel();
                 $general_data->fieldname = 'casual_leave_apply';
                 $general_data->fieldvalue = $casual_leave_at_one_time ?? 0;
+                $general_data->sub_institute_id = $subInstituteId;
+                $general_data->client_id = $clientId;
+                $general_data->type = 'hrms';
+                $general_data->save();
+            }
+        }
+        // earned_leave_days
+        if ($earned_leave_days !== null) {
+            // Check if a record with fieldname 'earned_leave_apply' and sub_institute_id exists
+            $existingearnedLeaveApply = general_dataModel::where('fieldname', 'earned_leave_apply')
+                ->where('sub_institute_id', $subInstituteId)
+                ->first();
+        
+            if ($existingearnedLeaveApply) {
+                // If exists, update the record
+                $existingearnedLeaveApply->fieldvalue = $earned_leave_days;
+                $existingearnedLeaveApply->save();
+            } else {
+                // If not exists, insert a new record
+                $general_data = new general_dataModel();
+                $general_data->fieldname = 'earned_leave_apply';
+                $general_data->fieldvalue = $earned_leave_days ?? 0;
                 $general_data->sub_institute_id = $subInstituteId;
                 $general_data->client_id = $clientId;
                 $general_data->type = 'hrms';
@@ -699,7 +726,7 @@ class HrmsController extends Controller
     }
 
     public function earlyGoingHrmsAttendanceReport(Request $request) {
-        $employee_id = 0;
+        // echo "<pre>";print_r($request->all());exit; 
         $type = $request->input('type');
         if ($type == 'API') {
             $sub_institute_id = $request->input('sub_institute_id');
@@ -707,9 +734,9 @@ class HrmsController extends Controller
             $sub_institute_id = $request->session()->get('sub_institute_id');
         }
 
-        $department_id = $request->get('department_id');
-	    $employee_id = $request->get('emp_id');
-	    $date = $request->get('date');
+        $department_id = ($request->department_id!=0) ? implode(',',$request->department_id) : 0;
+	    $employee_id = ($request->emp_id!=0) ? implode(',',$request->emp_id) : 0;
+	    $date = $request->date;
         
         $date_formatted = Carbon::createFromFormat('Y-m-d', $date)->format('Y-m-d');
         $timestamp = strtotime($date_formatted);
@@ -717,15 +744,28 @@ class HrmsController extends Controller
 
         $departments = HrmsDepartment::where('status', true)->pluck('department', 'id');
 
-        $employees = tbluserModel::where('sub_institute_id', $sub_institute_id)->whereIn('department_id', $department_id)->where('status', 1)->get();
+        $employeeDep = DB::table('tbluser')->where('sub_institute_id', $sub_institute_id)->when($department_id!=0,function($q) use($department_id){
+            $q->whereRaw('department_id in ('.$department_id.')');
+        })->where('status', 1)->selectRaw('GROUP_CONCAT(DISTINCT id) as user_id')->groupBy('sub_institute_id')->first();
+        // echo "<pre>";print_r($employeeDep->user_id);exit;  
+
+        $hrmsList = HrmsAttendance::join('tbluser as u','u.id','=','hrms_attendances.user_id')->where('hrms_attendances.sub_institute_id',$sub_institute_id);
         
-        $hrmsList = HrmsAttendance::join('tbluser as u','u.id','=','hrms_attendances.user_id');
-        
-        if($employee_id) {
-            $hrmsList = $hrmsList->where('day', $date_formatted)->whereRaw('user_id in ('.implode(',',$employee_id).')')->get();
-        }else{
-            $hrmsList = $hrmsList->where('day', $date_formatted)->get();
+        if($employee_id!=0){
+            echo $employee_id;
+            $hrmsList = $hrmsList->when(isset($employee_id),function($q) use($employee_id){
+                $q->whereRaw('user_id in ('.$employee_id.')');
+            });
         }
+        else if($department_id!=0) {
+            echo "else";
+
+            $hrmsList = $hrmsList->when(isset($employeeDep->user_id),function($q) use($employeeDep){
+                $q->whereRaw('user_id in ('.$employeeDep->user_id.')');
+            });
+        }
+
+        $hrmsList = $hrmsList->where('day', $date_formatted)->whereNotNull('punchout_time')->get();
         // echo "<pre>";print_r($hrmsList);exit;
         $hrmsList = $hrmsList->map(function ($e) use ($day)
         {
@@ -774,12 +814,12 @@ class HrmsController extends Controller
             return $e;
         })->where('is_late',1);
 
-        $res['employees'] = $employees;
+        $res['employees'] = $employeeDep;
         $res['date_formatted'] = $date_formatted;
         $res['hrmsList'] = $hrmsList;
         $res['employee_id'] = $employee_id;
         $res['selEmp'] = $request->emp_id;
-        $res['department_id'] = $department_id;
+        $res['department_id'] = $request->department_id;
         $res['departments'] = $departments;
  
         //return view('HRMS.hrms_attendance_report.early_going_report', compact('employees', 'employee_id', 'date_formatted', 'hrmsList', 'type', 'departments', 'department_id'));
@@ -938,5 +978,167 @@ class HrmsController extends Controller
 
         return $data;
     }
+    // multi Employee Attendance Report
+    public function multipleAttendanceReportIndex(Request $request){
+        $type= $request->type;
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+        $res = session()->get('data');
+        return is_mobile($type, "HRMS.hrms_attendance_report.multiEmpAttendanceReport", $res,'view');
+    }
 
+    public function multipleAttendanceReportCreate(Request $request){
+        $type= $request->type;
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+        $department_id = ($request->department_id !=0) ? implode(',',$request->department_id) : 0;
+        $employee_id = ($request->emp_id !=0) ? implode(',',$request->emp_id) : 0;
+        $from_date = $request->from_date;
+        $to_date = $request->to_date;
+        $currentMonth = '';
+
+        $from_date_formatted = (isset($from_date)) ? Carbon::createFromFormat('Y-m-d', $from_date)->format('Y-m-d') : date('Y-m-d');
+        $to_date_formatted = (isset($to_date)) ? Carbon::createFromFormat('Y-m-d', $to_date)->format('Y-m-d') : date('Y-m-d');
+        // echo $from_date_formatted;exit;
+        $hrmsAtt = DB::table('hrms_attendances as ha')
+        ->join('tbluser as u',function($join) use($sub_institute_id) {
+            $join->on('u.id','=','ha.user_id')->where(['u.sub_institute_id'=>$sub_institute_id,'u.status'=>1]);
+        })
+        ->leftJoin('hrms_departments as hd',function($join) {
+            $join->on('hd.id','=','u.department_id')->where('hd.status',1);
+        })
+        ->where(['ha.sub_institute_id'=>$sub_institute_id,'ha.status'=>1])
+        ->whereBetween('day',[$from_date_formatted,$to_date_formatted])
+        ->when($department_id!=0,function($query) use($department_id){
+            $query->whereRaw('u.department_id in ('.$department_id.')');
+        })
+        ->when($employee_id!=0,function($query) use($employee_id){
+            $query->whereRaw('u.id in ('.$employee_id.')');
+        })
+        ->selectRaw("ha.*,u.id AS empId,CONCAT_WS(' ',COALESCE(u.first_name,'-'),COALESCE(u.middle_name,'-'),COALESCE(u.last_name,'-')) AS full_name,COALESCE(hd.department,'-') AS depName,u.monday,u.tuesday,u.wednesday,u.thursday,u.friday,u.saturday,u.sunday,u.monday_in_date,u.tuesday_in_date,u.wednesday_in_date,u.thursday_in_date,u.friday_in_date,u.saturday_in_date,u.sunday_in_date,u.monday_out_date,u.tuesday_out_date,u.wednesday_out_date,u.thursday_out_date,u.friday_out_date,u.saturday_out_date,u.sunday_out_date")
+        ->groupBy('ha.id')
+        ->orderBy('ha.day')
+        ->orderBy('u.first_name')
+        ->get()->toArray();
+        // echo "<pre>";print_r($hrmsAtt);exit;
+
+        $get_hrms_emp_leaves = DB::table('hrms_emp_leaves as hel')
+        ->join('tbluser as u', 'u.id', '=', 'hel.user_id')
+        ->join('hrms_leave_types as hlt', 'hlt.id', '=', 'hel.leave_type_id')
+        ->selectRaw("hel.*, hlt.*, u.*, CONCAT_WS(' ',u.first_name,u.last_name) AS employee_name ,hel.leave_type_id as leave_id")
+        ->where('hel.sub_institute_id', $sub_institute_id)
+        ->where('hel.from_date','>=',$from_date_formatted)
+        ->where('hel.to_date','<=',$to_date_formatted)
+        // ->where('hel.user_id', $employee_id)
+        ->when($employee_id!=0,function($query) use($employee_id){
+            $query->whereRaw('hel.user_id in ('.$employee_id.')');
+        })
+        ->where('u.status',1)  // 23-04-24 by uma
+        ->get()->toArray();
+        // echo "<pre>";print_r($get_hrms_emp_leaves);exit;
+        
+        $get_hrms_holidays = DB::table('hrms_holidays')
+        ->where('sub_institute_id', $sub_institute_id)
+        ->where('from_date','>=',$from_date_formatted)
+        ->where('to_date','<=',$to_date_formatted)
+        ->get()->toArray();
+
+        $newHrmsAtt = [];
+
+        foreach ($hrmsAtt as $key => $value) {
+            $newHrmsAtt[$value->empId][$value->day] = $value;
+
+            $hrms_date = $value->day;
+            $hrms_date = Carbon::createFromFormat('Y-m-d', $hrms_date);
+
+            $day_name =lcfirst($hrms_date->format('l')); 
+            
+            $punchin_time = $value->punchin_time;
+            if (!is_null($punchin_time)) {
+                $punchin_time = Carbon::createFromFormat('Y-m-d H:i:s', $punchin_time);
+                $punchin_time = strtolower($punchin_time->format('H:i:s'));
+            } else {
+                $punchin_time = 'null'; // Or handle as needed
+            }
+
+            $punchout_time = $value->punchout_time;
+            if (!is_null($punchout_time)) {
+                $punchout_time = Carbon::createFromFormat('Y-m-d H:i:s', $punchout_time);
+                $punchout_time = strtolower($punchout_time->format('H:i:s'));
+            } else {
+                $punchout_time = 'null'; // Or handle as needed
+            }
+            $newHrmsAtt[$value->empId][$value->day]->att_punch_in = $punchin_time;
+            $newHrmsAtt[$value->empId][$value->day]->att_punch_out = $punchout_time;
+
+            $newHrmsAtt[$value->empId][$value->day]->day_name = $day_name;
+            $user_day_in = $day_name.'_in_date';
+            $newHrmsAtt[$value->empId][$value->day]->in_time = $value->$user_day_in;
+            
+            $user_day_out = $day_name.'_out_date';
+            $newHrmsAtt[$value->empId][$value->day]->out_time = $value->$user_day_out; 
+
+            $newHrmsAtt[$value->empId][$value->day]->is_late = 0;
+            if($punchin_time > $user_day_in){
+                $newHrmsAtt[$value->empId][$value->day]->is_late = 1;
+            }
+        }
+        $empLeaves = $empHolidays = [];
+        foreach ($get_hrms_emp_leaves as $value) {
+            $empLeaves[$value->user_id][$value->from_date][] = (array) $value;
+        }
+        
+        foreach ($get_hrms_holidays as $value) {
+            $empHolidays[$value->department][$value->from_date][] = (array) $value;
+        }
+       
+        $getUsers = DB::table('tbluser as u')->leftJoin('hrms_departments as hd',function($join) {
+                $join->on('hd.id','=','u.department_id')->where('hd.status',1);
+            })
+            ->selectRaw("u.*,CONCAT_WS(' ',COALESCE(u.first_name,'-'),COALESCE(u.middle_name,'-'),COALESCE(u.last_name,'-')) AS full_name,COALESCE(hd.department,'-') AS depName")
+            ->where(['u.sub_institute_id'=>$sub_institute_id,'u.status'=>1])
+            ->when($department_id!=0,function($query) use($department_id){
+                $query->whereRaw('u.department_id in ('.$department_id.')');
+            })
+            ->when($employee_id!=0,function($query) use($employee_id){
+                $query->whereRaw('u.id in ('.$employee_id.')');
+            })
+            ->groupBy('u.id')->orderBy('u.first_name')->get()->toArray();
+         
+        // echo "<pre>";print_r($getUsers);exit;
+
+            $report_data = [];
+            foreach ($getUsers as $key => $value) {
+                $i = 0;
+                $from_date_new = $from_date_formatted;
+                while (strtotime($from_date_new) <= strtotime($to_date_formatted)) {
+                    $i++;
+                    if (isset($newHrmsAtt[$value->id]) && array_key_exists($from_date_new, $newHrmsAtt[$value->id])) {
+                        $report_data[$from_date_new][$value->id] = (array) $newHrmsAtt[$value->id][$from_date_new];
+                    } else {
+                        $report_data[$from_date_new][$value->id] = (array) $value;
+                    }
+                    if (isset($empLeaves[$value->id]) && array_key_exists($from_date_new, $empLeaves[$value->id])) 
+                    {
+                        $report_data[$from_date_new][$value->id]['leave'] = $empLeaves[$value->id][$from_date_new];
+                    }
+                    if (isset($empHolidays[$value->department_id]) && array_key_exists($from_date_new, $empHolidays[$value->id])) 
+                    {
+                        $report_data[$from_date_new][$value->id]['holiday'] = $empHolidays[$value->department_id][$from_date_new];
+                    }
+                    $from_date_new = date("Y-m-d", strtotime("+1 day", strtotime($from_date_new)));
+                }
+            }
+        
+            $res['users'] = $getUsers;
+            $res['allData'] = $report_data;
+            $res['leaveData'] = $empLeaves;
+            $res['holidayData'] = $empHolidays;
+            $res['from_date'] = $request->from_date;
+            $res['to_date'] = $request->to_date;
+            $res['selEmp'] = $request->emp_id;
+            $res['selDept'] = $request->department_id;
+        // echo "<pre>";print_r($report_data);exit;
+        return is_mobile($type, "HRMS.hrms_attendance_report.multiEmpAttendanceReport", $res,'view');
+    }
 }

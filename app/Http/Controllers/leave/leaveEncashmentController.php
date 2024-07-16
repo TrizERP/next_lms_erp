@@ -37,6 +37,7 @@ class leaveEncashmentController extends Controller
             ->selectRaw('u.id as emp_id,u.employee_no as emp_code,u.department_id,u.openingleave,u.joined_date,u.CL_opening_leave,u.probation_period_from,u.probation_period_to,CONCAT_WS(" ",COALESCE(u.first_name, "-"),COALESCE(u.middle_name, "-"),COALESCE(u.last_name, "-")) as emp_name,hd.department as department_name,ess.*')
             ->where('u.sub_institute_id',$sub_institute_id)
             ->where('u.status',1)
+            ->whereRaw('ess.employee_salary_data != "" ')
             ->get();
            
             // get encashment as per salary 

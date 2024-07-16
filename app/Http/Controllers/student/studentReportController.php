@@ -82,6 +82,7 @@ class studentReportController extends Controller
             'standard_id' => 'standard.sort_order',
             'enrollment_no' => 'CONVERT(tblstudent.enrollment_no, SIGNED)',
             'roll_no' => 'CAST(tblstudent_enrollment.roll_no AS INT)',
+            'last_name' => 'tblstudent.last_name',
         ];
         $defaultOrderBy = 'tblstudent.first_name';
 

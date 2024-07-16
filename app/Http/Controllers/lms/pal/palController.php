@@ -340,7 +340,7 @@ class palController extends Controller
                 FROM lms_online_exam_answer_student
                 WHERE online_exam_id = '".$online_exam_id."' AND student_id = '".$user_id."'
                 GROUP BY question_id) AS a
-                INNER JOIN lms_question_master q ON q.id = a.question_id
+                INNER JOIN lms_question_master q ON q.id = a.question_id and q.status = 1
                 LEFT JOIN answer_master am ON a.question_id = am.question_id AND correct_answer = 1
                 GROUP BY am.question_id,a.question_id
             ");

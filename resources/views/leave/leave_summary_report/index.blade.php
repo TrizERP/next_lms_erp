@@ -23,7 +23,7 @@
                 <form action="{{route('leave.summary.report.show')}}" enctype="multipart/form-data" method="post">
                 @csrf
                     <div class="row">
-                        <div class="col-md-4 form-group">
+                        {{-- <div class="col-md-4 form-group">
                             <label>Department List</label>
                             <select id='department_id' name="department_id" class="form-control">
                                 <option value="">--Select Department--</option>
@@ -48,14 +48,25 @@
                                     @endforeach
                                 @endif
                             </select>
-                        </div>
+                        </div> --}}
+                        @php 
+                        $department_id = $emp_id = '';
+                            if(isset($data['department_id'])){
+                                $department_id = $data['department_id'];
+                            }
+                            if(isset($data['employee_id'])){
+                                $emp_id = $data['employee_id'];
+                            }
+                            $currentYear = date('Y');
+                        @endphp 
+                        {!! App\Helpers\HrmsDepartments("4","",$department_id,"",$emp_id,"") !!}
+
                         <div class="col-md-4 form-group">
                             <label>Year</label>
                             <select id='years' name="years" class="form-control">
-                                <option value="2024" @if(isset($data['years']) && "2024" == $data['years']) ) selected  @endif>2024-2025</option>
-                                <option value="2023" @if(isset($data['years']) && "2023" == $data['years']) ) selected  @endif>2023-2024</option>
-                                <option value="2022" @if(isset($data['years']) && "2022" == $data['years']) ) selected  @endif>2022-2023</option>
-                                <option value="2021" @if(isset($data['years']) && "2021" == $data['years']) ) selected  @endif>2021-2022</option>
+                                @foreach($data['allyears'] as $key=> $year)
+                                    <option @if(isset($data['years']) && $data['years'] == $key) selected @elseif($key==$currentYear) Selected @endif value="{{$key}}">{{$year}}</option>
+                                @endforeach
                             </select>
                         </div>
                         <div class="col-md-3 col-sm-offset-4 text-center form-group">
@@ -160,7 +171,7 @@
                                                     $total_taken = $data['new_data'][$get_hrms_leave_type->leave_type][$get_employee_leave_list->id] ?? 0; 
                                                 @endphp
 
-                                                {{ $total_taken }} 
+                                                <a style="text-decoration:underline !important" onclick="getLeaveList('{{$get_employee_leave_list->id}}','{{$get_employee_leave_list->department_id}}','{{$get_hrms_leave_type->id}}')">{{ $total_taken }}</a> 
                                             @else
                                                 0
                                             @endif
@@ -183,51 +194,69 @@
     </div>
 </div>
 
+<!-- Modal -->
+<div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document" style="max-width: 1260px !important;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLabel">View List</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" id="modalBody">
+        
+      </div>
+    </div>
+  </div>
+</div>
+<!-- end modal  -->
 @include('includes.footerJs')
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
 <script>
-    $(document).ready(function () {
-        var table = $('#example').DataTable({
-            ordering: false,
-            select: true,
-            lengthMenu: [
-                [100, 500, 1000, -1],
-                ->100', '500', '1000', 'Show All
-            ],
-            dom: 'Bfrtip',
-            buttons: [
-                {
-                    extend: 'pdfHtml5',
-                    title: 'Student Report',
-                    orientation: 'landscape',
-                    pageSize: 'LEGAL',
-                    pageSize: 'A0',
-                    exportOptions: {
-                        columns: ':visible'
-                    },
-                },
-                {extend: 'csv', text: ' CSV', title: 'Student Report'},
-                {extend: 'excel', text: ' EXCEL', title: 'Student Report'},
-                {extend: 'print', text: ' PRINT', title: 'Student Report'},
-                'pageLength'
-            ],
-        });
-        //table.buttons().container().appendTo('#example_wrapper .col-md-6:eq(0)');
+    // $(document).ready(function () {
+    //     var table = $('#example').DataTable({
+    //         ordering: false,
+    //         select: true,
+    //         lengthMenu: [
+    //             [100, 500, 1000, -1]
+    //             ['100', '500', '1000', 'Show All']
+    //         ],
+    //         dom: 'Bfrtip',
+    //         buttons: [
+    //             {
+    //                 extend: 'pdfHtml5',
+    //                 title: 'Leave Summary Report',
+    //                 orientation: 'landscape',
+    //                 pageSize: 'LEGAL',
+    //                 pageSize: 'A0',
+    //                 exportOptions: {
+    //                     columns: ':visible'
+    //                 },
+    //             },
+    //             {extend: 'csv', text: ' CSV', title: 'Leave Summary Report'},
+    //             {extend: 'excel', text: ' EXCEL', title: 'Leave Summary Report'},
+    //             {extend: 'print', text: ' PRINT', title: 'Leave Summary Report'},
+    //             'pageLength'
+    //         ],
+    //     });
+    //     // //table.buttons().container().appendTo('#example_wrapper .col-md-6:eq(0)');
 
-        $('#example thead tr').clone(true).appendTo('#example thead');
-        $('#example thead tr:eq(1) th').each(function (i) {
-            var title = $(this).text();
-            $(this).html('<input type="text" placeholder="Search ' + title + '" />');
+    //     $('#example thead tr').clone(true).appendTo('#example thead');
+    //     $('#example thead tr:eq(1) th').each(function (i) {
+    //         var title = $(this).text();
+    //         $(this).html('<input type="text" placeholder="Search ' + title + '" />');
 
-            $('input', this).on('keyup change', function () {
-                if (table.column(i).search() !== this.value) {
-                    table
-                        .column(i)
-                        .search(this.value)
-                        .draw();
-                }
-            });
-        });
-    });
+    //         $('input', this).on('keyup change', function () {
+    //             if (table.column(i).search() !== this.value) {
+    //                 table
+    //                     .column(i)
+    //                     .search(this.value)
+    //                     .draw();
+    //             }
+    //         });
+    //     });
+    // });
 </script>
 <script>
 	$(document).on("change", "#department_id", function(e) {
@@ -250,5 +279,72 @@
             }
         });
     });
+
+    function getLeaveList(empId,depId,leaveId){
+        $('#modalBody').empty();
+        var year = {{isset($data['years']) ? $data['years'] : session()->get('syear') }};
+        $.ajax({
+            url : "{{route('leavelist')}}",
+            data : {emp_id:empId,department_id:depId,leave_type_id:leaveId,year:year},
+            type : 'GET',
+            success : function(response){
+               if(Array.isArray(response)){
+                $('#modalBody').empty();
+                var table = `<table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Sr No.</th>
+                            <th>Date</th>
+                            <th>Employee Name</th>
+                            <th>Leave Type</th>
+                            <th>Leave Length</th>
+                            <th>Day</th>
+                            <th>Status</th>
+                            <th class="text-left">Comments</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+                    var i =1;
+                    response.forEach(element => {
+                        var from_date = element.from_date;
+                        var to_date = element.to_date;
+                        var day_type = parseFloat(element.day_type); 
+
+                        var fromDate = moment(from_date);
+                        var toDate = moment(to_date);
+                        var dayCount = 0;
+
+                        for (var date = fromDate.clone(); date.isSameOrBefore(toDate); date.add(1, 'day')) {
+                            dayCount += day_type;
+                        }
+                        console.log('Number of days counted:', dayCount);
+                        var day = "Half Day";
+                        if(day_type >= 1){
+                            var day = "Full Day";
+                        }
+                        table += `<tr>
+                        <td>${(i++)}</td>
+                        <td>${element.from_date}</td>
+                        <td>${element.employee_name}</td>
+                        <td>${element.leave_type}</td>
+                        <td>${dayCount}</td>
+                        <td>${day}</td>
+                        <td>${element.status}</td>
+                        <td>${element.comment}</td>
+                     </tr>`;  
+                    });
+                    table += `</tbody>
+                    </table>`;
+                    $('#modalBody').append(table);
+                    $('#exampleModal').modal('show');
+               }else{
+                alert('Something went wrong! Not Getting Data');
+               }
+            },
+            error : function(error){
+                console.error(error);
+            }
+        })
+    }
 </script>
 @include('includes.footer')

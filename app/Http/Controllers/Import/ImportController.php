@@ -238,8 +238,11 @@ class ImportController extends Controller
                     $failedFields[] = $re_field;
                 }
             }
-            if (count($failedFields) > 0) return view('import.import_success', compact('totalRecordCount', 'totalFailedRecordCount', 'totalOverwiteRecordCount', 'totalInsertRecordCount', 'failedFields', 'totalSkipRecordCount', 'totalFailedRecordArray', 'totalOverwiteRecordArray', 'totalSkipRecordArray'));
+            if (count($failedFields) > 0) {
+                return view('import.import_success', compact('totalRecordCount', 'totalFailedRecordCount', 'totalOverwiteRecordCount', 'totalInsertRecordCount', 'failedFields', 'totalSkipRecordCount', 'totalFailedRecordArray', 'totalOverwiteRecordArray', 'totalSkipRecordArray'));
+            }
         }
+       
         if (is_array($csv_data)) {
             $totalRecordCount = count($csv_data);
             foreach ($csv_data as $rowKey => $row) {

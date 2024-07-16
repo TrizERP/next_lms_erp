@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use function App\Helpers\is_mobile;
 use App\Http\Controllers\HRMS\departmentController;
 use App\Http\Controllers\frontdesk\taskController;
+use DB;
 
 class instituteDetailController extends Controller
 {
@@ -26,6 +27,8 @@ class instituteDetailController extends Controller
         $departmentController = new departmentController;
         $departmentData = $departmentController->create($request);
         $res['departmentData'] =  json_decode($departmentData,true);
+        $res['taskManagerLists'] = DB::table('tbluser') ->selectRaw('id,CONCAT_WS(" ",COALESCE(first_name,"-"),COALESCE(middle_name,"-"),COALESCE(last_name,"-")) as name,mobile')->where('sub_institute_id',$sub_institute_id)->where('status',1)->get()->toArray();
+        $res['skillLists'] = DB::table('tblemp_skills')->whereIn('sub_institute_id',[0,$sub_institute_id])->get()->toArray();
         // echo "<pre>";print_r($departmentData);exit;
         return is_mobile($type, "settings/add_institute_detail", $res, "view");
     }
@@ -49,6 +52,7 @@ class instituteDetailController extends Controller
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
         if($request->has('formName')){
+
              // get data from department controller
              $request1 = $request->merge(['type'=>'API','sub_institute_id'=>$sub_institute_id,'syear'=>$syear]);
              $departmentController = new departmentController;
@@ -59,14 +63,38 @@ class instituteDetailController extends Controller
                 $res['status_code'] = 1;
                 $res['message'] = "Added Successfully!!";
              }else if($request->formName=="addTask"){
-                $taskData = $taskController->store($request1);
-                $add = json_decode($taskData,true);
-                $res['status_code'] = 1;
-                $res['message'] = "Added Successfully!!";
+                $i=0;
+                foreach($request->arr as $k => $val){
+                    $attchment = $val['TASK_ATTACHMENT'] ?? '';
+                    
+                    $user_id = session()->get("user_id");
+                    // make new request to send in taskcontroller
+                    $newReq = new Request(['TASK_ALLOCATED_TO'=>$val['TASK_ALLOCATED_TO'] ?? [0],'TASK_TITLE'=>$val['TASK_TITLE'],'TASK_DESCRIPTION'=>$val['TASK_DESCRIPTION'],'KRA'=>$val['KRA'],'KPA'=>$val['KPA'],'selType'=>$val['selType'],'TASK_ATTACHMENT'=>$attchment,'manageby'=>$val['manageby'],'skills'=>$val['skills'],'TASK_DATE'=>now(),'type'=>'API','sub_institute_id'=>$sub_institute_id,'syear'=>$syear,'user_id'=>$user_id]);
+
+                    if ($attchment) {
+                        $newReq->files->set('TASK_ATTACHMENT', $attchment);
+                    }
+                    // add task
+                    if(isset($val['TASK_ALLOCATED_TO'])){
+                        $taskData = $taskController->store($newReq);
+                        $add = json_decode($taskData,true);
+                        $i++;
+                    }
+                } 
+               if($i > 0 ){
+                 // exit;
+                 $res['status_code'] = 1;
+                 $res['message'] = "Added Successfully!!";
+               }else{
+                 // exit;
+                 $res['status_code'] = 0;
+                 $res['message'] = "Please Select Atleast one Employees";
+               }
              }else{
                 $res['status_code'] = 0;
                 $res['message'] = "Failed To Add Data";
              }
+            //  echo "<pre>";print_r($request->all());exit;
             
         }else{
             $newRequest = $request->post();

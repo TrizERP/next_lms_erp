@@ -12,6 +12,7 @@ use App\Models\user\tbluserModel;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use function App\Helpers\is_mobile;
+use App\Traits\Helpers;
 use DB;
 
 class LeaveSummaryReportController extends Controller
@@ -32,6 +33,7 @@ class LeaveSummaryReportController extends Controller
         $department_id = $request->get('department_id');
 
         $departments = HrmsDepartment::where('status', true)->pluck('department', 'id');
+        $res['allyears'] = Helpers::getPairYears();
         $res['departments']=$departments;
         $res['employee_id']=$employee_id;
         $res['department_id']=$department_id;
@@ -53,20 +55,20 @@ class LeaveSummaryReportController extends Controller
 
     public function leaveSummaryReportShow(Request $request) 
     {
-        $type = $request->input('type');
+        $type = $request->type;
         if ($type == 'API') {
-            $sub_institute_id = $request->input('sub_institute_id');
+            $sub_institute_id = $request->get('sub_institute_id');
         } else {
             $sub_institute_id = $request->session()->get('sub_institute_id');
         }
 
-        $from_date = $request->get('from_date');
-        $to_date = $request->get('to_date');
+        // $from_date = $request->get('from_date');
+        // $to_date = $request->get('to_date');
         $department_id = $request->get('department_id');
-	    $employee_id = $request->input('emp_id');
-	    $years = $request->input('years');
-        $both_years = explode(" ", $years);
-        $year1 = $both_years[0];
+	    $employee_id = $request->get('emp_id');
+	    $years = $request->get('years');
+        // $both_years = explode(" ", $years);
+        // $year1 = $both_years[0];
         
         $departments = HrmsDepartment::where('status', true)->pluck('department', 'id');
 
@@ -96,7 +98,7 @@ class LeaveSummaryReportController extends Controller
             ->join('hrms_departments as hd', 'hd.id', '=', 'u.department_id')
             ->where('hel.sub_institute_id', $sub_institute_id)
             ->where('u.status', 1)
-            ->whereYear('hel.from_date', '=', $year1)
+            ->whereYear('hel.from_date', '=', $years)
             ->when($employee_id!=0, function ($query) use ($employee_id) {
                 return $query->where('hel.user_id', $employee_id);
             })
@@ -142,21 +144,43 @@ class LeaveSummaryReportController extends Controller
 
         }
 
-      
-
-        $res['employees']=$employees;
+        $res['allyears'] = Helpers::getPairYears();
+        // $res['employees']=$employees;
         $res['employee_id']=$employee_id;
         $res['department_id']=$department_id;
-        $res['departments']=$departments;
+        // $res['departments']=$departments;
         $res['get_employee_leave_lists']=$get_employee_leave_lists;
         $res['get_hrms_leave_types']=$get_hrms_leave_types;
         $res['new_data']=$new_data;
         $res['op_data']=$op_data;
         $res['years']=$years;
-        $res['employeget_hrms_leave_allocationses']=$get_hrms_leave_allocations;
-        // echo "<pre>";print_r($res);exit;
+        // $res['employeget_hrms_leave_allocationses']=$get_hrms_leave_allocations;
+        // echo "<pre>";print_r($get_employee_leave_lists);exit;
         return is_mobile($type,'leave/leave_summary_report/index',$res,'view');
      
-        // return view('leave.leave_summary_report.index', compact('employees', 'employee_id', 'department_id', 'departments', 'get_employee_leave_lists', 'get_hrms_leave_types','new_data', 'get_hrms_leave_allocations'));
+    }
+
+    public function leaveLists(Request $request){
+        $type=$request->type;
+        $sub_institute_id = session()->get('sub_institute_id');
+        if($type=="API"){
+            $sub_institute_id = $request->sub_institute_id;
+        }
+        $employee_id = $request->emp_id;
+        $department_id = $request->department_id;
+        $leaveTypeId = $request->leave_type_id;
+        $year = $request->year;
+
+        $get_employee_leave_lists = DB::table('hrms_emp_leaves as hel')
+        ->selectRaw("hel.*, CONCAT_WS(' ',u.first_name,u.last_name) AS employee_name, hlt.leave_type,u.department_id")
+        ->join('tbluser as u', 'u.id', '=', 'hel.user_id')
+        ->join('hrms_leave_types as hlt', 'hlt.id', '=', 'hel.leave_type_id')
+        ->where('hel.sub_institute_id', $sub_institute_id)
+        ->whereYear('hel.from_date', '>=', $year)
+        ->where('hel.leave_type_id',$leaveTypeId)
+        ->where('user_id',$employee_id)
+        ->get()->toArray();
+
+        return $get_employee_leave_lists;
     }
 }

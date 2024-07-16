@@ -18,6 +18,7 @@
                 @endif
                 @php 
                     $leave_status = ['Approved_lwp','Cancelled','Rejected','Pending','Approved'];
+                    $year = date('Y', strtotime($data['from_date_formatted']));
                 @endphp
                 <form action="{{ route('leave.authorisation.index') }}" enctype="multipart/form-data" method="post">
                 @csrf
@@ -67,6 +68,7 @@
                                 <th>To Date</th>
                                 <th>Employee Name</th>
                                 <th>No of Days</th>
+                                <th>Day Type</th>
                                 <th>Leave Type</th>
                                 <th>Reason</th>
                                 <th>HOD's Comment</th>
@@ -83,6 +85,18 @@
                         @endphp
                         <tbody>
                             @foreach($get_employee_leave_lists as $key => $employee_leave_lists)
+                            @php 
+                                $from_date = \Carbon\Carbon::parse($employee_leave_lists->from_date);
+                                $to_date = \Carbon\Carbon::parse($employee_leave_lists->to_date);
+                                $countDays = $dayCount = 0;
+                                for ($date = $from_date; $date->lte($to_date); $date->addDay()) {
+                                    if ($from_date->eq($date)) {
+                                        $countDays += $employee_leave_lists->day_type;
+                                        $dayCount++;
+                                    }
+                                }
+                                $numberOfDays = $to_date->diffInDays($from_date);
+                            @endphp
                                 <tr>
                                     <td>{{ $j++ }}
                                     <input type="hidden" name="employee_id[]" value="{{ $employee_leave_lists->id }}">
@@ -90,8 +104,9 @@
                                     <td>{{ \Carbon\Carbon::parse($employee_leave_lists->created_at)->format('d-M-Y') }}</td>
                                     <td>{{ \Carbon\Carbon::parse($employee_leave_lists->from_date)->format('d-M-Y') }}</td>
                                     <td>{{ \Carbon\Carbon::parse($employee_leave_lists->to_date)->format('d-M-Y') }}</td>
-                                    <td>{{ $employee_leave_lists->employee_name }}</td>
-                                    <td>{{ $employee_leave_lists->day_type }}</td>
+                                    <td><a style="text-decoration:underline !important" onclick="getEmpLeaveHistory('{{$employee_leave_lists->user_id}}','{{$employee_leave_lists->department_id}}')">{{ $employee_leave_lists->employee_name }}</a></td>
+                                    <td>{{ ($dayCount!=0) ? $dayCount : 1 }}</td>
+                                    <td>{{ ($employee_leave_lists->day_type=="0.5") ? 'Half Day' : 'Full Day' }}</td>
                                     <td>{{ $employee_leave_lists->leave_type }}</td>
                                     <td>
                                         {{ $employee_leave_lists->comment }}
@@ -126,6 +141,7 @@
     </div>
 </div>
 
+<!-- end data modal  -->
 @include('includes.footerJs')
 <script>
     $(document).ready(function () {
@@ -134,13 +150,13 @@
             select: true,
             lengthMenu: [
                 [100, 500, 1000, -1],
-                ->100', '500', '1000', 'Show All
+                ['100', '500', '1000', 'Show All']
             ],
             dom: 'Bfrtip',
             buttons: [
                 {
                     extend: 'pdfHtml5',
-                    title: 'Student Report',
+                    title: 'Leave Authorization Report',
                     orientation: 'landscape',
                     pageSize: 'LEGAL',
                     pageSize: 'A0',
@@ -148,9 +164,9 @@
                         columns: ':visible'
                     },
                 },
-                {extend: 'csv', text: ' CSV', title: 'Student Report'},
-                {extend: 'excel', text: ' EXCEL', title: 'Student Report'},
-                {extend: 'print', text: ' PRINT', title: 'Student Report'},
+                {extend: 'csv', text: ' CSV', title: 'Leave Authorization Report'},
+                {extend: 'excel', text: ' EXCEL', title: 'Leave Authorization Report'},
+                {extend: 'print', text: ' PRINT', title: 'Leave Authorization Report'},
                 'pageLength'
             ],
         });
@@ -171,5 +187,11 @@
             });
         });
     });
+
+    // leave.summary.report.show
+    function getEmpLeaveHistory(user_id,dep_id) {
+        var year = "{{$year}}";
+        window.open('leave-summary-report/create?department_id=' + dep_id + '&emp_id=' + user_id + '&years=' + year, '_blank', 'scrollbars=yes,resizable=no,status=no,location=no,toolbar=no,menubar=no,width=1200,height=1200,left=100,top=100');
+    }
 </script>
 @include('includes.footer')

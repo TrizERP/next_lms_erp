@@ -217,6 +217,13 @@ class dynamic_report_controller extends Controller
     {
         //getting all data from table
         $data = $this->getData($id);
+        // to resolve error of undefine index 0
+        if(!isset($data[0])){
+            $type="";
+            $res['status_code'] = 0;
+            $res['message']="Please Add Required Data to View Report";
+            return is_mobile($type, 'dynamic_report.index', $res);
+        }
         $all_detail = unserialize($data[0]->all_data);
 
         //getting main module name
@@ -741,6 +748,17 @@ class dynamic_report_controller extends Controller
                             $all_detail['table_name'] = 'S2_LOG';
                             $this->query = DB::table('S2_LOG as sl');
                             $main_table_initial = "sl";
+                            foreach ($sub_module_name as $id => $arr) {
+                                $this->query->Leftjoin('tblstudent_bank_detail as tsbd',function($q) {
+                                    $q->on('tsbd.UMRN','=','sl.UMRN_NO')->where('tsbd.sub_institute_id',session()->get('sub_institute_id'));
+                                });
+                                $this->query->leftJoin('tblstudent_enrollment as se', function($q) {
+                                    $q->on('se.student_id', '=', 'tsbd.student_id')
+                                      ->where('se.syear', session()->get('syear'));
+                                });
+                                $this->query->Leftjoin('standard as st', 'st.id','=','se.standard_id');
+                                $this->query->groupBy('sl.id');
+                            }
                             // $main_table_initial_capital = true;
                         }
                     }

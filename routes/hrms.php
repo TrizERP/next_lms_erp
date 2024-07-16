@@ -115,4 +115,8 @@ Route::group(['prefix' => 'hrms', 'middleware' => ['session', 'menu', 'logRoute'
     route::get('department-Emp-Lists',[departmentController::class, 'departmentEmpLists'])->name('departmentEmpLists');
     route::get('sub-department-list',[departmentController::class, 'subDepartmentList'])->name('subDepartmentList');
     route::get('department-employee-list',[departmentController::class, 'departmentEmployeeList'])->name('departmentEmployeeList');
+
+    // multiple employee hrms attendance
+    Route::get('multiple_attendance_report',[HrmsController::Class,'multipleAttendanceReportIndex'])->name('multiple_attendance_report.index');
+    Route::get('multiple_attendance_report/create',[HrmsController::Class,'multipleAttendanceReportCreate'])->name('multiple_attendance_report.create');
 });

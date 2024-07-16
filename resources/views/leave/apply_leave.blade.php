@@ -88,9 +88,9 @@
                                 </div>
                             </div>
                             @php 
-                                $get_general_datas = DB::table('general_data')->where('sub_institute_id', session()->get('sub_institute_id'))->where('fieldname', 'sandwich_leave')->first();
-
-                                $get_general_datas2 = DB::table('general_data')->where('sub_institute_id', session()->get('sub_institute_id'))->where('fieldname', 'casual_leave_apply')->first();
+                                $sandwhichLeaves = $data['sandwichLeave'];
+                                $casualLeaves = $data['causualLeave'];
+                                $earnedLeaves = $data['earnedLeave'];
                             @endphp
                             <div class="form-group">
                                 <label>To Date</label>
@@ -98,15 +98,14 @@
                                     <input type="text" required class="form-control mydatepicker" placeholder="YYYY/MM/DD" name="to_date" id="to_date" autocomplete="off">
                                     <span class="input-group-addon"><i class="icon-calender"></i></span>
                                 </div>
-                                @if($get_general_datas && $get_general_datas->fieldvalue == 'Yes')
                                     <span id="total_appear_days"></span>
                                     <input type="hidden" id="total_days" name="total_days" value="">
                                     <span id="criteria_validation"></span>
-                                @else
+                                
                                     <span id="without_sandwich_total_appear_days"></span>
                                     <span id="without_sandwich_criteria_validation"></span>
                                     <input type="hidden" id="total_days" name="total_days" value="">
-                                @endif
+                                
                             </div>
                             <div class="form-group slot d-none">
                                 <label for="">Slot</label>
@@ -139,6 +138,7 @@
                                     <th>From Date</th>
                                     <th>To Date</th>
                                     <th>No of Days</th>
+                                    <th>Day type</th>
                                     <th>Leave Type</th>
                                     <th>Reasons</th>
                                     <th>HOD Comment</th>
@@ -154,10 +154,11 @@
                                         $Mfrom_date = \Carbon\Carbon::parse($value->from_date);
                                         $from_date = \Carbon\Carbon::parse($value->from_date);
                                         $to_date = \Carbon\Carbon::parse($value->to_date);
-                                        $countDays = 0;
+                                        $countDays = $dayCount = 0;
                                         for ($date = $from_date; $date->lte($to_date); $date->addDay()) {
                                             if ($from_date->eq($date)) {
                                                 $countDays += $value->day_type;
+                                                $dayCount++;    
                                             }
                                         }
                                         $numberOfDays = $to_date->diffInDays($from_date);
@@ -166,7 +167,8 @@
                                         <td>{{$key+1}}</td>
                                         <td>{{$Mfrom_date->format('d-m-Y')}}</td>
                                         <td>{{$to_date->format('d-m-Y')}}</td>
-                                        <td>{{($countDays>0) ? $countDays : 1}}</td>
+                                        <td>{{($dayCount>0) ? $dayCount : 1}}</td>
+                                        <td>{{ ($value->day_type=="0.5") ? 'Half Day' : 'Full Day' }}</td>
                                         <td>{{$value->leave_type_name}}</td>
                                         <td>{{$value->comment}}</td>
                                         <td>{{$value->hod_comment}}</td>
@@ -210,7 +212,7 @@
                 buttons: [
                     {
                         extend: 'pdfHtml5',
-                        title: 'Student Report',
+                        title: 'Leave Apply Report',
                         orientation: 'landscape',
                         pageSize: 'LEGAL',
                         pageSize: 'A0',
@@ -218,9 +220,9 @@
                             columns: ':visible'
                         },
                     },
-                    {extend: 'csv', text: ' CSV', title: 'Student Report'},
-                    {extend: 'excel', text: ' EXCEL', title: 'Student Report'},
-                    {extend: 'print', text: ' PRINT', title: 'Student Report'},
+                    {extend: 'csv', text: ' CSV', title: 'Leave Apply Report'},
+                    {extend: 'excel', text: ' EXCEL', title: 'Leave Apply Report'},
+                    {extend: 'print', text: ' PRINT', title: 'Leave Apply Report'},
                     'pageLength'
                 ],
             });
@@ -244,6 +246,11 @@
 
     $(document).ready(function() {
 
+        $('#criteria_validation').empty();
+        $('#without_sandwich_criteria_validation').empty();
+        $('#without_sandwich_total_appear_days').empty();
+        $('#total_appear_days').empty();
+       
         $(document).on("submit", "#frmApplyLeave", function(e) {
             e.preventDefault();
             $('.error').remove()
@@ -376,7 +383,6 @@
         var fromDateValue = $('#from_date').val();
         var toDateValue = $(this).val();
         var leaveType = $('#leave_type').val();
-        
         // Manually parse the date strings into a format compatible with the Date constructor
         var fromParts = fromDateValue.split('-');
         var fromDate = new Date(fromParts[2], fromParts[1] - 1, fromParts[0]); // Year, Month (0-indexed), Day
@@ -384,8 +390,14 @@
         var toParts = toDateValue.split('-');
         var toDate = new Date(toParts[2], toParts[1] - 1, toParts[0]); // Year, Month (0-indexed), Day
 
+        $('#criteria_validation').empty();
+        $('#without_sandwich_criteria_validation').empty();
+        $('#without_sandwich_total_appear_days').empty();
+        $('#total_appear_days').empty();
+
         if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
-            alert("Invalid date format!");
+            alert("Invalid date format, Please select from date first !");
+            $('#to_date').val('');
             return;
         }
 
@@ -393,41 +405,25 @@
         var timeDiff = toDate.getTime() - fromDate.getTime();
         var diffDays = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
 
-        var getGeneralDatas = {!! json_encode($get_general_datas) !!};
-        var getGeneralDatas2 = {!! json_encode($get_general_datas2) !!};
+        var sandwhichLeaves = {!! json_encode($sandwhichLeaves) !!};
+        var casualLeaves = {!! json_encode($casualLeaves) !!};
+        var earnedLeaves = {!! json_encode($earnedLeaves) !!};
         
-        if(leaveType == '1')
+        if(leaveType === '1')
         {
-            if (getGeneralDatas.fieldvalue == 'Yes' && getGeneralDatas2.fieldvalue == '2') 
+            if (sandwhichLeaves.fieldvalue == 'Yes' && casualLeaves.fieldvalue == '2') 
             {
-                if (diffDays <= getGeneralDatas2.fieldvalue) {
+                if (diffDays <= casualLeaves.fieldvalue) {
                     $('#criteria_validation').empty();
                     $('#total_appear_days').addClass("success").text('Appear leave - ' + diffDays + ' days');
                     $('#total_days').val(diffDays); // Set the value of the hidden input field to diffDays
                 } 
-                else if (diffDays >= getGeneralDatas2.fieldvalue) {
+                else if (diffDays >= casualLeaves.fieldvalue) {
                     $('#total_appear_days').empty();
-                    $('#criteria_validation').addClass("error").text('The system will not allow more than the ' + getGeneralDatas2.fieldvalue + ' criteria set by the institute.');
+                    $('#criteria_validation').addClass("error").text('The system will not allow more than the ' + casualLeaves.fieldvalue + ' criteria set by the institute.');
                 }
             }
-            else
-            {
-                $('#total_appear_days').addClass("success").text('Appear leave - ' + diffDays + ' days');
-                $('#total_days').val(diffDays); // Set the value of the hidden input field to diffDays
-            }
-        }
-        else
-        {
-            if (getGeneralDatas.fieldvalue == 'Yes')
-            {
-                $('#total_appear_days').addClass("success").text('Appear leave - ' + diffDays + ' days');
-                $('#total_days').val(diffDays); // Set the value of the hidden input field to diffDays
-            }
-        }
-        
-        if(leaveType == '1')
-        {
-            if (getGeneralDatas.fieldvalue == 'No' && getGeneralDatas2.fieldvalue == '2') 
+           else if (sandwhichLeaves.fieldvalue == 'No' && casualLeaves.fieldvalue == '2') 
             {
                 $.ajax({
                     url: '/getHolidays',
@@ -453,14 +449,14 @@
 
                         diffDays -= (holidaysCount + saturdaysSundaysCount);
 
-                        if (diffDays <= getGeneralDatas2.fieldvalue) {
+                        if (diffDays <= casualLeaves.fieldvalue) {
                             $('#without_sandwich_criteria_validation').empty();
                             $('#without_sandwich_total_appear_days').addClass("success").text('Appear leave - ' + diffDays + ' days');
                             $('#total_days').val(diffDays); // Set the value of the hidden input field to diffDays
                         } 
-                        else if (diffDays >= getGeneralDatas2.fieldvalue) {
+                        else if (diffDays >= casualLeaves.fieldvalue) {
                             $('#without_sandwich_total_appear_days').empty();
-                            $('#without_sandwich_criteria_validation').addClass("error").text('The system will not allow more than the ' + getGeneralDatas2.fieldvalue + ' criteria set by the institute.');
+                            $('#without_sandwich_criteria_validation').addClass("error").text('The system will not allow more than the ' + casualLeaves.fieldvalue + ' criteria set by the institute.');
                         }
                     },
                     error: function(xhr, status, error) {
@@ -499,16 +495,26 @@
                     }
 
                     diffDays -= (holidaysCount + saturdaysSundaysCount);
+                    // console.log(diffDays);
+                    $('#without_sandwich_total_appear_days').empty();
+                    $('#without_sandwich_criteria_validation').empty();
 
-                    $('#without_sandwich_total_appear_days').addClass("success").text('Appear leave - ' + diffDays + ' days');
-                    $('#total_days').val(diffDays); // Set the value of the hidden input field to diffDays
-                    
+                    if(leaveType === '9' && earnedLeaves.fieldvalue && earnedLeaves.fieldvalue!=='' && diffDays > earnedLeaves.fieldvalue){
+                        $('#without_sandwich_criteria_validation').removeClass('success');
+                        $('#without_sandwich_criteria_validation').addClass("error").text('The system will not allow more than the ' + earnedLeaves.fieldvalue + ' criteria set by the institute.');
+                    }else{
+                        $('#without_sandwich_criteria_validation').removeClass('error');
+                        $('#without_sandwich_total_appear_days').addClass("success").text('Appear leave - ' + diffDays + ' days');
+                        $('#total_days').val(diffDays);
+                    }                    
                 },
                 error: function(xhr, status, error) {
                     console.error(error);
                 }
             });
         }
+        
     });
+
 </script>
 @include('includes.footer')

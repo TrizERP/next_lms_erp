@@ -189,7 +189,7 @@ if (!function_exists('SearchChain')) {
                 ->where('t.teacher_id', $teacher_id)
                 ->where('t.syear', $syear)
                 ->where('t.sub_institute_id', $sub_institute_id)
-                ->groupByRaw('s.id,t.standard_id,t.academic_section_id')
+                ->groupByRaw('s.id,t.standard_id,t.academic_section_id,t.division_id')
                 ->orderBy('s.subject_name')->get()->toArray();
 
             $subjectTeacherGrdArr = $subjectTeacherStdArr = $subjectTeacherDivArr = array();
@@ -919,7 +919,7 @@ if (!function_exists('FeeBreackoff')) {
                     CAST(SUBSTRING(fb.month_id, 1, CHAR_LENGTH(fb.month_id) - 4) as signed) as sort_month")
             ->where('s.sub_institute_id', $sub_institute_id)
             ->where('se.syear', $syear)
-            ->whereNull('se.end_date')
+            // ->whereNull('se.end_date')
             ->whereIn('s.id', $student_ids)
             ->groupBy('s.id', 'fb.month_id')
             ->orderByRaw('sort_year, sort_month')
@@ -982,7 +982,7 @@ if (!function_exists('FeeBreakoffHeadWise')) {
             ->havingRaw("sum(fb.amount) != 0")
             ->where('s.sub_institute_id', $sub_institute_id)
             ->where('se.syear', $syear)
-            ->whereNull('se.end_date')
+            // ->whereNull('se.end_date')
             ->whereRaw($extra_where)            
             ->whereIn('s.id', $student_ids)
             ->groupBy('s.id', 'fb.month_id', 'fb.fee_type_id')
@@ -1012,9 +1012,11 @@ if (!function_exists('FeeBreakoffHeadWise')) {
             $data[$value->id][$value->month_id][$value->fees_title]['amount'] = $value->amount - $paid_fees[0]->total_paid;
 
             // Start Added by 18/05/2021 for getting paid amount in Overall Fees Head Wise report
-            if (isset($paid_fees[0]->total_paid) && $paid_fees[0]->total_paid != '') {
+            if (isset($paid_fees[0]->total_paid) && $paid_fees[0]->total_paid != '' && $paid_fees[0]->total_paid!=0) {
                 $data[$value->id][$value->month_id][$value->fees_title]['paid_amount'] = $paid_fees[0]->total_paid;
                 $data[$value->id][$value->month_id][$value->fees_title]['disc_amount'] = $paid_fees[0]->total_disc; // 03-06-24 by uma
+            }else if (isset($paid_fees[0]->total_paid) && $paid_fees[0]->total_paid != '') {
+                $data[$value->id][$value->month_id][$value->fees_title]['paid_amount'] = $paid_fees[0]->total_paid; // 04-07-24 by uma
             } else {
                 $data[$value->id][$value->month_id][$value->fees_title]['paid_amount'] = 0;
             }

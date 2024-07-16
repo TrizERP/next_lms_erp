@@ -75,7 +75,7 @@
             </div>
             <div class="card">
                 <div class="table-responsive mt-20 tz-report-table">
-
+                {!! App\Helpers\get_school_details("","","") !!}
                     <table id="example" class="table table-striped">
                         <thead>
                         <tr>
@@ -88,7 +88,8 @@
                         </tr>
                         </thead>
                         <tbody>
-                        @foreach($employees as $employee)
+                        @php $allTotal = $empTotal= 0; @endphp
+                        @foreach($employees as $key=> $employee)
                         <tr>
                             <td>{{$employee->employee_no}}</td>
                             <td>{{$employee->first_name .' '. $employee->last_name}}</td>
@@ -97,7 +98,21 @@
                             <td>{{$employee->ifsc_code}}</td>
                             <td>{{$employee->total_payment}}</td>
                         </tr>
+                        @php 
+                            $allTotal += $employee->total_payment;
+                            $empTotal = ($key+1);
+                        @endphp
                         @endforeach
+                        @if(!empty($employees))
+                        <tr>
+                            <td><b>Total</b></td>
+                            <td><b>{{$empTotal}}</b></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td><b>{{$allTotal}}</b></td>
+                        </tr>
+                        @endif  
                         </tbody>
                     </table>
 
@@ -120,7 +135,7 @@
                 buttons: [
                     {
                         extend: 'pdfHtml5',
-                        title: 'Student Report',
+                        title: 'Bankwise Payroll Report',
                         orientation: 'landscape',
                         pageSize: 'LEGAL',
                         pageSize: 'A0',
@@ -128,9 +143,17 @@
                             columns: ':visible'
                         },
                     },
-                    {extend: 'csv', text: ' CSV', title: 'Student Report'},
-                    {extend: 'excel', text: ' EXCEL', title: 'Student Report'},
-                    {extend: 'print', text: ' PRINT', title: 'Student Report'},
+                    {extend: 'csv', text: ' CSV', title: 'Bankwise Payroll Report'},
+                    {extend: 'excel', text: ' EXCEL', title: 'Bankwise Payroll Report'},
+                    {
+                        extend: 'print',
+                        text: ' PRINT',
+                        title: 'Enquiry Followup Report',
+                        customize: function (win) {
+                            $(win.document.body).prepend(`{!! App\Helpers\get_school_details("", "", "") !!}`);
+                            $(win.document.body).append(`<div style="text-align: right;margin-top:20px">Printed on: {{date('d-m-Y H:i:s')}}</div>`);                                       
+                        }
+                    },
                     'pageLength'
                 ],
             });

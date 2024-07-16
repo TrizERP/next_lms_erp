@@ -15,6 +15,7 @@ use function App\Helpers\is_mobile;
 use DB;
 use Carbon\Carbon;
 use GenTux\Jwt\GetsJwtToken;
+use App\Traits\Helpers;
 
 class ApplyLeaveController extends Controller
 {
@@ -51,6 +52,11 @@ class ApplyLeaveController extends Controller
             ->whereYear('hel.from_date', $syear)
             ->orderBy('hel.id','DESC')
             ->get()->toArray();
+
+            $res['sandwichLeave'] = DB::table('general_data')->where('sub_institute_id',$sub_institute_id)->where('fieldname', 'sandwich_leave')->first();
+            $res['causualLeave'] =DB::table('general_data')->where('sub_institute_id',$sub_institute_id)->where('fieldname', 'casual_leave_apply')->first();
+            $res['earnedLeave'] = DB::table('general_data')->where('sub_institute_id',$sub_institute_id)->where('fieldname', 'earned_leave_apply')->first();
+            // echo "<pre>";print_r($res['earnedLeave']);exit;
             // return view('leave.apply_leave', compact('departments', 'users', 'leave_types'));
             return is_mobile($type, "leave.apply_leave", $res, "view");
         } catch (Exception $e) {
@@ -266,8 +272,8 @@ class ApplyLeaveController extends Controller
         } catch (Exception $e) {
             return response()->json($e->getMessage(), 500);
         } */
-        
-        return is_mobile($type, "leave/leave_list", null, "view");
+        $res['allyears'] = Helpers::getPairYears();
+        return is_mobile($type, "leave/leave_list", $res, "view");
     }
 
     public function getYearwiseleave(Request $request)
@@ -285,5 +291,44 @@ class ApplyLeaveController extends Controller
         ->get()->toArray();
         
         return response()->json($data);
+    }
+
+    public function updateLeave(Request $request){
+        $type = $request->type;
+        $sub_institute_id = session()->get('sub_institute_id');
+        $user_name = session()->get('user_name');
+
+        if($type=="API"){
+            $sub_institute_id  = $request->sub_institute_id;
+            $user_name  = $request->user_name;
+        }
+        $LeaveUpdate = $request->LeaveUpdate;
+        $i=0;
+        foreach ($LeaveUpdate as $id => $value) {
+            $comment = $value['comment'];
+            $hod_comment = $value['hod_comment'];
+            $hr_remarks = $value['hr_remarks'];
+            $status = $value['status'];
+            if($status=='cancelled'){
+                $i++;
+                $update = DB::table('hrms_emp_leaves')->where(['sub_institute_id'=>$sub_institute_id,'id'=>$id])->update([
+                    'comment' => $value['comment'],
+                    'hod_comment' => $value['hod_comment'],
+                    'hod_comment_date' => now(),
+                    'hr_remarks' => $value['hr_remarks'],
+                    'hr_remark_date' => now(),
+                    'approved_by'=>$user_name,
+                    'status' => $value['status'],
+                ]);
+            }
+        }
+        if($i!=0){
+            $res['status_code']=1;
+            $res['message']="Leave Cancelled Successfully!";
+        }else{
+            $res['status_code']=0;
+            $res['message']="No Leave Cancelled!";     
+        }
+        return is_mobile($type, "my-leave", $res);
     }
 }

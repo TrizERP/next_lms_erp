@@ -161,7 +161,7 @@
             buttons: [
                 {
                     extend: 'pdfHtml5',
-                    title: 'Fees Monthly Report',
+                    title: 'Book Issued & Due Reports',
                     orientation: 'landscape',
                     pageSize: 'LEGAL',
                     pageSize: 'A0',
@@ -169,9 +169,9 @@
                         columns: ':visible'
                     },
                 },
-                {extend: 'csv', text: ' CSV', title: 'Fees Monthly Report'},
-                {extend: 'excel', text: ' EXCEL', title: 'Fees Monthly Report'},
-                {extend: 'print', text: ' PRINT', title: 'Fees Monthly Report'},
+                {extend: 'csv', text: ' CSV', title: 'Book Issued & Due Reports'},
+                {extend: 'excel', text: ' EXCEL', title: 'Book Issued & Due Reports'},
+                {extend: 'print', text: ' PRINT', title: 'Book Issued & Due Reports'},
                 'pageLength'
             ],
         });

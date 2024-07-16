@@ -15,13 +15,6 @@ class requisitionController extends Controller
 {
     public function index(Request $request)
     {
-        if (session()->has('data')) { // check if it exists
-            $data_arr = session('data'); // to retrieve value
-            if (isset($data_arr['message'])) {
-                $requisition_data['message'] = $data_arr['message'];
-            }
-        }
-
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
         $user_id = $request->session()->get('user_id');
@@ -93,7 +86,7 @@ class requisitionController extends Controller
 
         $item_setting_data = inventory_master_setupModel::where([
             'sub_institute_id' => $sub_institute_id, 'syear' => $syear,
-        ])->get()->toArray();
+        ])->whereNotNull('ITEM_SETTING_FOR_REQUISITION')->get()->toArray();
 
         if (count($item_setting_data) == 0) {
             $res['status_code'] = "0";
@@ -105,12 +98,15 @@ class requisitionController extends Controller
 
         $item_setting_data_value = '';
 
-        if (isset($item_setting_data[0]['ITEM_SETTING_FOR_REQUISITION']) &&
-            $item_setting_data[0]['ITEM_SETTING_FOR_REQUISITION'] != '') {
-
+        if (isset($item_setting_data[0]['ITEM_SETTING_FOR_REQUISITION']) && $item_setting_data[0]['ITEM_SETTING_FOR_REQUISITION'] != '') {
             $item_setting_data_value = $item_setting_data[0]['ITEM_SETTING_FOR_REQUISITION'];
-        }
+        }else {
+            $res['status_code'] = "0";
+            $res['message'] = "ITEM_SETTING_FOR_REQUISITION Not set in masters please set";
+            $type = $request->input('type');
 
+            return is_mobile($type, "add_requisition.index", $res, "redirect");
+        }
 
         $FORM_NO = $this->generate_requisition_no($sub_institute_id, $syear);
 

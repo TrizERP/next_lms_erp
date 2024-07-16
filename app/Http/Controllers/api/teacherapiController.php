@@ -871,8 +871,7 @@ class teacherapiController extends Controller
             $chapterdata = DB::table('chapter_master')
                 ->where('sub_institute_id', $sub_institute_id)
                 ->where('subject_id', $subject_id)
-                ->where('syear', $syear)
-                ->where('standard_id', $standard_id)->get()->toArray();
+                ->where('standard_id', $standard_id)->get()->toArray();//->where('syear', $syear)
 
             $chapterdata = json_decode(json_encode($chapterdata), true);
             $finaldata = [];
@@ -899,10 +898,9 @@ class teacherapiController extends Controller
                                     file_folder,'/',filename)) as full_path ")
                                 ->where('sub_institute_id', $sub_institute_id)
                                 ->where('chapter_id', $chapter_id)
-                                ->where('syear', $syear)
                                 ->where('topic_id', $tval['id'])
                                 ->where('subject_id', $subject_id)
-                                ->get()->toArray();
+                                ->get()->toArray();//->where('syear', $syear)
 
                             $contentData = json_decode(json_encode($contentData), true);
                             $finaldata[$chapter_id]['topicData'][$tkey]['contentData'] = $contentData;
@@ -956,7 +954,7 @@ class teacherapiController extends Controller
             $data = timetableModel::from("timetable as t")
                 ->select(DB::raw('distinct(t.standard_id) as std_id'), 's.name as std_name', 's.grade_id')
                 ->join('standard as s', 's.id', '=', 't.standard_id')
-                ->where(['t.sub_institute_id' => $sub_institute_id, 't.teacher_id' => $teacher_id])
+                ->where(['t.sub_institute_id' => $sub_institute_id, 't.teacher_id' => $teacher_id, 't.syear' => $syear])
                 ->get()->toArray();
 
             $response['status'] = 1;
@@ -1003,8 +1001,10 @@ class teacherapiController extends Controller
                 ->select(DB::raw('distinct(t.subject_id) as sub_id'), 's.subject_name as sub_name')
                 ->join('subject as s', 's.id', '=', 't.subject_id')
                 ->where([
-                    't.sub_institute_id' => $sub_institute_id, 't.teacher_id' => $teacher_id,
-                    't.standard_id'      => $standard_id,
+                    't.sub_institute_id' => $sub_institute_id,
+                    't.teacher_id' => $teacher_id,
+                    't.standard_id' => $standard_id,
+                    't.syear' => $syear,
                 ])
                 ->get()->toArray();
 
@@ -1061,7 +1061,7 @@ class teacherapiController extends Controller
                 ->join('division as d', 'd.id', '=', 't.division_id')
                 ->where([
                     't.sub_institute_id' => $sub_institute_id, 't.teacher_id' => $teacher_id,
-                    't.standard_id'      => $standard_id,
+                    't.standard_id'      => $standard_id, 't.syear' => $syear,
                 ])
                 ->orderBy('d.name', 'asc')
                 ->get()->toArray();

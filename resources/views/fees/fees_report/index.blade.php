@@ -169,7 +169,7 @@
 						<tbody>
 							@php $j=1; $amount = 0; @endphp
 							@if(isset($data['fees_data']))
-							@foreach($fees_data as $key => $value)
+							@foreach($data['fees_data'] as $key => $value)
 							@php
 							
 							if($value['cheque_date']
@@ -216,9 +216,8 @@
 								<td>{{$value['division_name']}}</td>
 								<td>{{$value['batch'] ?? "-" }} {{$value['place_of_birth']}}</td>
 								@else
-								<td>{{$value['standard_name']}} - {{$value['division_name']}} {{$value['batch']}} {{ (session()->get('sub_institute_id')==257) ?  $value['place_of_birth'] : '' }} 
+								<td>{{$value['standard_name']}} - {{$value['division_name']}} {{$value['batch']}} {{ (session()->get('sub_institute_id')==257) ?  $value['place_of_birth'] : '' }} </td>
 								@endif
-								</td>
 								<td>{{$value['quota'] ?? "-"}}</td>
 								<td>{{$value['uniqueid']}}</td>
 								<td>{{ $monthNamesString}}</td>
@@ -250,9 +249,12 @@
 								<!--<td>{{date('d-m-Y h:i:s',strtotime($value['created_date']))}}</td>-->
 								<td>{{$value['actual_amountpaid']}}</td>
 							</tr>
-							@php $amount += $value['actual_amountpaid']; $j++; @endphp @endforeach
+							@php 
+								$amount += $value['actual_amountpaid'];
+								$j++; 
+							@endphp 
+							@endforeach 
 							<tr>
-								<td>Total</td>
 								<td></td>
 								<td></td>
 								<td></td>
@@ -264,21 +266,21 @@
 								<td></td>
 								@endif
 								<td></td>
+								<td></td>
+								<td></td>
+								<td></td>
+								<td></td>
 								@if(isset($data['groupby']))
-								<td></td>								
 								<td></td>
 								<td></td>
-								<td></td>									
+								<td></td>
+								<td></td>
 								@else
 								<td></td>
 								@endif
 								<td></td>
 								<td></td>
 								<td></td>
-								<td></td>
-								<td></td>
-								<td></td>
-								<!--<td></td>-->
 								<td>{{$amount}}</td>
 							</tr>
 							@endif
@@ -305,13 +307,13 @@
                                 $tot_amounts += $value['actual_amountpaid'];
                                 if (!in_array($value['payment_mode'], $printedModes)) {
                                     $printedModes[] = $value['payment_mode'];
-                                    $amount = 0;
+                                    $Allamount = 0;
                                     $studentCount = 0;
                                     $studentNames = [];
 
                                     foreach ($fees_data as $fee) {
                                         if ($fee['payment_mode'] === $value['payment_mode']) {
-                                            $amount += $fee['actual_amountpaid'];
+                                            $Allamount += $fee['actual_amountpaid'];
 
                                             if (!in_array($fee['student_name'], $studentNames)) {
                                                 $studentNames[] = $fee['student_name'];
@@ -330,7 +332,7 @@
                             <tr>
                                 <td>{{ $value['payment_mode'] }}</td>
                                 <td>{{ $studentCount }}</td>
-                                <td>{{ $amount }}</td>
+                                <td>{{ $Allamount }}</td>
                             </tr>
                         @endforeach
                         <tr>
