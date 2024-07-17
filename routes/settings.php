@@ -7,6 +7,7 @@ use App\Http\Controllers\settings\smtpController;
 use App\Http\Controllers\settings\tblcustomfieldsController;
 use App\Http\Controllers\settings\templateMasterController;
 use App\Http\Controllers\settings\announcementController;
+use App\Http\Controllers\settings\masterSetupSelectController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -24,4 +25,7 @@ Route::group(['prefix' => 'settings', 'middleware' => ['session', 'menu', 'logRo
     Route::resource('manage_institute', manageInstituteController::class);
     Route::resource('announcements', announcementController::class);
     Route::get('announcement_dashboard',[announcementController::class,'dashboardData']);
+
+    Route::resource('master_setup', masterSetupSelectController::class);
+
 });
