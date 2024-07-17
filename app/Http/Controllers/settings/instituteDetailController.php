@@ -69,7 +69,7 @@ class instituteDetailController extends Controller
                     
                     $user_id = session()->get("user_id");
                     // make new request to send in taskcontroller
-                    $newReq = new Request(['TASK_ALLOCATED_TO'=>$val['TASK_ALLOCATED_TO'] ?? [0],'TASK_TITLE'=>$val['TASK_TITLE'],'TASK_DESCRIPTION'=>$val['TASK_DESCRIPTION'],'KRA'=>$val['KRA'],'KPA'=>$val['KPA'],'selType'=>$val['selType'],'TASK_ATTACHMENT'=>$attchment,'manageby'=>$val['manageby'],'skills'=>$val['skills'],'TASK_DATE'=>now(),'type'=>'API','sub_institute_id'=>$sub_institute_id,'syear'=>$syear,'user_id'=>$user_id]);
+                    $newReq = new Request(['TASK_ALLOCATED_TO'=>$val['TASK_ALLOCATED_TO'] ?? [0],'TASK_TITLE'=>$val['TASK_TITLE'],'TASK_DESCRIPTION'=>$val['TASK_DESCRIPTION'],'KRA'=>$val['KRA'],'KPA'=>$val['KPA'],'selType'=>$val['selType'],'TASK_ATTACHMENT'=>$attchment,'manageby'=>$val['manageby'],'skills'=>$val['skills'],'TASK_DATE'=>now(),'observation_point'=>$val['observation_point'],'type'=>'API','sub_institute_id'=>$sub_institute_id,'syear'=>$syear,'user_id'=>$user_id]);
 
                     if ($attchment) {
                         $newReq->files->set('TASK_ATTACHMENT', $attchment);
@@ -77,12 +77,14 @@ class instituteDetailController extends Controller
                     // add task
                     if(isset($val['TASK_ALLOCATED_TO'])){
                         $taskData = $taskController->store($newReq);
+                        // echo "<pre>";print_r($taskData);
                         $add = json_decode($taskData,true);
                         $i++;
                     }
                 } 
+                // exit;
                if($i > 0 ){
-                 // exit;
+                //  exit;
                  $res['status_code'] = 1;
                  $res['message'] = "Added Successfully!!";
                }else{
