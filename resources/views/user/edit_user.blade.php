@@ -16,9 +16,6 @@ br {
             <div class="col-lg-9 col-md-4 col-sm-4 col-xs-12">
                 <h4 class="page-title">Edit User</h4>
             </div>
-            <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
-                <a class="btn btn-success" data-toggle="modal" data-target="#documentModel">Add Document</a>
-            </div>
         </div>
         <div class="card">
             <!-- @TODO: Create a saperate tmplate for messages and include in all tempate -->
@@ -30,6 +27,14 @@ br {
             @endif
             <div class="row">
                 <div class="col-lg-12 col-sm-12 col-xs-12">
+                    <div class="sttabs tabs-style-linemove triz-verTab bg-white style2">
+                        <center>
+                        <ul class="nav nav-tabs tab-title mb-4">
+                            <li class="nav-item"><a href="#section-linemove-1" class="nav-link active" aria-selected="true" data-toggle="tab"><span>Personal Details</span></a></li>
+                            <li class="nav-item"><a href="#section-linemove-2" class="nav-link" aria-selected="false" data-toggle="tab"><span>Upload Document</span></a></li>
+                        </ul>
+                        </center>
+
                     @php
                     $departments = $data['departments'];
                     $new_emp_code = $data['new_emp_code'];
@@ -46,6 +51,10 @@ br {
                     $data_fields = $data['data_fields'];
                     $data = $data['data'];
                     @endphp
+                    <!-- tabs starts  -->
+                    <div class="tab-content">
+                    <!-- tab 1 start  -->
+                    <div class="tab-pane p-3 active" id="section-linemove-1" role="tabpanel">      
                     <form action="{{ route('add_user.update', $data['id']) }}" enctype="multipart/form-data" method="post">
                     {{ method_field("PUT") }}
                     @csrf
@@ -531,8 +540,19 @@ br {
                             </div>
                         </div>
                     </form>
+                    </div>
+                    <!-- tab 1 ends  -->
+                    <!-- tab 2 start  -->
+                    <div class="tab-pane p-3" id="section-linemove-2" role="tabpanel">
+                        @include('user.documentModel')
+                    </div>
+                    <!-- tab 2 ends  -->
+                </div>
+                <!-- tabs ends  -->
                 </div>
             </div>
+        </div>
+
         </div>
     </div>
 </div>
@@ -615,7 +635,6 @@ br {
             document.getElementById("user_name").value = username;
         }
     </script>
-@include('user.documentModel')
 
 @include('includes.footer')
 @endsection

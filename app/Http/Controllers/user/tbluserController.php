@@ -444,11 +444,14 @@ class tbluserController extends Controller
         if($insert){
             $res['success'] = 1;
             $res['message'] = "Document Added successfully";
+            $request->session()->flash('success', 'Document Added successfully');
+
         }else{
             $res['fail'] = 0;
             $res['message'] = "Failed to Add Document";
+            $request->session()->flash('fail', 'Failed to Add Document');
         }
 
-        return is_mobile($type, "add_user.index", $res);
+        return redirect()->back()->with(['data'=>$res]);
     }
 }

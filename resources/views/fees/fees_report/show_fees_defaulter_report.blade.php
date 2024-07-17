@@ -121,7 +121,8 @@
                         $j=1;
                         $total_breakoff = $total_paid = $total_unpaid = 0;
                         $totalSum = 0;
-                        $toSum = 0;
+                        $toSum = $regularTotal= $rgBusTotal =$transTotal = 0;
+                        $feesTotal = [];
                         $displayNamesToExclude = ['Transport Fees', '2017-2018', '2018-2019', '2019-2020', '2020-2021', '2021-2022', '2022-2023'];
                         @endphp
 
@@ -152,6 +153,9 @@
                                     $toSum = $regBk - $excSum;
 
                                     $regbus = ($fees_value['final_fee']['Transport Fees'] ?? 0) + $toSum;
+                                    $rgBusTotal +=$regbus;
+                                    $regularTotal += $toSum ?? 0;
+                                    $transTotal += $fees_value['final_fee']['Transport Fees'] ?? 0;
                                 @endphp
                                 <td style="background-color:#7befef;">{{ $toSum ?? 0 }}</td>
                                 <td style="background-color:#7befef;">{{ $regbus }}</td>
@@ -169,6 +173,11 @@
                                     @if ($values->display_name !== 'Transport Fees')
                                         <td style="background-color:#7befef;">{{ $fee }}</td>
                                         @php
+                                        if(!isset($feesTotal[$values->display_name])){
+                                            $feesTotal[$values->display_name] = 0;
+                                        }else{
+                                            $feesTotal[$values->display_name] +=$fee;
+                                        }
                                             $totalSum += $fee;
                                         @endphp
                                     @endif
@@ -209,12 +218,17 @@
                                 <td></td>
                                 <td></td>
                                 <td></td>
-                                <td></td>
-                                <td></td>
-                               @foreach($data['fees_titles'] as $key => $value)
-                               <td></td>                               
-                               @endforeach
                                 <td>Total</td>
+                                <td>{{$transTotal}}</td>
+                                <td>{{$regularTotal}}</td>
+                                <td>{{$rgBusTotal}}</td>
+                               @foreach($data['fees_titles'] as $key => $value)
+                                    @if ($values->display_name !== 'Transport Fees')
+                                        <td>{{ $feesTotal[$values->display_name] }}</td>
+                                    @else
+                                        <td></td>
+                                    @endif
+                               @endforeach
                                 <td>{{$total_breakoff}}</td>
                                 <td>{{$total_paid}}</td>
                                 <td>{{$total_unpaid}}</td>
