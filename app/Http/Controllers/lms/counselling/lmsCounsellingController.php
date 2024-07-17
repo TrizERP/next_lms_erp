@@ -5,6 +5,9 @@ namespace App\Http\Controllers\lms\counselling;
 use App\Http\Controllers\Controller;
 use App\Models\lms\counselling\counsellingCourseModel;
 use App\Models\lms\counselling\counsellingOnlineExamModel;
+use App\Models\lms\counselling\OnetContentModelReference;
+use App\Models\lms\counselling\OnetCareerCluster;
+use App\Models\lms\counselling\OnetOccupationData;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
@@ -264,5 +267,106 @@ class lmsCounsellingController extends Controller
             $errorMessage = $exception->getMessage();
         }
     }
+    public function careerExplore()
+    {
+        // Fetch data from the database
+        $elements = OnetContentModelReference::whereNotNull('level')
+            ->orderBy('element_id')
+            ->get();
 
+        // Function to build the nested structure
+        function buildTree($elements, $parent_id = '', $level = 1)
+        {
+            $branch = [];
+            foreach ($elements as $element) {
+                if (substr($element->element_id, 0, strlen($parent_id)) === $parent_id && $element->level == $level) {
+                    $children = buildTree($elements, $element->element_id . '.', $level + 1);
+                    $elementData = [
+                        'level' => $element->level,
+                        'element_id' => $element->element_id,
+                        'element_name' => $element->element_name,
+                    ];
+                    if (!empty($children)) {
+                        $elementData['children'] = $children;
+                    }
+                    $branch[] = $elementData;
+                }
+            }
+            return $branch;
+        }
+
+        // Build the tree structure starting with the top-level elements (level 1)
+        $result = buildTree($elements);
+
+        // Return the final JSON response
+        return response()->json($result);
+    }
+    public function careerCluster()
+    {
+        // Fetch data from the database
+        $careers = OnetCareerCluster::all();
+
+        // Group by career_cluster and career_pathway
+        $groupedCareers = [];
+        foreach ($careers as $career) {
+            if (!isset($groupedCareers[$career->career_cluster])) {
+                $groupedCareers[$career->career_cluster] = [
+                    'career_id' => $career->career_id,
+                    'career_cluster' => $career->career_cluster,
+                    'image' => $career->image,
+                    'children' => []
+                ];
+            }
+
+            $pathwayExists = false;
+            foreach ($groupedCareers[$career->career_cluster]['children'] as &$pathway) {
+                if ($pathway['career_pathway'] === $career->career_pathway) {
+                    $pathway['children'][] = [
+                        'onetsoc_code' => $career->onetsoc_code,
+                        'title' => $career->title,
+                        'description' => $career->description
+                    ];
+                    $pathwayExists = true;
+                    break;
+                }
+            }
+
+            if (!$pathwayExists) {
+                $groupedCareers[$career->career_cluster]['children'][] = [
+                    'career_pathway' => $career->career_pathway,
+                    'image' => $career->image,
+                    'children' => [
+                        [
+                            
+                            'onetsoc_code' => $career->onetsoc_code,
+                            'title' => $career->title,
+                            'description' => $career->description
+                        ]
+                    ]
+                ];
+            }
+        }
+
+        // Return the final JSON response
+        return response()->json(array_values($groupedCareers));
+    }
+    public function allOccupation(Request $request)
+    {
+        // Retrieve the 'title' parameter from the request
+        $title = $request->input('title', 'all'); // Default to 'all' if the parameter is not provided
+
+        // Start the query
+        $query = OnetOccupationData::query();
+
+        // If 'title' parameter is provided and not 'all', add a where clause
+        if ($title !== 'all') {
+            $query->where('title', 'LIKE', "%{$title}%");
+        }
+
+        // Order the results by 'title'
+        $results = $query->orderBy('title')->get();
+
+        // Return the JSON response
+        return response()->json($results);
+    }
 }
