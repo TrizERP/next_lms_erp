@@ -175,9 +175,9 @@
                                         @php
                                         if(!isset($feesTotal[$values->display_name])){
                                             $feesTotal[$values->display_name] = 0;
-                                        }else{
-                                            $feesTotal[$values->display_name] +=$fee;
                                         }
+                                            $feesTotal[$values->display_name] +=$fee;
+                                        
                                             $totalSum += $fee;
                                         @endphp
                                     @endif
@@ -222,12 +222,8 @@
                                 <td>{{$transTotal}}</td>
                                 <td>{{$regularTotal}}</td>
                                 <td>{{$rgBusTotal}}</td>
-                               @foreach($data['fees_titles'] as $key => $value)
-                                    @if ($values->display_name !== 'Transport Fees')
-                                        <td>{{ $feesTotal[$values->display_name] }}</td>
-                                    @else
-                                        <td></td>
-                                    @endif
+                               @foreach($feesTotal as $key => $value)
+                                <td>{{$value}}</td>
                                @endforeach
                                 <td>{{$total_breakoff}}</td>
                                 <td>{{$total_paid}}</td>
