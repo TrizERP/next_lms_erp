@@ -81,6 +81,7 @@
                             @foreach($hrmsList as $hrmsAttendance)
                                 @php 
                                     $get_hrms_department = DB::table('hrms_departments')
+                                    ->where('sub_institute_id',session()->get('sub_institute_id'))
                                     ->where('id', $hrmsAttendance['getUser']['department_id'])
                                     ->first();
                                 @endphp

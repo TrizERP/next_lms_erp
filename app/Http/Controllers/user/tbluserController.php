@@ -51,7 +51,7 @@ class tbluserController extends Controller
         $subject_data = subjectModel::where(['sub_institute_id' => $sub_institute_id])->get();
         $employees = tbluserModel::where('sub_institute_id',$sub_institute_id)->where('status',1)->get();
         $job_titles = HrmsJobTitle::where('sub_institute_id',$sub_institute_id)->get();
-        $departments = DB::table('hrms_departments')->where('status',1)->get()->toArray();
+        $departments = DB::table('hrms_departments')->where('sub_institute_id',$sub_institute_id)->where('status',1)->get()->toArray();
         $fieldsData = tblfields_dataModel::get()->toArray();
         $i = 0;
         $finalfieldsData = [];
@@ -275,7 +275,9 @@ class tbluserController extends Controller
         ->get()
         ->toArray();
         // end  20-04-24
-        $res['departments'] = DB::table('hrms_departments')->where('status',1)->get()->toArray();
+        $departments = DB::table('hrms_departments')->where('sub_institute_id',$sub_institute_id)->where('status',1)->get()->toArray();
+        
+        $res['departments'] = $departments;
         $res['employees'] = tbluserModel::where('sub_institute_id',$sub_institute_id)->get();
         $res['job_titles'] = HrmsJobTitle::where('sub_institute_id',$sub_institute_id)->get();
         $res['custom_fields'] = $dataCustomFields;
@@ -435,14 +437,11 @@ class tbluserController extends Controller
         if($insert){
             $res['success'] = 1;
             $res['message'] = "Document Added successfully";
-            $request->session()->flash('success', 'Document Added successfully');
-
         }else{
             $res['fail'] = 0;
             $res['message'] = "Failed to Add Document";
-            $request->session()->flash('fail', 'Failed to Add Document');
         }
 
-        return redirect()->back()->with(['data'=>$res]);
+        return is_mobile($type, "add_user.index", $res);
     }
 }
