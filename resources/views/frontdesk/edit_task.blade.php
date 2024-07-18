@@ -96,7 +96,7 @@
                             </div> 
                             <div class="col-md-4 form-group">
                                 <label>Skills </label>
-                                <input type="text" id='skill' name="skills" class="form-control skillInput" @if(isset($data['required_skill'])) value="{{$data['required_skill']}}" @endif>
+                                <textarea class="form-control" name="skills" id="skills" @if($data['TASK_ALLOCATED_TO']==session()->get('user_id')) readonly  @endif>{{$data['required_skill']}}</textarea>
                             </div>
                             <!-- <div class="col-md-4 form-group">
                                 <label>User </label>
@@ -109,7 +109,11 @@
                                     @endif
                                 </datalist>
                             </div> -->
-
+                           
+                            <div class="col-md-4">
+                                <label for="">Observation Points</label>
+                                <textarea class="form-control" name="observation_point" id="observation_point" @if($data['TASK_ALLOCATED_TO']==session()->get('user_id')) readonly  @endif>{{$data['observation_point']}}</textarea>
+                            </div>
                             <div class="col-md-4 form-group">
                                 <label>Task Status </label>
                                 <select name='STATUS' class="form-control">
@@ -119,7 +123,6 @@
                                     @endforeach
                                 </select>
                             </div>
-
                             <div class="col-md-4 form-group">
                                 <label for="input-file-now">Task Attachment</label>
                                 <input type="file" @if(isset($data['TASK_ATTACHMENT'])) data-default-file="/storage/frontdesk/{{ $data['TASK_ATTACHMENT'] }}" @endif name="TASK_ATTACHMENT" id="input-file-now" class="dropify" />
@@ -129,6 +132,7 @@
                                 <textarea type="text" id='reply' required name='reply' class="form-control">{{ $data['reply'] }}
                                 </textarea>
                             </div>
+                            
                             <div class="col-md-12 form-group">
                                     <input type="submit" name="submit" value="Update" class="btn btn-success" >
                             </div>

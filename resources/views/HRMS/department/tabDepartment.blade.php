@@ -45,7 +45,7 @@ $taskType = ['Daily Task','Weekly Task','Monthly Task','Yearly Task'];
             </div>
             <hr class="headHr"> -->
             <div class="divBody">
-               <form action="{{route('institute_detail.store')}}" method="post" class="row mt-4" enctype="multipart/form-data" id="emailForm" novalidate>
+               <form action="{{route('institute_detail.store')}}" method="post" class="row mt-4" enctype="multipart/form-data">
                   @csrf
                   <input type="hidden" name="formName" value="addTask">
                   <div class="row cloneManageTask" id="cloneManageTask" style="padding:6px">
@@ -89,12 +89,17 @@ $taskType = ['Daily Task','Weekly Task','Monthly Task','Yearly Task'];
                      <!-- skills -->
                      <div class="col-md-4 form-group">
                         <label>Skills </label>
-                        <input type="email" id='skill0' list="dataLists" name="arr[0][skills]" class="form-control skillInput" multiple  autocomplete="off" >
+                       {{-- <input type="email" id='skill0' list="dataLists" name="arr[0][skills]" class="form-control skillInput" multiple  autocomplete="off" >
                         <datalist id="dataLists">
                            @foreach($data['skillLists'] as $k=>$val)
                            <option value="{{$val->skills}}"></option>
                         @endforeach
-                        </datalist>
+                        </datalist> --}}
+                        <select name="arr[0][skills][]" id="skill0" class="form-control" multiple>
+                            @foreach($data['skillLists'] as $k=>$val)
+                            <option value="{{$val->name}}">{{$val->name}}</option>
+                            @endforeach
+                        </select>
                      </div>
                      <!-- add KRA -->
                      <div class="col-md-4  form-group">

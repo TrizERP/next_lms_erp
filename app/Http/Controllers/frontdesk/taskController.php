@@ -13,6 +13,8 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use function App\Helpers\is_mobile;
+use Carbon\Carbon;
+use Carbon\CarbonPeriod;
 
 class taskController extends Controller
 {
@@ -71,6 +73,8 @@ class taskController extends Controller
         }
         $data = $data->orderBy('t.ID', 'desc');
         $data = $data->get()->toArray();
+
+        $res['checkList'] = DB::table('task')->where('TASK_ALLOCATED',$user_id)->where('task_type','=','Daily Task')->where('TASK_DATE',date('Y-m-d'))->get()->toArray();
 
         $res['status_code'] = 1;
         $res['message'] = "Success";
@@ -134,19 +138,20 @@ class taskController extends Controller
         $KPA = $request->input("KPA");
         $observation_point = $request->input("observation_point");
         $task_type = $request->input("selType");
-        $required_skill = $request->skills ?? '';
+        $required_skill = isset($request->skills) ? implode(',',$request->skills) : '';
         // store skills
-
-        if($required_skill!=''){
-            $explodeSkills = explode(',',$required_skill);
-            foreach ($explodeSkills as $id => $skillname) {
-               $checkSkillset = DB::table('tblemp_skills')->where('skills',$skillname)->whereIn('sub_institute_id',[0,$sub_institute_id])->get()->toArray();
-               if(empty($checkSkillset)){
-                DB::table('tblemp_skills')->insert(['sub_institute_id'=>$sub_institute_id,'skills'=>$skillname,'created_at'=>now()]);
-               }
-            }
-        }
-        $data = $request->except(['_method', '_token', 'submit', 'TASK_ATTACHMENT','formName','selDepartment','selSubDepartment','selType','add','type','syear','sub_institute_id','user_id','manageby','KRA','KPA','skills','observation_point']);
+        $dates = $this->getDatesWithoutSundays();
+        // echo "<pre>";print_r($required_skill);exit;
+        // if($required_skill!=''){
+        //     $explodeSkills = explode(',',$required_skill);
+        //     foreach ($explodeSkills as $id => $skillname) {
+        //        $checkSkillset = DB::table('tblemp_skills')->where('skills',$skillname)->whereIn('sub_institute_id',[0,$sub_institute_id])->get()->toArray();
+        //        if(empty($checkSkillset)){
+        //         DB::table('tblemp_skills')->insert(['sub_institute_id'=>$sub_institute_id,'skills'=>$skillname,'created_at'=>now()]);
+        //        }
+        //     }
+        // }
+        $data = $request->except(['_method', '_token', 'submit', 'TASK_ATTACHMENT','formName','selDepartment','selSubDepartment','selType','add','type','syear','sub_institute_id','user_id','manageby','KRA','KPA','skills','observation_point','TASK_DATE']);
 
         $file_name = $ext = $file_size = "";
         if ($request->hasFile('TASK_ATTACHMENT')) {
@@ -180,8 +185,15 @@ class taskController extends Controller
                 $data['FILE_SIZE'] = $file_size;
                 $data['FILE_TYPE'] = $ext;
             }
-
-            taskModel::insert($data);
+            if($task_type=="Daily Task"){
+                foreach ($dates as $k => $date) {
+                    $data['TASK_DATE']=$date;
+                    taskModel::insert($data);
+                }
+            }else{
+                $data['TASK_DATE'] = $request->get('TASK_DATE');
+                taskModel::insert($data);
+            }
         }
 
         $res['status_code'] = "1";
@@ -281,20 +293,12 @@ class taskController extends Controller
         $required_skill = $request->skills ?? '';
         // store skills
 
-        if($required_skill!=''){
-            $explodeSkills = explode(',',$required_skill);
-            foreach ($explodeSkills as $id => $skillname) {
-               $checkSkillset = DB::table('tblemp_skills')->where('skills',$skillname)->whereIn('sub_institute_id',[0,$sub_institute_id])->get()->toArray();
-               if(empty($checkSkillset)){
-                DB::table('tblemp_skills')->insert(['sub_institute_id'=>$sub_institute_id,'skills'=>$skillname,'created_at'=>now()]);
-               }
-            }
-        }
         $data = $request->except(['_method', '_token', 'submit', 'TASK_ATTACHMENT','formName','selDepartment','selSubDepartment','selType','add','type','syear','sub_institute_id','user_id','manageby','KRA','KPA','skills']);
 
         $data['KRA'] = $KRA;
         $data['KPA'] = $KPA;
         $data['task_type'] = $task_type;
+        $data['observation_point'] = $observation_point;
 
         $data['SYEAR'] = $syear;
         $data['MARKING_PERIOD_ID'] = $term_id;
@@ -357,4 +361,23 @@ class taskController extends Controller
 
         return is_mobile($type, "frontdesk.task_report", $res, "view");
     }
+
+    function getDatesWithoutSundays() {
+        $startDate = Carbon::now();
+        $endDate = Carbon::create($startDate->year, $startDate->month)->endOfMonth();  
+        
+        $dates = [];
+        
+        $period = CarbonPeriod::create($startDate, $endDate);
+        
+        foreach ($period as $date) {
+            if ($date->isSunday()) {
+                continue;
+            }
+            $dates[] = $date->format('Y-m-d');
+        }
+        
+        return $dates;
+    }
+
 }
