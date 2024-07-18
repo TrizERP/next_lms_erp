@@ -301,6 +301,118 @@ class lmsCounsellingController extends Controller
         // Return the final JSON response
         return response()->json($result);
     }
+    public function careerExploreResult(Request $request)
+    {
+        // Get query parameters
+        $abilities = $request->input('abilities');
+        $interests = $request->input('interests');
+        $knowledge = $request->input('knowledge');
+        $skills = $request->input('skills');
+        $work_styles = $request->input('work_styles');
+        $work_values = $request->input('work_values');
+        $job_zones = $request->input('job_zones');
+
+        // Build the initial query
+        $query = DB::table('onet_occupation_data as od')
+            ->select('od.onetsoc_code', 'od.title', 'od.description');
+
+        // Add conditional joins
+        if ($abilities) {
+            $abilitiesArray = explode(',', $abilities);
+            $query->join('onet_abilities as a', function ($join) use ($abilitiesArray) {
+                $join->on('a.onetsoc_code', '=', 'od.onetsoc_code')
+                    ->where('a.scale_id', '=', 'LV')
+                    ->where(function ($query) use ($abilitiesArray) {
+                        foreach ($abilitiesArray as $ability) {
+                            $query->orWhere('a.element_id', 'LIKE', "$ability%");
+                        }
+                    });
+            });
+        }
+
+        if ($interests) {
+            $interestsArray = explode(',', $interests);
+            $query->join('onet_interests as i', function ($join) use ($interestsArray) {
+                $join->on('i.onetsoc_code', '=', 'od.onetsoc_code')
+                    ->where('i.scale_id', '=', 'OI')
+                    ->where(function ($query) use ($interestsArray) {
+                        foreach ($interestsArray as $interest) {
+                            $query->orWhere('i.element_id', 'LIKE', "$interest%");
+                        }
+                    });
+            });
+        }
+
+        if ($knowledge) {
+            $knowledgeArray = explode(',', $knowledge);
+            $query->join('onet_knowledge as k', function ($join) use ($knowledgeArray) {
+                $join->on('k.onetsoc_code', '=', 'od.onetsoc_code')
+                    ->where('k.scale_id', '=', 'LV')
+                    ->where(function ($query) use ($knowledgeArray) {
+                        foreach ($knowledgeArray as $know) {
+                            $query->orWhere('k.element_id', 'LIKE', "$know%");
+                        }
+                    });
+            });
+        }
+
+        if ($skills) {
+            $skillsArray = explode(',', $skills);
+            $query->join('onet_skills as s', function ($join) use ($skillsArray) {
+                $join->on('s.onetsoc_code', '=', 'od.onetsoc_code')
+                    ->where('s.scale_id', '=', 'LV')
+                    ->where(function ($query) use ($skillsArray) {
+                        foreach ($skillsArray as $skill) {
+                            $query->orWhere('s.element_id', 'LIKE', "$skill%");
+                        }
+                    });
+            });
+        }
+
+        if ($work_styles) {
+            $workStylesArray = explode(',', $work_styles);
+            $query->join('onet_work_styles as ws', function ($join) use ($workStylesArray) {
+                $join->on('ws.onetsoc_code', '=', 'od.onetsoc_code')
+                    ->where('ws.scale_id', '=', 'IM')
+                    ->where(function ($query) use ($workStylesArray) {
+                        foreach ($workStylesArray as $workStyle) {
+                            $query->orWhere('ws.element_id', 'LIKE', "$workStyle%");
+                        }
+                    });
+            });
+        }
+
+        if ($work_values) {
+            $workValuesArray = explode(',', $work_values);
+            $query->join('onet_work_values as wv', function ($join) use ($workValuesArray) {
+                $join->on('wv.onetsoc_code', '=', 'od.onetsoc_code')
+                    ->where('wv.scale_id', '=', 'EX')
+                    ->where(function ($query) use ($workValuesArray) {
+                        foreach ($workValuesArray as $workValue) {
+                            $query->orWhere('wv.element_id', 'LIKE', "$workValue%");
+                        }
+                    });
+            });
+        }
+
+        if ($job_zones) {
+            $jobZonesArray = explode(',', $job_zones);
+            $query->join('onet_job_zones as jz', function ($join) use ($jobZonesArray) {
+                $join->on('jz.onetsoc_code', '=', 'od.onetsoc_code')
+                    ->where(function ($query) use ($jobZonesArray) {
+                        foreach ($jobZonesArray as $jobZone) {
+                            $query->orWhere('jz.job_zone', 'LIKE', "$jobZone%");
+                        }
+                    });
+            });
+        }
+
+        // Group by onetsoc_code and get the results
+        $results = $query->groupBy('od.onetsoc_code')->get();
+
+        // Return JSON response
+        return response()->json($results);
+    }
     public function careerCluster()
     {
         // Fetch data from the database
