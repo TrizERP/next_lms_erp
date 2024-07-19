@@ -26,7 +26,7 @@ class HrmsLeaveController extends Controller
 
         $res['allData']=DB::table('hrms_leave_allocation as hla')
                         ->join('hrms_departments as hd',function($join){
-                            $join->on('hd.id','=','hla.department_id')->where('status',1)->whereNull('deleted_at');
+                            $join->on('hd.id','=','hla.department_id')->where('hd.sub_institute_id',$sub_institute_id)->where('status',1)->whereNull('deleted_at');
                         })
                         ->join('hrms_leave_types as hlt','hlt.id','=','hla.leave_type_id')
                         ->where('hla.sub_institute_id',$sub_institute_id)->where('hla.year',$syear)->get()->toArray();
@@ -44,7 +44,7 @@ class HrmsLeaveController extends Controller
             $syear = $request->syear;
         }
 
-        $res['departments'] = DB::table('hrms_departments')->where('status',1)->whereNull('deleted_at')->pluck('department','id');
+        $res['departments'] = DB::table('hrms_departments')->where('sub_institute_id',$sub_institute_id)->where('status',1)->whereNull('deleted_at')->pluck('department','id');
         $res['leave_types'] = DB::table('hrms_leave_types')->whereNull('deleted_at')->pluck('leave_type','id');
         $res['years']= Helpers::getYears();
         return is_mobile($type, "HRMS.hrms_leave.hrms_leave_allocation.add", $res, "view");
@@ -77,7 +77,7 @@ class HrmsLeaveController extends Controller
         $res['days'] = $days = $request->days;
 
         if($department_ids=="All"){
-            $departmentAll = DB::table('hrms_departments')->where('status',1)->whereNull('deleted_at')->get()->toArray();
+            $departmentAll = DB::table('hrms_departments')->where('sub_institute_id',$sub_institute_id)->where('status',1)->whereNull('deleted_at')->get()->toArray();
             foreach($departmentAll as $key=>$value){
                 $res = $this->insertData($value->id,$leave_type_ids,$year,$days,$sub_institute_id);
             }
@@ -126,7 +126,7 @@ class HrmsLeaveController extends Controller
             $syear = $request->syear;
         }
         $res['editData'] = DB::table('hrms_leave_allocation')->where('id',$id)->first();
-        $res['departments'] = DB::table('hrms_departments')->where('status',1)->whereNull('deleted_at')->pluck('department','id');
+        $res['departments'] = DB::table('hrms_departments')->where('sub_institute_id',$sub_institute_id)->where('status',1)->whereNull('deleted_at')->pluck('department','id');
         $res['leave_types'] = DB::table('hrms_leave_types')->whereNull('deleted_at')->pluck('leave_type','id');
         $res['years']= Helpers::getYears();
         return is_mobile($type, "HRMS.hrms_leave.hrms_leave_allocation.edit", $res, "view");
