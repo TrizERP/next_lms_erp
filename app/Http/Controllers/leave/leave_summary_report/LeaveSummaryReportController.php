@@ -98,7 +98,9 @@ class LeaveSummaryReportController extends Controller
             ->join('hrms_departments as hd', 'hd.id', '=', 'u.department_id')
             ->where('hel.sub_institute_id', $sub_institute_id)
             ->where('u.status', 1)
-            ->whereYear('hel.from_date', '=', $years)
+            // ->whereYear('hel.from_date', '=', $years)
+            ->where('hel.from_date','>=',$years.'-04-01')
+            ->where('hel.to_date','<=',($years+1).'-03-31')
             ->when($employee_id!=0, function ($query) use ($employee_id) {
                 return $query->where('hel.user_id', $employee_id);
             })
@@ -176,7 +178,9 @@ class LeaveSummaryReportController extends Controller
         ->join('tbluser as u', 'u.id', '=', 'hel.user_id')
         ->join('hrms_leave_types as hlt', 'hlt.id', '=', 'hel.leave_type_id')
         ->where('hel.sub_institute_id', $sub_institute_id)
-        ->whereYear('hel.from_date', '>=', $year)
+        // ->whereYear('hel.from_date', '>=', $year)
+        ->where('hel.from_date','>=',$year.'-04-01')
+        ->where('hel.to_date','<=',($year+1).'-03-31')
         ->where('hel.leave_type_id',$leaveTypeId)
         ->where('user_id',$employee_id)
         ->get()->toArray();
