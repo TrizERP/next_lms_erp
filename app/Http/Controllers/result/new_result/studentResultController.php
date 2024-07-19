@@ -244,9 +244,14 @@ class studentResultController extends Controller
         } elseif ($value['gender'] == 'female') {
             $he_she = 'she';
         }
+        $term_name = '';
+        if($format != 'yearly'){
+            $term_name = DB::table('academic_year')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear])->where('term_id',$format)->value('title');
+        }
         //Start Bonafide certificate Tags
         $html_content = str_replace(htmlspecialchars("<<class_teacher_name>>"), isset($teacher_name->teacher_name) ? $teacher_name->teacher_name : ' ', $html_content);
         $html_content = str_replace(htmlspecialchars("<<academic_years>>"), $display_year, $html_content);
+        $html_content = str_replace(htmlspecialchars("<<term_name>>"), $term_name, $html_content);
         $html_content = str_replace(htmlspecialchars("<<student_image_value>>"), $student_image_path, $html_content);
         $html_content = str_replace(htmlspecialchars("<<student_id>>"),strtoupper($value['id']),$html_content);
         $html_content = str_replace(htmlspecialchars("<<student_name_value>>"), strtoupper($value['student_full_name']), $html_content);
@@ -3566,7 +3571,7 @@ while ($current_date <= $post_end_date) {
     {
         $syear = session()->get('syear');
         $sub_institute_id = session()->get('sub_institute_id');
-        if ($format == "yearly" || $academic_type == "upper") { 
+        if ($format == "yearly") { 
             if($academic_type!="primary"){
                 $extra_term = "term_id = 2 ";
                 $extra_term_co = "comark.term_id = 2 ";                
@@ -3575,7 +3580,6 @@ while ($current_date <= $post_end_date) {
             }
             $extra_exam = "1=1";
         } else {
-           
             $extra_term = "term_id = " . $format;
             $extra_term_co="1=1";            
             $extra_exam = 'comark.term_id=' . $format;
@@ -3652,7 +3656,7 @@ while ($current_date <= $post_end_date) {
                 }
             }
         }
-// echo "<pre>";print_r($decipline_data);exit;
+// echo "<pre>";print_r($ret_data);exit;
         if ($academic_type == "upper") {
             $term_name = "Grade";
             $flex = 'display:flex;flex-wrap:wrap';
@@ -3691,7 +3695,7 @@ while ($current_date <= $post_end_date) {
     
             foreach ($groupedData as $childTitle => $termGrades) {
                 $co_scholastic .= '<tr>';
-                if ($counter < 6) { 
+                if ($counter < 8) { 
                     $co_scholastic .= '<td class="'.$value->co_scholastic_id.'">' . $childTitle . '</td>';
                     foreach ($both_term as $keys => $terms) {
                         $grade = $termGrades[$terms->term_id] ?? '-';
@@ -3699,7 +3703,7 @@ while ($current_date <= $post_end_date) {
                     }
                     
                 } else {
-                    if ($counter === 6) {
+                    if ($counter === 8) {
                         $co_scholastic .= '</tr></tbody></table></div>';
                         $co_scholastic .= '<div style="width:50%;">
                         <table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" cellpadding="0" border="1">
@@ -3735,7 +3739,7 @@ while ($current_date <= $post_end_date) {
             }
         }
         $co_scholastic .= '</tbody></table></div></div>';
-
+        $other_table = '';
         // get other tag data
         if($academic_type=="primary"){
         $other_table = '<div style="display:flex;flex-wrap:wrap"  class="co_scho_hills">
@@ -3849,7 +3853,7 @@ while ($current_date <= $post_end_date) {
     }
     else{
             // Discipline 
-        
+    if (!empty($decipline_data)){
         $other_table= '
         <div style="width:50%;">
         <table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" cellpadding="0" border="1">
@@ -3862,16 +3866,15 @@ while ($current_date <= $post_end_date) {
         <tbody>
             <tr>
                 <td style="width: 82.50%;"><b>Discipline</b></td>';
-                if (!empty($decipline_data)) {
-                    foreach ($decipline_data as $key => $value) {
+               foreach ($decipline_data as $key => $value) {
                 $other_table .='<td class="data_center">' . $value->obtain_grade . '</td>'; 
-                    }
-                }           
+                    }    
                 $other_table.= ' <tr>
         </tbody>
         </table></div>';
+        }
     }
-        $res['co_scholastic'] = $co_scholastic;
+        $res['co_scholastic'] = (count($ret_data)>0) ? $co_scholastic : '';
         $res['other_tags'] = $other_table;
         return $res;
     }
