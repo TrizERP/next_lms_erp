@@ -288,7 +288,7 @@ class PayrollController extends Controller
                 }
                 // for contact emps 
                 $getIsCalculate = DB::table('tbluser as tu')->join('hrms_departments as hd','hd.id','=','tu.department_id')
-                ->where('tu.id',$emp_ids)->value('is_calculated');
+                ->where('tu.id',$emp_ids)->where('tu.sub_institute_id',$sub_institute_id)->value('is_calculated');
 
                 if($getIsCalculate==1){
                     $getPF = $getPT = 0;
@@ -499,6 +499,7 @@ class PayrollController extends Controller
             ->selectRaw('hd.department as department_name')
             ->join('tbluser as u', 'u.department_id', 'hd.id')
             ->where('u.status',1) // 23-04-24 by uma
+            ->where('hd.sub_institute_id',$sub_institute_id)
             ->where(['u.sub_institute_id' => $sub_institute_id, 'u.id' => $employee_id])
             ->first();
             
@@ -606,6 +607,7 @@ class PayrollController extends Controller
         $get_department_name = DB::table('hrms_departments as hd')
             ->selectRaw('hd.department as department_name')
             ->join('tbluser as u', 'u.department_id', 'hd.id')
+            ->where('hd.sub_institute_id',$sub_institute_id)
             ->where(['u.sub_institute_id' => $sub_institute_id, 'u.id' => $employee_id])
             ->first();
           

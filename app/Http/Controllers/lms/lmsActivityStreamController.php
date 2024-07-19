@@ -49,7 +49,7 @@ class lmsActivityStreamController extends Controller
         $res['upcoming'] = $this->upcomingActivity($request);
         $res['today'] = $this->todayActivity($request);
         $res['recent'] = $this->recentActivity($request);
-
+        $res['checkList'] = DB::table('task')->where('TASK_ALLOCATED',session()->get('user_id'))->where('task_type','=','Daily Task')->where('TASK_DATE',date('Y-m-d'))->get()->toArray();
         // echo "<pre>";print_r($res);exit;
         return is_mobile($type, 'lms/newActivityStream', $res, "view");
     }

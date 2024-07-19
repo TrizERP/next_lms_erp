@@ -829,12 +829,12 @@ class HrmsController extends Controller
     public function departmentAttendanceReport(Request $request){
         $type = $request->type;
         $res = session()->get('data');
-
+        $sub_institute_id = session()->get('sub_institute_id');
         $start_date = now()->startOfMonth();
         $res['start_date'] = $start_date->format('Y-m-d');
         $res['end_date'] = now();
 
-        $res['department'] = DB::table('hrms_departments')->where('status',1)->whereNull('deleted_at')->pluck('department','id');
+        $res['department'] = DB::table('hrms_departments')->where('sub_institute_id',$sub_institute_id)->where('status',1)->whereNull('deleted_at')->pluck('department','id');
       
         return is_mobile($type, "HRMS/hrms_attendance_report/departmentwiseReport", $res, "view");
     }
@@ -1005,7 +1005,7 @@ class HrmsController extends Controller
             $join->on('u.id','=','ha.user_id')->where(['u.sub_institute_id'=>$sub_institute_id,'u.status'=>1]);
         })
         ->leftJoin('hrms_departments as hd',function($join) {
-            $join->on('hd.id','=','u.department_id')->where('hd.status',1);
+            $join->on('hd.id','=','u.department_id')->where('hd.status',1)->where('hd.sub_institute_id',$sub_institute_id);
         })
         ->where(['ha.sub_institute_id'=>$sub_institute_id,'ha.status'=>1])
         ->whereBetween('day',[$from_date_formatted,$to_date_formatted])
@@ -1092,8 +1092,8 @@ class HrmsController extends Controller
             $empHolidays[$value->department][$value->from_date][] = (array) $value;
         }
        
-        $getUsers = DB::table('tbluser as u')->leftJoin('hrms_departments as hd',function($join) {
-                $join->on('hd.id','=','u.department_id')->where('hd.status',1);
+        $getUsers = DB::table('tbluser as u')->leftJoin('hrms_departments as hd',function($join) use($sub_institute_id) {
+                $join->on('hd.id','=','u.department_id')->where('hd.status',1)->where('hd.sub_institute_id',$sub_institute_id);
             })
             ->selectRaw("u.*,CONCAT_WS(' ',COALESCE(u.first_name,'-'),COALESCE(u.middle_name,'-'),COALESCE(u.last_name,'-')) AS full_name,COALESCE(hd.department,'-') AS depName")
             ->where(['u.sub_institute_id'=>$sub_institute_id,'u.status'=>1])

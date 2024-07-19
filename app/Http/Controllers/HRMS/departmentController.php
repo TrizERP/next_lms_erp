@@ -14,14 +14,14 @@ class departmentController extends Controller
         $type = $request->input('type');
         $sub_institute_id = session()->get('sub_institute_id');
 
-        $departmentData = DB::table('hrms_departments_mapping as hdm')
+        $departmentData = DB::table('hrms_departments as hdm')
         ->LeftJoin('tbluser as u',function($query) use($sub_institute_id){
             $query->on('u.department_id','=','hdm.id')->where('u.sub_institute_id',$sub_institute_id);
         })
         ->select('hdm.*',DB::raw('(CASE WHEN hdm.parent_id=0 THEN "parent" ELSE "child" END) as depType'),
         DB::raw('COUNT(u.id) as total_emp'))
         ->where('hdm.status',1)
-        ->whereIn('hdm.sub_institute_id',[0,$sub_institute_id])
+        ->where('hdm.sub_institute_id',$sub_institute_id)
         ->orderBy('hdm.sub_institute_id','DESC')
         ->orderBy('hdm.id','DESC')
         ->groupBy('hdm.id')
@@ -47,40 +47,40 @@ class departmentController extends Controller
         $sub_institute_id = session()->get('sub_institute_id');
         $res = session()->get('data');
 
-        $res['departmentList'] = DB::table('hrms_departments_mapping')->where('status',1)->where('parent_id',0)->whereIn('sub_institute_id',[0,$sub_institute_id])->get()->toArray();
+        $res['departmentList'] = DB::table('hrms_departments')->where('status',1)->where('parent_id',0)->where('sub_institute_id',$sub_institute_id)->get()->toArray();
 
-        $res['userDepartmentList'] = DB::table('hrms_departments_mapping as sub')
+        $res['userDepartmentList'] = DB::table('hrms_departments as sub')
                 ->select(
                     'sub.*',
-                    DB::Raw('IFNULL((select count(DISTINCT id) from hrms_departments_mapping where parent_id = sub.id),"-") as sub_dep'),
+                    DB::Raw('IFNULL((select count(DISTINCT id) from hrms_departments where parent_id = sub.id),"-") as sub_dep'),
                     DB::Raw('IFNULL((select count(DISTINCT id) from tbluser where department_id = sub.id and sub_institute_id='.$sub_institute_id.' and status=1),"-") as total_emp'),
                     DB::Raw('IFNULL((select group_concat(DISTINCT id) from tbluser where department_id = sub.id and sub_institute_id='.$sub_institute_id.' and status=1),"-") as emp_ids')
                 )
                 ->where('sub.status', 1)
                 ->where('sub.parent_id', '=', 0)
-                ->whereIn('sub.sub_institute_id', [0, $sub_institute_id])
+                ->where('sub.sub_institute_id', $sub_institute_id)
                 ->groupBy('sub.id')
                 ->get()
                 ->toArray();
         // echo "<pre>";print_r($res['userDepartmentList']);exit;
-        $res['SubDepartmentList'] = DB::table('hrms_departments_mapping as sub')
+        $res['SubDepartmentList'] = DB::table('hrms_departments as sub')
         ->select(
             'sub.*',
-            DB::raw('(CASE WHEN sub.parent_id!=0 THEN (SELECT department FROM hrms_departments_mapping WHERE id = sub.parent_id) ELSE "-" END) as mainDepartment'),
-            DB::raw('(CASE WHEN sub.parent_id=0 THEN (SELECT count(id) FROM hrms_departments_mapping WHERE parent_id = sub.id group by parent_id) ELSE "0" END) total_subDep'),
+            DB::raw('(CASE WHEN sub.parent_id!=0 THEN (SELECT department FROM hrms_departments WHERE id = sub.parent_id) ELSE "-" END) as mainDepartment'),
+            DB::raw('(CASE WHEN sub.parent_id=0 THEN (SELECT count(id) FROM hrms_departments WHERE parent_id = sub.id group by parent_id) ELSE "0" END) total_subDep'),
             DB::Raw('IFNULL((select count(DISTINCT id) from tbluser where department_id = sub.id and sub_institute_id='.$sub_institute_id.' and status=1),"-") as total_emp'),
             DB::Raw('IFNULL((select group_concat(DISTINCT id) from tbluser where department_id = sub.id and sub_institute_id='.$sub_institute_id.' and status=1),"-") as emp_ids')
         )
         ->where('sub.status', 1)
         // ->where('sub.parent_id', '!=', 0)
-        ->whereIn('sub.sub_institute_id', [0, $sub_institute_id])
+        ->where('sub.sub_institute_id', $sub_institute_id)
         ->groupBy('sub.id')
         ->get()
         ->toArray();
 
         $res['employeesList'] =DB::table('tbluser as u')
         ->join('tbluserprofilemaster as upm','upm.id','=','u.user_profile_id')
-        ->leftJoin('hrms_departments_mapping as dep','u.department_id', '=', 'dep.id')
+        ->leftJoin('hrms_departments as dep','u.department_id', '=', 'dep.id')
         ->select(
             'u.id as emp_id','u.employee_no','u.gender','u.image',DB::Raw('CONCAT_WS(" ",COALESCE(u.first_name),COALESCE(u.middle_name),COALESCE(u.last_name)) as emp_name'),
             'upm.name as user_role',DB::Raw('IFNULL(dep.department,"-") as emp_department')
@@ -108,14 +108,14 @@ class departmentController extends Controller
 
         if($request->has('parentDiv') && $request->parentDiv!=''){
             $parent_id = $request->parentDiv;
-            $check = DB::table('hrms_departments_mapping')->where(['department'=>$department_name,'parent_id'=>$parent_id])->get()->toArray();
+            $check = DB::table('hrms_departments')->where(['department'=>$department_name,'parent_id'=>$parent_id])->get()->toArray();
         }else{
-            $check = DB::table('hrms_departments_mapping')->where(['department'=>$department_name,'parent_id'=>$parent_id])->get()->toArray();
+            $check = DB::table('hrms_departments')->where(['department'=>$department_name,'parent_id'=>$parent_id])->get()->toArray();
         }
 
         if(empty($check)){
             $i=1;
-            $insert = DB::table('hrms_departments_mapping')->insert([
+            $insert = DB::table('hrms_departments')->insert([
                 'department'=>$department_name,
                 'parent_id'=>$parent_id,
                 'tasks'=>$task,
@@ -151,7 +151,7 @@ class departmentController extends Controller
             $parent_id = $request->parentDiv;
         }
 
-        $update = DB::table('hrms_departments_mapping')->where('id',$id)->Update([
+        $update = DB::table('hrms_departments')->where('id',$id)->Update([
                 'department'=>$department_name,
                 'parent_id'=>$parent_id,
                 'tasks'=>$task,
@@ -176,7 +176,7 @@ class departmentController extends Controller
         $type = $request->input('type');
         $sub_institute_id = session()->get('sub_institute_id');
 
-        $delete = DB::table('hrms_departments_mapping')->where('id',$id)->delete();
+        $delete = DB::table('hrms_departments')->where('id',$id)->delete();
 
         if($delete){
             $res['status_code']=1;
@@ -201,9 +201,9 @@ class departmentController extends Controller
         $sub_institute_id = session()->get('sub_institute_id');
         $depIds = $request->depId;
 
-         return DB::table('hrms_departments_mapping')
+         return DB::table('hrms_departments')
         ->whereRaw('parent_id in ('.$depIds.')')
-        ->whereIn('sub_institute_id',[0,$sub_institute_id])
+        ->where('sub_institute_id',$sub_institute_id)
         ->groupBy('id')
         ->get()
         ->toArray();

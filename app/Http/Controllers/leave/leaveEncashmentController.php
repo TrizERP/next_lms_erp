@@ -29,7 +29,7 @@ class leaveEncashmentController extends Controller
             // get emp with added salary structure 
             $empSalaryDetails = DB::table('tbluser as u')
             ->join('hrms_departments as hd',function($join){
-                $join->on('hd.id','=','u.department_id');
+                $join->on('hd.id','=','u.department_id')->where('hd.sub_institute_id',$sub_institute_id);
             })
             ->join('employee_salary_structures as ess',function($join) use($syear){
                 $join->on('ess.employee_id','=','u.id')->where('ess.year',$syear);

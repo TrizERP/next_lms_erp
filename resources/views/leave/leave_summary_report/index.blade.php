@@ -178,7 +178,7 @@
                                         </td>
                                         <td>
                                             @php
-                                                $total_remain = ($total_op - $total_taken);
+                                                $total_remain = ($total_op - (int) $total_taken);
                                             @endphp
 
                                             {{ $total_remain }}

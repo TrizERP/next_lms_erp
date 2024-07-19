@@ -61,9 +61,14 @@
             <div class="card">
                 <div class="row">
                   
-                    <div class="col-lg-3 col-sm-3 col-xs-3">
+                    <!-- <div class="col-lg-3 col-sm-3 col-xs-3">
                         <a href="{{ route('task.create') }}" class="btn btn-info add-new"><i class="fa fa-plus"></i> Add New Tasks</a>
+                    </div> -->
+
+                    <div class="col-lg-3 col-sm-3 col-xs-3">
+                        <a class="btn btn-info add-new" data-toggle="modal" data-target="#exampleModal">Check List</a>
                     </div>
+
                     <br><br><br>
                     <div class="col-lg-12 col-sm-12 col-xs-12">
                     <div class="table-responsive">
@@ -80,7 +85,8 @@
                                     <th>Date</th>
                                     <th>Allocator</th>
                                     <th>Allocated To</th>
-                                    <th>Manage By</th>
+                                    <th>Observation By</th>
+                                    <th>Observation Points</th>
                                     <th>Reply</th>
                                     <th>Status</th>
                                     <th>Approved By</th>
@@ -107,6 +113,7 @@
                                     <td>{{$value->ALLOCATOR}}</td>
                                     <td>{{$value->ALLOCATED_TO}}</td>
                                     <td>{{$value->manageby}}</td>
+                                    <td>{{$value->observation_point}}</td>
                                     <td>{{$value->reply}}</td>
                                     <td>{{$value->STATUS}}</td>
                                     <td>@if($value->approved_by == "") - @else {{$value->approved_by}} @endif</td>
@@ -130,9 +137,7 @@
                                 @endforeach
 							@endif
 
-
                             </tbody>
-
                         </table>
                     </div>
                     </div>
@@ -140,6 +145,42 @@
                 </div>
             </div>
         </div>    
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLabel">Today's Check List</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Sr No</th>
+                    <th>Task</th>
+                    <th>Status</th>
+                    <th class="text-left">Reply</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($data['checkList'] as $k => $value)
+                <tr>
+                    <td>{{$k+1}}</td>
+                    <td>{{$value->TASK_TITLE}}</td>
+                    <td>{{$value->STATUS}}</td>
+                    <td>{{$value->reply}}</td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 </div>
 
 @include('includes.footerJs')

@@ -49,7 +49,9 @@ class ApplyLeaveController extends Controller
             $res['leaveHistory'] = DB::table('hrms_emp_leaves as hel')->selectRaw("hel.*, hlt.leave_type as leave_type_name")
             ->join('hrms_leave_types as hlt', 'hlt.id', '=', 'hel.leave_type_id')
             ->where('hel.user_id', $user_id)
-            ->whereYear('hel.from_date', $syear)
+            // ->whereYear('hel.from_date', $syear)
+            ->where('hel.from_date','>=',$syear.'-04-01')
+            ->where('hel.to_date','<=',($syear+1).'-03-31')
             ->orderBy('hel.id','DESC')
             ->get()->toArray();
 

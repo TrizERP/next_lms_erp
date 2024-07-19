@@ -8,16 +8,11 @@
             </div>
         </div>       
         <div class="card">            
-           
-        <center>            
-            <ul class="nav nav-tabs tab-title mb-4">
-                <li class="nav-item"><a href="#section-linemove-1" class="nav-link active" aria-selected="true" data-toggle="tab"><span>Institute Details</span></a></li>
-                <li class="nav-item"><a href="#section-linemove-2" class="nav-link" aria-selected="false" data-toggle="tab"><span>Add Departments</span></a></li>
-                <li class="nav-item"><a href="#section-linemove-3" class="nav-link" aria-selected="false" data-toggle="tab"><span>School Handbook</span></a></li>
-                <li class="nav-item"><a href="#section-linemove-4" class="nav-link" aria-selected="false" data-toggle="tab"><span>Organization Chart</span></a></li>
-                <li class="nav-item"><a href="#section-linemove-5" class="nav-link" aria-selected="false" data-toggle="tab"><span>Parent Feedback</span></a></li>
-            </ul> 
-        </center>
+<style>
+    .inst-nav{
+        margin-bottom: 0px !important;
+    }
+</style>
             @if ($sessionData = Session::get('data')) 
                 @if($sessionData['status_code'] == 1)
                     <div class="alert alert-success alert-block">
@@ -28,6 +23,16 @@
                         <strong>{{ $sessionData['message'] }}</strong>
                     </div>
             @endif
+        <center>            
+            <ul class="nav nav-tabs tab-title mb-4 inst-nav">
+                <li class="nav-item"><a href="#section-linemove-1" class="nav-link active" aria-selected="true" data-toggle="tab"><span>Institute Details</span></a></li>
+                <li class="nav-item"><a href="#section-linemove-2" class="nav-link" aria-selected="false" data-toggle="tab"><span>Add Departments</span></a></li>
+                <li class="nav-item"><a href="#section-linemove-3" class="nav-link" aria-selected="false" data-toggle="tab"><span>School Handbook</span></a></li>
+                <li class="nav-item"><a href="#section-linemove-4" class="nav-link" aria-selected="false" data-toggle="tab"><span>Organization Chart</span></a></li>
+                <li class="nav-item"><a href="#section-linemove-5" class="nav-link" aria-selected="false" data-toggle="tab"><span>Parent Feedback</span></a></li>
+            </ul> 
+        </center>
+
             <!-- Start tabs  -->
             <div class="tab-content">
                 <!-- tab 1  -->
