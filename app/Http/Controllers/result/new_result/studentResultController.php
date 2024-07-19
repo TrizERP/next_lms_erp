@@ -3743,7 +3743,7 @@ while ($current_date <= $post_end_date) {
         $co_scholastic .= '</tbody></table></div></div>';
         $other_table = '';
         // get other tag data
-        if($academic_type=="primary"){
+        if($academic_type=="primary" && !empty($criteria_data)){
         $other_table = '<div style="display:flex;flex-wrap:wrap"  class="co_scho_hills">
             <div style="width:50%;">
             <table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" cellpadding="0" border="1">
