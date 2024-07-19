@@ -278,11 +278,7 @@
 								@else
 								<td></td>
 								@endif
-								@if($session_year != $receipt_date)
-									<td></td>
-								@else
-									<td></td>
-								@endif
+								<td></td>
 								<td></td>
 								<td></td>
 								<td>{{$amount}}</td>

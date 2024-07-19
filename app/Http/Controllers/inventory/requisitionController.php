@@ -98,7 +98,7 @@ class requisitionController extends Controller
 
         $item_setting_data_value = '';
 
-         if (isset($item_setting_data[0]['ITEM_SETTING_FOR_REQUISITION']) && $item_setting_data[0]['ITEM_SETTING_FOR_REQUISITION'] != '') {
+        if (isset($item_setting_data[0]['ITEM_SETTING_FOR_REQUISITION']) && $item_setting_data[0]['ITEM_SETTING_FOR_REQUISITION'] != '') {
             $item_setting_data_value = $item_setting_data[0]['ITEM_SETTING_FOR_REQUISITION'];
         }else {
             $res['status_code'] = "0";

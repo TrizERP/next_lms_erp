@@ -503,11 +503,12 @@
                     },
 					//--> send id of checked checkbox on other page
 					success: function(data) {
+                        // console.log(data);
                         $("#fees_head").empty();
-                    $("#fees_head").html(data);
-                    tot = $("#totalVal").val();
-                    // $("#totalDiscount").val(0);
-                    $("#pay_amount").val(tot);//grandTotal
+                        $("#fees_head").html(data);
+                        tot = $("#totalVal").val();
+                        // $("#totalDiscount").val(0);
+                        $("#pay_amount").val(tot);//grandTotal
 
                     
                     calculateTotal();
@@ -523,6 +524,7 @@
                         @if(session()->get('sub_institute_id') == 257)
 							var k = 0;
 							var checkedTitle = new Array();
+                            var currentMonth = "{{date('n')}}{{date('Y')}}";
 
 								$('.allField1').each(function() {
 									checkedTitle[k] = $(this).attr('id');
@@ -535,15 +537,19 @@
 									fineZero(0);
 								}
 								// advance fees 
-								else if(checkedMonths.length > 0){
+								else if(checkedMonths.length > 0 && !checkedMonths.includes(currentMonth)){
 									lastMonth = checkedMonths[checkedMonths.length - 1];
-									var currentMonth = "{{date('n')}}{{date('Y')}}";
 									
 									let greaterMonths = checkedMonths.filter(month => month > currentMonth);
-
-									if (!greaterMonths.includes(currentMonth) && greaterMonths.length > 0) {
+									if (greaterMonths.length > 0) {
 									    fineZero(0);
+                                        // console.log('no current month');
 									}
+                                    else{
+                                        var charge = $('#hidden_cheque_return_charges2').val();
+                                        var fine = parseFloat(charge);
+                                        fineZero(fine);
+								    }
 								}
 								else{
 									var charge = $('#hidden_cheque_return_charges2').val();
@@ -552,14 +558,13 @@
 								}
                                 CalDis();
 							@endif
-                            fin = parseFloat($("#totalFin").val());
-                            cheque_return_charges = $("#hidden_cheque_return_charges").val();
-                            sum = fin + parseFloat(cheque_return_charges);
-                            if(isNaN(sum)){
-                                $("#cheque_return_charges").val(0);                        
-                            }else{
-                                $("#cheque_return_charges").val(sum);
-                            }
+
+                            cheque_return_charges = parseFloat($("#hidden_cheque_return_charges").val());
+                              
+                            // 03-07-2024 
+                            var totPay = parseFloat($('#pay_amount').val()); 
+                            var payFin = (totPay+cheque_return_charges);
+                            $('#pay_amount').val(payFin);                 
                     }
 				});
 
@@ -578,7 +583,7 @@
                         lastMonth = checkedMonths[checkedMonths.length - 1];
                         // get months greater then equal to current month
                         let greaterMonthsdis = checkedMonths.filter(month => month >= currentMonth);
-                        console.log(greaterMonthsdis);
+                        // console.log(greaterMonthsdis);
                         // if(lastMonth >= currentMonth && checkedMonths.length>=3){
                         if (lastMonth >= currentMonth && greaterMonthsdis.length >= 3) {
                             var totalVal = parseFloat($('#totalVal').val());
