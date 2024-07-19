@@ -643,20 +643,24 @@ class AJAXController extends Controller
                 $search_ids2[] = $id;
             }
         }
-        $other_bk_off_month_wise2 = OtherBreackOfMonth($stu_arr,$last_syear); //for previous year
 
         $search_ids = $months;
         $reg_bk_off = FeeBreackoff($stu_arr); // for current year
         $other_bk_off = OtherBreackOff($stu_arr, $search_ids); // for current year
         $other_bk_off_month_wise = OtherBreackOfMonth($stu_arr);// for current year
         $year_arr = FeeMonthId();// for current year
-
-        $reg_bk_off2 = FeeBreackoff($stu_arr,'',$last_syear);
-        $other_bk_off2 = OtherBreackOff($stu_arr, $search_ids2,'','','',$last_syear);
-
-
-        $head_wise_fees = FeeBreakoffHeadWise($stu_arr); //for previous year
-        $head_wise_fees2 = FeeBreakoffHeadWise($stu_arr,'','','',$last_syear);//for previous year
+        $head_wise_fees = FeeBreakoffHeadWise($stu_arr); //for current year
+//   if($student_id==95642){
+//             echo "<pre>";print_r($head_wise_fees);exit;
+//         }
+        
+        $other_bk_off_month_wise2 = $reg_bk_off2 = $other_bk_off2 = $head_wise_fees2 = array();
+        if(session()->get('sub_institute_id')!=48 && session()->get('sub_institute_id')!=61){
+            $other_bk_off_month_wise2 = OtherBreackOfMonth($stu_arr,$last_syear); //for previous year
+            $reg_bk_off2 = FeeBreackoff($stu_arr,'',$last_syear); //for previous year
+            $other_bk_off2 = OtherBreackOff($stu_arr, $search_ids2,'','','',$last_syear); //for previous year
+            $head_wise_fees2 = FeeBreakoffHeadWise($stu_arr,'','','',$last_syear);//for previous year
+        }
      
         $till_now_breckoff = $till_now_breckoff2 = array();
         foreach ($search_ids as $id => $val) {
@@ -691,7 +695,7 @@ class AJAXController extends Controller
                         $reg_bk_month_wise[$arr['title']] = 0;
                     }
                     // 03-06-24 by uma for institute_id =248
-                    if(isset($arr['disc_amount']) && $arr['disc_amount']>0){
+                    if(isset($arr['disc_amount']) && $arr['disc_amount']>0 && $arr['amount']>=$arr['disc_amount']){
                         $reg_bk_month_wise[$arr['title']] += ($arr['amount']-$arr['disc_amount']); 
                     }else{
                         $reg_bk_month_wise[$arr['title']] += ($arr['amount']);
@@ -700,17 +704,23 @@ class AJAXController extends Controller
                 }
             }
         }
-        
+      
         // return $final_bk_name;exit;
         foreach ($till_now_breckoff2 as $month_id => $fees_detail) {
             foreach ($fees_detail as $head_name => $arr) {
                 if (!isset($reg_bk_month_wise2[$arr['title']])) {
                     $reg_bk_month_wise2[$arr['title']] = 0;
                 }
-                $reg_bk_month_wise2[$arr['title']] += $arr['amount'];
+                if(isset($arr['disc_amount']) && $arr['disc_amount']>0 && $arr['amount']>=$arr['disc_amount']){
+                    $reg_bk_month_wise2[$arr['title']] += ($arr['amount']-$arr['disc_amount']); 
+                }else{
+                    $reg_bk_month_wise2[$arr['title']] += ($arr['amount']);
+                }
+                // $reg_bk_month_wise2[$arr['title']] += $arr['amount'];
                 $final_bk_name[$arr['title']] = $head_name;
             }
         }
+        
         // echo "<pre>";print_r($other_bk_off);exit;
 
         $full_bk = array_merge($reg_bk_month_wise, $other_bk_off);
@@ -733,7 +743,7 @@ class AJAXController extends Controller
         
         $previous = array_sum($full_bk2);
 
-        if ($previous > 0 && session()->get('sub_institute_id')!=48 && session()->get('sub_institute_id')!=61) {
+        if ($previous > 0) {
         // if ($previous > 0) {            
             $full_bk['Previous Fees'] = $previous;
             $final_bk_name["Previous Fees"] = "previous_fees";
@@ -942,12 +952,12 @@ class AJAXController extends Controller
         foreach ($other_fee_title as $id => $arr) {
             foreach ($full_bk as $title => $val) {
                 if ($title == $arr->display_name) {
-                    $final_bk_name[$title] = $arr->other_fee_id;
+                    $final_bk_name[$title] = ($arr->other_fee_id>0) ? $arr->other_fee_id : 0;
                 }
             }
         }
 
-        $full_bk["Total"] = $total;
+        $full_bk["Total"] = ($total>0) ? $total : 0;
 
         return $full_bk;
     }
@@ -1475,6 +1485,11 @@ class AJAXController extends Controller
                 return json_encode($message,JSON_PRETTY_PRINT);
         }
         if ($fees_receipt_html != '') {
+            if (is_array($fees_receipt_html) == 1 && $sub_institute_id==49) {
+             $print = 2;
+            } else {
+             $print = 1;
+            }
             $dom = '<!DOCTYPE html>
                     <html>
                         <head>
@@ -1486,7 +1501,7 @@ class AJAXController extends Controller
             $dom .= $fees_receipt_css;
             $dom .= '</head>
                         <body>';
-            $dom .= $this->get_PageSetup($paper_size);
+            $dom .= $this->get_PageSetup($paper_size,$print);
 
             $dom .= '</body>
                 </html>';
@@ -1861,10 +1876,15 @@ class AJAXController extends Controller
         return $fees_receipt_css;
     }
 
-    public function get_PageSetup($paper_size)
+    public function get_PageSetup($paper_size,$print='')
     {
         $sub_institute_id = session()->get('sub_institute_id');
-        $four_res = [239];
+        if($print==2){
+            $four_res = [239,49];
+        }else{
+            $four_res = [239];
+        }
+        
         $syear = session()->get('syear');
 
         $extra_html = '';

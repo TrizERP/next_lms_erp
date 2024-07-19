@@ -101,9 +101,9 @@
                         <tr>
                             <th>Sr No.</th>
                             <th>Date</th>
+                            <th>Emp No</th>
                             <th>Department</th>
                             <th>Employee Name</th>
-                            <th>Emp No</th>
                             <th>In Time</th>
                             <th>Out Time</th>
                             <th class="text-left">Duration</th>

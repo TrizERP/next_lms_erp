@@ -238,4 +238,7 @@ Route::group(['prefix' => 'bazar', 'middleware' => ['session', 'menu', 'logRoute
 Route::get('/upcoming', [lmsActivityStreamController::class, 'upcomingActivity'])->name('upcoming');
 Route::get('/today', [lmsActivityStreamController::class, 'todayActivity'])->name('today');
 Route::get('/recent', [lmsActivityStreamController::class, 'recentActivity'])->name('recent');
-
+Route::get('careerExplore', [lmsCounsellingController::class, 'careerExplore']);
+Route::get('careerExploreResult', [lmsCounsellingController::class, 'careerExploreResult']);
+Route::get('careerCluster', [lmsCounsellingController::class, 'careerCluster']);
+Route::get('allOccupation', [lmsCounsellingController::class, 'allOccupation']);

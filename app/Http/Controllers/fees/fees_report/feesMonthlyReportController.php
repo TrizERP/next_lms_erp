@@ -83,6 +83,7 @@ class feesMonthlyReportController extends Controller
                     $other_columns .= "NULL as total_" . $columnAlias . ",";
                 }
                 $heading_arr[$val['fees_title']] = $val['display_name'];
+            }
                 
                 if (!$discountAdded) {
                     $fees_columns .="fees_collect.fees_discount as total_discount,";
@@ -98,18 +99,17 @@ class feesMonthlyReportController extends Controller
                 }
 
                 $columns .= "IFNULL(SUM(total_discount),0) AS total_discount,";
-                $columns .= "IFNULL(SUM(total_fine),0) AS total_fine,";                
-            }
+                $columns .= "IFNULL(SUM(total_fine),0) AS total_fine,";
 
         $extra_query = "";
         if ($grade != "") {
-            $extra_query = " AND s.grade_id = '" . $grade . "'";
+            $extra_query .= " AND s.grade_id = '" . $grade . "'";
         }
         if ($standard != "") {
-            $extra_query = " AND s.standard_id = '" . $standard . "'";
+            $extra_query .= " AND s.standard_id = '" . $standard . "'";
         }
         if ($division != "") {
-            $extra_query = " AND s.section_id = '" . $division . "'";
+            $extra_query .= " AND s.section_id = '" . $division . "'";
         }
 
         $final_data = array();
@@ -138,26 +138,52 @@ class feesMonthlyReportController extends Controller
             $fees_columns .= "fees_collect.receiptdate as fees_date";
             $other_columns .= "fees_paid_other.receiptdate as fees_date";
             $std = $_REQUEST['standard'] ?? '';
-        $data = DB::table(function ($query) use($columns,$fees_columns,$other_columns,$sub_institute_id,$syear,$from_date,$to_date,$std) {
+
+        $data = DB::table(function ($query) use ($columns, $fees_columns, $other_columns, $sub_institute_id, $syear, $from_date, $to_date, $grade, $standard, $division) {
             $query->selectRaw($fees_columns)
-                ->from('fees_collect')
-                ->where('sub_institute_id', $sub_institute_id)
-                ->where('syear', $syear)
-                ->whereBetween('receiptdate', [$from_date,$to_date])
-                ->where('is_deleted', 'N')
-                ->when($std,function($query) use($std){
-                    $query->where('standard_id',$std);
+                ->join('tblstudent_enrollment as s', function ($join) {
+                    $join->on('s.sub_institute_id', '=', 'fees_collect.sub_institute_id')
+                         ->on('fees_collect.student_id', '=', 's.student_id')
+                         ->on('fees_collect.syear', '=', 's.syear');
                 })
-                ->unionAll(function ($query)  use($columns,$fees_columns,$other_columns,$sub_institute_id,$syear,$from_date,$to_date,$std){
+                ->from('fees_collect')
+                ->where('fees_collect.sub_institute_id', $sub_institute_id)
+                ->where('fees_collect.syear', $syear)
+                ->whereBetween('fees_collect.receiptdate', [$from_date, $to_date])
+                ->where('fees_collect.is_deleted', 'N')
+                ->when($grade, function ($query) use ($grade) {
+                    $query->where('s.grade_id', $grade);
+                })
+                ->when($standard, function ($query) use ($standard) {
+                    $query->where('s.standard_id', $standard);
+                })
+                ->when($division, function ($query) use ($division) {
+                    $query->where('s.section_id', $division);
+                })
+                ->unionAll(function ($query) use ($columns, $fees_columns, $other_columns, $sub_institute_id, $syear, $from_date, $to_date, $grade, $standard, $division) {
                     $query->selectRaw($other_columns)
+                        ->join('tblstudent_enrollment as s', function ($join) {
+                            $join->on('s.sub_institute_id', '=', 'fees_paid_other.sub_institute_id')
+                                 ->on('fees_paid_other.student_id', '=', 's.student_id')
+                                 ->on('fees_paid_other.syear', '=', 's.syear');
+                        })
                         ->from('fees_paid_other')
-                        ->where('sub_institute_id', $sub_institute_id)
-                        ->where('syear', $syear)
-                        ->whereBetween('receiptdate',[$from_date,$to_date])
-                        ->where('is_deleted', 'N');
+                        ->where('fees_paid_other.sub_institute_id', $sub_institute_id)
+                        ->where('fees_paid_other.syear', $syear)
+                        ->whereBetween('fees_paid_other.receiptdate', [$from_date, $to_date])
+                        ->where('fees_paid_other.is_deleted', 'N')
+                        ->when($grade, function ($query) use ($grade) {
+                            $query->where('s.grade_id', $grade);
+                        })
+                        ->when($standard, function ($query) use ($standard) {
+                            $query->where('s.standard_id', $standard);
+                        })
+                        ->when($division, function ($query) use ($division) {
+                            $query->where('s.section_id', $division);
+                        });
                 });
         })
-        ->selectRaw( $columns .' fees_date')
+        ->selectRaw($columns . 'fees_date')
         ->groupBy('fees_date');
 
         // if ($grade != "") {
