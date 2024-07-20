@@ -173,6 +173,9 @@ class studentResultController extends Controller
             $html_content = str_replace(htmlspecialchars("<<result_right_logo>>"), $image_path_2, $html_content);
         }
         $display_year = $syear . "-" . ($syear + 1);
+        if($sub_institute_id==254){
+            $display_year =  $syear . "-" . substr($syear + 1,2);
+        }
 
         $student_image_path1 = "/storage/student/" . $value['image'];
         $student_image_path = '<img class="logo" src="' . $student_image_path1 . '" alt="Student Logo" style="height: ' . $photo_height . ';'.$photo_width.'">';
@@ -4405,7 +4408,7 @@ while ($current_date <= $post_end_date) {
                                     }
                                     else
                                     {
-                                        $table .= '<td style="text-align:center;font-size:medium !important;background:white !important;color:black;width:10%;"></td>'; 
+                                        $table .= '<td style="text-align:center;font-size:medium !important;background:white !important;color:black;width:10%;">N/A</td>'; 
                                     }
                                 }
                             }
