@@ -242,3 +242,4 @@ Route::get('careerExplore', [lmsCounsellingController::class, 'careerExplore']);
 Route::get('careerExploreResult', [lmsCounsellingController::class, 'careerExploreResult']);
 Route::get('careerCluster', [lmsCounsellingController::class, 'careerCluster']);
 Route::get('allOccupation', [lmsCounsellingController::class, 'allOccupation']);
+Route::get('OccupationDetails', [lmsCounsellingController::class, 'OccupationDetails']);
