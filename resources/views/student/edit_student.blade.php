@@ -255,7 +255,7 @@ datalist {
                                             <label>From Institute: {{ $data['total_distance'] }} (As per Google Map)</label>
                                         </div>
                                         <div class="col-md-4 form-group">
-                                            <label>Pincode</label>
+                                            <label>Pincode <span style="color: red;">*</span></label>
                                             <input type="text" value="{{ $student_data->pincode }}" id='pincode' name="pincode" class="form-control">
                                         </div>
 

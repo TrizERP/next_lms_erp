@@ -95,15 +95,15 @@
                 <table id="example" class="table table-striped">
                     <thead>
                         <tr>
-                            <th>Sr No.</th>
+                            <th>Sr.</th>
                             <th>Roll No.</th>
-                            <th>{{ App\Helpers\get_string('uniqueid','request')}}</th>                            
+                            <!--<th>{{ App\Helpers\get_string('uniqueid','request')}}</th>-->
                             <th>{{ App\Helpers\get_string('grno','request')}}</th>
                             <th>{{ App\Helpers\get_string('studentname','request')}}</th>
                             <th>{{ App\Helpers\get_string('std/div','request')}}</th>
                             <th>Quota</th>
                             <th>Mobile No.</th>
-                            <th style="background-color:#7befef;">Transport Fees</th>
+                            <th style="background-color:#7befef;">Bus</th>
                             <th style="background-color:#7befef;">Regular</th>
                             <th style="background-color:#7befef;">Reg+Bus</th>
                             @foreach($data['fees_titles'] as $values)
@@ -131,7 +131,7 @@
                             <tr>
                                 <td>{{$j}}</td>
                                 <td>{{isset($fees_value['roll_no']) ? $fees_value['roll_no'] : ''}}</td>                                
-                                <td>{{isset($fees_value['uniqueid']) ? $fees_value['uniqueid'] : ''}}</td>                                
+                                <!--<td>{{isset($fees_value['uniqueid']) ? $fees_value['uniqueid'] : ''}}</td>-->
                                 <td>{{isset($fees_value['enrollment']) ? $fees_value['enrollment'] : ''}}</td>
                                 <td>{{isset($fees_value['name']) ? $fees_value['name'] : ''}}</td>
                                 <td>{{isset($fees_value['stddiv']) ? $fees_value['stddiv'] : ''}}</td>
@@ -213,7 +213,7 @@
                             <tr class="font-weight-bold">
                                 <td>{{$j++}}</td>
                                 <td></td>
-                                <td></td>
+                                <!--<td></td>-->
                                 <td></td>
                                 <td></td>
                                 <td></td>
