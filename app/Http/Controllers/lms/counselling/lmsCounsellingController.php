@@ -517,11 +517,12 @@ class lmsCounsellingController extends Controller
         $results = $query->orderBy('title')->get();
 
         // Return the JSON response
-        return response()->json($results);
+        return response()->json($results)
+                        ->header('Access-Control-Allow-Origin', '*');
     }
     public function OccupationDetails(Request $request)
     {
-        $onetSocCode = '11-1011.00';
+        $onetSocCode = $request->input('onetsoc_code');
 
         $data = [
             [
