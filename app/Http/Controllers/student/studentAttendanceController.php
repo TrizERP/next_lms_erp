@@ -412,13 +412,13 @@ class studentAttendanceController extends Controller
             ->where('s.sub_institute_id', $sub_institute_id)
             ->groupBy('se.standard_id', 'se.section_id');
 
-        if ($taken == 'no') {
-            $data = $data->havingNull('attendance_code');
-        } else {
-            $data = $data->havingNotNull('attendance_code');
-        }
-
-        $data = $data->orderBy('sm.sort_order', 'ASC')->get()->toArray();
+            if ($taken == 'no') {
+                $data = $data->havingNull('attendance_code');
+            } else if ($taken == 'yes'){
+                $data = $data->havingNotNull('attendance_code');
+            }
+    
+            $data = $data->orderBy('sm.sort_order', 'ASC')->orderBy('dm.id', 'ASC')->get()->toArray();
 
         $res['status_code'] = 1;
         $res['message'] = "Success";
