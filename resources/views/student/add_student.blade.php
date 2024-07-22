@@ -102,7 +102,7 @@
                             </div>
                             <div class="col-md-4 form-group text-left" style="display: none;">
                                 <label>Username<span style="color: red;">*</span></label>
-                                <input type="text" id='username' required name="username" class="form-control">
+                                <input type="text" id='username' value="-" name="username" class="form-control">
                             </div>
                             <div class="col-md-4 form-group text-left">
                                 <label>{{ App\Helpers\get_string('grno','request')}}<span style="color: red;">*</span></label>
