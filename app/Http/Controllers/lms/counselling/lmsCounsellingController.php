@@ -269,10 +269,15 @@ class lmsCounsellingController extends Controller
     }
     public function careerExplore()
     {
-        // Fetch data from the database
+        // Fetch data from the OnetContentModelReference table
         $elements = OnetContentModelReference::whereNotNull('level')
             ->orderBy('element_id')
             ->get();
+
+        // Fetch data from the onet_job_zone_reference table
+        $jobZones = DB::table('onet_job_zone_reference')
+        ->select('job_zone as element_id', 'name as element_name')
+        ->get();
 
         // Function to build the nested structure
         function buildTree($elements, $parent_id = '', $level = 1)
@@ -298,6 +303,25 @@ class lmsCounsellingController extends Controller
         // Build the tree structure starting with the top-level elements (level 1)
         $result = buildTree($elements);
 
+        // Build the required JSON structure for job zones
+        $jobZonesJson = [
+            'level' => 1,
+            'element_id' => '',
+            'element_name' => 'Job Zone',
+            'children' => []
+        ];
+
+        foreach ($jobZones as $jobZone) {
+            $jobZonesJson['children'][] = [
+                'level' => 2,
+                'element_id' => $jobZone->element_id,
+                'element_name' => $jobZone->element_name,
+            ];
+        }
+
+        // Append the job zones structure to the result array
+        $result[] = $jobZonesJson;
+
         // Return the final JSON response
         return response()->json($result);
     }
@@ -307,7 +331,8 @@ class lmsCounsellingController extends Controller
         $abilities = $request->input('abilities');
         $interests = $request->input('interests');
         $knowledge = $request->input('knowledge');
-        $skills = $request->input('skills');
+        $basic_skills = $request->input('basic_skills');
+        $cross_skills = $request->input('cross_skills');
         $work_styles = $request->input('work_styles');
         $work_values = $request->input('work_values');
         $job_zones = $request->input('job_zones');
@@ -356,14 +381,27 @@ class lmsCounsellingController extends Controller
             });
         }
 
-        if ($skills) {
-            $skillsArray = explode(',', $skills);
-            $query->join('onet_skills as s', function ($join) use ($skillsArray) {
-                $join->on('s.onetsoc_code', '=', 'od.onetsoc_code')
-                    ->where('s.scale_id', '=', 'LV')
-                    ->where(function ($query) use ($skillsArray) {
-                        foreach ($skillsArray as $skill) {
-                            $query->orWhere('s.element_id', 'LIKE', "$skill%");
+        if ($basic_skills) {
+            $basic_skillsArray = explode(',', $basic_skills);
+            $query->join('onet_skills as bs', function ($join) use ($basic_skillsArray) {
+                $join->on('bs.onetsoc_code', '=', 'od.onetsoc_code')
+                    ->where('bs.scale_id', '=', 'LV')
+                    ->where(function ($query) use ($basic_skillsArray) {
+                        foreach ($basic_skillsArray as $basic_skill) {
+                            $query->orWhere('bs.element_id', 'LIKE', "$basic_skill%");
+                        }
+                    });
+            });
+        }
+
+        if ($cross_skills) {
+            $cross_skillsArray = explode(',', $cross_skills);
+            $query->join('onet_skills as cs', function ($join) use ($cross_skillsArray) {
+                $join->on('cs.onetsoc_code', '=', 'od.onetsoc_code')
+                    ->where('cs.scale_id', '=', 'LV')
+                    ->where(function ($query) use ($cross_skillsArray) {
+                        foreach ($cross_skillsArray as $cross_skill) {
+                            $query->orWhere('cs.element_id', 'LIKE', "$cross_skill%");
                         }
                     });
             });
@@ -480,5 +518,377 @@ class lmsCounsellingController extends Controller
 
         // Return the JSON response
         return response()->json($results);
+    }
+    public function OccupationDetails(Request $request)
+    {
+        $onetSocCode = '11-1011.00';
+
+        $data = [
+            [
+                "level" => 1,
+                "main_id" => 1,
+                "main_title" => "Worker Characteristics",
+                "main_description" => "Enduring characteristics that may influence both performance and the capacity to acquire knowledge and skills required for effective work performance. Worker characteristics comprise enduring qualities of individuals that may influence how they approach tasks and how they acquire work-relevant knowledges and skills. Traditionally, analyzing abilities has been the most common technique for comparing jobs in terms of these worker characteristics. However, recent research supports the inclusion of other types of worker characteristics. In particular, interests, values, and work styles have received support in the organizational literature. Interests and values reflect preferences for work environments and outcomes. Work style variables represent typical procedural differences in the way work is performed.",
+                "children" => [
+                    $this->getAbilities($onetSocCode),
+                    $this->getInterests($onetSocCode),
+                    $this->getWorkvalues($onetSocCode),
+                    $this->getWorkstyles($onetSocCode)
+                ]
+            ],
+            [
+                "level" => 1,
+                "main_id" => 2,
+                "main_title" => "Worker Requirements",
+                "main_description" => "Worker Requirements...",
+                "children" => [
+                    $this->getKnowledge($onetSocCode),
+                    $this->getSkills($onetSocCode)
+                ]
+            ],
+            [
+                "level" => 1,
+                "main_id" => 3,
+                "main_title" => "Experience Requirements",
+                "main_description" => "Experience Requirements...",
+                "children" => [
+
+                    ]
+            ],
+            [
+                "level" => 1,
+                "main_id" => 4,
+                "main_title" => "Occupational Requirements",
+                "main_description" => "Occupational Requirements...",
+                "children" => [
+                    $this->getWorkactivities($onetSocCode),
+                    $this->getWorkcontext($onetSocCode)
+                ]
+            ],
+            [
+                "level" => 1,
+                "main_id" => 5,
+                "main_title" => "Work Force Characterstics",
+                "main_description" => "Work Force Characterstics...",
+                "children" => [
+                    
+                ]
+            ],
+            [
+                "level" => 1,
+                "main_id" => 6,
+                "main_title" => "Occupation-Specific Information",
+                "main_description" => "Occupation-Specific Information...",
+                "children" => [
+                    $this->getTasks($onetSocCode),
+                    $this->getTechskills($onetSocCode),
+                    $this->getToolsused($onetSocCode)
+                ]
+            ],
+            // Add other main categories similarly
+        ];
+
+        return json_encode($data, JSON_PRETTY_PRINT);
+    }
+
+    private function getAbilities($onetSocCode) {
+        $results = DB::select("
+            SELECT omr.element_name, omr.description, ROUND((100 * a.data_value / sr.maximum),0) AS percentage
+            FROM onet_content_model_reference omr
+            INNER JOIN onet_abilities a ON omr.element_id = a.element_id AND a.scale_id = 'LV'
+            INNER JOIN onet_scales_reference sr ON sr.scale_id = a.scale_id
+            WHERE a.onetsoc_code = ?
+            ORDER BY a.data_value DESC
+        ", [$onetSocCode]);
+    
+        $children = [];
+        foreach ($results as $result) {
+            $children[] = [
+                "level" => 3,
+                "element_name" => $result->element_name,
+                "description" => $result->description,
+                "percentage" => $result->percentage
+            ];
+        }
+    
+        return [
+            "level" => 2,
+            "sub_title" => "Abilities",
+            "sub_description" => "Enduring attributes of the individual that influence performance",
+            "children" => $children
+        ];
+    }
+    
+    private function getInterests($onetSocCode) {
+        $results = DB::select("
+            SELECT omr.element_name, omr.description, ROUND((100 * a.data_value / sr.maximum),0) AS percentage
+            FROM onet_content_model_reference omr
+            INNER JOIN onet_interests a ON omr.element_id = a.element_id AND a.scale_id = 'OI'
+            INNER JOIN onet_scales_reference sr ON sr.scale_id = a.scale_id
+            WHERE a.onetsoc_code = ?
+            ORDER BY a.data_value DESC
+        ", [$onetSocCode]);
+    
+        $children = [];
+        foreach ($results as $result) {
+            $children[] = [
+                "level" => 3,
+                "element_name" => $result->element_name,
+                "description" => $result->description,
+                "percentage" => $result->percentage
+            ];
+        }
+    
+        return [
+            "level" => 2,
+            "sub_title" => "Interests",
+            "sub_description" => "Preferences for work environments. Occupational Interest Profiles (OIPs) are compatible with Holland's (1997) model of personality types and work environments. Six interest categories are used to describe the work environment of occupations: Realistic, Investigative, Artistic, Social, Enterprising, and Conventional. An OIP consists of six numerical scores indicating how descriptive and characteristic each work environment (or interest area) is for an O*NET-SOC occupation. In addition, a high-point profile has been assigned indicating which interests are most characteristic of an O*NET-SOC occupation. A high-point profile consists of one to three interest codes, depending on how many interest categories meet a minimum degree of descriptiveness for the O*NET-SOC occupation.",
+            "children" => $children
+        ];
+    }
+    private function getWorkvalues($onetSocCode) {
+        $results = DB::select("
+            SELECT omr.element_name, omr.description, ROUND((100 * a.data_value / sr.maximum),0) AS percentage
+            FROM onet_content_model_reference omr
+            INNER JOIN onet_work_values a ON omr.element_id = a.element_id AND a.scale_id = 'EX'
+            INNER JOIN onet_scales_reference sr ON sr.scale_id = a.scale_id
+            WHERE a.onetsoc_code = ?
+            ORDER BY a.data_value DESC
+        ", [$onetSocCode]);
+    
+        $children = [];
+        foreach ($results as $result) {
+            $children[] = [
+                "level" => 3,
+                "element_name" => $result->element_name,
+                "description" => $result->description,
+                "percentage" => $result->percentage
+            ];
+        }
+    
+        return [
+            "level" => 2,
+            "sub_title" => "Work Values",
+            "sub_description" => "Occupational Reinforcer Patterns (ORPs) indicate which work values and needs are likely to be reinforced or satisfied by a particular O*NET-SOC occupation. The use of work values to describe occupations is based on the Theory of Work Adjustment (TWA) developed during the Work Adjustment Project at the University of Minnesota under Research Grants from the U.S. Department of Health, Education and Welfare (Dawis, R.V., England, G.W., & Lofquist, L.H., 1964; Dawis, R.V., & Lofquist, L.H., 1984). This theory proposes that job satisfaction is directly related to the degree to which a person's values and corresponding needs are satisfied by his or her work environment. The TWA identifies six work values each with a corresponding set of needs.",
+            "children" => $children
+        ];
+    }
+    
+    private function getWorkstyles($onetSocCode) {
+        $results = DB::select("
+            SELECT omr.element_name, omr.description, ROUND((100 * a.data_value / sr.maximum),0) AS percentage
+            FROM onet_content_model_reference omr
+            INNER JOIN onet_work_styles a ON omr.element_id = a.element_id AND a.scale_id = 'IM'
+            INNER JOIN onet_scales_reference sr ON sr.scale_id = a.scale_id
+            WHERE a.onetsoc_code = ?
+            ORDER BY a.data_value DESC
+        ", [$onetSocCode]);
+    
+        $children = [];
+        foreach ($results as $result) {
+            $children[] = [
+                "level" => 3,
+                "element_name" => $result->element_name,
+                "description" => $result->description,
+                "percentage" => $result->percentage
+            ];
+        }
+    
+        return [
+            "level" => 2,
+            "sub_title" => "Work Styles",
+            "sub_description" => "Personal characteristics that can affect how well someone performs a job.",
+            "children" => $children
+        ];
+    }
+    
+    private function getKnowledge($onetSocCode) {
+        $results = DB::select("
+            SELECT omr.element_name, omr.description, ROUND((100 * a.data_value / sr.maximum),0) AS percentage
+            FROM onet_content_model_reference omr
+            INNER JOIN onet_knowledge a ON omr.element_id = a.element_id AND a.scale_id = 'LV'
+            INNER JOIN onet_scales_reference sr ON sr.scale_id = a.scale_id
+            WHERE a.onetsoc_code = ?
+            ORDER BY a.data_value DESC
+        ", [$onetSocCode]);
+    
+        $children = [];
+        foreach ($results as $result) {
+            $children[] = [
+                "level" => 3,
+                "element_name" => $result->element_name,
+                "description" => $result->description,
+                "percentage" => $result->percentage
+            ];
+        }
+    
+        return [
+            "level" => 2,
+            "sub_title" => "Knowledge",
+            "sub_description" => "Organized sets of principles and facts applying in general domains",
+            "children" => $children
+        ];
+    }
+    private function getSkills($onetSocCode) {
+        $results = DB::select("
+            SELECT omr.element_name, omr.description, ROUND((100 * a.data_value / sr.maximum),0) AS percentage
+            FROM onet_content_model_reference omr
+            INNER JOIN onet_skills a ON omr.element_id = a.element_id AND a.scale_id = 'LV'
+            INNER JOIN onet_scales_reference sr ON sr.scale_id = a.scale_id
+            WHERE a.onetsoc_code = ?
+            ORDER BY a.data_value DESC
+        ", [$onetSocCode]);
+    
+        $children = [];
+        foreach ($results as $result) {
+            $children[] = [
+                "level" => 3,
+                "element_name" => $result->element_name,
+                "description" => $result->description,
+                "percentage" => $result->percentage
+            ];
+        }
+    
+        return [
+            "level" => 2,
+            "sub_title" => "Skills",
+            "sub_description" => "Developed capacities that facilitate learning or the more rapid acquisition of knowledge",
+            "children" => $children
+        ];
+    }
+    private function getWorkactivities($onetSocCode) {
+        $results = DB::select("
+            SELECT omr.element_name, omr.description, ROUND((100 * a.data_value / sr.maximum),0) AS percentage
+            FROM onet_content_model_reference omr
+            INNER JOIN onet_work_activities a ON omr.element_id = a.element_id AND a.scale_id = 'LV'
+            INNER JOIN onet_scales_reference sr ON sr.scale_id = a.scale_id
+            WHERE a.onetsoc_code = ?
+            ORDER BY a.data_value DESC
+        ", [$onetSocCode]);
+    
+        $children = [];
+        foreach ($results as $result) {
+            $children[] = [
+                "level" => 3,
+                "element_name" => $result->element_name,
+                "description" => $result->description,
+                "percentage" => $result->percentage
+            ];
+        }
+    
+        return [
+            "level" => 2,
+            "sub_title" => "Work Activities",
+            "sub_description" => "Work activities that are common across a very large number of occupations. They are performed in almost all job families and industries.",
+            "children" => $children
+        ];
+    }
+    private function getWorkcontext($onetSocCode) {
+        $results = DB::select("
+            SELECT omr.element_name, omr.description, ROUND((100 * a.data_value / sr.maximum),0) AS percentage
+            FROM onet_content_model_reference omr
+            INNER JOIN onet_work_context a ON omr.element_id = a.element_id AND a.scale_id='CX'
+            INNER JOIN onet_scales_reference sr ON sr.scale_id = a.scale_id
+            WHERE a.onetsoc_code = ?
+            GROUP BY a.onetsoc_code,a.element_id
+            ORDER BY a.data_value DESC
+        ", [$onetSocCode]);
+    
+        $children = [];
+        foreach ($results as $result) {
+            $children[] = [
+                "level" => 3,
+                "element_name" => $result->element_name,
+                "description" => $result->description,
+                "percentage" => $result->percentage
+            ];
+        }
+    
+        return [
+            "level" => 2,
+            "sub_title" => "Work Context",
+            "sub_description" => "Physical and social factors that influence the nature of work",
+            "children" => $children
+        ];
+    }
+    private function getTasks($onetSocCode) {
+        $results = DB::select("
+        SELECT CONCAT(LEFT(CONCAT('[', ts.task_type, '] ', ts.task), 30),'...') AS element_name,ts.task as description, ROUND((100 * tr.data_value / sr.maximum),0) AS percentage
+            FROM onet_task_statements ts
+            INNER JOIN onet_task_ratings tr ON ts.task_id = tr.task_id AND tr.scale_id='IM'
+            INNER JOIN onet_scales_reference sr ON sr.scale_id = tr.scale_id
+            WHERE tr.onetsoc_code = ?
+            ORDER BY tr.data_value DESC
+        ", [$onetSocCode]);
+    
+        $children = [];
+        foreach ($results as $result) {
+            $children[] = [
+                "level" => 3,
+                "element_name" => $result->element_name,
+                "description" => $result->description,
+                "percentage" => $result->percentage
+            ];
+        }
+    
+        return [
+            "level" => 2,
+            "sub_title" => "Tasks",
+            "sub_description" => "Occupation-Specific Tasks",
+            "children" => $children
+        ];
+    }
+    private function getTechskills($onetSocCode) {
+        $results = DB::select("
+        SELECT ur.commodity_title AS element_name,GROUP_CONCAT(DISTINCT ts.example ORDER BY ts.example ASC SEPARATOR '; ') AS description, 0 AS percentage 
+            FROM onet_technology_skills ts
+            INNER JOIN onet_unspsc_reference ur ON ur.commodity_code=ts.commodity_code
+            WHERE ts.onetsoc_code = ?
+            GROUP BY ts.commodity_code
+            ORDER BY ur.commodity_title
+        ", [$onetSocCode]);
+
+        
+    
+        $children = [];
+        foreach ($results as $result) {
+            $children[] = [
+                "level" => 3,
+                "element_name" => $result->element_name,
+                "description" => $result->description
+            ];
+        }
+    
+        return [
+            "level" => 2,
+            "sub_title" => "Technology Skills",
+            "sub_description" => "Information technology and software skills essential to the functions of an occupational role.",
+            "children" => $children
+        ];
+    }
+    private function getToolsused($onetSocCode) {
+        $results = DB::select("
+        SELECT ur.commodity_title AS element_name,ts.example AS description, 0 AS percentage 
+            FROM onet_tools_used ts
+            INNER JOIN onet_unspsc_reference ur ON ur.commodity_code=ts.commodity_code
+            WHERE ts.onetsoc_code = ?
+            ORDER BY ur.commodity_title
+        ", [$onetSocCode]);
+    
+        $children = [];
+        foreach ($results as $result) {
+            $children[] = [
+                "level" => 3,
+                "element_name" => $result->element_name,
+                "description" => $result->description
+            ];
+        }
+    
+        return [
+            "level" => 2,
+            "sub_title" => "Tools Used",
+            "sub_description" => "Machines, equipment, and tools essential to the performance of an occupational role.",
+            "children" => $children
+        ];
     }
 }
