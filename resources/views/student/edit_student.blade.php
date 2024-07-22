@@ -140,9 +140,9 @@ datalist {
                                             <label>Sur Name </label>
                                             <input type="text" onchange="getUsername();" id='last_name' required name="last_name" value="{{ $student_data->last_name }}" class="form-control">
                                         </div>
-                                        <div class="col-md-4 form-group">
+                                        <div class="col-md-4 form-group"  style="display: none;">
                                             <label>Username</label>
-                                            <input type="text" id='username' required name="username" value="{{ $student_data->username }}"  class="form-control">
+                                            <input type="text" id='username' name="username" value="{{ $student_data->username ?? '-' }}"  class="form-control">
                                         </div>
                                         <div class="col-md-4 form-group">
                                             <label>{{ App\Helpers\get_string('grno','request')}}<i class="mdi mdi-lead-pencil"></i></label>
