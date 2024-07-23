@@ -324,7 +324,7 @@ class studentCertificateController extends Controller
         */
         $get_standard_subjects = DB::table('sub_std_map as ssm')
             ->select(
-                DB::raw('GROUP_CONCAT(IFNULL(ssm.display_name, "-"") ORDER BY ssm.sort_order ASC) as subject_name'),
+                DB::raw('GROUP_CONCAT(IFNULL(ssm.display_name, "-") ORDER BY ssm.sort_order ASC) as subject_name'),
                 DB::raw('GROUP_CONCAT(IFNULL(ssm.elective_subject, "-") ORDER BY ssm.sort_order ASC) as elective_subject')
             )
             ->join('standard as s', 's.id', '=', 'ssm.standard_id')
