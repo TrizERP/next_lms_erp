@@ -32,6 +32,10 @@ br {
                         <ul class="nav nav-tabs tab-title mb-4">
                             <li class="nav-item"><a href="#section-linemove-1" class="nav-link active" aria-selected="true" data-toggle="tab"><span>Personal Details</span></a></li>
                             <li class="nav-item"><a href="#section-linemove-2" class="nav-link" aria-selected="false" data-toggle="tab"><span>Upload Document</span></a></li>
+                            <li class="nav-item"><a href="#section-linemove-3" class="nav-link" aria-selected="false" data-toggle="tab"><span>Job Focus</span></a></li>
+                            <li class="nav-item"><a href="#section-linemove-4" class="nav-link" aria-selected="false" data-toggle="tab"><span>Soft Skills</span></a></li>
+                            <li class="nav-item"><a href="#section-linemove-5" class="nav-link" aria-selected="false" data-toggle="tab"><span>Technical Skills</span></a></li>
+                            <li class="nav-item"><a href="#section-linemove-6" class="nav-link" aria-selected="false" data-toggle="tab"><span>Certifications</span></a></li>
                         </ul>
                         </center>
 

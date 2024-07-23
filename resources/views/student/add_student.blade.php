@@ -102,14 +102,14 @@
                             </div>
                             <div class="col-md-4 form-group text-left" style="display: none;">
                                 <label>Username<span style="color: red;">*</span></label>
-                                <input type="text" id='username' required name="username" class="form-control">
+                                <input type="text" id='username' value="-" name="username" class="form-control">
                             </div>
                             <div class="col-md-4 form-group text-left">
                                 <label>{{ App\Helpers\get_string('grno','request')}}<span style="color: red;">*</span></label>
                                 <input type="text" id='enrollment_no' required name="enrollment_no" class="form-control" value="@if(isset($data['new_enrollment_no'])){{$data['new_enrollment_no']}}@endif">
                             </div>
                             <div class="col-md-4 form-group text-left">
-                                <label>Mother Name<span style="color: red;">*</span></label>
+                                <label>Mother Name</label>
                                 <input type="text" id='mother_name' name="mother_name" class="form-control" require>
                             </div>
                             @if(session()->get('sub_institute_id')!=257)
@@ -143,8 +143,8 @@
                             
                             </div> -->
                             <div class="col-md-4 form-group text-left">
-                                <label>Mother Mobile<span style="color: red;">*</span></label>
-                                <input type="text" id='mother_mobile'  pattern="[1-9]{1}[0-9]{9}" required name="mother_mobile" class="form-control">
+                                <label>Mother Mobile</label>
+                                <input type="text" id='mother_mobile'  pattern="[1-9]{1}[0-9]{9}" name="mother_mobile" class="form-control">
                             </div>                            
                             <div class="col-md-4 form-group text-left">
                                 <label>Email / Username<span style="color: red;">*</span></label>                                
@@ -224,7 +224,7 @@
                                 <input type="text" id='state' name="state" class="form-control">
                             </div> -->                            
                             <div class="col-md-4 form-group text-left">
-                                <label>Pincode</label>
+                                <label>Pincode <span style="color: red;">*</span></label>
                                 <input type="text" id='pincode' name="pincode" class="form-control">
                             </div>
                             

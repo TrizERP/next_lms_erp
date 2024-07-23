@@ -291,6 +291,7 @@ class taskController extends Controller
         $KPA = $request->input("KPA");
         $task_type = $request->input("selType");
         $required_skill = $request->skills ?? '';
+        $observation_point = $request->observation_point;
         // store skills
 
         $data = $request->except(['_method', '_token', 'submit', 'TASK_ATTACHMENT','formName','selDepartment','selSubDepartment','selType','add','type','syear','sub_institute_id','user_id','manageby','KRA','KPA','skills']);

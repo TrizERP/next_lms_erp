@@ -42,55 +42,25 @@ class InactiveStudentReportController extends Controller
 
         return is_mobile($type, "student/bulk_student_update", $res, "view");
     }
-        public function customFields(Request $request)
+
+    public function customFields(Request $request)
     {
-
-
         $sub_institute_id = $request->session()->get('sub_institute_id');
-        $tblcustom_fields['enrollment_no'] = 'Gr No';
-        // $tblcustom_fields['student_name'] = 'Student Name';
-        $tblcustom_fields['first_name'] = 'First Name';
-        $tblcustom_fields['middle_name'] = 'Middle Name';
-        $tblcustom_fields['last_name'] = 'Surname';
-        $tblcustom_fields['mobile'] = 'Mobile';
-        $tblcustom_fields['father_name'] = 'Father Name';
-        $tblcustom_fields['mother_name'] = 'Mother Name';
-        $tblcustom_fields['gender'] = 'Gender';
-        $tblcustom_fields['dob'] = 'Birthdate';
-        $tblcustom_fields['mother_mobile'] = 'Mother Mobile';
-        $tblcustom_fields['email'] = 'Email';
-        $tblcustom_fields['username'] = 'Username';
-        $tblcustom_fields['admission_year'] = 'Fees Year';
-        $tblcustom_fields['admission_date'] = 'Admission Date';
-        $tblcustom_fields['address'] = 'Address';
-        $tblcustom_fields['city'] = 'City';
-        $tblcustom_fields['state'] = 'State';
-        $tblcustom_fields['pincode'] = 'Pincode';
-        $tblcustom_fields['religion'] = 'Religion';
-        $tblcustom_fields['student_quota'] = 'Student Quota';
-        $tblcustom_fields['cast'] = 'Caste';
-        $tblcustom_fields['subcast'] = 'Subcaste';
-        $tblcustom_fields['bloodgroup'] = 'Blood Group';
-        $tblcustom_fields['adharnumber'] = 'Adhar Number';
-        $tblcustom_fields['anuualincome'] = 'Annual Income';
-        $tblcustom_fields['roll_no'] = 'Roll No';
-        $tblcustom_fields['image'] = 'Image';
-        $tblcustom_fields['house'] = 'House';
-        $tblcustom_fields['van'] = 'Van';
 
         $tblcustoms = DB::table("tblcustom_fields")
-            ->where(["status" => "1", "table_name" => "tblstudent"])
-            ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1)')
-            ->where('user_type',"")
-            ->pluck("field_label", "field_name");
-
-        $customfieldArray = [];
+        ->whereRaw("status=1 AND (common_to_all= 1 or sub_institute_id=$sub_institute_id) AND is_deleted != 'Y'")
+        ->where('user_type','student')
+        ->when($sub_institute_id==257,function($q) use($sub_institute_id){
+            $q->whereRaw('field_message NOT IN ('.$sub_institute_id.')');
+        })
+        ->orderByRaw('tab_sort_order,sort_order')
+        ->get()->toArray();    
+        
+        $headerType =[];
         foreach ($tblcustoms as $key => $value) {
-            $customfieldArray[$key] = $value;
+            $headerType[$value->column_header][]=$value;
         }
-
-
-        return array_merge($tblcustom_fields, $customfieldArray);
+        return $headerType;
 
     }
 
@@ -110,118 +80,194 @@ class InactiveStudentReportController extends Controller
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
-        $marking_period_id = session()->get('term_id');
+        $marking_period_id=session()->get('term_id');
 
-        $extra_order_by = '';
-        $extraSearchArray = [];
-        $extraSearchArray['tblstudent_enrollment.sub_institute_id'] = $sub_institute_id;
-        $extraSearchArray['tblstudent_enrollment.syear'] = $syear;
-        $extraSearchArray['tblstudent.status'] = 1;
-        if ($grade_id != '') {
-            $extraSearchArray['tblstudent_enrollment.grade_id'] = $grade_id;
-        }
-        if ($standard_id != '') {
-            $extraSearchArray['tblstudent_enrollment.standard_id'] = $standard_id;
-        }
-        if ($division_id != '') {
-            $extraSearchArray['tblstudent_enrollment.section_id'] = $division_id;
-        }
+       // Define default values and mappings
+        $extraSearchArray = [
+            'tblstudent_enrollment.sub_institute_id' => $sub_institute_id,
+            'tblstudent_enrollment.syear' => $syear,
+            'tblstudent.status' => 1,
+        ];
+        $searchFieldsMapping = [
+            'standard_id' => 'standard.sort_order',
+            'enrollment_no' => 'CONVERT(tblstudent.enrollment_no, SIGNED)',
+            'roll_no' => 'CAST(tblstudent_enrollment.roll_no AS INT)',
+            'last_name' => 'tblstudent.last_name',
+        ];
+        $defaultOrderBy = 'tblstudent.first_name';
 
-        if ($order_by != '' && $order_by == 'student_name') {
-            $extra_order_by = 'tblstudent.first_name';
-        } elseif ($order_by != '' && $order_by == 'standard_id') {
-            $extra_order_by = 'standard.sort_order';
-        } elseif ($order_by != '' && $order_by == 'enrollment_no') {
-            $extra_order_by = 'CONVERT(tblstudent.enrollment_no, SIGNED)';
-        } elseif ($order_by != '' && $order_by == 'roll_no') {
-            $extra_order_by = 'CAST(tblstudent_enrollment.roll_no AS INT)';
-        } else {
-            $extra_order_by = 'tblstudent.first_name';
-        }
-
+        // Map dynamic fields and headers
+        $res['dynamicFields'] = $dynamicFields = $request->input('dynamicFields') ?? [];
+        $searchArr1 = ['first_name', 'last_name', 'place_of_birth', 'student_mobile','optional_subjects','admission_year'];
+        $replaceArr1 = ['First Name', 'Surname', get_string('birthplace','request'), get_string('studentmobile','request'),'Optional Subjects','Fees Year'];
 
         $array = [
-            'standard.name as standard', 'division.name as division', 'academic_section.title as grade',
-            'batch.title as batch',
+            'tblstudent.enrollment_no as enrollment_no',
+            'tblstudent_enrollment.roll_no as roll_no',
             'tblstudent.id as id',
+            'academic_section.title as grade',
+            'standard.name as standard',
+            'division.name as division',
+            'batch.title as batch',
         ];
         $header = [
+            'enrollment_no' => get_string('grno', 'request'),
             'student_name' => 'Student Name',
-            'standard'     => 'Standard', 'division' => 'Division', 'grade' => 'Academic Section','batch'=>'Batch',
+            'grade'=>get_string('academicsection', 'request'),
+            'standard' => get_string('standard', 'request'),
+            'division' => get_string('division', 'request'),
+            'batch' => 'Batch',
         ];
-        $searchArr = ['_'];
-        $replaceArr = [' '];
-       
-        if ($request->input('dynamicFields') == '') {
-             
-            $array = [
-                'concat_ws(" ",tblstudent.first_name,tblstudent.middle_name,tblstudent.last_name) AS "'.get_string('studentname' , 'request').'"',
-                'academic_section.title as grade',
-                'standard.name as "'.get_string('standard' , 'request').'"', 
-                'division.name as "'.get_string('division' , 'request').'"', 
-                'batch.title as batch',
-                'tblstudent.id as id',
-            ];
-            $header = [
-                'student_name' => 'Student Name',
-                'standard'     => 'Standard', 'division' => 'Division', 'grade' => 'Academic Section','batch'=>'Batch',
-            ];
-            // $res['status_code'] = 0;
-            // $res['message'] = "Please select one checkbox atlease to view report";
-            // return is_mobile($type, "student_report.index", $res);
-        } else {
-            $searchArr1 = ['enrollment_no', 'first_name', 'last_name'];
-            $replaceArr1 = ['Gr No', 'First Name', 'Surname'];
-            foreach ($request->input('dynamicFields') as $key => $value) {
-                if ($value != "bloodgroup" && $value != "van"  && $value != "roll_no") {
-                    $array[] = $value;
-                }
-                $value1 = str_replace($searchArr1, $replaceArr1, $value);
-                $value2 = str_replace($searchArr, $replaceArr, $value1);
 
-                $header[$value] = ucfirst($value2);
+        foreach ($dynamicFields as $field) {
+            // if (!in_array($field, ["bloodgroup", "van", "optional_subjects", "roll_no","student_name","academic_year","religion_name","father_name","gender","mobile","email"])) {
+            //     $array[] = $field;
+            // }
+            $seprateValue  = explode("/",$field);
+            $fielValue = $seprateValue[0];
+            $fieldId = $seprateValue[1];
+
+          $customDetails = DB::table("tblcustom_fields")
+            ->whereRaw("status=1 AND (common_to_all= 1 or sub_institute_id=$sub_institute_id) AND is_deleted != 'Y'")
+            ->where('id',$fieldId)
+            ->where('user_type','student')
+            ->when($sub_institute_id==257,function($q) use($sub_institute_id){
+                $q->whereRaw('field_message NOT IN ('.$sub_institute_id.')');
+            })
+            ->first();
+
+            if(!empty($customDetails) && !in_array($fielValue,["student_name","optional_subject"])){
+                $array[] = $customDetails->table_name.".".$fielValue." as ".str_ireplace(" ","_",$customDetails->field_label);
+                $makeKey = strtolower(str_replace(" ","_",$customDetails->field_label));
+                $header[$makeKey] = ucfirst(str_replace(['_'], [' '], str_replace($searchArr1, $replaceArr1, $customDetails->field_label)));
+            }else if($fielValue=="academic_year"){
+                $array[] = "academic_section.title as academic_year";
+                $header[$fielValue] = ucfirst(str_replace(['_'], [' '], str_replace($searchArr1, $replaceArr1, $fielValue)));
             }
+            else if($fielValue=="optional_subject"){
+                $array[] = "GROUP_CONCAT(DISTINCT subject.subject_name) as optional_subject";
+                if($sub_institute_id==254){
+                    $header['optional_subject4']="Optional Subject 4";
+                    $header['optional_subject5']="Optional Subject 5";
+                    $header['optional_subject6']="Optional Subject 6";
+                }else{
+                    $header[$fielValue] = ucfirst(str_replace(['_'], [' '], str_replace($searchArr1, $replaceArr1, $fielValue)));
+                }
+            }
+            
+        }
+        
+        // Additional conditions for ordering
+        $orderField = $searchFieldsMapping[$order_by] ?? $defaultOrderBy;
+        $extra_order_by = $orderField ?? $defaultOrderBy;
 
-            $array[] = 'religion.religion_name as religion';
-            $array[] = 'house_master.house_name as house';
-            $array[] = 'student_quota.title as student_quota';
-            $array[] = 'caste.caste_name as cast';
-            $array[] = 'blood_group.bloodgroup as bloodgroup';
-            $array[] = 'transport_vehicle.title as van';
+        // Add additional fields to $array based on $sub_institute_id
+        if ($sub_institute_id == 254) {
+            $array[] = 'IF(tblstudent.admission_year = 2019, YEAR(tblstudent.admission_date), tblstudent.admission_year) AS fees_year';
         }
 
-
-        $result = DB::table('tblstudent')
-            ->select(DB::raw(implode(',', $array)))
+        // Concatenated student name
+        $array[] = 'CONCAT_WS(" ", tblstudent.first_name, tblstudent.middle_name, tblstudent.last_name) AS student_name';
+      
+        // Query
+        $student_data = DB::table('tblstudent')
+            ->select(DB::raw(strtolower(implode(',', $array))))
             ->join('tblstudent_enrollment', 'tblstudent.id', '=', 'tblstudent_enrollment.student_id')
             ->join('academic_section', 'academic_section.id', '=', 'tblstudent_enrollment.grade_id')
-            ->join('standard',function($join) use($marking_period_id){
-                $join->on('standard.id', '=', 'tblstudent_enrollment.standard_id');
-                // ->when($marking_period_id,function($query) use($marking_period_id){
-                //     $query->where('standard.marking_period_id',$marking_period_id);
-                // });
-            })
+            ->join('standard', 'standard.id', '=', 'tblstudent_enrollment.standard_id')
             ->join('division', 'division.id', '=', 'tblstudent_enrollment.section_id')
-            ->leftjoin('batch', 'batch.id', '=', 'tblstudent.studentbatch')
-            ->leftjoin('religion', 'religion.id', '=', 'tblstudent.religion')
-            ->leftjoin('house_master', 'house_master.id', '=', 'tblstudent_enrollment.house_id')
-            ->leftjoin('student_quota', 'student_quota.id', '=', 'tblstudent_enrollment.student_quota')
-            ->leftjoin('caste', 'caste.id', '=', 'tblstudent.cast')
-            ->leftjoin('blood_group', 'blood_group.id', '=', 'tblstudent.bloodgroup')
-            ->leftjoin('transport_map_student', 'transport_map_student.student_id', '=', 'tblstudent.id')
-            ->leftjoin('transport_vehicle', 'transport_vehicle.id', '=', 'transport_map_student.from_bus_id')
+            ->leftJoin('religion', 'religion.id', '=', 'tblstudent.religion')
+            ->leftJoin('house_master', 'house_master.id', '=', 'tblstudent_enrollment.house_id')
+            ->leftJoin('student_quota', 'student_quota.id', '=', 'tblstudent_enrollment.student_quota')
+            ->leftJoin('religion as r', 'r.id', '=', 'tblstudent.religion')
+            ->leftJoin('caste', 'caste.id', '=', 'tblstudent.cast')
+            ->leftJoin('blood_group', 'blood_group.id', '=', 'tblstudent.bloodgroup')
+            ->leftJoin('batch', function($join) use ($syear) {
+                $join->on('tblstudent.studentbatch', '=', 'batch.id')
+                    ->where('batch.syear', '=', $syear);
+            })
+            ->leftJoin('transport_map_student', function($join) use ($syear) {
+                $join->on('transport_map_student.student_id', '=', 'tblstudent.id')
+                    ->where('transport_map_student.syear', '=', $syear);
+            })
+            ->leftJoin('admission_enquiry', 'tblstudent.mobile', '=', 'admission_enquiry.mobile')
+            ->leftJoin('student_height_weight', function($join) use ($syear) {
+                $join->on('tblstudent.id', '=', 'student_height_weight.student_id')
+                    ->where('student_height_weight.syear', '=', $syear);
+            })
+            ->leftJoin('transport_vehicle', function($join) use ($sub_institute_id) {
+                $join->on('transport_vehicle.id', '=', 'transport_map_student.from_bus_id')
+                    ->where('transport_vehicle.sub_institute_id', '=', $sub_institute_id);
+            })
+            ->leftJoin('student_optional_subject', function($join){
+                $join->on('student_optional_subject.student_id', '=', 'tblstudent.id')
+                    ->where('student_optional_subject.syear', session()->get('syear'));
+            })
+            ->leftJoin('subject', 'student_optional_subject.subject_id', '=', 'subject.id')
+            ->leftJoin('transport_school_shift', 'transport_vehicle.school_shift', '=', 'transport_school_shift.id')
             ->where($extraSearchArray)
-            ->whereRaw('tblstudent_enrollment.end_date IS NOT NULL')
-            ->orderByRaw('tblstudent.id')
+            ->when($request->grade,function($q) use($request){
+                $q->where('tblstudent_enrollment.grade_id',$request->grade);
+            })
+            ->when($request->standard,function($q) use($request){
+                $q->where('tblstudent_enrollment.standard_id',$request->standard);
+            })
+            ->when($request->division,function($q) use($request){
+                $q->where('tblstudent_enrollment.section_id',$request->division);
+            })
+            ->whereNotNull('tblstudent_enrollment.end_date')
+            ->orderByRaw($extra_order_by)
+            ->groupBy('tblstudent.id')
             ->get();
-         
+            $student_dataArr = [];
+            if($sub_institute_id==254){
+                foreach ($student_data as $key => $value) {
+                    // optional subject level wise 
+                    if(isset($value->optional_subject)){
+                        $explodeSub = explode(',',$value->optional_subject);
+                        $value->optional_subject4 =  $value->optional_subject5= $value->optional_subject6 = [];
+                        foreach ($explodeSub as $keys => $subName) {
+                            $getLevel = DB::table('subject as s')
+                                ->join('student_optional_subject as sos', 'sos.subject_id', '=', 's.id')
+                                ->where('sos.syear', session()->get('syear'))
+                                ->where('sos.student_id', $value->id)
+                                ->where('s.subject_name', $subName)
+                                ->first();
+                        
+                            if ($getLevel) {
+                                if ($getLevel->level == 4 || $getLevel->level==null || $getLevel->level=="") {
+                                    $value->optional_subject4[] = $getLevel->subject_name;
+                                } 
+                                if ($getLevel->level == 5) {
+                                    $value->optional_subject5[] = $getLevel->subject_name;
+                                }
+                                if ($getLevel->level == 6) {
+                                    $value->optional_subject6[] = $getLevel->subject_name;
+                                }
+                            }
+                        }
+                        // convert into string 
+                       $value->optional_subject4 = implode(',',$value->optional_subject4) ?? [];     
+                       $value->optional_subject5 = implode(',',$value->optional_subject5) ?? [];     
+                       $value->optional_subject6 = implode(',',$value->optional_subject6) ?? [];     
+                    }
+                    //  ends level
+
+                 $student_dataArr[$key] = $value;
+                }
+            }else{
+                $student_dataArr = $student_data;
+            }
+        // echo "<pre>";print_r($header);exit;
         $res['status_code'] = 1;
-        $res['message'] = "Success";
-        $res['result_report'] = $result;
+        $res['message'] = "Student List";
+        $res['student_data'] = $student_dataArr;
         $res['grade_id'] = $grade_id;
         $res['standard_id'] = $standard_id;
         $res['division_id'] = $division_id;
-// echo "<pre>";print_r($res['result_report']);exit;
+        $res['data'] = $this->customFields($request);
+        $res['headers'] = $header;
+
         return is_mobile($type, "student/inactive_student_report", $res, "view");
     }
 
