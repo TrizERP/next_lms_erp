@@ -157,27 +157,22 @@ class other_fee_map_controller extends Controller
                                     'syear' => session()->get('syear'),
                                     'student_id' => $student_id,
                                     'fee_type_id' => $fee_type_id,
-                                    // 'grade_id' => $_REQUEST['grade'],
-                                    // 'standard_id' => $_REQUEST['standard'],
-                                    // 'section_id' => $_REQUEST['division'],
                                     'month_id' => $month_id,
                                     'sub_institute_id' => session()->get('sub_institute_id')
                                 ])->delete();
-                                //insert
-                            DB::table('fees_breakoff_other')->insert(
-                                array(
-                                    'syear' => session()->get('syear'),
-                                    'student_id' => $student_id,
-                                    'fee_type_id' => $fee_type_id,
-                                    // 'grade_id' => $_REQUEST['grade'],
-                                    // 'standard_id' => $_REQUEST['standard'],
-                                    // 'section_id' => $_REQUEST['division'],
-                                    'month_id' => $month_id,
-                                    'amount' => $amount,
-                                    'sub_institute_id' => session()->get('sub_institute_id')
-                                )
-                            );
-                        
+                            //insert when amount > 0
+                            if($amount>0){
+                                DB::table('fees_breakoff_other')->insert(
+                                    array(
+                                        'syear' => session()->get('syear'),
+                                        'student_id' => $student_id,
+                                        'fee_type_id' => $fee_type_id,
+                                        'month_id' => $month_id,
+                                        'amount' => $amount,
+                                        'sub_institute_id' => session()->get('sub_institute_id')
+                                    )
+                                );
+                            }
                         }
                         }
                     }
