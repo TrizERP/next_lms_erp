@@ -1957,19 +1957,25 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             $reg_bk_month_wise[$arr->month_id] = $arr->bkoff;
         }
 
-        $new_month_arr = [];
-        $new_month_arr2 = [];
+        $collect_month_arr = [];
+        $new_month_arr2 = $new_month_arr = [];
         foreach ($reg_bk_month_wise as $month_id => $val) {
             if(isset($month_arr[$month_id])){
-                $new_month_arr[$month_id] = $month_arr[$month_id];
+                $collect_month_arr[$month_id] = $month_arr[$month_id];
             }
         }
         foreach ($other_bk_off_month_wise as $month_id => $val) {
             if(isset($month_arr[$month_id])){
+                $collect_month_arr[$month_id] = $month_arr[$month_id];
+            }
+        }
+        // sort order monthwise head
+        foreach ($month_arr as $month_id => $val) {
+            if(isset($collect_month_arr[$month_id])){
                 $new_month_arr[$month_id] = $month_arr[$month_id];
             }
         }
-
+        // echo "<pre>";print_r($new_month_arr);exit;
         $merge_bk_month_wise = [];
         foreach ($reg_bk_month_wise as $month_id => $amount) {
             $merge_bk_month_wise[$month_id] = $amount;
@@ -2354,7 +2360,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                 $res['hillsFine'] = $hillsFine;
             }
             $res['fees_config_data'] = $config;
-            // echo "<pre>";print_r($res['hillsFine']);exit;
+            // echo "<pre>";print_r($res);exit;
             return is_mobile($type, "fees/fees_collect/fees_collect", $res, "view");exit;
         } 
         $res = [
