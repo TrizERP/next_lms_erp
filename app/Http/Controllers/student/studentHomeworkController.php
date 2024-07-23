@@ -312,9 +312,13 @@ class studentHomeworkController extends Controller
         if($type=='API'){
             $sub_institute_id = $request->get('sub_institute_id');
             $syear = $request->get('syear');
+            $user_id = $request->user_id;
+            $user_profile = $request->get('user_profile_name');
         }else{
             $sub_institute_id = $request->session()->get('sub_institute_id');
             $syear = $request->session()->get('syear');
+            $user_id = session()->get('user_id');
+            $user_profile = session()->get('user_profile_name');
         }
         $subject = $request->input('subject');
         $grade = $request->input('grade');
@@ -354,6 +358,23 @@ class studentHomeworkController extends Controller
 
         if ($division != '') {
             $result = $result->where('h.division_id', $division);
+        }
+        else if(isset($user_profile) && $user_profile=="Teacher"){
+            $result = $result->whereIn('h.division_id', function ($sub_query) use ($standard,$syear,$user_id) {
+                if(isset($standard)){
+                $sub_query->select('division_id')
+                    ->from('timetable')
+                    ->where('teacher_id', $user_id)
+                    ->where('standard_id',$standard)
+                    ->where('syear',$syear);
+                }else{
+                    $sub_query->select('division_id')
+                    ->from('timetable')
+                    ->where('teacher_id', $user_id)
+                    ->where('syear',$syear)
+                    ->groupBy('division_id');
+                }
+            });
         }
 
         if ($grade != '') {

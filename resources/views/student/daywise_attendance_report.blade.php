@@ -1,6 +1,3 @@
-{{--@include('includes.headcss')
-@include('includes.header')
-@include('includes.sideNavigation')--}}
 @extends('layout')
 @section('container')
 <div id="page-wrapper">
@@ -21,20 +18,22 @@
                                 <strong>{{ $sessionData['message'] }}</strong>
                             </div>
                         @endif
-                        <form action="{{ route('show_daywise_student_attendance_report') }}"
-                              enctype="multipart/form-data" method="post">
+                        <form action="{{ route('show_daywise_student_attendance_report') }}" enctype="multipart/form-data" method="post">
                             @csrf
+                            @php 
+                                $date = now();
+                                if(isset($data['date'])){
+                                    $date = $data['date'];
+                                }
+                            @endphp
                             <div class="row">
                                 <div class="col-md-4 form-group">
                                     <label>Attendance Date</label>
-                                    <input type="text" name="date" autocomplete="off"
-                                           @if(isset($data['date'])) value="{{$data['date']}}"
-                                           @endif class="form-control mydatepicker" required="required"
-                                           placeholder="Please select date to view report.">
+                                    <input type="text" name="date" autocomplete="off" value="{{$date}}" class="form-control mydatepicker" required="required" placeholder="Please select date to view report.">
                                 </div>
                                 <div class="col-md-4 form-group">
                                     <label>Taken</label>
-                                    <select name="taken" class="form-control" required="required">
+                                    <select name="taken" class="form-control">
                                         <option value="">Select Taken</option>
                                         <option value="yes"
                                                 @if(isset($data['taken'])) @if($data['taken'] == 'yes') selected="selected" @endif @endif>
@@ -55,7 +54,7 @@
                         </form>
                     </div>
 
-                    @if(isset($data['attendance_data']))
+        @if(isset($data['attendance_data']))
         @php
         $j = 1;
             if(isset($data['attendance_data'])){
@@ -64,77 +63,77 @@
            $token = isset($data['taken']) ? $data['taken'] : '';
                             
         @endphp
-                        <div class="card">
-                            <div class="table-responsive">
-                              {!! App\Helpers\get_school_details("","","") !!} 
-                              <br><center><span style="font-size: 14px; font-weight: 600; font-family: Arial, Helvetica, sans-serif !important">
-                              From Date : {{date('d-m-Y', strtotime($data['date'])) }}
-                               </span> <span style="font-size: 14px; font-weight: 600; font-family: Arial, Helvetica, sans-serif !important">
-                                Taken : {{$token}}   </span></center><br>
-                                <table id="daywise_attendance" class="table table-striped table-bordered" border="1"
-                                       style="border-collapse: collapse;">
-                                    <thead>
-                                    <tr>
-                                        <th rowspan="2">{{App\Helpers\get_string('standard','request')}}</th>
-                                        <th colspan="3">Total Student</th>
-                                        <th colspan="3">Present</th>
-                                        <th colspan="3">Absent</th>
-                                        <th rowspan="2">Taken</th>
-                                        <th rowspan="2">Average</th>
-                                        <th rowspan="2">Staff Signature</th>
-                                        </tr>
-                                        <tr>
-                                            <th>B</th>
-                                            <th>G</th>
-                                            <th>T</th>
-                                            <th>B</th>
-                                            <th>G</th>
-                                            <th>T</th>
-                                            <th>B</th>
-                                            <th>G</th>
-                                            <th>T</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach($attendance_data as $key => $value)
-                                            @php
-                                                $TBGP = ($value->TBP + $value->TGP);
-                                                $TBG = ($value->BOY + $value->GIRL);
-                                                if($TBG > 0)
-                                                {
-                                                    $avg_b_g = ($value->TBP + $value->TGP) / ($value->BOY + $value->GIRL);
-                                                    $per_b_g = number_format((100 * $avg_b_g),2);
-                                                }else{
-                                                    $per_b_g = 0;
-                                                }
-                                            @endphp
-                                            <tr>
-                                                <td> {{$value->standard_name}} </td>
-                                                <td> {{$value->BOY}} </td>
-                                                <td> {{$value->GIRL}} </td>
-                                                <td> {{($value->BOY + $value->GIRL)}} </td>
-                                                <td> {{$value->TBP}} </td>
-                                                <td> {{$value->TGP}} </td>
-                                                <td> {{($value->TBP + $value->TGP)}} </td>
-                                                <td> {{$value->TBA}} </td>
-                                                <td> {{$value->TGA}} </td>
-                                                <td> {{($value->TBA + $value->TGA)}} </td>
-                                                <td> {{ucfirst($data['taken'])}} </td>
-                                                <td> {{$per_b_g}}% </td>
-                                                <td> </td>
-                                            </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                                <center>
-                                    <button
-                                        onclick="exportTableToExcel('daywise_attendance', 'Boys Girls Daywise Attendance Report')"
-                                        class="btn btn-success mt-2">Excel Export
-                                    </button>
-                                </center>
-                            </div>
-                        </div>
-                    @endif
+            <div class="card">
+                <div class="table-responsive">
+                    {!! App\Helpers\get_school_details("","","") !!} 
+                    <br><center><span style="font-size: 14px; font-weight: 600; font-family: Arial, Helvetica, sans-serif !important">
+                    From Date : {{date('d-m-Y', strtotime($data['date'])) }}
+                    </span> <span style="font-size: 14px; font-weight: 600; font-family: Arial, Helvetica, sans-serif !important">
+                    Taken : {{$token}}   </span></center><br>
+                    <table id="daywise_attendance" class="table table-striped table-bordered" border="1"
+                            style="border-collapse: collapse;">
+                        <thead>
+                        <tr>
+                            <th rowspan="2">{{App\Helpers\get_string('standard','request')}}</th>
+                            <th colspan="3">Total Student</th>
+                            <th colspan="3">Present</th>
+                            <th colspan="3">Absent</th>
+                            <th rowspan="2">Taken</th>
+                            <th rowspan="2">Average</th>
+                            <th rowspan="2">Staff Signature</th>
+                            </tr>
+                            <tr>
+                                <th>B</th>
+                                <th>G</th>
+                                <th>T</th>
+                                <th>B</th>
+                                <th>G</th>
+                                <th>T</th>
+                                <th>B</th>
+                                <th>G</th>
+                                <th>T</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($attendance_data as $key => $value)
+                                @php
+                                    $TBGP = ($value->TBP + $value->TGP);
+                                    $TBG = ($value->BOY + $value->GIRL);
+                                    if($TBG > 0)
+                                    {
+                                        $avg_b_g = ($value->TBP + $value->TGP) / ($value->BOY + $value->GIRL);
+                                        $per_b_g = number_format((100 * $avg_b_g),2);
+                                    }else{
+                                        $per_b_g = 0;
+                                    }
+                                @endphp
+                                <tr>
+                                    <td> {{$value->standard_name}} </td>
+                                    <td> {{$value->BOY}} </td>
+                                    <td> {{$value->GIRL}} </td>
+                                    <td> {{($value->BOY + $value->GIRL)}} </td>
+                                    <td> {{$value->TBP}} </td>
+                                    <td> {{$value->TGP}} </td>
+                                    <td> {{($value->TBP + $value->TGP)}} </td>
+                                    <td> {{$value->TBA}} </td>
+                                    <td> {{$value->TGA}} </td>
+                                    <td> {{($value->TBA + $value->TGA)}} </td>
+                                    <td> {{($per_b_g > 0 ) ? 'Yes' : 'No'}} </td>
+                                    <td> {{$per_b_g}}% </td>
+                                    <td> </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                    <center>
+                        <button
+                            onclick="exportTableToExcel('daywise_attendance', 'Boys Girls Daywise Attendance Report')"
+                            class="btn btn-success mt-2">Excel Export
+                        </button>
+                    </center>
+                </div>
+            </div>
+        @endif
     </div>
 </div>
 
