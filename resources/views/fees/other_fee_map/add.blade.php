@@ -28,7 +28,7 @@
                     @php
                     if(isset($data['stu_data'])){
                     @endphp
-                    <form action="{{ route('other_fee_map.store') }}" enctype="multipart/form-data" method="post">
+                    <form action="{{ route('other_fee_map.store') }}" enctype="multipart/form-data" method="post"  id="myForm" onsubmit="return validateForm()">
                         {{ method_field("POST") }}
                         {{csrf_field()}}
                         <input type="hidden" name="grade" value="{{$data['grade']}}">
@@ -114,15 +114,26 @@
     </div>
 </div>
 
-
 @include('includes.footerJs')
 <script>
-    $(function () {
-        var $tblChkBox = $("input:checkbox");
-        $("#ckbCheckAll").on("click", function () {
-            $($tblChkBox).prop('checked', $(this).prop('checked'));
-        });
+    function validateForm() {
+    var checkboxes = document.querySelectorAll('input[name^="student_id["]');
+    var anyChecked = false;
+    
+    checkboxes.forEach(function(checkbox) {
+        if (checkbox.checked) {
+            anyChecked = true;
+        }
     });
+    
+    if (!anyChecked) {
+        alert("Please select at least one checkbox");
+        return false; 
+    }
+    
+    return true;
+}
+
 </script>
 <script>
 $(document).ready(function () {
