@@ -30,15 +30,20 @@
 							<table class="table table-stripped" style="color:#000 !important;">
 								<tr>
 									<th>Month</th>
+									@if(session()->get('sub_institute_id')==61)
+									<th>Bus Amount</th>
+									@endif
 									<th>Fees</th>
 									<th>Paid</th>
 									<th>Discount</th>
 									<th>Remaining</th>
 								</tr>
 								@php
-				                    $remainFees = $paidFees = 0;
+                  					$remainFees = $paidFees = 0;
+
 									$feesDetails= [];
-									$bk=$paid=$remain=$discount=$Paid_and_discount=array();
+									$bk=$paid=$remain=$discount=$Paid_and_discount=$busAmount=array();
+
 									foreach ($data['total_fees'] as $id => $arr) {
 									$feesDetails[$arr['month']] = $arr['remain'];
 									if(isset($arr['bk'])){
@@ -47,6 +52,9 @@
 									<td>
 										{{ $arr['month'] }}
 									</td>
+									@if(session()->get('sub_institute_id')==61)
+									<td>@php $busAmount[] = $arr['bus_amount']; echo isset($arr['bus_amount']) ? $arr['bus_amount'] : 0  @endphp</td>
+									@endif
 									<td>
 										@php $bk[] = $arr['bk']; echo $arr['bk'];  @endphp
 									</td>
@@ -66,6 +74,9 @@
 								@endphp
 								<tr>
 									<td>Total</td>
+									@if(session()->get('sub_institute_id')==61)
+									<td>{{ array_sum($busAmount) }}</td>
+									@endif
 									<td>
 										{{ array_sum($bk) }}
 									</td>

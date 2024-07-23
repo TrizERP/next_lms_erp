@@ -4393,23 +4393,35 @@ while ($current_date <= $post_end_date) {
                     {
                         $activity_master_title = explode('|', $get_result_activity_master->activity_master_title);
                         $activity_master_id = explode(',', $get_result_activity_master->ids);
-               
+                        
                         foreach($activity_master_title as $key2 => $activity_master_titles)
                         {
                             $table .= '<tr><td style="text-align:left;font-size:medium !important;width:60%;background:white !important;">' . $activity_master_titles .'</td>';
-                         
+                            $checked = 0;
                             if(isset($get_result_activity_marks[$activity_master_title[$key2]]) && !empty($get_result_activity_marks[$activity_master_title[$key2]]))
                             {
                                 foreach($get_result_activity_marks[$activity_master_title[$key2]] as $get_result_activity_mark)
                                 {
+                                    if(isset($get_result_activity_mark[0]) && $get_result_activity_mark[0]->activity_id==$activity_master_id[$key2]){
+                                        $checked++;
+                                    }                                  
+                                }
+                            }
+                            if($checked==0){
+                                foreach($get_result_activity_marks[$activity_master_title[$key2]] as $get_result_activity_mark)
+                                {
+                                    $table .= '<td style="text-align:center;font-size:medium !important;background:white !important;color:black;width:10%;">N/A</td>';
+                                }
+                            }else{
+                                foreach($get_result_activity_marks[$activity_master_title[$key2]] as $get_result_activity_mark)
+                                {
+                                    $table .= '<td style="text-align:center;font-size:medium !important;background:white !important;color:black;width:10%;">';
                                     if(isset($get_result_activity_mark[0]) && $get_result_activity_mark[0]->activity_id==$activity_master_id[$key2])
                                     {
-                                        $table .= '<td style="text-align:center;font-size:medium !important;background:white !important;color:black;width:10%;">&#10004</td>';
+                                        $table .= '&#10004';
                                     }
-                                    else
-                                    {
-                                        $table .= '<td style="text-align:center;font-size:medium !important;background:white !important;color:black;width:10%;">N/A</td>'; 
-                                    }
+                                    $table .= '</td>';
+                                  
                                 }
                             }
                             $table .= '</tr>';

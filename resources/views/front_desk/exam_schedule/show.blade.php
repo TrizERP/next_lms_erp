@@ -11,6 +11,14 @@
             </div>
         </div>
         <div class="card">
+        @if ($sessionData = Session::get('data'))
+            @if (isset($sessionData['status_code']))
+                <div class="alert alert-{{ $sessionData['status_code'] == 1 ? 'success' : 'danger' }} alert-block">
+                    <button type="button" class="close" data-dismiss="alert">×</button>
+                    <strong>{!! $sessionData['message'] !!}</strong>
+                </div>
+            @endif
+        @endif
             <form action="{{ route('exam_schedule.store') }}" enctype="multipart/form-data" method="post">
                 {{ method_field("POST") }}
                 {{csrf_field()}}
@@ -53,7 +61,10 @@
                                     <th>Date</th>
                                     <th>Standard</th>
                                     <th>Division</th>
-                                    <th>File</th>
+                                    <th class="text-left">File</th>
+                                    @if(session()->get('user_profile_name')=='Admin')
+                                    <th class="text-left">Action</th>
+                                    @endif
                                 </tr>
                             </thead>
                             <tbody>
@@ -69,7 +80,16 @@
                                     <td>{{date('d-m-Y',strtotime($data->date_))}}</td>
                                     <td>{{$data->std_name}}</td>
                                     <td>{{$data->division_name}}</td>
-                                    <td><a href="<?php echo asset('storage/exam_schedule/' . $data->file_name); ?>" target="_blank">View</a> </td>
+                                    <td><a href="{{ asset('storage/exam_schedule/' . $data->file_name); }}" target="_blank">View</a> </td>
+                                    @if(session()->get('user_profile_name')=='Admin')
+                                    <td>
+                                        <form action="{{ route('exam_schedule.destroy', $data->id)}}" method="post" class="d-inline">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" onclick="return confirmDelete();" class="btn btn-outline-danger"><i class="ti-trash"></i></button>
+                                        </form>
+                                    </td>
+                                    @endif
                                 </tr>
                                 @php
                                 $j++;
@@ -97,17 +117,17 @@
             dom: 'Bfrtip',
             buttons: [{
                     extend: 'excel',
-                    title: "Data export",
+                    title: "Exam Schedule report",
                     messageTop: hiddenTableHeader
                 },
                 {
                     extend: 'pdf',
-                    title: "Data export",
+                    title: "Exam Schedule report",
                     messageTop: hiddenTableHeader_short
                 },
                 {
                     extend: 'print',
-                    title: "Data export",
+                    title: "Exam Schedule report",
                     customize: function (win) {
                         $(win.document.body)
                             .css('font-size', '10pt')
