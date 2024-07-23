@@ -1985,6 +1985,9 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                 }
             }
         }
+        // lions bus amount (transport fees) 2024-07-20
+        $getTransportId = DB::table('fees_title')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear,'fees_title'=>'1'])->first();
+        // end 2024-07-20
 
         $left_bk_table = $this_month = $last_month = $left_bk_table2 = [];
         $i = 1;
@@ -2022,6 +2025,16 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                 $left_bk_table[$i]['discount'] = 0;
             }
 
+            // lions bus amount (transport fees) 2024-07-20
+            if($sub_institute_id==61){
+                if(!empty($getTransportId) && isset($getTransportId->fees_title)){
+                    $getTransportBreakoff = DB::table('fees_breakoff_other')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear,'fee_type_id'=>$getTransportId->fees_title,'month_id'=>$id,'student_id'=>$student_id])->value('amount'); 
+                    $left_bk_table[$i]['bus_amount']=$getTransportBreakoff;
+                }else{
+                    $left_bk_table[$i]['bus_amount']=0;
+                }
+            }
+            // end 2024-07-23
             $fees_total = $fees_total + $left_bk_table[$i]['bk'];
             $paid_total = $paid_total + $left_bk_table[$i]['paid'];
             $remain_total = $remain_total + $left_bk_table[$i]['remain'];
@@ -2029,6 +2042,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             $i = $i + 1;
         }
         }
+// echo "<pre>";print_r($left_bk_table);exit;
     // end 01/02/24
         
         $pending_fees = 0;
@@ -2226,6 +2240,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             );
             }
         }
+
      //24-04-2021 START Check Cheque Return charges
 
         $get_cheque_return_amt = SchoolModel::where(['id' => $sub_institute_id])->get()->toArray();
