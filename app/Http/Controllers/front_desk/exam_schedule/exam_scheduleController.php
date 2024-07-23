@@ -160,9 +160,24 @@ class exam_scheduleController extends Controller
      * @param  int  $id
      * @return void
      */
-    public function destroy($id)
+    public function destroy(Request $request,$id)
     {
-        //
+        $type = $request->input('type');
+
+        $delete = DB::table('exam_schedule')->where('id',$id)->delete();
+        if($delete){
+            $res = [
+                "status_code" => 1,
+                "message"     => "Deleted Successfully!!",
+            ];
+        }else{
+            $res = [
+                "status_code" => 0,
+                "message"     => "Failed to Delete!!",
+            ];
+        }
+
+        return is_mobile($type, "exam_schedule.index", $res, "redirect");
     }
 
     public function studentExamScheduleAPI(Request $request)
