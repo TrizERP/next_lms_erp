@@ -288,15 +288,13 @@
                                     <div class="col-md-4">
                                         <div class="form-group">
                                             <label for="">Image</label>
-                                            <input type="file" name="image" id="image" class="form-control"
-                                                placeholder="Enter Image">
+                                            <input type="file" name="image" id="image" class="form-control" accept="image/*"  placeholder="Enter Image">
                                         </div>
                                     </div>
                                     <div class="col-md-4">
                                         <div class="form-group">
                                             <label for="">File Attachment</label>
-                                            <input type="file" name="file_att" id="file_att"
-                                                class="form-control" placeholder="Enter File Attachment">
+                                            <input type="file" name="file_att" id="file_att" class="form-control" placeholder="Enter File Attachment">
                                         </div>
                                     </div>
                                 </div>
