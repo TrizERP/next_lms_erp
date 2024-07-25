@@ -287,6 +287,7 @@ class ApplyLeaveController extends Controller
         $selectedYear = $request->input('year');
         $type = $request->type;
         $user_id = session()->get('user_id');
+        $sub_institute_id = session()->get('sub_institute_id');
         if($type=="API"){
             $user_id=$request->user_id;
         }
@@ -294,6 +295,7 @@ class ApplyLeaveController extends Controller
         ->join('hrms_leave_types as hlt', 'hlt.id', '=', 'hel.leave_type_id')
         ->where('hel.user_id', $user_id)
         ->whereYear('hel.from_date', $selectedYear)
+        ->where('hel.sub_institute_id',$sub_institute_id)
         ->get()->toArray();
         
         return response()->json($data);
