@@ -2650,7 +2650,7 @@ while ($current_date <= $post_end_date) {
                         $pass_or_fail ='Passed & Promoted to class : '.$next_std;
                     }
 
-                $res['pass_or_fail'] = $pass_or_fail;
+                $res['pass_or_fail'] = ($format != "yearly") ? '' : $pass_or_fail;
 
        return $res;
 
@@ -3567,7 +3567,7 @@ while ($current_date <= $post_end_date) {
             $pass_or_fail ='Passed & Promoted to class : '.$next_std;
         }
 
-        $res['pass_or_fail'] = $pass_or_fail;
+        $res['pass_or_fail'] = ($format != "yearly") ? '' : $pass_or_fail;
        return $res;
     }
 
@@ -3715,27 +3715,27 @@ while ($current_date <= $post_end_date) {
                             <thead>
                                 <tr>
                                 <th><b>CO SCHOLASTIC</b></th>';
-                                if($academic_type=="primary"){
+                                // if($academic_type=="primary"){
                                 foreach ($both_term as $keys => $terms) {
                                     $co_scholastic .= '<th class="data_center"><b>' . $terms->title . '</b></th>';
                                     $term_ids[] = $terms->term_id;
                                 }
-                                }else{
-                                    $co_scholastic .='<th class="data_center"><b>' . $term_name . '</b></th>';
-                                }
+                                // }else{
+                                //     $co_scholastic .='<th class="data_center"><b>' . $term_name . '</b></th>';
+                                // }
                             $co_scholastic .= '</tr>
                             </thead>
                             <tbody>';
                     }
                     $co_scholastic .= '<td class="'.$value->co_scholastic_id.'">' . $childTitle . '</td>';
-                    if($academic_type=="primary"){
+                    // if($academic_type=="primary"){
                     foreach ($both_term as $keys => $terms) {
                         $grade = $termGrades[$terms->term_id] ?? '-';
                         $co_scholastic .= '<td class="data_center co_term-' . $terms->term_id . ' mterm-' . $terms->term_id . ' ">' . $grade . '</td>';
                     }
-                    }else{
-                        $co_scholastic .='<td class="data_center">' . $value->obtain_grade . '</td>';
-                    }
+                    // }else{
+                    //     $co_scholastic .='<td class="data_center">' . $value->obtain_grade . '</td>';
+                    // }
                     $co_scholastic .='</tr>';
                 }
     
@@ -4410,7 +4410,7 @@ while ($current_date <= $post_end_date) {
                             if($checked==0){
                                 foreach($get_result_activity_marks[$activity_master_title[$key2]] as $get_result_activity_mark)
                                 {
-                                    $table .= '<td style="text-align:center;font-size:medium !important;background:white !important;color:black;width:10%;">N/A</td>';
+                                    $table .= '<td style="text-align:center;font-size:medium !important;background:white !important;color:black;width:10%;">NA</td>';
                                 }
                             }else{
                                 foreach($get_result_activity_marks[$activity_master_title[$key2]] as $get_result_activity_mark)
