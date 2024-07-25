@@ -57,7 +57,7 @@
                                         <div class="col-md-4 form-group" style="margin-left: 0px !important">
                                             <select id='casual_leave_at_one_time' name="casual_leave_at_one_time" class="form-control" style="margin-left: 50px;">
                                             @foreach($casual_leave as $key=>$value)
-                                                    <option value="{{$value}}" @if(isset($data['get_casual_leave_data']->fieldvalue) && $data['get_casual_leave_data']->fieldvalue === $value) selected @endif>{{$value}}</option>
+                                                    <option value="{{$value}}" @if(isset($data['get_casual_leave_data']->fieldvalue) && $data['get_casual_leave_data']->fieldvalue == $value) selected @endif>{{$value}}</option>
                                             @endforeach
                                             </select>
                                         </div>
@@ -72,7 +72,7 @@
                                         <div class="col-md-4 form-group" style="margin-left: 0px !important">
                                             <select id='earned_leave_days' name="earned_leave_days" class="form-control" style="margin-left: 50px;">
                                             @foreach($casual_leave as $key=>$value)
-                                                    <option value="{{$value}}" @if(isset($data['get_earned_leave_data']->fieldvalue) && $data['get_earned_leave_data']->fieldvalue === $value) selected @endif>{{$value}}</option>
+                                                    <option value="{{$value}}" @if(isset($data['get_earned_leave_data']->fieldvalue) && $data['get_earned_leave_data']->fieldvalue == $value) selected @endif>{{$value}}</option>
                                             @endforeach
                                             </select>
                                         </div>
