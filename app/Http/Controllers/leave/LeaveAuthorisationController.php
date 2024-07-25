@@ -116,7 +116,10 @@ class LeaveAuthorisationController extends Controller
         $hrRemarks = $request->get('hr_remarks');
         $leaveStatuses = $request->get('single_leave_status');
         $employee_ids = $request->get('employee_id');
+        $checkedEmp = $request->checkedEmp;
         $leave_id = $request->get('id');
+        
+        // echo "<pre>";print_r($checkedEmp);exit;
 
         if($type == 'API')
         {
@@ -150,17 +153,17 @@ class LeaveAuthorisationController extends Controller
         }
         else
         {
-            foreach($employee_ids as $key => $value)
+            foreach($checkedEmp as $id => $value)
             {
                 DB::table('hrms_emp_leaves')
-                    ->where('id', $value)
+                    ->where('id', $id)
                     ->update([
-                        'hod_comment' => $hodComments[$value],
+                        'hod_comment' => $hodComments[$id],
                         'hod_comment_date' => now(),
-                        'hr_remarks' => $hrRemarks[$value],
+                        'hr_remarks' => $hrRemarks[$id],
                         'hr_remark_date' => now(),
                         'approved_by' => $user_name->employee_name,
-                        'status' => $leaveStatuses[$value],
+                        'status' => $leaveStatuses[$id],
                     ]);
             }
         }
