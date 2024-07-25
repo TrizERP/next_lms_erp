@@ -92,7 +92,7 @@ class LeaveSummaryReportController extends Controller
         $get_hrms_leave_allocations = $leaveAllocationsQuery->get()->toArray();
                    
         $get_employee_leave_lists = DB::table('hrms_emp_leaves as hel')
-            ->selectRaw("hel.*, u.*,CONCAT_WS(' ',u.first_name,u.last_name) AS employee_name, group_concat(hlt.leave_type) as leave_type, hlt.id as leave_id, hel.status as hel_status, group_concat(hel.day_type) as total_day_type, hd.department as department_name,hd.id as department_id")
+            ->selectRaw("hel.*, u.*,CONCAT_WS(' ',u.first_name,u.last_name) AS employee_name, group_concat(hlt.leave_type) as leave_type,group_concat(hel.status) as leave_status, hlt.id as leave_id, hel.status as hel_status, group_concat(hel.day_type) as total_day_type, hd.department as department_name,hd.id as department_id")
             ->join('tbluser as u', 'u.id', '=', 'hel.user_id')
             ->join('hrms_leave_types as hlt', 'hlt.id', '=', 'hel.leave_type_id')
             ->join('hrms_departments as hd', 'hd.id', '=', 'u.department_id')
@@ -117,22 +117,27 @@ class LeaveSummaryReportController extends Controller
         foreach($get_employee_leave_lists as $key => $value)
         {
             $Casual_Leave = explode(',', $value->leave_type);
+            $leave_status = explode(',', $value->leave_status);
             $day_type = explode(',', $value->total_day_type);
             $value_exits =$sum_exists = [];
 
             foreach($Casual_Leave as $key2 => $value2)
             {
-                $sum = $day_type[$key2];
-                $sum_exists[$value2][] = $day_type[$key2];
-                $new_data[$value2][$value->id]= $sum;
-                
-                if(in_array($value2, $value_exits))
-                {
-                    $new_data[$value2][$value->id]= array_sum($sum_exists[$value2]);
-                }
-                else
-                {
-                    $value_exits[] = $value2;
+
+                if(in_array($leave_status[$key2],['approved','approved_lwp','pending'])){
+                    $sum = $day_type[$key2];
+                    $sum_exists[$value2][] = $day_type[$key2];
+    
+                    $new_data[$value2][$value->id]= $sum;
+                    
+                    if(in_array($value2, $value_exits))
+                    {
+                        $new_data[$value2][$value->id]= array_sum($sum_exists[$value2]);
+                    }
+                    else
+                    {
+                        $value_exits[] = $value2;
+                    }
                 }
             }
             foreach($get_hrms_leave_types as $key => $value2)
@@ -145,7 +150,7 @@ class LeaveSummaryReportController extends Controller
             } 
 
         }
-
+        // echo "<pre>";print_r($new_data);exit;
         $res['allyears'] = Helpers::getPairYears();
         // $res['employees']=$employees;
         $res['employee_id']=$employee_id;
@@ -183,6 +188,7 @@ class LeaveSummaryReportController extends Controller
         ->where('hel.to_date','<=',($year+1).'-03-31')
         ->where('hel.leave_type_id',$leaveTypeId)
         ->where('user_id',$employee_id)
+        ->whereIn('hel.status',['approved','approved_lwp','pending'])
         ->get()->toArray();
 
         return $get_employee_leave_lists;
