@@ -28,7 +28,7 @@ class masterSetupSelectController extends Controller
         if($type=="API"){
             $sub_institute_id = $request->sub_institute_id;
         }
-        $res['seltypes'] = ['Education','Language','Skills'];
+        $res['seltypes'] = ['Qualification','Skills'];
         return is_mobile($type, "settings/master_setup_select/add", $res, "view");
     }
 

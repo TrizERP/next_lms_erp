@@ -309,7 +309,7 @@
                         <input type="text" id='noticereason' name="noticereason" class="form-control">
                     </div>
                     <div class="col-md-4 form-group">
-                        <label>Opening Leave</label>
+                        <label>EL Opening Leave</label>
                         <input type="text" id='openingleave' name="openingleave" class="form-control">
                     </div>
 
