@@ -25,7 +25,7 @@ class notification_report_controller extends Controller
     {
         $type = $request->input('type');
 
-        $res['status_code'] = "1";
+        $res['status_code'] = 1;
         $res['message'] = "Success";
 
         return is_mobile($type, "easy_comm/send_notification_report/show_notification_report", $res, "view");

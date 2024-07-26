@@ -4410,7 +4410,7 @@ while ($current_date <= $post_end_date) {
                             if($checked==0){
                                 foreach($get_result_activity_marks[$activity_master_title[$key2]] as $get_result_activity_mark)
                                 {
-                                    $table .= '<td style="text-align:center;font-size:medium !important;background:white !important;color:black;width:10%;">N/A</td>';
+                                    $table .= '<td style="text-align:center;font-size:medium !important;background:white !important;color:black;width:10%;">NA</td>';
                                 }
                             }else{
                                 foreach($get_result_activity_marks[$activity_master_title[$key2]] as $get_result_activity_mark)

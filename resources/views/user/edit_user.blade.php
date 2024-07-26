@@ -339,7 +339,7 @@ br {
                                 <input type="text" id='noticereason' value="{{$data['noticereason']}}" name="noticereason" class="form-control">
                             </div>
                             <div class="col-md-4 form-group">
-                                <label>Opening Leave</label>
+                                <label>EL Opening Leave</label>
                                 <input type="text" id='openingleave' value="{{$data['openingleave']}}" name="openingleave" class="form-control">
                             </div>
 
@@ -356,7 +356,10 @@ br {
                                 <label>CL Opening Leave</label>
                                 <input type="text" id='CL_opening_leave' value="{{$data['CL_opening_leave']}}" name="CL_opening_leave" class="form-control">
                             </div>
-
+                            <div class="col-md-4 form-group">
+                                <label>Total Experience</label>
+                                <input type="text" id='total_experience' value="{{$data['total_experience']}}" name="total_experience" class="form-control">
+                            </div>
                             <div class="col-md-12 form-group">
                                 <h4>Report To</h4>
                             </div>
