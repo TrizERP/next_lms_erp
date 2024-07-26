@@ -401,7 +401,10 @@ class studentResultController extends Controller
         $html_content = str_replace(htmlspecialchars("<<class_teacher_remark_anual>>"), $atten['anual'], $html_content);
         $html_content = str_replace(htmlspecialchars("<<attandance_altius>>"), $atten['table'], $html_content);
     }
-        
+    
+    $termAtten = $this->getTermAttendance($standard_id, $value['id'], $format,'');
+    $html_content = str_replace(htmlspecialchars("<<term_attendance>>"), $termAtten, $html_content);
+
         if (strpos($html_content, htmlspecialchars('<<total_attendance_manual>>')) !== false) {
             $atten = $this->get_attendance($standard_id, $value['id'], $format, "total_attendance_manual");
             $html_content = str_replace(htmlspecialchars("<<total_attendance_manual>>"), $atten['table'], $html_content);
@@ -3700,7 +3703,12 @@ while ($current_date <= $post_end_date) {
     
             foreach ($groupedData as $childTitle => $termGrades) {
                 $co_scholastic .= '<tr>';
-                if ($counter < 8) { 
+                $break = 8;
+                if($academic_type=="primary"){
+                    $break=6;
+                }
+
+                if ($counter < $break) { 
                     $co_scholastic .= '<td class="'.$value->co_scholastic_id.'">' . $childTitle . '</td>';
                     foreach ($both_term as $keys => $terms) {
                         $grade = $termGrades[$terms->term_id] ?? '-';
@@ -3708,34 +3716,34 @@ while ($current_date <= $post_end_date) {
                     }
                     
                 } else {
-                    if ($counter === 8) {
+                    if ($counter === $break) {
                         $co_scholastic .= '</tr></tbody></table></div>';
                         $co_scholastic .= '<div style="width:50%;">
                         <table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" cellpadding="0" border="1">
                             <thead>
                                 <tr>
                                 <th><b>CO SCHOLASTIC</b></th>';
-                                if($academic_type=="primary"){
+                                // if($academic_type=="primary"){
                                 foreach ($both_term as $keys => $terms) {
                                     $co_scholastic .= '<th class="data_center"><b>' . $terms->title . '</b></th>';
                                     $term_ids[] = $terms->term_id;
                                 }
-                                }else{
-                                    $co_scholastic .='<th class="data_center"><b>' . $term_name . '</b></th>';
-                                }
+                                // }else{
+                                //     $co_scholastic .='<th class="data_center"><b>' . $term_name . '</b></th>';
+                                // }
                             $co_scholastic .= '</tr>
                             </thead>
                             <tbody>';
                     }
                     $co_scholastic .= '<td class="'.$value->co_scholastic_id.'">' . $childTitle . '</td>';
-                    if($academic_type=="primary"){
+                    // if($academic_type=="primary"){
                     foreach ($both_term as $keys => $terms) {
                         $grade = $termGrades[$terms->term_id] ?? '-';
                         $co_scholastic .= '<td class="data_center co_term-' . $terms->term_id . ' mterm-' . $terms->term_id . ' ">' . $grade . '</td>';
                     }
-                    }else{
-                        $co_scholastic .='<td class="data_center">' . $value->obtain_grade . '</td>';
-                    }
+                    // }else{
+                    //     $co_scholastic .='<td class="data_center">' . $value->obtain_grade . '</td>';
+                    // }
                     $co_scholastic .='</tr>';
                 }
     
@@ -4435,5 +4443,81 @@ while ($current_date <= $post_end_date) {
         $res['table'] = $table;
         return $res;
     }
-    
+
+        public function getTermAttendance($standard_id, $student_id, $format, $type)
+        {
+            $sub_institute_id = session()->get('sub_institute_id');
+            $syear = session()->get('syear');
+
+            $get_term = DB::table('academic_year')
+                    ->selectRaw('group_concat(id) as id,group_concat(term_id) as term_id,group_concat(title) as title,group_concat(start_date) as start_date,group_concat(end_date) as end_date,group_concat(post_start_date) as post_start_date,group_concat(post_end_date) as post_end_date')
+                    ->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])
+                    ->when($format!=='yearly',function($q) use($format){
+                        $q->where('term_id',$format);
+                    })
+                    ->groupBy('syear')
+                    ->first();
+            // echo "<pre>";print_r($student_id);exit;
+            $post_start_date_ex = explode(',',$get_term->post_start_date);
+            $post_end_date_ex = explode(',',$get_term->post_end_date);
+            $post_start_date_final_ex = explode(',',$get_term->post_start_date);
+            $post_end_date_final_ex = explode(',',$get_term->post_end_date);
+
+            $post_start_date = $post_start_date_ex[0];
+            $post_end_date = isset($post_end_date_ex[1]) ? $post_end_date_ex[1] : $post_end_date_ex[0];
+            $post_start_date_final =  $post_start_date_final_ex[0];
+            $post_end_date_final = isset($post_end_date_final_ex[1]) ? $post_end_date_final_ex[1] : $post_end_date_final_ex[0];
+
+            $cal_event = DB::table('calendar_events as ce')
+            ->join('academic_year as ay', 'ce.syear', '=', 'ay.syear')
+            ->where(['ce.sub_institute_id' => $sub_institute_id, 'ce.syear' => $syear])
+            ->WhereRaw("FIND_IN_SET('$standard_id', ce.standard) AND ce.event_type in ('holiday','vacation')")
+            ->whereBetween('ce.school_date', [$post_start_date, $post_end_date])
+            ->when($format!=='yearly',function($q) use($format){
+                $q->where('ay.term_id',$format);
+            })
+            ->groupBy('ce.school_date')
+            ->get()
+            ->toArray();
+
+            $calArr = array();
+            foreach ($cal_event as $calRow) {
+            $calArr[] = $calRow->school_date;
+            }
+
+            $attTotDays = 0;
+            while ($post_start_date <= $post_end_date) {
+                if (date('w', strtotime($post_start_date)) != 0) {
+                    $attTotDays++;
+                }
+                $post_start_date = date('Y-m-d', strtotime($post_start_date . ' +1 day'));
+            }
+            $attTotDays = $attTotDays - count($calArr);
+
+            // db::enableQueryLog();
+            $attarray = DB::table('attendance_student as ap')
+            ->join('tblstudent as s', 'ap.student_id', '=', 's.id')
+            ->join('tblstudent_enrollment as se', function ($join) {
+            $join->on('s.id', '=', 'se.student_id')
+            ->whereNull('se.end_date');
+            })
+            ->select('s.id', 's.first_name', DB::raw('COUNT(DISTINCT ap.attendance_date) AS present_day'))
+            ->where('se.sub_institute_id', $sub_institute_id)
+            ->where('se.syear', $syear)
+            ->where('se.standard_id', $standard_id)
+            ->where('ap.student_id', $student_id)
+            ->where('ap.attendance_code', 'P')
+            ->whereBetween('ap.attendance_date', [$post_start_date_final, $post_end_date_final])
+            ->groupBy('s.id')
+            ->get();
+            // dd(db::getQueryLog($attarray));
+            $attarray = $attarray->pluck('present_day', 'id')->all();
+            if (isset($attarray[$student_id])) {
+                $attendance = $attarray[$student_id] . '/' . $attTotDays;
+            } else {
+                $attendance = '-/' . $attTotDays; 
+            }
+         
+            return $attendance;
+        }
 }

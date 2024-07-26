@@ -405,6 +405,7 @@
         // Calculate the difference in days, including both start and end dates
         var timeDiff = toDate.getTime() - fromDate.getTime();
         var diffDays = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
+        var SundayDiffDays = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
 
         var sandwhichLeaves = {!! json_encode($sandwhichLeaves) !!};
         var casualLeaves = {!! json_encode($casualLeaves) !!};
@@ -486,23 +487,36 @@
 
                     // Subtract Saturdays and Sundays
                     var saturdaysSundaysCount = 0;
-
+                    // Subtract Sundays
+                    var SundaysCount = 0;
                     for (var date = new Date(fromDate); date <= toDate; date.setDate(date.getDate() + 1)) {
                         var dayOfWeek = date.getDay();
+                        // Subtract Saturdays and Sundays
                         if (dayOfWeek === 0 || dayOfWeek === 6) // 0 is Sunday, 6 is Saturday
                         { 
                             saturdaysSundaysCount++;
                         }
+                        // Subtract Sundays
+                        if (dayOfWeek === 0) // 0 is Sunday
+                        { 
+                            SundaysCount++;
+                        }
                     }
-
+                    console.log(SundayDiffDays);
+                    console.log('-');
                     diffDays -= (holidaysCount + saturdaysSundaysCount);
-                    // console.log(diffDays);
+                    SundayDiffDays -= (holidaysCount + SundaysCount); // Subtract Sundays
+                    console.log(SundayDiffDays);
                     $('#without_sandwich_total_appear_days').empty();
                     $('#without_sandwich_criteria_validation').empty();
 
-                    if(leaveType === '9' && earnedLeaves.fieldvalue && earnedLeaves.fieldvalue!=='' && diffDays > earnedLeaves.fieldvalue){
+                    if(leaveType === '9' && earnedLeaves.fieldvalue && earnedLeaves.fieldvalue!=='' && SundayDiffDays > earnedLeaves.fieldvalue){
                         $('#without_sandwich_criteria_validation').removeClass('success');
                         $('#without_sandwich_criteria_validation').addClass("error").text('The system will not allow more than the ' + earnedLeaves.fieldvalue + ' criteria set by the institute.');
+                    }else if(leaveType === '9'){
+                        $('#without_sandwich_criteria_validation').removeClass('error');
+                        $('#without_sandwich_total_appear_days').addClass("success").text('Appear leave - ' + SundayDiffDays + ' days');
+                        $('#total_days').val(SundayDiffDays);
                     }else{
                         $('#without_sandwich_criteria_validation').removeClass('error');
                         $('#without_sandwich_total_appear_days').addClass("success").text('Appear leave - ' + diffDays + ' days');

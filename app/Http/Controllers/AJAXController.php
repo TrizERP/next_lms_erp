@@ -301,8 +301,18 @@ class AJAXController extends Controller
                 if (isset($pathParts['filename'])) {
                     $module_name = $pathParts['filename'];
                 }
-                if($parsedUrl['path'] == '/lms/question_paper/create')
+                if($parsedUrl['path'] == '/lms/question_paper/create'){
                     $module_name = 'question_paper';
+                }
+                if($parsedUrl['path'] == '/student/student_homework_submission/create'){
+                    $module_name = 'student_homework_submission';
+                }
+                $path = "/student/student_homework/create";
+                $keyword = "student_homework";
+                
+                if (strpos($path, $keyword) !== false) {
+                    $module_name = "student_homework";
+                }
             }
         }
 
@@ -314,7 +324,8 @@ class AJAXController extends Controller
             '5' => 'questionReport',
             '6' => 'parent_communication',
             '7' => 'question_paper',
-            '8' => 'co_scholastic_marks_entry',            
+            '8' => 'co_scholastic_marks_entry', 
+            '11' => 'student_homework_submission', // 2024-07-25          
         ];
         // search student want divisions timetable wise 14-06-2024
         if(in_array(session()->get('sub_institute_id'),[61])){

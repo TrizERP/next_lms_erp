@@ -610,14 +610,14 @@ class studentHomeworkController extends Controller
         $teacher_id = $request->session()->get('user_id');
         $standard_id = $request->input('standard_id');
 
-        if ($profile_parent_id == '1') {
-            $subject_teacher_subjects_data = DB::table('sub_std_map as s')
-                ->selectRaw("s.subject_id,s.display_name,s.standard_id, '' as academic_section_id,'' as division_id,'' as teacher_id")
-                ->where('s.sub_institute_id', $sub_institute_id)
-                ->where('s.standard_id', $standard_id)
-                ->groupByRaw('s.subject_id,s.standard_id')
-                ->orderBy('s.display_name')->get()->toArray();
-        } else {
+        // if ($profile_parent_id == '1') {
+        //     $subject_teacher_subjects_data = DB::table('sub_std_map as s')
+        //         ->selectRaw("s.subject_id,s.display_name,s.standard_id, '' as academic_section_id,'' as division_id,'' as teacher_id")
+        //         ->where('s.sub_institute_id', $sub_institute_id)
+        //         ->where('s.standard_id', $standard_id)
+        //         ->groupByRaw('s.subject_id,s.standard_id')
+        //         ->orderBy('s.display_name')->get()->toArray();
+        // } else {
             $subject_teacher_subjects_data = DB::table('sub_std_map as s')
                 ->join('timetable as t', function ($join) {
                     $join->whereRaw('t.standard_id = s.standard_id AND t.sub_institute_id = s.sub_institute_id AND t.subject_id = s.subject_id');
@@ -625,10 +625,13 @@ class studentHomeworkController extends Controller
                 ->selectRaw("s.subject_id,s.display_name,t.academic_section_id,t.standard_id,t.division_id,t.teacher_id")
                 ->where('s.sub_institute_id', $sub_institute_id)
                 ->where('s.standard_id', $standard_id)
+                ->when($request->division_id,function($q) use($request){
+                    $q->where('t.division_id',$request->division_id);
+                })
                 ->where('t.teacher_id', $teacher_id)
                 ->groupByRaw('s.subject_id,s.standard_id')
                 ->orderBy('s.display_name')->get()->toArray();
-        }
+        // }
 
         // $class_teacher_sql = "SELECT s.subject_id,s.display_name,ct.grade_id,ct.standard_id,ct.division_id,ct.teacher_id
         // 					FROM sub_std_map s
