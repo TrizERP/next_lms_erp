@@ -208,7 +208,8 @@ class fees_collect_controller extends Controller
 
             if(isset($paid_result) && !empty($paid_result)){
                 $pd_stu_id = $paid_result['stu_data']['student_id'];
-                $remain = $paid_result['final_fee']['Total'];
+                // $remain = $paid_result['final_fee']['Total'];
+                $remain = $paid_result['stu_data']['pending']; // 2024-07-26
                 $previous = isset($paid_result['final_fee']['Previous Fees']) ? $paid_result['final_fee']['Previous Fees'] : 0;
                 if ($bk_stu_id == $pd_stu_id) {
 
