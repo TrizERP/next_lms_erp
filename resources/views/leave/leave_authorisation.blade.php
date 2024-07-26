@@ -56,12 +56,13 @@
         </div>
         @if(isset($data['get_employee_leave_lists']))
             <div class="card">
-                <form action="{{ route('leave.authorisation.store') }}" method="post">
+                <form action="{{ route('leave.authorisation.store') }}" method="post" onsubmit="return validateForm()">
                 @csrf
                 <div class="table-responsive mt-20 tz-report-table">
                     <table id="example" class="table table-striped">
                         <thead>
                             <tr>
+                                <th><input type="checkbox" name="all" id="ckbCheckAll" class="ckbox">  </th>
                                 <th>Sr No.</th>
                                 <th>Applied Date</th>
                                 <th>From Date</th>
@@ -98,8 +99,8 @@
                                 $numberOfDays = $to_date->diffInDays($from_date);
                             @endphp
                                 <tr>
+                                    <td><input type="checkbox" name="checkedEmp[{{$employee_leave_lists->id}}]" class="ckbox1"></td>
                                     <td>{{ $j++ }}
-                                    <input type="hidden" name="employee_id[]" value="{{ $employee_leave_lists->id }}">
                                     </td>
                                     <td>{{ \Carbon\Carbon::parse($employee_leave_lists->created_at)->format('d-M-Y') }}</td>
                                     <td>{{ \Carbon\Carbon::parse($employee_leave_lists->from_date)->format('d-M-Y') }}</td>
@@ -193,5 +194,29 @@
         var year = "{{$year}}";
         window.open('leave-summary-report/create?department_id=' + dep_id + '&emp_id=' + user_id + '&years=' + year, '_blank', 'scrollbars=yes,resizable=no,status=no,location=no,toolbar=no,menubar=no,width=1200,height=1200,left=100,top=100');
     }
+
+    function validateForm() {
+        var checkboxes = document.querySelectorAll('input[name^="checkedEmp["]');
+        var anyChecked = false;
+        
+        checkboxes.forEach(function(checkbox) {
+            if (checkbox.checked) {
+                anyChecked = true;
+            }
+        });
+        
+        if (!anyChecked) {
+            alert("Please select at least one checkbox");
+            return false; 
+        }
+        
+        return true;
+    }
+    $(function () {
+        var $tblChkBox = $("input:checkbox");
+        $("#ckbCheckAll").on("click", function () {
+            $($tblChkBox).prop('checked', $(this).prop('checked'));
+        });
+    });
 </script>
 @include('includes.footer')
