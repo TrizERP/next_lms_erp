@@ -23,6 +23,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 use function App\Helpers\is_mobile;
 use Illuminate\Support\Facades\Storage;
+use function App\Helpers\get_string;
 
 class bulkStudentController extends Controller
 {
@@ -48,83 +49,80 @@ class bulkStudentController extends Controller
     {
 
         $sub_institute_id = $request->session()->get('sub_institute_id');
-
-        $tblcustom_fields['enrollment_no']['name'] = 'Gr No';
-        $tblcustom_fields['first_name']['name'] = 'Student Name';
+        // common field names
+        $tblcustom_fields['enrollment_no']['name'] = get_string('grno', 'request');
+        $tblcustom_fields['first_name']['name'] = get_string('studentname', 'request');
+        $tblcustom_fields['father_name']['name'] = get_string('fathername','request');
+        $tblcustom_fields['division']['name'] = get_string('division','request');
+        $tblcustom_fields['student_mobile']['name'] = get_string('studentmobile','request');
+        $tblcustom_fields['anuualincome']['name'] = get_string('annualincome','request');
+        $tblcustom_fields['uniqueid']['name'] = get_string('uniqueid','request');
+        $tblcustom_fields['cast']['name'] =  get_string('cast','request');
         $tblcustom_fields['middle_name']['name'] = 'Middle Name';
         $tblcustom_fields['last_name']['name'] = 'Surname';
-        //$tblcustom_fields['standard']['name'] = 'Standard';
-        $tblcustom_fields['division']['name'] = 'Division';
-        if($sub_institute_id == 257)
-        {
-            $tblcustom_fields['student_quota']['name'] = 'Student Quota';
-        }
-        //$tblcustom_fields['grade']['name'] = 'Academic Section';
-        $tblcustom_fields['mobile']['name'] = 'Mobile';
-        $tblcustom_fields['father_name']['name'] = 'Father Name';
         $tblcustom_fields['mother_name']['name'] = 'Mother Name';
-        $tblcustom_fields['gender']['name'] = 'Gender';
-        $tblcustom_fields['dob']['name'] = 'Birthdate';
         $tblcustom_fields['mother_mobile']['name'] = 'Mother Mobile';
+        $tblcustom_fields['mobile']['name'] = 'mobile';
+        $tblcustom_fields['dob']['name'] = 'Birthdate';
+        $tblcustom_fields['gender']['name'] = 'Gender';
         $tblcustom_fields['email']['name'] = 'Email';
-        $tblcustom_fields['username']['name'] = 'Username';
-        //$tblcustom_fields['username']['name'] = 'Username';
-        //$tblcustom_fields['admission_year']['name'] = 'Admission Year';
         $tblcustom_fields['admission_date']['name'] = 'Admission Date';
         $tblcustom_fields['address']['name'] = 'Address';
         $tblcustom_fields['city']['name'] = 'City';
         $tblcustom_fields['state']['name'] = 'State';
         $tblcustom_fields['pincode']['name'] = 'Pincode';
-        $tblcustom_fields['religion']['name'] = 'Religion';
         $tblcustom_fields['house']['name'] = 'House';
-        $tblcustom_fields['cast']['name'] = 'Caste';
-        $tblcustom_fields['subcast']['name'] = 'Subcaste';
         $tblcustom_fields['bloodgroup']['name'] = 'Blood Group';
-        $tblcustom_fields['adharnumber']['name'] = 'Adhar Number';
-        $tblcustom_fields['anuualincome']['name'] = 'Annual Income';
         $tblcustom_fields['roll_no']['name'] = 'Roll No';
         $tblcustom_fields['image']['name'] = 'Image';
-        $tblcustom_fields['uniqueid']['name'] = 'Unique ID';
-        $tblcustom_fields['dise_uid']['name'] = 'Dise U_ID';
 
+        // common field type
         $tblcustom_fields['enrollment_no']['type'] = 'textbox';
         $tblcustom_fields['first_name']['type'] = 'textbox';
         $tblcustom_fields['middle_name']['type'] = 'textbox';
         $tblcustom_fields['last_name']['type'] = 'textbox';
         //$tblcustom_fields['standard']['type'] = 'dropdown';
         $tblcustom_fields['division']['type'] = 'dropdown';
-        if($sub_institute_id == 257)
-        {
-            $tblcustom_fields['student_quota']['type'] = 'dropdown';
-        }
-        //$tblcustom_fields['grade']['type'] = 'dropdown';
         $tblcustom_fields['mobile']['type'] = 'textbox';
+        $tblcustom_fields['student_mobile']['type'] = 'textbox';
         $tblcustom_fields['father_name']['type'] = 'textbox';
         $tblcustom_fields['mother_name']['type'] = 'textbox';
         $tblcustom_fields['gender']['type'] = 'dropdown';
         $tblcustom_fields['dob']['type'] = 'date';
         $tblcustom_fields['mother_mobile']['type'] = 'textbox';
         $tblcustom_fields['email']['type'] = 'textbox';
-        $tblcustom_fields['username']['type'] = 'textbox';
-        //$tblcustom_fields['username']['type'] = 'textbox';
-        //$tblcustom_fields['admission_year']['type'] = 'textbox';
         $tblcustom_fields['admission_date']['type'] = 'date';
         $tblcustom_fields['address']['type'] = 'textbox';
         $tblcustom_fields['city']['type'] = 'textbox';
         $tblcustom_fields['state']['type'] = 'textbox';
         $tblcustom_fields['pincode']['type'] = 'textbox';
-        $tblcustom_fields['religion']['type'] = 'dropdown';
         $tblcustom_fields['house']['type'] = 'dropdown';
         $tblcustom_fields['cast']['type'] = 'dropdown';
-        $tblcustom_fields['subcast']['type'] = 'textbox';
         $tblcustom_fields['bloodgroup']['type'] = 'dropdown';
-        $tblcustom_fields['adharnumber']['type'] = 'textbox';
         $tblcustom_fields['anuualincome']['type'] = 'textbox';
         $tblcustom_fields['roll_no']['type'] = 'textbox';
         $tblcustom_fields['image']['type'] = 'file';
         $tblcustom_fields['uniqueid']['type'] = 'textbox';
-        $tblcustom_fields['dise_uid']['type'] = 'textbox';
+        // not common
+        if($sub_institute_id != 257){
+            // field 
+            $tblcustom_fields['religion']['name'] = 'Religion';
+            $tblcustom_fields['subcast']['name'] = 'Subcaste';
+            $tblcustom_fields['adharnumber']['name'] = 'Adhar Number';
+            $tblcustom_fields['dise_uid']['name'] = 'Dise U_ID';
+            // field type
+            $tblcustom_fields['religion']['type'] = 'dropdown';
+            $tblcustom_fields['subcast']['type'] = 'textbox';
+            $tblcustom_fields['adharnumber']['type'] = 'textbox';
+            $tblcustom_fields['dise_uid']['type'] = 'textbox';
+        }
 
+        // only in cn
+        if($sub_institute_id == 257)
+        {
+            $tblcustom_fields['student_quota']['name'] = get_string('studentquota','request');
+            $tblcustom_fields['student_quota']['type'] = 'dropdown';
+        }
         $tblcustoms = tblcustomfieldsModel::select(['field_name', 'field_label', 'field_type'])
             ->where(["status" => "1", "table_name" => "tblstudent"])
             ->whereRaw('(sub_institute_id = ' . $sub_institute_id . ' OR common_to_all = 1)')
@@ -137,6 +135,7 @@ class bulkStudentController extends Controller
             $tblcustom_fields[$value['field_name']]['name'] = $value['field_label'];
             $tblcustom_fields[$value['field_name']]['type'] = $value['field_type'];
         }
+        // echo "<pre>";print_r($tblcustom_fields);exit;
 
         return $tblcustom_fields;
 
