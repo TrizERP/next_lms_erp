@@ -144,7 +144,7 @@
                                 @foreach($data['headers'] as $hkey => $header)
                                     <th data-toggle="tooltip" title="{{$header['name']}}"> {{$header['name']}} </th>
                                 @endforeach
-                                <th data-toggle="tooltip" title="Updated On"> Updated On </th>
+                                <th data-toggle="tooltip" title="Updated On" class="text-left"> Updated On </th>
                             </tr>
                         </thead>
                         <tbody>
@@ -157,11 +157,11 @@
                                         @else
                                             @if($header['type'] == "textbox")
                                                 @if($hkey == "mobile" || $hkey == "mother_mobile")
-                                                <td><input type="text" pattern="[1-9]{1}[0-9]{9}" name="values[{{$value->id}}][{{$hkey}}]" value="{{$value->$hkey}}"></td>
+                                                <td><input type="text" pattern="[1-9]{1}[0-9]{9}" name="values[{{$value->id}}][{{$hkey}}]" value="{{$value->$hkey}}" class="form-control"></td>
                                                 @elseif($hkey == "email")
                                                 <td>{{$value->$hkey}}</td>
                                                 @else
-                                                <td><input type="text" name="values[{{$value->id}}][{{$hkey}}]" value="{{$value->$hkey}}"></td>
+                                                <td><input type="text" name="values[{{$value->id}}][{{$hkey}}]" value="{{$value->$hkey}}"  class="form-control"></td>
                                                 @endif
                                             @elseif($header['type'] == "dropdown")
                                             <td>
