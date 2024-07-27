@@ -80,6 +80,7 @@
                                     <th>Sr No.</th>
                                     <th>Emp.No</th>
                                     <th>Emp.Name</th>
+                                    <th>Department</th>
                                     <th>Gender</th>
                                     @foreach ($data['payrollTypes'] as $payrollType)
                                         <th class="text-left">{{$payrollType->payroll_name}}</th>
@@ -92,7 +93,8 @@
                                     <tr>
                                         <td>{{$key+1}}</td>
                                         <td>{{$value['employee_no']}}</td>
-                                        <td>{{$value['first_name'] .' '. $value['middle_name'] .' '.$value['last_name']}} ({{$value['department']}}) </td>
+                                        <td>{{$value['first_name'] .' '. $value['middle_name'] .' '.$value['last_name']}}</td>
+                                        <td>{{$value['department']}}</td>
                                         <td>{{$value['gender']}}<input type="hidden" name="emp[{{$value['id']}}][]" value="{{$value['gender']}}"></td>
                                          
                                         @foreach ($data['payrollTypes'] as $payrollType)
@@ -159,7 +161,6 @@
 <script>
     $(document).ready(function () {
         var table = $('#example').DataTable({
-            ordering: false,
             select: true,
             lengthMenu: [
                 [100, 500, 1000, -1],
