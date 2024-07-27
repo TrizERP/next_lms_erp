@@ -230,7 +230,6 @@
     $(document).ready(function () {
         // $('#department_ids').prop('required',true);
         var table = $('#example').DataTable({
-            ordering: false,
             select: true,
             lengthMenu: [
                 [100, 500, 1000, -1],
