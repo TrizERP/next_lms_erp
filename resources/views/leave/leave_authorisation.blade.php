@@ -41,7 +41,7 @@
                             <label>Leave Status</label>
                             <select id='leave_status' name="leave_status[]" class="form-control" multiple required>
                                 @foreach($leave_status as $leave)
-                                    <option value="{{ $leave }}" @if(isset($data['get_leave_status']) && in_array($leave,$data['get_leave_status']) ) selected @endif>
+                                    <option value="{{ $leave }}" @if(isset($data['get_leave_status']) && in_array($leave,$data['get_leave_status']) ) selected @elseif(isset($data['defaultSel']) && $data['defaultSel']==$leave) selected @endif>
                                         {{ $leave }}
                                     </option>
                                 @endforeach
@@ -147,7 +147,6 @@
 <script>
     $(document).ready(function () {
         var table = $('#example').DataTable({
-            ordering: false,
             select: true,
             lengthMenu: [
                 [100, 500, 1000, -1],
