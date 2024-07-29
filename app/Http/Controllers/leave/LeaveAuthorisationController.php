@@ -34,7 +34,7 @@ class LeaveAuthorisationController extends Controller
             $sub_institute_id = $request->session()->get('sub_institute_id');
         }
 
-        $from_date_formatted = Carbon::now()->format('Y-m-d');
+        $from_date_formatted = Carbon::now()->subMonth()->format('Y-m-d');
         $to_date_formatted = Carbon::now()->format('Y-m-d');
 
         $get_employee_leave_lists = DB::table('hrms_emp_leaves as hel')
@@ -50,6 +50,7 @@ class LeaveAuthorisationController extends Controller
         $res['get_employee_leave_lists'] = $get_employee_leave_lists;
         $res['from_date_formatted'] = $from_date_formatted;
         $res['to_date_formatted'] = $to_date_formatted;
+        $res['defaultSel'] = "Pending";
         // echo "<pre>";print_r($get_employee_leave_lists);exit;
         // return view('leave.leave_authorisation', compact('from_date_formatted', 'to_date_formatted'));
         return is_mobile($type, "leave/leave_authorisation", $res, "view");
