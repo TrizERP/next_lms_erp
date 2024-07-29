@@ -2681,10 +2681,10 @@ while ($current_date <= $post_end_date) {
         $get_subject = $this->get_subject($sub_institute_id, $syear, $student_id, $standard_id);
         $exam_marks = $this->get_exam_marks($sub_institute_id, $student_id, 'best_of_2');
 
-        $heads =DB::table('result_create_exam as rce')->join('result_exam_master as rem', 'rem.id', '=', 'rce.exam_id')->where('rce.report_card_status','Y')->whereRaw($extra_exam)->where(['rce.sub_institute_id' => $sub_institute_id, 'rce.syear' => $syear, 'rce.standard_id' => $standard_id])
+        $heads =DB::table('result_create_exam as rce')->join('result_exam_master as rem', 'rem.id', '=', 'rce.exam_id')->where('rce.report_card_status','Y')->where(['rce.sub_institute_id' => $sub_institute_id, 'rce.syear' => $syear, 'rce.standard_id' => $standard_id])
         ->selectRaw('rce.id,rce.title,rce.term_id,rce.standard_id,rem.weightage,rem.ExamTitle,rce.subject_id,rce.points,rce.con_point,rem.Id as ExamId,rce.exam_id')
         ->orderBy('rce.sort_order')
-        ->get()->toArray();
+        ->get()->toArray();//->whereRaw($extra_exam)
 
         // Initialize table
         $table = '<style>.data_center{text-align:center !important;}</style>';
@@ -2698,32 +2698,33 @@ while ($current_date <= $post_end_date) {
         $total_weightage = $overall_total = $all_colspan = 0;
 
         // Generate term headers
-        foreach ($term_name as $terms) {
+        /*foreach ($term_name as $terms) {
             $term_exam_titles = array_filter($heads, function ($title) use ($terms) {
                 return $title->term_id == $terms->term_id;
-            });
+            });*/
 
-            $all_colspan += count($term_exam_titles);
-        }
+            $all_colspan += count($heads);
+        //}
 
         $table .= '<td colspan='.$all_colspan.' class="data_center" style="background:black;color:white"><b>Progress Report Card</b></td></tr>
                     <tr><th><b>Subject</b></th>';
         
         // Generate exam headers
-        foreach ($term_name as $terms) {
+        //foreach ($term_name as $terms) {
             $total_mark = 0;
             $newHead = [];
             foreach ($heads as $title) {
                 if(!isset($newHead[$title->title])){
                     $newHead[$title->title] = $title;
-                    if ($terms->term_id == $title->term_id) {
-                        $table .= '<th class="data_center"><b>' . $title->title . '<br>(' . $title->points . ')</b></th>';
+                    //if ($terms->term_id == $title->term_id) {
+                        $table .= '<th class="data_center"><b>' . $title->title . '<br>(' . $title->con_point . ')</b></th>';
                         $total_mark += $title->weightage;
-                    }
+                    //}
                 } 
+                $overall_total += $total_mark;
             }
-            $overall_total += $total_mark;
-        }
+            
+        //}
       
         $table .= '</tr></thead><tbody>';
 
@@ -2735,30 +2736,31 @@ while ($current_date <= $post_end_date) {
             $both_term_ob_mark = 0;
             $table .= '<tr><td '.$val->subject_id.'>' . $val->subject_name . '</td>';
 
-            foreach ($term_name as $terms) {
+            //foreach ($term_name as $terms) {
                 $ob_main_mark = 0;
-                $total_marks =0;
+                $total_marks = 0;
                 $title_exam = $to_marks=$w_marks=[];
 
                 foreach ($heads as $title) {
-                    if($title->subject_id==$val->subject_id  && $terms->term_id == $title->term_id){
+                    if($title->subject_id==$val->subject_id){//  && $terms->term_id == $title->term_id
                     foreach ($exam_marks as $marks) { 
                         if ($title->id == $marks->exam_id && $title->subject_id==$val->subject_id) {
-                            $ob_mark = $marks->is_absent ? 0 : $marks->points;
+                            $obt_mark = $marks->is_absent ? 0 : $marks->points;
+                            $ob_mark = number_format(($obt_mark / $title->points) * $title->con_point, 2);
                             if(!isset($title_exam[$title->id])){
                                 $title_exam[$title->id] = $ob_mark;
                                 $underline= '';
-                                if($title->title=="P.T.-1" && $title->title=='P.T.-2'){
-                                    $pt_per = ($ob_mark !== '0.00' && is_string($ob_mark)) ? round(($ob_mark / $title->points) * 100, 0) : 0;
+                                if($title->title=="P.T.-1" || $title->title=='P.T.-2'){
+                                    $pt_per = ($ob_mark !== '0.00' && is_string($ob_mark)) ? round(($ob_mark / $title->con_point) * 100, 0) : 0;
                                     $underline = ($pt_per < 33 && $academic_type == "upper") ? 'style="text-decoration: underline red 2px;"' : '';
                                 }
-                                $table .= '<td class="data_center" '.$underline.' '.$title->title.' '.$val->subject_name.'>'.$ob_mark.'</td>';
+                                $table .= '<td class="data_center" '.$underline.' '.$pt_per.' '.$title->title.' '.$val->subject_name.'>'.$ob_mark.'</td>';
                             } 
                         }
                     }
                     }
                 }
-            }
+            //}
             $table .= '</tr>';
     }
 
