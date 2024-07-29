@@ -887,6 +887,7 @@ class HrmsController extends Controller
 
             // get user working time 
             $late = 0;
+            $lateArr = [];
             foreach ($getPunchTime as $punchkey => $punchvalue) {
                 $dayOfWeek = Carbon::parse($punchvalue->day)->dayOfWeek; 
                 $dayName = strtolower(Carbon::parse($punchvalue->day)->format('l'));
@@ -900,11 +901,13 @@ class HrmsController extends Controller
 
                 if($punchInTimeCarbon > $getUserInTimeCarbon){
                     $late++;
+                    $lateArr[]=$punchvalue->id;
                 }
                 }
             }
             // exit;
             $newEmpData[$key]->late = $late;
+            $newEmpData[$key]->lateAtt = $lateArr;
 
              // week off days sunday 
             $startDate = Carbon::parse($from_date);
@@ -1140,5 +1143,19 @@ class HrmsController extends Controller
             $res['selDept'] = $request->department_id;
         // echo "<pre>";print_r($report_data);exit;
         return is_mobile($type, "HRMS.hrms_attendance_report.multiEmpAttendanceReport", $res,'view');
+    }
+
+    public function getAttandanceData(Request $request){
+
+        $attId = isset($request->attId) ? explode(',',$request->attId) : [];
+        $sub_institute_id = session()->get('sub_institute_id');
+
+       $attData = DB::table('hrms_attendances as ha')
+                ->join('tbluser as u','u.id','=','ha.user_id')
+                ->join('hrms_departments as hd','hd.id','=','u.department_id')
+                ->selectRaw('ha.*,CONCAT_WS(" ", COALESCE(u.first_name, "-"), COALESCE(u.last_name, "-")) as full_name,hd.department')
+                ->where('ha.sub_institute_id',$sub_institute_id)->whereIn('ha.id',$attId)->get()->toArray();
+       
+       return $attData;
     }
 }
