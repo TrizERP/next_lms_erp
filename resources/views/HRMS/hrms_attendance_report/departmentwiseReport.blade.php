@@ -81,7 +81,7 @@
                             $abDays = ($value->total_ab_day);
                             $holidays = $value->holidays ?? 0;
                             $removedDays = ($value->total_att_day+$abDays+$holidays);
-                           
+                            $lateArr = !empty($value->lateAtt)  ? implode(',',$value->lateAtt) : '';
                         @endphp
                         <tr>
                             <td>{{$key+1}}</td>
@@ -102,7 +102,7 @@
 
                             <td>@if($value->half_day != 0) <a class="text-body" style="text-decoration:underline !important" onclick="getDetails('{{$value->user_id}}','half_day')">{{$value->half_day}}</a> @else 0 @endif</td>
 
-                            <td>@if($value->late != 0) <a class="text-body" style="text-decoration:underline !important" onclick="getDetails('{{$value->user_id}}','late')">{{$value->late}}</a> @else 0 @endif</td>
+                            <td>@if($value->late != 0) <a class="text-body" style="text-decoration:underline !important" onclick="getDetails('{{$value->user_id}}','late','{!! $lateArr !!}')">{{$value->late}}</a> @else 0 @endif</td>
                         </tr>
                     @endforeach
                     </tbody>
@@ -137,7 +137,6 @@
         $(document).ready(function () {
             $('#totalDaysModel').hide();
             var table = $('#example').DataTable({
-                ordering: false,
                 select: true,
                 lengthMenu: [
                     [100, 500, 1000, -1],
@@ -179,11 +178,12 @@
             });
         });
 
-    function getDetails(user_id,DayDetails) {
+    function getDetails(user_id,DayDetails,AttIdArr='') {
             var fromDate = new Date("{{$fromdate}}");
             var toDate = new Date("{{$todate}}");
             var modalContent = '<table class="table table-border">';
             var i = 1;
+            // total attendance 
             if (DayDetails=="totalDays") {
                 modalContent += "<tr><th>Sr</th><th>Date</th><th>Days</th></tr>";
                 while (fromDate <= toDate) {
@@ -196,6 +196,7 @@
                 $('#dateRangeInfo').html(modalContent);
                 $('#totalDaysModel').modal('show');
             }
+            // week off days 
             else if (DayDetails=="weekday_off") {
                 modalContent += "<tr><th>Sr</th><th>Date</th><th>Days</th></tr>";
                 while (fromDate <= toDate) {
@@ -207,7 +208,9 @@
                 $('#dateRangeModalLabel').text('Week Days Off');
                 $('#dateRangeInfo').html(modalContent);
                 $('#totalDaysModel').modal('show');
-            }else if (DayDetails=="workingDays") {
+            }
+            // working days
+            else if (DayDetails=="workingDays") {
                 modalContent += "<tr><th>Sr</th><th>Date</th><th>Days</th></tr>";
                 while (fromDate <= toDate) {
                     if (fromDate.getDay() !== 0) { 
@@ -219,10 +222,37 @@
                 $('#dateRangeInfo').html(modalContent);
                 $('#totalDaysModel').modal('show');
             }
+            // late comes 
+            else if(DayDetails=='late'){
+                $.ajax({
+                    url : '{{route("attendance_by_id")}}',
+                    type: 'Get',
+                    data : {attId:AttIdArr},
+                    success : function(result){
+                        if (Array.isArray(result)) {
+                            modalContent += "<tr><th>Sr No.</th><th>Emp Code.</th><th>Emp Name</th><th>Department</th><th>Date</th><th>Day</th></tr>"
+                            var i =1;
+                            result.forEach(value=>{
+                                var fdate = new Date(value.day);
+                                modalContent +='<tr><td>'+(i++)+'</td><td>'+value.employee_no+'</td><td>'+value.full_name+'</td><td>'+value.department+'</td><td>' + formatDate(fdate) + '</td><td>' + getDayName(fdate.getDay()) + '</td></tr>';
+                            });
+                            modalContent += '</table>';
+                            $('#dateRangeModalLabel').text('Late Come Days');
+                            $('#dateRangeInfo').html(modalContent);
+                            $('#totalDaysModel').modal('show');     
+                        }else{
+                            console.log('empty response');        
+                        }                
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error:', error);
+                    }
+                })
+            }
             
                 var fromDate2 ="{{$fromdate}}";
                 var toDate2 = "{{$todate}}";
-
+                // holidays 
                  if (DayDetails=="holidays") {
                     var url = "/get-holidays?department_id="+user_id+'&from_date='+fromDate2+'&to_date='+toDate2;
                     $('#dateRangeModalLabel').text('Holidays');
@@ -253,7 +283,7 @@
                         })
                     }
                     
-                 
+                //  absent days 
                  if (DayDetails=="absent_days") {
                     var url = "/get-absent-days?user_id="+user_id+'&from_date='+fromDate2+'&to_date='+toDate2;
                     $.ajax({

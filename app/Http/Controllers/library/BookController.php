@@ -126,6 +126,8 @@ class BookController extends Controller
     public function store(Request $request)
     {        
         try {
+            $sub_institute_id = session()->get('sub_institute_id');
+
             $createBook = LibraryBook::find($request->id) ?? new LibraryBook();
             $createBook->title = $request->title;
             $createBook->sub_title = $request->sub_title;
@@ -148,6 +150,7 @@ class BookController extends Controller
             $createBook->price_currency = $request->price_currency;
             $createBook->notes = $request->notes;
             $createBook->review = $request->review;
+            $createBook->sub_institute_id = $sub_institute_id;
             if ($request->image) {
                 $img = $request->image;
                 $filename = $img->getClientOriginalName();
@@ -161,7 +164,6 @@ class BookController extends Controller
                 $createBook->file_att = $filepath ? $filename : '';
             }
             if ($createBook->save()) {
-                $sub_institute_id = session()->get('sub_institute_id');
 
                 $itemCount = LibraryItem::where(['book_id' => $createBook->id, 'sub_institute_id' => $sub_institute_id])->get()->count();
                 if ($request->no_of_items < $itemCount) {

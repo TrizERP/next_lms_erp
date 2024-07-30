@@ -34,7 +34,7 @@ class LeaveAuthorisationController extends Controller
             $sub_institute_id = $request->session()->get('sub_institute_id');
         }
 
-        $from_date_formatted = Carbon::now()->format('Y-m-d');
+        $from_date_formatted = Carbon::now()->subMonth()->format('Y-m-d');
         $to_date_formatted = Carbon::now()->format('Y-m-d');
 
         $get_employee_leave_lists = DB::table('hrms_emp_leaves as hel')
@@ -50,6 +50,7 @@ class LeaveAuthorisationController extends Controller
         $res['get_employee_leave_lists'] = $get_employee_leave_lists;
         $res['from_date_formatted'] = $from_date_formatted;
         $res['to_date_formatted'] = $to_date_formatted;
+        $res['defaultSel'] = "Pending";
         // echo "<pre>";print_r($get_employee_leave_lists);exit;
         // return view('leave.leave_authorisation', compact('from_date_formatted', 'to_date_formatted'));
         return is_mobile($type, "leave/leave_authorisation", $res, "view");
@@ -116,7 +117,10 @@ class LeaveAuthorisationController extends Controller
         $hrRemarks = $request->get('hr_remarks');
         $leaveStatuses = $request->get('single_leave_status');
         $employee_ids = $request->get('employee_id');
+        $checkedEmp = $request->checkedEmp;
         $leave_id = $request->get('id');
+        
+        // echo "<pre>";print_r($checkedEmp);exit;
 
         if($type == 'API')
         {
@@ -150,17 +154,17 @@ class LeaveAuthorisationController extends Controller
         }
         else
         {
-            foreach($employee_ids as $key => $value)
+            foreach($checkedEmp as $id => $value)
             {
                 DB::table('hrms_emp_leaves')
-                    ->where('id', $value)
+                    ->where('id', $id)
                     ->update([
-                        'hod_comment' => $hodComments[$value],
+                        'hod_comment' => $hodComments[$id],
                         'hod_comment_date' => now(),
-                        'hr_remarks' => $hrRemarks[$value],
+                        'hr_remarks' => $hrRemarks[$id],
                         'hr_remark_date' => now(),
                         'approved_by' => $user_name->employee_name,
-                        'status' => $leaveStatuses[$value],
+                        'status' => $leaveStatuses[$id],
                     ]);
             }
         }

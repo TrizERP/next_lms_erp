@@ -208,7 +208,8 @@ class fees_collect_controller extends Controller
 
             if(isset($paid_result) && !empty($paid_result)){
                 $pd_stu_id = $paid_result['stu_data']['student_id'];
-                $remain = $paid_result['final_fee']['Total'];
+                // $remain = $paid_result['final_fee']['Total'];
+                $remain = $paid_result['stu_data']['pending']; // 2024-07-26
                 $previous = isset($paid_result['final_fee']['Previous Fees']) ? $paid_result['final_fee']['Previous Fees'] : 0;
                 if ($bk_stu_id == $pd_stu_id) {
 
@@ -1957,19 +1958,25 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             $reg_bk_month_wise[$arr->month_id] = $arr->bkoff;
         }
 
-        $new_month_arr = [];
-        $new_month_arr2 = [];
+        $collect_month_arr = [];
+        $new_month_arr2 = $new_month_arr = [];
         foreach ($reg_bk_month_wise as $month_id => $val) {
             if(isset($month_arr[$month_id])){
-                $new_month_arr[$month_id] = $month_arr[$month_id];
+                $collect_month_arr[$month_id] = $month_arr[$month_id];
             }
         }
         foreach ($other_bk_off_month_wise as $month_id => $val) {
             if(isset($month_arr[$month_id])){
+                $collect_month_arr[$month_id] = $month_arr[$month_id];
+            }
+        }
+        // sort order monthwise head
+        foreach ($month_arr as $month_id => $val) {
+            if(isset($collect_month_arr[$month_id])){
                 $new_month_arr[$month_id] = $month_arr[$month_id];
             }
         }
-
+        // echo "<pre>";print_r($new_month_arr);exit;
         $merge_bk_month_wise = [];
         foreach ($reg_bk_month_wise as $month_id => $amount) {
             $merge_bk_month_wise[$month_id] = $amount;
@@ -1979,6 +1986,9 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                 }
             }
         }
+        // lions bus amount (transport fees) 2024-07-20
+        $getTransportId = DB::table('fees_title')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear,'fees_title'=>'1'])->first();
+        // end 2024-07-20
 
         $left_bk_table = $this_month = $last_month = $left_bk_table2 = [];
         $i = 1;
@@ -2016,6 +2026,16 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                 $left_bk_table[$i]['discount'] = 0;
             }
 
+            // lions bus amount (transport fees) 2024-07-20
+            if($sub_institute_id==61){
+                if(!empty($getTransportId) && isset($getTransportId->fees_title)){
+                    $getTransportBreakoff = DB::table('fees_breakoff_other')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear,'fee_type_id'=>$getTransportId->fees_title,'month_id'=>$id,'student_id'=>$student_id])->value('amount'); 
+                    $left_bk_table[$i]['bus_amount']=$getTransportBreakoff;
+                }else{
+                    $left_bk_table[$i]['bus_amount']=0;
+                }
+            }
+            // end 2024-07-23
             $fees_total = $fees_total + $left_bk_table[$i]['bk'];
             $paid_total = $paid_total + $left_bk_table[$i]['paid'];
             $remain_total = $remain_total + $left_bk_table[$i]['remain'];
@@ -2023,6 +2043,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             $i = $i + 1;
         }
         }
+// echo "<pre>";print_r($left_bk_table);exit;
     // end 01/02/24
         
         $pending_fees = 0;
@@ -2220,6 +2241,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             );
             }
         }
+
      //24-04-2021 START Check Cheque Return charges
 
         $get_cheque_return_amt = SchoolModel::where(['id' => $sub_institute_id])->get()->toArray();
@@ -2354,7 +2376,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                 $res['hillsFine'] = $hillsFine;
             }
             $res['fees_config_data'] = $config;
-            // echo "<pre>";print_r($res['hillsFine']);exit;
+            // echo "<pre>";print_r($res);exit;
             return is_mobile($type, "fees/fees_collect/fees_collect", $res, "view");exit;
         } 
         $res = [

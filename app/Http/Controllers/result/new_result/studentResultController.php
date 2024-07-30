@@ -307,7 +307,12 @@ class studentResultController extends Controller
             $html_content = str_replace(htmlspecialchars("<<scholastic_marks_hills_11>>"), $main_result['scholastic'], $html_content);
             $html_content = str_replace(htmlspecialchars("<<class_teacher_remark>>"), $main_result['teacher_remark'], $html_content);
             $html_content = str_replace(htmlspecialchars("<<pass_or_fail>>"), $main_result['pass_or_fail'], $html_content);
-        } 
+        } else if(strpos($html_content, htmlspecialchars('<<scholastic_marks_hills_10_11>>')) !== false) {
+            $main_result = $this->get_scholastic_hills_10_11($standard_id, $value['id'], $format, 'upper');
+            $html_content = str_replace(htmlspecialchars("<<scholastic_marks_hills_10_11>>"), $main_result['scholastic'], $html_content);
+            $html_content = str_replace(htmlspecialchars("<<class_teacher_remark>>"), $main_result['teacher_remark'], $html_content);
+            $html_content = str_replace(htmlspecialchars("<<pass_or_fail>>"), $main_result['pass_or_fail'], $html_content);
+        }
         // for mmis co scholastic
         if (strpos($html_content, htmlspecialchars('<<co_scholastic_marks_mmis>>')) !== false) {
             $co_result = $this->get_co_scholastic_mmis($standard_id, $value['id'], $format, "primary");
@@ -401,7 +406,10 @@ class studentResultController extends Controller
         $html_content = str_replace(htmlspecialchars("<<class_teacher_remark_anual>>"), $atten['anual'], $html_content);
         $html_content = str_replace(htmlspecialchars("<<attandance_altius>>"), $atten['table'], $html_content);
     }
-        
+    
+    $termAtten = $this->getTermAttendance($standard_id, $value['id'], $format,'');
+    $html_content = str_replace(htmlspecialchars("<<term_attendance>>"), $termAtten, $html_content);
+    
         if (strpos($html_content, htmlspecialchars('<<total_attendance_manual>>')) !== false) {
             $atten = $this->get_attendance($standard_id, $value['id'], $format, "total_attendance_manual");
             $html_content = str_replace(htmlspecialchars("<<total_attendance_manual>>"), $atten['table'], $html_content);
@@ -2383,32 +2391,32 @@ while ($current_date <= $post_end_date) {
 
     public function get_scholastic_hills($standard_id, $student_id, $format, $academic_type)
     {
-        $syear = session()->get('syear');
-       $sub_institute_id = session()->get('sub_institute_id');
-       $extra_term  = $extra_exam = "1=1";
-       $att_term="atd.term_id = 2";
-       if ($format != "yearly"){
-           $extra_term = "term_id = " . $format;
-           $extra_exam = "rce.term_id = " . $format;
-           $att_term = "atd.term_id = " . $format;
-       }
-   
-       // get term_name 
-       $term_name = DB::table('academic_year')->whereRaw($extra_term)->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->get()->toArray();
-       // get subject
-       $get_subject = $this->get_subject($sub_institute_id,$syear,$student_id,$standard_id);
-       // get exam master name
-       $exam_name = $this->get_exam_name($sub_institute_id,$syear,$standard_id,$extra_exam);
-      // get exam title 
-      $exam_title = $this->get_exam_title($sub_institute_id,$syear,$standard_id,$extra_exam);
-      //get exam marks
-      $exam_marks = $this->get_exam_marks($sub_institute_id,$student_id,'best_of_2');
-       
-       // scholastic table started 
-      $table = '<style>.data_center{text-align:center !important;}</style><table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0"  border="1">
-       <thead>
-           <tr>
-               <th style="background:black;color:white"><b>Scholastic Areas:</b></th>';
+    $syear = session()->get('syear');
+    $sub_institute_id = session()->get('sub_institute_id');
+    $extra_term  = $extra_exam = "1=1";
+    $att_term="atd.term_id = 2";
+    if ($format != "yearly"){
+        $extra_term = "term_id = " . $format;
+        $extra_exam = "rce.term_id = " . $format;
+        $att_term = "atd.term_id = " . $format;
+    }
+
+    // get term_name 
+    $term_name = DB::table('academic_year')->whereRaw($extra_term)->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->get()->toArray();
+    // get subject
+    $get_subject = $this->get_subject($sub_institute_id,$syear,$student_id,$standard_id);
+    // get exam master name
+    $exam_name = $this->get_exam_name($sub_institute_id,$syear,$standard_id,$extra_exam);
+    // get exam title 
+    $exam_title = $this->get_exam_title($sub_institute_id,$syear,$standard_id,$extra_exam);
+    //get exam marks
+    $exam_marks = $this->get_exam_marks($sub_institute_id,$student_id,'best_of_2');
+    
+    // scholastic table started 
+    $table = '<style>.data_center{text-align:center !important;}</style><table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0"  border="1">
+    <thead>
+        <tr>
+            <th style="background:black;color:white"><b>Scholastic Areas:</b></th>';
                 $col = 1;
                 $total_term_marks = $total_sub_marks = [];
                 $total_weightage = $overall_total  = $all_colspan =$last_col = 0;
@@ -2514,7 +2522,7 @@ while ($current_date <= $post_end_date) {
                                 }
                             }
                         }
-       
+    
                         $ob_main_mark = $ab_ex_na = $total_marks = 0;
                         // for best of 2 exam wise 
                         if (!empty($title_exam)) {
@@ -2603,9 +2611,9 @@ while ($current_date <= $post_end_date) {
                 }
                 // exit;
             $table .= '<tr>';
-      
+    
         $table .= '</tr></tbody></table>';
-       
+    
                 $res['scholastic'] = $table;
                 $ret_data = DB::table('result_student_attendance_master as atd')
                     ->join('result_working_day_master as wrkd', function ($join) use ($standard_id, $sub_institute_id) {
@@ -2650,238 +2658,153 @@ while ($current_date <= $post_end_date) {
                         $pass_or_fail ='Passed & Promoted to class : '.$next_std;
                     }
 
-                $res['pass_or_fail'] = $pass_or_fail;
-
-       return $res;
-
+                $res['pass_or_fail'] = ($format != "yearly") ? '' : $pass_or_fail;
+ 
+        return $res;
     }
    
-
-    public function get_scholastic_lions($standard_id, $student_id, $format, $academic_type)
-    {  // echo "<pre>";print_r($student_id);exit;
+    public function get_scholastic_hills_10_11($standard_id, $student_id, $format, $academic_type){
         $syear = session()->get('syear');
         $sub_institute_id = session()->get('sub_institute_id');
-        $extra_term =$extra_exam = "1=1";
-        if ($format != "yearly"){
+
+        // Initialize variables
+        $extra_term = $extra_exam = "1=1";
+        $att_term = "atd.term_id = 2";
+        if ($format != "yearly") {
             $extra_term = "term_id = " . $format;
             $extra_exam = "rce.term_id = " . $format;
+            $att_term = "atd.term_id = " . $format;
         }
-        // get term_name 
+
+        // Retrieve data from database
         $term_name = DB::table('academic_year')->whereRaw($extra_term)->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->get()->toArray();
+        $get_subject = $this->get_subject($sub_institute_id, $syear, $student_id, $standard_id);
+        $exam_marks = $this->get_exam_marks($sub_institute_id, $student_id, 'best_of_2');
 
-       // get subject
-       $get_subject = $this->get_subject($sub_institute_id,$syear,$student_id,$standard_id);
-       // get exam name
-       $exam_name = $this->get_exam_name($sub_institute_id,$syear,$standard_id,$extra_exam);
-       // get exam title 
-       $exam_title = $this->get_exam_title($sub_institute_id,$syear,$standard_id,$extra_exam);
-       //get exam marks
-       $exam_marks = $this->get_exam_marks($sub_institute_id,$student_id,$syear,$standard_id,$extra_exam,'lions');
+        $heads =DB::table('result_create_exam as rce')->join('result_exam_master as rem', 'rem.id', '=', 'rce.exam_id')->where('rce.report_card_status','Y')->where(['rce.sub_institute_id' => $sub_institute_id, 'rce.syear' => $syear, 'rce.standard_id' => $standard_id])
+        ->selectRaw('rce.id,rce.title,rce.term_id,rce.standard_id,rem.weightage,rem.ExamTitle,rce.subject_id,rce.points,rce.con_point,rem.Id as ExamId,rce.exam_id')
+        ->orderBy('rce.sort_order')
+        ->get()->toArray();//->whereRaw($extra_exam)
 
-        $table = '<style>.data_center{text-align:center !important;}</style><table class="aca-year"  style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0"  border="1">
-        <thead>
-            <tr>
-                <th><b>Scholastic Areas:</b></th>';
-                $col = 1;
-                $total_term_marks = $total_sub_marks = [];
-                $total_weightage = $overall_total =  $all_colspan = 0;
-                $colspan = 2;
-                // print term title like term-1 or term-2
-                foreach ($term_name as $keys => $terms) {
-                    $term_exam_titles = array_filter($exam_title, function ($title) use ($terms) {
-                        return $title->term_id == $terms->term_id;
-                    });
-                    $total_weightage = array_reduce(
-                        array_filter($exam_title, function ($title) use ($terms) {
-                            return $title->term_id == $terms->term_id;
-                        }),
-                        function ($carry, $title) {
-                            return $carry + $title->weightage;
-                        },
-                        0
-                    );
-                
-                    $table .= '<th colspan="' . (count($term_exam_titles) + $colspan) . '" style="text-align:center;"><b>' . $terms->title.'(' . $total_weightage . ')</b></th>';
-                    // Initialize the total marks for each term to zero
-                    $total_term_marks[$terms->term_id] = 0;
-                    $total_sub_marks[$terms->term_id] = 0;
-                    $all_colspan += count($term_exam_titles);
-                }
+        // Initialize table
+        $table = '<style>.data_center{text-align:center !important;}</style>';
+        $table .= '<table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0"  border="1">
+            <thead>
+                <tr>
+                    <th style="background:black;color:white"><b>Scholastic Areas:</b></th>';
 
-        $table .= '</tr>
-        <tr>
-            <th><b>Subject</b></th>';
-                // exam names like periodic test,portfolio etc
-                foreach ($term_name as $keys => $terms) {
-                    $total_mark = 0;
-                    foreach ($exam_title as $key => $title) {
-                        if ($terms->term_id == $title->term_id) {
-                            $table .= '<th class="data_center"><b>' . $title->ExamTitle . '<br>(' . $title->weightage . ')</b></th>';
-                                $total_mark += $title->weightage;
-                        }
-                    }
-                    // Store the total marks for each term
-                    $table .= '<th class="data_center"><b>Marks Obtained <br>('.$total_mark.') </b></th>';
-                    $overall_total += $total_mark;
-                    $table .= '<th class="data_center"><b>Grade (' . $terms->title . ')</b></th>';
-                }
-       
-        $table .= '</tr>
-        </thead>
-        <tbody>';
-        // grade array to get grade according to marks
-        $grade_arr = $this->getGradeScale($standard_id, '');
+        $colspan = $academic_type == "primary" ? 1 : 2;
+        $total_term_marks = $total_sub_marks = [];
+        $total_weightage = $overall_total = $all_colspan = 0;
 
-        $tot_ob_mark =  $tot_sub_mark =   $get_all_ob_mark =  $get_all_tot_mark =$pass_or_fail = 0;
-        // get all subject name 
-        foreach ($get_subject as $val) {
-            $both_term_ob_mark =0;
-            $subject_total=[];
-            $table .= '<tr>
-            <td>' . $val->subject_name . '</td>';
-            // get term wise eam and marks 
-            foreach ($term_name as $keys => $terms) {
-                $obtained_marks =$to_marks = $to_weight = $title_exam = []; 
-                // get marks by exam id wise
-                foreach ($exam_name as $key => $title) {
-                    if ($title->subject_id == $val->subject_id && $terms->term_id == $title->term_id) {
-                        $foundMarks = false;
-                        $title_exam[$title->exam_id][] = $title->ExamTitle;
-                        // all exam marks 
-                        foreach ($exam_marks as $index => $marks) {
-                            if ($title->id == $marks->exam_id) {
-                                $to_marks[$title->exam_id][] = $title->points;
-                                $to_weight[$title->exam_id] = $title->weightage;
-                                // for AB,NA,EX
-                                if ($marks->is_absent != "") {
-                                    $ab_ex_na = $marks->is_absent;
-                                    $obtained_marks[$title->exam_id][] = $ab_ex_na;
-                                } else {
-                                    // store marks in array to get best of 2 
-                                    $obtained_marks[$title->exam_id][] = $marks->points;
-                                    $foundMarks = true;
-                                }
-                                break;
-                            }
-                        }
-                    }
-                }
-                //    echo "<pre>";print_r($obtained_marks);
-                $ob_main_mark = 0;
-                // for best of 2 exam wise 
-                if (!empty($title_exam)) {
-                    foreach ($title_exam as $exam_id => $marksArray) {                                
-                        $w_m = $to_weight[$exam_id] ?? 0; // Check if the key exists
-                        $t_m = isset($to_marks[$exam_id]) ? array_values($to_marks[$exam_id]) : [0=>0];
-                        $obtained_mark_arr = isset($obtained_marks[$exam_id]) ? array_values($obtained_marks[$exam_id]) : [0=>0];
-                        
-                        $obtained_mark_sum = end($obtained_mark_arr);
-                        $t_m = end($t_m);                                                                        
-                        if(!isset($subject_total[$terms->term_id])){
-                            $subject_total[$terms->term_id] = 0;
-                        }
-                    //    echo "<pre>";print_r($obtained_mark_arr); echo '-'.$exam_id.'-';
-                        if($obtained_mark_sum=="AB" || $obtained_mark_sum=="EX" || $obtained_mark_sum=="N.A." || $obtained_mark_sum=="A.B"){
-                            $convert_mark = $obtained_mark_sum;
-                            if($obtained_mark_sum=="A.B" || $obtained_mark_sum=="AB"){
-                                $subject_total[$terms->term_id] += $w_m;    
-                            }                        
-                        }else{
-                            $ob_main_mark += ($obtained_mark_sum !=0 ) ? number_format(($obtained_mark_sum / $t_m) * $w_m,0) : 0;
-                            $convert_mark = ($obtained_mark_sum !=0 ) ?  number_format(($obtained_mark_sum / $t_m) * $w_m,0) : '0';
-                            $subject_total[$terms->term_id] += $w_m;                            
-                        }
-                        
-                        $table .= '<td class="data_center" '.$exam_id.' '.$val->subject_id.'>' . $convert_mark .'</td>';
-                       
-                        // if($convert_mark!=0){
-                        // }
-                    }
-                } else {
-                    // If marks not found
-                    foreach ($title_exam as $exam_id => $marksArray) {
-                        $table .= '<td class="data_center no_mark ' . $exam_id . '">0</td>';
-                    }
-                }            
-                $obtained_mark_formatted = number_format($ob_main_mark, 0);
-                if($subject_total[$terms->term_id]!=0){
-                    $tot_mark = ($obtained_mark_formatted * 100)/$subject_total[$terms->term_id];
-                    if($tot_mark < 33){
-                        $pass_or_fail++;
-                    }
-                }
-                
-                $table .= '<td class="data_center all_mark">' . $obtained_mark_formatted .'</td><td class="data_center grade_of_both">'. $this->getGrade($grade_arr, $subject_total[$terms->term_id], $obtained_mark_formatted) . '</td>';
-                                
-                $both_term_ob_mark += $obtained_mark_formatted;
-                // Update the total marks for the current term
-                $total_term_marks[$terms->term_id] += $ob_main_mark;
-                $total_sub_marks[$terms->term_id] += $subject_total[$terms->term_id];
-            } 
-            
-            $get_all_ob_mark += $both_term_ob_mark;
-            $get_all_tot_mark += array_sum($subject_total);
-            $table .= '</tr>';
-        }
-        // exit;
-        $table .= '<tr>';
-        $table_per = $rep_val =$table_all = '';
-        $all_ob_mark = $all_sub_mark =$overall_per = $finalPer= 0;
-        $result = "Pass";
+        // Generate term headers
+        /*foreach ($term_name as $terms) {
+            $term_exam_titles = array_filter($heads, function ($title) use ($terms) {
+                return $title->term_id == $terms->term_id;
+            });*/
+
+            $all_colspan += count($heads);
+        //}
+
+        $table .= '<td colspan='.$all_colspan.' class="data_center" style="background:black;color:white"><b>Progress Report Card</b></td></tr>
+                    <tr><th><b>Subject</b></th>';
         
-        // Calculate the total marks for each term
-            foreach ($term_name as $keys => $terms) {
-                $term_exam_titles = array_filter($exam_title, function ($title) use ($terms) {
-                    return $title->term_id == $terms->term_id;
-                });
-                $tot_ob_mark = $total_term_marks[$terms->term_id];
-                $tot_sub_mark = $total_sub_marks[$terms->term_id];
-                if ($keys == 0) {
-                    $cols = 1;
-                    $val = "Overall Percentage";
-                } else {
-                    $cols = 0;
-                    $val = "Overall Grade";
-                }
-                $all_ob_mark += $total_term_marks[$terms->term_id];
-                $all_sub_mark += $total_sub_marks[$terms->term_id];
-                // get percentage   
-                $finalPer = $this->getPer($tot_ob_mark, $tot_sub_mark);  
-                // get overall percentage  
-                $overall_per += $finalPer;  
-                $main_per = number_format(($overall_per / 200) * 100,2);  
-                // get overall grade  
-                $grade_arr = $this->getGradeScale($standard_id, '');
-
-                $all_grade = \App\Helpers\getGrade($grade_arr, 100, $main_per);
-                $all_per = $main_per . "%";
-                if ($keys == 0) {
-                    $rep_val = "&lt;&lt;per&gt;&gt;";
-                } else {
-                    $rep_val = "&lt;&lt;grade&gt;&gt;";
-                }
-                $table .= '<td colspan="' . (count($term_exam_titles)) + $cols . '" style="text-align:right"><b>Total</b></td><td class="data_center"><b>' . round($tot_ob_mark,0) . '</b></td><td rowspan="2" class="data_center"><b>' . \App\Helpers\getGrade($grade_arr, $total_mark, $finalPer) . '</b></td>';
-
-                $table_per .= '<td colspan="' . (count($term_exam_titles)) + $cols . '" style="text-align:right"><b>Percentage</b></td><td class="data_center"><b>' . $finalPer . '% </b></td>';
-
-                $table_all .= '<td colspan="' . (count($term_exam_titles)) + $cols . '" style="text-align:right"><b>' . $val . '</b></td><td colspan="2" class="data_center"><b>' . $rep_val . '</b></td>';
+        // Generate exam headers
+        //foreach ($term_name as $terms) {
+            $total_mark = 0;
+            $newHead = [];
+            foreach ($heads as $title) {
+                if(!isset($newHead[$title->title])){
+                    $newHead[$title->title] = $title;
+                    //if ($terms->term_id == $title->term_id) {
+                        $table .= '<th class="data_center"><b>' . $title->title . '<br>(' . $title->con_point . ')</b></th>';
+                        $total_mark += $title->weightage;
+                    //}
+                } 
+                $overall_total += $total_mark;
             }
-        // exit;
-            $table_all = str_replace(htmlspecialchars("<<per>>"), $all_per, $table_all);
-            $table_all = str_replace(htmlspecialchars("<<grade>>"), $all_grade, $table_all);
-            $table .= '<tr>' . $table_per . '</tr>
-                    <tr>' . $table_all . '</tr>
-                    </tr>
-                </tbody></table>';
+            
+        //}
+      
+        $table .= '</tr></thead><tbody>';
 
-        $result="Pass";
-        if($pass_or_fail>0){
-            $result="Promoted";
+        $grade_arr = $this->getGradeScale($standard_id, '');
+        $pass_fail = [];
+        // echo "<pre>";print_r($newHead);exit;
+        // Process each subject
+        foreach ($get_subject as $val) {
+            $both_term_ob_mark = 0;
+            $table .= '<tr><td '.$val->subject_id.'>' . $val->subject_name . '</td>';
+
+            //foreach ($term_name as $terms) {
+                $ob_main_mark = 0;
+                $total_marks = 0;
+                $title_exam = $to_marks=$w_marks=[];
+
+                foreach ($heads as $title) {
+                    if($title->subject_id==$val->subject_id){//  && $terms->term_id == $title->term_id
+                    foreach ($exam_marks as $marks) { 
+                        if ($title->id == $marks->exam_id && $title->subject_id==$val->subject_id) {
+                            $obt_mark = $marks->is_absent ? 0 : $marks->points;
+                            $ob_mark = number_format(($obt_mark / $title->points) * $title->con_point, 2);
+                            if(!isset($title_exam[$title->id])){
+                                $title_exam[$title->id] = $ob_mark;
+                                $underline= '';
+                                if($title->title=="P.T.-1" || $title->title=='P.T.-2'){
+                                    $pt_per = ($ob_mark !== '0.00' && is_string($ob_mark)) ? round(($ob_mark / $title->con_point) * 100, 0) : 0;
+                                    $underline = ($pt_per < 33 && $academic_type == "upper") ? 'style="text-decoration: underline red 2px;"' : '';
+                                }
+                                $table .= '<td class="data_center" '.$underline.' '.$pt_per.' '.$title->title.' '.$val->subject_name.'>'.$ob_mark.'</td>';
+                            } 
+                        }
+                    }
+                    }
+                }
+            //}
+            $table .= '</tr>';
+    }
+
+        $table .= '<tr></tr></tbody></table>';
+        $res['scholastic'] = $table;
+
+        // Fetch attendance and remarks
+        $ret_data = DB::table('result_student_attendance_master as atd')
+            ->join('result_working_day_master as wrkd', function ($join) use ($standard_id, $sub_institute_id) {
+                $join->on('wrkd.standard', '=', 'atd.standard')
+                    ->on('wrkd.sub_institute_id', '=', 'atd.sub_institute_id');
+            })
+            ->selectRaw("atd.student_id, wrkd.total_working_day, atd.attendance, GROUP_CONCAT(Distinct atd.teacher_remark SEPARATOR '|') as teacher_remark")
+            ->where('atd.standard', $standard_id)
+            ->where('atd.sub_institute_id', $sub_institute_id)
+            ->where('atd.student_id', $student_id)
+            ->where('atd.syear', $syear)
+            ->whereRaw($att_term)
+            ->groupBy('student_id')
+            ->first();
+
+        $res['teacher_remark'] = !empty($ret_data) ? str_replace('|', '', $ret_data->teacher_remark) : '';
+
+        // Determine pass/fail status
+        $get_remark = DB::table('result_remarks')
+            ->selectRaw("student_id, GROUP_CONCAT(Distinct term_id SEPARATOR '|') as term_id, GROUP_CONCAT(Distinct result_remarks SEPARATOR '|') as remark")
+            ->where('sub_institute_id', $sub_institute_id)
+            ->where('student_id', $student_id)
+            ->where('syear', $syear)
+            ->groupBy('student_id')
+            ->first();
+
+        if (isset($get_remark->remark)) {
+            $pass_or_fail = str_replace('|', '', $get_remark->remark);
+        } else if (in_array('Failed', $pass_fail)) {
+            $pass_or_fail = 'Failed';
+        } else {
+            $get_next_std = DB::table('standard')->where('id', $standard_id)->first();
+            $next_std_name = $get_next_std->next_standard_id ? DB::table('standard')->where('id', $get_next_std->next_standard_id)->first()->short_name : '';
+            $pass_or_fail = 'Passed & Promoted to class : ' . $next_std_name;
         }
 
-        $res['remark'] = \App\Helpers\getGradeComment($grade_arr, 100, $main_per) ?? '-'; //$finalPer by rajesh 23-03-2024
-        $res['result'] = $result;//.'-'.$main_per
-        $res['table'] = $table;
+        $res['pass_or_fail'] = ($format != "yearly") ? '' : $pass_or_fail;
+
         return $res;
     }
 
@@ -3567,322 +3490,271 @@ while ($current_date <= $post_end_date) {
             $pass_or_fail ='Passed & Promoted to class : '.$next_std;
         }
 
-        $res['pass_or_fail'] = $pass_or_fail;
+        $res['pass_or_fail'] = ($format != "yearly") ? '' : $pass_or_fail;
        return $res;
     }
 
+public function get_co_scholastic_hills($standard_id, $student_id, $format, $academic_type)
+{
+    $syear = session()->get('syear');
+    $sub_institute_id = session()->get('sub_institute_id');
+    
+    $extra_term = ($format == "yearly") ? 
+        (($academic_type != "primary") ? "term_id = 2" : "1=1") : 
+        "term_id = $format";
+    $extra_term_co = ($format == "yearly" && $academic_type != "primary") ? "comark.term_id = 2" : "1=1";
+    $extra_exam = ($format == "yearly") ? "1=1" : "comark.term_id = $format";
 
-    public function get_co_scholastic_hills($standard_id, $student_id, $format, $academic_type)
-    {
-        $syear = session()->get('syear');
-        $sub_institute_id = session()->get('sub_institute_id');
-        if ($format == "yearly") { 
-            if($academic_type!="primary"){
-                $extra_term = "term_id = 2 ";
-                $extra_term_co = "comark.term_id = 2 ";                
-            }else{
-                $extra_term =  $extra_term_co="1=1";
-            }
-            $extra_exam = "1=1";
-        } else {
-            $extra_term = "term_id = " . $format;
-            $extra_term_co="1=1";            
-            $extra_exam = 'comark.term_id=' . $format;
-        }
-        // get term_name 
-        $both_term = DB::table('academic_year')->whereRaw($extra_term)->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->get()->toArray();
-        $sql_mark_grade = "select * from result_co_scholastic where sub_institute_id = " . $sub_institute_id . " and " . $extra_term . " ";
-        $ret_mark_grade = DB::select(DB::raw($sql_mark_grade));
-        // echo "<pre>";print_r($ret_mark_grade);exit;
+    $both_term = DB::table('academic_year')
+        ->whereRaw($extra_term)
+        ->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])
+        ->get()
+        ->toArray();
+
+    $ret_mark_grade = DB::select(DB::raw("SELECT * FROM result_co_scholastic WHERE sub_institute_id = $sub_institute_id AND $extra_term"));
+
+    if (count($ret_mark_grade) > 0) {
+        $ret_data = DB::table('result_co_scholastic_marks_entries as comark')
+            ->selectRaw(
+                'comark.student_id, comark.co_scholastic_id, comark.term_id, cop.id as parent_id, cop.title as parent_title, co.title as child_title, co.id as coid,
+                IF(comark.grade = 0, comark.points, cograde.title) as obtain_grade, co.max_mark'
+            )
+            ->leftJoin('result_co_scholastic_grades as cograde', 'cograde.id', '=', 'comark.grade')
+            ->join('result_co_scholastic as co', 'co.id', '=', 'comark.co_scholastic_id')
+            ->join('result_co_scholastic_parent as cop', 'cop.id', '=', 'co.parent_id')
+            ->where('comark.syear', $syear)
+            ->whereRaw($extra_exam)
+            ->whereRaw($extra_term_co)
+            ->where([
+                'comark.standard_id' => $standard_id,
+                'co.standard_id' => $standard_id,
+                'comark.student_id' => $student_id,
+                'comark.sub_institute_id' => $sub_institute_id
+            ])
+            ->orderBy('comark.student_id')
+            ->orderBy('cop.sort_order')
+            ->orderBy('co.sort_order')
+            ->orderBy('comark.term_id')
+            ->get();
         
-        if (count($ret_mark_grade) > 0) {
-            $type = $ret_mark_grade[0]->mark_type;
-            // if ($type == "GRADE") {
-                // db::enableQueryLog();
-                $ret_data = DB::table('result_co_scholastic_marks_entries as comark')
-                    ->selectRaw(
-                        'comark.student_id,comark.co_scholastic_id,comark.term_id,cop.id as parent_id,cop.title as parent_title,co.title as child_title,co.id as coid,
-                  if(comark.grade=0,comark.points,cograde.title) obtain_grade,co.max_mark'
-                    )
-                    ->leftjoin('result_co_scholastic_grades as cograde', 'cograde.id', '=', 'comark.grade')
-                    ->join('result_co_scholastic as co', 'co.id', '=', 'comark.co_scholastic_id')
-                    ->join('result_co_scholastic_parent as cop', 'cop.id', '=', 'co.parent_id')
-                    ->where('comark.syear', $syear)
-                    ->whereRaw($extra_exam)
-                    ->whereRaw($extra_term_co)                    
-                    ->where('comark.standard_id', $standard_id)
-                    ->where('co.standard_id', $standard_id)
-                    ->where('comark.student_id', $student_id)
-                    ->where('comark.sub_institute_id', $sub_institute_id)
-                    ->orderBy('comark.student_id')
-                    ->orderBy('cop.sort_order')
-                    ->orderBy('co.sort_order')
-                    ->orderBy('comark.term_id')
-                    ->get();
-                    // dd(db::getQueryLog($ret_data));
-            // }
-            $skill_data = $criteria_data =$decipline_data =$co_data = [];
-            // grade array to convert marks
-            $get_grade = DB::table('result_co_scholatic_range')->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->get();
-            foreach ($ret_data as $key => $value) {
-                if ($value->parent_title == "SKILL OBSERVATION") {
-                      if($value->obtain_grade=="0.00"){
-                         $value->obtain_grade = '-';
-                    }
+        $skill_data = $criteria_data = $decipline_data = $co_data = [];
+        $get_grade = DB::table('result_co_scholatic_range')
+            ->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])
+            ->get();
+        
+        foreach ($ret_data as $value) {
+            $per = $value->obtain_grade;
+            switch ($value->parent_title) {
+                case "SKILL OBSERVATION":
+                    $value->obtain_grade = ($value->obtain_grade != '0.00') ? $value->obtain_grade : '-';
                     $skill_data[] = $value;
-                }
-                if ($value->parent_title == "CRITERIA") {
-                    if($value->obtain_grade=="0.00"){
-                         $value->obtain_grade = '-';
-                    }
+                    break;
+                case "CRITERIA":
+                    $value->obtain_grade = ($value->obtain_grade != '0.00') ? $value->obtain_grade : '-';
                     $criteria_data[] = $value;
-                }
-                if ($value->parent_title == "DISCIPLINE") {
-                     $per = $value->obtain_grade;
-                    if (!empty($get_grade) && $per != 0 && $per != '') {
-                        // $value->obtain_grade = $this->getGrade($get_grade, $per, $value->max_mark, "co_scholastic");
-                         $value->obtain_grade = $this->getGrade($get_grade,  $value->max_mark, $per,"co_scholastic");
-                        // echo $value->child_title.'-marks-'.$per.'-grade-'.$value->obtain_grade.'<br>';                        
-                    } else {
-                        $value->obtain_grade = '-';
-                    }
-                    $decipline_data[] = $value;   
-                }
-                if ($value->parent_title != "CRITERIA" && $value->parent_title != "SKILL OBSERVATION" && $value->parent_title != "DISCIPLINE") {
-                    $per = $value->obtain_grade;
-                    if (!empty($get_grade) && $per != 0 && $per != '') {
-                        // $value->obtain_grade = $this->getGrade($get_grade,  $per, $value->max_mark,"co_scholastic");
-                         $value->obtain_grade = $this->getGrade($get_grade,  $value->max_mark, $per,"co_scholastic");
-                        // echo $value->child_title.'-marks-'.$per.'-grade-'.$value->obtain_grade.'<br>';
-                    } else {
-                        $value->obtain_grade = '-';
-                    }
-                    $co_data[] = $value;                
-                }
+                    break;
+                case "DISCIPLINE":
+                    $grade = (!empty($get_grade) && $per != 0 && $per != '') ? $this->getGrade($get_grade, $value->max_mark, $per, "co_scholastic") : '-';
+                    $value->obtain_grade = $grade;
+                    $decipline_data[] = $value;
+                    break;
+                default:
+                    $grade = (!empty($get_grade) && $per != 0 && $per != '') ? $this->getGrade($get_grade, $value->max_mark, $per, "co_scholastic") : '-';
+                    $value->obtain_grade = $grade;
+                    $co_data[] = $value;
             }
         }
-// echo "<pre>";print_r($ret_data);exit;
-        if ($academic_type == "upper") {
-            $term_name = "Grade";
-            $flex = 'display:flex;flex-wrap:wrap';
-        } else {
-            $term_name = $both_term[0]->title ?? 'Grade';
-            $flex = 'display:flex;flex-wrap:wrap';
-        }
-        // get other tag data
-        $co_scholastic = '<div style=' . $flex . ' class="co_scho_hills">
-        <div style="width:50%;">
-            <table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" cellpadding="0" border="1">
-                <thead>
-                    <tr>
-                        <th><b>CO SCHOLASTIC</b></th>';
-                        foreach ($both_term as $keys => $terms) {
-                        
-                        if($academic_type=="primary"){
-                            $co_scholastic .= '<th class="data_center"><b>' . $terms->title . '</b></th>';
-                            $term_ids[] = $terms->term_id;
-                        }else{
-                            $co_scholastic .='<th class="data_center"><b>' . $term_name . '</b></th>';
-                        }
-                    }
-                        
-                    $co_scholastic .= '</tr>
-                </thead>
-                <tbody>';
-        $counter = 0;
         
-        $groupedData = [];
-    //    co schoastic part
-        if (!empty($co_data)) {
-            foreach ($co_data as $key => $value) {
-                $groupedData[$value->child_title][$value->term_id] = $value->obtain_grade;
-            }
-    
-            foreach ($groupedData as $childTitle => $termGrades) {
-                $co_scholastic .= '<tr>';
-                if ($counter < 8) { 
-                    $co_scholastic .= '<td class="'.$value->co_scholastic_id.'">' . $childTitle . '</td>';
-                    foreach ($both_term as $keys => $terms) {
-                        $grade = $termGrades[$terms->term_id] ?? '-';
-                        $co_scholastic .= '<td class="data_center">' . $grade . '</td>';
-                    }
-                    
-                } else {
-                    if ($counter === 8) {
-                        $co_scholastic .= '</tr></tbody></table></div>';
-                        $co_scholastic .= '<div style="width:50%;">
-                        <table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" cellpadding="0" border="1">
-                            <thead>
-                                <tr>
-                                <th><b>CO SCHOLASTIC</b></th>';
-                                if($academic_type=="primary"){
-                                foreach ($both_term as $keys => $terms) {
-                                    $co_scholastic .= '<th class="data_center"><b>' . $terms->title . '</b></th>';
-                                    $term_ids[] = $terms->term_id;
-                                }
-                                }else{
-                                    $co_scholastic .='<th class="data_center"><b>' . $term_name . '</b></th>';
-                                }
-                            $co_scholastic .= '</tr>
-                            </thead>
-                            <tbody>';
-                    }
-                    $co_scholastic .= '<td class="'.$value->co_scholastic_id.'">' . $childTitle . '</td>';
-                    if($academic_type=="primary"){
-                    foreach ($both_term as $keys => $terms) {
-                        $grade = $termGrades[$terms->term_id] ?? '-';
-                        $co_scholastic .= '<td class="data_center co_term-' . $terms->term_id . ' mterm-' . $terms->term_id . ' ">' . $grade . '</td>';
-                    }
-                    }else{
-                        $co_scholastic .='<td class="data_center">' . $value->obtain_grade . '</td>';
-                    }
-                    $co_scholastic .='</tr>';
-                }
-    
-                $co_scholastic .= '</tr>';
-                $counter++;
-            }
-        }
-        $co_scholastic .= '</tbody></table></div></div>';
-        $other_table = '';
-        // get other tag data
-        if($academic_type=="primary" && !empty($criteria_data)){
-        $other_table = '<div style="display:flex;flex-wrap:wrap"  class="co_scho_hills">
-            <div style="width:50%;">
-            <table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" cellpadding="0" border="1">
-            <thead>
-                <tr>
-                <th><b>CRITERIA</b></th>';
-                if($academic_type=="primary"){
-                foreach ($both_term as $keys => $terms) {
-                    $other_table .= '<th class="data_center"><b>' . $terms->title . '</b></th>';
-                    $term_ids[] = $terms->term_id;
-                }
-                }else{
-                    $other_table .='<th class="data_center"><b>' . $term_name . '</b></th>';
-                }
-            $other_table .= '</tr>
-            </thead>';
-        // if (!empty($criteria_data)) {
-        //     foreach ($criteria_data as $key => $value) {
-        //         $other_table .= '<tr><td>' . $value->child_title . '</td>';
-        //         if($academic_type=="primary"){
-        //         foreach ($both_term as $keys => $terms) {
-        //             $grade = $termGrades[$terms->term_id] ?? '-';
-        //             $other_table .= '<td class="data_center co_term-' . $terms->term_id . ' mterm-' . $terms->term_id . ' ">' . $grade . '</td>';
-        //         }
-        //         }else{
-        //             $other_table .='<td class="data_center">' . $value->obtain_grade . '</td>';
-        //         }
-        //         $other_table .='</tr>';
-        //     }
-        // }
+        $term_name = ($academic_type == "upper") ? "Grade" : ($both_term[0]->title ?? 'Grade');
+        $flex = 'display:flex;flex-wrap:wrap';
 
-         if (!empty($criteria_data)) {
-            $groupedData = [];
-            foreach ($criteria_data as $key => $value) {
-                $groupedData[$value->child_title][$value->term_id] = $value->obtain_grade;
-            }
+        $co_scholastic = $this->buildCoScholasticTable($both_term, $co_data, $term_name, $flex, $academic_type);
+        $other_table = $this->buildOtherTables($both_term, $criteria_data, $skill_data, $decipline_data, $term_name, $academic_type);
 
-            foreach ($groupedData as $childTitle => $termGrades) {
-                $other_table .= '<tr><td class="'.$value->co_scholastic_id.'">' . $childTitle . '</td>';
-             if($academic_type=="primary"){
-               foreach ($both_term as $keys => $terms) {
-                    $grade = $termGrades[$terms->term_id] ?? '-';
-                    $other_table .= '<td class="data_center co_term-' . $terms->term_id . ' mterm-' . $terms->term_id . ' ">' . $grade . '</td>';
-                }
-                }else{
-                    $other_table .='<td class="data_center">' . $value->obtain_grade . '</td>';
-                }
-                
-
-                $other_table .= '</tr>';
-            }
-        }
-        $other_table .= '<tboady></tboady>
-            </table></div>
-            <div style="width:50%;">
-            <table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" cellpadding="0" border="1">
-            <thead>
-                <tr>
-                <th><b>SKILL OBSERVATION</b></th>';
-                if($academic_type=="primary"){
-                foreach ($both_term as $keys => $terms) {
-                    $other_table .= '<th class="data_center"><b>' . $terms->title . '</b></th>';
-                    $term_ids[] = $terms->term_id;
-                }
-                }else{
-                    $other_table .='<th class="data_center"><b>' . $term_name . '</b></th>';
-                }
-            $other_table .= '</tr>
-            </thead>';
-        // if (!empty($skill_data)) {
-        //     foreach ($skill_data as $key => $value) {
-        //         $other_table .= '<tr><td>' . $value->child_title . '</td>';
-        //         if($academic_type=="primary"){
-        //         foreach ($both_term as $keys => $terms) {
-        //             $grade = $termGrades[$terms->term_id] ?? '-';
-        //             $other_table .= '<td class="data_center co_term-' . $terms->term_id . ' mterm-' . $terms->term_id . ' ">' . $grade . '</td>';
-        //         }
-        //         }else{
-        //             $other_table .='<td class="data_center">' . $value->obtain_grade . '</td>';
-        //         }
-        //         $other_table .='</tr>';
-        //     }
-        // }
-             if (!empty($skill_data)) {
-            $groupedData = [];
-            foreach ($skill_data as $key => $value) {
-                $groupedData[$value->child_title][$value->term_id] = $value->obtain_grade;
-            }
-
-            foreach ($groupedData as $childTitle => $termGrades) {
-                $other_table .= '<tr><td class="'.$value->co_scholastic_id.'">' . $childTitle . '</td>';
-             if($academic_type=="primary"){
-               foreach ($both_term as $keys => $terms) {
-                    $grade = $termGrades[$terms->term_id] ?? '-';
-                    $other_table .= '<td class="data_center co_term-' . $terms->term_id . ' mterm-' . $terms->term_id . ' ">' . $grade . '</td>';
-                }
-                }else{
-                    $other_table .='<td class="data_center">' . $value->obtain_grade . '</td>';
-                }
-                
-
-                $other_table .= '</tr>';
-            }
-        }
-        $other_table .= '<tboady></tboady>
-            </table>
-            </div>            
-        </div>';
+        return [
+            'co_scholastic' => (count($ret_data) > 0) ? $co_scholastic : '',
+            'other_tags' => $other_table
+        ];
     }
-    else{
-            // Discipline 
-    if (!empty($decipline_data)){
-        $other_table= '
-        <div style="width:50%;">
+
+    return [
+        'co_scholastic' => '',
+        'other_tags' => ''
+    ];
+}
+
+// private function buildCoScholasticTable($both_term, $co_data, $term_name, $flex, $academic_type)
+// {
+//     $co_scholastic = '<div style=' . $flex . ' class="co_scho_hills">
+//     <div style="width:50%;">
+//         <table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" cellpadding="0" border="1">
+//             <thead>
+//                 <tr>
+//                     <th><b>CO SCHOLASTIC</b></th>';
+
+//     foreach ($both_term as $terms) {
+//         $co_scholastic .= '<th class="data_center"><b>' . ($academic_type == "primary" ? $terms->title : $term_name) . '</b></th>';
+//     }
+
+//     $co_scholastic .= '</tr></thead><tbody>';
+//     $groupedData = [];
+
+//     foreach ($co_data as $value) {
+//         $groupedData[$value->child_title][$value->term_id] = $value->obtain_grade;
+//     }
+
+//     foreach ($groupedData as $childTitle => $termGrades) {
+//         $co_scholastic .= '<tr><td>' . $childTitle . '</td>';
+//         foreach ($both_term as $terms) {
+//             $grade = $termGrades[$terms->term_id] ?? '-';
+//             $co_scholastic .= '<td class="data_center">' . $grade . '</td>';
+//         }
+//         $co_scholastic .= '</tr>';
+//     }
+
+//     $co_scholastic .= '</tbody></table></div></div>';
+//     return $co_scholastic;
+// }
+private function buildCoScholasticTable($both_term, $co_data, $term_name, $flex, $academic_type)
+{
+    $co_scholastic = '<div style=' . $flex . ' class="co_scho_hills">';
+
+    // Group data
+    $groupedData = [];
+    foreach ($co_data as $value) {
+        $groupedData[$value->child_title][$value->term_id] = $value->obtain_grade;
+    }
+    $break = 8;
+    if($academic_type=="primary"){
+        $break = 6;
+    }
+    // Split grouped data into two parts
+    $groupedData1 = array_slice($groupedData, 0, $break, true);
+    $groupedData2 = array_slice($groupedData, $break, null, true);
+
+    // Build first table
+    $co_scholastic .= '<div style="width:50%;">
         <table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" cellpadding="0" border="1">
-        <thead>
-            <tr>
-            <th><b>DISCIPLINE</b></th>
-            <th style="text-align:center"><b>Grade<b></th>
-            <tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td style="width: 82.50%;"><b>Discipline</b></td>';
-               foreach ($decipline_data as $key => $value) {
-                $other_table .='<td class="data_center">' . $value->obtain_grade . '</td>'; 
-                    }    
-                $other_table.= ' <tr>
-        </tbody>
-        </table></div>';
+            <thead>
+                <tr>
+                    <th><b>CO SCHOLASTIC</b></th>';
+
+    foreach ($both_term as $terms) {
+        $co_scholastic .= '<th class="data_center"><b>' . ($academic_type == "primary" ? $terms->title : $term_name) . '</b></th>';
+    }
+
+    $co_scholastic .= '</tr></thead><tbody>';
+    foreach ($groupedData1 as $childTitle => $termGrades) {
+        $co_scholastic .= '<tr><td>' . $childTitle . '</td>';
+        foreach ($both_term as $terms) {
+            $grade = $termGrades[$terms->term_id] ?? '-';
+            $co_scholastic .= '<td class="data_center">' . $grade . '</td>';
         }
+        $co_scholastic .= '</tr>';
     }
-        $res['co_scholastic'] = (count($ret_data)>0) ? $co_scholastic : '';
-        $res['other_tags'] = $other_table;
-        return $res;
+    $co_scholastic .= '</tbody></table></div>';
+
+    // Build second table
+    $co_scholastic .= '<div style="width:50%;">
+        <table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" cellpadding="0" border="1">
+            <thead>
+                <tr>
+                    <th><b>CO SCHOLASTIC</b></th>';
+
+    foreach ($both_term as $terms) {
+        $co_scholastic .= '<th class="data_center"><b>' . ($academic_type == "primary" ? $terms->title : $term_name) . '</b></th>';
     }
+
+    $co_scholastic .= '</tr></thead><tbody>';
+    foreach ($groupedData2 as $childTitle => $termGrades) {
+        $co_scholastic .= '<tr><td>' . $childTitle . '</td>';
+        foreach ($both_term as $terms) {
+            $grade = $termGrades[$terms->term_id] ?? '-';
+            $co_scholastic .= '<td class="data_center">' . $grade . '</td>';
+        }
+        $co_scholastic .= '</tr>';
+    }
+    $co_scholastic .= '</tbody></table></div>';
+
+    $co_scholastic .= '</div>';
+    return $co_scholastic;
+}
+
+private function buildOtherTables($both_term, $criteria_data, $skill_data, $decipline_data, $term_name, $academic_type)
+{
+    $other_table = '';
+    $groupedCriteria = [];
+    $groupedSkills = [];
+
+    foreach ($criteria_data as $value) {
+        $groupedCriteria[$value->child_title][$value->term_id] = $value->obtain_grade;
+    }
+
+    foreach ($skill_data as $value) {
+        $groupedSkills[$value->child_title][$value->term_id] = $value->obtain_grade;
+    }
+
+    if ($academic_type == "primary" && !empty($criteria_data)) {
+        $other_table .= "<div style='display:flex;felx-wrap:wrap;width:100%'>
+           ".$this->buildSubTable('CRITERIA', $groupedCriteria, $both_term, $academic_type)."
+            ".$this->buildSubTable('SKILL OBSERVATION', $groupedSkills, $both_term, $academic_type)."
+        </div>";
+    } elseif (!empty($decipline_data)) {
+        $other_table .= $this->buildDisciplineTable($decipline_data);
+    }
+
+    return $other_table;
+}
+
+private function buildSubTable($title, $groupedData, $both_term, $academic_type)
+{
+    $sub_table = '<div style="width:50%;">
+        <table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" cellpadding="0" border="1">
+            <thead>
+                <tr>
+                    <th><b>' . $title . '</b></th>';
+
+    foreach ($both_term as $terms) {
+        $sub_table .= '<th class="data_center"><b>' . ($academic_type == "primary" ? $terms->title : 'Grade') . '</b></th>';
+    }
+
+    $sub_table .= '</tr></thead><tbody>';
+
+    foreach ($groupedData as $childTitle => $termGrades) {
+        $sub_table .= '<tr><td>' . $childTitle . '</td>';
+        foreach ($both_term as $terms) {
+            $grade = $termGrades[$terms->term_id] ?? '-';
+            $sub_table .= '<td class="data_center">' . $grade . '</td>';
+        }
+        $sub_table .= '</tr>';
+    }
+
+    $sub_table .= '</tbody></table></div>';
+    return $sub_table;
+}
+
+private function buildDisciplineTable($decipline_data)
+{
+    $discipline_table = '<div style="width:50%;">
+        <table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" cellpadding="0" border="1">
+            <thead>
+                <tr>
+                    <th><b>DISCIPLINE</b></th>
+                    <th class="data_center"><b>Grade</b></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><b>Discipline</b></td>';
+
+    foreach ($decipline_data as $value) {
+        $discipline_table .= '<td class="data_center">' . $value->obtain_grade . '</td>';
+    }
+
+    $discipline_table .= '</tr></tbody></table></div>';
+    return $discipline_table;
+}
+
 
     //co_schalstic area for mmis
     public function get_co_scholastic_mmis($standard_id, $student_id, $format, $grade_type)
@@ -4393,23 +4265,35 @@ while ($current_date <= $post_end_date) {
                     {
                         $activity_master_title = explode('|', $get_result_activity_master->activity_master_title);
                         $activity_master_id = explode(',', $get_result_activity_master->ids);
-               
+                        
                         foreach($activity_master_title as $key2 => $activity_master_titles)
                         {
                             $table .= '<tr><td style="text-align:left;font-size:medium !important;width:60%;background:white !important;">' . $activity_master_titles .'</td>';
-                         
+                            $checked = 0;
                             if(isset($get_result_activity_marks[$activity_master_title[$key2]]) && !empty($get_result_activity_marks[$activity_master_title[$key2]]))
                             {
                                 foreach($get_result_activity_marks[$activity_master_title[$key2]] as $get_result_activity_mark)
                                 {
+                                    if(isset($get_result_activity_mark[0]) && $get_result_activity_mark[0]->activity_id==$activity_master_id[$key2]){
+                                        $checked++;
+                                    }                                  
+                                }
+                            }
+                            if($checked==0){
+                                foreach($get_result_activity_marks[$activity_master_title[$key2]] as $get_result_activity_mark)
+                                {
+                                    $table .= '<td style="text-align:center;font-size:medium !important;background:white !important;color:black;width:10%;">NA</td>';
+                                }
+                            }else{
+                                foreach($get_result_activity_marks[$activity_master_title[$key2]] as $get_result_activity_mark)
+                                {
+                                    $table .= '<td style="text-align:center;font-size:medium !important;background:white !important;color:black;width:10%;">';
                                     if(isset($get_result_activity_mark[0]) && $get_result_activity_mark[0]->activity_id==$activity_master_id[$key2])
                                     {
-                                        $table .= '<td style="text-align:center;font-size:medium !important;background:white !important;color:black;width:10%;">&#10004</td>';
+                                        $table .= '&#10004';
                                     }
-                                    else
-                                    {
-                                        $table .= '<td style="text-align:center;font-size:medium !important;background:white !important;color:black;width:10%;">N/A</td>'; 
-                                    }
+                                    $table .= '</td>';
+                                  
                                 }
                             }
                             $table .= '</tr>';
@@ -4423,5 +4307,81 @@ while ($current_date <= $post_end_date) {
         $res['table'] = $table;
         return $res;
     }
-    
+
+        public function getTermAttendance($standard_id, $student_id, $format, $type)
+        {
+            $sub_institute_id = session()->get('sub_institute_id');
+            $syear = session()->get('syear');
+
+            $get_term = DB::table('academic_year')
+                    ->selectRaw('group_concat(id) as id,group_concat(term_id) as term_id,group_concat(title) as title,group_concat(start_date) as start_date,group_concat(end_date) as end_date,group_concat(post_start_date) as post_start_date,group_concat(post_end_date) as post_end_date')
+                    ->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])
+                    ->when($format!=='yearly',function($q) use($format){
+                        $q->where('term_id',$format);
+                    })
+                    ->groupBy('syear')
+                    ->first();
+            // echo "<pre>";print_r($student_id);exit;
+            $post_start_date_ex = explode(',',$get_term->post_start_date);
+            $post_end_date_ex = explode(',',$get_term->post_end_date);
+            $post_start_date_final_ex = explode(',',$get_term->post_start_date);
+            $post_end_date_final_ex = explode(',',$get_term->post_end_date);
+
+            $post_start_date = $post_start_date_ex[0];
+            $post_end_date = isset($post_end_date_ex[1]) ? $post_end_date_ex[1] : $post_end_date_ex[0];
+            $post_start_date_final =  $post_start_date_final_ex[0];
+            $post_end_date_final = isset($post_end_date_final_ex[1]) ? $post_end_date_final_ex[1] : $post_end_date_final_ex[0];
+
+            $cal_event = DB::table('calendar_events as ce')
+            ->join('academic_year as ay', 'ce.syear', '=', 'ay.syear')
+            ->where(['ce.sub_institute_id' => $sub_institute_id, 'ce.syear' => $syear])
+            ->WhereRaw("FIND_IN_SET('$standard_id', ce.standard) AND ce.event_type in ('holiday','vacation')")
+            ->whereBetween('ce.school_date', [$post_start_date, $post_end_date])
+            ->when($format!=='yearly',function($q) use($format){
+                $q->where('ay.term_id',$format);
+            })
+            ->groupBy('ce.school_date')
+            ->get()
+            ->toArray();
+
+            $calArr = array();
+            foreach ($cal_event as $calRow) {
+            $calArr[] = $calRow->school_date;
+            }
+
+            $attTotDays = 0;
+            while ($post_start_date <= $post_end_date) {
+                if (date('w', strtotime($post_start_date)) != 0) {
+                    $attTotDays++;
+                }
+                $post_start_date = date('Y-m-d', strtotime($post_start_date . ' +1 day'));
+            }
+            $attTotDays = $attTotDays - count($calArr);
+
+            // db::enableQueryLog();
+            $attarray = DB::table('attendance_student as ap')
+            ->join('tblstudent as s', 'ap.student_id', '=', 's.id')
+            ->join('tblstudent_enrollment as se', function ($join) {
+            $join->on('s.id', '=', 'se.student_id')
+            ->whereNull('se.end_date');
+            })
+            ->select('s.id', 's.first_name', DB::raw('COUNT(DISTINCT ap.attendance_date) AS present_day'))
+            ->where('se.sub_institute_id', $sub_institute_id)
+            ->where('se.syear', $syear)
+            ->where('se.standard_id', $standard_id)
+            ->where('ap.student_id', $student_id)
+            ->where('ap.attendance_code', 'P')
+            ->whereBetween('ap.attendance_date', [$post_start_date_final, $post_end_date_final])
+            ->groupBy('s.id')
+            ->get();
+            // dd(db::getQueryLog($attarray));
+            $attarray = $attarray->pluck('present_day', 'id')->all();
+            if (isset($attarray[$student_id])) {
+                $attendance = $attarray[$student_id] . '/' . $attTotDays;
+            } else {
+                $attendance = '-/' . $attTotDays; 
+            }
+         
+            return $attendance;
+        }
 }

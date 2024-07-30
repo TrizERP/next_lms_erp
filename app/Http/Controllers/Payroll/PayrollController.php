@@ -125,7 +125,7 @@ class PayrollController extends Controller
         $res['selected_emp']=$request->emp_id;
         $res['department_id']=$request->department_id;
         $res['emp_status'] = $status;
-        // echo "<pre>";print_r($employeeSalaryStructures[7011]);exit;
+        // echo "<pre>";print_r($employeeSalaryStructures);exit;
         //return json_decode($employeeSalaryStructures[0]['employee_salary_data'], true);
         return is_mobile($type, "payroll.employee_salary_structure.index", $res, "view");
         
@@ -377,7 +377,10 @@ class PayrollController extends Controller
         $res['salaryStructure'] = EmployeeSalaryStructure::join('tbluser as u',function($join){
             $join->on('u.id','=','employee_salary_structures.employee_id')->where('u.status',1); // 23-04-24 by uma
         })
-        ->select('employee_salary_structures.*', DB::raw('CONCAT_ws(" ",COALESCE(u.first_name,"-"), COALESCE(u.last_name,"-")) as employee_name'),'u.employee_no')
+        ->join('hrms_departments as hd',function($join){
+            $join->on('hd.id','=','u.department_id'); // 27-04-24 by uma
+        })
+        ->select('employee_salary_structures.*', DB::raw('CONCAT_ws(" ",COALESCE(u.first_name,"-"), COALESCE(u.last_name,"-")) as employee_name'),'u.employee_no',DB::raw('IFNULL(hd.department,"-") as department'))
         ->when($emp_id!=0,function($q) use($emp_id){
             $q->whereRaw('employee_salary_structures.employee_id in ('.$emp_id.')');
         })

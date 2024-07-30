@@ -25,7 +25,7 @@ class HrmsLeaveController extends Controller
         }
 
         $res['allData']=DB::table('hrms_leave_allocation as hla')
-                        ->join('hrms_departments as hd',function($join){
+                        ->join('hrms_departments as hd',function($join) use($sub_institute_id){
                             $join->on('hd.id','=','hla.department_id')->where('hd.sub_institute_id',$sub_institute_id)->where('status',1)->whereNull('deleted_at');
                         })
                         ->join('hrms_leave_types as hlt','hlt.id','=','hla.leave_type_id')

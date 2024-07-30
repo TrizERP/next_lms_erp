@@ -74,6 +74,7 @@
                             <tr>
                                 <th>Emp No</th>
                                 <th>Employee Name</th>
+                                <th>Department</th>
                                 <th>Year</th>
                                 @foreach($data['headers'] as $hkey => $header)
                                     <th class="text-left"> {{$header}} </th>
@@ -85,6 +86,7 @@
                                 <tr>
                                     <td>{{$value['employee_no']}}</td>
                                     <td>{{$value['employee_name']}}</td>
+                                    <td>{{$value['department']}}</td>
                                     <td>{{$value['year']}}</td>
                                     @php $jsonData = json_decode($value['employee_salary_data'],true); @endphp
                                     @foreach($data['headers'] as $hkey => $header)
@@ -108,7 +110,6 @@
     <script>
         $(document).ready(function () {
             var table = $('#example').DataTable({
-                ordering: false,
                 select: true,
                 lengthMenu: [
                     [100, 500, 1000, -1],

@@ -146,7 +146,9 @@ if (!function_exists('SearchChain')) {
                 if($parsedUrl['path'] == '/lms/question_paper/create' || $parsedUrl['path'] == '/lms/question_paper/search'){
                     $module_name = 'question_paper';
                 }
-                
+                if($parsedUrl['path'] == '/student/student_homework_submission/create'){
+                    $module_name = 'student_homework_submission';
+                }
                 $path = "/student/student_homework/create";
                 $keyword = "student_homework";
                 
@@ -163,9 +165,9 @@ if (!function_exists('SearchChain')) {
             '5' => 'questionReport',
             '6' => 'parent_communication',
             '7' => 'question_paper',
-            '8' => 'co_scholastic_marks_entry',                                    
+            '8' => 'co_scholastic_marks_entry', 
+            '9' => 'student_homework_submission', // 2024-07-25          
         ];
-
         // menu_ids to get class teacher class only
         if(session()->get('sub_institute_id')==195){
             $menu_ids = [80,102];
@@ -353,7 +355,7 @@ if (!function_exists('SearchChain')) {
                 $std_option .= "<option $selected value=$id>$val</option>";
             }
         }
-
+        
         $div_option = "<option value=''>Select</option>";
         if ($std_val != "") {
             if (is_array($std_val)) {
@@ -380,11 +382,6 @@ if (!function_exists('SearchChain')) {
 
                 $division = $query->pluck('division.name', 'division.id');
 
-                // $division = DB::table('std_div_map')
-                // ->join('division', 'division.id', '=', 'std_div_map.division_id')
-                // //                        ->where("std_div_map.standard_id", implode(',', $std_val))
-                // ->where("std_div_map.standard_id", $std_val)
-                // ->pluck('division.name', 'division.id');
             } else {
                 // die('here');
                 $query = DB::table('std_div_map');
@@ -403,39 +400,22 @@ if (!function_exists('SearchChain')) {
                 $subjectTeacherDivArr = session()->get('subjectTeacherDivArr');
                 // if(isset($subjectTeacherDivArr) && (!isset($subjectTeacherDivArr) || in_array($module_name, $module_array)))
                 if ($subjectTeacherDivArr != "" && ($classTeacherDivArr == "" || in_array($module_name, $module_array))) {
-                    // print_r($subjectTeacherDivArr); exit('here');
-                    if (count($subjectTeacherDivArr) > 0) {
-                        // $query->orwhereIn('division.id',$subjectTeacherDivArr);
-                        $query->whereIn('division.id', $subjectTeacherDivArr);
+                    if(in_array(session()->get('right_menu_id'),$menu_ids) && session()->get('user_profile_name')=="Teacher"){
+                        $query->where('division.id',$getClass->division_id);
+                    }else{
+                        $query->whereIn('division.id', function ($sub_query) use ($subjectTeacherDivArr,$std_val) {
+                            $sub_query->select('division_id')
+                                ->from('timetable')
+                                ->where('teacher_id', session()->get('user_id'))
+                                ->where('standard_id',$std_val)
+                                ->whereIn('division_id', $subjectTeacherDivArr)
+                                ->where('syear',session()->get('syear'));
+                        });
                     }
                 }
                 //END Check for subject teacher assigned
 
                 $division = $query->pluck('division.name', 'division.id');
-                // $division = DB::table('std_div_map')
-                // ->join('division', 'division.id', '=', 'std_div_map.division_id')
-                // ->where("std_div_map.standard_id", $std_val)
-                // ->pluck('division.name', 'division.id');
-                // $query = DB::table('std_div_map');
-                // $query->join('division', 'division.id', '=', 'std_div_map.division_id');
-                // $query->where("std_div_map.standard_id", $std_val);
-                // //START Check for class teacher assigned standards
-                // $classTeacherDivArr = session()->get('classTeacherDivArr');
-                // if ($classTeacherDivArr != "" && !in_array($module_name, $module_array))
-                // {
-                //     $query->whereIn('division.id',$classTeacherDivArr);
-                // }
-                // //END Check for class teacher assigned standards
-
-                // //START Check for class teacher assigned standards
-                // $subjectTeacherDivArr = session()->get('subjectTeacherDivArr');
-                // if ($subjectTeacherDivArr != "" && ($classTeacherDivArr == "" || in_array($module_name, $module_array)))
-                // {
-                //     $query->whereIn('division.id',$subjectTeacherDivArr);
-                // }
-                // //END Check for class teacher assigned standards
-
-                // $division = $query->pluck('division.name', 'division.id');
             }
 
             foreach ($division as $id => $val) {
