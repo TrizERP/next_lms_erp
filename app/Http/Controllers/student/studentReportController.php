@@ -191,6 +191,7 @@ class studentReportController extends Controller
             })
             ->leftJoin('subject', 'student_optional_subject.subject_id', '=', 'subject.id')
             ->leftJoin('transport_school_shift', 'transport_vehicle.school_shift', '=', 'transport_school_shift.id')
+            ->leftJoin('tblstudent_bank_detail', 'tblstudent_bank_detail.student_id', '=', 'tblstudent.id')
             ->where($extraSearchArray)
             ->when($request->grade,function($q) use($request){
                 $q->where('tblstudent_enrollment.grade_id',$request->grade);
