@@ -117,7 +117,7 @@
 
                                 @if($get_probation_period_from <= now() && now() <= $get_probation_period_to) 
                                     @php 
-                                        $att_status = 'background-color: red;'; 
+                                        $att_status = 'background-color: #ff7373';  
                                     @endphp
                                 @endif
 
@@ -145,24 +145,14 @@
                                             $total_op = 0; $total_taken = 0; $total_remain = 0;
                                         @endphp
                                         <td>
-                                            @if($get_probation_period_from <= now() && now() <= $get_probation_period_to)
-                                                @if(isset($data['op_data'][$get_hrms_leave_type->leave_type]) && $data['op_data'][$get_hrms_leave_type->leave_type] != '')
-                                                    @php 
-                                                        $total_op = 0;
-                                                    @endphp
+                                            @if(isset($data['op_data'][$get_hrms_leave_type->leave_type][$get_employee_leave_list->user_id]) && $data['op_data'][$get_hrms_leave_type->leave_type][$get_employee_leave_list->user_id] != '')
+                                                @php 
+                                                    $total_op = $data['op_data'][$get_hrms_leave_type->leave_type][$get_employee_leave_list->user_id];
+                                                @endphp
 
-                                                    {{ $total_op }}
-                                                @endif
+                                                {{ $total_op }}
                                             @else
-                                                @if(isset($data['op_data'][$get_hrms_leave_type->leave_type][$get_employee_leave_list->department_id]) && $data['op_data'][$get_hrms_leave_type->leave_type][$get_employee_leave_list->department_id] != '')
-                                                    @php 
-                                                        $total_op = $data['op_data'][$get_hrms_leave_type->leave_type][$get_employee_leave_list->department_id];
-                                                    @endphp
-
-                                                    {{ $total_op }}
-                                                @else
-                                                    0
-                                                @endif
+                                                0
                                             @endif
                                         </td>
                                         <td>

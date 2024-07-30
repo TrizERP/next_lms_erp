@@ -92,7 +92,7 @@ class LeaveSummaryReportController extends Controller
         $get_hrms_leave_allocations = $leaveAllocationsQuery->get()->toArray();
                    
         $get_employee_leave_lists = DB::table('hrms_emp_leaves as hel')
-            ->selectRaw("hel.*, u.*,CONCAT_WS(' ',u.first_name,u.last_name) AS employee_name, group_concat(hlt.leave_type) as leave_type,group_concat(hel.status) as leave_status, hlt.id as leave_id, hel.status as hel_status, group_concat(hel.day_type) as total_day_type, hd.department as department_name,hd.id as department_id")
+            ->selectRaw("hel.*, u.*,CONCAT_WS(' ',u.first_name,u.last_name) AS employee_name, group_concat(hlt.leave_type) as leave_type,group_concat(hel.status) as leave_status, hlt.id as leave_id, hel.status as hel_status, group_concat(hel.day_type) as total_day_type, hd.department as department_name,hd.id as department_id,u.openingleave,u.CL_opening_leave,u.probation_period_from,u.probation_period_to")
             ->join('tbluser as u', 'u.id', '=', 'hel.user_id')
             ->join('hrms_leave_types as hlt', 'hlt.id', '=', 'hel.leave_type_id')
             ->join('hrms_departments as hd', 'hd.id', '=', 'u.department_id')
@@ -113,7 +113,8 @@ class LeaveSummaryReportController extends Controller
 
         $new_data = [];
         $op_data = [];
-
+        $maximumOpeningLeave = number_format(180,2); // levae should not be greater then this
+        $date = date('Y-m-d');
         foreach($get_employee_leave_lists as $key => $value)
         {
             $Casual_Leave = explode(',', $value->leave_type);
@@ -145,24 +146,47 @@ class LeaveSummaryReportController extends Controller
                 $op_datas = DB::table('hrms_leave_allocation')->where(['sub_institute_id'=>$sub_institute_id, 'leave_type_id'=>$value2->id])
                 ->where('department_id',$value->department_id ?? 0)
                 ->first();
-    
-                $op_data[$value2->leave_type][$value->department_id ?? 0] = $op_datas->value ?? 0;
+                // prohabition to date
+                $probationto= $value->probation_period_to;
+                $elLeave = $value->openingleave ?? 0;
+                $clLeave = $value->CL_opening_leave ?? 0;
+                $leaveTypeId = $value2->leave_type_id ?? '-';
+                $depLeave = $op_datas->value ?? 0;
+
+                $mainLeave = number_format($depLeave,2) ?? 0;
+                // LTY009 earned Leave openingleave
+                if($elLeave > 0 && isset($leaveTypeId) && $leaveTypeId=='LTY009' && strtotime($probationto) > strtotime($date)){
+                    $mainLeave = $elLeave;
+                }
+                else if(isset($leaveTypeId) && $leaveTypeId=='LTY009'){
+                    $mainLeave = ($depLeave + $elLeave);
+                }
+
+                // LTY001 causual leave CL_opening_leave
+                if($clLeave > 0 && isset($leaveTypeId) && $leaveTypeId=='LTY001' && strtotime($probationto) > strtotime($date)){
+                    $mainLeave = $clLeave;
+                }
+
+                // leave should not be greater then set maixmum leave 
+                if($mainLeave > $maximumOpeningLeave){
+                    $mainLeave = $maximumOpeningLeave;
+                }
+                
+                // store leave value in user_id
+                $op_data[$value2->leave_type][$value->user_id] = number_format($mainLeave,2);
             } 
 
         }
-        // echo "<pre>";print_r($new_data);exit;
+        // echo "<pre>";print_r($op_data);exit;
         $res['allyears'] = Helpers::getPairYears();
-        // $res['employees']=$employees;
         $res['employee_id']=$employee_id;
         $res['department_id']=$department_id;
-        // $res['departments']=$departments;
         $res['get_employee_leave_lists']=$get_employee_leave_lists;
         $res['get_hrms_leave_types']=$get_hrms_leave_types;
         $res['new_data']=$new_data;
         $res['op_data']=$op_data;
         $res['years']=$years;
-        // $res['employeget_hrms_leave_allocationses']=$get_hrms_leave_allocations;
-        // echo "<pre>";print_r($get_employee_leave_lists);exit;
+      
         return is_mobile($type,'leave/leave_summary_report/index',$res,'view');
      
     }
