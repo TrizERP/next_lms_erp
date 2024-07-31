@@ -460,10 +460,10 @@
                         <label>Sat</label>
                         <input type="checkbox" id='saturday' name="saturday" value="1" class="">
                     </div>
-                    <div class="col-md-1 form-group">
-                        <label>Sun</label>
-                        <input type="checkbox" id='sunday' name="sunday" value="1" class="">
-                    </div>
+                    <!-- <div class="col-md-1 form-group"> -->
+                        <!-- <label>Sun</label> -->
+                        <input type="hidden" id='sunday' name="sunday" value="0" class="">
+                    <!-- </div> -->
 
                     <div class="col-md-6 form-group">
                         <label>Monday In Date</label>
@@ -519,10 +519,10 @@
                         <input type="time" id='saturday_out_date' name="saturday_out_date" class="form-control">
                     </div>
 
-                    <div class="col-md-6 form-group">
+                    <!-- <div class="col-md-6 form-group">
                         <label>Sunday In Date</label>
                         <input type="time" id='sunday_in_date' name="sunday_in_date" class="form-control">
-                    </div>
+                    </div> -->
                     <div class="col-md-6 form-group">
                         <label>Sunday Out Date</label>
                         <input type="time" id='sunday_out_date' name="sunday_out_date" class="form-control">
