@@ -922,7 +922,7 @@ class HrmsController extends Controller
                     $countSundays++;
                 }
             }
-            $holidays = $value->holidays ?? 0;
+            $holidays = $value->total_holidays ?? 0;
             $newEmpData[$key]->weekday_off = $countSundays;
             $newEmpData[$key]->totalDays = $totalDays;
             $newEmpData[$key]->workingDays = ($totalDays - $countSundays - $holidays);
