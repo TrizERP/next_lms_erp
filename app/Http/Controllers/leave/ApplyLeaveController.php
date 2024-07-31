@@ -44,10 +44,13 @@ class ApplyLeaveController extends Controller
             $res['departments'] = HrmsDepartment::where('status', true)->pluck('department', 'id');
             $res['users'] = tbluserModel::where('sub_institute_id', $sub_institute_id)->where('status',1)->get();   // 23-04-24 by uma
             //echo("<pre>");print_r($users);exit;
-            $res['leave_types'] = HrmsLeaveType::get();
+            $res['leave_types'] = HrmsLeaveType::where('sub_institute_id', $sub_institute_id)->where('status',1)->orderBy('sort_order')->get();
             
             $res['leaveHistory'] = DB::table('hrms_emp_leaves as hel')->selectRaw("hel.*, hlt.leave_type as leave_type_name")
-            ->join('hrms_leave_types as hlt', 'hlt.id', '=', 'hel.leave_type_id')
+            ->join('hrms_leave_types as hlt', function($join) use ($sub_institute_id) {
+                $join->on('hlt.id', '=', 'hel.leave_type_id')
+                     ->where('hlt.sub_institute_id', '=', $sub_institute_id);
+            })
             ->where('hel.user_id', $user_id)
             // ->whereYear('hel.from_date', $syear)
             ->where('hel.from_date','>=',$syear.'-04-01')
@@ -81,7 +84,7 @@ class ApplyLeaveController extends Controller
         try {
             $departments = HrmsDepartment::where('status', true)->pluck('department', 'id');
             $users = tbluserModel::where('sub_institute_id', $sub_institute_id)->where('status',1)->get();  // 23-04-24 by uma
-            $leave_types = HrmsLeaveType::get();
+            $leave_types = HrmsLeaveType::where('sub_institute_id', $sub_institute_id)->where('status',1)->orderBy('sort_order')->get();
             return view('leave.import_leave', compact('departments', 'users', 'leave_types'));
         } catch (Exception $e) {
             return response()->json($e->getMessage(), 500);
@@ -288,7 +291,10 @@ class ApplyLeaveController extends Controller
             $user_id=$request->user_id;
         }
         $data = DB::table('hrms_emp_leaves as hel')->selectRaw("hel.*, hlt.leave_type as leave_type_name")
-        ->join('hrms_leave_types as hlt', 'hlt.id', '=', 'hel.leave_type_id')
+        ->join('hrms_leave_types as hlt', function($join) use ($sub_institute_id) {
+            $join->on('hlt.id', '=', 'hel.leave_type_id')
+                 ->where('hlt.sub_institute_id', '=', $sub_institute_id);
+        })
         ->where('hel.user_id', $user_id)
         ->whereYear('hel.from_date', $selectedYear)
         ->where('hel.sub_institute_id',$sub_institute_id)

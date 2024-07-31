@@ -75,7 +75,10 @@ class leaveEncashmentController extends Controller
                         ->where('hla.sub_institute_id',$sub_institute_id)
                         ->where('hla.year',$syear);
                    })
-                    ->join('hrms_leave_types as hlt','hlt.id','=','hla.leave_type_id')
+                    ->join('hrms_leave_types as hlt', function($join) use ($sub_institute_id) {
+                        $join->on('hlt.id', '=', 'hla.leave_type_id')
+                             ->where('hlt.sub_institute_id', '=', $sub_institute_id);
+                    })
                     ->join('hrms_departments as hd',function($join){
                         $join->on('hd.id','=','u.department_id');
                     })
