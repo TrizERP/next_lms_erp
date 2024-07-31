@@ -110,13 +110,13 @@
                         </tr>
                     </thead>
                     <tbody>
+                        @php $i=1; @endphp
                         @if(isset($data['allData']) && !empty($data['allData']))
                             @foreach($data['allData'] as $date=>$empArr)
-                                @php $i=1; @endphp
                                 @foreach($empArr as $empId=>$value)
                                 @php
                                     $att_status=$day_name='';
-                                    $get_format_punchin_time=$get_format_punchout_time='-';
+                                    $get_format_punchin_time=$get_format_punchout_time='N/A';
                                     $holidays=$cl_leave=$on_duty_leave=[];
                                     if (isset($value['punchin_time']) && !empty($value)) 
                                     {
@@ -139,7 +139,7 @@
                                             $att_status = 'background-color: orange;';
                                         }
                                             
-                                    }else if($get_format_punchin_time=='-'){
+                                    }else if($get_format_punchin_time=='N/A'){
                                         $att_status = 'background-color: #FFB2B2;';
                                     }
                                     else if(isset($hrmsAttendance['leave'][0]) && !empty($hrmsAttendance['leave'][0]))
@@ -203,6 +203,13 @@
                                     {
                                         $att_status = 'background-color:#99D699;';
                                     }
+
+                                    $timediff =isset($value['timestamp_diff']) ? \Carbon\Carbon::parse($value['timestamp_diff'])->format('H:i') : '-'; 
+
+                                    // for off days
+                                    if(isset($value['day_status']) && $value['day_status']=='offday' && $get_format_punchin_time=="N/A" && $get_format_punchout_time=="N/A"){
+                                        $get_format_punchin_time=$get_format_punchout_time='-';
+                                    }
                                 @endphp
                                 <tr style="{{ $att_status }}">
                                     <td>{{$i++}}</td>
@@ -210,9 +217,9 @@
                                     <td>{{$value['employee_no'] ?? '-'}}</td>
                                     <td>{{$value['depName'] ?? '-'}}</td>
                                     <td>{{$value['full_name']  ?? '-'}}</td>
-                                    <td>{{$get_format_punchin_time  ?? '-'}}</td>
-                                    <td>{{$get_format_punchout_time  ?? '-'}}</td>
-                                    <td class="text-left">{{ isset($value['timestamp_diff']) ? \Carbon\Carbon::parse($value['timestamp_diff'])->format('H:i') : '-' }}</td>
+                                    <td>{{$get_format_punchin_time}}</td>
+                                    <td>{{$get_format_punchout_time}}</td>
+                                    <td class="text-left">{{ $timediff }}</td>
                                 </tr>
                                 @endforeach
                             @endforeach
