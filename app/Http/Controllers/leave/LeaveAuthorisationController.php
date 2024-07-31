@@ -40,7 +40,10 @@ class LeaveAuthorisationController extends Controller
         $get_employee_leave_lists = DB::table('hrms_emp_leaves as hel')
         ->selectRaw("hel.*, CONCAT_WS(' ',u.first_name,u.last_name) AS employee_name, hlt.leave_type,u.department_id")
         ->join('tbluser as u', 'u.id', '=', 'hel.user_id')
-        ->join('hrms_leave_types as hlt', 'hlt.id', '=', 'hel.leave_type_id')
+        ->join('hrms_leave_types as hlt', function($join) use ($sub_institute_id) {
+            $join->on('hlt.id', '=', 'hel.leave_type_id')
+                 ->where('hlt.sub_institute_id', '=', $sub_institute_id);
+        })
         ->where('hel.sub_institute_id', $sub_institute_id)
         ->where('hel.from_date', '>=', $from_date_formatted)
         ->where('hel.to_date', '<=', $to_date_formatted)
@@ -81,7 +84,10 @@ class LeaveAuthorisationController extends Controller
         $get_employee_leave_lists = DB::table('hrms_emp_leaves as hel')
         ->selectRaw("hel.*, CONCAT_WS(' ',u.first_name,u.last_name) AS employee_name, hlt.leave_type,u.department_id")
         ->join('tbluser as u', 'u.id', '=', 'hel.user_id')
-        ->join('hrms_leave_types as hlt', 'hlt.id', '=', 'hel.leave_type_id')
+        ->join('hrms_leave_types as hlt', function($join) use ($sub_institute_id) {
+            $join->on('hlt.id', '=', 'hel.leave_type_id')
+                 ->where('hlt.sub_institute_id', '=', $sub_institute_id);
+        })
         ->where('hel.sub_institute_id', $sub_institute_id)
         ->where('hel.from_date', '>=', $from_date_formatted)
         ->where('hel.to_date', '<=', $to_date_formatted)

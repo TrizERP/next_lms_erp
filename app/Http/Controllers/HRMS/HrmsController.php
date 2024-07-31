@@ -1007,7 +1007,7 @@ class HrmsController extends Controller
         ->join('tbluser as u',function($join) use($sub_institute_id) {
             $join->on('u.id','=','ha.user_id')->where(['u.sub_institute_id'=>$sub_institute_id,'u.status'=>1]);
         })
-        ->leftJoin('hrms_departments as hd',function($join) {
+        ->leftJoin('hrms_departments as hd',function($join) use($sub_institute_id) {
             $join->on('hd.id','=','u.department_id')->where('hd.status',1)->where('hd.sub_institute_id',$sub_institute_id);
         })
         ->where(['ha.sub_institute_id'=>$sub_institute_id,'ha.status'=>1])
