@@ -335,6 +335,16 @@ class online_fees_collect_controller extends Controller
             "syear" => $get_all_data[0]->syear,
             "hdfc_order_id" => $order_id
         );
+
+//START RAJESH 30-07-2024 = prevent second time success
+        if($get_all_data[0]->hdfc_payment_status == 'PS'){
+            $school_data = array();
+            $school_data["website"] = $this->site_name();
+            $type = "web";
+            return \App\Helpers\is_mobile($type, "fees/online_fees_collect/search_student", $school_data, "view");
+        }
+//END RAJESH 30-07-2024
+
         // echo '<pre>'; print_r($where_arr); exit;
         DB::table("fees_payment")
             ->where($where_arr)
@@ -375,6 +385,7 @@ class online_fees_collect_controller extends Controller
             })
             ->whereNotNull('fp.hdfc_order_id')
             ->whereBetween('fp.created_at', [now()->subDays(3), now()->subMinutes(30)])
+            ->whereIn('fp.id', [35323,35388])
             ->groupBy('fp.id')
             ->get();
 
@@ -424,7 +435,9 @@ class online_fees_collect_controller extends Controller
 
                 // Close the cURL session
                 curl_close($ch);
-
+echo "<pre>".$order_no."<br/>";
+print_r($response);
+exit();
                 // Process the response
                 if ($response !== false) {
                     parse_str($response, $response_data);

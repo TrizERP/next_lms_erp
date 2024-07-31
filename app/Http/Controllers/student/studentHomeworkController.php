@@ -628,7 +628,9 @@ class studentHomeworkController extends Controller
                 ->when($request->division_id,function($q) use($request){
                     $q->where('t.division_id',$request->division_id);
                 })
-                ->where('t.teacher_id', $teacher_id)
+                ->when($user_profile_name=="Teacher",function($q) use($teacher_id){
+                    $q->where('t.teacher_id', $teacher_id);
+                })
                 ->groupByRaw('s.subject_id,s.standard_id')
                 ->orderBy('s.display_name')->get()->toArray();
         // }

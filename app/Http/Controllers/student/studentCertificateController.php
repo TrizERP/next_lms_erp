@@ -311,6 +311,7 @@ class studentCertificateController extends Controller
             }, $getSub);
             $subject_names = implode(',',$subject_names);
         }
+        /*
         $get_standard_subjects = DB::table('sub_std_map as ssm')
       ->select(DB::raw('GROUP_CONCAT(IFNULL(ssm.display_name, "-")) as subject_name'),DB::raw('GROUP_CONCAT(IFNULL(ssm.elective_subject, "-")) as elective_subject'))
         ->join('standard as s', 's.id', '=', 'ssm.standard_id')
@@ -320,13 +321,51 @@ class studentCertificateController extends Controller
         ->groupBy('ssm.standard_id')
         ->orderBy('ssm.sort_order')
         ->first();
+        */
+        
+        /*$get_standard_subjects = DB::table('sub_std_map as ssm')
+            ->select(
+                DB::raw('GROUP_CONCAT(IFNULL(ssm.display_name, "-") ORDER BY ssm.sort_order ASC) as subject_name'),
+                DB::raw('GROUP_CONCAT(IFNULL(ssm.elective_subject, "No") ORDER BY ssm.sort_order ASC) as elective_subject')
+            )
+            ->join('standard as s', 's.id', '=', 'ssm.standard_id')
+            ->join('tblstudent_enrollment as te', 'te.standard_id', '=', 's.id')
+            ->leftJoin('student_optional_subject as sos', function($join) {
+                $join->on('sos.subject_id', '=', 'ssm.subject_id')
+                     ->where('sos.student_id', '=', 'te.student_id')
+                     ->where('sos.syear', '=', 'te.syear');
+            })
+            ->where('ssm.sub_institute_id', session()->get('sub_institute_id'))
+            ->where('te.standard_id', $value['standard_id'])
+            ->where('te.student_id', $value['id'])
+            ->where('ssm.allow_grades', 'Yes')
+            ->where(function($query) {
+                $query->where('ssm.elective_subject', 'No')
+                      ->orWhereNotNull('sos.id');
+            })
+            ->where('te.syear', session()->get('syear'))
+            ->groupBy('ssm.standard_id')
+            ->first();
+*/
+
+        $get_standard_subjects = DB::select("SELECT GROUP_CONCAT(IFNULL(ssm.display_name, '-') ORDER BY ssm.sort_order ASC) AS subject_name,
+            GROUP_CONCAT(IFNULL(ssm.elective_subject, '-') ORDER BY ssm.sort_order ASC) AS elective_subject
+FROM `sub_std_map` AS `ssm`
+INNER JOIN `standard` AS `s` ON `s`.`id` = `ssm`.`standard_id`
+INNER JOIN `tblstudent_enrollment` AS `te` ON `te`.`standard_id` = `s`.`id`
+LEFT JOIN `student_optional_subject` AS `sos` ON `sos`.`subject_id` = `ssm`.`subject_id` AND `sos`.`student_id` = te.student_id AND `sos`.`syear` = te.syear
+WHERE `ssm`.`sub_institute_id` = ".session()->get('sub_institute_id')." AND `te`.`standard_id` = ".$value['standard_id']." AND `te`.`student_id` = ".$value['id']." AND `ssm`.`allow_grades` = 'Yes' AND (`ssm`.`elective_subject` = 'NO' OR `sos`.`id` IS NOT NULL) AND `te`.`syear` = ".session()->get('syear')."
+GROUP BY `ssm`.`standard_id`
+ORDER BY `ssm`.`sort_order` ASC
+LIMIT 1");            
         $mainSub = $optionalSub = [];
+        //echo "<pre>";print_r($get_standard_subjects[0]);exit;
         // mmis optional and main subject in different lines
         if($sub_institute_id==47){
-            if(isset($get_standard_subjects->elective_subject)){
+            if(isset($get_standard_subjects[0]->elective_subject)){
 
-                $electiveExplode = explode(',',$get_standard_subjects->elective_subject);
-                $subjectExplode = explode(',',$get_standard_subjects->subject_name);
+                $electiveExplode = explode(',',$get_standard_subjects[0]->elective_subject);
+                $subjectExplode = explode(',',$get_standard_subjects[0]->subject_name);
 
                 foreach($electiveExplode as $key=>$val){
                     if($val=='Yes'){
@@ -340,9 +379,10 @@ class studentCertificateController extends Controller
             $subjectImplode = implode(',',$mainSub);
             $tdOptionalData = $subjectImplode.'<br>'.$optionalImplode;
         }else{
-            $tdOptionalData = optional($get_standard_subjects)->subject_name ?? '-';
+            $tdOptionalData = $get_standard_subjects[0]->subject_name ?? '-';
+            
         }
-        // echo "<pre>";print_r($tdOptionalData);exit;
+
         $get_student_attendances = DB::table('attendance_student')
         ->select(DB::raw('COUNT(id) as total_att_days,sum(CASE WHEN attendance_code = "P" THEN 1 ELSE 0 END) as present_att_days'))
         ->where('sub_institute_id', session()->get('sub_institute_id'))
@@ -436,9 +476,9 @@ class studentCertificateController extends Controller
         //$standard_array = ['I' => 1,'II' => 2,'III' => 3,'IV' => 4,'V' => 5,'VI' => 6,'VII' => 7,'VIII' => 8,'IX' => 9,'X' => 10,'XI' => 11,'XII' => 12];
         //$std = $standard_array[$value['short_standard_name']] ?? 0;
         $html_content = str_replace(htmlspecialchars("<<short_standard_name_in_word_value>>"), strtoupper($value['school_stream']), $html_content);
-        if($sub_institute_id==254){
+        /*if($sub_institute_id==254){
             $html_content = str_replace(htmlspecialchars("<<subjects_studied_system>>"),strtoupper($subject_names),$html_content);
-        }else{
+        }else*/{
             $html_content = str_replace(htmlspecialchars("<<subjects_studied_system>>"),strtoupper($tdOptionalData),$html_content);
         }
        
