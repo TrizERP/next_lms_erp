@@ -290,6 +290,7 @@ class lmsCounsellingController extends Controller
                         'level' => $element->level,
                         'element_id' => $element->element_id,
                         'element_name' => $element->element_name,
+                        'element_type' => $element->type,
                     ];
                     if (!empty($children)) {
                         $elementData['children'] = $children;
@@ -308,6 +309,7 @@ class lmsCounsellingController extends Controller
             'level' => 1,
             'element_id' => '',
             'element_name' => 'Job Zone',
+            'element_type' => 'job_zones',
             'children' => []
         ];
 
@@ -316,6 +318,7 @@ class lmsCounsellingController extends Controller
                 'level' => 2,
                 'element_id' => $jobZone->element_id,
                 'element_name' => $jobZone->element_name,
+                'element_type' => 'job_zones',
             ];
         }
 
