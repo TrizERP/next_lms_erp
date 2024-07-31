@@ -44,7 +44,7 @@ class ApplyLeaveController extends Controller
             $res['departments'] = HrmsDepartment::where('status', true)->pluck('department', 'id');
             $res['users'] = tbluserModel::where('sub_institute_id', $sub_institute_id)->where('status',1)->get();   // 23-04-24 by uma
             //echo("<pre>");print_r($users);exit;
-            $res['leave_types'] = HrmsLeaveType::get();
+            $res['leave_types'] = HrmsLeaveType::where('sub_institute_id', $sub_institute_id)->orderBy('sort_order')->get();
             
             $res['leaveHistory'] = DB::table('hrms_emp_leaves as hel')->selectRaw("hel.*, hlt.leave_type as leave_type_name")
             ->join('hrms_leave_types as hlt', 'hlt.id', '=', 'hel.leave_type_id')
@@ -68,11 +68,15 @@ class ApplyLeaveController extends Controller
 
     public function getEmployees(Request $request)
     {
-        $departmentId = $request->input('department_id');
-        $employees = tbluserModel::where('department_id', $departmentId)->where('status',1)->get();
 
+		$sub_institute_id = session()->get('sub_institute_id');
+        $departmentId = $request->get('department_id');
+
+        $employees = tbluserModel::where('department_id', $departmentId)->where('sub_institute_id', $sub_institute_id)->where('status',1)->get();
+	
         return response()->json(['employees' => $employees]);
     }
+
 
     public function importLeave()
     {
@@ -81,7 +85,7 @@ class ApplyLeaveController extends Controller
         try {
             $departments = HrmsDepartment::where('status', true)->pluck('department', 'id');
             $users = tbluserModel::where('sub_institute_id', $sub_institute_id)->where('status',1)->get();  // 23-04-24 by uma
-            $leave_types = HrmsLeaveType::get();
+            $leave_types = HrmsLeaveType::where('sub_institute_id', $sub_institute_id)->orderBy('sort_order')->get();
             return view('leave.import_leave', compact('departments', 'users', 'leave_types'));
         } catch (Exception $e) {
             return response()->json($e->getMessage(), 500);
@@ -283,6 +287,7 @@ class ApplyLeaveController extends Controller
         $selectedYear = $request->input('year');
         $type = $request->type;
         $user_id = session()->get('user_id');
+        $sub_institute_id = session()->get('sub_institute_id');
         if($type=="API"){
             $user_id=$request->user_id;
         }
@@ -290,6 +295,7 @@ class ApplyLeaveController extends Controller
         ->join('hrms_leave_types as hlt', 'hlt.id', '=', 'hel.leave_type_id')
         ->where('hel.user_id', $user_id)
         ->whereYear('hel.from_date', $selectedYear)
+        ->where('hel.sub_institute_id',$sub_institute_id)
         ->get()->toArray();
         
         return response()->json($data);

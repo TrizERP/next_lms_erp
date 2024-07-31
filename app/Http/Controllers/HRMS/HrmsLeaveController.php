@@ -45,7 +45,7 @@ class HrmsLeaveController extends Controller
         }
 
         $res['departments'] = DB::table('hrms_departments')->where('sub_institute_id',$sub_institute_id)->where('status',1)->whereNull('deleted_at')->pluck('department','id');
-        $res['leave_types'] = DB::table('hrms_leave_types')->whereNull('deleted_at')->pluck('leave_type','id');
+        $res['leave_types'] = DB::table('hrms_leave_types')->where('sub_institute_id',$sub_institute_id)->orderBy('sort_order')->pluck('leave_type','id');
         $res['years']= Helpers::getYears();
         return is_mobile($type, "HRMS.hrms_leave.hrms_leave_allocation.add", $res, "view");
     }
@@ -127,7 +127,7 @@ class HrmsLeaveController extends Controller
         }
         $res['editData'] = DB::table('hrms_leave_allocation')->where('id',$id)->first();
         $res['departments'] = DB::table('hrms_departments')->where('sub_institute_id',$sub_institute_id)->where('status',1)->whereNull('deleted_at')->pluck('department','id');
-        $res['leave_types'] = DB::table('hrms_leave_types')->whereNull('deleted_at')->pluck('leave_type','id');
+        $res['leave_types'] = DB::table('hrms_leave_types')->where('sub_institute_id',$sub_institute_id)->orderBy('sort_order')->pluck('leave_type','id');
         $res['years']= Helpers::getYears();
         return is_mobile($type, "HRMS.hrms_leave.hrms_leave_allocation.edit", $res, "view");
     }
