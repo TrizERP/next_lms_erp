@@ -1983,9 +1983,15 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             foreach ($other_bk_off_month_wise as $MonthId => $amt) {
                 if ($month_id == $MonthId) {
                     $merge_bk_month_wise[$month_id] += $amt;
+                }else if($amt>0){
+                    if(!isset($merge_bk_month_wise[$MonthId])){
+                        $merge_bk_month_wise[$MonthId] =0;
+                    }
+                    $merge_bk_month_wise[$MonthId] += $amt;
                 }
             }
         }
+        // echo "<pre>";print_r($merge_bk_month_wise);exit;
         // lions bus amount (transport fees) 2024-07-20
         $getTransportId = DB::table('fees_title')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear,'fees_title'=>'1'])->first();
         // end 2024-07-20
@@ -2180,12 +2186,12 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                     ];
                 }
                 if (isset($arr['amount'])) {
-                      // 03-06-24 by uma for institute_id =248
-                    if(isset($arr['disc_amount']) && $arr['disc_amount']>0){
-                        $reg_bk_month_wise[$arr['title']] += ($arr['amount']-$arr['disc_amount']); 
-                    }else{
+                      // 03-06-24 by uma for institute_id =248 // commented on 2024-07-30
+                    // if(isset($arr['disc_amount']) && $arr['disc_amount']>0){
+                    //     $reg_bk_month_wise[$arr['title']] += ($arr['amount']-$arr['disc_amount']); 
+                    // }else{
                         $reg_bk_month_wise[$arr['title']] += $arr['amount'];
-                    }
+                    // }
                     // $reg_bk_month_wise[$arr['title']] += $arr['amount'];
                     $reg_month_wise[$arr['title']] = [
                         'title' => $arr['title'],
@@ -2208,12 +2214,12 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                     ];
                 }
                 if (isset($arr['amount'])) {
-
-                    if(isset($arr['disc_amount']) && $arr['disc_amount']>0 && $arr['amount']>=$arr['disc_amount']){
-                        $reg_bk_month_wise2[$arr['title']] += ($arr['amount']-$arr['disc_amount']); 
-                    }else{
+                    // commented on 2024-07-30
+                    // if(isset($arr['disc_amount']) && $arr['disc_amount']>0 && $arr['amount']>=$arr['disc_amount']){
+                    //     $reg_bk_month_wise2[$arr['title']] += ($arr['amount']-$arr['disc_amount']); 
+                    // }else{
                         $reg_bk_month_wise2[$arr['title']] += ($arr['amount']);
-                    }
+                    // }
                     // $reg_bk_month_wise2[$arr['title']] += $arr['amount'];
                     $reg_month_wise2[$arr['title']] = [
                         'title' => $arr['title'],
