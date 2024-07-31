@@ -79,7 +79,7 @@ class LeaveSummaryReportController extends Controller
                   }
         $employees = $employeesQuery->get()->toArray();  // 23-04-24 by uma
 
-        $get_hrms_leave_types = DB::table('hrms_leave_types')->get()->toArray();
+        $get_hrms_leave_types = DB::table('hrms_leave_types')->where('sub_institute_id',$sub_institute_id)->where('status',1)->orderBy('sort_order')->get()->toArray();
         
         // get_hrms_leave_allocations
         $leaveAllocationsQuery = DB::table('hrms_leave_allocation')->where('sub_institute_id', $sub_institute_id);
