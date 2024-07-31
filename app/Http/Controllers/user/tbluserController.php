@@ -79,6 +79,18 @@ class tbluserController extends Controller
 
         $occupationList = tbluserModel::where('sub_institute_id',$sub_institute_id)->where('status',1)->whereNotNull('occupation')->groupBy('occupation')->pluck('occupation');
 
+         // start 30-07-2024
+         $masterSetups = DB::table('master_setup_select')->select('type','fieldname',DB::raw('GROUP_CONCAT(fieldValue SEPARATOR "||") as selOptions'))->where('sub_institute_id',$sub_institute_id)->groupBy('type')->get()->toArray();
+         $pluckedData = [];
+         foreach ($masterSetups as $setup) {
+             if (!isset($pluckedData[$setup->type])) {
+                 $pluckedData[$setup->type] = [];
+             }
+             $pluckedData[$setup->type]['fieldname'] = $setup->fieldname;
+             $pluckedData[$setup->type]['fieldvalue'] = $setup->selOptions; // array ['skills']['select skill']=skill1 || skill 2 || skill 3
+         }
+         // end 30-07-2024
+
         view()->share('qualificationList', $qualificationList);
         view()->share('occupationList', $occupationList);
             
@@ -90,6 +102,7 @@ class tbluserController extends Controller
         view()->share('job_titles', $job_titles);
         view()->share('employees', $employees);
         view()->share('departments', $departments);
+        view()->share('masterSetups', $pluckedData);
 
         return view('user/add_user');
     }
@@ -277,6 +290,19 @@ class tbluserController extends Controller
         // end  20-04-24
 
         $departments = DB::table('hrms_departments')->where('sub_institute_id',$sub_institute_id)->where('status',1)->get()->toArray();
+
+        // start 29-07-2024
+        $masterSetups = DB::table('master_setup_select')->select('type','fieldname',DB::raw('GROUP_CONCAT(fieldValue SEPARATOR "||") as selOptions'))->where('sub_institute_id',$sub_institute_id)->groupBy('type')->get()->toArray();
+        $pluckedData = [];
+        foreach ($masterSetups as $setup) {
+            if (!isset($pluckedData[$setup->type])) {
+                $pluckedData[$setup->type] = [];
+            }
+            $pluckedData[$setup->type]['fieldname'] = $setup->fieldname;
+            $pluckedData[$setup->type]['fieldvalue'] = $setup->selOptions; // array ['skills']['select skill']=skill1 || skill 2 || skill 3
+        }
+        // end 29-07-2024
+        $res['masterSetups'] = $pluckedData;
         $res['departments'] = $departments;
         $res['employees'] = tbluserModel::where('sub_institute_id',$sub_institute_id)->get();
         $res['job_titles'] = HrmsJobTitle::where('sub_institute_id',$sub_institute_id)->get();
@@ -286,7 +312,7 @@ class tbluserController extends Controller
         $res['user_profiles'] = $data;
         $res['new_emp_code'] = $new_emp_code;
         $res['data'] = $editData;
-        // echo "<pre>";print_r($res);exit;
+        // echo "<pre>";print_r($res['masterSetups']);exit;
         return is_mobile($type, "user/edit_user", $res, "view");
     }
 

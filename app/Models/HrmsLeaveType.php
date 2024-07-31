@@ -11,9 +11,9 @@ class HrmsLeaveType extends Model
     use HasFactory, SoftDeletes;
     protected $guarded = ['id'];
 
-    public function setLeaveTypeId()
+    public function setLeaveTypeId($sub_institute_id='')
     {
-        $last = HrmsLeaveType::latest()->first()->id ?? null;
+        $last = HrmsLeaveType::where('sub_institute_id',$sub_institute_id)->latest()->first()->id ?? null;
         return $last ? 'LTY' . str_pad($last + 1, 3, '0', STR_PAD_LEFT) : 'LTY001';
     }
 }

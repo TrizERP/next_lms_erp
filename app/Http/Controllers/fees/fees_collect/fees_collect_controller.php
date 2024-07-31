@@ -2180,12 +2180,12 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                     ];
                 }
                 if (isset($arr['amount'])) {
-                      // 03-06-24 by uma for institute_id =248
-                    if(isset($arr['disc_amount']) && $arr['disc_amount']>0){
-                        $reg_bk_month_wise[$arr['title']] += ($arr['amount']-$arr['disc_amount']); 
-                    }else{
+                      // 03-06-24 by uma for institute_id =248 // commented on 2024-07-30
+                    // if(isset($arr['disc_amount']) && $arr['disc_amount']>0){
+                    //     $reg_bk_month_wise[$arr['title']] += ($arr['amount']-$arr['disc_amount']); 
+                    // }else{
                         $reg_bk_month_wise[$arr['title']] += $arr['amount'];
-                    }
+                    // }
                     // $reg_bk_month_wise[$arr['title']] += $arr['amount'];
                     $reg_month_wise[$arr['title']] = [
                         'title' => $arr['title'],
@@ -2208,12 +2208,12 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                     ];
                 }
                 if (isset($arr['amount'])) {
-
-                    if(isset($arr['disc_amount']) && $arr['disc_amount']>0 && $arr['amount']>=$arr['disc_amount']){
-                        $reg_bk_month_wise2[$arr['title']] += ($arr['amount']-$arr['disc_amount']); 
-                    }else{
+                    // commented on 2024-07-30
+                    // if(isset($arr['disc_amount']) && $arr['disc_amount']>0 && $arr['amount']>=$arr['disc_amount']){
+                    //     $reg_bk_month_wise2[$arr['title']] += ($arr['amount']-$arr['disc_amount']); 
+                    // }else{
                         $reg_bk_month_wise2[$arr['title']] += ($arr['amount']);
-                    }
+                    // }
                     // $reg_bk_month_wise2[$arr['title']] += $arr['amount'];
                     $reg_month_wise2[$arr['title']] = [
                         'title' => $arr['title'],

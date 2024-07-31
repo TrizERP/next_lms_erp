@@ -7,6 +7,7 @@ use App\Models\HrmsLeaveType;
 use Exception;
 use Illuminate\Http\Request;
 use Yajra\DataTables\Facades\DataTables;
+use function App\Helpers\is_mobile;
 
 class LeaveTypeController extends Controller
 {
@@ -18,10 +19,16 @@ class LeaveTypeController extends Controller
     public function index(Request $request)
     {
         try {
+            $type = $request->type;
+            $sub_institute_id = session()->get('sub_institute_id');
+            $data = HrmsLeaveType::where('sub_institute_id',$sub_institute_id)->latest()->get();
+            
             if ($request->ajax()) {
-                $data = HrmsLeaveType::latest()->get();
-                return DataTables::of($data)
+               return DataTables::of($data)
                     ->addIndexColumn()
+                    ->addColumn('status', function ($row) {
+                        return $row->status == 1 ? 'active' : 'inactive';
+                    })
                     ->addColumn('action', function ($row) {
                         $actionBtn = '<a href="javascript:void(0)" class="edit btn btn-success btn-edit btn-sm" data-id="' . $row->id . '">Edit</a> <a href="javascript:void(0)" class="delete btn btn-danger btn-delete btn-sm"data-id="' . $row->id . '">Delete</a>';
                         return $actionBtn;
@@ -29,7 +36,13 @@ class LeaveTypeController extends Controller
                     ->rawColumns(['action'])
                     ->make(true);
             }
-            return view('leave.leave_type_master');
+            // return view('leave.leave_type_master');
+            $maxSortOrder=HrmsLeaveType::where('sub_institute_id',$sub_institute_id)->max('sort_order');
+            $res['alldata'] = $data;
+            $res['maxSortOrder'] = ($maxSortOrder+1);
+            // echo "<pre>";print_r($res['maxSortOrder']);exit;
+            return is_mobile($type, "leave.leave_type_master", $res, "view");
+
         } catch (Exception $e) {
             return response()->json($e->getMessage(), 500);
         }
@@ -56,13 +69,17 @@ class LeaveTypeController extends Controller
         $request->validate([
             'leave_type_name' => 'required',
         ]);
-
+        $sub_institute_id = session()->get('sub_institute_id');
         try {
-            $objLeave = HrmsLeaveType::find($request->leave_id) ?? HrmsLeaveType::firstOrNew(['leave_type' => $request->leave_type_name]);
-            $objLeave->leave_type_id = $objLeave->leave_type_id ?? $objLeave->setLeaveTypeId();
+            $objLeave = HrmsLeaveType::find($request->leave_id) ?? HrmsLeaveType::firstOrNew(['leave_type' => $request->leave_type_name,'sub_institute_id'=>$sub_institute_id]);
+            $objLeave->leave_type_id = $objLeave->leave_type_id ?? $objLeave->setLeaveTypeId($sub_institute_id);
             $objLeave->leave_type = $request->leave_type_name;
+            $objLeave->sort_order = $request->sort_order;
+            $objLeave->status = $request->status;
+            $objLeave->sub_institute_id = $sub_institute_id;
             if ($objLeave->save()) {
                 return response()->json(['message' => 'Leave type added successfully !!'], 200);
+              
             }
             return response()->json(['message' => 'Something went wrong !!'], 500);
         } catch (Exception $e) {

@@ -20,6 +20,27 @@
         color: green;
         font-weight: bold;
     }
+    .dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: #f9f9f9;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    padding: 10px;
+    z-index: 1;
+    width: 100%;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    margin-top: 2px;
+}
+
+.dropdown-content label {
+    display: block;
+    padding: 5px 0;
+}
+
+.dropdown-content input[type="checkbox"] {
+    margin-right: 10px;
+}
 </style>
 <div id="page-wrapper">
     <div class="container-fluid">
@@ -249,16 +270,33 @@
 
                     <!-- qualification and occupation  -->
                     <div class="col-md-4 form-group">
-                        <label>Qualification </label>
-                        <input type="text" id='qualification'  list="qualifications"  name="qualification" class="form-control">
-                        <datalist id="qualifications" height="100" style="height:100px">
+                        @if(isset($masterSetups['Qualification']) && !empty($masterSetups['Qualification']))
+                            @php 
+                                $options  = explode('||',$masterSetups['Qualification']['fieldvalue']);
+                            @endphp
+                            <label>{{$masterSetups['Qualification']['fieldname']}}</label>
+                            <div class="dropdown">
+                            <input type="text" id="qualification-input" class="form-control" name="qualification" autocomplete="off"/>
+                            <div class="dropdown-content" id="dropdown-content">
+                            @foreach($options as $key => $value)
+                                <label><input type="checkbox" value="{{$value}}">{{$value}}</label>
+                            @endforeach
+                            </div>
+                        </div>
+                        @else
+                            <label>Qualification</label>
+                            <input type="text" id='qualification' list="qualifications"  name="qualification" class="form-control">
+                            <datalist id="qualifications" height="100" style="height:100px">
                             @if(!empty($qualificationList))
                                 @foreach($qualificationList as $key => $value)
                                     <option value="{{$value}}">{{$value}}</option>
                                 @endforeach
                             @endif
+                        @endif
                         </datalist>
                     </div>
+                    <!-- end qulifications -->
+
                     <div class="col-md-4 form-group">
                         <label>occupation</label>
                         <input type="text" id='occupation'  list="occupations"  name="occupation" class="form-control">
@@ -502,6 +540,28 @@
 </div>
 
 @include('includes.footerJs')
+<script>
+     $(document).ready(function() {
+        $('#qualification-input').on('click', function() {
+            $('#dropdown-content').toggle();
+        });
+
+        $('.dropdown-content input[type="checkbox"]').on('change', function() {
+            var selectedFruits = [];
+            $('.dropdown-content input[type="checkbox"]:checked').each(function() {
+                selectedFruits.push($(this).val());
+            });
+            $('#qualification-input').val(selectedFruits.join(', '));
+        });
+
+        // Hide dropdown when clicking outside
+        $(document).on('click', function(event) {
+            if (!$(event.target).closest('.dropdown').length) {
+                $('#dropdown-content').hide();
+            }
+        });
+    });
+</script>
 <script src="../../../admin_dep/js/cbpFWTabs.js"></script>
 <script type="text/javascript">
     (function () {
@@ -557,6 +617,7 @@
         document.getElementById("user_name").value = username;
     }
 
+   
     var email_state = false;
 
     //START Unique Email Validation
@@ -598,7 +659,6 @@
         }
 
     });
-
 
 </script>
 @include('includes.footer')
