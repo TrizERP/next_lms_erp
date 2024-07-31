@@ -550,14 +550,14 @@ br {
                                 <label>Fri</label>
                                 <input type="checkbox" id='friday' name="friday" value="1" {{$data['friday'] ? 'checked' :''}} class="">
                             </div>
-                            <div class="col-md-1 form-group">
+                            <div class="col-md-3 form-group">
                                 <label>Sat</label>
                                 <input type="checkbox" id='saturday' name="saturday" value="1" {{$data['saturday'] ? 'checked' :''}} class="">
                             </div>
-                            <div class="col-md-1 form-group">
+                            <!-- <div class="col-md-1 form-group">
                                 <label>Sun</label>
                                 <input type="checkbox" id='sunday' name="sunday" value="1"  {{$data['sunday'] ? 'checked' :''}} class="">
-                            </div>
+                            </div> -->
 
                             <div class="col-md-6 form-group">
                                 <label>Monday In Date</label>
@@ -613,14 +613,14 @@ br {
                                 <input type="time" id='saturday_out_date'   value="{{ $data['saturday_out_date'] ? date('H:i',strtotime($data['saturday_out_date'])) : '' }}" name="saturday_out_date" class="form-control">
                             </div>
 
-                            <div class="col-md-6 form-group">
+                            <!-- <div class="col-md-6 form-group">
                                 <label>Sunday In Date</label>
                                 <input type="time" id='sunday_in_date'  value="{{ $data['sunday_in_date'] ? date('H:i',strtotime($data['sunday_in_date'])) : '' }}" name="sunday_in_date" class="form-control">
-                            </div>
-                            <div class="col-md-6 form-group">
+                            </div> -->
+                            <!-- <div class="col-md-6 form-group">
                                 <label>Sunday Out Date</label>
                                 <input type="time" id='sunday_out_date'  value="{{ $data['sunday_out_date'] ? date('H:i',strtotime($data['sunday_out_date'])) : '' }}" name="sunday_out_date" class="form-control">
-                            </div>
+                            </div> -->
 
                             <div class="col-md-12 form-group mt-2">
                                 <center>
