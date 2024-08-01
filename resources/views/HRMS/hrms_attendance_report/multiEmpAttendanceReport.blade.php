@@ -116,7 +116,7 @@
                                 @foreach($empArr as $empId=>$value)
                                 @php
                                     $att_status=$day_name='';
-                                    $get_format_punchin_time=$get_format_punchout_time='N/A';
+                                    $get_format_punchin_time=$get_format_punchout_time='-';
                                     $holidays=$cl_leave=$on_duty_leave=[];
                                     if (isset($value['punchin_time']) && !empty($value)) 
                                     {
@@ -139,8 +139,15 @@
                                             $att_status = 'background-color: orange;';
                                         }
                                             
-                                    }else if($get_format_punchin_time=='N/A'){
+                                    }
+                                    // for off days
+                                    else if(isset($value['day_status']) && $value['day_status']=='offday' && $get_format_punchin_time=="-" && $get_format_punchout_time=="-"){
                                         $att_status = 'background-color: #FFB2B2;';
+                                        $get_format_punchin_time=$get_format_punchout_time='-';
+                                    }
+                                    else if($get_format_punchin_time=='-'){
+                                        $att_status = 'background-color: #FFB2B2;';
+                                        $get_format_punchin_time=$get_format_punchout_time='N/A';
                                     }
                                     else if(isset($hrmsAttendance['leave'][0]) && !empty($hrmsAttendance['leave'][0]))
                                     {
@@ -206,10 +213,7 @@
 
                                     $timediff =isset($value['timestamp_diff']) ? \Carbon\Carbon::parse($value['timestamp_diff'])->format('H:i') : '-'; 
 
-                                    // for off days
-                                    if(isset($value['day_status']) && $value['day_status']=='offday' && $get_format_punchin_time=="N/A" && $get_format_punchout_time=="N/A"){
-                                        $get_format_punchin_time=$get_format_punchout_time='-';
-                                    }
+                                   
                                 @endphp
                                 <tr style="{{ $att_status }}">
                                     <td>{{$i++}}</td>
