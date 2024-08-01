@@ -975,9 +975,13 @@ class HrmsController extends Controller
         ->join('tbluser as tu','hel.user_id','=','tu.id')
         ->join('hrms_departments as hd','tu.department_id','=','hd.id')
         ->join('hrms_leave_types as hlt','hel.leave_type_id','=','hlt.id')
-        ->selectRaw('hel.*,hd.department,tu.employee_no,CONCAT_WS(" ", COALESCE(tu.first_name, "-"), COALESCE(tu.last_name, "-")) as full_name,hel.day_type,hlt.leave_type')
+        ->join('hrms_attendances as ha',function($q) use($request){
+            $q->on('ha.user_id','=','hel.user_id')->whereRaw('ha.day BETWEEN hel.from_date AND hel.to_date')->where('ha.user_id',$request->user_id);
+        })
+        ->selectRaw('hel.*,ha.*,hd.department,tu.employee_no,CONCAT_WS(" ", COALESCE(tu.first_name, "-"), COALESCE(tu.last_name, "-")) as full_name,hel.day_type,hlt.leave_type')
         ->where('hel.user_id',$request->user_id)->where('hel.from_date','>=',$request->from_date)->where('hel.to_date','<=',$request->to_date)->where('hel.sub_institute_id',$sub_institute_id)->where('hel.status','approved')
-        ->where('hel.day_type','0.5')->get()->toArray();
+        ->where('hel.day_type','0.5')
+        ->get()->toArray();
 
         return $data;
     }
