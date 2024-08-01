@@ -225,7 +225,7 @@ class HrmsController extends Controller
             $hrmsAttendanceInOutTime['date'] = Carbon::now();
         }
 
-        $employeeLists = tbluserModel::where('sub_institute_id', $subInstituteId)->where('status', 1)->get();
+        $employeeLists = tbluserModel::where('sub_institute_id', $subInstituteId)->where('status', 1)->orderBy('first_name')->get();
 
         $hrmsAttendanceInOutTime['id'] = 0;
         $hrmsAttendanceInOutTime['time'] = Carbon::now()->format('H:i:s');

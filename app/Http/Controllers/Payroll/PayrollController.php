@@ -539,6 +539,7 @@ class PayrollController extends Controller
 
         $res['departments'] = $departments = HrmsDepartment::where('status', true)->pluck('department', 'id');
         $res['years'] = Helpers::getYears();
+        $res['year'] = date('Y');
         $res['payrollTypes'] = PayrollType::where('sub_institute_id',$sub_institute_id)->where('status', 1)->where('payroll_type', 1)->get()->toArray();
 
         return is_mobile($type, "payroll.salary_certificate.index", $res, "view");        
@@ -555,7 +556,7 @@ class PayrollController extends Controller
         }
 
         $department_id = $request->get('department_id');
-	    $employee_id = $request->get('employee_id');
+	    $employee_id = $request->get('emp_id');
 	    $year = $request->get('year');
 	    $month_ids = $request->get('month_id');
 	    $payroll_type_ids = $request->get('payroll_type_id');

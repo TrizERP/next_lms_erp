@@ -22,6 +22,7 @@ class HolidayController extends Controller
     public function index(Request $request)
     {
         $type = $request->type;
+        $sub_institute_id = session()->get('sub_institute_id');
         if ($request->ajax()) {
             $data = HrmsHoliday::latest()
                 ->when(request()->year, function ($q) {
@@ -40,7 +41,7 @@ class HolidayController extends Controller
                 ->rawColumns(['checkbox', 'action'])
                 ->make(true);
         }
-        $departments = HrmsDepartment::whereStatus(true)->pluck('department', 'id');
+        $departments = HrmsDepartment::where(['sub_institute_id'=>$sub_institute_id,'status'=>1])->whereNull('deleted_at')->orderBy('department')->pluck('department', 'id');
         $weekdays = HrmsWeekday::pluck('day_type', 'day');
 
         if ($weekdays->isEmpty()) {
