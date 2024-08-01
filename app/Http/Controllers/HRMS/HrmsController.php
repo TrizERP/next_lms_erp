@@ -922,7 +922,7 @@ class HrmsController extends Controller
                     $countSundays++;
                 }
             }
-            $holidays = $value->holidays ?? 0;
+            $holidays = $value->total_holidays ?? 0;
             $newEmpData[$key]->weekday_off = $countSundays;
             $newEmpData[$key]->totalDays = $totalDays;
             $newEmpData[$key]->workingDays = ($totalDays - $countSundays - $holidays);
@@ -1073,7 +1073,7 @@ class HrmsController extends Controller
             }
             $newHrmsAtt[$value->empId][$value->day]->att_punch_in = $punchin_time;
             $newHrmsAtt[$value->empId][$value->day]->att_punch_out = $punchout_time;
-
+            
             $newHrmsAtt[$value->empId][$value->day]->day_name = $day_name;
             $user_day_in = $day_name.'_in_date';
             $newHrmsAtt[$value->empId][$value->day]->in_time = $value->$user_day_in;
@@ -1085,6 +1085,7 @@ class HrmsController extends Controller
             if($punchin_time > $user_day_in){
                 $newHrmsAtt[$value->empId][$value->day]->is_late = 1;
             }
+                 
         }
         $empLeaves = $empHolidays = [];
         foreach ($get_hrms_emp_leaves as $value) {
@@ -1121,6 +1122,13 @@ class HrmsController extends Controller
                     } else {
                         $report_data[$from_date_new][$value->id] = (array) $value;
                     }
+                    $day_name =lcfirst(Carbon::parse($from_date_new)->format('l')); 
+                    // when they have day off 
+                    $report_data[$from_date_new][$value->id]['day_status'] = 'day';
+                    if($value->$day_name == 0){
+                        $report_data[$from_date_new][$value->id]['day_status'] = 'offday';
+                    }
+
                     if (isset($empLeaves[$value->id]) && array_key_exists($from_date_new, $empLeaves[$value->id])) 
                     {
                         $report_data[$from_date_new][$value->id]['leave'] = $empLeaves[$value->id][$from_date_new];
