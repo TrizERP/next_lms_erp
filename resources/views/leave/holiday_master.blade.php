@@ -39,8 +39,7 @@
                             </div>
                             <div class="col-lg-12 col-sm-3 col-xs-3 row">
                                 <div class="col-md-2">
-                                    <a data-toggle="modal" data-target="#addHoliday" class="btn btn-info add-new"><i
-                                            class="fa fa-plus"></i>
+                                    <a data-toggle="modal" data-target="#addHoliday" class="btn btn-info add-new"><i class="fa fa-plus"></i>
                                         Add Holiday</a>
                                     <a class="btn btn-danger delete-all"><i class="fa fa-trash"></i>
                                         Delete </a>
@@ -48,10 +47,9 @@
                                 <div class="col-md-3 pull-right">
                                     <select id="cmbyear" class="form-control" name="cmbyear"
                                         onchange="getyearwise_holiday(this.value);">
-                                        <option value="">Select Year</option>
-                                        <option value="2023">2023-2024</option>
-                                        <option value="2022">2022-2023</option>
-                                        <option value="2021">2021-2022</option>
+                                        @foreach ($data['years'] as $year => $pairyear)
+                                            <option value="{{ $year }}" @if($data['selYear']==$year) selected @endif>{{ $pairyear }}</option>
+                                        @endforeach
                                     </select>
                                 </div>
                             </div>
@@ -86,13 +84,13 @@
                                         <label for="">Monday</label>
                                         <select name="monday" id="monday" class="form-control">
                                             <option value="full"
-                                                {{ $weekdays['monday'] == 'full' ? 'selected' : '' }}>
+                                                {{ $data['weekdays']['monday'] == 'full' ? 'selected' : '' }}>
                                                 Full Day</option>
                                             <option value="half"
-                                                {{ $weekdays['monday'] == 'half' ? 'selected' : '' }}>
+                                                {{ $data['weekdays']['monday'] == 'half' ? 'selected' : '' }}>
                                                 Half Day</option>
                                             <option value="weekend"
-                                                {{ $weekdays['monday'] == 'weekend' ? 'selected' : '' }}>Weekend
+                                                {{ $data['weekdays']['monday'] == 'weekend' ? 'selected' : '' }}>Weekend
                                             </option>
                                         </select>
                                     </div>
@@ -100,13 +98,13 @@
                                         <label for="">Tuesday</label>
                                         <select name="tuesday" id="tuesday" class="form-control">
                                             <option value="full"
-                                                {{ $weekdays['tuesday'] == 'full' ? 'selected' : '' }}>
+                                                {{ $data['weekdays']['tuesday'] == 'full' ? 'selected' : '' }}>
                                                 Full Day</option>
                                             <option value="half"
-                                                {{ $weekdays['tuesday'] == 'half' ? 'selected' : '' }}>
+                                                {{ $data['weekdays']['tuesday'] == 'half' ? 'selected' : '' }}>
                                                 Half Day</option>
                                             <option value="weekend"
-                                                {{ $weekdays['tuesday'] == 'weekend' ? 'selected' : '' }}>Weekend
+                                                {{ $data['weekdays']['tuesday'] == 'weekend' ? 'selected' : '' }}>Weekend
                                             </option>
                                         </select>
                                     </div>
@@ -114,13 +112,13 @@
                                         <label for="">Wednesday</label>
                                         <select name="wednesday" id="wednesday" class="form-control">
                                             <option value="full"
-                                                {{ $weekdays['wednesday'] == 'full' ? 'selected' : '' }}>
+                                                {{ $data['weekdays']['wednesday'] == 'full' ? 'selected' : '' }}>
                                                 Full Day</option>
                                             <option value="half"
-                                                {{ $weekdays['wednesday'] == 'half' ? 'selected' : '' }}>
+                                                {{ $data['weekdays']['wednesday'] == 'half' ? 'selected' : '' }}>
                                                 Half Day</option>
                                             <option value="weekend"
-                                                {{ $weekdays['wednesday'] == 'weekend' ? 'selected' : '' }}>Weekend
+                                                {{ $data['weekdays']['wednesday'] == 'weekend' ? 'selected' : '' }}>Weekend
                                             </option>
                                         </select>
                                     </div>
@@ -128,13 +126,13 @@
                                         <label for="">Thursday</label>
                                         <select name="thursday" id="thursday" class="form-control">
                                             <option value="full"
-                                                {{ $weekdays['thursday'] == 'full' ? 'selected' : '' }}>
+                                                {{ $data['weekdays']['thursday'] == 'full' ? 'selected' : '' }}>
                                                 Full Day</option>
                                             <option value="half"
-                                                {{ $weekdays['thursday'] == 'half' ? 'selected' : '' }}>
+                                                {{ $data['weekdays']['thursday'] == 'half' ? 'selected' : '' }}>
                                                 Half Day</option>
                                             <option value="weekend"
-                                                {{ $weekdays['thursday'] == 'weekend' ? 'selected' : '' }}>Weekend
+                                                {{ $data['weekdays']['thursday'] == 'weekend' ? 'selected' : '' }}>Weekend
                                             </option>
                                         </select>
                                     </div>
@@ -142,13 +140,13 @@
                                         <label for="">Friday</label>
                                         <select name="friday" id="friday" class="form-control">
                                             <option value="full"
-                                                {{ $weekdays['friday'] == 'full' ? 'selected' : '' }}>
+                                                {{ $data['weekdays']['friday'] == 'full' ? 'selected' : '' }}>
                                                 Full Day</option>
                                             <option value="half"
-                                                {{ $weekdays['friday'] == 'half' ? 'selected' : '' }}>
+                                                {{ $data['weekdays']['friday'] == 'half' ? 'selected' : '' }}>
                                                 Half Day</option>
                                             <option value="weekend"
-                                                {{ $weekdays['friday'] == 'weekend' ? 'selected' : '' }}>Weekend
+                                                {{ $data['weekdays']['friday'] == 'weekend' ? 'selected' : '' }}>Weekend
                                             </option>
                                         </select>
                                     </div>
@@ -156,13 +154,13 @@
                                         <label for="">Saturday</label>
                                         <select name="saturday" id="saturday" class="form-control">
                                             <option value="full"
-                                                {{ $weekdays['saturday'] == 'full' ? 'selected' : '' }}>
+                                                {{ $data['weekdays']['saturday'] == 'full' ? 'selected' : '' }}>
                                                 Full Day</option>
                                             <option value="half"
-                                                {{ $weekdays['saturday'] == 'half' ? 'selected' : '' }}>
+                                                {{ $data['weekdays']['saturday'] == 'half' ? 'selected' : '' }}>
                                                 Half Day</option>
                                             <option value="weekend"
-                                                {{ $weekdays['saturday'] == 'weekend' ? 'selected' : '' }}>Weekend
+                                                {{ $data['weekdays']['saturday'] == 'weekend' ? 'selected' : '' }}>Weekend
                                             </option>
                                         </select>
                                     </div>
@@ -170,13 +168,13 @@
                                         <label for="">Sunday</label>
                                         <select name="sunday" id="sunday" class="form-control">
                                             <option value="full"
-                                                {{ $weekdays['sunday'] == 'full' ? 'selected' : '' }}>
+                                                {{ $data['weekdays']['sunday'] == 'full' ? 'selected' : '' }}>
                                                 Full Day</option>
                                             <option value="half"
-                                                {{ $weekdays['sunday'] == 'half' ? 'selected' : '' }}>
+                                                {{ $data['weekdays']['sunday'] == 'half' ? 'selected' : '' }}>
                                                 Half Day</option>
                                             <option value="weekend"
-                                                {{ $weekdays['sunday'] == 'weekend' ? 'selected' : '' }}>Weekend
+                                                {{ $data['weekdays']['sunday'] == 'weekend' ? 'selected' : '' }}>Weekend
                                             </option>
                                         </select>
                                     </div>
@@ -231,7 +229,7 @@
                     <div class="form-group">
                         <label for="">Department</label>
                         <select name="department[]" id="department" class="form-control" multiple>
-                            @foreach ($departments as $id => $dpt)
+                            @foreach ($data['departments'] as $id => $dpt)
                                 <option value="{{ $id }}">{{ $dpt }}</option>
                             @endforeach
                         </select>
@@ -334,8 +332,10 @@
                 url: "{{ route('holiday.store') }}",
                 data: formData,
                 success: function(data) {
+                    alert(data.message);
                     $('#addHoliday').modal('toggle');
                     $('#tblLeaveType').DataTable().ajax.reload();
+                    location.reload();
                 },
                 error: function(xhr) {
                     if (xhr.status == 422) {
@@ -360,6 +360,7 @@
                 url: "{{ route('holiday.weekdays') }}",
                 data: formData,
                 success: function(data) {
+                    alert(data.message);
                     location.reload();
                 },
                 error: function(xhr) {

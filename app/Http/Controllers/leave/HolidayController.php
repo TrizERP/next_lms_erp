@@ -9,6 +9,8 @@ use App\Models\HrmsWeekday;
 use Exception;
 use Illuminate\Http\Request;
 use Yajra\DataTables\Facades\DataTables;
+use App\Traits\Helpers;
+use function App\Helpers\is_mobile;
 
 class HolidayController extends Controller
 {
@@ -19,6 +21,7 @@ class HolidayController extends Controller
      */
     public function index(Request $request)
     {
+        $type = $request->type;
         if ($request->ajax()) {
             $data = HrmsHoliday::latest()
                 ->when(request()->year, function ($q) {
@@ -52,7 +55,12 @@ class HolidayController extends Controller
             ];
         }
 
-        return view('leave.holiday_master', compact('weekdays', 'departments'));
+        $res['weekdays']= $weekdays;
+        $res['departments']= $departments;
+        $res['years']= Helpers::getPairYears();
+        $res['selYear']= date('Y');
+        // return view('leave.holiday_master', compact('weekdays', 'departments'));
+        return is_mobile($type, "leave.holiday_master", $res, "view");
     }
 
     /**
