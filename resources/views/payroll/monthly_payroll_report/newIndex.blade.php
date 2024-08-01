@@ -49,7 +49,7 @@
                     <select id='year' name="year" class="form-control">
                         <option value="0">Select Year</option>
                         @foreach($data['years'] as $year)
-                        <option @if(isset($data['selYear']) && $data['selYear'] == $year) selected @endif>{{$year}}</option>
+                        <option @if(isset($data['selYear']) && $data['selYear'] == $year) selected @elseif(date('Y')==$year) selected @endif>{{$year}}</option>
                         @endforeach
                     </select>
                 </div>
@@ -87,7 +87,7 @@
                             <td>{{$key+1}}</td>
                             <td>{{$value['employee_no']}}</td>
                             <td>{{$value['full_name'] ?? '-' .'('.$value['user_profile'] ?? '-' .')'}}</td>
-                            <td><input type="text" id="totalDay_{{$value['id']}}" name="payrollVal[{{$value['id']}}][total_day]" onkeyup="getData(this,{{$value['id']}})" class="form-control" value="{{ isset($value['monthlyData']->total_day) ? round($value['monthlyData']->total_day,2) : round($value['totalDay'],2) }}" ></td>
+                            <td><input type="text" id="totalDay_{{$value['id']}}" name="payrollVal[{{$value['id']}}][total_day]" onkeyup="getData(this,{{$value['id']}})" class="form-control" value="{{ isset($value['monthlyData']->total_day) ? $value['monthlyData']->total_day : $value['totalDay'] }}" ></td>
                             @foreach($data['header'] as $hkey => $col)
                                 @if(!empty($value['monthlyData']))
                                     @php 

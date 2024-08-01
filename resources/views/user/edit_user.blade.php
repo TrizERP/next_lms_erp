@@ -472,17 +472,6 @@ br {
                                 <input type="text" id='amount' value="{{$data['amount']}}" name="amount" class="form-control">
                             </div>
                             <div class="col-md-4 form-group">
-                            @if(isset($masterSetups['Bank Transfer Type']) && !empty($masterSetups['Bank Transfer Type']))
-                                @php 
-                                    $options  = explode('||',$masterSetups['Bank Transfer Type']['fieldvalue']);
-                                @endphp
-                                    <label>{{$masterSetups['Bank Transfer Type']['fieldname']}}</label>                       
-                                    <select id='transfer_type' name="transfer_type" class="form-control">
-                                        @foreach($options as $key => $value)
-                                        <option value="{{$value}}" @if(isset($data['transfer_type']) && $data['transfer_type']==$value) Selected @endif>{{$value}}</option>
-                                        @endforeach
-                                    </select>
-                            @else
                                 <label>Transfer Type</label>
                                 <select id='transfer_type' name="transfer_type" class="form-control">
                                     @if(isset($data['transfer_type']) && $data['transfer_type'] == "Direct")
@@ -493,7 +482,6 @@ br {
                                         <option value="Indirect" selected>In Direct</option>
                                     @endif
                                 </select>
-                            @endif
                             </div>
 
                             <div class="col-md-12 form-group">
