@@ -78,8 +78,8 @@
         </div>
         @if(isset($data['get_employee_leave_lists']))
             <div class="card">
+                <h4><span style="color:red;">Note: Red color indicates employee under probation period</span></h4>
                 <div class="table-responsive mt-20 tz-report-table">
-                    <h4><font style="color:red;">Note: Red color indicates employee under probation period</font></h4>
                     <table id="example" class="table table-striped">
                         <thead style="text-align:center;">
                             <tr>
@@ -92,14 +92,23 @@
                             </tr>
                             <tr>
                                 @foreach($data['get_hrms_leave_types'] as $get_hrms_leave_type)
+                                    @if($get_hrms_leave_type->leave_type_id=="LTY001" || $get_hrms_leave_type->leave_type_id=="LTY009")
                                     <th colspan="3" style="text-align:center; !importanat">{{ $get_hrms_leave_type->leave_type }}</th>
+                                    @else
+                                    <th style="text-align:center; !importanat">{{ $get_hrms_leave_type->leave_type }}</th>
+                                    @endif
                                 @endforeach
                             </tr>
                             <tr>
                                 @foreach($data['get_hrms_leave_types'] as $get_hrms_leave_type)
+                                @if($get_hrms_leave_type->leave_type_id=="LTY001" || $get_hrms_leave_type->leave_type_id=="LTY009")
                                     <th>Op Balance</th>
                                     <th>Taken</th>
                                     <th>Balance</th>
+                                @else
+                                    <th>Taken</th>
+                                @endif
+
                                 @endforeach
                             </tr>
                         </thead>
@@ -144,6 +153,7 @@
                                         @php 
                                             $total_op = 0; $total_taken = 0; $total_remain = 0;
                                         @endphp
+                                        @if($get_hrms_leave_type->leave_type_id=="LTY001" || $get_hrms_leave_type->leave_type_id=="LTY009")
                                         <td>
                                             @if(isset($data['op_data'][$get_hrms_leave_type->leave_type][$get_employee_leave_list->user_id]) && $data['op_data'][$get_hrms_leave_type->leave_type][$get_employee_leave_list->user_id] != '')
                                                 @php 
@@ -173,12 +183,27 @@
 
                                             {{ $total_remain }}
                                         </td>
+                                    @else
+                                    <td>
+                                            @if(isset($data['new_data'][$get_hrms_leave_type->leave_type]) && $data['new_data'][$get_hrms_leave_type->leave_type] != '')
+                                                @php 
+                                                    $total_taken = $data['new_data'][$get_hrms_leave_type->leave_type][$get_employee_leave_list->id] ?? 0; 
+                                                @endphp
+
+                                                <a style="text-decoration:underline !important" onclick="getLeaveList('{{$get_employee_leave_list->id}}','{{$get_employee_leave_list->department_id}}','{{$get_hrms_leave_type->id}}')">{{ $total_taken }}</a> 
+                                            @else
+                                                0
+                                            @endif
+                                    </td>
+                                    @endif
+                                    
                                     @endforeach
                                 </tr>
                             @endforeach
                         </tbody>
                     </table>
                 </div>
+               
             </div>
         @endif
     </div>
@@ -203,50 +228,36 @@
 <!-- end modal  -->
 @include('includes.footerJs')
 <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+
 <script>
-    // $(document).ready(function () {
-    //     var table = $('#example').DataTable({
-    //         ordering: false,
-    //         select: true,
-    //         lengthMenu: [
-    //             [100, 500, 1000, -1]
-    //             ['100', '500', '1000', 'Show All']
-    //         ],
-    //         dom: 'Bfrtip',
-    //         buttons: [
-    //             {
-    //                 extend: 'pdfHtml5',
-    //                 title: 'Leave Summary Report',
-    //                 orientation: 'landscape',
-    //                 pageSize: 'LEGAL',
-    //                 pageSize: 'A0',
-    //                 exportOptions: {
-    //                     columns: ':visible'
-    //                 },
-    //             },
-    //             {extend: 'csv', text: ' CSV', title: 'Leave Summary Report'},
-    //             {extend: 'excel', text: ' EXCEL', title: 'Leave Summary Report'},
-    //             {extend: 'print', text: ' PRINT', title: 'Leave Summary Report'},
-    //             'pageLength'
-    //         ],
-    //     });
-    //     // //table.buttons().container().appendTo('#example_wrapper .col-md-6:eq(0)');
-
-    //     $('#example thead tr').clone(true).appendTo('#example thead');
-    //     $('#example thead tr:eq(1) th').each(function (i) {
-    //         var title = $(this).text();
-    //         $(this).html('<input type="text" placeholder="Search ' + title + '" />');
-
-    //         $('input', this).on('keyup change', function () {
-    //             if (table.column(i).search() !== this.value) {
-    //                 table
-    //                     .column(i)
-    //                     .search(this.value)
-    //                     .draw();
-    //             }
-    //         });
-    //     });
-    // });
+    $(document).ready(function () {
+        var table = $('#example').DataTable({
+            select: true,
+            lengthMenu: [
+                [100, 500, 1000, -1]
+                ['100', '500', '1000', 'Show All']
+            ],
+            pageLength: 100,  // Default page length
+            dom: 'Bfrtip',
+            buttons: [
+                {
+                    extend: 'pdfHtml5',
+                    title: 'Leave Summary Report',
+                    orientation: 'landscape',
+                    pageSize: 'LEGAL',
+                    pageSize: 'A0',
+                    exportOptions: {
+                        columns: ':visible'
+                    },
+                },
+                {extend: 'csv', text: ' CSV', title: 'Leave Summary Report'},
+                {extend: 'excel', text: ' EXCEL', title: 'Leave Summary Report'},
+                {extend: 'print', text: ' PRINT', title: 'Leave Summary Report'},
+                'pageLength'
+            ],
+        });
+        table.buttons().container().appendTo('#example_wrapper .col-md-6:eq(0)');
+    });
 </script>
 <script>
 	$(document).on("change", "#department_id", function(e) {
@@ -336,5 +347,6 @@
             }
         })
     }
+
 </script>
 @include('includes.footer')
