@@ -2224,7 +2224,7 @@ if (!function_exists('get_string')) {
             }
             // dd($dep_idsArr);
             //get all department Lists
-            $depLists =DB::table('hrms_departments')->where('sub_institute_id',$sub_institute_id)->where('status',1)->whereNull('deleted_at')->pluck('department','id');
+            $depLists =DB::table('hrms_departments')->where('sub_institute_id',$sub_institute_id)->where('status',1)->whereNull('deleted_at')->orderBy('department','ASC')->pluck('department','id');
             // make select for department
             $SelectDepartment ="<div class='col-md-".$col." form-group'>
                 <label>Select Department</label>

@@ -309,7 +309,37 @@
                         </datalist>
                     </div>
                     <!-- end qualification and occupation -->
-
+                      <!--  added on 01-08-2024 mmis -->
+                      @php 
+                        $radioArr = ['tds_deduction'=>'TDS Deduction','pf_deduction'=>'PF Deduction','pt_deduction'=>'PT Deduction'];
+                        $textArr = ['pf_no'=>"PF No",'pan_no'=>"PAN No",'aadhar_no'=>"Aadhar No",'esic_no'=>"ESIC No",'uan_no'=>"UAN No"];
+                    @endphp
+                    @foreach($radioArr as $k => $v)
+                    <div class="col-md-4 from-group">
+                        <label for="{{$k}}">{{$v}}</label>
+                        <div class="radio-list">
+                            <label class="radio-inline p-0">
+                                <div class="radio radio-success">
+                                    <input type="radio" name="{{$k}}" id="{{$k}}" value="Y">
+                                    <label for="Eligible">Eligible</label>
+                                </div>
+                            </label>
+                            <label class="radio-inline">
+                                <div class="radio radio-success">
+                                    <input type="radio" name="{{$k}}" id="{{$k}}" value="N">
+                                    <label for="Non-Eligible">Non-Eligible</label>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    @endforeach
+                    @foreach($textArr as $k => $v)
+                    <div class="col-md-4 form-group">
+                        <label>{{$v}}</label>
+                        <input type="text" id='{{$k}}' name="{{$k}}" class="form-control">
+                    </div>
+                    @endforeach
+                    <!--  added on 01-08-2024 mmis  -->
                     <div class="col-md-4 form-group">
                         <label>Joining Date</label>
                         <input type="date" id='joined_date' name="joined_date" class="form-control">
@@ -323,7 +353,7 @@
                         <label>Probation Period To</label>
                         <input type="date" id='probation_period_to' name="probation_period_to" class="form-control">
                     </div>
-
+                  
                     <div class="col-md-4 form-group">
                         <label>Terminated Date</label>
                         <input type="date" id='terminated_date' name="terminated_date" class="form-control">
@@ -456,7 +486,7 @@
                         <label>Fri</label>
                         <input type="checkbox" id='friday' name="friday" value="1" class="">
                     </div>
-                    <div class="col-md-1 form-group">
+                    <div class="col-md-3 form-group">
                         <label>Sat</label>
                         <input type="checkbox" id='saturday' name="saturday" value="1" class="">
                     </div>
@@ -523,10 +553,10 @@
                         <label>Sunday In Date</label>
                         <input type="time" id='sunday_in_date' name="sunday_in_date" class="form-control">
                     </div> -->
-                    <div class="col-md-6 form-group">
+                    <!-- <div class="col-md-6 form-group">
                         <label>Sunday Out Date</label>
                         <input type="time" id='sunday_out_date' name="sunday_out_date" class="form-control">
-                    </div>
+                    </div> -->
 
                     <div class="col-md-12 form-group">
                         <center>
