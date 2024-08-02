@@ -105,8 +105,8 @@ class MenuMiddleware
 
         if (isset($rightsQuery['0']['MID'])) {
             $rightsMenusIds = $rightsQuery['0']['MID'];
-            //$rightsMenusIds = substr($rightsMenusIds, 0,-1);
-            $rightsMenusIds = substr($rightsMenusIds, 0);
+            $rightsMenusIds = substr($rightsMenusIds, 0,-1);
+            // $rightsMenusIds = substr($rightsMenusIds, 0);
         }
         // echo "<pre>";print_r($rightsMenusIds);exit;
 

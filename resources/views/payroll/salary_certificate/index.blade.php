@@ -17,10 +17,10 @@
                         <strong>{{ session('success') }}</strong>
                     </div>
                 @endif
-                <form action="{{ route('hrms_salary_certificate.report') }}" enctype="multipart/form-data" method="post">
+                <form action="{{ route('hrms_salary_certificate.report') }}" enctype="multipart/form-data" method="post" id="SearchCertificate">
                 @csrf
                     <div class="row">
-                        <div class="col-md-4 form-group">
+                        {{-- <div class="col-md-4 form-group">
                             <label>Department List</label>
                             <select id='department_id' name="department_id" class="form-control" required>
                                 <option value="">Select Department</option>
@@ -45,7 +45,19 @@
                                     @endforeach
                                 @endif
                             </select>
-                        </div>
+                        </div> --}}
+                        @php 
+                            $dep_id = $emp_id = '';
+                            if(isset($data['department_id'])){
+                                $dep_id = $data['department_id'];
+                            }
+
+                            if(isset($data['employee_id'])){
+                                $emp_id = $data['employee_id'];
+                            }
+                        @endphp
+
+                        {!! App\Helpers\HrmsDepartments("4","",$dep_id,"",$emp_id,"") !!}
                         <div class="col-md-4 form-group">
                             <label>Select Year</label>
                             <select id='year' name="year" class="form-control" required>
@@ -137,10 +149,27 @@
                 }
             });
         });
+
+
+        $('#SearchCertificate').on('submit', function(event) {
+            var departmentId = $('#department_ids').val();
+            var employeeId = $('#emp_id').val();
+         
+            if (departmentId == '0') {
+                alert('Department Selection Required');
+                return false;
+            } 
+            
+            if(employeeId == '0' || employeeId=='' || employeeId==null){
+                alert('Employee Selection Required');
+                return false; 
+            }
+        });
+
     });
 </script>
 <script>
-    $(document).on("change", "#department_id", function(e) {
+    $(document).on("change", "#department_ids", function(e) {
         $('#employee_id').empty();
         var departmentId = $(this).val();
         

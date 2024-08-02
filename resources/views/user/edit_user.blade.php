@@ -340,7 +340,38 @@ br {
                                 </datalist>
                             </div>
                             <!-- end qualification and occupation -->
-
+                            <!--  added on 01-08-2024 mmis -->
+                            @php 
+                                $radioArr = ['tds_deduction'=>'TDS Deduction','pf_deduction'=>'PF Deduction','pt_deduction'=>'PT Deduction'];
+                                $textArr = ['pf_no'=>"PF No",'pan_no'=>"PAN No",'aadhar_no'=>"Aadhar No",'esic_no'=>"ESIC No",'uan_no'=>"UAN No"];
+                            @endphp
+                            @foreach($radioArr as $k => $v)
+                            <div class="col-md-4 from-group">
+                                @php $checked = $data[$k]; @endphp
+                                <label for="{{$k}}">{{$v}}</label>
+                                <div class="radio-list">
+                                    <label class="radio-inline p-0">
+                                        <div class="radio radio-success">
+                                            <input type="radio" name="{{$k}}" id="{{$k}}" value="Y" {{ ($checked=='Y') ? 'Checked' : '' }}>
+                                            <label for="Eligible">Eligible</label>
+                                        </div>
+                                    </label>
+                                    <label class="radio-inline">
+                                        <div class="radio radio-success">
+                                            <input type="radio" name="{{$k}}" id="{{$k}}" value="N" {{ ($checked=='N') ? 'Checked' : '' }}>
+                                            <label for="Non-Eligible">Non-Eligible</label>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                            @endforeach
+                            @foreach($textArr as $k => $v)
+                            <div class="col-md-4 form-group">
+                                <label>{{$v}}</label>
+                                <input type="text" id='{{$k}}' name="{{$k}}" class="form-control" value="{{$data[$k]}}">
+                            </div>
+                            @endforeach
+                            <!--  added on 01-08-2024 mmis  -->
                             <div class="col-md-4 form-group">
                                 <label>Joining Date</label>
                                 <input type="date" id='joined_date' name="joined_date" value="{{ $data['joined_date'] ? date('Y-m-d',strtotime($data['joined_date'])) : '' }}" class="form-control">

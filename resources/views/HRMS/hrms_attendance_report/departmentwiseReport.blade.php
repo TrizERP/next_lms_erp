@@ -181,7 +181,7 @@
     function getDetails(user_id,DayDetails,AttIdArr='') {
             var fromDate = new Date("{{$fromdate}}");
             var toDate = new Date("{{$todate}}");
-            var modalContent = '<table class="table table-border">';
+            var modalContent = '<table class="table table-bordered">';
             var i = 1;
             // total attendance 
             if (DayDetails=="totalDays") {
@@ -230,11 +230,14 @@
                     data : {attId:AttIdArr},
                     success : function(result){
                         if (Array.isArray(result)) {
-                            modalContent += "<tr><th>Sr No.</th><th>Emp Code.</th><th>Emp Name</th><th>Department</th><th>Date</th><th>Day</th></tr>"
+                            modalContent += "<tr><th>Sr No.</th><th>Emp Code.</th><th>Emp Name</th><th>Date</th><th>Day</th><th>Punch-In</th><th>Punch-Out</th></tr>"
                             var i =1;
                             result.forEach(value=>{
                                 var fdate = new Date(value.day);
-                                modalContent +='<tr><td>'+(i++)+'</td><td>'+value.employee_no+'</td><td>'+value.full_name+'</td><td>'+value.department+'</td><td>' + formatDate(fdate) + '</td><td>' + getDayName(fdate.getDay()) + '</td></tr>';
+                                var punchin = getTimeFromTimestamp(value.punchin_time);
+                                var punchout = getTimeFromTimestamp(value.punchout_time);
+
+                                modalContent +='<tr><td>'+(i++)+'</td><td>'+value.employee_no+'</td><td>'+value.full_name+'</td><td>' + formatDate(fdate) + '</td><td>' + getDayName(fdate.getDay()) + '</td><td>'+punchin+'</td><td>'+punchout+'</td></tr>';
                             });
                             modalContent += '</table>';
                             $('#dateRangeModalLabel').text('Late Come Days');
@@ -264,11 +267,14 @@
                             type: 'Get',
                             success : function(result){
                                 if (Array.isArray(result)) {
-                                    modalContent += "<tr><th>Sr No.</th><th>Emp Code.</th><th>Emp Name</th><th>Department</th><th>Date</th><th>Day</th></tr>"
+                                    modalContent += "<tr><th>Sr No.</th><th>Emp Code.</th><th>Emp Name</th><th>Date</th><th>Day</th><th>Punch-In</th><th>Punch-Out</th></tr>"
                                     var i =1;
                                     result.forEach(value=>{
                                         var fdate = new Date(value.day);
-                                        modalContent +='<tr><td>'+(i++)+'</td><td>'+value.employee_no+'</td><td>'+value.full_name+'</td><td>'+value.department+'</td><td>' + formatDate(fdate) + '</td><td>' + getDayName(fdate.getDay()) + '</td></tr>';
+                                        var punchin = getTimeFromTimestamp(value.punchin_time);
+                                        var punchout = getTimeFromTimestamp(value.punchout_time);
+
+                                        modalContent +='<tr><td>'+(i++)+'</td><td>'+value.employee_no+'</td><td>'+value.full_name+'</td><td>' + formatDate(fdate) + '</td><td>' + getDayName(fdate.getDay()) + '</td><td>'+punchin+'</td><td>'+punchout+'</td></tr>';
                                     });
                                     modalContent += '</table>';
                                     $('#dateRangeModalLabel').text('Total Attendance Days');
@@ -317,11 +323,14 @@
                             type: 'Get',
                             success : function(result){
                                 if (Array.isArray(result)) {
-                                    modalContent += "<tr><th>Sr No.</th><th>Emp Code.</th><th>Emp Name</th><th>Department</th><th>Leave Day Type</th><th>Leave Type</th><th>Date</th><th>Day</th></tr>"
+                                    modalContent += "<tr><th>Sr No.</th><th>Emp Code.</th><th>Emp Name</th><th>Leave Day Type</th><th>Leave Type</th><th>Date</th><th>Day</th><th>Punch-In</th><th>Punch-Out</th></tr>"
                                     var i =1;
                                     result.forEach(value=>{
-                                        var fdate = new Date(value.from_date);
-                                        modalContent +='<tr><td>'+(i++)+'</td><td>'+value.employee_no+'</td><td>'+value.full_name+'</td><td>'+value.department+'</td><td>'+value.day_type+'</td><td>'+value.leave_type+'</td><td>' + formatDate(fdate) + '</td><td>' + getDayName(fdate.getDay()) + '</td></tr>';
+                                        var fdate = new Date(value.day);
+                                        var punchin = getTimeFromTimestamp(value.punchin_time);
+                                        var punchout = getTimeFromTimestamp(value.punchout_time);
+
+                                        modalContent +='<tr><td>'+(i++)+'</td><td>'+value.employee_no+'</td><td>'+value.full_name+'</td><td>'+value.day_type+'</td><td>'+value.leave_type+'</td><td>' + formatDate(fdate) + '</td><td>' + getDayName(fdate.getDay()) + '</td><td>'+punchin+'</td><td>'+punchout+'</td></tr>';
                                     });
                                     modalContent += '</table>';
                                     $('#dateRangeModalLabel').text('Half Days');
@@ -341,13 +350,35 @@
         var day = date.getDate();
         var month = date.getMonth() + 1;
         var year = date.getFullYear();
-        return year + '-' + (month < 10 ? '0' : '') + month + '-' + (day < 10 ? '0' : '') + day;
+        return (day < 10 ? '0' : '') + day + '-' + (month < 10 ? '0' : '') + month + '-' + year;
     }
 
     function getDayName(dayIndex) {
         var days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
         return days[dayIndex];
     }
-        
+    function getTimeFromTimestamp(timestamp) {
+        if (!timestamp) {
+            return "-";
+        }
+
+        const date = new Date(timestamp);
+        let day = date.getDate();
+        let month = date.getMonth() + 1; // Months are zero-based
+        const year = date.getFullYear();
+        let hours = date.getHours();
+        const minutes = date.getMinutes();
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+
+        // Ensure day and month are always two digits
+        day = day < 10 ? '0' + day : day;
+        month = month < 10 ? '0' + month : month;
+
+        hours = hours % 12;
+        hours = hours ? hours : 12; // the hour '0' should be '12'
+        const minutesFormatted = minutes < 10 ? '0' + minutes : minutes;
+
+        return `${day}-${month}-${year} ${hours}:${minutesFormatted} ${ampm}`;
+    }
     </script>
 @include('includes.footer')
