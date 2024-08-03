@@ -497,7 +497,7 @@
 
                             $dailylms_link = "dailylmslogin.php?SUB_INSTITUTE_ID=" . $sub_institute_id . "&U=" . base64_encode($DUSER_ID) . "&P=" . base64_encode($DUSER_PWD) . "";
 
-                        if ($hrms_rights == 1 && Session::get('user_profile_name') != 'Student') {
+                        if ($hrms_rights == 1 && Session::get('user_profile_name') == 'Admin') {//!= 'Student'
                             ?>
 
                         <a class="nav-link" target="_blank" href="http://150.129.172.110/new_hrms/Products/hrms/login.php{{ $hrms_link }}">
