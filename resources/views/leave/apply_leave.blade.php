@@ -154,20 +154,13 @@
                                         $Mfrom_date = \Carbon\Carbon::parse($value->from_date);
                                         $from_date = \Carbon\Carbon::parse($value->from_date);
                                         $to_date = \Carbon\Carbon::parse($value->to_date);
-                                        $countDays = $dayCount = 0;
-                                        for ($date = $from_date; $date->lte($to_date); $date->addDay()) {
-                                            if ($from_date->eq($date)) {
-                                                $countDays += $value->day_type;
-                                                $dayCount++;    
-                                            }
-                                        }
-                                        $numberOfDays = $to_date->diffInDays($from_date);
+                                        $dayType = $value->day_type ?? 0;
                                     @endphp
                                     <tr>
                                         <td>{{$key+1}}</td>
                                         <td>{{$Mfrom_date->format('d-m-Y')}}</td>
                                         <td>{{$to_date->format('d-m-Y')}}</td>
-                                        <td>{{($dayCount>0) ? $dayCount : 1}}</td>
+                                        <td>{{ App\Helpers\countDays($Mfrom_date,$to_date,$dayType,'skip_sunday') }}</td>
                                         <td>{{ ($value->day_type=="0.5") ? 'Half Day' : 'Full Day' }}</td>
                                         <td>{{$value->leave_type_name}}</td>
                                         <td>{{$value->comment}}</td>

@@ -299,7 +299,7 @@
                             <th>Employee Name</th>
                             <th>Leave Type</th>
                             <th>Leave Length</th>
-                            <th>Day</th>
+                            <th>Day Type</th>
                             <th>Status</th>
                             <th class="text-left">Comments</th>
                         </tr>
@@ -316,7 +316,9 @@
                         var dayCount = 0;
 
                         for (var date = fromDate.clone(); date.isSameOrBefore(toDate); date.add(1, 'day')) {
-                            dayCount += day_type;
+                            if (date.day() !== 0) { // 0 represents Sunday skip sunday in day count
+                                dayCount= dayCount+day_type;
+                            }
                         }
                         console.log('Number of days counted:', dayCount);
                         var day = "Half Day";
