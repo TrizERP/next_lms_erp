@@ -34,6 +34,7 @@ use Symfony\Component\Process\Exception\ProcessFailedException;
 use Spatie\Async\Pool;
 use Gemini\Laravel\Facades\Gemini;
 use Log;
+use function App\Helpers\getSubCordinates;
 
 class AJAXController extends Controller
 {
@@ -2342,12 +2343,23 @@ class AJAXController extends Controller
     {
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $department_id = explode(',',$request->get('department_id'));
-
+        // 02-08-2024 
+        $userId= session()->get('user_id');
+        $userProfileName= session()->get('user_profile_name');
+        $SubCordinates =[];
+        $profileArr = ["Admin","Super Admin"];
+        if(!in_array($userProfileName,$profileArr)){
+            $SubCordinates = getSubCordinates($sub_institute_id,$userId);
+        }
+        // end 02-08-2024
         $employees = DB::table('tbluser')->join('tbluserprofilemaster as upm', 'upm.id', '=', 'tbluser.user_profile_id')
         ->selectRaw('tbluser.id,CONCAT_WS(" ",COALESCE(tbluser.first_name, "-"),COALESCE(tbluser.last_name, "-")) as full_name, tbluser.sub_institute_id, IfNULL(upm.name,"-") as user_profile')
         ->where('tbluser.sub_institute_id', $sub_institute_id)
         ->whereRaw('tbluser.department_id in ('.implode(',',$department_id).') ')
         ->where('tbluser.status', 1)
+        ->when(!empty($SubCordinates),function($q) use($SubCordinates){
+            $q->whereIn('tbluser.id', $SubCordinates);
+        })
         ->orderBy('tbluser.first_name')
         ->groupBy('tbluser.id')
         ->get()
