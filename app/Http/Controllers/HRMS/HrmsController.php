@@ -14,6 +14,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use function App\Helpers\is_mobile;
 use function App\Helpers\employeeDetails;
+use function App\Helpers\getSubCordinates;
 use DB;
 
 
@@ -998,12 +999,26 @@ class HrmsController extends Controller
         $type= $request->type;
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
+        $userId= session()->get('user_id');
+        $userProfileName= session()->get('user_profile_name');
+
         $department_id = ($request->department_id !=0) ? implode(',',$request->department_id) : 0;
         $employee_id = ($request->emp_id !=0) ? implode(',',$request->emp_id) : 0;
         $from_date = $request->from_date;
         $to_date = $request->to_date;
         $currentMonth = '';
 
+        // sub cordinates 02-08-2024
+        $SubCordinates =[];
+        $profileArr = ["Admin","Super Admin"];
+        if($employee_id==0 && !in_array($userProfileName,$profileArr)){
+            $SubCordinates = getSubCordinates($sub_institute_id,$userId);
+            if(!empty($SubCordinates)){
+                $employee_id = implode(',',$SubCordinates);
+            }
+        }
+        // echo "<pre>"; print_r($SubCordinates);exit;
+        // end  02-08-2024
         $from_date_formatted = (isset($from_date)) ? Carbon::createFromFormat('Y-m-d', $from_date)->format('Y-m-d') : date('Y-m-d');
         $to_date_formatted = (isset($to_date)) ? Carbon::createFromFormat('Y-m-d', $to_date)->format('Y-m-d') : date('Y-m-d');
         // echo $from_date_formatted;exit;
