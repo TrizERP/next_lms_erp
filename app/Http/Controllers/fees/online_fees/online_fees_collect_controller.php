@@ -399,8 +399,7 @@ class online_fees_collect_controller extends Controller
 
                 $send_arr = [
                     'order_no' => $order_no,
-                    'reference_no' => $order_no,
-                ];
+                ];//'reference_no' => $order_no,
 
                 $request_payload = http_build_query($send_arr);
                 $enc_request = $this->hdfc_encrypt($request_payload, $working_code);
@@ -419,9 +418,9 @@ class online_fees_collect_controller extends Controller
                     'access_code' => $access_code,
                     'request_type' => 'JSON',
                     'command' => 'orderStatusTracker',
-                    'reference_no' => $order_no,
                     'order_no' => $order_no,
-                ]));
+                    'version' => '1.2',
+                ]));//'reference_no' => $order_no,
 
                 // Execute the cURL request
                 $response = curl_exec($ch);

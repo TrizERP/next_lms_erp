@@ -244,7 +244,7 @@ $grade_arr = cbse_1t5_result_controller::getGradeScale($_REQUEST['standard'],'we
                                                                 <td><b>Result : </b>{{$result}}</td>
                                                                 <td><b>Rank : </b>{{$rank}}/{{$data['WRT_data']['total_student']}}</td>
                                                                 <td width="25%" align="center" colspan="3">
-                                                                    <b>Ribben Base : </b>
+                                                                    <b>Ribbon Base : </b>
                                                                     <span class={{$ribbenClass}}>{{$ribbenLabel}}</span>
                                                                 </td>
                                                             </tr>

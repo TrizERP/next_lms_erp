@@ -110,9 +110,9 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @php $i=1; @endphp
                         @if(isset($data['allData']) && !empty($data['allData']))
                             @foreach($data['allData'] as $date=>$empArr)
+                                @php $i=1; @endphp
                                 @foreach($empArr as $empId=>$value)
                                 @php
                                     $att_status=$day_name='';
@@ -139,15 +139,8 @@
                                             $att_status = 'background-color: orange;';
                                         }
                                             
-                                    }
-                                    // for off days
-                                    else if(isset($value['day_status']) && $value['day_status']=='offday' && $get_format_punchin_time=="-" && $get_format_punchout_time=="-"){
+                                    }else if($get_format_punchin_time=='-'){
                                         $att_status = 'background-color: #FFB2B2;';
-                                        $get_format_punchin_time=$get_format_punchout_time='-';
-                                    }
-                                    else if($get_format_punchin_time=='-'){
-                                        $att_status = 'background-color: #FFB2B2;';
-                                        $get_format_punchin_time=$get_format_punchout_time='N/A';
                                     }
                                     else if(isset($hrmsAttendance['leave'][0]) && !empty($hrmsAttendance['leave'][0]))
                                     {
@@ -210,10 +203,6 @@
                                     {
                                         $att_status = 'background-color:#99D699;';
                                     }
-
-                                    $timediff =isset($value['timestamp_diff']) ? \Carbon\Carbon::parse($value['timestamp_diff'])->format('H:i') : '-'; 
-
-                                   
                                 @endphp
                                 <tr style="{{ $att_status }}">
                                     <td>{{$i++}}</td>
@@ -221,9 +210,9 @@
                                     <td>{{$value['employee_no'] ?? '-'}}</td>
                                     <td>{{$value['depName'] ?? '-'}}</td>
                                     <td>{{$value['full_name']  ?? '-'}}</td>
-                                    <td>{{$get_format_punchin_time}}</td>
-                                    <td>{{$get_format_punchout_time}}</td>
-                                    <td class="text-left">{{ $timediff }}</td>
+                                    <td>{{$get_format_punchin_time  ?? '-'}}</td>
+                                    <td>{{$get_format_punchout_time  ?? '-'}}</td>
+                                    <td class="text-left">{{ isset($value['timestamp_diff']) ? \Carbon\Carbon::parse($value['timestamp_diff'])->format('H:i') : '-' }}</td>
                                 </tr>
                                 @endforeach
                             @endforeach

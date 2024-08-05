@@ -1414,7 +1414,7 @@ class PayrollController extends Controller
         $res['months'] = Helpers::getMonths();
         $res['years'] = Helpers::getYears();
         $res['py_types'] = PayrollType::where('sub_institute_id',$sub_institute_id)->orderBy('sort_order')->where('status',1)->get()->toArray();
-        
+
         return is_mobile($type, "payroll.payroll_report.payrollTypeReport", $res, "view");
     }
 
@@ -1455,10 +1455,8 @@ class PayrollController extends Controller
             $sub_institute_id = $request->sub_institute_id;
             $syear = $request->syear;
         }
-        $res = session()->get('data');
         $res['months'] = Helpers::getMonths();
         $res['years'] = Helpers::getYears();
-        $res['selYear'] = date('Y');
 
         return is_mobile($type,'payroll.monthly_payroll_report.newIndex',$res,'view');
     }
@@ -1500,14 +1498,14 @@ class PayrollController extends Controller
                 $currentMonth = date('n');
 
                 $from_date = Carbon::createFromDate($year, $monthNumber, 1);
-                if($currentMonth==$monthNumber && $year == date('Y')){
+                if($currentMonth==$monthNumber){
                     $to_date = now();
                 }else{
                     $to_date = $from_date->copy()->endOfMonth();
                 }
                 // $emp_att = DB::table('hrms_attendances')->whereBetween('day',[$from_date,$to_date])->where('user_id',$value['id'])->count();
 
-                $request2 = new Request(['type'=>"API",'sub_institute_id'=>$sub_institute_id ,'syear'=>$year,'from_date'=>$from_date,'to_date'=>$to_date,'department_id'=>[$value['department_id']],'emp_id'=>$value['id']]);
+                $request2 = new Request(['type'=>"API",'sub_institute_id'=>$sub_institute_id ,'syear'=>$syear,'from_date'=>$from_date,'to_date'=>$to_date,'department_id'=>[$value['department_id']],'emp_id'=>$value['id']]);
                 $hrmsController = new HrmsController;
                 $attResponse = json_decode($hrmsController->departmentAttendanceReportCreate($request2),true);
                 $AttTotalDays = isset($attResponse['empData'][0]['totalDays']) ? $attResponse['empData'][0]['totalDays'] : 0;
@@ -1550,7 +1548,7 @@ class PayrollController extends Controller
         $res['months'] = Helpers::getMonths();
         $res['years'] = Helpers::getYears();
       
-        // echo "<pre>";print_r($res);exit;
+        // echo "<pre>";print_r($daysCount);exit;
         return is_mobile($type,'payroll.monthly_payroll_report.newIndex',$res,'view');
     }
 
@@ -1560,7 +1558,7 @@ class PayrollController extends Controller
         $totalDay = $request->totalDay;
         
         $payrollTypes = PayrollType::where('sub_institute_id',$sub_institute_id)->where('status', 1)->orderBy('sort_order')->get();
-        $employeeSalaryDetails = EmployeeSalaryStructure::where(['employee_id'=> $request->emp_id, 'sub_institute_id'=>$sub_institute_id,'year'=>$request->year])->first();
+        $employeeSalaryDetails = EmployeeSalaryStructure::where(['employee_id'=> $request->emp_id, 'sub_institute_id'=>$sub_institute_id])->first();
 
         if(empty($employeeSalaryDetails)){
             $res['status_code']=0;
@@ -1622,7 +1620,7 @@ class PayrollController extends Controller
         }
 
         $res['salaryData'] = $employeefinalDisplayData;
-        $res['totalDay'] = round($request->totalDay,2);
+        $res['totalDay'] = $request->total_day;
 
         return $res;
     }
