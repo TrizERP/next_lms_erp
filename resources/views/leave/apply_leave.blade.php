@@ -160,7 +160,7 @@
                                         <td>{{$key+1}}</td>
                                         <td>{{$Mfrom_date->format('d-m-Y')}}</td>
                                         <td>{{$to_date->format('d-m-Y')}}</td>
-                                        <td>{{ App\Helpers\countDays($Mfrom_date,$to_date,$dayType,'skip_sunday') }}</td>
+                                        <td>{{ App\Helpers\countDays($Mfrom_date,$to_date,$dayType) }}</td>
                                         <td>{{ ($value->day_type=="0.5") ? 'Half Day' : 'Full Day' }}</td>
                                         <td>{{$value->leave_type_name}}</td>
                                         <td>{{$value->comment}}</td>
