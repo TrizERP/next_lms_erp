@@ -98,7 +98,7 @@
                                     <td>{{ \Carbon\Carbon::parse($employee_leave_lists->from_date)->format('d-M-Y') }}</td>
                                     <td>{{  \Carbon\Carbon::parse($employee_leave_lists->to_date)->format('d-M-Y') }}</td>
                                     <td><a style="text-decoration:underline !important" onclick="getEmpLeaveHistory('{{$employee_leave_lists->user_id}}','{{$employee_leave_lists->department_id}}')">{{ $employee_leave_lists->employee_name }}</a></td>
-                                    <td>{{ App\Helpers\countDays($from_date,$to_date,$dayType,'skip_sunday') }}</td>
+                                    <td>{{ App\Helpers\countDays($from_date,$to_date,$dayType) }}</td>
                                     <td>{{ ($employee_leave_lists->day_type=="0.5") ? 'Half Day' : 'Full Day' }}</td>
                                     <td>{{ $employee_leave_lists->leave_type }}</td>
                                     <td>

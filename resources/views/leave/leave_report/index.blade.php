@@ -106,7 +106,7 @@
                                     <td>{{ $toDate }}</td>
                                     <td>{{ $get_employee_leave_list->employee_no }}</td>
                                     <td>{{ $get_employee_leave_list->employee_name }}</td>
-                                    <td>{{ App\Helpers\countDays($fromDate,$toDate,$dayType,'skip_sunday') }}</td>
+                                    <td>{{ App\Helpers\countDays($fromDate,$toDate,$dayType) }}</td>
                                     <td>{{ ($dayType==1) ? 'Full Day' : 'Half Day' }}</td>
                                     <td>{{ $get_employee_leave_list->leave_type }}</td>
                                     <td>{{ ucfirst($get_employee_leave_list->hel_status) }}</td>
