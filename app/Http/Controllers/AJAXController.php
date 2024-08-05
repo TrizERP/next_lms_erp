@@ -2347,7 +2347,7 @@ class AJAXController extends Controller
         $userId= session()->get('user_id');
         $userProfileName= session()->get('user_profile_name');
         $SubCordinates =[];
-        $profileArr = ["Admin","Super Admin"];
+        $profileArr = ["Admin","Super Admin","School Admin","Assistant Admin"];
         if(!in_array($userProfileName,$profileArr)){
             $SubCordinates = getSubCordinates($sub_institute_id,$userId);
         }
