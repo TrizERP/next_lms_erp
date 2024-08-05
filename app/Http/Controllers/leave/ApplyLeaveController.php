@@ -288,7 +288,8 @@ class ApplyLeaveController extends Controller
 
     public function getYearwiseleave(Request $request)
     {
-        $selectedYear = $request->input('year');
+        $selectedYear = $request->input('year') ?? date('Y');
+        $nextYear = ($selectedYear+1);
         $type = $request->type;
         $user_id = session()->get('user_id');
         $sub_institute_id = session()->get('sub_institute_id');
@@ -301,7 +302,8 @@ class ApplyLeaveController extends Controller
                  ->where('hlt.sub_institute_id', '=', $sub_institute_id);
         })
         ->where('hel.user_id', $user_id)
-        ->whereYear('hel.from_date', $selectedYear)
+        ->whereRaw('hel.from_date >= "'.$selectedYear.'-04-01"')
+        ->whereRaw('hel.to_date <= "'.$nextYear.'-03-31"')
         ->where('hel.sub_institute_id',$sub_institute_id)
         ->get()->toArray();
         
