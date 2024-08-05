@@ -494,25 +494,19 @@
                             SundaysCount++;
                         }
                     }
-                    console.log(SundayDiffDays);
-                    console.log('-');
                     diffDays -= (holidaysCount + saturdaysSundaysCount);
-                    SundayDiffDays -= (holidaysCount + SundaysCount); // Subtract Sundays
-                    console.log(SundayDiffDays);
+                    SundayDiffDays -= (holidaysCount); // Subtract Sundays
+                    // console.log(SundayDiffDays);
                     $('#without_sandwich_total_appear_days').empty();
                     $('#without_sandwich_criteria_validation').empty();
 
                     if(leaveType === '9' && earnedLeaves.fieldvalue && earnedLeaves.fieldvalue!=='' && SundayDiffDays > earnedLeaves.fieldvalue){
                         $('#without_sandwich_criteria_validation').removeClass('success');
                         $('#without_sandwich_criteria_validation').addClass("error").text('The system will not allow more than the ' + earnedLeaves.fieldvalue + ' criteria set by the institute.');
-                    }else if(leaveType === '9'){
+                    }else{
                         $('#without_sandwich_criteria_validation').removeClass('error');
                         $('#without_sandwich_total_appear_days').addClass("success").text('Appear leave - ' + SundayDiffDays + ' days');
                         $('#total_days').val(SundayDiffDays);
-                    }else{
-                        $('#without_sandwich_criteria_validation').removeClass('error');
-                        $('#without_sandwich_total_appear_days').addClass("success").text('Appear leave - ' + diffDays + ' days');
-                        $('#total_days').val(diffDays);
                     }                    
                 },
                 error: function(xhr, status, error) {
