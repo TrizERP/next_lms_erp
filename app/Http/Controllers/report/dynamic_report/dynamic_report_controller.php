@@ -924,36 +924,6 @@ echo("<pre>");print_r($val); */
                 $this->query->orderBy($order, $all_detail["sort_order"][0]);
             }
         }
-        // if (isset($all_detail["group_by"][1])) {
-        //     // echo $all_detail["group_by"][1];exit;
-
-        //    // $group_by_arr = explode(" as", $all_fields_index[$all_detail["group_by"][1]]);
-// <<<<<<< HEAD
-        // $group_by_arr = explode(" as", $all_fields_index[$all_detail["group_by"][1]]);
-        //  $pattern = '/\((.*?)\)/';
-        //  preg_match($pattern, $group_by_arr[0], $matches);
-        //     $field = str_replace(["(DISTINCT "], "", $matches[0] ?? $matches);
-        //       if(isset($matches[0])){
-        //             $order = substr($field, 0,-1);
-        //     }else{
-        //          $order = $group_by_arr[0];
-        //       }
-// =======
-		// $group_by_arr = explode(" as", $all_fields_index[$all_detail["group_by"][1]]);
-        // 	$pattern = '/\((.*?)\)/';
-        // 	preg_match($pattern, $group_by_arr[0], $matches);
-        //     $field = str_replace(["(DISTINCT "], "", $matches[0] ?? $matches);
-        //    	 if(isset($matches[0])){
-        //      	   $order = substr($field, 0,-1);
-        //     }else{
-        //     	    $order = $group_by_arr[0];
-        //    	 }
-// >>>>>>> 5711c69549bbcd152bf4c8020191d51575f0ee7c
-        //     $this->query->groupBy($group_by_arr[0]);
-        //     if (isset($all_detail["sort_order"][1])) {
-        //         $this->query->orderBy($order, $all_detail["sort_order"][1]);
-        //     }
-        // }
 // EP-2
 
  if (isset($all_detail["group_by"]) && isset($all_detail["group_by"][1])) {

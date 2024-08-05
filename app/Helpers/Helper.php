@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Validator;
+use Carbon\Carbon;
 
 if (!defined('BEST_OF')) {
     define('BEST_OF', 2);
@@ -2350,6 +2351,40 @@ if (!function_exists('get_string')) {
                 return $SubCordinates;
             }
             
+        }
+    }
+
+    if (!function_exists('countDays')) {
+
+        function countDays($from_date,$to_date,$dayType='',$skipday='')
+        {
+            $fromDate = Carbon::parse($from_date);
+            $toDate = Carbon::parse($to_date);
+            // count days without sunday
+            if($skipday!='' && $skipday=="skip_sunday"){
+                $daysCount = 0;
+                while ($fromDate->lte($toDate)) {
+                    if ($fromDate->dayOfWeek != Carbon::SUNDAY) {
+                        // Calculate the total number of days if day type = 1 or 0.5
+                        if($dayType!=''){
+                            $daysCount = $dayType + $daysCount;
+                        }else{
+                            $daysCount++;
+                        }
+                    }
+                    $fromDate->addDay();
+                }
+            }
+            // count days with sunday 
+            else{
+                // Calculate the total number of days if day type = 1 or 0.5
+                if($dayType!=''){
+                    $daysCount = $fromDate->diffInDays($toDate) + $dayType;
+                }else{
+                    $daysCount = $fromDate->diffInDays($toDate) + 1;
+                }
+            }
+           return $daysCount;
         }
     }
 }
