@@ -289,15 +289,17 @@ class PayrollController extends Controller
                 // for contact emps 
                 $getIsCalculate = DB::table('tbluser as tu')->join('hrms_departments as hd','hd.id','=','tu.department_id')
                 ->where('tu.id',$emp_ids)->where('tu.sub_institute_id',$sub_institute_id)->value('is_calculated');
-
+                // check hrms_departments table, if is_calculated is 1 then pf or pt will be not count
                 if($getIsCalculate==1){
                     $getPF = $getPT = 0;
+                    echo "if";
                 }
                 else{
+                    // to count PT and PF percentage wise, in payroll_type table amount_type must be 2
                     $getPF = ($hasPF == 2) ? Helpers::getPF($totalAllowance) : $getPfFlat;
                     $getPT = ($hasPT == 2) ? Helpers::getPT($totalGrossSalary,$gender) : $getPTFlat; 
                 }           
-                // echo "<pre>";print_r($getPF);
+                // echo "<pre>";print_r($getPT);
                 foreach ($allData as $key => $value) {
                    if(isset($value['PF'])){
                     $jsonData[$key] = $getPF;
