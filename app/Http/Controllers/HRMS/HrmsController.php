@@ -879,22 +879,25 @@ class HrmsController extends Controller
         foreach ($empData as $key => $value) {
             $newEmpData[] = $value;
             // add half days 
-            $ab = $value->ab_days ?? 0;
+            $ab = (int)$value->ab_days ?? 0;
+            $totAb=$value->total_ab_day ?? 0;
             $getHlafDays = DB::table('hrms_emp_leaves')->whereRaw('id in ('.$ab.')')->where('day_type','0.5')->count();
             $newEmpData[$key]->half_day = $getHlafDays ?? 0;
             // add late comes 
             $wkDay = $value->worked_days ?? 0;
             $getPunchTime = DB::table('hrms_attendances')->whereRaw('id in ('.$wkDay.')')->get()->toArray();
-
             // get user working time 
             $late = 0;
-            $lateArr = [];
+            $lateArr = $punchDates = [];
             foreach ($getPunchTime as $punchkey => $punchvalue) {
                 $dayOfWeek = Carbon::parse($punchvalue->day)->dayOfWeek; 
                 $dayName = strtolower(Carbon::parse($punchvalue->day)->format('l'));
                 
                 $getUserInTime = DB::table('tbluser')->where('id',$value->user_id)->value($dayName.'_in_date') ?? 0;
                 $punchInTime = Carbon::parse($punchvalue->punchin_time)->toTimeString();
+
+                $punchDates[] = $punchvalue->day;
+
                 if(isset($getUserInTime) && $getUserInTime!=0){
                    
                 $punchInTimeCarbon = Carbon::createFromFormat('H:i:s', $punchInTime);
@@ -914,7 +917,7 @@ class HrmsController extends Controller
             $startDate = Carbon::parse($from_date);
             $endDate = Carbon::parse($to_date);
 
-            $countSundays = $totalDays = 0;
+            $countSundays = $totalDays = $attAb = 0;
 
             for ($date = $startDate; $date->lte($endDate); $date->addDay()) {
                 $totalDays++;
@@ -922,11 +925,26 @@ class HrmsController extends Controller
                 if ($date->isSunday()) {
                     $countSundays++;
                 }
+                else {
+                    // Check if the current date is in $punchDates
+                    $found = false;
+                    foreach ($punchDates as $punchDate) {
+                        if ($date->isSameDay($punchDate)) {
+                            $found = true;
+                            break;
+                        }
+                    }
+            
+                    if (!$found) {
+                        $attAb++;
+                    }
+                }
             }
             $holidays = $value->holidays ?? 0;
             $newEmpData[$key]->weekday_off = $countSundays;
             $newEmpData[$key]->totalDays = $totalDays;
             $newEmpData[$key]->workingDays = ($totalDays - $countSundays - $holidays);
+            $newEmpData[$key]->total_ab_day = ($totAb + $attAb);
         }
 
         if(!empty($newEmpData)){
