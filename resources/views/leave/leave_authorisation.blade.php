@@ -89,24 +89,16 @@
                             @php 
                                 $from_date = \Carbon\Carbon::parse($employee_leave_lists->from_date);
                                 $to_date = \Carbon\Carbon::parse($employee_leave_lists->to_date);
-                                $countDays = $dayCount = 0;
-                                for ($date = $from_date; $date->lte($to_date); $date->addDay()) {
-                                    if ($from_date->eq($date)) {
-                                        $countDays += $employee_leave_lists->day_type;
-                                        $dayCount++;
-                                    }
-                                }
-                                $numberOfDays = $to_date->diffInDays($from_date);
+                                $dayType = $employee_leave_lists->day_type ?? 0;
                             @endphp
                                 <tr>
                                     <td><input type="checkbox" name="checkedEmp[{{$employee_leave_lists->id}}]" class="ckbox1"></td>
-                                    <td>{{ $j++ }}
-                                    </td>
+                                    <td>{{ $j++ }}</td>
                                     <td>{{ \Carbon\Carbon::parse($employee_leave_lists->created_at)->format('d-M-Y') }}</td>
                                     <td>{{ \Carbon\Carbon::parse($employee_leave_lists->from_date)->format('d-M-Y') }}</td>
-                                    <td>{{ \Carbon\Carbon::parse($employee_leave_lists->to_date)->format('d-M-Y') }}</td>
+                                    <td>{{  \Carbon\Carbon::parse($employee_leave_lists->to_date)->format('d-M-Y') }}</td>
                                     <td><a style="text-decoration:underline !important" onclick="getEmpLeaveHistory('{{$employee_leave_lists->user_id}}','{{$employee_leave_lists->department_id}}')">{{ $employee_leave_lists->employee_name }}</a></td>
-                                    <td>{{ ($dayCount!=0) ? $dayCount : 1 }}</td>
+                                    <td>{{ App\Helpers\countDays($from_date,$to_date,$dayType) }}</td>
                                     <td>{{ ($employee_leave_lists->day_type=="0.5") ? 'Half Day' : 'Full Day' }}</td>
                                     <td>{{ $employee_leave_lists->leave_type }}</td>
                                     <td>

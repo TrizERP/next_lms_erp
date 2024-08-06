@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Validator;
+use Carbon\Carbon;
 
 if (!defined('BEST_OF')) {
     define('BEST_OF', 2);
@@ -2211,6 +2212,9 @@ if (!function_exists('get_string')) {
         function HrmsDepartments($col="",$depMultiple="",$dep_ids="",$empMultiple="",$emp_ids="",$inactive="")
         {
             $sub_institute_id= session()->get('sub_institute_id');
+            $userId= session()->get('user_id');
+            $userProfileName= session()->get('user_profile_name');
+            
             if($col==""){
                 $col=3;
             }
@@ -2223,8 +2227,25 @@ if (!function_exists('get_string')) {
                 }
             }
             // dd($dep_idsArr);
+            // for subordinates 02-08-2024
+            $SubCordinatesDep =[];
+            $profileArr = ["Admin","Super Admin","School Admin","Assistant Admin"];
+            if(!in_array($userProfileName,$profileArr)){
+                $SubCordinatesDep = getSubCordinates($sub_institute_id,$userId,'dep');
+            }
+            // dd($SubCordinates); exit;
+            // end 02-08-2024
+
             //get all department Lists
-            $depLists =DB::table('hrms_departments')->where('sub_institute_id',$sub_institute_id)->where('status',1)->whereNull('deleted_at')->pluck('department','id');
+            $depLists =DB::table('hrms_departments')
+                        ->where('sub_institute_id',$sub_institute_id)
+                        ->when(!empty($SubCordinatesDep),function($q) use($SubCordinatesDep){
+                            $q->whereIn('id',$SubCordinatesDep);
+                        })
+                        ->where('status',1)
+                        ->whereNull('deleted_at')
+                        ->orderBy('department','ASC')->pluck('department','id');
+                        
             // make select for department
             $SelectDepartment ="<div class='col-md-".$col." form-group'>
                 <label>Select Department</label>
@@ -2263,12 +2284,23 @@ if (!function_exists('get_string')) {
             $empData = [];
 
             if(isset($dep_ids) && $dep_ids!=0){
+                // for subordinates 02-08-2024
+                $SubCordinates =[];
+                $profileArr = ["Admin","Super Admin","School Admin","Assistant Admin"];
+                if(!in_array($userProfileName,$profileArr)){
+                    $SubCordinates = getSubCordinates($sub_institute_id,$userId);
+                }
+                // dd($SubCordinates); exit;
+                // end 02-08-2024
                 $empData =DB::table('tbluser')->join('tbluserprofilemaster as upm', 'upm.id', '=', 'tbluser.user_profile_id')
                 ->selectRaw('tbluser.id,CONCAT_WS(" ",COALESCE(tbluser.first_name, "-"),COALESCE(tbluser.last_name, "-")) as full_name,tbluser.sub_institute_id, IfNULL(upm.name,"-") as user_profile')
                 ->where('tbluser.sub_institute_id', $sub_institute_id)
                 ->whereIn('tbluser.department_id', $dep_idsArr)
                 ->where('tbluser.department_id','!=',0)
                 ->where('tbluser.status', 1)
+                ->when(!empty($SubCordinates),function($q) use($SubCordinates){
+                    $q->whereIn('tbluser.id', $SubCordinates);
+                })
                 ->orderBy('tbluser.first_name')
                 ->groupBy('tbluser.id')
                 ->get()
@@ -2297,6 +2329,62 @@ if (!function_exists('get_string')) {
             </div>";
             }
             return $SelectDepartment;
+        }
+    }
+    
+    if (!function_exists('getSubCordinates')) {
+
+        function getSubCordinates($sub_institute_id='',$user_id='',$type='')
+        {
+            if($type=='dep'){
+                $SubCordinatesDep = DB::table('tbluser as u')
+                            ->where(['u.sub_institute_id'=>$sub_institute_id,'u.status'=>1])
+                            ->whereRaw('(u.id = '.$user_id.' or u.employee_id='.$user_id.')')
+                            ->groupBy('u.department_id')
+                            ->pluck('department_id')->toArray();
+                return $SubCordinatesDep;
+            }else{
+                $SubCordinates = DB::table('tbluser as u')
+                ->where(['u.sub_institute_id'=>$sub_institute_id,'u.status'=>1])
+                ->whereRaw('(u.id = '.$user_id.' or u.employee_id='.$user_id.')')
+                ->pluck('id')->toArray();
+                return $SubCordinates;
+            }
+            
+        }
+    }
+
+    if (!function_exists('countDays')) {
+
+        function countDays($from_date,$to_date,$dayType='',$skipday='')
+        {
+            $fromDate = Carbon::parse($from_date);
+            $toDate = Carbon::parse($to_date);
+            // count days without sunday
+            if($skipday!='' && $skipday=="skip_sunday"){
+                $daysCount = 0;
+                while ($fromDate->lte($toDate)) {
+                    if ($fromDate->dayOfWeek != Carbon::SUNDAY) {
+                        // Calculate the total number of days if day type = 1 or 0.5
+                        if($dayType!=''){
+                            $daysCount = $dayType + $daysCount;
+                        }else{
+                            $daysCount++;
+                        }
+                    }
+                    $fromDate->addDay();
+                }
+            }
+            // count days with sunday 
+            else{
+                // Calculate the total number of days if day type = 1 or 0.5
+                if($dayType!=''){
+                    $daysCount = $fromDate->diffInDays($toDate) + $dayType;
+                }else{
+                    $daysCount = $fromDate->diffInDays($toDate) + 1;
+                }
+            }
+           return $daysCount;
         }
     }
 }

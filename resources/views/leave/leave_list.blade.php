@@ -48,6 +48,7 @@
                                     <th data-toggle="tooltip" title="From Date">From Date</th>
                                     <th data-toggle="tooltip" title="To Date">To Date</th>
                                     <th data-toggle="tooltip" title="No of Days">No of Days</th>
+                                    <th data-toggle="tooltip" title="Day type">Day Type</th>
                                     <th data-toggle="tooltip" title="Leave Type">Leave Type</th>
                                     <th data-toggle="tooltip" title="Reason">Reason</th>
                                     <th data-toggle="tooltip" title="HOD's Comment">HOD's Comment</th>
@@ -77,6 +78,8 @@
 @include('includes.footerJs')
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-toast-plugin/1.3.2/jquery.toast.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-toast-plugin/1.3.2/jquery.toast.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+
 <script type="text/javascript">
     $(document).ready(function() {
         $('[data-toggle="tooltip"]').tooltip();
@@ -132,12 +135,29 @@
                     status = '<select class="form-control" name="LeaveUpdate['+item.id+'][status]"><option value="pending">Pending</option><option value="cancelled">Cancelled</option></select>';
 
                 }
+                var from_date = item.from_date;
+                var to_date = item.to_date;
+                var day_type = parseFloat(item.day_type); 
+
+                var fromDate = moment(from_date);
+                var toDate = moment(to_date);
+                var dayCount = 0;
+
+                for (var date = fromDate.clone(); date.isSameOrBefore(toDate); date.add(1, 'day')) {
+                    dayCount = dayCount+day_type;
+                }
+                console.log('Number of days counted:', dayCount);
+                var day = "Half Day";
+                if(day_type >= 1){
+                    var day = "Full Day";
+                }
                 // Append a new row for each item in the data
                 var row = '<tr>' +
                     '<td>' + (index + 1) + '</td>' +
                     '<td>' + item.from_date + '</td>' +
                     '<td>' + item.to_date + '</td>' +
-                    '<td>' + item.day_type + '</td>' +
+                    '<td>' + dayCount + '</td>' +
+                    '<td>' + day + '</td>' +
                     '<td>' + item.leave_type_name + '</td>' +
                     '<td>' + comment + '</td>' +
                     '<td>' + hod_comment + '</td>' +

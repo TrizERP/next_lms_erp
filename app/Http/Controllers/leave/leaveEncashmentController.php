@@ -38,6 +38,7 @@ class leaveEncashmentController extends Controller
             ->where('u.sub_institute_id',$sub_institute_id)
             ->where('u.status',1)
             ->whereRaw('ess.employee_salary_data != "" ')
+            ->orderBy('u.first_name','ASC')
             ->get();
            
             // get encashment as per salary 
@@ -92,6 +93,7 @@ class leaveEncashmentController extends Controller
                     hel.leave_type_id ,hlt.leave_type_id as leave_code,hlt.leave_type,hel.from_date as leave_date,hel.user_id as leave_user_id,hel.leave_type_id as taken_leave_id,hla.value as no_of_days_allotted,IFNULL(SUM(hel.day_type),0) as taken_leave,IFNULL((hla.value - SUM(hel.day_type)),0) PENDING')
                     ->where('u.sub_institute_id',$sub_institute_id)
                     ->groupByRaw('hla.leave_type_id,hlt.leave_type_id')
+                    ->orderBy('u.first_name','ASC')
                     ->get()->toArray();    
                     
                     // count leaves 

@@ -154,20 +154,13 @@
                                         $Mfrom_date = \Carbon\Carbon::parse($value->from_date);
                                         $from_date = \Carbon\Carbon::parse($value->from_date);
                                         $to_date = \Carbon\Carbon::parse($value->to_date);
-                                        $countDays = $dayCount = 0;
-                                        for ($date = $from_date; $date->lte($to_date); $date->addDay()) {
-                                            if ($from_date->eq($date)) {
-                                                $countDays += $value->day_type;
-                                                $dayCount++;    
-                                            }
-                                        }
-                                        $numberOfDays = $to_date->diffInDays($from_date);
+                                        $dayType = $value->day_type ?? 0;
                                     @endphp
                                     <tr>
                                         <td>{{$key+1}}</td>
                                         <td>{{$Mfrom_date->format('d-m-Y')}}</td>
                                         <td>{{$to_date->format('d-m-Y')}}</td>
-                                        <td>{{($dayCount>0) ? $dayCount : 1}}</td>
+                                        <td>{{ App\Helpers\countDays($Mfrom_date,$to_date,$dayType) }}</td>
                                         <td>{{ ($value->day_type=="0.5") ? 'Half Day' : 'Full Day' }}</td>
                                         <td>{{$value->leave_type_name}}</td>
                                         <td>{{$value->comment}}</td>
@@ -501,25 +494,19 @@
                             SundaysCount++;
                         }
                     }
-                    console.log(SundayDiffDays);
-                    console.log('-');
                     diffDays -= (holidaysCount + saturdaysSundaysCount);
-                    SundayDiffDays -= (holidaysCount + SundaysCount); // Subtract Sundays
-                    console.log(SundayDiffDays);
+                    SundayDiffDays -= (holidaysCount); // Subtract Sundays
+                    // console.log(SundayDiffDays);
                     $('#without_sandwich_total_appear_days').empty();
                     $('#without_sandwich_criteria_validation').empty();
 
                     if(leaveType === '9' && earnedLeaves.fieldvalue && earnedLeaves.fieldvalue!=='' && SundayDiffDays > earnedLeaves.fieldvalue){
                         $('#without_sandwich_criteria_validation').removeClass('success');
                         $('#without_sandwich_criteria_validation').addClass("error").text('The system will not allow more than the ' + earnedLeaves.fieldvalue + ' criteria set by the institute.');
-                    }else if(leaveType === '9'){
+                    }else{
                         $('#without_sandwich_criteria_validation').removeClass('error');
                         $('#without_sandwich_total_appear_days').addClass("success").text('Appear leave - ' + SundayDiffDays + ' days');
                         $('#total_days').val(SundayDiffDays);
-                    }else{
-                        $('#without_sandwich_criteria_validation').removeClass('error');
-                        $('#without_sandwich_total_appear_days').addClass("success").text('Appear leave - ' + diffDays + ' days');
-                        $('#total_days').val(diffDays);
                     }                    
                 },
                 error: function(xhr, status, error) {

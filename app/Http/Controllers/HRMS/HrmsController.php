@@ -14,6 +14,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use function App\Helpers\is_mobile;
 use function App\Helpers\employeeDetails;
+use function App\Helpers\getSubCordinates;
 use DB;
 
 
@@ -225,7 +226,7 @@ class HrmsController extends Controller
             $hrmsAttendanceInOutTime['date'] = Carbon::now();
         }
 
-        $employeeLists = tbluserModel::where('sub_institute_id', $subInstituteId)->where('status', 1)->get();
+        $employeeLists = tbluserModel::where('sub_institute_id', $subInstituteId)->where('status', 1)->orderBy('first_name')->get();
 
         $hrmsAttendanceInOutTime['id'] = 0;
         $hrmsAttendanceInOutTime['time'] = Carbon::now()->format('H:i:s');
@@ -975,9 +976,13 @@ class HrmsController extends Controller
         ->join('tbluser as tu','hel.user_id','=','tu.id')
         ->join('hrms_departments as hd','tu.department_id','=','hd.id')
         ->join('hrms_leave_types as hlt','hel.leave_type_id','=','hlt.id')
-        ->selectRaw('hel.*,hd.department,tu.employee_no,CONCAT_WS(" ", COALESCE(tu.first_name, "-"), COALESCE(tu.last_name, "-")) as full_name,hel.day_type,hlt.leave_type')
+        ->join('hrms_attendances as ha',function($q) use($request){
+            $q->on('ha.user_id','=','hel.user_id')->whereRaw('ha.day BETWEEN hel.from_date AND hel.to_date')->where('ha.user_id',$request->user_id);
+        })
+        ->selectRaw('hel.*,ha.*,hd.department,tu.employee_no,CONCAT_WS(" ", COALESCE(tu.first_name, "-"), COALESCE(tu.last_name, "-")) as full_name,hel.day_type,hlt.leave_type')
         ->where('hel.user_id',$request->user_id)->where('hel.from_date','>=',$request->from_date)->where('hel.to_date','<=',$request->to_date)->where('hel.sub_institute_id',$sub_institute_id)->where('hel.status','approved')
-        ->where('hel.day_type','0.5')->get()->toArray();
+        ->where('hel.day_type','0.5')
+        ->get()->toArray();
 
         return $data;
     }
@@ -994,12 +999,26 @@ class HrmsController extends Controller
         $type= $request->type;
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
+        $userId= session()->get('user_id');
+        $userProfileName= session()->get('user_profile_name');
+
         $department_id = ($request->department_id !=0) ? implode(',',$request->department_id) : 0;
         $employee_id = ($request->emp_id !=0) ? implode(',',$request->emp_id) : 0;
         $from_date = $request->from_date;
         $to_date = $request->to_date;
         $currentMonth = '';
 
+        // sub cordinates 02-08-2024
+        $SubCordinates =[];
+        $profileArr = ["Admin","Super Admin","School Admin","Assistant Admin"];
+        if($employee_id==0 && !in_array($userProfileName,$profileArr)){
+            $SubCordinates = getSubCordinates($sub_institute_id,$userId);
+            if(!empty($SubCordinates)){
+                $employee_id = implode(',',$SubCordinates);
+            }
+        }
+        // echo "<pre>"; print_r($SubCordinates);exit;
+        // end  02-08-2024
         $from_date_formatted = (isset($from_date)) ? Carbon::createFromFormat('Y-m-d', $from_date)->format('Y-m-d') : date('Y-m-d');
         $to_date_formatted = (isset($to_date)) ? Carbon::createFromFormat('Y-m-d', $to_date)->format('Y-m-d') : date('Y-m-d');
         // echo $from_date_formatted;exit;
