@@ -1983,14 +1983,19 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             foreach ($other_bk_off_month_wise as $MonthId => $amt) {
                 if ($month_id == $MonthId) {
                     $merge_bk_month_wise[$month_id] += $amt;
-                }else if($amt>0){
-                    if(!isset($merge_bk_month_wise[$MonthId])){
-                        $merge_bk_month_wise[$MonthId] =0;
-                    }
-                    $merge_bk_month_wise[$MonthId] += $amt;
                 }
             }
         }
+        // if only additional fees set 2024-08-06
+        foreach ($other_bk_off_month_wise as $MonthId => $amt) {
+            if($amt>0 && !isset($merge_bk_month_wise[$MonthId])){
+                if(!isset($merge_bk_month_wise[$MonthId])){
+                    $merge_bk_month_wise[$MonthId] =0;
+                }
+                $merge_bk_month_wise[$MonthId] += $amt;
+            }
+        }
+        // end 2024-08-06
         // echo "<pre>";print_r($merge_bk_month_wise);exit;
         // lions bus amount (transport fees) 2024-07-20
         $getTransportId = DB::table('fees_title')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear,'fees_title'=>'1'])->first();
