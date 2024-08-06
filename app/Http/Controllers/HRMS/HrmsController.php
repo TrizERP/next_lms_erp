@@ -879,8 +879,8 @@ class HrmsController extends Controller
         foreach ($empData as $key => $value) {
             $newEmpData[] = $value;
             // add half days 
-            $ab = (int)$value->ab_days ?? 0;
-            $totAb=$value->total_ab_day ?? 0;
+            $ab = $value->ab_days ?? 0;
+            $totAb= $value->total_ab_day ?? 0;
             $getHlafDays = DB::table('hrms_emp_leaves')->whereRaw('id in ('.$ab.')')->where('day_type','0.5')->count();
             $newEmpData[$key]->half_day = $getHlafDays ?? 0;
             // add late comes 
