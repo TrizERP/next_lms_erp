@@ -258,6 +258,11 @@ class resultAPIController extends Controller
                 $type = $item->type_name;
                 $title = $item->value_name;
                 $progress = $item->total_question;
+
+                // Initialize the chapter key if not already set
+                if (!isset($transformedData[$row->chapter_name])) {
+                    $transformedData[$row->chapter_name] = [];
+                }
             
                 if (!isset($transformedData[$row->chapter_name][$type])) {
                     $transformedData[$row->chapter_name][$type] = [
@@ -272,8 +277,11 @@ class resultAPIController extends Controller
                 ];
             }
             
-            // Convert the associative array to indexed array
-            $transformedData = array_values($transformedData[$row->chapter_name]);
+            // Convert the associative array to indexed array if key exists
+            if (isset($transformedData[$row->chapter_name])) {
+                $transformedData = array_values($transformedData[$row->chapter_name]);
+            }
+
             // db::enableQueryLog();
             $getCurrentStudentExam = DB::table('lms_online_exam')->selectRaw('group_concat(DISTINCT question_paper_id) as question_paper_id')->whereRaw('student_id = '.$request->student_id.'')->groupBy('student_id')->first();
             // dd(db::getQueryLog($getCurrentStudentExam));
@@ -324,24 +332,24 @@ class resultAPIController extends Controller
                 "chapterrank"=>4,
                 "recommendation"=>array(
                     array(
-                        "type"=>"vedio",
-                        "title"=>"vedio-1",
-                        "link"=>"https://erp.triz.co.in/video-1.mp4",
+                        "type"=>"video",
+                        "title"=>"video-1",
+                        "link"=>"https://youtu.be/wDchsz8nmbo?si=O8Md_owjD1ipg383",
                     ),
                     array(
-                        "type"=>"vedio",
-                        "title"=>"vedio-2",
-                        "link"=>"https://erp.triz.co.in/video-2.mp4",
+                        "type"=>"video",
+                        "title"=>"video-2",
+                        "link"=>"https://youtu.be/wDchsz8nmbo?si=O8Md_owjD1ipg383",
                     ), 
                     array(
-                        "type"=>"vedio",
-                        "title"=>"vedio-3",
-                        "link"=>"https://erp.triz.co.in/video-3.mp4",
+                        "type"=>"video",
+                        "title"=>"video-3",
+                        "link"=>"https://youtu.be/wDchsz8nmbo?si=O8Md_owjD1ipg383",
                     ),
                      array(
-                        "type"=>"vedio",
-                        "title"=>"vedio-4",
-                        "link"=>"https://erp.triz.co.in/video-4.mp4",
+                        "type"=>"video",
+                        "title"=>"video-4",
+                        "link"=>"https://youtu.be/wDchsz8nmbo?si=O8Md_owjD1ipg383",
                     ),
                 ),
                 "chapteroutcome"=> $transformedData,
