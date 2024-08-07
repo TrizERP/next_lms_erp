@@ -84,6 +84,7 @@ class studentIcardController extends Controller
         $res['standard_id'] = $standard;
         $res['division_id'] = $division;
         $res['driver_id'] = $driver_id;
+        $res['sub_institute_id'] = $sub_institute_id;
 
         return is_mobile($type, "student/student_icard/show_student", $res, "view");
     }
@@ -95,10 +96,17 @@ class studentIcardController extends Controller
         $row = $request->input('row');
         $column = $request->input('column');
         $student_ids = $request->input('students');
-        /*$syear = $request->session()->get('syear');
+        $syear = $request->session()->get('syear');
         $sub_institute_id = $request->session()->get('sub_institute_id');
-        $grade_id = $request->input('grade_id');
+        /*$grade_id = $request->input('grade_id');
         $standard_id = $request->input('standard_id');*/
+
+        $receiptBook = DB::table('fees_receipt_book_master')
+            ->selectRaw('*,GROUP_CONCAT(fees_head_id) heads')
+            ->where('syear', $syear)
+            ->where('sub_institute_id', $sub_institute_id)
+            ->groupByRaw('receipt_line_1,receipt_line_2,receipt_line_3,receipt_line_4,receipt_prefix,receipt_logo,last_receipt_number')
+            ->orderBy('sort_order')->latest('id')->first();
 
         $data = getStudents($student_ids);
         $res['status_code'] = 1;
@@ -107,7 +115,9 @@ class studentIcardController extends Controller
         $res['column'] = $column;
         $res['row'] = $row;
         $res['template'] = $template;
+        $res['receiptBook'] = $receiptBook;
 
+        // echo "<pre>";print_r($receiptBook);exit;
         return is_mobile($type, "student/student_icard/show_student_icard", $res, "view");
     }
 

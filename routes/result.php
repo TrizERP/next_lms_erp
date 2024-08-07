@@ -57,7 +57,7 @@ use App\Http\Controllers\result\result_activity_marks\resultActivityMarksControl
 use App\Http\Controllers\lms\pal\resultPersonalizeMarksController;
 use App\Http\Controllers\result\new_result\allResultController;
 
-Route::group(['prefix' => 'result', 'middleware' => ['session', 'menu', 'logRoute']], function () {
+Route::group(['prefix' => 'result', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
     Route::resource('exam_type_master', ExamTypeMasterController::class);
     Route::resource('exam_master', ExamMasterController::class);
     Route::resource('grade_master', GradeMasterController::class);
@@ -140,7 +140,7 @@ Route::GET('ajax_sendEmailFeesReceipt', [AJAXController::class, 'ajax_sendEmailF
 Route::GET('ajax_sendBulkEmailFeesReceipt', [AJAXController::class, 'ajax_sendBulkEmailFeesReceipt'])->name('ajax_sendBulkEmailFeesReceipt');
 
 // Route::group(['prefix' => 'easy_com', 'middleware' => ['session', 'mastersetup_menu']], function () {
-Route::group(['prefix' => 'easy_com', 'middleware' => ['session', 'menu', 'logRoute']], function () {
+Route::group(['prefix' => 'easy_com', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
     Route::resource('manage_sms_api', manage_sms_api_controller::class);
     Route::resource('send_sms_parents', send_sms_parents_controller::class);
     Route::resource('send_email_report', send_email_report_controller::class);
@@ -159,7 +159,7 @@ Route::group(['prefix' => 'easy_com', 'middleware' => ['session', 'menu', 'logRo
 });
 Route::POST('announcement', [send_sms_staff_controller::class, 'GetStudentAnnouncement']);
 
-Route::group(['prefix' => 'learning_outcome', 'middleware' => ['session', 'menu', 'logRoute']], function () {
+Route::group(['prefix' => 'learning_outcome', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
     Route::resource('lo_master', lo_masterController::class);
     Route::resource('indicator_mapping', indicator_mappingController::class);
     Route::post('indicator_mapping/get_indicator', [indicator_mappingController::class, 'get_indicator'])->name('get_indicator');
@@ -180,7 +180,7 @@ Route::POST('api/get_co_scholastic_marks_dd', [marks_entry_controller::class, 'g
 Route::POST('api/get_result', [marks_entry_controller::class, 'get_result']);
 
 
-Route::group(['prefix' => 'report', 'middleware' => ['session', 'menu']], function () {
+Route::group(['prefix' => 'report', 'middleware' => ['session', 'menu','check_permissions']], function () {
     Route::resource('dynamic_report', dynamic_report_controller::class);
     // exam report
     Route::get('student-mark-report', [StudentsMarksReportController::class, 'index'])->name('student-mark-report');

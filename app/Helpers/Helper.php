@@ -1400,6 +1400,8 @@ if (!function_exists('getStudents')) {
                 $join->whereRaw(' d.id = se.section_id');
             })->join('school_setup as ss', function ($join) {
                 $join->whereRaw('s.sub_institute_id = ss.Id');
+            })->leftJoin('batch as bt', function ($join) {
+                $join->whereRaw('s.studentbatch = bt.id');
             })->leftJoin('blood_group as bg', function ($join) {
                 $join->whereRaw('s.bloodgroup = bg.id');
             })->leftJoin('tblstudent_tc_details as tc', function ($join) {
@@ -1431,7 +1433,7 @@ if (!function_exists('getStudents')) {
                 r.religion_name,c.caste_name,s.subcast,s.affiliation_no,s.school_code,s.admission_date,td.first_name AS driver_name,
                 td.mobile AS driver_mobile,td.icard_icon,s.mother_mobile,CONCAT_WS(' ',s.first_name,CONCAT(SUBSTRING(s.father_name,1,1),'.'),
                 s.last_name) as short_student_name,tv.vehicle_type,tkr.id as distance_from_school_id,tkr.distance_from_school,
-                tkr.from_distance,IF(tv.vehicle_type = 'Van',tkr.van_new,tkr.rick_new) AS distance_rate,s.first_name as student_first_name,s.middle_name as student_middle_name,s.last_name as student_last_name,rsam.teacher_remark,COUNT(ats.id) as total_att_days,sum(CASE WHEN ats.attendance_code = 'P' THEN 1 ELSE 0 END) as present_att_days, group_concat(DISTINCT  fc.term_id) as month_name, bg.bloodgroup as blood_group_name")
+                tkr.from_distance,IF(tv.vehicle_type = 'Van',tkr.van_new,tkr.rick_new) AS distance_rate,s.first_name as student_first_name,s.middle_name as student_middle_name,s.last_name as student_last_name,rsam.teacher_remark,COUNT(ats.id) as total_att_days,sum(CASE WHEN ats.attendance_code = 'P' THEN 1 ELSE 0 END) as present_att_days, group_concat(DISTINCT  fc.term_id) as month_name, bg.bloodgroup as blood_group_name,bt.title as batch_name")
                 ->where('s.sub_institute_id', $sub_institute_id)
                 ->where('se.syear', $syear)
                 // ->groupBy('fc.id')
@@ -1460,6 +1462,9 @@ if (!function_exists('getStudents')) {
             $student_data[$value->id]['address'] = $value->address;
             $student_data[$value->id]['standard_name'] = $value->standard_name;
             $student_data[$value->id]['short_standard_name'] = $value->short_standard_name;
+            $student_data[$value->id]['batch_id'] = $value->studentbatch;
+            $student_data[$value->id]['batch_name'] = $value->batch_name;
+            $student_data[$value->id]['emergency_contact'] = $value->emergency_contact_no_religion_to_student;
             $student_data[$value->id]['school_stream'] = $value->school_stream;
             $student_data[$value->id]['division_name'] = $value->division_name;
             $student_data[$value->id]['father_name'] = $value->father_name;
