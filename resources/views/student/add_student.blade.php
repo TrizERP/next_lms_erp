@@ -334,6 +334,8 @@
                                 <input type="text" id='subcast' name="subcast" class="form-control">
                             </div>
                             @endif
+                            <!-- CN kishor remove roll no and blood group 07-08-2024  -->
+                            @if(session()->get('sub_institute_id')!=248)
                             <div class="col-md-4 form-group text-left">
                                 <label>Roll No.</label>
                                 <input type="text" id='roll_no' name="roll_no" class="form-control">
@@ -350,6 +352,8 @@
                                     @endif                                                  
                                 </select>
                             </div>
+                            @endif
+                            <!-- end CN kishor remove roll no and blood group 07-08-2024 -->
                             @if(session()->get('sub_institute_id')!=257)
                             <div class="col-md-4 form-group text-left">
                                 <label>Aadhar Number</label>

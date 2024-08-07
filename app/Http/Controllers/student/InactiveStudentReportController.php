@@ -50,9 +50,11 @@ class InactiveStudentReportController extends Controller
         $tblcustoms = DB::table("tblcustom_fields")
         ->whereRaw("status=1 AND (common_to_all= 1 or sub_institute_id=$sub_institute_id) AND is_deleted != 'Y'")
         ->where('user_type','student')
-        ->when($sub_institute_id==257,function($q) use($sub_institute_id){
-            $q->whereRaw('field_message NOT IN ('.$sub_institute_id.')');
-        })
+        // ->when($sub_institute_id==257,function($q) use($sub_institute_id){
+        //     $q->whereRaw('field_message NOT IN ('.$sub_institute_id.')');
+        // })
+        // need to add sub_institute_id in field_message column in table
+        ->whereRaw('FIND_IN_SET('.$sub_institute_id.', field_message) = 0')
         ->orderByRaw('tab_sort_order,sort_order')
         ->get()->toArray();    
         
@@ -131,9 +133,10 @@ class InactiveStudentReportController extends Controller
             ->whereRaw("status=1 AND (common_to_all= 1 or sub_institute_id=$sub_institute_id) AND is_deleted != 'Y'")
             ->where('id',$fieldId)
             ->where('user_type','student')
-            ->when($sub_institute_id==257,function($q) use($sub_institute_id){
-                $q->whereRaw('field_message NOT IN ('.$sub_institute_id.')');
-            })
+            // ->when($sub_institute_id==257,function($q) use($sub_institute_id){
+            //     $q->whereRaw('field_message NOT IN ('.$sub_institute_id.')');
+            // })
+            ->whereRaw('FIND_IN_SET('.$sub_institute_id.', field_message) = 0')
             ->first();
 
             if(!empty($customDetails) && !in_array($fielValue,["student_name","optional_subject"])){
