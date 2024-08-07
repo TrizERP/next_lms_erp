@@ -19,7 +19,7 @@ use App\Http\Controllers\HRMS\departmentController;
 */
 
 //PAYROLL SYSTEM
-Route::group([ 'middleware' => ['session', 'menu', 'logRoute']], function () {
+Route::group([ 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
    
     Route::get('/payroll-type', [PayrollController::class, 'payrollType'])->name('payroll_type.index');
     Route::get('/payroll-type/create', [PayrollController::class, 'payrollCreate'])->name('payroll_type.create');
@@ -108,7 +108,7 @@ Route::group([ 'middleware' => ['session', 'menu', 'logRoute']], function () {
    Route::get('/getMonthlyData', [PayrollController::class, 'getEmpMonthlyData'])->name('getMonthlyData');
 });
 
-Route::group(['prefix' => 'hrms', 'middleware' => ['session', 'menu', 'logRoute']], function () {
+Route::group(['prefix' => 'hrms', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
     Route::resource('designation_leave', HrmsLeaveController::class);
     Route::resource('leave_encashment', leaveEncashmentController::class);
     Route::resource('add_department', departmentController::class);

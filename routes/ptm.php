@@ -5,7 +5,7 @@ use App\Http\Controllers\ptm\ptmattenedstatusController;
 use App\Http\Controllers\ptm\ptmtimeslotmasterController;
 use Illuminate\Support\Facades\Route;
 
-Route::group(['prefix' => 'ptm', 'middleware' => ['session', 'menu', 'logRoute']], function() {
+Route::group(['prefix' => 'ptm', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function() {
     Route::resource('add_ptm_time_slot_master', ptmtimeslotmasterController::class);
     Route::resource('add_ptm_attened_status', ptmattenedstatusController::class);
 });

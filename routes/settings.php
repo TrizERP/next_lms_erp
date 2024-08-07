@@ -11,7 +11,7 @@ use App\Http\Controllers\settings\masterSetupSelectController;
 use Illuminate\Support\Facades\Route;
 
 
-Route::group(['prefix' => 'settings', 'middleware' => ['session', 'menu', 'logRoute']], function () {
+Route::group(['prefix' => 'settings', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
     Route::resource('add_fields', tblcustomfieldsController::class);
     Route::resource('smtp_setting', smtpController::class);
     Route::resource('biomatrix', biomatrixController::class);
