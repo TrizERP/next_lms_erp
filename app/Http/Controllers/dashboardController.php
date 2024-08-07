@@ -970,7 +970,7 @@ class dashboardController extends Controller
 
 
                 $school_setup_data = DB::table("school_setup")
-                    ->selectRaw("*, DATEDIFF(expire_date, " . $current_date . ") as remaining_days, SUM(ifnull(given_space_mb, 0)) as given_space_mb")
+                    ->selectRaw('*, DATEDIFF(expire_date, "' . $current_date . '") as remaining_days, SUM(ifnull(given_space_mb, 0)) as given_space_mb')
                     ->where("id", "=", $sub_institute_id)
                     ->get()->toArray();
                 $school_setup_data = json_decode(json_encode($school_setup_data[0]), true);

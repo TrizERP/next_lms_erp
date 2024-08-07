@@ -125,26 +125,30 @@
 
 	function get_roles_respo_fees(profile_name, modules) {
 		$('#roles_respo').empty();
-		var getRoles = @json($data['roles']);
+		var getRoles = @json($data['roles'] ?? []);
 
 		var html = '';
+		if(getRoles){
 		html +=
 			`<h5>${profile_name} Roles and Responsibility</h5>
 					${getRoles[modules][profile_name]['text']}
 					`;
 
 		$('#roles_respo').html(html);
+		}
 	}
 
 	function get_roles_respo(profile_name, modules) {
 		$('#roles_respo2').empty();
 		var html = '';
-		var getRoles = @json($data['roles']);
+		var getRoles = @json($data['roles'] ?? []);
+		if(getRoles){
 		html +=
 			`<h5>${profile_name} Roles and Responsibility</h5>
 					${getRoles[modules][profile_name]['text']}
 					`;
 		$('#roles_respo2').html(html);
+		}
 	}
 	// 22-05-24
 	
