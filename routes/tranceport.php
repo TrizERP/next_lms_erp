@@ -16,7 +16,7 @@ use App\Http\Controllers\transportation\van_wise_students_detail\van_wise_studen
 
 use Illuminate\Support\Facades\Route;
 
-Route::group(['prefix' => 'transportation', 'middleware' => ['session', 'menu', 'logRoute']], function () {
+Route::group(['prefix' => 'transportation', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
     Route::resource('add_driver', add_driver_controller::class);
     Route::resource('add_vehicle', add_vehicle_controller::class);
     Route::resource('add_route', add_route_controller::class);

@@ -52,7 +52,7 @@ use App\Http\Controllers\student\studentAnacdotalController;
 use Illuminate\Support\Facades\Route;
 
 
-Route::group(['prefix' => 'student', 'middleware' => ['session', 'menu', 'logRoute']], function () {
+Route::group(['prefix' => 'student', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
     Route::resource('add_student', tblstudentController::class);
     Route::resource('add_house', houseController::class);
     Route::resource('past_education', tblstudentPastEducationController::class);

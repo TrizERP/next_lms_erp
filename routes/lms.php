@@ -48,7 +48,7 @@ use App\Http\Controllers\school_setup\sub_std_mapController;
 use App\Http\Controllers\lms\lmsDashboardController;
 use Illuminate\Support\Facades\Route;
 
-Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute']], function () {
+Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
     Route::get('o-net-data-category',[\App\Http\Controllers\lms\ONetOnlineDataController::class,'index'])->name('o-net-data-category.index');
     Route::get('o-net-data-list',[\App\Http\Controllers\lms\ONetOnlineDataController::class,'ONetDataTable'])->name('o-net-data-table.show-list');
     Route::get('o-net-data-list-details',[\App\Http\Controllers\lms\ONetOnlineDataController::class,'ONetDataTableListDetails'])->name('o-net-data-table.show-list-details');
@@ -222,7 +222,7 @@ Route::controller(lms_apiController::class)->group(function () {
     Route::post('/trizStandardAPI', 'trizStandardAPI');
 });
 
-Route::group(['prefix' => 'bazar', 'middleware' => ['session', 'menu', 'logRoute']], function () {
+Route::group(['prefix' => 'bazar', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
     Route::resource('bulk_upload_sheet', bulkUploadSheetController::class);
     Route::get('bulk_position_data', [bulkUploadSheetController::class, 'bulk_position_data'])->name('bulk_position_data');
     Route::post('store_position_data', [bulkUploadSheetController::class, 'store_position_data'])->name('store_position_data');

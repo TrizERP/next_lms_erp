@@ -58,7 +58,7 @@ use App\Http\Controllers\fees\feesAIController;
 use App\Http\Controllers\fees\fees_report\monthwiseReceiptPdfController;
 use Illuminate\Support\Facades\Route;
 
-Route::group(['prefix' => 'fees', 'middleware' => ['session', 'menu', 'logRoute']], function () {
+Route::group(['prefix' => 'fees', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
     Route::resource('fees_config_master', tblfeesConfigController::class);
     Route::resource('fees_circular_master', feesCircularMasterController::class);
     Route::resource('fees_late_master', tblfeesLateController::class);
@@ -218,7 +218,7 @@ Route::get('payphi', function ($id = null) {
 Route::post('api/', [AJAXController::class, 'getOnlineFees'])->name('get-online-fees-list');
 Route::post('fees/PaidUnpaid', [fees_collect_controller::class, 'PaidUnpaid']);
 Route::post('fees/PaidUnpaidTeacher', [fees_collect_controller::class, 'PaidUnpaidTeacher']);
-Route::group(['prefix' => 'report', 'middleware' => ['session', 'menu', 'logRoute']], function () {
+Route::group(['prefix' => 'report', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
     Route::resource('report_module', 'report\report_module\report_module_controller');
 });
 //online routes

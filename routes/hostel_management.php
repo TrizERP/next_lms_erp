@@ -15,7 +15,7 @@ use App\Http\Controllers\hostel_management\tblhostelRoomAllocationController;
 use Illuminate\Support\Facades\Route;
 
 
-Route::group(['prefix' => 'hostel_management', 'middleware' => ['session', 'menu', 'logRoute']], function() {
+Route::group(['prefix' => 'hostel_management', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function() {
     Route::resource('add_hostel_type_master', hosteltypemasterController::class);
     // Route::get('listhosteltype', 'hostel_management\hosteltypemasterController@listhosteltype')->name('listhosteltype');
     Route::resource('add_room_type_master', room_type_masterController::class);

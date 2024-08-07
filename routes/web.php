@@ -155,7 +155,7 @@ if (isset($_REQUEST['sub_institute_id']) && $_REQUEST['sub_institute_id'] != '')
 }
 
 //PAYROLL SYSTEM
-Route::group([ 'middleware' => ['session', 'menu', 'logRoute']], function () {
+Route::group([ 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
     
     Route::get('/whatsapp-user-details', [WhatsappController::class, 'whatsapp_user_details'])->name('whatsapp_user_details.index');
     Route::get('/whatsapp-user-details/create', [WhatsappController::class, 'whatsappUserDetailsCreate'])->name('whatsapp_user_details.create');
@@ -258,7 +258,7 @@ Route::get('/skip_implementation', [tourController::class, 'skipImplementation']
 Route::get('ajax_SaveDynamicDashboardMenu', [dashboardSettingController::class, 'ajax_SaveDynamicDashboardMenu'])->name('ajax_SaveDynamicDashboardMenu');
 
 // Harshad Start
-Route::group(['prefix' => 'student', 'middleware' => ['session', 'menu', 'logRoute']], function () {
+Route::group(['prefix' => 'student', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
     Route::get('studentresult', [TemplateResult::class, 'index']);
     Route::post('studentresult_show', [TemplateResult::class, 'show_result'])->name('studentresult.show');
     Route::get('result_show/{arr?}', [TemplateResult::class, 'result_show'])->name('result.show');
@@ -266,7 +266,7 @@ Route::group(['prefix' => 'student', 'middleware' => ['session', 'menu', 'logRou
 // Harshad End
 
 
-Route::group(['prefix' => 'school_setup', 'middleware' => ['session', 'menu', 'logRoute']], function () {
+Route::group(['prefix' => 'school_setup', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
     Route::resource('add_school', schoolController::class);
     Route::resource('std_div_map', std_divController::class);
     Route::resource('division_capacity_master', divisionCapacityMasterController::class);
@@ -418,7 +418,7 @@ Route::get('icici_fetch_payment_status', 'fees\online_fees\online_fees_collect_c
 Route::get('hdfc_fetch_payment_status', 'fees\online_fees\online_fees_collect_controller@hdfc_fetch_payment_status');
 Route::get('payphi_fetch_payment_status', 'fees\online_fees\online_fees_collect_controller@payphi_fetch_payment_status');
 
-Route::group(['middleware' => ['session', 'menu', 'logRoute']], function () {
+Route::group(['middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
     Route::resource('leave-type', LeaveTypeController::class);
     Route::resource('holiday', HolidayController::class);
     Route::resource('leave-apply', ApplyLeaveController::class);
