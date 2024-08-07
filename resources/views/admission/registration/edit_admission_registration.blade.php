@@ -240,8 +240,7 @@ $editData = array();
                                 <label>Amount </label>
                                 <input type="text" id='amount' @if(isset($editData['amount'])) value="{{$editData['amount']}}" @endif  name="amount" class="form-control">
                             </div>
-                            <!-- CN kishor remove roll no and blood group 07-08-2024  -->
-                            @if(session()->get('sub_institute_id')!=248)
+
                             <div class="col-md-3 form-group">
                                 <label>Blood Group</label>
                                 <select id='blood_group' name="blood_group" class="form-control">
@@ -253,8 +252,7 @@ $editData = array();
                                     @endif
                                 </select>
                             </div>
-                            @endif
-                            <!-- end CN kishor remove roll no and blood group 07-08-2024  -->
+                            
                             <div class="col-md-3 form-group">
                                 <label>Payment Mode </label>
                                 <select id='payment_mode' name="payment_mode" onchange="displayBank(this.value);" class="form-control" >
