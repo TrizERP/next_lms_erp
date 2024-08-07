@@ -41,9 +41,9 @@ class ApplyLeaveController extends Controller
 
         try {
             $res = session()->get('data');
-            $res['departments'] = HrmsDepartment::where('status', true)->pluck('department', 'id');
+            $res['departments'] = HrmsDepartment::where('sub_institute_id',$sub_institute_id)->where('status', 1)->pluck('department', 'id');
             $res['users'] = tbluserModel::where('sub_institute_id', $sub_institute_id)->where('status',1)->get();   // 23-04-24 by uma
-            //echo("<pre>");print_r($users);exit;
+            // echo("<pre>");print_r(session()->all());exit;
             $res['leave_types'] = HrmsLeaveType::where('sub_institute_id', $sub_institute_id)->where('status',1)->orderBy('sort_order')->get();
             
             $res['leaveHistory'] = DB::table('hrms_emp_leaves as hel')->selectRaw("hel.*, hlt.leave_type as leave_type_name")
@@ -55,7 +55,7 @@ class ApplyLeaveController extends Controller
             // ->whereYear('hel.from_date', $syear)
             ->where('hel.from_date','>=',$syear.'-04-01')
             ->where('hel.to_date','<=',($syear+1).'-03-31')
-            ->orderBy('hel.id','DESC')
+            ->orderBy('hel.from_date')
             ->get()->toArray();
 
             $res['sandwichLeave'] = DB::table('general_data')->where('sub_institute_id',$sub_institute_id)->where('fieldname', 'sandwich_leave')->first();

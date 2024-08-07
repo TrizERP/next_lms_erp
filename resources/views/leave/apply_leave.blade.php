@@ -45,11 +45,15 @@
                             <div class="form-group">
                                 @php 
                                     $user_profile_name = DB::table('tbluser as u')
-                                    ->selectRaw("u.user_profile_id, um.name as user_profile_name")
+                                    ->selectRaw("u.user_profile_id, um.name as user_profile_name,u.department_id,u.id as user_id")
                                     ->join('tbluserprofilemaster as um', 'um.id', '=', 'u.user_profile_id')
                                     ->where('u.id', session()->get('user_id'))
                                     ->where('u.status',1)
                                     ->first();
+
+                                    $user_id = $user_profile_name->user_id;
+                                    $department_id = $user_profile_name->department_id;
+                                    $year = session()->get('syear');
                                 @endphp
                                 <label for="">Type Leave</label>
                                 <select name="type_leave" id="type_leave" class="form-control">
@@ -129,7 +133,7 @@
             <!-- div for apply end  -->
             <!-- apply history start  -->
                 <div class="col-md-8">
-                    <h4>My Leave History</h4>
+                    <h4><a onclick="openSummary('{{$user_id}}','{{$department_id}}','{{$year}}')"><u>My Leave History</u></a></h4>
                     <!-- table start  -->
                     <div class="table-responsive mt-20 tz-report-table">
                         <table id="example" class="table table-striped" style="width:100%">
@@ -199,8 +203,8 @@
                 ordering: false,
                 select: true,
                 lengthMenu: [
-                    [100, 500, 1000, -1],
-                    ['100', '500', '1000', 'Show All']
+                    [50, 100, 500, 1000, -1],
+                    ['50', '100', '500', '1000', 'Show All']
                 ],
                 dom: 'Bfrtip',
                 buttons: [
@@ -517,6 +521,9 @@
         }
         
     });
+    function openSummary(user_id,dep_id,year) {
+        window.open('leave-summary-report/create?department_id=' + dep_id + '&emp_id=' + user_id + '&years=' + year, '_blank', 'scrollbars=yes,resizable=no,status=no,location=no,toolbar=no,menubar=no,width=1200,height=1200,left=100,top=100');
+    }
 
 </script>
 @include('includes.footer')

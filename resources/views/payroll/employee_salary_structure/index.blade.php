@@ -101,30 +101,30 @@
                                             @if(($payrollType->payroll_name == 'PF' || $payrollType->payroll_name == 'PT') && Session::get('sub_institute_id') != '195')
                                                 
                                                 <td>
-                                                    <input type="hidden" name="emp[{{$value['id']}}][{{$payrollType->id}}][]"
-                                                       value="{{$payrollType->id}}">
-                                                       <span id="all_values" style="display:none">{{$data['employeeSalaryStructures'][$value['id']][$payrollType->id] ?? 0}}</span>
-                                                       <input type="text" disabled
-                                                           value="{{$data['employeeSalaryStructures'][$value['id']][$payrollType->id] ?? 0}}">
-                                                    <input type="hidden" name="emp[{{$value['id']}}][{{$payrollType->id}}][]"
-                                                           value="{{$data['employeeSalaryStructures'][$value['id']][$payrollType->id] ?? 0}}">
-                                                    <input type="hidden" name="emp[{{$value['id']}}][{{$payrollType->id}}][]"
-                                                           value="{{$payrollType->payroll_name}}">
-                                                    <input type="hidden" name="emp[{{$value['id']}}][{{$payrollType->id}}][]"
-                                                           value="{{$payrollType->payroll_type}}">
+                                                    <input type="hidden" name="emp[{{$value['id']}}][{{$payrollType->id}}][]" value="{{$payrollType->id}}">
+
+                                                    <span id="all_values" style="display:none">{{$data['employeeSalaryStructures'][$value['id']][$payrollType->id] ?? 0}}</span>
+
+                                                    <input type="text" disabled value="{{$data['employeeSalaryStructures'][$value['id']][$payrollType->id] ?? 0}}" class="form-control" style="width:80px !important">
+
+                                                    <input type="hidden" name="emp[{{$value['id']}}][{{$payrollType->id}}][]" value="{{$data['employeeSalaryStructures'][$value['id']][$payrollType->id] ?? 0}}">
+
+                                                    <input type="hidden" name="emp[{{$value['id']}}][{{$payrollType->id}}][]" value="{{$payrollType->payroll_name}}">
+
+                                                    <input type="hidden" name="emp[{{$value['id']}}][{{$payrollType->id}}][]" value="{{$payrollType->payroll_type}}">
                                                 </td>
                                             @else
                                                 
                                                 <td>
-                                                    <input type="hidden" name="emp[{{$value['id']}}][{{$payrollType->id}}][]"
-                                                       value="{{$payrollType->id}}">
-                                                       <span id="all_values" style="display:none">{{$data['employeeSalaryStructures'][$value['id']][$payrollType->id] ?? 0}}</span>
+                                                    <input type="hidden" name="emp[{{$value['id']}}][{{$payrollType->id}}][]" value="{{$payrollType->id}}">
 
-                                                       <input type="text" name="emp[{{$value['id']}}][{{$payrollType->id}}][]"
-                                                           value="{{$data['employeeSalaryStructures'][$value['id']][$payrollType->id] ?? 0}}">
-                                                    <input type="hidden" name="emp[{{$value['id']}}][{{$payrollType->id}}][]"
-                                                           value="{{$payrollType->payroll_name}}"> <input type="hidden" name="emp[{{$value['id']}}][{{$payrollType->id}}][]"
-                                                           value="{{$payrollType->payroll_type}}">
+                                                    <span id="all_values" style="display:none">{{$data['employeeSalaryStructures'][$value['id']][$payrollType->id] ?? 0}}</span>
+
+                                                    <input type="text" name="emp[{{$value['id']}}][{{$payrollType->id}}][]" value="{{$data['employeeSalaryStructures'][$value['id']][$payrollType->id] ?? 0}}" class="form-control" style="width:80px !important">
+
+                                                    <input type="hidden" name="emp[{{$value['id']}}][{{$payrollType->id}}][]" value="{{$payrollType->payroll_name}}"> 
+
+                                                    <input type="hidden" name="emp[{{$value['id']}}][{{$payrollType->id}}][]" value="{{$payrollType->payroll_type}}">
                                                 </td>
                                             @endif
 
