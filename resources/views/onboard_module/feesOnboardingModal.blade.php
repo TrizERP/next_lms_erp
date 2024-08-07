@@ -213,18 +213,22 @@
                                         <label>Starting Month</label>
                                         <select name="start_month" id="start_month" class="form-control" required>
                                             <option value="">--Select--</option>
-                                        @foreach ($data['map_year']->data->ddMonth as $id => $arr) 
-                                            <option value='{{$id}}'>{{$arr}}</option>";
-                                            @endforeach
+                                            @if(!empty($data['map_year']))
+                                             @foreach ($data['map_year']->data->ddMonth as $id => $arr) 
+                                             <option value='{{$id}}'>{{$arr}}</option>";
+                                             @endforeach
+                                             @endif
                                         </select>
                                     </div>
                                     <div class="col-md-4 form-group ml-0">
                                         <label>Ending Month</label>
                                         <select name="end_month" id="end_month" class="form-control" required>
                                             <option value="">--Select--</option>
-                                        @foreach ($data['map_year']->data->ddMonth as $id => $arr) 
-                                                <option value='{{$id}}'>{{$arr}}</option>
-                                        @endforeach
+                                            @if(!empty($data['map_year']))
+                                             @foreach ($data['map_year']->data->ddMonth as $id => $arr) 
+                                                      <option value='{{$id}}'>{{$arr}}</option>
+                                             @endforeach
+                                             @endif
                                         </select>
                                     </div>
                                     <div class="col-md-12 form-group ml-0">
@@ -240,9 +244,11 @@
                                   <label>Fees Title</label>
                                   <select name="fees_title_id" id="fees_title_id" class="form-control van">
                                       <option value="">--Select--</option>
-                                     @foreach ($data['feesTitle']->data->ddTtitle as $id => $arr) 
-                                          <option value='{{$id}}'>{{$arr}}</option>
-                                    @endforeach
+                                      @if(!empty($data['feesTitle']))
+                                       @foreach ($data['feesTitle']->data->ddTtitle as $id => $arr) 
+                                             <option value='{{$id}}'>{{$arr}}</option>
+                                       @endforeach
+                                    @endif
                                   </select>
                               </div>
                               <div class="col-md-3 form-group">
@@ -395,6 +401,7 @@
                                                    <th style="text-align: left;">Header</th>
                                                 </tr>
                                           </thead>
+                                          @if(!empty($data['feesMonthHeader']))
                                           @foreach($data['feesMonthHeader']->data->ddMonth as $key => $value)
                                                 @php
                                                    $existingHeader = null;
@@ -412,6 +419,7 @@
                                                    </td>
                                                 </tr>
                                           @endforeach
+                                          @endif
                                        </table>
                                     </div>
                               </div>
@@ -485,9 +493,11 @@
                             <div class="col-md-4 form-group">
                                 <label>Fees Head</label>
                                 <select name="fees_head_id[]" id="fees_head_id" class="form-control" required multiple>
+                                @if(!empty($data['feesReceiptBook']))
                                     @foreach($data['feesReceiptBook']->feeHeadList as $key => $value)
                                         <option value="{{$value->id}}">{{$value->display_name}}</option>
                                     @endforeach
+                                 @endif
                                 </select>
                             </div>
                             <div class="col-md-4 form-group" id="imagelogo">
@@ -520,12 +530,14 @@
                             </div>
 
                         </div>
+                        @if(!empty($data['feesBreakoff']))
                         @foreach ($data['feesBreakoff']->data->ddMonth as $id => $val)
                            <div class="col-md-3 form-group month-option">
                               <input class="monthclass breakoffmonths" name="month[{{$id}}]" id="breakoffmonths{{$id}}" value="{{$id}}" type="checkbox">
                               <label>{{$val}}</label>
                            </div>
                         @endforeach
+                        @endif
 
                         <div class="col-md-12 form-group">
                           <center>
@@ -547,10 +559,12 @@
                                     <label for="email">Module :</label>
                                     <select name="tablename" id="table" class="form-control" required>
                                         <option value=""> Select Module Name</option>
+                                @if(!empty($data['importdata']))
                                         @foreach($data['importData'] as $value)
                                             @if($value->is_customized_table == 1)<option
                                                 value="{{$value->table_name}}">{{ $value->display_table_name }}</option>@endif
                                         @endforeach
+                                 @endif
                                     </select>
                                 </div>
                                 @if ($errors->has('tablename'))
