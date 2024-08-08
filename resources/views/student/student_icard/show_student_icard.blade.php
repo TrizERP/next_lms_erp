@@ -116,6 +116,9 @@
         @endphp
         <?php
             $file_name = "icard/templates/" . $data['template'] . ".html";
+            if(!file_exists($file_name)){
+                die("Selected Icard Template is not in proper format .");
+            }
             $fin = fopen($file_name, 'r') or die("Selected Icard Template is not in proper format .");
             $string = fread($fin, filesize($file_name));
             fclose($fin);
@@ -177,6 +180,20 @@
                     $str = str_replace(htmlspecialchars("<<school_image>>"), "/storage/school/" . $value['school_image'], $str);
                     $str = str_replace(htmlspecialchars("<<school_address>>"), $value['school_address'], $str);
                     $str = str_replace(htmlspecialchars("<<years>>"), session()->get('syear') . "-" . (session()->get('syear') + 1), $str);
+
+                    // cn card 07-08-2024
+                    if(!empty($data['receiptBook'])){
+                        $receiptBook = $data['receiptBook'];
+                        $logoSrc = "https://".$_SERVER['HTTP_HOST']."/storage/fees/".$receiptBook->receipt_logo;
+                        $schoolLogo = '<img src="'.$logoSrc.'" alt="SCHOOL LOGO">';
+
+                        $str = str_replace(htmlspecialchars("<<receipt_logo>>"),$schoolLogo, $str);
+                        $str = str_replace(htmlspecialchars("<<receipt_line_1>>"), $receiptBook->receipt_line_1, $str);
+                        $str = str_replace(htmlspecialchars("<<receipt_line_2>>"),$receiptBook->receipt_line_2, $str);
+                        $str = str_replace(htmlspecialchars("<<receipt_line_3>>"),$receiptBook->receipt_line_3, $str);
+                        $str = str_replace(htmlspecialchars("<<receipt_line_4>>"),$receiptBook->receipt_line_4, $str);
+                    }
+                    // end 07-08-2024
                 ?>
                 <div class="item">
                     <?php echo $str; ?>

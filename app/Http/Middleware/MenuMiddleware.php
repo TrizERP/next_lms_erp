@@ -80,7 +80,7 @@ class MenuMiddleware
 //DB::enableQueryLog();
                 $rightsQuery = DB::table('tbluser as u')
                     ->leftJoin('tblindividual_rights as i', function ($join) {
-                        $join->whereRaw("u.id = i.user_id AND u.sub_institute_id = i.sub_institute_id");
+                        $join->whereRaw("u.id = i.user_id AND u.sub_institute_id = i.sub_institute_id AND u.user_profile_id=i.profile_id");
                     })->leftJoin('tblgroupwise_rights as g', function ($join) {
                         $join->whereRaw("u.user_profile_id = g.profile_id AND u.sub_institute_id = g.sub_institute_id");
                     })->join('tblmenumaster as m', function ($join) use ($sub_institute_id) {

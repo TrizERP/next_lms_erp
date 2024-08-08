@@ -78,6 +78,9 @@
                                             <option value="template_2">Template 2</option>
                                             <option value="template_3">Template 3</option>
                                             <option value="template_4">Template 4</option>
+                                            @if($data['sub_institute_id']==257)
+                                            <option value="cn_card">CN Card</option>
+                                            @endif
                                         </select>
                                     </div>
                     <div class="col-md-3 form-group">
@@ -101,7 +104,7 @@
                                         <th>{{App\Helpers\get_string('grno','request')}}</th>
                                         <th>{{App\Helpers\get_string('studentname','request')}}</th>
                                         <th>{{App\Helpers\get_string('standard','request')}}</th>
-                                        <th>{{App\Helpers\get_string('division','request')}}</th>
+                                        <th class="text-center">{{App\Helpers\get_string('division','request')}}</th>
                                     </tr>
                                 </thead>
                                 <tbody>

@@ -26,7 +26,7 @@ use App\Http\Controllers\inventory\requisitionApprovedController;
 use App\Http\Controllers\inventory\requisitionController;
 use Illuminate\Support\Facades\Route;
 
-Route::group(['prefix' => 'inventory', 'middleware' => ['session', 'menu', 'logRoute']], function() {
+Route::group(['prefix' => 'inventory', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function() {
     Route::resource('add_inventory_master_setup', inventory_master_setupController::class);
     Route::resource('add_inventory_item_category_master', inventory_item_category_masterController::class, ['parameters' => [
             'add_inventory_item_category_master' => 'item_category'

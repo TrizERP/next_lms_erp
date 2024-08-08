@@ -428,7 +428,7 @@ datalist {
                                             <label>{{ App\Helpers\get_string('cast','request')}}<i class="mdi mdi-lead-pencil"></i></label>
                                             <input type="text" id='subcast' value="{{ $student_data->subcast }}" name="subcast" class="form-control">
                                         </div>
-                                        @endif
+                                       
                                         <div class="col-md-4 form-group">
                                             <label>Roll Number</label>
                                             <input type="text" id='roll_no' value="{{ $student_data->roll_no }}" name="roll_no" class="form-control">
@@ -445,7 +445,7 @@ datalist {
                                                 @endif                                                  
                                             </select>
                                         </div>
-                                        @if(session()->get('sub_institute_id')!=257)
+                                       
                                         <div class="col-md-4 form-group">
                                             <label>Aadhar Number</label>
                                             <input type="text" id='adharnumber' value="{{ $student_data->adharnumber }}"  name="adharnumber" class="form-control" onblur="AadharValidate();">

@@ -252,7 +252,7 @@ $editData = array();
                                     @endif
                                 </select>
                             </div>
-
+                            
                             <div class="col-md-3 form-group">
                                 <label>Payment Mode </label>
                                 <select id='payment_mode' name="payment_mode" onchange="displayBank(this.value);" class="form-control" >
