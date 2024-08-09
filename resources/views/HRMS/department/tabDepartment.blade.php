@@ -104,12 +104,12 @@ $taskType = ['Daily Task','Weekly Task','Monthly Task','Yearly Task'];
                      <!-- add KRA -->
                      <div class="col-md-4  form-group">
                         <label for="task">Add KRA</label>
-                        <input type="text" name="arr[0][KRA]" id="KRA0" class="form-control" data-val="0" required autocomplete="off" >
+                        <input type="text" name="arr[0][KRA]" id="KRA0" class="form-control" data-val="0" autocomplete="off" >
                      </div>
                      <!--add KPA -->
                      <div class="col-md-4  form-group">
                         <label for="task">Add KPA</label>
-                        <input type="text" name="arr[0][KPA]" id="KPA0" class="form-control" data-val="0" required autocomplete="off" >
+                        <input type="text" name="arr[0][KPA]" id="KPA0" class="form-control" data-val="0" autocomplete="off" >
                      </div>
                      <!-- add Type -->
                      <div class="col-md-4  form-group">

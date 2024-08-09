@@ -106,7 +106,7 @@ class studentIcardController extends Controller
             ->where('syear', $syear)
             ->where('sub_institute_id', $sub_institute_id)
             ->groupByRaw('receipt_line_1,receipt_line_2,receipt_line_3,receipt_line_4,receipt_prefix,receipt_logo,last_receipt_number')
-            ->orderBy('sort_order')->latest('id')->first();
+            ->orderBy('sort_order')->first();
 
         $data = getStudents($student_ids);
         $res['status_code'] = 1;

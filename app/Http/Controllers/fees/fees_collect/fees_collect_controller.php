@@ -205,15 +205,18 @@ class fees_collect_controller extends Controller
             $bk_stu_id = $arr->id;
             // get paid and unpiad history of student by his/her id
             $paid_result = $this->getBk($request, $bk_stu_id);
-
+            // echo "<pre>";print_r($paid_result);
             if(isset($paid_result) && !empty($paid_result)){
                 $pd_stu_id = $paid_result['stu_data']['student_id'];
                 // $remain = $paid_result['final_fee']['Total'];
-                $remain = $paid_result['stu_data']['pending']; // 2024-07-26
-                $previous = isset($paid_result['final_fee']['Previous Fees']) ? $paid_result['final_fee']['Previous Fees'] : 0;
+                $remain = $paid_result['stu_data']['pending'] ?? 0; // 2024-07-26
+                $previous = $paid_result['stu_data']['previous_fees'] ?? 0;
                 if ($bk_stu_id == $pd_stu_id) {
-
-                    if ($previous < 0) {
+                    
+                    if ($remain > 0 && $sub_institute_id==254){
+                        $arr->bkoff = ($remain + $previous);
+                    }
+                    else if ($previous < 0) {
                         $arr->bkoff = ($remain - $previous);
                     }else if($previous > 0){
                         $arr->bkoff = ($remain - $previous);                    
@@ -227,7 +230,7 @@ class fees_collect_controller extends Controller
                 }
             }
         }
-        
+        // exit;
         if (empty($result)) {
 
             // if student details are missing then this code will give missing detail in message
@@ -313,7 +316,7 @@ class fees_collect_controller extends Controller
         $responce_arr['grade_id'] = $request->grade ?? '';
         $responce_arr['standard_id'] = $request->standard ?? '';
         $responce_arr['division_id'] = $request->division ?? '';
-            // echo "<pre>";print_r($responce_arr);exit;
+
         return is_mobile($type, "fees/fees_collect/show", $responce_arr, "view");
     }
 
@@ -1976,9 +1979,8 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
         $reg_bk_off = FeeBreackoff($stu_arr, $request->standard,$syear,$sub_institute_id); //for current year
 
         if($sub_institute_id != 48 && $sub_institute_id != 61){//Previous Year Fees Not Display in Current Year - Rajesh 01-07-2024
-            $reg_bk_off2 = FeeBreackoff($stu_arr, $request->standard,$last_syear,$sub_institute_id); // for previous year
+            $reg_bk_off2 = FeeBreackoff($stu_arr, null,$last_syear,$sub_institute_id); // for previous 
         }
-
         $reg_bk_off_count = is_array($reg_bk_off) ? count($reg_bk_off) : $reg_bk_off->count();
 
         if (count($reg_bk_off) == 0) {
@@ -2178,6 +2180,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             "father_name" => $reg_bk_off[0]->father_name,
             "mother_name" => $reg_bk_off[0]->mother_name,
             "pending" => $pending_fees,
+            'previous_fees'=>0,
             "mobile" => $reg_bk_off[0]->mobile,
             "uniqueid" => $reg_bk_off[0]->uniqueid,
             "std_id" => $reg_bk_off[0]->standard_id,
@@ -2282,6 +2285,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             $previous = array_sum($full_bk2);
             if($previous > 0){
             $full_bk['Previous Fees'] = $previous;
+            $stu_detail['previous_fees'] = $previous;
             $full_bk_new['Previous Fees'] = array(
                 'title' => 'Previous Fees',
                 'amount' => $previous,

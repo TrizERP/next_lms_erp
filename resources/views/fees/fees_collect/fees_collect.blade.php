@@ -72,6 +72,17 @@
                                         $paidFees += $arr['paid'];
                                         } 
 								@endphp
+								<!-- hills previous pending fees Previous Year Fees Not Display in Current Year - Rajesh 01-07-2024  -->
+								@if(!in_array(session()->get('sub_institute_id'),[48,61]) && $data['stu_data']['previous_fees'] > 0)
+								<tr>
+									<td>Previous Fees</td>
+									<td>@php $bk[]= $data['stu_data']['previous_fees']; echo $data['stu_data']['previous_fees'] @endphp</td>
+									<td>0</td>
+									<td>0</td>
+									<td>@php $remain[] = $data['stu_data']['previous_fees']; echo $data['stu_data']['previous_fees'] @endphp</td>
+								</tr>
+								@endif
+								<!-- end previous fees  -->
 								<tr>
 									<td>Total</td>
 									@if(session()->get('sub_institute_id')==61)
@@ -91,6 +102,7 @@
 
 							</table>
 						</div>
+						
 						<div class="row">
 							<div class="col-md-12 text-center mt-4">
 								<button type="button" class="btn btn-info" data-toggle="modal" id="add_data" onclick="javascript:add_data('{{ $data['stu_data']['enrollment']}}',{{$data['stu_data']['student_id']}});">
@@ -172,7 +184,12 @@
 										<tr>
 											<td style="color: red;">Pending Fees</td>
 											<td style="color: red;">
-												{{ $data['stu_data']['pending']; }}
+											<!-- for hills  previous fees  -->
+											@if(!in_array(session()->get('sub_institute_id'),[48,61]) && $data['stu_data']['previous_fees'] > 0)
+											 	{{($data['stu_data']['previous_fees'] + $data['stu_data']['pending']) }}
+											@else
+												{{$data['stu_data']['pending']}}
+											@endif
 											</td>
 										</tr>
 										@if (Session::get('sub_institute_id') == '181')

@@ -67,7 +67,7 @@
                             }
                         @endphp
                         <div class="card">
-                            <form method="POST" action="show_student_icard">
+                            <form method="POST" action="show_student_icard" onsubmit="validateForm()">
                                 @csrf
                                 <div class="row">
                                     <div class="col-md-4 form-group">
@@ -79,17 +79,18 @@
                                             <option value="template_3">Template 3</option>
                                             <option value="template_4">Template 4</option>
                                             @if($data['sub_institute_id']==257)
-                                            <option value="cn_card">CN Card</option>
+                                            <option value="cn_card_front">CN Card Front</option>
+                                            <option value="cn_card_back">CN Card Back</option>
                                             @endif
                                         </select>
                                     </div>
                     <div class="col-md-3 form-group">
                         <label>Card Per Row</label>
-                        <input type="text" id="row" name="row" required="required" class="form-control">
+                        <input type="text" id="row" name="row" value="1" required="required" class="form-control">
                     </div>
                     <div class="col-md-3 form-group">
                         <label>Card Per Column</label>
-                        <input type="text" required="required" id="column" name="column" class="form-control">
+                        <input type="text" value="1" required="required" id="column" name="column" class="form-control">
                     </div>
                     <div class="col-md-2 form-group">
                         <label>View Templates</label>
@@ -104,7 +105,7 @@
                                         <th>{{App\Helpers\get_string('grno','request')}}</th>
                                         <th>{{App\Helpers\get_string('studentname','request')}}</th>
                                         <th>{{App\Helpers\get_string('standard','request')}}</th>
-                                        <th class="text-center">{{App\Helpers\get_string('division','request')}}</th>
+                                        <th class="text-left">{{App\Helpers\get_string('division','request')}}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -163,6 +164,7 @@
              }
          }
     }
+</script>
 </script>
 @include('includes.footer')
 @endsection
