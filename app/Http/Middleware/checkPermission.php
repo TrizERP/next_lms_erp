@@ -28,10 +28,10 @@ class checkPermission
             $menu_id = session()->get('right_menu_id');
             $permissions = [];
             
-            $menu = DB::table('tblmenumaster')->where('link', $current_url)->first();
-            if (!empty($menu)) {
-                $menu_id = $menu->id;
-            }
+            // $menu = DB::table('tblmenumaster')->where('link', $current_url)->first();
+            // if (!empty($menu)) {
+            //     $menu_id = $menu->id;
+            // }
             // echo "<pre>";print_r($menu_id);exit;
             $individual = DB::table('tblindividual_rights')->where('menu_id', $menu_id)
                 ->where('profile_id', $userProfileId)
@@ -57,9 +57,9 @@ class checkPermission
 
             // check methods 
             
-            if (empty($permissions)) {
-                throw new AuthorizationException('You do not have the necessary permissions to access this resource.');
-            }
+            // if (empty($permissions)) {
+            //     throw new AuthorizationException('You do not have the necessary permissions to access this resource.');
+            // }
 
             if ($request->get('_method')=="PUT" && $can_edit != 1) {
                 throw new AuthorizationException('You do not have permission to edit this resource.');
@@ -67,12 +67,12 @@ class checkPermission
                 throw new AuthorizationException('You do not have permission to add this resource.');
             } elseif ($request->get('_method')=="DELETE" && $can_delete != 1) {
                 throw new AuthorizationException('You do not have permission to delete this resource.');
-            } else {
-                if ($can_view != 1) {
-                    throw new AuthorizationException('You do not have permission to view this resource.');
-                }
-            }
-          
+            } 
+            // else {
+            //     if ($can_view != 1) {
+            //         throw new AuthorizationException('You do not have permission to view this resource.');
+            //     }
+            // }
         }
 
         return $next($request);
