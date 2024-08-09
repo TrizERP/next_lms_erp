@@ -68,11 +68,11 @@ class checkPermission
             } elseif ($request->get('_method')=="DELETE" && $can_delete != 1) {
                 throw new AuthorizationException('You do not have permission to delete this resource.');
             } 
-            // else {
-            //     if ($can_view != 1) {
-            //         throw new AuthorizationException('You do not have permission to view this resource.');
-            //     }
-            // }
+            else {
+                if ($can_view != 1) {
+                    throw new AuthorizationException('You do not have permission to view this resource.');
+                }
+            }
         }
 
         return $next($request);

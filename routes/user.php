@@ -11,22 +11,15 @@ use App\Http\Controllers\user\tbluserProfileWiseMenuController;
 use App\Http\Controllers\user\tblmobileAppMenuRightsController;
 use Illuminate\Support\Facades\Route;
 
-
-Route::group(['prefix' => 'user', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
-    Route::resource('add_user_profile', tbluserprofilemasterController::class);
-    Route::resource('add_user', tbluserController::class);
+// all persmissions
+Route::group(['prefix' => 'user', 'middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::resource('add_groupwise_rights', tblgroupwise_rightsController::class);
     Route::resource('add_mobileapp_menu_rights', mobileapp_menu_rightsController::class);
     Route::resource('add_user_past_education', tbluserPastEducationController::class);
-    Route::resource('user_report', userReportController::Class);
     Route::resource('user_profile_wise_menu_rights', tbluserProfileWiseMenuController::class);
     Route::get('mobile_app_menu_rights', [tblmobileAppMenuRightsController::class, 'create'])->name("mobile_app_menu_rights");
     Route::post('mobile_app_menu_rights/store', [tblmobileAppMenuRightsController::class, 'store'])->name("mobile_app_menu_rights.store");
     Route::post('mobile_app_menu_rights/update', [tblmobileAppMenuRightsController::class, 'store'])->name("mobile_app_menu_rights.update");
-
-    Route::post('show_user_report', [userReportController::class, 'searchUser'])->name("show_user_report");
-    Route::post('ajax_userProfile_Data_Create',
-        [tblgroupwise_rightsController::class, 'ajax_userProfile_Data_Create'])->name('ajax_userProfile_Data_Create');
     Route::get('ajax_groupwiserights',
         [tblgroupwise_rightsController::class, 'displayGroupwiseRights'])->name('ajax_groupwiserights');
     Route::get('ajax_pasteducation',
@@ -41,7 +34,15 @@ Route::group(['prefix' => 'user', 'middleware' => ['session', 'menu', 'logRoute'
     Route::get('ajax_mobile_app_menu_rights',
         [tblmobileAppMenuRightsController::class, 'displayMobileAppMenuRights'])->name('ajax_mobile_app_menu_rights');
 
-        Route::post('user_document/{id}',[tbluserController::class, 'addUserDocument'])->name('user_document');
+});
+// chek permission
+Route::group(['prefix' => 'user', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
+    Route::resource('add_user_profile', tbluserprofilemasterController::class);
+    Route::post('ajax_userProfile_Data_Create',[tblgroupwise_rightsController::class, 'ajax_userProfile_Data_Create'])->name('ajax_userProfile_Data_Create');
+    Route::resource('add_user', tbluserController::class);
+    Route::post('show_user_report', [userReportController::class, 'searchUser'])->name("show_user_report");
+    Route::resource('user_report', userReportController::Class);
+    Route::post('user_document/{id}',[tbluserController::class, 'addUserDocument'])->name('user_document');
 });
 
 Route::post('/teacherListAPI', [tbluserController::class, 'teacherListAPI']);
