@@ -137,6 +137,8 @@
                             <input type="hidden" name="student_id" value="<?php echo $data['stu_data']['student_id']; ?>">
                             <input type="hidden" name="std_div" value="<?php echo $data['stu_data']['stddiv']; ?>">
                             <input type="hidden" name="full_name" value="<?php echo $data['stu_data']['name']; ?>">
+                            <!-- // 2024-08-08 by uma -->
+                            <input type="hidden" name="student_batch" value="{{ $data['stu_data']['student_batch']; }}">
 
                             <div class="col-md-12" style="border-top: 2px solid black;">
                                 <div style="display:flex; flex-wrap:wrap; justify-content: space-between;">
