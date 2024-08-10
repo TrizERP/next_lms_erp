@@ -257,7 +257,7 @@
                         $generalTotal = 0;
                         if(isset($data['religion'])){  $mreligionTotals =  array_fill(0, count($data['religion']), 0); }
                         if(isset($data['religion'])){  $freligionTotals =  array_fill(0, count($data['religion']), 0); }
-                        if(isset($data['strength'])){  $strengthTotals = array_fill(0, count($data['strength']), 0); }
+                        if(isset($data['strength'])){  $strengthTotals = array(); }
                         if(isset($data['cast'])){ $mcastTotals = array_fill(0, count($data['cast']), 0); }
                         if(isset($data['cast'])){ $fcastTotals = array_fill(0, count($data['cast']), 0); }
                         if(isset($data['quota'])){ $mquotaTotals = array_fill(0, count($data['quota']), 0); }
@@ -314,7 +314,10 @@
                                                 $genderIndex = 0;
                                             }
                                         }
-                                        $strengthTotals[$genderIndex] += $genderTotal;
+                                        if(!isset($strengthTotals[$gender])){
+                                            $strengthTotals[$gender] = 0;
+                                        }
+                                        $strengthTotals[$gender] += $genderTotal;
                                     @endphp
                                     <td>{{$genderTotal}}</td>
                                 @endforeach
