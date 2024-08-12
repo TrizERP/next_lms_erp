@@ -470,6 +470,9 @@ Route::group(['middleware' => ['session', 'menu', 'logRoute','check_permissions'
 });
 
 // no permission check 
+Route::group(['middleware' => ['session', 'menu', 'logRoute']], function () {
+    Route::get('setup-institute-details', [dashboardController::class, 'setup_details'])->name('setup-institute-details');
+});
 Route::group(['prefix' => 'school_setup', 'middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::resource('change_password', changePasswordController::class);
     Route::resource('dashboard_setting', dashboardSettingController::class);
