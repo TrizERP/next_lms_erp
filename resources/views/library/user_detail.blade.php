@@ -32,9 +32,14 @@
     <div class="form-group">
         <label for="">Item Code</label>
         <select name="item_codes" id="item_codes" class="form-control" onchange="checkIssue()" required>
-        @if(count($item_codes)==1)
+        @if(count($item_codes)==1 && session()->get('sub_institute_id')==254)
             @foreach($item_codes as $key=>$value)
                 <option value="{{$value->id}}" selected>{{$value->item_code}}</option>
+            @endforeach
+        @else
+            <option value=''>Select Item Code</option>
+            @foreach($item_codes as $key=>$value)
+                <option value="{{$value->id}}">{{$value->item_code}}</option>
             @endforeach
         @endif
         </select>
@@ -89,6 +94,7 @@
         var book_id =$('#bookId').val();
         $('#library_book_id').empty();
         $('#library_book_id').val(book_id);
+
         var selectedDate = $('#issue_date').val();
         
         get_date(selectedDate);
@@ -139,8 +145,13 @@
         var student_gr = $('#enroll_no').val();        
         // alert(book_id);
         var item_code = $('#item_codes').val();
+        @if(session()->get('sub_institute_id')==254)
+         var urls = '/check_issue?book_id='+book_id;
+        @else
+            var urls = '/check_issue?book_id='+book_id+'&item_code='+item_code;
+        @endif
         $.ajax({
-            url : '/check_issue?book_id='+book_id,
+            url : urls,
             type:'GET',
             success : function (result){
                 console.log(result);

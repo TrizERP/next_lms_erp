@@ -29,10 +29,10 @@ class BookController extends Controller
         $subjects = LibraryBook::groupBy('subject')->pluck('subject', 'id');
         $publisher_names = LibraryBook::groupBy('publisher_name')->pluck('publisher_name', 'id');
         $author_names = LibraryBook::groupBy('author_name')->pluck('author_name', 'id');
+        $sub_institute_id = session()->get('sub_institute_id');
         
         // ->with('items')
         if ($request->ajax()) {
-            $sub_institute_id = session()->get('sub_institute_id');
             
             $data = LibraryBook::where('sub_institute_id', $sub_institute_id)
             ->when(request('subject'),function($q){
@@ -86,7 +86,18 @@ class BookController extends Controller
                 ->rawColumns(['checkbox', 'image','item_codes', 'action'])
                 ->make(true);
         }
-        return view('library.books',compact('subjects','publisher_names','author_names'));
+        $lastItem = LibraryItem::where('sub_institute_id',$sub_institute_id)->where('item_code','like','%L%')->orderBy('id', 'desc')->first();
+        if ($lastItem) {
+            // Extract the numeric part of the item_code and increment it
+            $lastItemCode = substr($lastItem->item_code, 1); // Remove the 'L' prefix
+            $nextItemCode = (int)$lastItemCode + 1;
+            $nextItemCode = str_pad($nextItemCode, 5, '0', STR_PAD_LEFT); // Ensure it's 5 digits
+            $nextItemCode = 'L' . $nextItemCode;
+        }else{
+            $nextItemCode = "L000001";
+        }
+       
+        return view('library.books',compact('subjects','publisher_names','author_names','nextItemCode'));
     }
 
     public function generateBarcode(Request $request, $id)
@@ -164,31 +175,37 @@ class BookController extends Controller
                 $createBook->file_att = $filepath ? $filename : '';
             }
             if ($createBook->save()) {
-
-                $itemCount = LibraryItem::where(['book_id' => $createBook->id, 'sub_institute_id' => $sub_institute_id])->get()->count();
-                if ($request->no_of_items < $itemCount) {
-                    LibraryItem::where(['book_id' => $createBook->id, 'sub_institute_id' => $sub_institute_id])->where('item_code', '<', $request->no_of_items)->delete();
-                }
-                if($request->no_of_items!=0){
-                    for ($i = 1; $i <= $request->no_of_items; $i++) {
-                        $lastItem = LibraryItem::orderBy('id', 'desc')->where('item_code','like','%L%')->first();
-                        if ($lastItem) {
-                            // Extract the numeric part of the item_code and increment it
-                            $lastItemCode = substr($lastItem->item_code, 1); // Remove the 'L' prefix
-                            $nextItemCode = (int)$lastItemCode + 1;
-                            $nextItemCode = str_pad($nextItemCode, 5, '0', STR_PAD_LEFT); // Ensure it's 5 digits
-                            $nextItemCode = 'L' . $nextItemCode;
-                        } else {
-                            // If no previous items exist, start with L00001
-                            $nextItemCode = 'L00001';
-                        }
-                        $objItem = LibraryItem::updateOrCreate([
-                            'book_id' => $createBook->id,
-                            'call_number' => $createBook->call_number,
-                            'item_code' => $nextItemCode,
-                            'sub_institute_id'=>$sub_institute_id,
-                        ]);
+                // only for add
+                if(!isset($request->id)){
+                    $itemCount = LibraryItem::where(['book_id' => $createBook->id, 'sub_institute_id' => $sub_institute_id])->get()->count();
+                    if ($request->no_of_items < $itemCount) {
+                        LibraryItem::where(['book_id' => $createBook->id, 'sub_institute_id' => $sub_institute_id])->where('item_code', '<', $request->no_of_items)->delete();
                     }
+                    if($request->no_of_items!=0){
+                        for ($i = 1; $i <= $request->no_of_items; $i++) {
+                            $lastItem = LibraryItem::orderBy('id', 'desc')->where('sub_institute_id',$sub_institute_id)->where('item_code','like','%L%')->first();
+                            if ($lastItem) {
+                                // Extract the numeric part of the item_code and increment it
+                                $lastItemCode = substr($lastItem->item_code, 1); // Remove the 'L' prefix
+                                $nextItemCode = (int)$lastItemCode + 1;
+                                $nextItemCode = str_pad($nextItemCode, 5, '0', STR_PAD_LEFT); // Ensure it's 5 digits
+                                $nextItemCode = 'L' . $nextItemCode;
+                            } else {
+                                // If no previous items exist, start with L00001
+                                $nextItemCode = 'L00001';
+                            }
+                            $objItem = LibraryItem::updateOrCreate([
+                                'book_id' => $createBook->id,
+                                'call_number' => $createBook->call_number,
+                                'item_code' => $nextItemCode,
+                                'sub_institute_id'=>$sub_institute_id,
+                            ]);
+                        }
+                    }
+                }else{
+                    $objItem = LibraryItem::where(['book_id' => $createBook->id,'sub_institute_id'=>$sub_institute_id])->update([
+                        'call_number' => $createBook->call_number,
+                    ]);
                 }
                 // if ($objItem) {
                     if(isset($request->id)){
@@ -214,8 +231,12 @@ class BookController extends Controller
         try {
             $message ='';
             $type=$request->type;	
-            $issue_status = $this->checkIssue($request->book_id);            
-            $sub_institute_id = $request->sub_institute_id ?? session()->get('sub_institute_id');            
+            $sub_institute_id = $request->sub_institute_id ?? session()->get('sub_institute_id');    
+            if($sub_institute_id==254){
+                $issue_status = $this->checkIssue($request);            
+            } else{
+                $issue_status = 0;            
+            }     
             $details = tblstudentModel::where('enrollment_no', $enroll)->where('sub_institute_id',$sub_institute_id)->with('issuedBookItem')->first();
             $item_codes= DB::table('library_items')->where('book_id',$request->book_id)->where('sub_institute_id',$sub_institute_id)->get()->toArray();
             if($request->type!="API"){
@@ -243,9 +264,9 @@ class BookController extends Controller
         try {
             $details = LibraryBook::where('library_books.sub_institute_id', $sub_institute_id)
             ->where('library_books.id',$id)
-            ->select(['library_books.*', DB::raw('(SELECT GROUP_CONCAT(item_code) FROM library_items WHERE book_id = library_books.id) as item_codes')])
+            ->select(['library_books.*', DB::raw('(SELECT GROUP_CONCAT(item_code) FROM library_items WHERE book_id = library_books.id) as item_codes'), DB::raw('(SELECT count(item_code) FROM library_items WHERE book_id = library_books.id) as no_of_items')])
             ->groupBy('library_books.id')->get()->toArray();
-            // return $details[0]['title'];exit;
+            // return $details[0];exit;
             return response()->json(['data' => $details], 200);
         } catch (Exception $e) {
             return response()->json($e->getMessage(), 500);
@@ -453,7 +474,7 @@ class BookController extends Controller
         return is_mobile($type, 'library/quick_return', $res, 'view');    
     }
 
-    public function checkIssue($book_id){
+    public function checkIssue(Request $request){
         $syear= session()->get('syear');
         $sub_institute_id = session()->get('sub_institute_id');
         $issuedBookDetails = DB::table('library_items as li')
@@ -466,7 +487,10 @@ class BookController extends Controller
         ->join('tblstudent_enrollment as se', 'se.student_id', '=', 's.id')
         ->join('standard as std', 'std.id', '=', 'se.standard_id')
         ->join('division as d', 'd.id', '=', 'se.section_id')
-        ->where('lbc.book_id',$book_id)
+        ->where('lbc.book_id',$request->book_id)
+        ->when($request->item_code,function($q) use($request){
+            $q->where('lbc.item_code',$request->item_code);
+        })
         ->whereNull('lbc.return_date')
         ->whereNull('se.end_date')
         ->get();
