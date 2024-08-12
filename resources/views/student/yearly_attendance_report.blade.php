@@ -73,7 +73,7 @@
                         @endphp
                         <div class="card">
                       {!! App\Helpers\get_school_details($grade_id,$standard_id,$division_id) !!}
-                        <br><center><span style=" font-size: 14px;font-weight: 600;font-family: Arial, Helvetica, sans-serif !important">From Date : {{ date('d-m-Y',strtotime($data['from_date'])) }} - </span><span style=" font-size: 14px;font-weight: 600;font-family: Arial, Helvetica, sans-serif !important">To Date : {{date('d-m-Y',strtotime($data['to_date'])) }}</span></center><br>';
+                        <br><center><span style=" font-size: 14px;font-weight: 600;font-family: Arial, Helvetica, sans-serif !important">From Date : {{ date('d-m-Y',strtotime($data['from_date'])) }} - </span><span style=" font-size: 14px;font-weight: 600;font-family: Arial, Helvetica, sans-serif !important">To Date : {{date('d-m-Y',strtotime($data['to_date'])) }}</span></center><br>
                             <div class="table-responsive" id="printPage">
                                 <div class="my-4" id="head-table"></div>
                                 
