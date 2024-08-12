@@ -209,46 +209,78 @@ class LibraryReportController extends Controller
 
         foreach ($request->check_id as $key => $value) {
             $barcodeGenerator = new BarcodeGeneratorPNG();
-            // $barcode = $barcodeGenerator->getBarcode($value, $barcodeGenerator::TYPE_CODE_128);
-            $barcode = $barcodeGenerator->getBarcode($value, $barcodeGenerator::TYPE_CODE_128,2,60);
+        
+            // Generate the barcode image
+            $barcodeImageData = $barcodeGenerator->getBarcode($value, $barcodeGenerator::TYPE_CODE_128, 2, 60);
             
-            $image = imagecreatefromstring($barcode);
-            $text = $value;
-            $fontSize = 16;
-            $fontColor = imagecolorallocate($image, 0, 0, 0); // Black color
-            $bgColor = imagecolorallocate($image, 255, 255, 255);
-            $imageWidth = imagesx($image);
-            $imageHeight = imagesy($image);
-                        
-            $textWidth = strlen($text) * $fontSize * 0.6;
-            if ($request->print_type == "member") {
-            $textWidth = strlen($text) * $fontSize * 0.3;                
-            }
-            $textX = ($imageWidth - $textWidth) / 2;
-            $textY = $imageHeight  - 10; 
-            $font = 1; 
-
-            imagefilledrectangle($image, $textX - 43, $textY - $fontSize + 14, $textX + $textWidth + 43, $textY + $fontSize - 0, $bgColor);
-            $textX = ($imageWidth - $textWidth) / 2;
-            $textY = $imageHeight - 10; //
-
-            imagestring($image, $font, $textX, $textY, $text, $fontColor);
-
+            // Create an image resource from the barcode data
+            $barcodeImage = imagecreatefromstring($barcodeImageData);
+            
+            // Get the dimensions of the barcode image
+            $barcodeWidth = imagesx($barcodeImage);
+            $barcodeHeight = imagesy($barcodeImage);
+            
+            // Define text properties
+            $fontSize = 3; // GD built-in font size (1 to 5)
+            $topPadding = 0; // Padding above the text
+            $sidePadding = 25; // Padding on left and right of the text
+        
+            $textHeight = imagefontheight($fontSize) + $topPadding  * 2; // Height including padding
+            
+            // Create a new image with additional space for the text background
+            $newImageHeight = $barcodeHeight; // No additional height needed
+            $newImage = imagecreatetruecolor($barcodeWidth, $newImageHeight);
+            
+            // Allocate colors
+            $white = imagecolorallocate($newImage, 255, 255, 255);
+            $black = imagecolorallocate($newImage, 0, 0, 0);
+            
+            // Fill the background with white
+            imagefill($newImage, 0, 0, $white);
+            
+            // Copy the barcode image onto the new image
+            imagecopy($newImage, $barcodeImage, 0, 0, 0, 0, $barcodeWidth, $barcodeHeight);
+            
+            // Calculate text width and background box dimensions
+            $textWidth = imagefontwidth($fontSize) * strlen($value);
+            $backgroundWidth =  $textWidth + $sidePadding * 2; // Background width including padding
+            $backgroundX = ($barcodeWidth - $backgroundWidth) / 2; // Center background horizontally
+            $backgroundY = (($barcodeHeight - $topPadding) / 2) + 19; // Center background vertically
+            
+            // Draw a white background box for the text
+            imagefilledrectangle($newImage, $backgroundX, $backgroundY, $backgroundX + $backgroundWidth, $backgroundY + $textHeight, $white);
+            
+            // Calculate text position
+            $textX = $backgroundX + $sidePadding; // Add padding to the text position
+            $textY = $backgroundY + $topPadding; // Add padding to the text position
+            
+            // Add the text to the image
+            imagestring($newImage, $fontSize, $textX, $textY, $value, $black);
+            
+            // Output the final image as PNG
             ob_start();
-            imagepng($image);
-            $barcodeWithText = ob_get_clean();
-            imagedestroy($image);
-
+            imagepng($newImage);
+            $imageData = ob_get_contents();
+            ob_end_clean();
+            
+            // Free up memory
+            imagedestroy($barcodeImage);
+            imagedestroy($newImage);
+            
+        // Return the image response
+        // return response($imageData)
+        //     ->header('Content-Type', 'image/png');
             if ($request->print_type == "member") {
-                $barcodes[] = ['code' => $value, 'image' => $barcodeWithText, 'title' => $request->print_text[$key],'other'=>$request->print_type];
+                $barcodes[] = ['code' => $value, 'image' => $imageData, 'title' => $request->print_text[$key],'other'=>$request->print_type];
             } else {
-                $barcodes[] = ['code' => $value, 'image' => $barcodeWithText, 'title' => $request->print_text[$key], 'other' => $request->print_code[$key]];
+                $barcodes[] = ['code' => $value, 'image' => $imageData, 'title' => $request->print_text[$key], 'other' => $request->print_code[$key]];
             }
         }
-
+        // exit;
         // Generate PDF
         $pdf = PDF::loadView('library.reports.barcodes', ['barcodes' => $barcodes]);
+        return $pdf->stream('barcodes.pdf');
         // Download the PDF
-        return $pdf->download('barcodes.pdf');
+        // return $pdf->download('barcodes.pdf');
     }
 }
