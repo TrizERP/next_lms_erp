@@ -146,8 +146,9 @@ else{
                 <td style='display: table-cell;width:30px;'><span class='label label-info'>Days - Lectures</span></td>";
             foreach ($period_data as $pkey => $pval) {
                 $html .= "<td style='display: table-cell;' align='center'><span class='label label-info'>" . $pval['title'] . "</span>";
-                $html .= "<br>";
-                $html .= "( " . $pval['s_time'] . "-" . $pval['e_time'] . " )" . "</span></td>";
+                //$html .= "<br>";
+                //$html .= "( " . $pval['s_time'] . "-" . $pval['e_time'] . " )" . "</span>";
+                $html .= "</td>";
             }
             $html .= "</tr>";
             foreach ($week_data as $wkey => $wval) {

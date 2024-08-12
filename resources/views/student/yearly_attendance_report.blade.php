@@ -73,7 +73,7 @@
                         @endphp
                         <div class="card">
                       {!! App\Helpers\get_school_details($grade_id,$standard_id,$division_id) !!}
-                        <br><center><span style=" font-size: 14px;font-weight: 600;font-family: Arial, Helvetica, sans-serif !important">From Date : {{ date('d-m-Y',strtotime($data['from_date'])) }} - </span><span style=" font-size: 14px;font-weight: 600;font-family: Arial, Helvetica, sans-serif !important">To Date : {{date('d-m-Y',strtotime($data['to_date'])) }}</span></center><br>';
+                        <br><center><span style=" font-size: 14px;font-weight: 600;font-family: Arial, Helvetica, sans-serif !important">From Date : {{ date('d-m-Y',strtotime($data['from_date'])) }} - </span><span style=" font-size: 14px;font-weight: 600;font-family: Arial, Helvetica, sans-serif !important">To Date : {{date('d-m-Y',strtotime($data['to_date'])) }}</span></center><br>
                             <div class="table-responsive" id="printPage">
                                 <div class="my-4" id="head-table"></div>
                                 
@@ -93,6 +93,7 @@
                                             <th>{{$month_name[$i]}}</th>
                                         @endforeach
                                         <th class="text-left">Total School Year Day</th>
+                                        <th class="text-left">Per %</th>
                                         @php $working_day = 0; @endphp
                                     </tr>
                                     <tr>
@@ -112,6 +113,7 @@
                                         @endforeach
                                         @endif
                                         <th style="text-align:center">{{$working_day}}</th>
+                                        <th style="text-align:center">Per %</th>
                                     </tr>
                                     </thead>
                                     <tbody>
@@ -137,6 +139,10 @@
                                                 </td>
                                             @endforeach
                                             <td style="text-align:center">{{$totalAttandance}}</td>
+                                            @php 
+                                                $per = ($working_day > 0) ? round((($totalAttandance * 100) / $working_day),2) : 0;
+                                            @endphp
+                                            <td style="text-align:center">{{$per}}</td>
                                         </tr>
                                     @endforeach
                                     </tbody>

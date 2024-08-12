@@ -276,14 +276,8 @@ Route::group(['prefix' => 'school_setup', 'middleware' => ['session', 'menu', 'l
     Route::resource('topic_master', topicController::class);
     Route::resource('sub_std_map', sub_std_mapController::class);
     Route::resource('period_master', periodController::class);
-    Route::resource('change_password', changePasswordController::class);
-    Route::resource('dashboard_setting', dashboardSettingController::class);
     Route::resource('map_teacher', mapTeacherController::class);
 
-    Route::get('device_check', [changePasswordController::class, 'device_check'])->name('device_check');
-
-    Route::resource('erp_status', erpstatusController::class);
-    Route::resource('workflow', workflowController::class);
     Route::get('ajax_wk_modulewise_fields', [workflowController::class, 'wk_modulewise_fields'])->name('ajax_wk_modulewise_fields');
     Route::post('ajax_wk_savemail', [workflowController::class, 'wk_savemail'])->name('ajax_wk_savemail');
     Route::post('ajax_wk_saveupdatequery', [workflowController::class, 'wk_saveupdatequery'])->name('ajax_wk_saveupdatequery');
@@ -473,6 +467,18 @@ Route::group(['middleware' => ['session', 'menu', 'logRoute','check_permissions'
     Route::get('print_barcode', [LibraryReportController::class, 'PrintBarcode'])->name('print_barcode.index');
     Route::post('print_barcode', [LibraryReportController::class, 'PrintBarcodeCreate'])->name('print_barcode.create');
     Route::post('generateBarcodePdf', [LibraryReportController::class, 'generateBarcodePdf'])->name('generateBarcodePdf');
+});
+
+// no permission check 
+Route::group(['middleware' => ['session', 'menu', 'logRoute']], function () {
+    Route::get('setup-institute-details', [dashboardController::class, 'setup_details'])->name('setup-institute-details');
+});
+Route::group(['prefix' => 'school_setup', 'middleware' => ['session', 'menu', 'logRoute']], function () {
+    Route::resource('change_password', changePasswordController::class);
+    Route::resource('dashboard_setting', dashboardSettingController::class);
+    Route::get('device_check', [changePasswordController::class, 'device_check'])->name('device_check');
+    Route::resource('erp_status', erpstatusController::class);
+    Route::resource('workflow', workflowController::class);
 });
 
 Route::get('privacyPolicy', [dashboardController::class, 'privacyPolicy'])->name('privacyPolicy');

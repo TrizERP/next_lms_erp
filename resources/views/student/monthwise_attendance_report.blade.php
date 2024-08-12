@@ -107,6 +107,7 @@
                                         <th>Total Working Days</th>
                                         <th>Total Presant</th>
                                         <th class="text-left">Total Absent</th>
+                                        <th class="text-left">Per %</th>
                                     </tr>
                                     </thead>
                                     <tbody>
@@ -157,6 +158,10 @@
                                             <td>{{$totalWorkingDays}}</td>
                                             <td>{{$totalP}}</td>
                                             <td>{{$totalA}}</td>
+                                            @php 
+                                                $per = ($totalWorkingDays>0) ? round((($totalP*100) / $totalWorkingDays),2) : 0;
+                                            @endphp
+                                            <td>{{$per}}%</td>
                                         </tr>
                                     @endforeach
                                     </tbody>

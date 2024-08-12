@@ -11,13 +11,26 @@
     .page-break-clear {
       clear: both;
     }
-    .row-4-column-1{
+   
+    .row-{{$data['row']}}-column-{{$data['column']}} {
+        display: grid;
+        grid-template-columns: repeat({{$data['column']}}, 1fr);
+        grid-template-rows: repeat({{$data['row']}}, 1fr);
+        grid-column-gap: 10px;
+        grid-row-gap: 5px;
+        width: 48vh;
+        {{-- @if($data['row']==1 && $data['column']==1)
+            margin-right: auto;
+            margin-left: auto;
+        @endif --}}
+    }
+    /* .row-4-column-1{
         display: grid;
         grid-template-columns: 1fr;
         grid-template-rows: 4fr;
         grid-column-gap: 10px;
         grid-row-gap: 5px;
-        width: 48vh;
+        width: 48%;
         margin-right: auto;
         margin-left: auto;
     }
@@ -27,7 +40,7 @@
         grid-template-rows: repeat(2, 1fr);
         grid-column-gap: 10px;
         grid-row-gap: 5px;
-        width: 48vh;
+        width: 48%;
         margin-right: auto;
         margin-left: auto;
     }
@@ -37,7 +50,17 @@
         grid-template-rows: 1fr;
         grid-column-gap: 10px;
         grid-row-gap: 5px;
-        width: 48vh;
+        width: 48%;
+        margin-right: auto;
+        margin-left: auto;
+    }
+    .row-3-column-1 {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        grid-template-rows: repeat(3, 1fr);
+        grid-column-gap: 10px;
+        grid-row-gap: 5px;
+        width: 48%;
         margin-right: auto;
         margin-left: auto;
     }
@@ -47,7 +70,7 @@
         grid-template-rows: repeat(3, 1fr);
         grid-column-gap: 10px;
         grid-row-gap: 5px;
-        width: 48vh;
+        width: 48%;
         margin-right: auto;
         margin-left: auto;
     }
@@ -57,10 +80,10 @@
         grid-template-rows: repeat(3, 1fr);
         grid-column-gap: 10px;
         grid-row-gap: 5px;
-        width: 48vh;
+        width: 48%;
         margin-right: auto;
         margin-left: auto;
-    }
+    } */
     .icard-item{
          /*content:url(http://dev.triz.co.in/icard/templates/card-bg.jpg); */
          /*background: url(http://dev.triz.co.in/icard/templates/card-bg.jpg) !important; */
@@ -95,6 +118,7 @@
     .item{
         position: relative;
         z-index: 9;
+        margin: 0px 25px;
     }
 </style>
 
@@ -155,6 +179,10 @@
                     {
                         $from_distance = $value['from_distance'].'K.M.';
                     }
+            
+                    $admissionDate =  \Carbon\Carbon::parse($value['admission_date'])->format('d-m-Y');
+                    $birthDate =  \Carbon\Carbon::parse($value['dob'])->format('d-m-Y');
+
                     // echo $value['student_name'];exit;
                     $str = str_replace(htmlspecialchars("<<student_name>>"), $value['student_name'], $string);
                     $str = str_replace(htmlspecialchars("<<short_student_name>>"), strtoupper($value['short_student_name']), $str);
@@ -163,19 +191,23 @@
                     $str = str_replace(htmlspecialchars("<<division_name>>"), $value['division_name'], $str);
                     $str = str_replace(htmlspecialchars("<<father_name>>"), $value['father_name'], $str);
                     $str = str_replace(htmlspecialchars("<<mother_name>>"), $value['mother_name'], $str);
-                    $str = str_replace(htmlspecialchars("<<address>>"), $add_val, $str);
-                    $str = str_replace(htmlspecialchars("<<mobile>>"), $value['mobile'], $str);
-                    $str = str_replace(htmlspecialchars("<<blood_group_name>>"), $value['blood_group_name'], $str);
+                    $str = str_replace(htmlspecialchars("<<address>>"), $add_val  ?? '&nbsp;', $str);
+                    $str = str_replace(htmlspecialchars("<<mobile>>"), $value['mobile'] ?? '&nbsp;', $str);
+                    $str = str_replace(htmlspecialchars("<<admission_date>>"), $admissionDate, $str);
+                    $str = str_replace(htmlspecialchars("<<dob>>"), $birthDate, $str);
+                    $str = str_replace(htmlspecialchars("<<batch_name>>"), $value['batch_name'] ?? '&nbsp;', $str);
+                    $str = str_replace(htmlspecialchars("<<emergency_contact>>"), $value['emergency_contact'] ?? '&nbsp;', $str); 
+                    $str = str_replace(htmlspecialchars("<<blood_group_name>>"), $value['blood_group_name'] ?? '&nbsp;' , $str);
                     $str = str_replace(htmlspecialchars("<<mother_mobile>>"), $value['mother_mobile'], $str);
                     $str = str_replace(htmlspecialchars("<<student_image>>"), "/storage/student/" . $value['image'], $str);
-                    $str = str_replace(htmlspecialchars("<<gender>>"), $value['gender'], $str);
+                    $str = str_replace(htmlspecialchars("<<gender>>"), $value['gender']  ?? '&nbsp;', $str);
                     $str = str_replace(htmlspecialchars("<<driver_name>>"), strtoupper($value['driver_name']), $str);
                     $str = str_replace(htmlspecialchars("<<driver_mobile>>"), $value['driver_mobile'], $str);
                     $str = str_replace(htmlspecialchars("<<icard_icon>>"), $icard_icon, $str);
                     $str = str_replace(htmlspecialchars("<<distance_from_school>>"), $value['distance_from_school'], $str);
                     $str = str_replace(htmlspecialchars("<<from_distance>>"), $from_distance, $str);
                     $str = str_replace(htmlspecialchars("<<distance_rate>>"), $distance_rate, $str);
-                    $str = str_replace(htmlspecialchars("<<school_name>>"), $value['school_name'], $str);
+                    $str = str_replace(htmlspecialchars("<<school_name>>"), $value['school_name']  ?? '&nbsp;', $str);
                     $str = str_replace(htmlspecialchars("<<school_mobile>>"), $value['school_mobile'], $str);
                     $str = str_replace(htmlspecialchars("<<school_image>>"), "/storage/school/" . $value['school_image'], $str);
                     $str = str_replace(htmlspecialchars("<<school_address>>"), $value['school_address'], $str);
@@ -187,7 +219,7 @@
                         $logoSrc = "https://".$_SERVER['HTTP_HOST']."/storage/fees/".$receiptBook->receipt_logo;
                         $schoolLogo = '<img src="'.$logoSrc.'" alt="SCHOOL LOGO">';
 
-                        $str = str_replace(htmlspecialchars("<<receipt_logo>>"),$schoolLogo, $str);
+                        $str = str_replace(htmlspecialchars("<<receipt_logo>>"),$logoSrc, $str);
                         $str = str_replace(htmlspecialchars("<<receipt_line_1>>"), $receiptBook->receipt_line_1, $str);
                         $str = str_replace(htmlspecialchars("<<receipt_line_2>>"),$receiptBook->receipt_line_2, $str);
                         $str = str_replace(htmlspecialchars("<<receipt_line_3>>"),$receiptBook->receipt_line_3, $str);

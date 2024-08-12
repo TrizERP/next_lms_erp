@@ -108,7 +108,7 @@
                                                 <th data-toggle="tooltip" title="Publisher Name">Publisher Name</th>
                                                 <th data-toggle="tooltip" title="Publish Year">Publish Year</th>
                                                 <th data-toggle="tooltip" title="Auther Name">Auther Name</th>
-                                                <th data-toggle="tooltip" title="Action">Action</th>
+                                                <th data-toggle="tooltip" title="Action" class="text-left">Action</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -169,9 +169,13 @@
                                     <div class="col-md-4">
                                         <div class="form-group">
                                             <label for="">No Of Items</label>
-                                            <input type="number" name="no_of_items" id="no_of_items"
-                                                class="form-control" value="Enter No Of Items">
-
+                                            <input type="number" name="no_of_items" id="no_of_items" class="form-control" placeholder="Enter No Of Items" value="1">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="">Item Code</label>
+                                            <input type="text" id="item_code_value" class="form-control"  readonly>
                                         </div>
                                     </div>
                                     <div class="col-md-4">
@@ -531,8 +535,9 @@
             // Empty all input fields
             $('input[type="text"]').val('');
             $('input[type="number"]').val('');   
-            $('#no_span').remove();               
-
+            $('#no_span').remove();       
+            $('#no_of_items').prop('readonly',false);
+            $('#item_code_value').val('{{$nextItemCode}}');
            $('#title,#sub_title,#material_resource_type,#no_of_items,#author_name,#isbn_issn,#classification,#publisher_name,#publish_year,#publish_place,#pages,#series_title,#call_number,#language,#source,#subject,#price,#price_currency,#notes,#review, #edition, #tags, #no_of_items').prop('required', true);               
         })
         $(document).on("click", ".btn-edit", function(e) {
@@ -570,7 +575,9 @@
                         $('#material_resource_type').val(data.data[0].material_resource_type);
                         $('#edition').val(data.data[0].edition);
                         $('#tags').val(data.data[0].tags);
-                        $('#no_of_items').val('0');
+                        $('#no_of_items').val(data.data[0].no_of_items);
+                        $('#no_of_items').prop('readonly',true);
+                        $('#item_code_value').val(data.data[0].item_codes);
                         $('#author_name').val(data.data[0].author_name);
                         $('#isbn_issn').val(data.data[0].isbn_issn);
                         $('#classification').val(data.data[0].classification);
