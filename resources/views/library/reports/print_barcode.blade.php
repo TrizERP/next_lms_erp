@@ -51,7 +51,7 @@
         <!-- data card start  -->
         @if(isset($data['details']))
         <div class="card">
-        <form action="{{route('generateBarcodePdf')}}" method="post">
+        <form action="{{route('generateBarcodePdf')}}" method="post" target="_blank">
         @csrf 
         <input type="hidden" name="print_type" value="{{$data['print_type']}}">
 			<div class="table-responsive">
@@ -118,8 +118,8 @@
         var table = $('#example').DataTable({
             select: true,
             lengthMenu: [
-                [24],
-                ['24']
+                [24,100, 500, 1000, -1],
+                ['24','100', '500', '1000', 'Show All']
             ],
             dom: 'Bfrtip',
             buttons: [
@@ -154,6 +154,7 @@
                 }
             } );
         } );
+
     } );
 
     	function checkAll(ele) {
@@ -174,7 +175,7 @@
 			}
 		}
 
-		
+     
 	function check_validation() {
 		var checked_questions = err = 0;
 

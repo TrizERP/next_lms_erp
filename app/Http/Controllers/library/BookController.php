@@ -49,6 +49,14 @@ class BookController extends Controller
                     $subquery->where('item_code', request('search_item'));
                 });
             })
+            // 12-08-2024
+            ->when(request('classification_no'),function($q){
+                $q->where('classification',request('classification_no'));
+            }) 
+            ->when(request('isbn_issn'),function($q){
+                $q->where('isbn_issn',request('isbn_issn'));
+            }) 
+            //12-08-2024
             ->when(request('book_status'),function($q){
                 $q->whereHas('book_circulations', function ($q) {
                     switch (request('book_status')) {
