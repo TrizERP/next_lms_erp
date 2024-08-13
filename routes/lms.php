@@ -243,3 +243,5 @@ Route::get('careerExploreResult', [lmsCounsellingController::class, 'careerExplo
 Route::get('careerCluster', [lmsCounsellingController::class, 'careerCluster']);
 Route::get('allOccupation', [lmsCounsellingController::class, 'allOccupation']);
 Route::get('OccupationDetails', [lmsCounsellingController::class, 'OccupationDetails']);
+Route::get('getInstituteData', [lmsCounsellingController::class, 'getInstituteData']);
+Route::get('getCourseData', [lmsCounsellingController::class, 'getCourseData']);
