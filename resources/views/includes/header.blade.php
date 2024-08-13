@@ -75,8 +75,13 @@ $academicTerms = session()->get('academicTerms');
                         }
                         else
                         {
-                        $words = explode(" ", Session::get('name'));
-                        $name_initial = strtoupper($words[0][0] . $words[1][0]);
+                            $words = explode(" ", Session::get('name'));
+                            $name_initial = '';
+                            if (isset($words[0][0]) && isset($words[1][0])) {
+                                $name_initial = strtoupper($words[0][0] . $words[1][0]);
+                            } elseif (isset($words[0][0])) {
+                                $name_initial = strtoupper($words[0][0]);
+                            }
                         @endphp
                         <div id="profileImage">{{$name_initial}}</div>
                         @php
