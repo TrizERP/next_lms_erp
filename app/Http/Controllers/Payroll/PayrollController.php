@@ -1621,19 +1621,32 @@ class PayrollController extends Controller
         $employeefinalDisplayData = [];
         foreach ($preparPayrollType as $value){
             // for allowance
+            $monthNo = date('n', strtotime($request->month)); // Converts months
+            $payrollMonthDays = Carbon::create($request->year, $monthNo)->daysInMonth;
+
             if(isset($value['allowance'])) {
                 $allowence =  $value['allowance'][0];
-                if($value['allowance'][1] == 1) $allowence = round( ($allowence / 30) * $request->totalDay);
-                if($value['allowance'][1] == 2) $allowence = (round(($allowence / 30) * $request->totalDay));
+                if($value['allowance'][1] == 1) $allowence = round( ($allowence / $payrollMonthDays) * $request->totalDay);
+                if($value['allowance'][1] == 2) $allowence = (round(($allowence / $payrollMonthDays) * $request->totalDay));
                 $employeefinalDisplayData[$value['allowance'][2]] = $allowence;
                 $totalallowance = $totalallowance + $allowence;
             }
             // for deduction
             if(isset($value['deduction'])) {
+                // 13-08-2024 start
+                    // check eligible
+                    $getEligible = DB::table('tbluser')->where('id',$request->emp_id)->first(); 
+                    if($getEligible->pf_deduction=="N" && $value['deduction'][3]=="PF"){
+                        $value['deduction'][0]=0;
+                    }
+                    if($getEligible->pt_deduction=="N" && $value['deduction'][3]=="PT"){
+                        $value['deduction'][0]=0;
+                    }
                 $deduction =  $value['deduction'][0];
+                // 13-08-2024 end 
                 $deductionName=  (($value['deduction'][3] == 'PT') ? 1 : 0);
-                if($value['deduction'][1] == 1 && !$deductionName) $deduction = round(($deduction / 30) * $request->totalDay);
-                if($value['deduction'][1] == 2 && !$deductionName) $deduction = round(($deduction / 30) * $request->totalDay);
+                if($value['deduction'][1] == 1 && !$deductionName) $deduction = round(($deduction / $payrollMonthDays) * $request->totalDay);
+                if($value['deduction'][1] == 2 && !$deductionName) $deduction = round(($deduction / $payrollMonthDays) * $request->totalDay);
                 $employeefinalDisplayData[$value['deduction'][2]] = $deduction;
                 $totaldeduction = $totaldeduction + $deduction;
             }
@@ -1643,6 +1656,7 @@ class PayrollController extends Controller
             $employeefinalDisplayData['total_deduction'] = $totaldeduction;
             $employeefinalDisplayData['total_payment'] = ($totalallowance - $totaldeduction);
         }
+        // echo "<pre>";print_r($employeefinalDisplayData);exit;
 
         $res['salaryData'] = $employeefinalDisplayData;
         $res['totalDay'] = $request->total_day;
