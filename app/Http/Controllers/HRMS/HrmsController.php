@@ -1028,7 +1028,7 @@ class HrmsController extends Controller
 
         // sub cordinates 02-08-2024
         $SubCordinates =[];
-        $profileArr = ["Admin","Super Admin"];
+        $profileArr = ["Admin","Super Admin","School Admin","Assistant Admin"];
         if($employee_id==0 && !in_array($userProfileName,$profileArr)){
             $SubCordinates = getSubCordinates($sub_institute_id,$userId);
             if(!empty($SubCordinates)){

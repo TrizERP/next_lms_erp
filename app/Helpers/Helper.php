@@ -2234,7 +2234,7 @@ if (!function_exists('get_string')) {
             // dd($dep_idsArr);
             // for subordinates 02-08-2024
             $SubCordinatesDep =[];
-            $profileArr = ["Admin","Super Admin"];
+            $profileArr = ["Admin","Super Admin","School Admin","Assistant Admin"];
             if(!in_array($userProfileName,$profileArr)){
                 $SubCordinatesDep = getSubCordinates($sub_institute_id,$userId,'dep');
             }
@@ -2291,7 +2291,7 @@ if (!function_exists('get_string')) {
             if(isset($dep_ids) && $dep_ids!=0){
                 // for subordinates 02-08-2024
                 $SubCordinates =[];
-                $profileArr = ["Admin","Super Admin"];
+                $profileArr = ["Admin","Super Admin","School Admin","Assistant Admin"];
                 if(!in_array($userProfileName,$profileArr)){
                     $SubCordinates = getSubCordinates($sub_institute_id,$userId);
                 }
