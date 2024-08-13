@@ -988,93 +988,39 @@ class lmsCounsellingController extends Controller
     }
     public function getCourseData()
     {
-        // Fetch the data using an inner join
-        $institutes = DB::table('onet_institute_data as oid')
-            ->leftJoin('onet_institute_courses as oic', 'oic.institute_id', '=', 'oid.id')
-            ->select(
-                'oid.id',
-                'oid.college_name',
-                'oid.description',
-                'oid.aicte_id',
-                'oid.type',
-                'oid.level',
-                'oid.address',
-                'oid.district',
-                'oid.state',
-                'oid.image',
-                'oid.women',
-                'oid.minority',
-                'oic.id as course_id',
-                'oic.institute_id',
-                'oic.aicte_id as course_aicte_id',
-                'oic.college_name as course_college_name',
-                'oic.description as course_description',
-                'oic.programme',
-                'oic.university',
-                'oic.course_level',
-                'oic.course_name',
-                'oic.course_type',
-                'oic.course_fees',
-                'oic.intake',
-                'oic.enrollment',
-                'oic.placement'
-            )
+        // First query to group institutes by course
+        $courses = DB::table('onet_institute_courses as oic')
+        ->selectRaw('GROUP_CONCAT(DISTINCT oic.institute_id) as institute_id, oic.aicte_id, oic.college_name, oic.description, oic.programme, oic.university, oic.course_level, oic.course_name, oic.course_type, oic.course_fees, oic.intake, oic.enrollment, oic.placement')
+        ->groupBy('oic.course_name')
+        ->get();
+
+    // Initialize an empty array to store the final result
+    $result = [];
+
+    foreach ($courses as $course) {
+        // Convert institute_id string to an array
+        $instituteIds = explode(',', $course->institute_id);
+
+        // Second query to get institute data for the selected IDs
+        $instituteData = DB::table('onet_institute_data as oid')
+            ->select('oid.id', 'oid.college_name', 'oid.description', 'oid.aicte_id', 'oid.type', 'oid.level', 'oid.address', 'oid.district', 'oid.state', 'oid.image', 'oid.women', 'oid.minority')
+            ->whereIn('oid.id', $instituteIds) // Update as needed to dynamically filter by relevant institute IDs
             ->get();
 
-        // Group courses by institute
-        $result = [];
-        foreach ($institutes as $institute) {
-            $instituteId = $institute->id;
-            if (!isset($result[$instituteId])) {
-                $result[$instituteId] = [
-                    'id' => $institute->id,
-                    'college_name' => $institute->college_name,
-                    'description' => $institute->description,
-                    'aicte_id' => $institute->aicte_id,
-                    'type' => $institute->type,
-                    'level' => $institute->level,
-                    'address' => $institute->address,
-                    'district' => $institute->district,
-                    'state' => $institute->state,
-                    'image' => $institute->image,
-                    'women' => $institute->women,
-                    'minority' => $institute->minority,
-                    'course_data' => [],
-                ];
-            }
+        // Add course details and associated institute data to the result
+        $result[] = [
+            'institute_id' => $course->institute_id,
+            'description' => $course->description,
+            'programme' => $course->programme,
+            'course_level' => $course->course_level,
+            'course_name' => $course->course_name,
+            'course_type' => $course->course_type,
+            'course_fees' => $course->course_fees,
+            'institute_data' => $instituteData
+        ];
+    }
 
-            // Check if the course has meaningful data
-            $courseData = [
-                'id' => $institute->course_id,
-                'institute_id' => $institute->institute_id,
-                'aicte_id' => $institute->course_aicte_id,
-                'college_name' => $institute->course_college_name,
-                'description' => $institute->course_description,
-                'programme' => $institute->programme,
-                'university' => $institute->university,
-                'course_level' => $institute->course_level,
-                'course_name' => $institute->course_name,
-                'course_type' => $institute->course_type,
-                'course_fees' => $institute->course_fees,
-                'intake' => $institute->intake,
-                'enrollment' => $institute->enrollment,
-                'placement' => $institute->placement,
-            ];
-
-            // Filter out null values and add course data if it has meaningful data
-            if (array_filter($courseData)) {
-                $result[$instituteId]['course_data'][] = $courseData;
-            }
-        }
-
-        // Remove 'course_data' key if it's empty
-        foreach ($result as &$institute) {
-            if (empty($institute['course_data'])) {
-                unset($institute['course_data']);
-            }
-        }
-
-        // Return the result as a JSON response
-        return response()->json(array_values($result));
+    // Return the result as a JSON response
+    return response()->json($result);
     }
 }
