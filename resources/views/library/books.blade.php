@@ -84,7 +84,16 @@
                                         @endforeach
                                     </select>
                                 </div>
-
+                                <!-- 12-08-2024  start -->
+                                <div class="col-md-3  pull-right" >
+                                    <label for="">Search Classification Number</label>
+                                    <input type="text" class="form-control" placeholder="Enter Classification Number" id="classification_number" name="classification_number" onkeyup="getClassification(this.value);">
+                                </div>
+                                <div class="col-md-3  pull-right" >
+                                    <label for="">Search ISBN/ISSN</label>
+                                    <input type="text" class="form-control" placeholder="Enter ISBN/ISSN" id="isbn_issn" name="isbn_issn" onkeyup="getIsbnIssn(this.value);">
+                                </div>
+                                <!-- 12-08-2024  end -->
                                 <div class="col-md-4 mt-2" style="display:none">
                                     <a class="btn btn-danger delete-all"><i class="fa fa-trash"></i>
                                         Delete </a>
@@ -842,10 +851,18 @@
     function getPublishers(publisher) {
         $('#tblBooks').DataTable().ajax.url("?publisher_name=" + publisher).load();;
     }
-    function getItemCode(publisher) {
-        $('#tblBooks').DataTable().ajax.url("?search_item=" + publisher).load();;
+    function getItemCode(item) {
+        $('#tblBooks').DataTable().ajax.url("?search_item=" + item).load();;
     }
 
+    // 12-08-2024
+    function getClassification(number) {
+        $('#tblBooks').DataTable().ajax.url("?classification_no=" + number).load();;
+    }
+    function getIsbnIssn(number) {
+        $('#tblBooks').DataTable().ajax.url("?isbn_issn=" + number).load();;
+    }
+    // 12-08-2024
     function getAuthors(author) {
         $('#tblBooks').DataTable().ajax.url("?author_name=" + author).load();;
     }

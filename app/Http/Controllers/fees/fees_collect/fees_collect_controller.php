@@ -1301,7 +1301,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             $recTotal = 0;
 
             foreach ($arr as $key => $pval) {
-                if ($key == 'Discount') {
+                if ($key == get_string('discount', 'request',$sub_institute_id)) {
                     $recTotal = $recTotal - $pval;
                 } else {
                     $recTotal = $recTotal + $pval;
@@ -1346,7 +1346,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                     }
                 }
                 //START Added on 16th june 2021
-                if ($pkey == 'Discount') {
+                if ($pkey == get_string('discount', 'request',$sub_institute_id)) {
                     $minus_sign = "-";
                 } else {
                     $minus_sign = "";
