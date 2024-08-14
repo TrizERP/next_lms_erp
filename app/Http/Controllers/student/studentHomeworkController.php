@@ -17,6 +17,7 @@ use function App\Helpers\getStudents;
 use function App\Helpers\is_mobile;
 use function App\Helpers\SearchStudent;
 use function App\Helpers\sendNotification;
+use function App\Helpers\send_FCM_Notification;
 use App\Models\school_setup\SchoolModel;
 
 class studentHomeworkController extends Controller
@@ -447,15 +448,19 @@ class studentHomeworkController extends Controller
                     $join->on('d.id', '=', 'h.division_id')->on('h.sub_institute_id','=','d.sub_institute_id');
                 })->join('subject as ss', function ($join) {
                     $join->on('ss.id', '=', 'h.subject_id')->on('ss.sub_institute_id', '=', 'h.sub_institute_id');
-                })->join('class_teacher as ct', function ($join) {
+                })
+                /*
+                ->join('class_teacher as ct', function ($join) {
                     $join->on('ct.standard_id', '=', 'h.standard_id')->on('ct.division_id', '=', 'h.division_id')->on('ct.syear', '=', 'h.syear');
-                })->selectRaw("h.id,h.title,h.description,h.date,if(h.image = '','',
+                })
+                */
+                ->selectRaw("h.id,h.title,h.description,h.date,if(h.image = '','',
                     concat('https://".$_SERVER['SERVER_NAME']."/storage/student/',h.image)) as file_name,s.name AS standard_name,
                     d.name AS division_name,ss.subject_name,CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name) AS student_name,
                     ts.enrollment_no,ts.mobile,h.type")
                 ->where('h.sub_institute_id', $sub_institute_id)
                 ->where('h.syear', $syear)
-                ->where('ct.teacher_id', $teacher_id)
+                ->where('h.created_by', $teacher_id)
                 ->where('h.type', $action)
                 ->when($from_date != '',function($q) use($from_date){
                     $q->where('h.date', '>=', $from_date);
