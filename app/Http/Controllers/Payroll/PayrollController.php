@@ -238,68 +238,91 @@ class PayrollController extends Controller
                 $totalAllowance = $totalSalary = $totalGrossSalary= 0;
                 $allData = $jsonData = [];
                 // payroll type details get head and amounts
-                $getPfFlat = $getPTFlat = $payroll_percentage = $amount_type = $hasPF = $hasPT =0;
+                $getPfFlat = $getPTFlat = $getPF = $getPT = $payroll_percentage = $amount_type = $hasPF = $hasPT =0;
                 // echo "<pre>";print_r($emp_values);
 
                 foreach($emp_values as $key => $value){
                     if($key ==0){
                         $gender = $value;
                     }
-                    $getAmountType = PayrollType::where('id',$key)->first();
+                    $getPayrollType = PayrollType::where('id',$key)->first();
                     
-                    $payroll_percentage = isset($getAmountType->payroll_percentage) ? $getAmountType->payroll_percentage : 0;
-                    $amount_type = isset($getAmountType->amount_type) ? $getAmountType->amount_type : 0;
+                    $Per_Flat = isset($getPayrollType->payroll_percentage) ? $getPayrollType->payroll_percentage : 0;
+                    $amount_type = isset($getPayrollType->amount_type) ? $getPayrollType->amount_type : 0;
 
                     if($key!=0){
                        $payroll_type_id = $value[0];
 
-                       if($amount_type==1 && $payroll_percentage!=0 && $value[1] > $payroll_percentage){
-                        $amount = ($value[1]-$payroll_percentage);
+                       if($amount_type==1 && $Per_Flat!=0 && $value[1] > $Per_Flat){
+                        $amount = ($value[1]-$Per_Flat);
                        }else{
                         $amount = $value[1];
                        }
 
                        $payroll_type_name = $value[2];
                        $payroll_type = $value[3] ?? 0;
-                       if($payroll_type_name=="BASIC" || $payroll_type_name=="D.A" || $payroll_type_name=="GRADE PAY"){
-                        $totalAllowance += $amount;
-                       }
-                        //    for flat 
+                    //    if($payroll_type_name=="BASIC" || $payroll_type_name=="D.A" || $payroll_type_name=="GRADE PAY"){
+                    //     $totalAllowance += $amount;
+                    //    }
+                    //     //    for flat 
                         
                         if($payroll_type_name=='PF'){
-                            if($amount_type==1 && $payroll_percentage!=0){
-                                $getPfFlat = $payroll_percentage;
+                            if($amount_type==1 && $Per_Flat!=0){
+                                $getPfFlat = $Per_Flat;
                             }
                             $hasPF = $amount_type;
                         }
+
                         if($payroll_type_name=='PT'){
-                            if($amount_type==1 && $payroll_percentage!=0){
-                                $getPTFlat = $payroll_percentage;
+                            if($amount_type==1 && $Per_Flat!=0){
+                                $getPTFlat = $Per_Flat;
                             }
                             $hasPT = $amount_type;
                         }
 
-                        if(!in_array($payroll_type_name,['TDS','PT','PF'])){
-                            $totalGrossSalary += $amount;
-                        }
+                    //     if(!in_array($payroll_type_name,['TDS','PT','PF'])){
+                    //         $totalGrossSalary += $amount;
+                    //     }
                        $totalSalary+=$amount;
+
+                        // data to make json 
                        $allData[$payroll_type_id] = [$payroll_type_name=>$amount];
+
+                    // 13-08-2024 caculate PT and PF
+                        // check allowance if allowance make it gross Salary
+                        if($getPayrollType->payroll_type==1){
+                            // for PT Deduction 
+                            $totalGrossSalary +=$amount;
+                            // for PF Deduction 
+                            if($payroll_type_name=="BASIC" || $payroll_type_name=="D.A" || $payroll_type_name=="GRADE PAY"){
+                                $totalAllowance += $amount;
+                            }
+                        }
+                    // 13-04-2024 end
                     }
                 }
                 // for contact emps 
-                $getIsCalculate = DB::table('tbluser as tu')->join('hrms_departments as hd','hd.id','=','tu.department_id')
-                ->where('tu.id',$emp_ids)->where('tu.sub_institute_id',$sub_institute_id)->value('is_calculated');
-                // check hrms_departments table, if is_calculated is 1 then pf or pt will be not count
-                if($getIsCalculate==1){
-                    $getPF = $getPT = 0;
-                    echo "if";
-                }
-                else{
+                // $getIsCalculate = DB::table('tbluser as tu')->join('hrms_departments as hd','hd.id','=','tu.department_id')
+                // ->where('tu.id',$emp_ids)->where('tu.sub_institute_id',$sub_institute_id)->value('is_calculated');
+                // // check hrms_departments table, if is_calculated is 1 then pf or pt will be not count
+                // if($getIsCalculate==1){
+                //     $getPF = $getPT = 0;
+                //     echo "if";
+                // }
+                // else{
                     // to count PT and PF percentage wise, in payroll_type table amount_type must be 2
-                    $getPF = ($hasPF == 2) ? Helpers::getPF($totalAllowance) : $getPfFlat;
-                    $getPT = ($hasPT == 2) ? Helpers::getPT($totalGrossSalary,$gender) : $getPTFlat; 
-                }           
+                    // $getPF = ($hasPF == 2) ? Helpers::getPF($totalAllowance) : $getPfFlat;
+                    // $getPT = ($hasPT == 2) ? Helpers::getPT($totalGrossSalary,$gender) : $getPTFlat; 
+                // }           
                 // echo "<pre>";print_r($getPT);
+
+                // 13-08-2024 claculate PT as per eligilble emp_ids
+                $getPF = ($hasPF == 2) ? Helpers::getPF($totalAllowance) : $getPfFlat; // getPfFlat is for set flat amounts
+                $getPT = ($hasPT == 2) ? Helpers::getPT($totalGrossSalary,$gender) : $getPTFlat; // getPtFlat is for set flat amounts
+                // 13-08-2024 end 
+                // echo "<pre>";print_r($getPF);
+                // echo "<pre>";print_r($getPT);
+              
                 foreach ($allData as $key => $value) {
                    if(isset($value['PF'])){
                     $jsonData[$key] = $getPF;
@@ -312,7 +335,7 @@ class PayrollController extends Controller
                 }
                 // convert into json 
                 $encodeData = json_encode($jsonData);
-
+                // echo "<pre>";print_r($encodeData);
                 $find = EmployeeSalaryStructure::where(['employee_id' => $emp_ids, 'year' => $year], ['year' => $year,'sub_institute_id' => $sub_institute_id])->get()->toArray();
                 // update data
                 $res['status_code']=1;
@@ -1598,19 +1621,32 @@ class PayrollController extends Controller
         $employeefinalDisplayData = [];
         foreach ($preparPayrollType as $value){
             // for allowance
+            $monthNo = date('n', strtotime($request->month)); // Converts months
+            $payrollMonthDays = Carbon::create($request->year, $monthNo)->daysInMonth;
+
             if(isset($value['allowance'])) {
                 $allowence =  $value['allowance'][0];
-                if($value['allowance'][1] == 1) $allowence = round( ($allowence / 30) * $request->totalDay);
-                if($value['allowance'][1] == 2) $allowence = (round(($allowence / 30) * $request->totalDay));
+                if($value['allowance'][1] == 1) $allowence = round( ($allowence / $payrollMonthDays) * $request->totalDay);
+                if($value['allowance'][1] == 2) $allowence = (round(($allowence / $payrollMonthDays) * $request->totalDay));
                 $employeefinalDisplayData[$value['allowance'][2]] = $allowence;
                 $totalallowance = $totalallowance + $allowence;
             }
             // for deduction
             if(isset($value['deduction'])) {
+                // 13-08-2024 start
+                    // check eligible
+                    $getEligible = DB::table('tbluser')->where('id',$request->emp_id)->first(); 
+                    if($getEligible->pf_deduction=="N" && $value['deduction'][3]=="PF"){
+                        $value['deduction'][0]=0;
+                    }
+                    if($getEligible->pt_deduction=="N" && $value['deduction'][3]=="PT"){
+                        $value['deduction'][0]=0;
+                    }
                 $deduction =  $value['deduction'][0];
+                // 13-08-2024 end 
                 $deductionName=  (($value['deduction'][3] == 'PT') ? 1 : 0);
-                if($value['deduction'][1] == 1 && !$deductionName) $deduction = round(($deduction / 30) * $request->totalDay);
-                if($value['deduction'][1] == 2 && !$deductionName) $deduction = round(($deduction / 30) * $request->totalDay);
+                if($value['deduction'][1] == 1 && !$deductionName) $deduction = round(($deduction / $payrollMonthDays) * $request->totalDay);
+                if($value['deduction'][1] == 2 && !$deductionName) $deduction = round(($deduction / $payrollMonthDays) * $request->totalDay);
                 $employeefinalDisplayData[$value['deduction'][2]] = $deduction;
                 $totaldeduction = $totaldeduction + $deduction;
             }
@@ -1620,6 +1656,7 @@ class PayrollController extends Controller
             $employeefinalDisplayData['total_deduction'] = $totaldeduction;
             $employeefinalDisplayData['total_payment'] = ($totalallowance - $totaldeduction);
         }
+        // echo "<pre>";print_r($employeefinalDisplayData);exit;
 
         $res['salaryData'] = $employeefinalDisplayData;
         $res['totalDay'] = $request->total_day;

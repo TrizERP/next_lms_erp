@@ -42,6 +42,7 @@ trait Helpers
     }
 
     public static function getPF($totalAllowance) {
+        // BASIC + GRADPAY + DA for MMIS
         $PF = 0;
         if($totalAllowance > 0){
             $PF =round(($totalAllowance * 12)/100);
@@ -53,6 +54,7 @@ trait Helpers
     }
 
     public static function getPT($totalAllowance,$gender="") {
+        // Sum of all allowance plus
         $PT = 0;
         if($totalAllowance > 0){
             // PT calculation for male 
