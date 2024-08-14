@@ -4063,50 +4063,53 @@ private function buildCoScholasticTable($both_term, $co_data, $term_name, $flex,
     $groupedData2 = array_slice($groupedData, $break, null, true);
 
     // Build first table
-    $co_scholastic .= '<div style="width:50%;">
-        <table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" cellpadding="0" border="1">
-            <thead>
-                <tr>
-                    <th><b>CO SCHOLASTIC</b></th>';
+    if(!empty($groupedData1)){
+        $co_scholastic .= '<div style="width:50%;">
+            <table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" cellpadding="0" border="1">
+                <thead>
+                    <tr>
+                        <th><b>CO SCHOLASTIC</b></th>';
 
-    foreach ($both_term as $terms) {
-        $co_scholastic .= '<th class="data_center"><b>' . ($academic_type == "primary" ? $terms->title : $term_name) . '</b></th>';
-    }
-
-    $co_scholastic .= '</tr></thead><tbody>';
-    foreach ($groupedData1 as $childTitle => $termGrades) {
-        $co_scholastic .= '<tr><td>' . $childTitle . '</td>';
         foreach ($both_term as $terms) {
-            $grade = $termGrades[$terms->term_id] ?? '-';
-            $co_scholastic .= '<td class="data_center">' . $grade . '</td>';
+            $co_scholastic .= '<th class="data_center"><b>' . ($academic_type == "primary" ? $terms->title : $term_name) . '</b></th>';
         }
-        $co_scholastic .= '</tr>';
-    }
-    $co_scholastic .= '</tbody></table></div>';
 
+        $co_scholastic .= '</tr></thead><tbody>';
+        foreach ($groupedData1 as $childTitle => $termGrades) {
+            $co_scholastic .= '<tr><td>' . $childTitle . '</td>';
+            foreach ($both_term as $terms) {
+                $grade = $termGrades[$terms->term_id] ?? '-';
+                $co_scholastic .= '<td class="data_center">' . $grade . '</td>';
+            }
+            $co_scholastic .= '</tr>';
+        }
+        $co_scholastic .= '</tbody></table></div>';
+    }
     // Build second table
-    $co_scholastic .= '<div style="width:50%;">
+    if(!empty($groupedData2)){
+        $co_scholastic .= '<div style="width:50%;">
         <table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" cellpadding="0" border="1">
             <thead>
                 <tr>
                     <th><b>CO SCHOLASTIC</b></th>';
 
-    foreach ($both_term as $terms) {
-        $co_scholastic .= '<th class="data_center"><b>' . ($academic_type == "primary" ? $terms->title : $term_name) . '</b></th>';
-    }
-
-    $co_scholastic .= '</tr></thead><tbody>';
-    foreach ($groupedData2 as $childTitle => $termGrades) {
-        $co_scholastic .= '<tr><td>' . $childTitle . '</td>';
         foreach ($both_term as $terms) {
-            $grade = $termGrades[$terms->term_id] ?? '-';
-            $co_scholastic .= '<td class="data_center">' . $grade . '</td>';
+            $co_scholastic .= '<th class="data_center"><b>' . ($academic_type == "primary" ? $terms->title : $term_name) . '</b></th>';
         }
-        $co_scholastic .= '</tr>';
-    }
-    $co_scholastic .= '</tbody></table></div>';
 
+        $co_scholastic .= '</tr></thead><tbody>';
+        foreach ($groupedData2 as $childTitle => $termGrades) {
+            $co_scholastic .= '<tr><td>' . $childTitle . '</td>';
+            foreach ($both_term as $terms) {
+                $grade = $termGrades[$terms->term_id] ?? '-';
+                $co_scholastic .= '<td class="data_center">' . $grade . '</td>';
+            }
+            $co_scholastic .= '</tr>';
+        }
+        $co_scholastic .= '</tbody></table></div>';
+    }
     $co_scholastic .= '</div>';
+    
     return $co_scholastic;
 }
 
