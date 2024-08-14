@@ -265,7 +265,7 @@ class questionpaperController extends Controller
                     'SUB_INSTITUTE_ID'         => $sub_institute_id,
                     'SYEAR'                    => $syear,
                     'SCREEN_NAME'              => 'general',
-                    'CREATED_BY'               => session()->get('user_id'),
+                    'CREATED_BY'               => $user_id,
                     'CREATED_IP'               => $_SERVER['REMOTE_ADDR'],
                 ];
 

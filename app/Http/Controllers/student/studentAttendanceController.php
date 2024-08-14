@@ -763,8 +763,8 @@ class studentAttendanceController extends Controller
                 'STATUS'                   => 0,
                 'SUB_INSTITUTE_ID'         => $sub_institute_id,
                 'SYEAR'                    => $syear,
-                'SCREEN_NAME'              => 'general',
-                'CREATED_BY'               => session()->get('user_id'),
+                'SCREEN_NAME'              => 'student_attendance',
+                'CREATED_BY'               => $request->created_by,
                 'CREATED_IP'               => $_SERVER['REMOTE_ADDR'],
             ];
 
