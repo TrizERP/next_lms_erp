@@ -245,3 +245,4 @@ Route::get('allOccupation', [lmsCounsellingController::class, 'allOccupation']);
 Route::get('OccupationDetails', [lmsCounsellingController::class, 'OccupationDetails']);
 Route::get('getInstituteData', [lmsCounsellingController::class, 'getInstituteData']);
 Route::get('getCourseData', [lmsCounsellingController::class, 'getCourseData']);
+Route::get('getEmployerData', [lmsCounsellingController::class, 'getEmployerData']);

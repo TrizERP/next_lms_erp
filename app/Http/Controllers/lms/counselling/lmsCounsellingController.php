@@ -7,6 +7,7 @@ use App\Models\lms\counselling\counsellingCourseModel;
 use App\Models\lms\counselling\counsellingOnlineExamModel;
 use App\Models\lms\counselling\OnetContentModelReference;
 use App\Models\lms\counselling\OnetCareerCluster;
+use App\Models\lms\counselling\OnetEmployer;
 use App\Models\lms\counselling\OnetOccupationData;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -1022,5 +1023,10 @@ class lmsCounsellingController extends Controller
 
     // Return the result as a JSON response
     return response()->json($result);
+    }
+    public function getEmployerData()
+    {
+        $employers = OnetEmployer::all();
+        return response()->json($employers);
     }
 }
