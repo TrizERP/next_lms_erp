@@ -17,6 +17,7 @@ use function App\Helpers\getStudents;
 use function App\Helpers\is_mobile;
 use function App\Helpers\SearchStudent;
 use function App\Helpers\sendNotification;
+use App\Models\school_setup\SchoolModel;
 
 class studentHomeworkController extends Controller
 {
@@ -200,6 +201,7 @@ class studentHomeworkController extends Controller
                 foreach ($student_details as $id => $arr) {
                     
                     $student_id = $arr['id'];
+                    $mobile = $arr['mobile'];
                     $standard_id = $arr['standard_id'];
                     $division_id = $arr['section_id'];
                     $addhomeworkArray = [];
@@ -222,19 +224,23 @@ class studentHomeworkController extends Controller
                     studentHomeworkModel::insert($addhomeworkArray);
 
                     //START Send Notification Code
-                    $app_notification_content = [
-                        'NOTIFICATION_TYPE'        => 'Homework',
-                        'NOTIFICATION_DATE'        => date('Y-m-d'),
-                        'STUDENT_ID'               => $student_id,
-                        'NOTIFICATION_DESCRIPTION' => $title,
-                        'STATUS'                   => 0,
-                        'SUB_INSTITUTE_ID'         => $sub_institute_id,
-                        'SYEAR'                    => $syear,
-                        'SCREEN_NAME'              => 'home_work',
-                        'CREATED_BY'               => $created_by,
-                        'CREATED_IP'               => $_SERVER['REMOTE_ADDR'],
-                    ];
-                    sendNotification($app_notification_content);
+                    // $app_notification_content = [
+                    //     'NOTIFICATION_TYPE'        => 'Homework',
+                    //     'NOTIFICATION_DATE'        => date('Y-m-d'),
+                    //     'STUDENT_ID'               => $student_id,
+                    //     'NOTIFICATION_DESCRIPTION' => $title,
+                    //     'STATUS'                   => 0,
+                    //     'SUB_INSTITUTE_ID'         => $sub_institute_id,
+                    //     'SYEAR'                    => $syear,
+                    //     'SCREEN_NAME'              => 'home_work',
+                    //     'CREATED_BY'               => $created_by,
+                    //     'CREATED_IP'               => $_SERVER['REMOTE_ADDR'],
+                    // ];
+                    // sendNotification($app_notification_content);
+                    $sms_sent = $this->sendHomewokNotification($student_id,$sub_institute_id,$syear,$title,$created_by,$mobile);
+                    // if($sms_sent!=1){
+                    //     $res['sms_not_sent'][] = $student_id;
+                    // }
                     //END Send Notification Code
             }
 
@@ -665,5 +671,56 @@ class studentHomeworkController extends Controller
         $res['message'] = "Student Homework Deleted Successfully";
     
         return is_mobile($type, "student_homework_report_index", $res, "redirect");
+    }
+
+    public function sendHomewokNotification($student_id,$sub_institute_id,$syear,$text,$created_by,$mobile){
+
+        $app_notification_content = [
+            'NOTIFICATION_TYPE'        => 'Homework',
+            'NOTIFICATION_DATE'        => date('Y-m-d'),
+            'STUDENT_ID'               => $student_id,
+            'NOTIFICATION_DESCRIPTION' => $text,
+            'STATUS'                   => 0,
+            'SUB_INSTITUTE_ID'         => $sub_institute_id,
+            'SYEAR'                    => $syear,
+            'SCREEN_NAME'              => 'home_work',
+            'CREATED_BY'               => $created_by,
+            'CREATED_IP'               => $_SERVER['REMOTE_ADDR'],
+        ];
+        sendNotification($app_notification_content);
+
+        $gcm_data = DB::table('gcm_users')->where('mobile_no', $mobile)
+            ->where('sub_institute_id', $sub_institute_id)->get()->toArray();
+
+        $gcmRegIds = [];
+        if (count($gcm_data) > 0) {
+            foreach ($gcm_data as $key1 => $val1) {
+                $gcmRegIds[] = $val1->gcm_regid;
+            }
+        }
+
+        $pushMessage = $text;
+
+        $bunch_arr = array_chunk($gcmRegIds, 1000);
+        $schoolData = SchoolModel::where(['id' => $sub_institute_id])->get()->toArray();
+        $schoolName = ($schoolData[0]['SchoolName']) ? $schoolData[0]['SchoolName'] : '-';
+        $schoolLogo = $_SERVER['APP_URL'].'/admin_dep/images/'.$schoolData[0]['Logo'];
+        
+        if (!empty($bunch_arr)) {
+            foreach ($bunch_arr as $val) {
+                if (isset($val, $pushMessage)) {
+                    $type1 = 'Homework';
+                    $message = [
+                        'body'  => $pushMessage, 'TYPE' => $type1, 'USER_ID' => $student_id,
+                        'title' => $schoolName, 'image' => $schoolLogo,
+                    ];
+                    $pushStatus = send_FCM_Notification($val, $message, $sub_institute_id);
+                    // sendNotification($app_notification_content);
+                }
+            }
+            return 1;
+        }else{
+            return 0;
+        }
     }
 }
