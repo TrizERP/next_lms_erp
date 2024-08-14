@@ -290,15 +290,19 @@ class studentCertificateController extends Controller
         $males = ["male","Male","MALE","M"];
         $females =["female","Female","FEMALE","F"];
 
-        $his_her =  $he_she = $mr_miss = $daughter_son = '';
+        $cap_his_her =  $small_his_her = $cap_he_she = $small_he_she = $mr_miss = $daughter_son = '';
         if(in_array($value['gender'],$males)){
-            $his_her = 'His';
-            $he_she = 'he';
+            $cap_his_her = 'His';
+            $small_his_her = 'his';
+            $cap_he_she = 'He';
+            $small_he_she = 'he';
             $mr_miss = 'Mr.';
             $daughter_son = 'son';
         } else if(in_array($value['gender'],$females)){
-            $his_her = 'Her';
-            $he_she = 'she';
+            $cap_his_her = 'Her';
+            $small_his_her = 'her';
+            $cap_he_she = 'She';
+            $small_he_she = 'she';
             $mr_miss = 'Miss.';
             $daughter_son = 'daughter';            
         }    
@@ -422,8 +426,10 @@ LIMIT 1");
         $html_content = str_replace(htmlspecialchars("<<student_dob_word_value>>"), $date_in_word, $html_content);
         $html_content = str_replace(htmlspecialchars("<<student_dise_uid_value>>"), $value['dise_uid'], $html_content);
         $html_content = str_replace(htmlspecialchars("<<certificate_no>>"), $certificate_no, $html_content);
-        $html_content = str_replace(htmlspecialchars("<<his_her_value>>"), $his_her, $html_content);
-        $html_content = str_replace(htmlspecialchars("<<he_she_value>>"), $he_she, $html_content);
+        $html_content = str_replace(htmlspecialchars("<<HIS_HER>>"), $cap_his_her, $html_content);
+        $html_content = str_replace(htmlspecialchars("<<his_her>>"), $small_his_her, $html_content);
+        $html_content = str_replace(htmlspecialchars("<<HE_SHE>>"), $cap_he_she, $html_content);
+        $html_content = str_replace(htmlspecialchars("<<he_she>>"), $small_he_she, $html_content);
         $html_content = str_replace(htmlspecialchars("<<certificate_reason>>"), $certificate_reason, $html_content);
         //END Bonafide certificate Tags
         // transfer certificate detals
