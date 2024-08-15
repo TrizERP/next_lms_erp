@@ -20,7 +20,7 @@ if (!defined('BEST_OF')) {
 
 if (!function_exists('is_mobile')) {
 
-    function is_mobile($type, $url = null, $data = null, $redirect_type = "redirect")
+    function is_mobile($type, $url = null, $data = null, $redirect_type = "redirect",$compact = '', $routeWithPara = 0)
     {
         if ($type == "API") {
             if (isset($data["status_code"])) {
@@ -31,15 +31,17 @@ if (!function_exists('is_mobile')) {
             return json_encode($data);
         } else {
             if ($redirect_type == 'redirect') {
-
+                if ($routeWithPara) {
+                    return redirect()->route($url['route'],$url['id'])->with(['data' => $data]);
+                }
                 return redirect()->route($url)->with(['data' => $data]);
+            } else if ($compact == 'compact') {
+                return view($url,$data);
             } else {
                 if ($redirect_type == 'route_with_message') {
-
                     return route($url)->with(['data' => $data]);
                 } else {
                     if ($redirect_type == 'view') {
-
                         return view($url, ['data' => $data]);
                     }
                 }
@@ -658,7 +660,7 @@ if (!function_exists('SearchStudent')) {
         if($stud_id!=''){
             $stud_id = $stud_id;
         }
-        
+
         $enrollment_join = array(
             'se.student_id' => 'ts.id',
             'se.sub_institute_id' => 'ts.sub_institute_id',
@@ -679,7 +681,7 @@ if (!function_exists('SearchStudent')) {
             'b.id' => 'ts.studentbatch',
             'b.sub_institute_id' => 'se.sub_institute_id',
         );
-        
+
 
         $select_fields = "ts.*,se.syear,se.student_id,se.grade_id,
                 se.standard_id,se.section_id,se.student_quota,se.start_date,
@@ -699,9 +701,9 @@ if (!function_exists('SearchStudent')) {
         //     $join->where('ts.marking_period_id', $marking_period_id);
         // });
         if($batch!=""){
-            $query->where('ts.studentbatch', $batch);                        
+            $query->where('ts.studentbatch', $batch);
         }
-        
+
         if ($mobile != '') {
             $query->where('ts.mobile', $mobile);
         }
@@ -731,7 +733,7 @@ if (!function_exists('SearchStudent')) {
         $columns[] = "s.name as standard_name";
         $columns[] = "s.medium as medium";
         $columns[] = "d.name as division_name";
-        $columns[] = "b.title as batch_title";        
+        $columns[] = "b.title as batch_title";
 
         $query->join('tblstudent_enrollment as se', $enrollment_join);
         $query->where($where);
@@ -751,7 +753,7 @@ if (!function_exists('SearchStudent')) {
             $query->WhereIn('d.id', $div_arr);
         }
         $query->leftJoin('batch as b', $batch_join);
-  
+
         //START Check for class teacher assigned standards
         $extraRaw = " 1 = 1 ";
 
@@ -853,7 +855,7 @@ if (!function_exists('FeeBreackoff')) {
                 ->on('fb.quota', '=', 'se.student_quota')
                 ->on('fb.grade_id', '=', 'se.grade_id')
                 ->on('fb.sub_institute_id', '=', DB::raw("'" . $sub_institute_id . "'"));
-    
+
             if (!$standard) {
                 $join->on('fb.standard_id', '=', 'se.standard_id');
             } else {
@@ -928,7 +930,7 @@ if (!function_exists('FeeBreakoffHeadWise')) {
         ->groupBy('s.id', 'fb.month_id', 'fb.fee_type_id')
         ->orderByRaw('sort_year, sort_month, ft.sort_order ASC')
         ->get()->toArray();
-    
+
         $data = array();
         $student_data = array();
         foreach ($result as $key => $value) {
@@ -1110,7 +1112,7 @@ if (!function_exists('OtherBreackOff')) {
         $extra_condition = '';
 
         if (isset($_REQUEST['from_date']) && isset($_REQUEST['to_date'])) {
-            $extra_condition .= " AND receiptdate <= '" . $_REQUEST['to_date'] . "' "; 
+            $extra_condition .= " AND receiptdate <= '" . $_REQUEST['to_date'] . "' ";
          }
         //END for fees over all headwise report
 
@@ -1352,7 +1354,7 @@ if (!function_exists('getStudents')) {
         foreach ($result as $key => $value) {
             $student_data[$value->id]['id'] = $value->id;
             $student_data[$value->id]['enrollment_no'] = $value->enrollment_no;
-            $student_data[$value->id]['roll_no'] = $value->roll_no;            
+            $student_data[$value->id]['roll_no'] = $value->roll_no;
             $student_data[$value->id]['student_name'] = $value->first_name . " " . $value->last_name;
             $student_data[$value->id]['student_full_name'] = $value->first_name . " " . $value->middle_name . " " . $value->last_name;
             $student_data[$value->id]['gender'] = $value->gender;
@@ -1361,7 +1363,7 @@ if (!function_exists('getStudents')) {
             $student_data[$value->id]['admission_year'] = $value->admission_year;
             $student_data[$value->id]['address'] = $value->address;
             $student_data[$value->id]['standard_name'] = $value->standard_name;
-            $student_data[$value->id]['short_standard_name'] = $value->short_standard_name;            
+            $student_data[$value->id]['short_standard_name'] = $value->short_standard_name;
             $student_data[$value->id]['division_name'] = $value->division_name;
             $student_data[$value->id]['father_name'] = $value->father_name;
             $student_data[$value->id]['mother_name'] = $value->mother_name;
@@ -1794,7 +1796,7 @@ if (!function_exists('getGradeScale')) {
             ->orderBy('dt.breakoff', 'DESC')
             ->get()->toArray();
 
-        //converting it into array 
+        //converting it into array
         $grade_arr = array();
         foreach ($ret_grade as $id => $arr) {
             $grade_arr[$id]['id'] = $arr->id;
@@ -1835,9 +1837,9 @@ if (!function_exists('get_string')) {
     {
         $sub_institute_id = session()->get('sub_institute_id');
         $strings = DB::table('app_language')->whereRaw('sub_institute_id = 0 and string = "' . $arg . '"')->value('value');
-        $strings_id = DB::table('app_language')->whereRaw('sub_institute_id = 0 and string = "' . $arg . '"')->groupBy('menu_id')->value('menu_id');        
+        $strings_id = DB::table('app_language')->whereRaw('sub_institute_id = 0 and string = "' . $arg . '"')->groupBy('menu_id')->value('menu_id');
         // return $arg;exit;
-        
+
         // dd($strings);
         if ($type === 'menu_id') {
             $menu_id = $arg;

@@ -85,6 +85,20 @@ class TestFunction extends Command
     public function handle()
     {
 
+     /*   $record = \App\Models\DynamicModel::createRecord('users1', [
+            'name2' => 'darshan test',
+            'sub_institute_id' => 1,
+        ]);*/
+
+        /*$record = \App\Models\DynamicModel::updateRecord('users1',1 ,[
+            'name2' => 'darshan test1',
+            'sub_institute_id' => 1,
+        ]);*/
+
+        //$record = \App\Models\DynamicModel::readRecords('users1');
+        $record = \App\Models\DynamicModel::deleteRecord('users1',1);
+        dd($record);
+
         //$message = "Hello this is test message for me<a href=\"https://erp.triz.co.in/Images/logo.png\">https://erp.triz.co.in/Images/logo.png</a> for me ";
         $message = "Triz ";
         list($textArray, $hrefArray) = $this->mediaFound($message);
