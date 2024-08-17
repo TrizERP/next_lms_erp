@@ -22,7 +22,7 @@ if (!defined('BEST_OF')) {
 
 if (!function_exists('is_mobile')) {
 
-    function is_mobile($type, $url = null, $data = null, $redirect_type = "redirect")
+    function is_mobile($type, $url = null, $data = null, $redirect_type = "redirect",$compact = '', $routeWithPara = 0)
     {
         if ($type == "API") {
             if (isset($data["status_code"])) {
@@ -33,15 +33,17 @@ if (!function_exists('is_mobile')) {
             return json_encode($data);
         } else {
             if ($redirect_type == 'redirect') {
-
+                if ($routeWithPara) {
+                    return redirect()->route($url['route'],$url['id'])->with(['data' => $data]);
+                }
                 return redirect()->route($url)->with(['data' => $data]);
+            } else if ($compact == 'compact') {
+                return view($url,$data);
             } else {
                 if ($redirect_type == 'route_with_message') {
-
                     return route($url)->with(['data' => $data]);
                 } else {
                     if ($redirect_type == 'view') {
-
                         return view($url, ['data' => $data]);
                     }
                 }

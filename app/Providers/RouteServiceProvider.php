@@ -100,6 +100,8 @@ class RouteServiceProvider extends ServiceProvider
         $this->mapAdminApiRoutes();
 
         $this->mapHrmsRoutes();
+
+        $this->mapCustomModuleApiRoutes();
     }
 
     /**
@@ -116,6 +118,12 @@ class RouteServiceProvider extends ServiceProvider
             ->group(base_path('routes/web.php'));
     }
 
+    protected function mapCustomModuleApiRoutes()
+    {
+        Route::namespace($this->namespace)
+            ->middleware('web')
+            ->group(base_path('routes/custom_module.php'));
+    }
     /**
      * Define the "api" routes for the application.
      *
