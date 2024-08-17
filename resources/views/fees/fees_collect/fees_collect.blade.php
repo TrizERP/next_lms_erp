@@ -719,7 +719,7 @@ function checkForm() {
 
 			$(document).on('change', '.hillsFine', function() {
 				var amount = parseFloat($(this).val());
-				var grandTotal = parseFloat($('#all_total').text());
+				var grandTotal = parseFloat($('#totalVal').val());
 				// subtract totalFin from grandTotal
 				var TotVal = (grandTotal + amount);
 				$("#grandTotal").val(TotVal);
@@ -733,6 +733,8 @@ function checkForm() {
 				dis = parseFloat($("#totalDis").val());
 				if({{session()->get('sub_institute_id')}} == 257){
 					cheque_return_charges = $("#cheque_return_charges1").val();
+				}else if({{session()->get('sub_institute_id')}} == 254){
+					cheque_return_charges = $(".hillsFine").val();
 				}else{
 					cheque_return_charges = $("#hidden_cheque_return_charges").val();
 				}
@@ -869,6 +871,8 @@ function checkForm() {
 							// START 30-12-2021 Added for total fine box value display wrong
 								fin = parseFloat($("#totalFin").val());
 								cheque_return_charges = $("#hidden_cheque_return_charges").val();
+								// 16-08-2024
+								$('.hillsFine').val(cheque_return_charges);
 								sum = fin + parseFloat(cheque_return_charges);
 								$("#cheque_return_charges").val(sum);
 								calculateTotal();
