@@ -232,11 +232,18 @@ if($start_month==6){
             $cur_syear = session()->get('syear');
             $sub_institute_id = session()->get('sub_institute_id');
 
-            $old_year = DB::table('tblstudent')
-                ->selectRaw('distinct(admission_year)')
-                ->where('sub_institute_id', $sub_institute_id)
-                ->where('admission_year', '<', $cur_syear)->get()->toArray();
+            // $old_year = DB::table('tblstudent')
+            //     ->selectRaw('distinct(admission_year)')
+            //     ->where('sub_institute_id', $sub_institute_id)
+            //     ->where('admission_year', '<', $cur_syear)->get()->toArray();
 
+            // 16-08-2024 syear as admission_years from academic_year table
+            $old_year = DB::table('academic_year')
+            ->selectRaw('distinct(syear) as admission_year')
+            ->where('sub_institute_id', $sub_institute_id)
+            ->where('syear', '<', $cur_syear)->get()->toArray();
+            // echo "<pre>";print_r($old_year);exit;
+            // end 16-08-2024
             $all_data = $_REQUEST['OldValues'];
             foreach ($all_data as $id => $arr) {
                 foreach ($arr as $ids => $val) {

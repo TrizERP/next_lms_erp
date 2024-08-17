@@ -51,10 +51,10 @@
                                 <thead>
                                     <tr>
                                         <th>{{ App\Helpers\get_string('studentquota','request')}}</th>
-                                        <?php foreach ($data['data']['title_arr'] as $id => $val) { ?>
-                                            <th><?php echo $val; ?></th>
-                                        <?php } ?>
-                                        <th>Total</th>
+                                         @foreach ($data['data']['title_arr'] as $id => $val)
+                                            <th>{{$val}}</th>
+                                        @endforeach
+                                        <th class="text-center">Total</th>
                                     </tr>
                                 </thead>
                                 <?php
@@ -88,7 +88,7 @@
                                             }
                                             ?>
                                             <td>
-                                                <input {{$disable_new_edit}} type="text" class="form-control" value="<?php echo $amount_val; ?>" name="<?php echo 'NewValues[' . $quota_id . '][' . $id . ']'; ?>">
+                                                <input {{$disable_new_edit}} type="text" class="form-control" value="{{$amount_val}}" name="NewValues[{{$quota_id}}][{{$id}}]">
                                             </td>
                                         <?php } ?>
                                         <td class="total">
