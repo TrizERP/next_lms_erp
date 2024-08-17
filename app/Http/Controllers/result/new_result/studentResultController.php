@@ -2950,7 +2950,7 @@ while ($current_date <= $post_end_date) {
                             //$ob_mark = number_format(($obt_mark / $title->points) * $title->con_point, 2); // Rajesh 06-08-2024
                             if(!isset($title_exam[$title->id])){
                                 $title_exam[$title->id] = $obt_mark;
-                                $underline= '';
+                                $underline = $pt_per = '';
                                 if($title->title=="P.T.-1" || $title->title=='P.T.-2'){
                                     //$pt_per = ($ob_mark !== '0.00' && is_string($ob_mark)) ? round(($ob_mark / $title->con_point) * 100, 0) : 0;  // Rajesh 06-08-2024
                                     $pt_per = ($obt_mark !== '0.00' && is_numeric($obt_mark)) ? round(($obt_mark / $title->points) * 100, 0) : 0;
