@@ -1029,4 +1029,62 @@ class lmsCounsellingController extends Controller
         $employers = OnetEmployer::all();
         return response()->json($employers);
     }
+    public function ExploreSector(Request $request)
+    {
+        $title = $request->input('title');
+
+        // Fetch data from the database using the query builder
+        $sectors = DB::table('onet_explore_sector')
+            ->where('title', $title)
+            ->get();
+
+        // Group data by title
+        $response = $sectors->groupBy('title')->map(function ($items) {
+            return [
+                'title' => $items->first()->title,
+                'image' => $items->first()->image,
+                'data' => $items->map(function ($item) {
+                    return [
+                        'key' => $item->key,
+                        'value' => $item->value,
+                        'html' => $item->html,
+                    ];
+                })->toArray(),
+            ];
+        })->values()->first();
+
+        return response()->json($response);
+    }
+    public function ExpertAdvice(Request $request)
+    {
+        $title = $request->input('title');
+
+        // Fetch data from the database using the query builder
+        $sectors = DB::table('onet_expert_advice')
+            ->where('title', $title)
+            ->get();
+
+        // Group data by title
+        $response = $sectors->groupBy('title')->map(function ($items) {
+            return [
+                'title' => $items->first()->title,
+                'image' => $items->first()->image,
+                'data' => $items->map(function ($item) {
+                    return [
+                        'name' => $item->name,
+                        'description' => $item->description,
+                        'education' => $item->education,
+                        'city' => $item->city,
+                        'state' => $item->state,
+                        'contact_no' => $item->contact_no,
+                        'teacher' => $item->teacher,
+                        'benefits' => $item->benefits,
+                        'university_shortlist' => $item->university_shortlist,
+                    ];
+                })->toArray(),
+            ];
+        })->values()->first();
+
+        return response()->json($response);
+    }
 }
