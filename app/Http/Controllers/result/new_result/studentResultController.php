@@ -2726,9 +2726,10 @@ while ($current_date <= $post_end_date) {
                         $exam_head = $title->ExamTitle;
                         if($exam_head == 'Periodic Test'){
                             $i = 0;
+                            $pts = ($title->standard_id == 3299) ? 3 : 2;
                             $printed_titles = []; // Array to keep track of printed titles
                             foreach ($exam_name as $key => $value) {
-                                if ($i < 2 && !in_array($value->title, $printed_titles)) {
+                                if ($i < $pts && !in_array($value->title, $printed_titles)) {
                                     $table .= '<th class="data_center"><b>' . $value->title . '<br>(' . $value->points . ')</b></th>';
                                     $printed_titles[] = $value->title; // Add the title to printed_titles array
                                     $i++;
@@ -2747,7 +2748,7 @@ while ($current_date <= $post_end_date) {
                 $table .= '</tr>
                 </thead>
                 <tbody>';
-                $tot_ob_mark =  $tot_sub_mark =   $get_all_ob_mark =  $get_all_tot_mark = 0;
+                $tot_ob_mark = $tot_sub_mark = $get_all_ob_mark = $get_all_tot_mark = 0;
 
                 // get all subject name 
                 foreach ($get_subject as $val) {
@@ -2951,7 +2952,9 @@ while ($current_date <= $post_end_date) {
                             if(!isset($title_exam[$title->id])){
                                 $title_exam[$title->id] = $obt_mark;
                                 $underline = $pt_per = '';
-                                if($title->title=="P.T.-1" || $title->title=='P.T.-2'){
+
+                                $pt_exams=["P.T.-1","P.T.-2","P.T.-3"];
+	                            if(in_array($title->title,$pt_exams) ){
                                     //$pt_per = ($ob_mark !== '0.00' && is_string($ob_mark)) ? round(($ob_mark / $title->con_point) * 100, 0) : 0;  // Rajesh 06-08-2024
                                     $pt_per = ($obt_mark !== '0.00' && is_numeric($obt_mark)) ? round(($obt_mark / $title->points) * 100, 0) : 0;
                                     $underline = ($pt_per < 33 && $academic_type == "upper") ? 'style="text-decoration: underline red 2px;"' : '';
@@ -2964,7 +2967,7 @@ while ($current_date <= $post_end_date) {
                 }
             //}
             $table .= '</tr>';
-    }
+    	}
 
         $table .= '<tr></tr></tbody></table>';
         $res['scholastic'] = $table;
@@ -3157,19 +3160,19 @@ while ($current_date <= $post_end_date) {
                     }
                 }            
                 $obtained_mark_formatted = number_format($ob_main_mark, 0);
-                if($subject_total[$terms->term_id]!=0){
+                if(isset($subject_total[$terms->term_id]) && $subject_total[$terms->term_id]!=0){
                     $tot_mark = ($obtained_mark_formatted * 100)/$subject_total[$terms->term_id];
                     if($tot_mark < 33){
                         $pass_or_fail++;
                     }
                 }
                 
-                $table .= '<td class="data_center all_mark">' . $obtained_mark_formatted .'</td><td class="data_center grade_of_both">'. $this->getGrade($grade_arr, $subject_total[$terms->term_id], $obtained_mark_formatted) . '</td>';
+                $table .= '<td class="data_center all_mark">' . $obtained_mark_formatted .'</td><td class="data_center grade_of_both">'. $this->getGrade($grade_arr, isset($subject_total[$terms->term_id]) ? $subject_total[$terms->term_id] : 0, $obtained_mark_formatted) . '</td>';
                                 
                 $both_term_ob_mark += $obtained_mark_formatted;
                 // Update the total marks for the current term
                 $total_term_marks[$terms->term_id] += $ob_main_mark;
-                $total_sub_marks[$terms->term_id] += $subject_total[$terms->term_id];
+                $total_sub_marks[$terms->term_id] += isset($subject_total[$terms->term_id]) ? $subject_total[$terms->term_id] : 0;
             } 
             
             $get_all_ob_mark += $both_term_ob_mark;
