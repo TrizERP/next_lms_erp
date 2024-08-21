@@ -91,7 +91,7 @@
                                 </div>
                                 <div class="col-md-3  pull-right" >
                                     <label for="">Search ISBN/ISSN</label>
-                                    <input type="text" class="form-control" placeholder="Enter ISBN/ISSN" id="isbn_issn" name="isbn_issn" onkeyup="getIsbnIssn(this.value);">
+                                    <input type="text" class="form-control" placeholder="Enter ISBN/ISSN" id="SearchIsbnIssn" name="isbn_issn" onkeyup="getIsbnIssn(this.value);">
                                 </div>
                                 <!-- 12-08-2024  end -->
                                 <div class="col-md-4 mt-2" style="display:none">
@@ -181,10 +181,27 @@
                                             <input type="number" name="no_of_items" id="no_of_items" class="form-control" placeholder="Enter No Of Items" value="1">
                                         </div>
                                     </div>
-                                    <div class="col-md-4">
+                                   <div class="col-md-4"  id="otherItemCOde">
                                         <div class="form-group">
                                             <label for="">Item Code</label>
-                                            <input type="text" id="item_code_value" class="form-control"  readonly>
+                                            <input type="text" id="item_code_value" id="radioItem" class="form-control"  readonly>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                    <label class="control-label">Item Code<span style="color: red;"></span></label>
+                                        <div class="radio-list" id="mmisItemCOde">
+                                            <label class="radio-inline p-0">
+                                                <div class="radio radio-success">
+                                                    <input type="radio" name="item_code_value" id="radioItem1" class="purchase">
+                                                    <label for="male">Purchase <br><span id="purchase"></span></label>
+                                                </div>
+                                            </label>
+                                            <label class="radio-inline">
+                                                <div class="radio radio-success">
+                                                    <input type="radio" name="item_code_value"  id="radioItem2" class="donate">
+                                                    <label for="female">Donate <br><span id="donate"></span></label>
+                                                </div>
+                                            </label>
                                         </div>
                                     </div>
                                     <div class="col-md-4">
@@ -547,7 +564,20 @@
             $('#no_span').remove();       
             $('#no_of_items').prop('readonly',false);
             $('#item_code_value').val('{{$nextItemCode}}');
-           $('#title,#sub_title,#material_resource_type,#no_of_items,#author_name,#isbn_issn,#classification,#publisher_name,#publish_year,#publish_place,#pages,#series_title,#call_number,#language,#source,#subject,#price,#price_currency,#notes,#review, #edition, #tags, #no_of_items').prop('required', true);               
+            @if(session()->get('sub_institute_id')!=47)
+            $('#mmisItemCOde').hide();
+            $('#otherItemCOde').show();
+            @else
+            $('#otherItemCOde').hide();
+            $('#mmisItemCOde').show();
+            @endif
+            $('#purchase').text('{{$nextItemCode}}');
+            $('#donate').text('{{$DonateCode}}');
+            $('.purchase').val('{{$nextItemCode}}');
+            $('.donate').val('{{$DonateCode}}');
+
+           $('#title,#sub_title,#material_resource_type,#no_of_items,#author_name,#isbn_issn,#classification,#publisher_name,#publish_year,#publish_place,#pages,#series_title,#call_number,#language,#source,#subject,#price,#price_currency,#notes,#review, #edition, #tags, #no_of_items').prop('required', true);     
+                     
         })
         $(document).on("click", ".btn-edit", function(e) {
            
@@ -587,6 +617,10 @@
                         $('#no_of_items').val(data.data[0].no_of_items);
                         $('#no_of_items').prop('readonly',true);
                         $('#item_code_value').val(data.data[0].item_codes);
+                        @if(session()->get('sub_institute_id')==47) 
+                        $('#mmisItemCOde').hide();
+                        $('#otherItemCOde').show();
+                        @endif
                         $('#author_name').val(data.data[0].author_name);
                         $('#isbn_issn').val(data.data[0].isbn_issn);
                         $('#classification').val(data.data[0].classification);
