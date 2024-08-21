@@ -40,7 +40,7 @@
                     <select id='month' name="month" class="form-control">
                         <option value="0">Select Month</option>
                         @foreach($data['months'] as $month)
-                        <option @if(isset($data['selMonth']) && $data['selMonth'] == $month) selected @elseif($currentMonth == $month) Selected @endif>{{$month}}</option>
+                        <option @if(isset($data['selMonth']) && $data['selMonth'] == $month) selected @endif>{{$month}}</option>
                         @endforeach
                     </select>
                 </div>
@@ -49,7 +49,7 @@
                     <select id='year' name="year" class="form-control">
                         <option value="0">Select Year</option>
                         @foreach($data['years'] as $year)
-                        <option @if(isset($data['selYear']) && $data['selYear'] == $year) selected @elseif(date('Y')==$year) selected @endif>{{$year}}</option>
+                        <option @if(isset($data['selYear']) && $data['selYear'] == $year) selected @endif>{{$year}}</option>
                         @endforeach
                     </select>
                 </div>

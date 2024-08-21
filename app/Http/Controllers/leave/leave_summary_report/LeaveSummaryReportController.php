@@ -130,8 +130,15 @@ class LeaveSummaryReportController extends Controller
 
             foreach($Casual_Leave as $key2 => $value2)
             {
+               // leave without pay
+               if($leave_status[$key2] =="approved_lwp"){
+                    $sum_exists["Leave Without Pay"][] = $day_type[$key2];
+                    $counday = countDays($leave_from_date[$key2],$leave_to_date[$key2],$day_type[$key2],'');
+                    $new_data["Leave Without Pay"][$value->id]= $counday;
 
-                if(in_array($leave_status[$key2],['approved','approved_lwp','pending'])){
+                    $new_data["Leave Without Pay"][$value->id]= array_sum($sum_exists['Leave Without Pay']);
+                }
+                else if(in_array($leave_status[$key2],['approved','pending'])){
                     $sum = $day_type[$key2];
                     $sum_exists[$value2][] = $day_type[$key2];
                     $counday = countDays($leave_from_date[$key2],$leave_to_date[$key2],$day_type[$key2],'');
@@ -146,6 +153,7 @@ class LeaveSummaryReportController extends Controller
                         $value_exits[] = $value2;
                     }
                 }
+                
             }
             foreach($get_hrms_leave_types as $key => $value2)
             {
@@ -206,8 +214,9 @@ class LeaveSummaryReportController extends Controller
         $employee_id = $request->emp_id;
         $department_id = $request->department_id;
         $leaveTypeId = $request->leave_type_id;
+        $leaveType = $request->leaveType;
         $year = $request->year;
-
+        // DB::enableQueryLog();
         $get_employee_leave_lists = DB::table('hrms_emp_leaves as hel')
         ->selectRaw("hel.*, CONCAT_WS(' ',u.first_name,u.last_name) AS employee_name, hlt.leave_type,u.department_id")
         ->join('tbluser as u', 'u.id', '=', 'hel.user_id')
@@ -219,11 +228,15 @@ class LeaveSummaryReportController extends Controller
         // ->whereYear('hel.from_date', '>=', $year)
         ->where('hel.from_date','>=',$year.'-04-01')
         ->where('hel.to_date','<=',($year+1).'-03-31')
-        ->where('hel.leave_type_id',$leaveTypeId)
-        ->where('user_id',$employee_id)
-        ->whereIn('hel.status',['approved','approved_lwp','pending'])
+        ->when($leaveType!='lwp',function($q) use($leaveTypeId,$employee_id){
+            $q->where('hel.leave_type_id',$leaveTypeId)
+            ->where('hel.user_id',$employee_id)
+            ->whereIn('hel.status',['approved','pending']);
+        },function($q) use($leaveTypeId,$employee_id) {
+            $q->whereRaw("(hel.status = 'approved_lwp' OR hel.leave_type_id = {$leaveTypeId}) and hel.user_id = {$employee_id}");
+        })
         ->get()->toArray();
-
+        // dd(DB::getQueryLog($get_employee_leave_lists));
         return $get_employee_leave_lists;
     }
 }
