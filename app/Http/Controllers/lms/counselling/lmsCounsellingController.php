@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Http\Client\RequestException;
+use App\Traits\Constants;
 
 class lmsCounsellingController extends Controller
 {
@@ -146,8 +147,8 @@ class lmsCounsellingController extends Controller
         $type = $request->input('type');
 
         try {
-            $username = 'trizinnovation';
-            $password = '4225aej';
+            $username = Constants::ONET_USERNAME;
+            $password = Constants::ONET_PASSWORD;
 
             $credentials = base64_encode($username . ':' . $password);
 
@@ -175,8 +176,8 @@ class lmsCounsellingController extends Controller
         $allCareers = [];
 
         try {
-            $username = 'trizinnovation';
-            $password = '4225aej';
+            $username = Constants::ONET_USERNAME;
+            $password = Constants::ONET_PASSWORD;
 
             $credentials = base64_encode($username . ':' . $password);
 
@@ -214,8 +215,8 @@ class lmsCounsellingController extends Controller
         $type = $request->input('type');
 
         try {
-            $username = 'trizinnovation';
-            $password = '4225aej';
+            $username = Constants::ONET_USERNAME;
+            $password = Constants::ONET_PASSWORD;
 
             $credentials = base64_encode($username . ':' . $password);
 
@@ -243,8 +244,8 @@ class lmsCounsellingController extends Controller
         $type = $request->input('type');
 
         try {
-            $username = 'trizinnovation';
-            $password = '4225aej';
+            $username = Constants::ONET_USERNAME;
+            $password = Constants::ONET_PASSWORD;
 
             $credentials = base64_encode($username . ':' . $password);
 
@@ -1086,5 +1087,219 @@ class lmsCounsellingController extends Controller
         })->values()->first();
 
         return response()->json($response);
+    }
+
+    public function intrestQuestions(Request $request)
+    {
+        $start = $request->input('start') ?? 1;
+        $end = $request->input('end') ?? 60;
+
+        try {
+            $username = Constants::ONET_USERNAME;
+            $password = Constants::ONET_PASSWORD;
+
+            $credentials = base64_encode($username . ':' . $password);
+
+            $response = Http::withHeaders([
+                'Authorization' => 'Basic ' . $credentials,
+                'Accept' => 'application/json',
+            ])->get('https://services.onetcenter.org/ws/mnm/interestprofiler/questions', [
+                'start' => $start,
+                'end' => $end,
+            ]);
+
+            if ($response->successful()) {
+                $data = $response->json(); // Extract the JSON data from the response
+                return response()->json($data); // Return the JSON data
+            } else {
+                $statusCode = $response->status();
+                $errorMessage = $response->body();
+                return response()->json(['error' => $errorMessage], $statusCode); // Return the error message with status code
+            }
+        } catch (RequestException $exception) {
+            $errorMessage = $exception->getMessage();
+            return response()->json(['error' => $errorMessage], 500); // Return the exception message with a 500 status code
+        }
+    }
+    public function intrestResults(Request $request)
+    {
+        $answers = $request->input('answers');
+
+        try {
+            // Fetch credentials from app\Traits\Constants.php
+            $username = Constants::ONET_USERNAME;
+            $password = Constants::ONET_PASSWORD;
+
+            // Encode credentials for Basic Auth
+            $credentials = base64_encode($username . ':' . $password);
+
+            // Make the API request
+            $response = Http::withHeaders([
+                'Authorization' => 'Basic ' . $credentials,
+                'Accept' => 'application/json',
+            ])->get('https://services.onetcenter.org/ws/mnm/interestprofiler/results', [
+                'answers' => $answers
+            ]);
+
+            // Check if the response is successful
+            if ($response->successful()) {
+                return response()->json($response->json()); // Return the JSON data
+            } else {
+                $statusCode = $response->status();
+                $errorMessage = $response->body();
+                return response()->json(['error' => $errorMessage], $statusCode); // Return the error message with status code
+            }
+        } catch (RequestException $exception) {
+            $errorMessage = $exception->getMessage();
+            return response()->json(['error' => $errorMessage], 500); // Return the exception message with a 500 status code
+        }
+    }
+    public function intrestJobzone()
+    {
+        try {
+            // Fetch credentials from app\Traits\Constants.php
+            $username = Constants::ONET_USERNAME;
+            $password = Constants::ONET_PASSWORD;
+
+            // Encode credentials for Basic Auth
+            $credentials = base64_encode($username . ':' . $password);
+
+            // Make the API request
+            $response = Http::withHeaders([
+                'Authorization' => 'Basic ' . $credentials,
+                'Accept' => 'application/json',
+            ])->get('https://services.onetcenter.org/ws/mnm/interestprofiler/job_zones');
+
+            // Check if the response is successful
+            if ($response->successful()) {
+                return response()->json($response->json()); // Return the JSON data
+            } else {
+                $statusCode = $response->status();
+                $errorMessage = $response->body();
+                return response()->json(['error' => $errorMessage], $statusCode); // Return the error message with status code
+            }
+        } catch (RequestException $exception) {
+            $errorMessage = $exception->getMessage();
+            return response()->json(['error' => $errorMessage], 500); // Return the exception message with a 500 status code
+        }
+    }
+    public function intrestCareers(Request $request)
+    {
+        $answers = $request->input('answers');
+        $job_zone = $request->input('job_zone');
+
+        try {
+            // Fetch credentials from app\Traits\Constants.php
+            $username = Constants::ONET_USERNAME;
+            $password = Constants::ONET_PASSWORD;
+
+            // Encode credentials for Basic Auth
+            $credentials = base64_encode($username . ':' . $password);
+
+            // Make the API request
+            $response = Http::withHeaders([
+                'Authorization' => 'Basic ' . $credentials,
+                'Accept' => 'application/json',
+            ])->get('https://services.onetcenter.org/ws/mnm/interestprofiler/careers', [
+                'answers' => $answers,
+                'job_zone' => $job_zone
+            ]);
+
+            // Check if the response is successful
+            if ($response->successful()) {
+                return response()->json($response->json()); // Return the JSON data
+            } else {
+                $statusCode = $response->status();
+                $errorMessage = $response->body();
+                return response()->json(['error' => $errorMessage], $statusCode); // Return the error message with status code
+            }
+        } catch (RequestException $exception) {
+            $errorMessage = $exception->getMessage();
+            return response()->json(['error' => $errorMessage], 500); // Return the exception message with a 500 status code
+        }
+    }
+    public function intrestEnterScore(Request $request)
+    {
+        $Realistic = $request->input('Realistic') ?? 0;
+        $Investigative = $request->input('Investigative') ?? 0;
+        $Artistic = $request->input('Artistic') ?? 0;
+        $Social = $request->input('Social') ?? 0;
+        $Enterprising = $request->input('Enterprising') ?? 0;
+        $Conventional = $request->input('Conventional') ?? 0;
+        $job_zone = $request->input('job_zone') ?? 5;
+        $end = $request->input('end') ?? 1000;
+        
+        try {
+            // Fetch credentials from app\Traits\Constants.php
+            $username = Constants::ONET_USERNAME;
+            $password = Constants::ONET_PASSWORD;
+
+            // Encode credentials for Basic Auth
+            $credentials = base64_encode($username . ':' . $password);
+
+            // Make the API request
+            $response = Http::withHeaders([
+                'Authorization' => 'Basic ' . $credentials,
+                'Accept' => 'application/json',
+            ])->get('https://services.onetcenter.org/ws/mnm/interestprofiler/careers', [
+                'Realistic' => $Realistic,
+                'Investigative' => $Investigative,
+                'Artistic' => $Artistic,
+                'Social' => $Social,
+                'Enterprising' => $Enterprising,
+                'Conventional' => $Conventional,
+                'job_zone' => $job_zone,
+                'end' => $end,
+            ]);
+
+            // Check if the response is successful
+            if ($response->successful()) {
+                return response()->json($response->json()); // Return the JSON data
+            } else {
+                $statusCode = $response->status();
+                $errorMessage = $response->body();
+                return response()->json(['error' => $errorMessage], $statusCode); // Return the error message with status code
+            }
+        } catch (RequestException $exception) {
+            $errorMessage = $exception->getMessage();
+            return response()->json(['error' => $errorMessage], 500); // Return the exception message with a 500 status code
+        }
+    }
+    public function intrestArea(Request $request)
+    {
+        $area = $request->input('area') ?? 'Realistic';
+        $job_zone = $request->input('job_zone') ?? 5;
+        $end = $request->input('end') ?? 1000;
+
+        try {
+            // Fetch credentials from app\Traits\Constants.php
+            $username = Constants::ONET_USERNAME;
+            $password = Constants::ONET_PASSWORD;
+
+            // Encode credentials for Basic Auth
+            $credentials = base64_encode($username . ':' . $password);
+
+            // Make the API request
+            $response = Http::withHeaders([
+                'Authorization' => 'Basic ' . $credentials,
+                'Accept' => 'application/json',
+            ])->get('https://services.onetcenter.org/ws/mnm/interestprofiler/careers', [
+                'area' => $area,
+                'job_zone' => $job_zone,
+                'end' => $end,
+            ]);
+
+            // Check if the response is successful
+            if ($response->successful()) {
+                return response()->json($response->json()); // Return the JSON data
+            } else {
+                $statusCode = $response->status();
+                $errorMessage = $response->body();
+                return response()->json(['error' => $errorMessage], $statusCode); // Return the error message with status code
+            }
+        } catch (RequestException $exception) {
+            $errorMessage = $exception->getMessage();
+            return response()->json(['error' => $errorMessage], 500); // Return the exception message with a 500 status code
+        }
     }
 }
