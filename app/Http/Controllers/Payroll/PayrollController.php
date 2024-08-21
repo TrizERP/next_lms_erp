@@ -1482,6 +1482,8 @@ class PayrollController extends Controller
         }
         $res['months'] = Helpers::getMonths();
         $res['years'] = Helpers::getYears();
+        $res['selYear'] = date('Y');
+        $res['selMonth'] = date('M');
 
         return is_mobile($type,'payroll.monthly_payroll_report.newIndex',$res,'view');
     }
@@ -1514,7 +1516,7 @@ class PayrollController extends Controller
             // get monthly salary Data and add into newData array
             $newData[$key]['monthlyData'] = DB::table('employee_monthly_salary_data')->where(['sub_institute_id'=>$sub_institute_id,'year'=>$year])->where('employee_id',$value['id'])->where('month',$month)->first();
             if(isset($newData[$key]['monthlyData']->total_day)){
-                $newData[$key]['totalDay'] = $newData[$key]['monthlyData']->total_day;
+                $newData[$key]['totalDay'] = number_format($newData[$key]['monthlyData']->total_day,2);
             }else{
                 $year = $year ?? Carbon::now()->year;
                 $month = $month ?? Carbon::now()->format('M');
@@ -1529,17 +1531,17 @@ class PayrollController extends Controller
                     $to_date = $from_date->copy()->endOfMonth();
                 }
                 // $emp_att = DB::table('hrms_attendances')->whereBetween('day',[$from_date,$to_date])->where('user_id',$value['id'])->count();
-
+              
                 $request2 = new Request(['type'=>"API",'sub_institute_id'=>$sub_institute_id ,'syear'=>$syear,'from_date'=>$from_date,'to_date'=>$to_date,'department_id'=>[$value['department_id']],'emp_id'=>$value['id']]);
-                $hrmsController = new HrmsController;
-                $attResponse = json_decode($hrmsController->departmentAttendanceReportCreate($request2),true);
-                $AttTotalDays = isset($attResponse['empData'][0]['totalDays']) ? $attResponse['empData'][0]['totalDays'] : 0;
-                $AttTotalAb = isset($attResponse['empData'][0]['total_ab_day']) ? $attResponse['empData'][0]['total_ab_day'] : 0;
+                // $hrmsController = new HrmsController;
+                // $attResponse = json_decode($hrmsController->departmentAttendanceReportCreate($request2),true);
+                // $AttTotalDays = isset($attResponse['empData'][0]['totalDays']) ? $attResponse['empData'][0]['totalDays'] : 0;
+                // $AttTotalAb = isset($attResponse['empData'][0]['total_ab_day']) ? $attResponse['empData'][0]['total_ab_day'] : 0;
 
-                $emp_att = ($AttTotalDays - $AttTotalAb);
-                // echo "<pre>";print_r($attResponse);
+                // $emp_att = ($AttTotalDays - $AttTotalAb);
+                $emp_att = $this->getTotalDays($request2);
 
-                $newData[$key]['totalDay'] = $emp_att;
+                $newData[$key]['totalDay'] = number_format($emp_att,2);
             }
         }
                 // echo "<pre>";print_r($newData);
@@ -1573,7 +1575,7 @@ class PayrollController extends Controller
         $res['months'] = Helpers::getMonths();
         $res['years'] = Helpers::getYears();
       
-        // echo "<pre>";print_r($daysCount);exit;
+        // echo "<pre>";print_r($newData);exit;
         return is_mobile($type,'payroll.monthly_payroll_report.newIndex',$res,'view');
     }
 
@@ -1714,5 +1716,106 @@ class PayrollController extends Controller
             $res['message'] = "Inserted Successfully";
         }
         return is_mobile($type,'monthly_payroll.index',$res);
+    }
+
+    // 2024-08-20 getTotal Days
+    public function getTotalDays(Request $request){
+        $sub_institute_id=$request->sub_institute_id;
+        $syear=$request->syear;
+        $from_date =$request->from_date;
+        $to_date =$request->to_date;
+        $user_id=$request->emp_id;
+     
+        // getUserData 
+        $userData = DB::table('tbluser')->where('id',$user_id)->first();
+        // get weekDays
+        $startDate = Carbon::parse($from_date);
+        $endDate = Carbon::parse($to_date);
+        $countSundays = $totalDays = $attAb = 0;
+        for ($date = $startDate; $date->lte($endDate); $date->addDay()) {
+            if ($date->isSunday()) {
+                $countSundays++;
+            }
+        }
+        $weekday_off = $countSundays;
+
+        // get Holidays 
+        $get_hrms_holidays = DB::table('hrms_holidays')
+        ->where('sub_institute_id', $sub_institute_id)
+        ->where('from_date','>=',$from_date)
+        ->where('to_date','<=',$to_date)
+        ->get()->toArray();
+        
+        $holiday = 0;
+        $hstartDate = Carbon::parse($from_date);
+        $hendDate = Carbon::parse($to_date);
+        foreach ($get_hrms_holidays as $key => $value) {
+            $startDate = Carbon::parse($value->from_date);
+            $endDate = Carbon::parse($value->to_date);
+            for ($date = $hstartDate; $date->lte($hendDate); $date->addDay()) {
+                $holiday++;
+            }
+        }
+        // get users attandance
+        $totalAtt = 0;
+        $noAtt=$attArr=  [];
+        $astartDate = Carbon::parse($from_date);
+        $aendDate = Carbon::parse($to_date);
+        for ($date = $astartDate; $date->lte($aendDate); $date->addDay()) {
+            if ($date->isSunday()) {
+                $countSundays++;
+            }else{
+                $searchDate = Carbon::parse($date)->format('Y-m-d');
+                $attData = DB::table('hrms_attendances')->where(['sub_institute_id'=>$sub_institute_id,'user_id'=>$user_id])->where('day',$searchDate)->count();
+                if($attData>0){
+                    $totalAtt += $attData;
+                    $attArr[]= $searchDate;
+                }else{
+                    $noAtt[] = $searchDate;
+                }
+            }
+        }   
+        // get users leave
+        $userLeaves = DB::table('hrms_emp_leaves as hel')
+        ->where('hel.user_id',$user_id)
+        ->whereRaw('hel.from_date >= "'.$from_date->format('Y-m-d').'" and hel.to_date <="'.$to_date->format('Y-m-d').'"')
+        ->get()->toArray();
+        
+        $totDayPlaus = $totDayMinus = $noData = 0;
+        $leaveDates=[];
+        // check leave date in attandance and also aprroved_lwp
+        foreach ($userLeaves as $key => $value) {
+            $leaveFrom = Carbon::parse($value->from_date);
+            $leaveTo = Carbon::parse($value->to_date);
+            for ($leavedate = $leaveFrom; $leavedate->lte($leaveTo); $leavedate->addDay()) {
+                if ($date->isSunday()) {
+                    $countSundays++;
+                }else{
+                    // Leaves that are not in attandance.. 
+                    if(!in_array($leavedate->format('Y-m-d'),$attArr) && !in_array($value->status,["approved_lwp"])){
+                        $totDayPlaus= ($totDayPlaus+$value->day_type);
+                    }
+                    // if date not found in attdance and leave is approved lwp then minus, count only full day leave because half day will be in attandance
+                    if($value->status == "approved_lwp"){
+                        $totDayMinus = ($totDayMinus+$value->day_type);
+                    }
+                    // echo $leavedate->format('Y-m-d');
+                    $leaveDates[] =$leavedate->format('Y-m-d');
+                }
+            }
+        }
+
+        // date not found in attandance and leave, no punch in and punch out and also no leave entry in database
+        $noEnrty = 0;
+        foreach ($noAtt as $key => $value) {
+            if(!in_array($value,$leaveDates)){
+                $noEnrty++;
+            }
+        }
+        $totalDays = ($totalAtt + $holiday + $weekday_off + $totDayPlaus);
+        $totalDays = ($totalDays - $totDayMinus - $noEnrty);
+        $totalDays = ($totalDays>0) ? $totalDays : 0; // totDays should not be in minus
+
+        return $totalDays;
     }
 }
