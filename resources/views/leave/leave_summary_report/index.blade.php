@@ -295,7 +295,8 @@
                     <thead>
                         <tr>
                             <th>Sr No.</th>
-                            <th>Date</th>
+                            <th>From Date</th>
+                            <th>To Date</th>
                             <th>Employee Name</th>
                             <th>Leave Type</th>
                             <th>Leave Length</th>
@@ -326,6 +327,7 @@
                         table += `<tr>
                         <td>${(i++)}</td>
                         <td>${element.from_date}</td>
+                        <td>${element.to_date}</td>
                         <td>${element.employee_name}</td>
                         <td>${element.leave_type}</td>
                         <td>${dayCount}</td>

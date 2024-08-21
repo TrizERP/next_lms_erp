@@ -55,7 +55,7 @@
                                          @foreach ($data['data']['title_arr'] as $id => $val)
                                             <th>{{$val}}</th>
                                         @endforeach
-                                        <th>Total</th>
+                                        <th class="text-center">Total</th>
                                     </tr>
                                 </thead>
                                 @foreach ($data['data']['quota_arr'] as $quota_id => $quota_val)
@@ -90,7 +90,7 @@
                                             }
                                            @endphp
                                             <td>
-                                                <input {{$disable_new_edit}} type="text" class="form-control" value="{{$amount_val}}" name="NewValues[{{$quota_id}}][{{$id}}">
+                                                <input {{$disable_new_edit}} type="text" class="form-control" value="{{$amount_val}}" name="NewValues[{{$quota_id}}][{{$id}}]">
                                             </td>
                                         @endforeach
                                         <td class="total">

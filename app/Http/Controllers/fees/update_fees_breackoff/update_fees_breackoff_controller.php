@@ -79,6 +79,7 @@ class update_fees_breackoff_controller extends Controller
     {
         //dd($request->all());
         if ($request->has('action') && $request->input('action') == 'insert'){
+            // echo "<pre>";print_r($request->all());exit;
             
             if($request->has('NewValues'))
             {
@@ -155,10 +156,14 @@ class update_fees_breackoff_controller extends Controller
                     }
                 }
 
-                $old_year = DB::table('fees_breackoff')->selectRaw('distinct(admission_year)')
-                    ->where('sub_institute_id', session()->get('sub_institute_id'))
-                    ->where('admission_year', "<", session()->get('syear'))->get()->toArray();
-
+                // $old_year = DB::table('fees_breackoff')->selectRaw('distinct(admission_year)')
+                //     ->where('sub_institute_id', session()->get('sub_institute_id'))
+                //     ->where('admission_year', "<", session()->get('syear'))->get()->toArray();
+                // 16-08-2024
+                $old_year = DB::table('academic_year')
+                ->selectRaw('distinct(syear) as admission_year')
+                ->where('sub_institute_id',session()->get('sub_institute_id'))
+                ->where('syear', '<', session()->get('syear'))->get()->toArray();
                 foreach ($old_year as $year_id => $year_arr) {
     //                foreach ($req['grade'] as $grade_id => $grade) {
     //                    foreach ($req['standard'] as $std_id => $std) {

@@ -2384,7 +2384,8 @@ if (!function_exists('get_string')) {
             else{
                 // Calculate the total number of days if day type = 1 or 0.5
                 if($dayType!=''){
-                    $daysCount = $fromDate->diffInDays($toDate) + $dayType;
+                    $mainDays = $fromDate->diffInDays($toDate) + 1;
+                    $daysCount = ($mainDays*$dayType);
                 }else{
                     $daysCount = $fromDate->diffInDays($toDate) + 1;
                 }

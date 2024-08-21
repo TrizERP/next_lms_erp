@@ -94,18 +94,43 @@ class BookController extends Controller
                 ->rawColumns(['checkbox', 'image','item_codes', 'action'])
                 ->make(true);
         }
-        $lastItem = LibraryItem::where('sub_institute_id',$sub_institute_id)->where('item_code','like','%L%')->orderBy('id', 'desc')->first();
-        if ($lastItem) {
-            // Extract the numeric part of the item_code and increment it
-            $lastItemCode = substr($lastItem->item_code, 1); // Remove the 'L' prefix
-            $nextItemCode = (int)$lastItemCode + 1;
-            $nextItemCode = str_pad($nextItemCode, 5, '0', STR_PAD_LEFT); // Ensure it's 5 digits
-            $nextItemCode = 'L' . $nextItemCode;
+        $DonateCode = '';
+        if($sub_institute_id!=47){
+            $lastItem = LibraryItem::where('sub_institute_id',$sub_institute_id)->where('item_code','like','%L%')->orderBy('id', 'desc')->first();
+
+            if ($lastItem) {
+                // Extract the numeric part of the item_code and increment it
+                $lastItemCode = substr($lastItem->item_code, 1); // Remove the 'L' prefix
+                $nextItemCode = (int)$lastItemCode + 1;
+                $nextItemCode = str_pad($nextItemCode, 5, '0', STR_PAD_LEFT); // Ensure it's 5 digits
+                $nextItemCode = 'L' . $nextItemCode;
+            }else{
+                $nextItemCode = "L000001";
+            }
         }else{
-            $nextItemCode = "L000001";
+            $purchase = LibraryItem::where('sub_institute_id',$sub_institute_id)->where('item_code','like','%A%')->orderBy('id', 'desc')->first();
+            $Donate = LibraryItem::where('sub_institute_id',$sub_institute_id)->where('item_code','like','%D%')->orderBy('id', 'desc')->first();
+            if ($purchase) {
+                // Extract the numeric part of the item_code and increment it
+                $lastItemCode = substr($purchase->item_code, 1); // Remove the 'L' prefix
+                $nextItemCode = (int)$lastItemCode + 1;
+                $nextItemCode = str_pad($nextItemCode, 5, '0', STR_PAD_LEFT); // Ensure it's 5 digits
+                $nextItemCode = 'A' . $nextItemCode;
+            }else{
+                $nextItemCode = "A000001";
+            }
+
+            if ($Donate) {
+                // Extract the numeric part of the item_code and increment it
+                $lastDonateCode = substr($Donate->item_code, 1); // Remove the 'L' prefix
+                $DonateCode = (int)$lastDonateCode + 1;
+                $DonateCode = str_pad($DonateCode, 5, '0', STR_PAD_LEFT); // Ensure it's 5 digits
+                $DonateCode = 'D' . $DonateCode;
+            }else{
+                $DonateCode = "D000001";
+            }
         }
-       
-        return view('library.books',compact('subjects','publisher_names','author_names','nextItemCode'));
+        return view('library.books',compact('subjects','publisher_names','author_names','nextItemCode','DonateCode'));
     }
 
     public function generateBarcode(Request $request, $id)
@@ -143,7 +168,8 @@ class BookController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function store(Request $request)
-    {        
+    {         
+    
         try {
             $sub_institute_id = session()->get('sub_institute_id');
 
@@ -192,15 +218,26 @@ class BookController extends Controller
                     if($request->no_of_items!=0){
                         for ($i = 1; $i <= $request->no_of_items; $i++) {
                             $lastItem = LibraryItem::orderBy('id', 'desc')->where('sub_institute_id',$sub_institute_id)->where('item_code','like','%L%')->first();
-                            if ($lastItem) {
-                                // Extract the numeric part of the item_code and increment it
-                                $lastItemCode = substr($lastItem->item_code, 1); // Remove the 'L' prefix
-                                $nextItemCode = (int)$lastItemCode + 1;
-                                $nextItemCode = str_pad($nextItemCode, 5, '0', STR_PAD_LEFT); // Ensure it's 5 digits
-                                $nextItemCode = 'L' . $nextItemCode;
-                            } else {
-                                // If no previous items exist, start with L00001
-                                $nextItemCode = 'L00001';
+                                if($sub_institute_id!=47){
+                                if ($lastItem) {
+                                    // Extract the numeric part of the item_code and increment it
+                                    $lastItemCode = substr($lastItem->item_code, 1); // Remove the 'L' prefix
+                                    $nextItemCode = (int)$lastItemCode + 1;
+                                    $nextItemCode = str_pad($nextItemCode, 5, '0', STR_PAD_LEFT); // Ensure it's 5 digits
+                                    $nextItemCode = 'L' . $nextItemCode;
+                                } else {
+                                    // If no previous items exist, start with L00001
+                                    $nextItemCode = 'L00001';
+                                }
+                            }else{
+                                if($i==1){
+                                    $nextItemCode = $request->item_code_value;
+                                }else{
+                                    $first =substr($request->item_code_value, 0,1);
+                                    $nextItemCode = (int)substr($request->item_code_value, 1) + 1;
+                                    $nextItemCode = str_pad($nextItemCode, 5, '0', STR_PAD_LEFT); // Ensure it's 5 digits
+                                    $nextItemCode = $first. $nextItemCode;
+                                }
                             }
                             $objItem = LibraryItem::updateOrCreate([
                                 'book_id' => $createBook->id,
