@@ -160,76 +160,6 @@ class PayrollController extends Controller
         // remove datas with value 0
         $empDetails =[];
         $totalAllowance = 0;
-        // if (!empty($request->emp)){
-        //     $makeJson = [];
-        //     foreach ($request->emp as $emp_id => $salaryData) {
-        //         if($salaryData[2][1]!=0 || $salaryData[3][1]!=0){
-        //             $empDetails[$emp_id]=$salaryData;
-        //         }
-               
-        //     }
-        // }
-        
-        // if (!empty($empDetails)) {
-        //     foreach ($empDetails as $employee) {
-        //         $totalAllowance = 0;
-        //         $employeeDetails = [];
-        //         foreach ($employee as $key => $data) {
-        //             if ($key == 0) $employeeDetails['id'] = $data;
-        //             if ($key > 0) {
-        //                 $employeeDetails['data'][$data[0]] = ($data[1]!=0) ? $data[1] : 0;
-        //                 $emp_data = ($data[1]!=0) ? $data['3'] : '';
-        //                 if ($emp_data == 1 && $data[1]!=0) {
-        //                     $totalAllowance = $totalAllowance + $data[1];
-        //                 }
-        //             }
-        //         }
-        //          foreach ($employee as $key => $data) {
-        //             $check_pf = $data['2'] ?? '';
-        //             if ($check_pf == 'PF') {
-        //                 $employeeDetails['data'][$data[0]] = $totalAllowance > 0 ? (($totalAllowance * 12)/100 > 1800) ? 1800 :  round((($totalAllowance * 12)/100)) : 0;
-        //             }
-        //             if ($check_pf == 'Pro.Tax') {
-        //                 $employeeDetails['data'][$data[0]] = ($totalAllowance > 10000) ? 200 :0;
-        //             }
-        //         }
-        //         if(isset($employeeDetails['id'])){
-        //         $find = EmployeeSalaryStructure::where(['employee_id' => $employeeDetails['id'], 'year' => $year], [
-        //             'year' => $year,
-        //             'sub_institute_id' => $sub_institute_id
-        //         ])->get()->toArray();
-        //         if(!empty($find)){
-        //             if(!empty($employeeDetails['data'])){
-        //                 EmployeeSalaryStructure::where(['employee_id' => $employeeDetails['id'],'year' => $year,'sub_institute_id' => $sub_institute_id
-        //                 ])->update([
-        //                     'employee_id' => $employeeDetails['id'], 
-        //                     'employee_salary_data' => $employeeDetails['data'],
-        //                     'year' => $year,
-        //                     'sub_institute_id' => $sub_institute_id,
-        //                     'updated_at'=>now(),
-        //                 ]);
-        //                 $res['message']="Updated Successfully";
-        //             }
-        //         }
-        //         else{
-        //             if(!empty($employeeDetails['data'])){
-        //             EmployeeSalaryStructure::where(['employee_id' => $employeeDetails['id'], 'year' => $year], [
-        //                 'year' => $year,
-        //                 'sub_institute_id' => $sub_institute_id
-        //             ])->insert([
-        //                 'employee_id' => $employeeDetails['id'],
-        //                 'employee_salary_data' => json_encode($employeeDetails['data']),
-        //                 'year' => $year,
-        //                 'sub_institute_id' => $sub_institute_id,
-        //                 'created_at' => now(),
-        //             ]);
-        //             $res['message']="Added Successfully"; 
-        //             }                   
-        //         }
-        //         $res['status_code']=1;
-        //     }
-        //     }
-        // }     
 
         if(!empty($request->emp)){
             // foreach for employees 
@@ -267,15 +197,15 @@ class PayrollController extends Controller
                     //     //    for flat 
                         
                         if($payroll_type_name=='PF'){
-                            if($amount_type==1 && $Per_Flat!=0){
-                                $getPfFlat = $Per_Flat;
+                            if($amount_type==1){
+                                $getPfFlat = $amount;
                             }
                             $hasPF = $amount_type;
                         }
 
                         if($payroll_type_name=='PT'){
-                            if($amount_type==1 && $Per_Flat!=0){
-                                $getPTFlat = $Per_Flat;
+                            if($amount_type==1){
+                                $getPTFlat = $amount;
                             }
                             $hasPT = $amount_type;
                         }
@@ -1638,6 +1568,7 @@ class PayrollController extends Controller
                 // 13-08-2024 start
                     // check eligible
                     $getEligible = DB::table('tbluser')->where('id',$request->emp_id)->first(); 
+
                     if($getEligible->pf_deduction=="N" && $value['deduction'][3]=="PF"){
                         $value['deduction'][0]=0;
                     }
@@ -1645,6 +1576,7 @@ class PayrollController extends Controller
                         $value['deduction'][0]=0;
                     }
                 $deduction =  $value['deduction'][0];
+
                 // 13-08-2024 end 
                 $deductionName=  (($value['deduction'][3] == 'PT') ? 1 : 0);
                 if($value['deduction'][1] == 1 && !$deductionName) $deduction = round(($deduction / $payrollMonthDays) * $request->totalDay);
