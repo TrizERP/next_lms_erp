@@ -118,9 +118,13 @@
                                     $att_status=$day_name='';
                                     $get_format_punchin_time=$get_format_punchout_time='-';
                                     $holidays=$cl_leave=$on_duty_leave=[];
+                                    
                                     if (isset($value['punchin_time']) && !empty($value)) 
                                     {
                                         $hrmsAttendance = $value;
+                                        $hrms_date = \Carbon\Carbon::createFromFormat('Y-m-d', $date);
+                                        $day_name =lcfirst($hrms_date->format('l'));
+                                        $dateDayTime = \Carbon\Carbon::parse($hrmsAttendance[$day_name.'_in_date'])->format('H:i A'); 
 
                                         $get_format_punchin_time =($hrmsAttendance['punchin_time']!='') ? \Carbon\Carbon::parse($hrmsAttendance['punchin_time'])->format('H:i A') : '-';
 
@@ -134,7 +138,7 @@
                                         {
                                             $att_status = 'background-color: yellow;';
                                         }
-                                        else if ($hrmsAttendance['monday_in_date'] < $get_format_punchin_time || $hrmsAttendance['tuesday_in_date'] < $get_format_punchin_time || $hrmsAttendance['wednesday_in_date'] < $get_format_punchin_time || $hrmsAttendance['thursday_in_date'] < $get_format_punchin_time || $hrmsAttendance['friday_in_date'] < $get_format_punchin_time || $hrmsAttendance['saturday_in_date'] < $get_format_punchin_time)
+                                        else if ($dateDayTime < $get_format_punchin_time)
                                         {
                                             $att_status = 'background-color: orange;';
                                         }
@@ -202,9 +206,6 @@
                                     {
                                         $att_status = 'background-color:#9191c7;';
                                     }
-
-                                    $hrms_date = \Carbon\Carbon::createFromFormat('Y-m-d', $date);
-                                    $day_name =lcfirst($hrms_date->format('l'));
 
                                     if($day_name ==  "sunday")
                                     {
