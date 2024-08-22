@@ -2138,25 +2138,28 @@ if (!function_exists('get_string')) {
         }
         $get_month_head = [];
         if (!empty($months_arr)) {
-            foreach ($months_arr as $key => $val) {
+            $getAllMonths = FeeMonthId();
+            foreach ($getAllMonths as $key => $val) {
+                DB::enableQueryLog();
                 $get_month = DB::table('fees_month_header')->where(['sub_institute_id' => $sub_institute_id, 'month_id' => $key])->first();
-                $get_month_head[$key] = $get_month->header;
-                $numericValues = $alphabeticValues = [];
-
-                foreach ($get_month_head as $key => $value) {
-                    if (is_numeric($value)) {
-                        $numericValues[$key] = $value;
-                    } else {
-                        $alphabeticValues[$key] = $value;
+                if(isset($get_month->header)){
+                    $get_month_head[$key] = $get_month->header;
+                    // dd();
+                    $numericValues = $alphabeticValues = [];
+    
+                    foreach ($get_month_head as $key => $value) {
+                        if (is_numeric($value)) {
+                            $numericValues[$key] = $value;
+                        } else {
+                            $alphabeticValues[$key] = $value;
+                        }
                     }
+                    $get_month_head = $numericValues + $alphabeticValues;
+
                 }
-
-                asort($numericValues, SORT_NUMERIC);
-                asort($alphabeticValues, SORT_NATURAL);
-
-                $get_month_head = $numericValues + $alphabeticValues;
-
             }
+            // exit;
+
         } else {
             $get_month_head = $months_arr;
         }
