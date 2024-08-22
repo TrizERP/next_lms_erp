@@ -1,6 +1,13 @@
 @include('includes.headcss')
 @include('includes.header')
 @include('includes.sideNavigation')
+
+<style>
+    .imageTD img{
+        width:100px !important;
+        height: 100px !important;
+    }
+</style>
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row bg-title">
@@ -10,7 +17,7 @@
         </div>
         <div class="card">
             @if ($sessionData = Session::get('data'))
-                <div class="alert alert-success alert-block">
+                <div class="alert {{ ($sessionData['status_code']==0) ? 'alert-danger' :  'alert-success'}}  alert-block">
                     <button type="button" class="close" data-dismiss="alert">×</button>
                     <strong>{{ $sessionData['message'] }}</strong>
                 </div>
@@ -31,19 +38,23 @@
                                 <th>Student Name</th>
                                 <th>Mobile</th>
                                 <th>Created By</th>
+                                <th>Status</th>
                                 <th class="text-left">Message</th>
+                                <th class="text-left">Attachment</th>
                             </tr>
                             </thead>
                             <tbody>
                             @foreach($data['data'] as $key => $data)
                                 <tr>
                                     <td>{{$key + 1}}</td>
-                                    <td>{{$data['standard_id']}}</td>
-                                    <td>{{$data['division_id']}}</td>
+                                    <td>{{ (isset($data['standard'][0])) ? $data['standard'][0]['name'] : '-'}}</td> <!-- added on 22-08-2024 -->
+                                    <td>{{ (isset($data['division'][0])) ? $data['division'][0]['name'] : '-'}}</td> <!-- added on 22-08-2024 -->
                                     <td>{{ (isset($data['student'][0])) ? $data['student'][0]['first_name'].' '.$data['student'][0]['last_name'] : '-'}}</td>
                                     <td>{{ (isset($data['student'][0])) ? $data['student'][0]['mobile'] : '-' }}</td>
                                     <td>{{$data['created_by_name'] ?? '-'}}</td>
-                                    <td>{{$data['message'] ?? '-'}}</td>
+                                    <td>{!! $data['message_status'] ?? '-' !!}</td>
+                                    <td class="imageTD">{!! $data['message'] ?? '-' !!}</td>
+                                    <td><a href="{{$data['attachment']}}" target="_blank">View</a></td>
                                 </tr>
                             @endforeach
                             </tbody>
