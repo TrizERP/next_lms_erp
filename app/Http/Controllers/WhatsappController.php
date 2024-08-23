@@ -357,9 +357,7 @@ class WhatsappController extends Controller
             }
         }*/
 
-
         return is_mobile($type, 'whatsapp_send_messages.index', $res, "redirect");
-
     }
     public function whatsappUserDetailsDestroy(Request $request, $id)
     {
