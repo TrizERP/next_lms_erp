@@ -29,12 +29,18 @@
 
                         <div class="col-md-6 mt-2">
                             <label>{{$column['column_name']}} </label>
-                            @if ($column['column_name'] == 'image')
+                            @if (Str::startsWith($column['column_name'], "image_"))
                                 <input type="file" id="{{$column['column_name']}}" {{$data['data']['view'][$column['column_name']] ? "hidden":"" }} name="{{$column['column_name']}}" class="form-control" value="{{$data['data']['view'][$column['column_name']]}}">
                                 <input type="file" id="{{$column['column_name']}}" {{$data['data']['view'][$column['column_name']] ? "":"hidden" }} name="new_{{$column['column_name']}}" class="form-control" value="{{$data['data']['view'][$column['column_name']]}}">
                                @if ($data['data']['view']['id'] > 0)
                                 <a href="{{asset('images/'.$data['data']['view'][$column['column_name']])}}" target="_blank">link</a>
                                 @endif
+                            @elseif (Str::startsWith($column['column_name'], "date_"))
+                                    <input type="date" id="{{$column['column_name']}}" required name="{{$column['column_name']}}" class="form-control"
+                                           value="{{$data['data']['view'][$column['column_name']]}}">
+                            @elseif (Str::startsWith($column['column_name'], "date_time"))
+                                <input type="datetime-local" id="{{$column['column_name']}}" required name="{{$column['column_name']}}" class="form-control"
+                                       value="{{$data['data']['view'][$column['column_name']]}}">
                             @else
                                 <input type="text" id="{{$column['column_name']}}" required name="{{$column['column_name']}}" class="form-control"
                                        value="{{$data['data']['view'][$column['column_name']]}}">

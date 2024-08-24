@@ -8,6 +8,7 @@ use App\Models\CustomModuleTableColumn;
 use App\Models\DynamicModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Opcodes\LogViewer\Log;
 use function App\Helpers\is_mobile;
 use Illuminate\Validation\Rule;
@@ -53,7 +54,12 @@ class CustomModuleController extends Controller
         } else {
             $customModuleTable = new CustomModuleTable();
         }
-        $customModuleTable->table_name = $request->table_name;
+        $prefixTableName = $request->table_name;
+        if (!Str::startsWith($request->table_name, "Z_")) {
+            $prefixTableName =  "Z_" . $request->table_name;
+        }
+
+        $customModuleTable->table_name = $prefixTableName;
         $customModuleTable->sub_institute_id = $subInstituteId;
         $customModuleTable->save();
         return is_mobile($type, "custom-module.tables", null, "redirect");
@@ -116,7 +122,7 @@ class CustomModuleController extends Controller
             $tableColumn = new CustomModuleTableColumn();
         }
 
-        $tableColumn->column_name = $request->column_name;
+        $tableColumn->column_name = Str::snake($request->column_name);
         $tableColumn->table_id = $id;
         $tableColumn->auto_increment = $request->has('column_auto_increment') ? 1 : 0;
         $tableColumn->type = $request->column_type;
@@ -165,7 +171,7 @@ class CustomModuleController extends Controller
             foreach ($getTableData['columns'] as $column) {
                 $columnName = $column['column_name'];
                 $columnType = $column['type'];
-                $columnLength = !empty($column['length']) ? "({$column['length']})" : "";
+                $columnLength = !empty($column['length']) ? "({$column['length']})" : ($column['type'] == 'varchar' ? "(255)" : " ");
                 $autoIncrement = $column['auto_increment'] == 1 ? "AUTO_INCREMENT" : "";
                 $notNull = $column['not_null'] == 1 ? "NOT NULL" : "";
                 $defaultValue = isset($column['default']) ? "DEFAULT '{$column['default']}'" : "";
@@ -207,8 +213,8 @@ class CustomModuleController extends Controller
             foreach ($getTableData['columns'] as $column) {
                 $columnDefinition = $column['column_name'] . " " . $column['type'];
 
-                if (!empty($column['length'])) {
-                    $columnDefinition .= " ({$column['length']})";
+                if (isset($column['length'])) {
+                    $columnDefinition .=  $column['length'] > 0 ? " ({$column['length']})" : ($column['type'] == 'varchar' ? "(255)" : " ");
                 }
 
                 if ($column['auto_increment'] == 1) {
@@ -235,10 +241,12 @@ class CustomModuleController extends Controller
 
             $sql = "
         CREATE TABLE {$tableName} (
+              id bigint NOT NULL AUTO_INCREMENT,
             " . $columns . ",
             sub_institute_id int NOT NULL DEFAULT '0',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`)
         ) ENGINE=INNODB;
     ";
 
@@ -267,6 +275,7 @@ class CustomModuleController extends Controller
         foreach ($data['data']['columns'] as $key=>  $column) {
             $prepareView[$column['column_name']]  = '';
         }
+        $prepareView['id']  = 0;
         $data['data']['view'] = $prepareView;
         if (isset($data['data']['table_name'])) {
            $getRecords = DynamicModel::readSingleRecord($data['data']['table_name'], $viewId);
@@ -284,25 +293,32 @@ class CustomModuleController extends Controller
         $columns = collect($data)->keys()->toArray();
         if ($id) {
             if ($request->view_id) {
-                if ($request->new_image) {
-                    $imageName = time() . '.' . $request->new_image->extension();
+                foreach ($request->files as $key => $file) {
+                    if (Str::startsWith($key, 'new_')) {
+                        $imageName = time() . '.' . $file->getClientOriginalExtension();
+                        $file->move(public_path('images'), $imageName);
+                        $oldKey = Str::replaceFirst('new_', '', $key);
+                        $data[$oldKey] = $imageName;
 
-                    // Store the image in the public directory
-                    $request->new_image->move(public_path('images'), $imageName);
-                    $data['image'] = $imageName;
+                    }
                 }
             }
-            if ($request->image) {
-                $imageName = time() . '.' . $request->image->extension();
 
-                // Store the image in the public directory
-                $request->image->move(public_path('images'), $imageName);
-                $data['image'] = $imageName;
+            foreach ($request->files as $key => $file) {
+                if (Str::startsWith($key, 'image_')) {
+                    $imageName = time() . '.' . $file->getClientOriginalExtension();
+                    $file->move(public_path('images'), $imageName);
+                    $data[$key] = $imageName;
+                }
             }
-
             $getTable = CustomModuleTable::with('columns')->find($id);
+
+            $data = array_filter($data, function($key) {
+                return strpos($key, 'new_') !== 0;
+            }, ARRAY_FILTER_USE_KEY);
+
             if (!empty($getTable)) {
-                $data['sub_institute_id'] = $request->session()->get('sub_institute_id');;
+                $data['sub_institute_id'] = $request->session()->get('sub_institute_id');
                 $dynamicModel = new DynamicModel([], $columns);
                 if ($request->view_id) {
                     $dynamicModel->updateRecord($getTable['table_name'], $request->view_id,$data);
