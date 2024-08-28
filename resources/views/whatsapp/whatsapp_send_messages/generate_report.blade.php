@@ -3,7 +3,12 @@
 @include('includes.sideNavigation')--}}
 @extends('layout')
 @section('container')
-
+<style>
+    .imageTD img{
+        width:100px !important;
+        height: 100px !important;
+    }
+</style>
     <div id="page-wrapper">
         <div class="container-fluid">
             <div class="row bg-title">
@@ -72,12 +77,13 @@
                                         <table id="example" class="table table-box table-bordered">
                                             <thead>
                                             <tr>
-                                                <th>Id</th>
+                                                <th>Sr No</th>
                                                 <th>Gr No</th>
                                                 <th>Student Name</th>
                                                 <th>Mobile Number</th>
                                                 <th>Created By</th>
                                                 <th>Date</th>
+                                                <th>Status</th>
                                                 <th class="text-left">Message</th>
                                             </tr>
                                             </thead>
@@ -87,13 +93,14 @@
                                             @endphp
                                             @foreach($data['stu_data'] as $key => $data)
                                                 <tr>
-                                                    <td>{{$j}}</td>
-                                                    <td>{{$data['student']['enrollment_no']}}</td>
-                                                    <td>{{$data['student']['first_name']}}- {{$data['student']['last_name']}}</td>
-                                                    <td>{{$data['student']->mobile}}</td>
+                                                    <td>{{$key+1}}</td>
+                                                    <td>{{ (isset($data['student'][0]['enrollment_no'])) ? $data['student'][0]['enrollment_no'] : '-'}}</td>
+                                                    <td>{{ (isset($data['student'][0])) ? $data['student'][0]['first_name'].' '.$data['student'][0]['last_name'] : '-'}}</td>
+                                                    <td>{{ (isset($data['student'][0]['mobile'])) ? $data['student'][0]['mobile'] : '-'}}</td>
                                                     <td>{{$data->created_by_name ?? '-'}}</td>
                                                     <td>{{$data->created_at ?? '-'}}</td>
-                                                    <td>{{$data->message ?? '-'}}</td>
+                                                    <td>{{$data->message_status ?? '-'}}</td>
+                                                    <td class="imageTD">{!!$data->message ?? '-'!!}</td>
                                                 </tr>
                                                 @php
                                                     $j++;
@@ -123,7 +130,7 @@
                     buttons: [
                         {
                             extend: 'pdfHtml5',
-                            title: 'Fees Monthly Report',
+                            title: 'Whatsapp Report',
                             orientation: 'landscape',
                             pageSize: 'LEGAL',
                             pageSize: 'A0',
@@ -131,9 +138,9 @@
                                 columns: ':visible'
                             },
                         },
-                        {extend: 'csv', text: ' CSV', title: 'Fees Monthly Report'},
-                        {extend: 'excel', text: ' EXCEL', title: 'Fees Monthly Report'},
-                        {extend: 'print', text: ' PRINT', title: 'Fees Monthly Report'},
+                        {extend: 'csv', text: ' CSV', title: 'Whatsapp Report'},
+                        {extend: 'excel', text: ' EXCEL', title: 'Whatsapp Report'},
+                        {extend: 'print', text: ' PRINT', title: 'Whatsapp Report'},
                         'pageLength'
                     ],
                 });
