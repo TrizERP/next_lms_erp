@@ -99,7 +99,7 @@ class RouteServiceProvider extends ServiceProvider
 
         $this->mapAdminApiRoutes();
 
-        $this->mapCustomModuleApiRoutes();
+        $this->mapHrmsRoutes();
     }
 
     /**
@@ -114,14 +114,6 @@ class RouteServiceProvider extends ServiceProvider
         Route::middleware('web')
             ->namespace($this->namespace)
             ->group(base_path('routes/web.php'));
-    }
-
-
-    protected function mapCustomModuleApiRoutes()
-    {
-        Route::namespace($this->namespace)
-            ->middleware('web')
-            ->group(base_path('routes/custom_module.php'));
     }
 
     /**
@@ -270,6 +262,13 @@ class RouteServiceProvider extends ServiceProvider
             ->group(base_path('routes/adminapi.php'));
     }
 
+    protected function mapHrmsRoutes()
+    {
+        Route::namespace($this->namespace)
+            ->middleware('web')
+            ->group(base_path('routes/hrms.php'));
+    }
+    
     /**
      * Configure the rate limiters for the application.
      *

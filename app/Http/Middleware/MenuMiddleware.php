@@ -74,12 +74,13 @@ class MenuMiddleware
                         $join->whereRaw("(i.menu_id = m.id OR g.menu_id = m.id) AND FIND_IN_SET(".$client_id.", m.client_id)");
                     })->selectRaw("GROUP_CONCAT(distinct m.id) AS MID")
                     ->whereIn('u.sub_institute_id', explode(',', $sub_institute_id))
+                    ->where('u.status',1) // 23-04-24 by uma
                     ->where('u.id', $user_id)->get()->toArray();
             } else {
 //DB::enableQueryLog();
                 $rightsQuery = DB::table('tbluser as u')
                     ->leftJoin('tblindividual_rights as i', function ($join) {
-                        $join->whereRaw("u.id = i.user_id AND u.sub_institute_id = i.sub_institute_id");
+                        $join->whereRaw("u.id = i.user_id AND u.sub_institute_id = i.sub_institute_id AND u.user_profile_id=i.profile_id");
                     })->leftJoin('tblgroupwise_rights as g', function ($join) {
                         $join->whereRaw("u.user_profile_id = g.profile_id AND u.sub_institute_id = g.sub_institute_id");
                     })->join('tblmenumaster as m', function ($join) use ($sub_institute_id) {
@@ -104,8 +105,8 @@ class MenuMiddleware
 
         if (isset($rightsQuery['0']['MID'])) {
             $rightsMenusIds = $rightsQuery['0']['MID'];
-            //$rightsMenusIds = substr($rightsMenusIds, 0,-1);
-            $rightsMenusIds = substr($rightsMenusIds, 0);
+            $rightsMenusIds = substr($rightsMenusIds, 0,-1);
+            // $rightsMenusIds = substr($rightsMenusIds, 0);
         }
         // echo "<pre>";print_r($rightsMenusIds);exit;
 
@@ -263,7 +264,7 @@ class MenuMiddleware
 
                 $subChildMenuData = tblmenumasterModel::where('parent_menu_id', '!=', 0)
                     ->whereRaw("find_in_set('$sub_institute_id',sub_institute_id) AND level = 3
-                        and id in (" . $rightsMenusIds . ") and status = 1 and menu_type != 'MASTER' or menu_type IS NULL ")->orderBy('sort_order')->get()->toArray();
+                        and id in (" . $rightsMenusIds . ") and status = 1 and (menu_type != 'MASTER' or menu_type IS NULL )")->orderBy('sort_order')->get()->toArray();
                 $i = 0;
                 foreach ($subChildMenuData as $key => $value) {
                     $finalSubChildMenu[$value['parent_menu_id']][$i] = $subChildMenuData[$key];

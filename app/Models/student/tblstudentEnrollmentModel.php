@@ -14,6 +14,7 @@ class tblstudentEnrollmentModel extends Model
         'id',
         'syear',
         'student_id',
+        'roll_no',
         'grade_id',
         'standard_id',
         'section_id',

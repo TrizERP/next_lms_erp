@@ -108,13 +108,16 @@ class Handler extends ExceptionHandler
                 return response()->view('errors.'.'404', [], 404);
             }
         }
-        // else {
-        //     // Redirect to dashboard with error message, filename, and line number
-        //     $res['status_code']=0;
-        //     $res['message']="Error Occured :".$exception->getMessage()." on line number ".$exception->getLine(); //$exception->getFile(),
-        //     return redirect('/dashboard')->with(['data' => $res]);
-        // }
-
+        /*else if ($exception->getStatusCode() != 302){
+            // Redirect to dashboard with error message, filename, and line number
+            $type='';
+            $res['status_error']=0;
+            $res['message_error']="Error Occured :".$exception->getMessage()." on line number ".$exception->getLine(); //$exception->getFile(),
+            // return redirect('/dashboard')->with(['data' => $res]);
+        return redirect('/dashboard?err=1&err_msg='.$res['message_error']);
+            
+        }
+*/
         return parent::render($request, $exception);
     }
 }

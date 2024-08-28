@@ -9,9 +9,9 @@ use Illuminate\Database\Eloquent\Model;
 class EmployeeSalaryStructure extends Model
 {
     use HasFactory;
-    public $fillable =['employee_id','employee_salary_data','year','sub_institute_id'];
+    public $fillable =['employee_id','employee_salary_data','year','sub_institute_id','created_at','updated_at'];
 
     public function getUser(){
-        return $this->hasOne(tbluserModel::class,'id','employee_id');
+        return $this->hasOne(tbluserModel::class,'id','employee_id')->where('status', '=', 1);
     }
 }

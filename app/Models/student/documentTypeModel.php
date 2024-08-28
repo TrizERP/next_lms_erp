@@ -14,6 +14,7 @@ class documentTypeModel extends Model
         'id',
         'document_type',
         'status',
+        'user_type',
         'created_at'
     ];
 }
