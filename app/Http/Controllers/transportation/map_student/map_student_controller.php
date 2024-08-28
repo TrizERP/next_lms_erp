@@ -85,7 +85,8 @@ class map_student_controller extends Controller
         ->where("a.id", "=", $grade)
         ->get()->toArray();
 
-        $default_shift_id = !empty($result) ? $result[0]->shift_id : '';
+        //$default_shift_id = !empty($result) ? $result[0]->shift_id : ''; //Hide by rajesh becoz map_student selected issue from hills 08_03_2024
+        $default_shift_id = '';
 
         $responce_arr = [];
 
@@ -119,7 +120,7 @@ class map_student_controller extends Controller
                 $responce_arr['stu_data'][$id]['to_bus_id'] = $results[0]['to_bus_id'];
                 $responce_arr['stu_data'][$id]['to_stop'] = $results[0]['to_stop'];
                 $responce_arr['stu_data'][$id]['total_amount'] = $results[0]['amount'];
-                $responce_arr['stu_data'][$id]['distance'] = $results[0]['distance'];     
+                $responce_arr['stu_data'][$id]['distance'] = $results[0]['distance'];
                 $shift = DB::table('transport_school_shift')->where(['id'=>$results[0]['from_shift_id'],'sub_institute_id'=>$sub_institute_id])->get()->toArray();
                 if (count($shift) > 0 && isset($request->id) ) {
                 $responce_arr['stu_data'][$id]['shift_rate'] = $shift[0]->shift_rate;
@@ -127,8 +128,10 @@ class map_student_controller extends Controller
                 $responce_arr['stu_data'][$id]['van-shift'] = $results[0]['from_bus_id']."-".$results[0]['from_shift_id'];
                 $responce_arr['stu_data'][$id]['van_shift'] = $this->van_shift();
                 $responce_arr['stu_data'][$id]['area'] = $this->area();
-                
-                }     
+                } else{
+                    $responce_arr['stu_data'][$id]['shift_rate'] = $shift[0]->shift_rate;
+                    $responce_arr['stu_data'][$id]['km_amount'] = $shift[0]->km_amount;
+                }    
              
                 $responce_arr['stu_data'][$id]['ddShift'] = $this->ddShift();
                
@@ -141,6 +144,7 @@ class map_student_controller extends Controller
 
                 $bus = DB::table('transport_vehicle as tv')
                     ->where($where)
+                    ->orderBy('tv.title')
                     ->pluck('tv.title', 'tv.id');
                 $responce_arr['stu_data'][$id]['ddFromBus'] = $bus;
 
@@ -152,6 +156,7 @@ class map_student_controller extends Controller
 
                 $bus = DB::table('transport_vehicle as tv')
                     ->where($where)
+                    ->orderBy('tv.title')
                     ->pluck('tv.title', 'tv.id');
                 $responce_arr['stu_data'][$id]['ddToBus'] = $bus;
 
@@ -205,6 +210,7 @@ class map_student_controller extends Controller
         
                 $bus = DB::table('transport_vehicle as tv')
                     ->where($where)
+                    ->orderBy('tv.title')
                     ->pluck('tv.title', 'tv.id');
                 //END to fill from bus and to bus by default                    
 
@@ -239,9 +245,8 @@ class map_student_controller extends Controller
     public function ddShift()
     {
         return DB::table('transport_school_shift')
-            ->select('transport_school_shift.shift_title', 'transport_school_shift.id')
             ->where("transport_school_shift.sub_institute_id", session()->get('sub_institute_id'))
-            ->pluck('shift_title', 'id');
+            ->get()->toArray();
     }
     public function van_shift()
     {
@@ -249,6 +254,7 @@ class map_student_controller extends Controller
             ->select('transport_school_shift.shift_title', 'transport_school_shift.id', 'transport_vehicle.id as vid', 'transport_vehicle.vehicle_number')
             ->join('transport_school_shift', 'transport_school_shift.id', '=', 'transport_vehicle.school_shift')
             ->where("transport_school_shift.sub_institute_id", session()->get('sub_institute_id'))
+            ->orderBy('transport_vehicle.title')
             ->get();
     
         $result = [];
@@ -293,19 +299,19 @@ class map_student_controller extends Controller
                 INNER JOIN (
                 SELECT *
                 FROM transport_driver_detail
-                WHERE `type` = 'Driver') fd ON tvf.driver = fd.id
+                WHERE `type` = 'Driver' AND `status` = 'Active') fd ON tvf.driver = fd.id
                 INNER JOIN (
                 SELECT *
                 FROM transport_driver_detail
-                WHERE `type` = 'Driver') td ON tvt.driver = td.id
+                WHERE `type` = 'Driver' AND `status` = 'Active') td ON tvt.driver = td.id
                 INNER JOIN (
                 SELECT *
                 FROM transport_driver_detail
-                WHERE `type` = 'Conductor') fc ON tvf.conductor = fc.id
+                WHERE `type` = 'Conductor' AND `status` = 'Active') fc ON tvf.conductor = fc.id
                 INNER JOIN (
                 SELECT *
                 FROM transport_driver_detail
-                WHERE `type` = 'Conductor') tc ON tvt.conductor = tc.id
+                WHERE `type` = 'Conductor' AND `status` = 'Active') tc ON tvt.conductor = tc.id
                 WHERE tms.student_id = '$student_id' AND
                 tms.sub_institute_id = '$sub_institute_id' AND
                 tms.syear = '$syear'";
@@ -323,6 +329,7 @@ class map_student_controller extends Controller
 
     public function store(Request $request)
     {
+        // echo "<pre>";print_r($request->all());exit;
         if (isset($_REQUEST['values'])) {
             foreach ($_REQUEST['values'] as $student_id => $arr) {
                 if (isset($arr['ckbox'])) {
@@ -342,6 +349,8 @@ class map_student_controller extends Controller
                         "to_shift_id"      => $arr['to_shift'],
                         "to_bus_id"        => $arr['to_bus'],
                         "to_stop"          => $arr['to_stop'],
+                        "distance"         => $arr['distance'],                        
+                        "amount"          => $arr['distance_amount'],                        
                         'sub_institute_id' => session()->get('sub_institute_id'),
                     ]);
                     $exam->save();
@@ -373,11 +382,14 @@ class map_student_controller extends Controller
                 ->get()
                 ->first();
 
-            $totalReserveCapacity = DB::table('transport_map_student')
-                ->where('from_bus_id', $bus_id)
-                ->where('from_shift_id', $shift_id)
-                ->where('sub_institute_id', $sub_institute_id)
-                ->where('syear', $syear)
+            $totalReserveCapacity = DB::table('transport_map_student as tms')
+                ->join('tblstudent_enrollment as te', 'te.student_id', '=', 'tms.student_id')
+                ->where('tms.from_bus_id', $bus_id)
+                ->where('tms.from_shift_id', $shift_id)
+                ->where('tms.sub_institute_id', $sub_institute_id)
+                ->where('tms.syear', $syear)
+                ->where('te.syear', $syear)
+                ->whereNull('te.end_date')
                 ->count();
 
             $totalCapacity = $getTotalCapacity->sitting_capacity ?? '';

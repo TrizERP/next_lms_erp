@@ -1,12 +1,14 @@
-@include('includes.lmsheadcss')
+{{--@include('includes.lmsheadcss')--}}
+@extends('lmslayout')
+@section('container')
 <style>
 .tooltip-inner {
     max-width: 1100px !important;
 }
 
 </style>
-@include('includes.header')
-@include('includes.sideNavigation')
+{{--@include('includes.header')
+@include('includes.sideNavigation')--}}
 <!-- Content main Section -->
 <div id="page-wrapper">
     <div class="container-fluid mb-5">
@@ -150,3 +152,4 @@
 
 </script>
 @include('includes.footer')
+@endsection

@@ -35,13 +35,12 @@ use DB;
                 $division_id = $data['division_id'];
             }
 
-        @endphp
-        <?php
             $file_name = "fees_circular/templates/challan.html";
             $fin = fopen($file_name, 'r') or die("Selected Certificate Template is not in proper format .");
             $string = fread($fin, filesize($file_name));
             fclose($fin);
-        ?>
+            @endphp
+            
         @if(isset($data['data']))
         @php
             $all_inserted_id = '';
@@ -52,7 +51,7 @@ use DB;
         @endphp
         @foreach($student_data as $key => $value)
 
-        <?php
+        @php
 $table = '';
 $total = 0;
 if (isset($data['breakoff'][$value['id']])) {
@@ -112,10 +111,10 @@ if (isset($data['feesconfig'])) {
 	$str = str_replace(htmlspecialchars("<<cms_client_code>>"), $cms_client_code, $str);
 	$str = str_replace(htmlspecialchars("<<pan_no>>"), $data['feesconfig']['pan_no'], $str);
 }
-?>
+@endphp
 
                 <div class="card">
-                    <?php
+                    @php
                         echo $str;
 
                         $inserted_ids_arr = explode(',',$data['last_inserted_ids']);
@@ -125,7 +124,7 @@ if (isset($data['feesconfig'])) {
                             $update_sql = "UPDATE fees_circular_log SET FEES_CIRCULAR_HTML = '".$str."' WHERE STUDENT_ID = '".$value['id']."'   AND id = '".$v."' ";
                             $sql_data = DB::select($update_sql);
                         }
-                    ?>
+                    @endphp
 
                 </div>
 

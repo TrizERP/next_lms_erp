@@ -50,34 +50,45 @@
                                         $total = $obtained_total = $percentage = 0;
                                         $student_id = $all_data['id'];
                                     @endphp                                    
-                                    <tr>
-                                        <td>{{$all_data['standard_name']}} - {{$all_data['division_name']}}</td>
-                                        <td>{{$all_data['roll_no']}}</td>    
-                                        <td>{{$all_data['first_name']}} {{$all_data['middle_name']}} {{$all_data['last_name']}}</td>
-                                        @if(isset($data['date_arr']))
-                                        @foreach($data['date_arr'] as $k => $date_point)
-                                            @if(isset($data['WRT_data'][$student_id][$k]) && count($data['WRT_data'][$student_id][$k]) > 0)
-                                                    @if($data['WRT_data'][$student_id][$k]['is_absent'] == 'AB')
-                                                        <td style="font-weight: bold;color:red;">{{$data['WRT_data'][$student_id][$k]['is_absent']}}</td>
-                                                    @else
-                                                        <td>{{$data['WRT_data'][$student_id][$k]['obtained_points']}}</td>
-                                                    @endif
-                                                @php
-                                                    $total = $total + $data['WRT_data'][$student_id][$k]['total_points'];
-                                                    $obtained_total = $obtained_total + $data['WRT_data'][$student_id][$k]['obtained_points'];
-                                                    $per = (($obtained_total * 100) / $total);
-                                                    $percentage = number_format($per,2);
-                                                @endphp
-                                                @else
-                                              <td>
-                                                    -
-                                              </td>
-                                            @endif
-                                        @endforeach
-                                        @endif
-                                        <td>{{$obtained_total}}/{{$total}}</td>
-                                        <td>{{$percentage}}</td>
-                                    </tr>
+<tr>
+    <td>{{$all_data['standard_name']}} - {{$all_data['division_name']}}</td>
+    <td>{{$all_data['roll_no']}}</td>    
+    <td>{{$all_data['first_name']}} {{$all_data['middle_name']}} {{$all_data['last_name']}}</td>
+    @if(isset($data['date_arr']))
+    @foreach($data['date_arr'] as $k => $date_point)
+        @if(isset($data['WRT_data'][$student_id][$k]) && count($data['WRT_data'][$student_id][$k]) > 0)
+                @if($data['WRT_data'][$student_id][$k]['is_absent'] == 'AB')
+                    <td style="font-weight: bold;color:red;">{{$data['WRT_data'][$student_id][$k]['is_absent']}}</td>
+                    @php
+                        $total += $data['WRT_data'][$student_id][$k]['total_points'];
+                        $obtained_total += $data['WRT_data'][$student_id][$k]['obtained_points'];
+                    @endphp
+                @elseif($data['WRT_data'][$student_id][$k]['is_absent'] == 'EX' || $data['WRT_data'][$student_id][$k]['is_absent'] == 'N.A.')
+                    <td style="font-weight: bold;color:red;">{{$data['WRT_data'][$student_id][$k]['is_absent']}}</td>
+                    @php
+                        $obtained_total += $data['WRT_data'][$student_id][$k]['obtained_points'];
+                    @endphp
+                @else
+                    <td>{{$data['WRT_data'][$student_id][$k]['obtained_points']}}</td>
+                    @php
+                        $total += $data['WRT_data'][$student_id][$k]['total_points'];
+                        $obtained_total += $data['WRT_data'][$student_id][$k]['obtained_points'];
+                    @endphp
+                @endif
+            @php
+                $per = ($total != 0) ? (($obtained_total * 100) / $total) : 0;
+                $percentage = number_format($per,2);
+            @endphp
+            @else
+          <td>
+                -
+          </td>
+        @endif
+    @endforeach
+    @endif
+    <td>{{$obtained_total}}/{{$total}}</td>
+    <td>{{$percentage}}</td>
+</tr>
                                 @endforeach
                             </tbody>    
                         </table>

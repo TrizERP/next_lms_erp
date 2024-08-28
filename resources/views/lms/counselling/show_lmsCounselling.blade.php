@@ -1,7 +1,8 @@
-@include('includes.lmsheadcss')
+{{--@include('includes.lmsheadcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('lmslayout')
+@section('container')
 <style>
 br{
 	display:block !important;
@@ -15,13 +16,13 @@ br{
 	            <h1 class="h4 mb-3">Counselling</h1>
 	             <nav aria-label="breadcrumb">
 	                <ol class="breadcrumb bg-transparent p-0">
-	                    <li class="breadcrumb-item"><a href="{{route('course_master.index')}}">LMS</a></li>                                 
-	                    <li class="breadcrumb-item">Engagement</li>                                                         
-	                    <li class="breadcrumb-item">Show Counselling</li>                                                         
+	                    <li class="breadcrumb-item"><a href="{{route('course_master.index')}}">LMS</a></li>
+	                    <li class="breadcrumb-item">Engagement</li>
+	                    <li class="breadcrumb-item">Show Counselling</li>
 	                </ol>
 	            </nav>
-	        </div> 
-        </div> 
+	        </div>
+        </div>
 		<div class="card border-0">
 			<div class="card-body">
 				<div class="h4">Counselling</div>
@@ -30,20 +31,20 @@ br{
 						<div class="row justify-content-center text-center">
 							<div class="col-lg-6">
 								<div class="h3 mb-3">Take a Free Personality Test!</div>
-								<p>Today, the art of talking therapies such as counselling, are used to help people come to terms with many problems they are facing, with an ultimate aim of overcoming them.</p>	
+								<p>Today, the art of talking therapies such as counselling, are used to help people come to terms with many problems they are facing, with an ultimate aim of overcoming them.</p>
 								<!-- <a href="#" class="btn btn-primary">Take the Test</a> -->
 							</div>
 						</div>
 					</div>
 				</div>
 				<div class="h4 mb-3">Suggested Short Courses in Counselling</div>
-				<div class="row mb-4">					
+				<div class="row mb-4">
 					@if(isset($data['counselling_course']))
 					@foreach($data['counselling_course'] as $key => $val)
 						<div class="col-md-6 col-lg-3 mb-3">
 							<div class="card h-100">
-								<div class="d-flex align-items-center border-bottom p-3">									
-									<img src="../../../storage/counselling_course/{{$val['image']}}" width="40" alt="">									
+								<div class="d-flex align-items-center border-bottom p-3">
+									<img src="../../../storage/counselling_course/{{$val['image']}}" width="40" alt="">
 
 									@if($val['title'] == 'MBTI' || strtoupper
 									 (session()->get
@@ -58,10 +59,10 @@ br{
 									 ['course_id'=>$val['id']]) }}">{{$val
 									 ['title']}}</a> </div> @endif </div>
 									 <div class="card-body
-									 p-3">									
-									 <p class="mb-0">{!!$val['description']!!}</p> 
-									</div>								
-								
+									 p-3">
+									 <p class="mb-0">{!!$val['description']!!}</p>
+									</div>
+
 
 								<!--START Show Attempted User Data -->
 								@if(isset($data['user_data'][$val['id']]))
@@ -77,25 +78,25 @@ br{
 													<th>Right</th>
 													<th>Wrong</th>
 												@endif
-												
+
 											</tr>
 										</thead>
-										<tbody>											
+										<tbody>
 											@foreach($data['user_data'][$val['id']] as $key => $user_data)
 											@if($val['title'] == 'MBTI')
 											<tr>
-												<td><span class="text-dark">{{$user_data['exam_date']}}</span></td>												
+												<td><span class="text-dark">{{$user_data['exam_date']}}</span></td>
 												<td><span class="font-weight-bold text-warning">{{$user_data['obtain_marks']}}</span></td>
 											</tr>
-											@else											
+											@else
 											<tr>
-												<td><span class="text-dark">{{$user_data['exam_date']}}</span></td>												
+												<td><span class="text-dark">{{$user_data['exam_date']}}</span></td>
 												<td><span class="font-weight-bold text-warning">{{$user_data['obtain_marks']}}</span> / <span class="font-weight-bold text-primary">{{$user_data['total_points']}}</span></td>
 												<td><span class="font-weight-bold" style="color:#1ce21c;">{{$user_data['total_right']}}</span> / <span class="font-weight-bold text-primary">{{$user_data['total_ques']}}</span></td>
 												<td><span class="font-weight-bold text-danger">{{$user_data['total_wrong']}}</span> / <span class="font-weight-bold text-primary">{{$user_data['total_ques']}}</span></td>
 											</tr>
 											@endif
-											@endforeach																					
+											@endforeach
 										</tbody>
 									</table>
 								</div>
@@ -115,7 +116,7 @@ br{
 					@endif
 					<div class="row mb-4">
 						<div class="embed-onet-ip"></div>
-					</div>													
+					</div>
 				</div>
 			</div>
 		</div>
@@ -127,7 +128,8 @@ br{
 
 <script type="text/javascript">
 $(document).ready(function(){
-    $('[data-toggle="tooltip"]').tooltip();   
+    $('[data-toggle="tooltip"]').tooltip();
 });
 </script>
 @include('includes.footer')
+@endsection

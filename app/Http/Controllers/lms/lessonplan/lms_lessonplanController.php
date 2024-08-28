@@ -21,6 +21,7 @@ use function App\Helpers\is_mobile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\View;
+use Illuminate\Support\Facades\Http;
 
 class lms_lessonplanController extends Controller
 {
@@ -37,9 +38,11 @@ class lms_lessonplanController extends Controller
         $lessonData = LmsLessonPlan::when($id, function ($q) use ($id) {
             $q->whereId($id);
         })
-            ->when(is_null($id), function ($q) use ($request) {
+            ->when($request, function ($q) use ($request) {
                 $q->where('standard_id', $request->standard_id);
                 $q->where('subject_id', $request->subject_id);
+            })
+            ->when($request->chapter_id,function($q) use($request){
                 $q->where('chapter_id', $request->chapter_id);
             })
             ->with(['standard', 'subject', 'chapter', 'topic', 'lessonDays'])
@@ -66,13 +69,14 @@ class lms_lessonplanController extends Controller
         $res['status_code'] = 1;
         $res['message'] = "SUCCESS";
         $res['lessonplan_data'] = $lessonData;
-        // echo "<pre>";print_r($lessonData['lessonDays'][0]['selfstudyactivity']);exit;
+        // echo "<pre>";print_r($lessonData['lessonDays']);exit;
         $res['form_data'] = $formData;
         $res['topics'] = $topics;
         $res['chapters'] = $chapters;
         $res['subjects'] = $subjects;
         $res['standards'] = $standards;
-        return is_mobile($type, 'lms/lessonplan/add_lessonplan', $res, "view");
+        // echo "<pre>";print_r($res['lessonplan_data']);exit;
+        return is_mobile($type, 'lms/lessonplan/add_lessonplan', $res, "view");        
     }
 
     public function create(Request $request)
@@ -111,7 +115,7 @@ class lms_lessonplanController extends Controller
             ->where('sub_institute_id', $sub_institute_id)
             ->where('chapter_id', $lessonData->chapter_id)
             ->get();
-        // dd($lessonData);
+        // echo "<pre>";print_r($lessonData);exit;
         $res['status_code'] = 1;
         $res['message'] = "SUCCESS";
         $res['lessonplan_data'] = $lessonData;
@@ -154,7 +158,7 @@ class lms_lessonplanController extends Controller
             })
             ->get();
         $objDayWise = LmsLessonPlanDayWise::where('lpid', $id)->get();
-        $data = View::make('lms.lessonplan.day_wise_lesson_plan', compact('day', 'objDayWise', 'content_master', 'question_master'));
+        $data = View::make('lms.lessonplan.day_wise_lesson_plan', compact('day', 'objDayWise', 'content_master', 'question_master','id'));
         return $data;
     }
 
@@ -348,7 +352,7 @@ class lms_lessonplanController extends Controller
 
     public function store(Request $request)
     {
-        // dd($request->all());
+        // echo "<pre>";print_r($request->all());exit;
         $request->validate([
             'focauspoint' => 'required',
             'pedagogicalprocess' => 'required',
@@ -362,8 +366,8 @@ class lms_lessonplanController extends Controller
             $objLessonPlan->sub_institute_id = session()->get('sub_institute_id');
             $objLessonPlan->syear = session()->get('syear');
             $objLessonPlan->standard_id = $request->standard_id;
-            $objLessonPlan->subject_id = $request->subject_id;
-            $objLessonPlan->chapter_id = $request->chapter_id;
+            $objLessonPlan->subject_id = $request->subject ?? $request->subject_id;
+            $objLessonPlan->chapter_id = $request->chapter ?? $request->chapter_id;
             $objLessonPlan->topic_id = $request->topic;
             $objLessonPlan->standard_id = $request->standard;
             $objLessonPlan->numberofperiod = $request->numberofperiod;
@@ -404,6 +408,7 @@ class lms_lessonplanController extends Controller
 
                 foreach ($inputDays as $i => $value) {
                     $objDayWise = LmsLessonPlanDayWise::where('days', $value)->where('lpid', $objLessonPlan->id)->first() ?? new LmsLessonPlanDayWise();
+                    $objDayWise->sub_institute_id = session()->get('sub_institute_id');            
                     $objDayWise->lpid = $objLessonPlan->id;
                     $objDayWise->days = $value;
                     $objDayWise->topicname = $request->topicname[$value] ?? '';
@@ -446,11 +451,11 @@ class lms_lessonplanController extends Controller
 
         $teacherData = DB::select("SELECT DISTINCT(teacher_id), CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name) AS teacher_name,u.user_profile_id
             FROM timetable t
-            INNER JOIN tbluser u ON u.id = t.teacher_id AND u.sub_institute_id = t.sub_institute_id
+            INNER JOIN tbluser u ON u.id = t.teacher_id AND u.sub_institute_id = t.sub_institute_id AND u.status = 1
             WHERE t.sub_institute_id = '" . $sub_institute_id . "' AND t.standard_id = '" . $standard_id . "'
             AND t.division_id = '" . $division_id . "' AND t.subject_id = '" . $subject_id . "' AND t.syear = '" . $syear . "'
             ORDER BY first_name asc
-        ");
+        "); // 23-04-24 by uma
         $teacherData = json_decode(json_encode($teacherData), true);
 
         return $teacherData;
@@ -558,5 +563,45 @@ class lms_lessonplanController extends Controller
             }
         }
         return $counter;
+    }
+
+    public function getChatOutput(Request $request){
+        $extra_text ='';
+        if(isset($request->topic) && $request->topic !="Select Topic"){
+            $extra_text = ' and for topic="'.$request->topic.'"';
+        }
+        $main_prompt = $request->prompt." for standard name =".$request->standard." and subject name =".$request->subject." and chapter name =".$request->chapter.$extra_text." , In response array give Short and simple Answer";
+        $prompt = array($main_prompt);
+        $apiKey ='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';
+      
+        $endpoint = "https://api.openai.com/v1/chat/completions";
+
+        $data = [
+            'model' => 'gpt-3.5-turbo',
+            'messages' => [
+                [
+                    'role' => 'user',
+                    'content' => json_encode($prompt)
+                ]
+            ],
+            "temperature" => 0.7,
+            "max_tokens" => 256,
+            "top_p" => 1,
+            "frequency_penalty" => 0,
+            "presence_penalty" => 0,
+            "stop" => ["11."]
+        ];
+
+        $response = Http::withHeaders([
+            'Content-Type' => 'application/json',
+            'Authorization' => 'Bearer ' . $apiKey,
+        ])->post($endpoint, $data)->json();
+
+        if (isset($response['choices'][0]['message']['content'])) {
+            $res['answer'] = $response['choices'][0]['message']['content'];
+        }else{
+            $res['answer']['error'] = $response['error']['message'];
+        }
+       return $res['answer'];
     }
 }

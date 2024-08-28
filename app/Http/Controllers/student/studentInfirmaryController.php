@@ -54,9 +54,25 @@ class studentInfirmaryController extends Controller
      *
      * @return Application|Factory|View
      */
-    public function create()
+    public function create(Request $request)
     {
-        return view('student/infirmary/add_student_infirmary');
+        $type= $request->type;
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $syear = $request->session()->get('syear');
+        
+        $medical_case_no = DB::table("student_infirmary")
+            ->selectRaw('(IFNULL(MAX(CAST(medical_case_no AS INT)),0) + 1) AS medical_case_no')
+            ->where("sub_institute_id", "=", $sub_institute_id)
+            ->where("syear", "=", $syear)
+            ->get()->toArray();
+
+        $res['medical_case_no'] = $medical_case_no[0]->medical_case_no;
+        $res['user_name'] = session()->get('name');
+
+        // view()->share('medical_case_no', $medical_case_no[0]->medical_case_no);
+        // return view('student/infirmary/add_student_infirmary');
+        return is_mobile($type, "student/infirmary/add_student_infirmary", $res, "view");
+
     }
 
     /**
@@ -111,10 +127,10 @@ class studentInfirmaryController extends Controller
                 $mobile_no = $val->mobile;
                 $student_name = $val->student_name;
 
-                $pushMessage = "Dear Parents, ".$student_name." Infirmary details has been added for date : ".
+                $pushMessage = "Dear ".$student_name.", Infirmary details has been added for date : ".
                     date('d-m-Y',
-                        strtotime($_REQUEST['date']))." . Details are Medical Case No.: ".$_REQUEST['medical_case_no']." ,
-                    Doctore Name : ".$_REQUEST['doctor_name']." ,Doctore Concat No.: ".$_REQUEST['doctor_contact'];
+                        strtotime($_REQUEST['date']))." . Case No.: ".$_REQUEST['medical_case_no']." ,
+                    Name : ".$_REQUEST['doctor_name']." , Contact: ".$_REQUEST['doctor_contact'];
 
                 $app_notification_content = [
                     'NOTIFICATION_TYPE'        => 'Infirmary',
@@ -138,6 +154,7 @@ class studentInfirmaryController extends Controller
                         $gcmRegIds[] = $val1->gcm_regid;
                     }
                 }
+                sendNotification($app_notification_content);
 
                 $bunch_arr = array_chunk($gcmRegIds, 1000);
                 if (! empty($bunch_arr)) {
@@ -149,7 +166,7 @@ class studentInfirmaryController extends Controller
                                 'title' => $schoolName, 'image' => $schoolLogo,
                             ];
                             $pushStatus = send_FCM_Notification($val, $message, $sub_institute_id);
-                            sendNotification($app_notification_content);
+                            // sendNotification($app_notification_content);
                         }
                     }
                 }
@@ -190,7 +207,7 @@ class studentInfirmaryController extends Controller
         $result = DB::table('student_infirmary as si')
             ->join('tblstudent as s', function ($join) {
                 $join->whereRaw('si.student_id = s.id');
-            })->whereRaw("si.*, CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name")
+            })->selectRaw("si.*, CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name")
             ->where('si.sub_institute_id', $sub_institute_id)
             ->where('si.id', $id)
             ->orderBy('si.id', 'DESC')->get()->toArray();
@@ -264,9 +281,10 @@ class studentInfirmaryController extends Controller
 
         $result = DB::table($req['health_type']." as si")
             ->join('tblstudent as s', function ($join) use($marking_period_id){
-                $join->whereRaw("si.student_id = s.id")->when(function($query) use($marking_period_id){
-                    $query->where('s.marking_period_id',$marking_period_id);
-                });
+                $join->whereRaw("si.student_id = s.id");
+                // ->when(function($query) use($marking_period_id){
+                //     $query->where('s.marking_period_id',$marking_period_id);
+                // });
             })->join('tblstudent_enrollment as se', function ($join) use ($syear) {
                 $join->whereRaw("se.student_id = s.id and se.syear = '".$syear."'");
             })->selectRaw("si.*, CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name")
@@ -329,7 +347,7 @@ class studentInfirmaryController extends Controller
         }
 
         $result = $result->orderBy('si.id', 'DESC')->get()->toArray();
-
+        // echo "<pre>";print_r($request->all());exit;
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['health_data'] = $result;
@@ -338,8 +356,8 @@ class studentInfirmaryController extends Controller
         $res['standard_id'] = $req['standard'];
         $res['division_id'] = $req['division'];
         $res['health_type'] = $req['health_type'];
-        $res['from_date'] = $req['from_date'];
-        $res['to_date'] = $req['to_date'];
+        $res['from_date'] = $request->from_date;
+        $res['to_date'] = $request->to_date;
 
         return is_mobile($type, "student/show_student_health_report", $res, "view");
     }

@@ -7,6 +7,7 @@ use GenTux\Jwt\GetsJwtToken;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use function App\Helpers\is_mobile;
 
 
@@ -24,7 +25,7 @@ class notification_report_controller extends Controller
     {
         $type = $request->input('type');
 
-        $res['status_code'] = "1";
+        $res['status_code'] = 1;
         $res['message'] = "Success";
 
         return is_mobile($type, "easy_comm/send_notification_report/show_notification_report", $res, "view");
@@ -43,8 +44,13 @@ class notification_report_controller extends Controller
         $mobile_no = $request->input('mobile_no');
         $from_date = $request->input('from_date');
         $to_date = $request->input('to_date');
-        $syear = $request->session()->get('syear');
-        $sub_institute_id = $request->session()->get('sub_institute_id');
+        if($type=='API'){
+            $sub_institute_id = $request->sub_institute_id;
+            $syear = $request->syear;
+        }else{
+            $sub_institute_id = $request->session()->get('sub_institute_id');
+            $syear = $request->session()->get('syear');            
+        }
         $marking_period_id = session()->get('term_id');
 
         $data = DB::table('app_notification as an')
@@ -59,8 +65,9 @@ class notification_report_controller extends Controller
                 // });
             })->join('academic_section as aa', function ($join) {
                 $join->whereRaw('aa.id=ss.grade_id');
-            })->join('gcm_users as gu', function ($join) {
-                $join->whereRaw('gu.mobile_no = s.mobile');
+            })->leftJoin('gcm_users as gu', function ($join) use($sub_institute_id){
+                $join->whereRaw('gu.mobile_no = s.mobile')
+                ->where('gu.sub_institute_id', $sub_institute_id);
             })->join('division as dd', function ($join) {
                 $join->whereRaw('dd.id=se.section_id');
             })->selectRaw("s.id AS student_id,CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS stu_name, 
@@ -69,7 +76,6 @@ class notification_report_controller extends Controller
                 DATE_FORMAT(an.NOTIFICATION_DATE,'%d-%m-%Y') AS NOTOFICATION_DATE,an.NOTIFICATION_DESCRIPTION, 
                 CASE WHEN an.Status = 1 THEN 'Read' WHEN an.Status =0 THEN 'Un-Read' ELSE 'N/A' END AS NOTIFICATION_STATUS")
             ->where('se.SYEAR', $syear)
-            ->where('gu.sub_institute_id', $sub_institute_id)
             ->where('an.sub_institute_id', $sub_institute_id)
             ->where(function ($q) use ($mobile_no, $from_date, $to_date) {
                 if ($mobile_no != '') {
@@ -82,18 +88,25 @@ class notification_report_controller extends Controller
                 if ($to_date != '') {
                     $q->where('an.NOTIFICATION_DATE', '<=', $to_date);
                 }
-            })->get()->toArray();
+            })
+            ->groupBy(['an.STUDENT_ID','an.NOTIFICATION_TYPE','an.NOTIFICATION_DATE','an.NOTIFICATION_DESCRIPTION','gu.imei_no'])
+            ->orderBy('an.id','DESC')
+            ->get()->toArray();
 
         $data = array_map(function ($value) {
             return (array) $value;
         }, $data);
-
-        $res['status_code'] = 1;
-        $res['message'] = "Success";
-        $res['data'] = $data;
-        $res['mobile_no'] = $mobile_no;
-        $res['from_date'] = $from_date;
-        $res['to_date'] = $to_date;
+        if(!empty($data)){
+            $res['status_code'] = 1;
+            $res['message'] = "Success";
+            $res['data'] = $data;
+            $res['mobile_no'] = $mobile_no;
+            $res['from_date'] = $from_date;
+            $res['to_date'] = $to_date;
+        }else{
+            $res['status_code'] = 0;
+            $res['message'] = "No notification found";
+        }
 
         return is_mobile($type, "easy_comm/send_notification_report/show_notification_report", $res, "view");
     }

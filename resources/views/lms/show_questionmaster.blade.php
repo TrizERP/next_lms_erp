@@ -1,7 +1,8 @@
-@include('includes.lmsheadcss')
+{{--@include('includes.lmsheadcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('lmslayout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row bg-title align-items-center justify-content-between">
@@ -65,6 +66,10 @@
                                         @php
                                                 $map_type = explode(',', $quesdata->type_name);
                                                 $j =1;
+                                                $edit = 0;
+                                                if($quesdata->attempt_question!=0){
+                                                    $edit = 1;
+                                                }
                                             @endphp
                                             <tr>
                                                 <td>@php echo $i++;@endphp</td>
@@ -98,9 +103,10 @@
                                                 <td>
                                                     <div class="d-flex align-items-center justify-content-end">
                                                         <a class="btn btn-outline-success"
-                                                           href="{{ route('question_master.edit',$quesdata->id)}}">
+                                                           href="{{ route('question_master.edit',$quesdata->id)}}?question_type={{$edit}}">
                                                             <i class="ti-pencil-alt"></i>
                                                         </a>
+                                                        @if($edit==0)
                                                         <form class="d-inline"
                                                               action="{{ route('question_master.destroy', $quesdata->id)}}"
                                                               method="post"
@@ -110,6 +116,7 @@
                                                             <button type="submit" class="btn btn-outline-danger"><i
                                                                     class="ti-trash"></i></button>
                                                         </form>
+                                                        @endif
                                                     </div>
                                                 </td>
                                             </tr>
@@ -188,3 +195,4 @@
 
 </script>
 @include('includes.footer')
+@endsection

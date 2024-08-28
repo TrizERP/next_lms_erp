@@ -43,7 +43,7 @@ class questionWiseReportController extends Controller
         $question_paper_id = $request->exam;
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
-        $marking_period_id = session()->get('term_id');
+        $res['action']=$action = $request->action;
         // return $request;exit;
         $examData = questionpaperModel::where([
             'sub_institute_id' => $sub_institute_id, 'standard_id' => $standard, 'subject_id' => $subject,
@@ -54,11 +54,8 @@ class questionWiseReportController extends Controller
         $queryResult = DB::table('tblstudent as ts')
             ->join('tblstudent_enrollment as tse', function ($join) {
                 $join->whereRaw('tse.student_id = ts.id');
-            })->join('standard as std', function ($join) use($marking_period_id){
+            })->join('standard as std', function ($join){
                 $join->whereRaw('std.id = tse.standard_id');
-                // ->when($marking_period_id,function($query) use($marking_period_id){
-                //     $query->where('std.marking_period_id',$marking_period_id);
-                // });
             })->join('std_div_map as sdm', function ($join) {
                 $join->whereRaw('sdm.standard_id = std.id');
             })->join('division as divi', function ($join) {
@@ -82,15 +79,30 @@ class questionWiseReportController extends Controller
                             qp.id = qp2.id
                             AND FIND_IN_SET(lqm.id, qp.question_ids)
                     )');
-            })->join('lms_online_exam_answer as am', function ($join) use ($question_paper_id) {
-                $join->whereRaw("am.question_paper_id = qp.id and am.student_id = ts.id and am.question_id = lqm.id  
-                    AND am.online_exam_id = (SELECT lo.id FROM lms_online_exam lo WHERE lo.question_paper_id = $question_paper_id 
-                    AND lo.student_id = ts.id and lo.total_right = ( SELECT MAX(total_right)
-                                    FROM lms_online_exam
-                                    WHERE question_paper_id = $question_paper_id
-                                    AND student_id = ts.id
-                                    AND question_id = lqm.id) ORDER BY id DESC LIMIT 1)");
-            })->selectRaw("ts.id,CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name) as student_name,ts.roll_no,
+            })
+            ->when($action==0, function ($query) use($question_paper_id) {
+                $query->leftJoin('lms_online_exam_answer as am', function ($join) use ($question_paper_id) {
+                    $join->whereRaw("am.question_paper_id = qp.id and am.student_id = ts.id and am.question_id = lqm.id  
+                        AND am.online_exam_id = (SELECT lo.id FROM lms_online_exam lo WHERE lo.question_paper_id = $question_paper_id 
+                        AND lo.student_id = ts.id and lo.total_right = ( SELECT MAX(total_right)
+                                        FROM lms_online_exam
+                                        WHERE question_paper_id = $question_paper_id
+                                        AND student_id = ts.id
+                                        AND question_id = lqm.id) ORDER BY id DESC LIMIT 1)");
+                });
+            }, function ($query) use($question_paper_id) {
+                $query->Join('lms_online_exam_answer as am', function ($join) use ($question_paper_id) {
+                    $join->whereRaw("am.question_paper_id = qp.id and am.student_id = ts.id and am.question_id = lqm.id  
+                        AND am.online_exam_id = (SELECT lo.id FROM lms_online_exam lo WHERE lo.question_paper_id = $question_paper_id 
+                        AND lo.student_id = ts.id and lo.total_right = ( SELECT MAX(total_right)
+                                        FROM lms_online_exam
+                                        WHERE question_paper_id = $question_paper_id
+                                        AND student_id = ts.id
+                                        AND question_id = lqm.id) ORDER BY id DESC LIMIT 1)");
+                });
+            })
+            
+            ->selectRaw("ts.id,CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name) as student_name,tse.roll_no,
                 std.name as standerd_name,divi.name as division_name,sub.subject_name as subject_name,qp.paper_name as 
                 question_paper_name,qp.total_ques as total_question,qp.id as question_paper_id,lqm.id as question_id,
                 am.online_exam_id as online_exam_id,lqm.question_title as questions,am.ans_status as ans_status")
@@ -105,73 +117,8 @@ class questionWiseReportController extends Controller
                 'tse.sub_institute_id' => $sub_institute_id,
                 'qp.id'                => $question_paper_id,
                 'qp.syear'             => $syear,
-            ])->orderBy('ts.roll_no')->get()->toArray();
-// DB::enableQueryLog();
-    //     $queryResult =  DB::table('tblstudent as ts')
-    //         ->join('tblstudent_enrollment as tse', function ($join) {
-    //             $join->whereRaw('tse.student_id = ts.id');
-    //         })->join('standard as std', function ($join) {
-    //             $join->whereRaw('std.id = tse.standard_id');
-    //         })->join('std_div_map as sdm', function ($join) {
-    //             $join->whereRaw('sdm.standard_id = std.id');
-    //         })->join('division as divi', function ($join) {
-    //             $join->whereRaw('divi.id = sdm.division_id');
-    //         })->join('sub_std_map as ssm', function ($join) {
-    //             $join->whereRaw('ssm.standard_id = sdm.standard_id');
-    //         })->join('subject as sub', function ($join) {
-    //             $join->whereRaw('sub.id = ssm.subject_id');
-    //         })->join('question_paper as qp', function ($join) {
-    //             $join->whereRaw('qp.subject_id = ssm.subject_id and qp.standard_id = sdm.standard_id');
-    //         })->join('lms_question_master as lqm', function ($join) {
-    //             $join->whereRaw('lqm.subject_id = ssm.subject_id
-    //     and lqm.standard_id = sdm.standard_id
-    //     and lqm.id in (
-    //         SELECT
-    //             lqm.id
-    //         FROM
-    //             lms_question_master as lqm,
-    //             question_paper as qp2
-    //         WHERE
-    //             qp.id = qp2.id
-    //             AND FIND_IN_SET(lqm.id, qp.question_ids)
-    //     )');
-    //         })
-    //         ->join('lms_online_exam_answer as am', function ($join) use ($question_paper_id) {
-    //             $join->whereRaw("am.question_paper_id = qp.id and am.student_id = ts.id and am.question_id = lqm.id  
-    //         AND am.online_exam_id = (
-    //             SELECT lo.id
-    //             FROM lms_online_exam lo
-    //             WHERE lo.question_paper_id = $question_paper_id 
-    //             AND lo.student_id = ts.id
-    //             AND lo.obtain_marks = (
-    //                 SELECT MAX(total_right)
-    //                 FROM lms_online_exam
-    //                 WHERE question_paper_id = $question_paper_id
-    //                 AND student_id = ts.id
-    //                 AND question_id = lqm.id
-    //             )
-    //             ORDER BY id DESC
-    //             LIMIT 1
-    //         )");
-    //         })->selectRaw("ts.id,CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name) as student_name,ts.roll_no,
-    // std.name as standerd_name,divi.name as division_name,sub.subject_name as subject_name,qp.paper_name as 
-    // question_paper_name,qp.total_ques as total_question,qp.id as question_paper_id,lqm.id as question_id,
-    // am.online_exam_id as online_exam_id,lqm.question_title as questions,am.ans_status as ans_status")
-    //         ->where([
-    //             'std.grade_id'         => $grade,
-    //             'std.id'               => $standard,
-    //             'tse.section_id'       => $division,
-    //             'sdm.division_id'      => $division,
-    //             'sub.id'               => $subject,
-    //             'ts.sub_institute_id'  => $sub_institute_id,
-    //             'tse.syear'            => $syear,
-    //             'tse.sub_institute_id' => $sub_institute_id,
-    //             'qp.id'                => $question_paper_id,
-    //             'qp.syear'             => $syear,
-    //         ])
-    //         ->orderBy('ts.roll_no')
-    //         ->get()
-    //         ->toArray();
+            ])->whereNULL('tse.end_date')->orderBy('tse.roll_no')->get()->toArray();
+
 // dd(DB::getQueryLog($queryResult));
         if ($queryResult) {
             $resultArr = [];

@@ -33,11 +33,11 @@
                             <thead>
                                 <tr>
                                     <th>Id</th>
-                                    <th>Student Name</th>
-                                    <th>Medical Case No</th>
-                                    <th>Doctor Name</th>
-                                    <th>Doctor Contact</th>
-                                    <th>Open Date</th>
+                                    <th>{{ App\Helpers\get_string('studentname','request') }}</th>
+                                    <th>{{ App\Helpers\get_string('caseno','request') }}</th>
+                                    <th>{{ App\Helpers\get_string('doctorname','request') }}</th>
+                                    <th>{{ App\Helpers\get_string('doctorcontact','request') }}</th>
+                                    <th>{{ App\Helpers\get_string('opendate','request') }}</th>
                                     <th>Complaint</th>
                                     <th>Symptoms</th>
                                     <th>Disease</th>

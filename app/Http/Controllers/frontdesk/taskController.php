@@ -13,6 +13,8 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use function App\Helpers\is_mobile;
+use Carbon\Carbon;
+use Carbon\CarbonPeriod;
 
 class taskController extends Controller
 {
@@ -31,18 +33,23 @@ class taskController extends Controller
         $syear = $request->session()->get("syear");
         $user_profile_name = $request->session()->get("user_profile_name");
         $user_id = $request->session()->get("user_id");
+        $taskType = $request->taskType;
 
         $data = DB::table("task as t")
             ->join('tbluser as u', function ($join) use ($sub_institute_id) {
-                $join->whereRaw("t.TASK_ALLOCATED = u.id AND u.sub_institute_id = '".$sub_institute_id."'");
+                $join->whereRaw("t.TASK_ALLOCATED = u.id AND u.sub_institute_id = '".$sub_institute_id."'")->where('u.status',1); // 23-04-24 by uma
+            })
+            ->join('tbluser as u1', function ($join) use ($sub_institute_id) {
+                $join->whereRaw("t.CREATED_BY = u1.id AND u1.sub_institute_id = '".$sub_institute_id."'")->where('u1.status',1); // 23-04-24 by uma
             })
             ->join('tbluser as u2', function ($join) use ($sub_institute_id) {
-                $join->whereRaw("t.TASK_ALLOCATED_TO = u2.id AND u2.sub_institute_id = '".$sub_institute_id."'");
+                $join->whereRaw("t.TASK_ALLOCATED_TO = u2.id AND u2.sub_institute_id = '".$sub_institute_id."'")->where('u2.status',1); // 23-04-24 by uma
             })
             ->leftJoin('tbluser as u3', function ($join) use ($sub_institute_id) {
-                $join->whereRaw("t.approved_by = u3.id AND u3.sub_institute_id = '".$sub_institute_id."'");
+                $join->whereRaw("t.approved_by = u3.id AND u3.sub_institute_id = '".$sub_institute_id."'")->where('u3.status',1); // 23-04-24 by uma
             })
-            ->selectRaw("t.*, CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name) AS ALLOCATOR, 
+            ->selectRaw("t.*, CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name) AS manageby, 
+            CONCAT_WS(' ',u1.first_name,u1.middle_name,u1.last_name) AS ALLOCATOR,
             CONCAT_WS(' ',u2.first_name,u2.middle_name,u2.last_name) AS ALLOCATED_TO,
             CONCAT_WS(' ',u3.first_name,u3.middle_name,u3.last_name) AS approved_by")
             ->where("t.SYEAR", "=", $syear);
@@ -51,20 +58,23 @@ class taskController extends Controller
             $data = $data->where('t.TASK_DATE', '>=', $from_date);
             $res['from_date'] = $from_date;
         }
-
+        
         if (isset($to_date)) {
             $data = $data->where('t.TASK_DATE', '<=', $from_date);
             $res['to_date'] = $to_date;
         }
+        if(isset($taskType)){
+            $data = $data->where('t.task_type',$taskType);
+            $res['taskType']=$taskType;
+        }
 
-        // Filter for tasks assigned to Melvin
-        $data = $data->where(function ($query) use ($user_id) {
-            $query->where('t.TASK_ALLOCATED_TO', $user_id)
-                ->orWhere('t.TASK_ALLOCATED', $user_id);
-        });
-
+        if (strtoupper($user_profile_name) != 'ADMIN') {
+            $data = $data->whereRaw("(t.TASK_ALLOCATED_TO = '".$user_id."' OR t.TASK_ALLOCATED = '".$user_id."')");
+        }
         $data = $data->orderBy('t.ID', 'desc');
         $data = $data->get()->toArray();
+
+        $res['checkList'] = DB::table('task')->where('TASK_ALLOCATED',$user_id)->where('task_type','=','Daily Task')->where('TASK_DATE',date('Y-m-d'))->get()->toArray();
 
         $res['status_code'] = 1;
         $res['message'] = "Success";
@@ -85,14 +95,16 @@ class taskController extends Controller
         $syear = $request->session()->get("syear");
         $user_id = $request->session()->get("user_id");
 
-        $users = tbluserModel::where(["sub_institute_id" => $sub_institute_id])
+        $users = tbluserModel::where(["sub_institute_id" => $sub_institute_id, 'status' => 1])
             ->whereRaw("id != '".$user_id."'")
+            ->where('status',1)
             ->get()
             ->toArray();
 
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['userList'] = $users;
+        $res['skillLists'] = DB::table('tblemp_skills')->whereIn('sub_institute_id',[0,$sub_institute_id])->get()->toArray();
 
         return is_mobile($type, "frontdesk.add_task", $res, "view");
     }
@@ -105,13 +117,41 @@ class taskController extends Controller
      */
     public function store(Request $request)
     {
+        // echo "<pre>";print_r($request->all());exit;
         $type = $request->input("type");
-        $sub_institute_id = $request->session()->get("sub_institute_id");
-        $syear = $request->session()->get("syear");
-        $term_id = $request->session()->get("term_id");
-        $user_id = $request->session()->get("user_id");
+        if($type=="API"){
+            $sub_institute_id = $request->sub_institute_id;
+            $syear = $request->syear;
+            $term_id = 0;
+            $user_id = $request->user_id;
+            $manageby = $request->input("manageby");
+        }else{
+            $sub_institute_id = $request->session()->get("sub_institute_id");
+            $syear = $request->session()->get("syear");
+            $term_id = $request->session()->get("term_id");
+            $user_id = $request->session()->get("user_id");
+            $manageby = $request->session()->get("user_id");
+        }
+        
         $TASK_ALLOCATED_TO = $request->input("TASK_ALLOCATED_TO");
-        $data = $request->except(['_method', '_token', 'submit', 'TASK_ATTACHMENT']);
+        $KRA = $request->input("KRA");
+        $KPA = $request->input("KPA");
+        $observation_point = $request->input("observation_point");
+        $task_type = $request->input("selType");
+        $required_skill = isset($request->skills) ? implode(',',$request->skills) : '';
+        // store skills
+        $dates = $this->getDatesWithoutSundays();
+        // echo "<pre>";print_r($required_skill);exit;
+        // if($required_skill!=''){
+        //     $explodeSkills = explode(',',$required_skill);
+        //     foreach ($explodeSkills as $id => $skillname) {
+        //        $checkSkillset = DB::table('tblemp_skills')->where('skills',$skillname)->whereIn('sub_institute_id',[0,$sub_institute_id])->get()->toArray();
+        //        if(empty($checkSkillset)){
+        //         DB::table('tblemp_skills')->insert(['sub_institute_id'=>$sub_institute_id,'skills'=>$skillname,'created_at'=>now()]);
+        //        }
+        //     }
+        // }
+        $data = $request->except(['_method', '_token', 'submit', 'TASK_ATTACHMENT','formName','selDepartment','selSubDepartment','selType','add','type','syear','sub_institute_id','user_id','manageby','KRA','KPA','skills','observation_point','TASK_DATE']);
 
         $file_name = $ext = $file_size = "";
         if ($request->hasFile('TASK_ATTACHMENT')) {
@@ -125,11 +165,17 @@ class taskController extends Controller
         }
 
         foreach ($TASK_ALLOCATED_TO as $key => $value) {
+            $data['KRA'] = $KRA;
+            $data['KPA'] = $KPA;
+            $data['observation_point'] = $observation_point;
+            $data['task_type'] = $task_type;
+
             $data['SYEAR'] = $syear;
             $data['MARKING_PERIOD_ID'] = $term_id;
             $data['CREATED_BY'] = $user_id;
-            $data['TASK_ALLOCATED'] = $user_id;
+            $data['TASK_ALLOCATED'] = $manageby;
             $data['TASK_ALLOCATED_TO'] = $TASK_ALLOCATED_TO[$key];
+            $data['required_skill'] = $required_skill;
             $data['CREATED_IP_ADDRESS'] = $_SERVER['REMOTE_ADDR'];
             $data['CREATED_ON'] = date('Y-m-d H:i:s');
             $data['sub_institute_id'] = $sub_institute_id;
@@ -139,8 +185,15 @@ class taskController extends Controller
                 $data['FILE_SIZE'] = $file_size;
                 $data['FILE_TYPE'] = $ext;
             }
-
-            taskModel::insert($data);
+            if($task_type=="Daily Task"){
+                foreach ($dates as $k => $date) {
+                    $data['TASK_DATE']=$date;
+                    taskModel::insert($data);
+                }
+            }else{
+                $data['TASK_DATE'] = $request->get('TASK_DATE');
+                taskModel::insert($data);
+            }
         }
 
         $res['status_code'] = "1";
@@ -175,13 +228,17 @@ class taskController extends Controller
 
         $result = DB::table("task as t")
             ->join('tbluser as u', function ($join) use ($sub_institute_id) {
-                $join->whereRaw("t.TASK_ALLOCATED = u.id AND u.sub_institute_id = '".$sub_institute_id."'");
+                $join->whereRaw("t.TASK_ALLOCATED = u.id AND u.sub_institute_id = '".$sub_institute_id."'")->where('u.status',1); // 23-04-24 by uma
+            })
+            ->join('tbluser as u1', function ($join) use ($sub_institute_id) {
+                $join->whereRaw("t.CREATED_BY = u1.id AND u1.sub_institute_id = '".$sub_institute_id."'")->where('u1.status',1); // 23-04-24 by uma
             })
             ->join('tbluser as u2', function ($join) use ($sub_institute_id) {
-                $join->whereRaw("t.TASK_ALLOCATED_TO = u2.id AND u2.sub_institute_id = '".$sub_institute_id."'");
+                $join->whereRaw("t.TASK_ALLOCATED_TO = u2.id AND u2.sub_institute_id = '".$sub_institute_id."'")->where('u2.status',1); // 23-04-24 by uma
             })
-            ->selectRaw("t.*, CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name) AS ALLOCATOR, 
-        CONCAT_WS(' ',u2.first_name,u2.middle_name,u2.last_name) AS ALLOCATED_TO")
+            ->selectRaw("t.*, CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name) AS manageby, 
+            CONCAT_WS(' ',u1.first_name,u1.middle_name,u1.last_name) AS ALLOCATOR,
+            CONCAT_WS(' ',u2.first_name,u2.middle_name,u2.last_name) AS ALLOCATED_TO")
             ->where("t.ID", "=", $id)
             ->get()->toArray();
 
@@ -190,30 +247,7 @@ class taskController extends Controller
         }, $result);
 
         $editData = $result[0];
-
-        if($user_profile_name != "Teacher")
-        {
-            $extrawhere = "id != '".$user_id."'";
-        }
-        else
-        {
-            $extrawhere = "id = '".$user_id."'";
-        }
-
-        if($user_profile_name != "ICT")
-        {
-            $extrawhere = "id != '".$user_id."'";
-        }
-        else
-        {
-            $extrawhere = "id = '".$user_id."'";
-        }
-
-        $users = tbluserModel::where(["sub_institute_id" => $sub_institute_id])
-            ->whereRaw($extrawhere)
-            ->get()
-            ->toArray();
-
+       
         $dataResult = DB::table("complaint_status")
             ->where("TYPE", "=", 'TASK')
             ->get()->toarray();
@@ -223,8 +257,9 @@ class taskController extends Controller
         }, $dataResult);
 
         $taskStatus = $dataResult;
+        $editData['skillLists'] = DB::table('tblemp_skills')->whereIn('sub_institute_id',[0,$sub_institute_id])->get()->toArray();
 
-        return view('frontdesk/edit_task', ['data' => $editData, 'userList' => $users, 'taskStatus' => $taskStatus]);
+        return view('frontdesk/edit_task', ['data' => $editData, 'taskStatus' => $taskStatus]);
     }
 
     /**
@@ -237,11 +272,34 @@ class taskController extends Controller
     public function update(Request $request, $id)
     {
         $type = $request->input("type");
-        $sub_institute_id = $request->session()->get("sub_institute_id");
-        $syear = $request->session()->get("syear");
-        $term_id = $request->session()->get("term_id");
-        $user_id = $request->session()->get("user_id");
-        $data = $request->except(['_method', '_token', 'submit', 'TASK_ATTACHMENT']);
+        if($type=="API"){
+            $sub_institute_id = $request->sub_institute_id;
+            $syear = $request->syear;
+            $term_id = 0;
+            $user_id = $request->user_id;
+            $manageby = $request->input("manageby");
+        }else{
+            $sub_institute_id = $request->session()->get("sub_institute_id");
+            $syear = $request->session()->get("syear");
+            $term_id = $request->session()->get("term_id");
+            $user_id = $request->session()->get("user_id");
+            $manageby = $request->session()->get("user_id");
+        }
+        
+        $TASK_ALLOCATED_TO = $request->input("TASK_ALLOCATED_TO");
+        $KRA = $request->input("KRA");
+        $KPA = $request->input("KPA");
+        $task_type = $request->input("selType");
+        $required_skill = $request->skills ?? '';
+        $observation_point = $request->observation_point;
+        // store skills
+
+        $data = $request->except(['_method', '_token', 'submit', 'TASK_ATTACHMENT','formName','selDepartment','selSubDepartment','selType','add','type','syear','sub_institute_id','user_id','manageby','KRA','KPA','skills']);
+
+        $data['KRA'] = $KRA;
+        $data['KPA'] = $KPA;
+        $data['task_type'] = $task_type;
+        $data['observation_point'] = $observation_point;
 
         $data['SYEAR'] = $syear;
         $data['MARKING_PERIOD_ID'] = $term_id;
@@ -304,4 +362,23 @@ class taskController extends Controller
 
         return is_mobile($type, "frontdesk.task_report", $res, "view");
     }
+
+    function getDatesWithoutSundays() {
+        $startDate = Carbon::now();
+        $endDate = Carbon::create($startDate->year, $startDate->month)->endOfMonth();  
+        
+        $dates = [];
+        
+        $period = CarbonPeriod::create($startDate, $endDate);
+        
+        foreach ($period as $date) {
+            if ($date->isSunday()) {
+                continue;
+            }
+            $dates[] = $date->format('Y-m-d');
+        }
+        
+        return $dates;
+    }
+
 }

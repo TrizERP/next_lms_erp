@@ -11,6 +11,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use function App\Helpers\is_mobile;
+use function App\Helpers\SearchStudent;
+use App\Http\Controllers\api\apiController;
 
 class visitor_masterController extends Controller
 {
@@ -28,14 +30,26 @@ class visitor_masterController extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
 
         $data = visitor_masterModel::select('visitor_master.*',
-            DB::raw('concat(u.first_name," ",u.middle_name," ",u.last_name) as staff_name'),
+            DB::raw('
+                CASE 
+                WHEN vt.title = "Parent" 
+                    THEN concat_ws(" ", t.first_name, t.middle_name, t.last_name) 
+                ELSE 
+                    concat_ws(" ", u.first_name, u.middle_name, u.last_name) 
+                END as staff_name'),
             DB::raw('if(out_time = "00:00:00","green","") as status'),
+            DB::raw('(SELECT CONCAT_WS(" ",COALESCE(first_name,"-"),COALESCE(middle_name,"-"),COALESCE(last_name,"-")) from tbluser where id=visitor_master.created_by) as created_by'),
             'vt.title as visitor_type_name')
-            ->join('tbluser as u', 'u.id', '=', 'visitor_master.to_meet')
+            ->leftjoin('tbluser as u',function($join){
+                $join->on('u.id', '=', 'visitor_master.to_meet')->where('u.status',1); // 23-04-24 by uma
+            })
+            ->leftjoin('tblstudent as t',function($join){
+                $join->on('t.id', '=', 'visitor_master.to_meet'); // 22-05-24 by rajesh
+            })
             ->join('visitor_type as vt', 'vt.id', '=', 'visitor_master.visitor_type')
             ->where(['visitor_master.sub_institute_id' => $sub_institute_id, 'meet_date' => date('Y-m-d')])
             ->get();
-
+            // echo "<pre>";print_r($data);exit;
         $visitor_data['status_code'] = 1;
         $visitor_data['data'] = $data;
         $type = $request->input('type');
@@ -72,9 +86,20 @@ class visitor_masterController extends Controller
 
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $data = visitor_masterModel::select('visitor_master.*',
-            DB::raw('concat(u.first_name," ",u.middle_name," ",u.last_name) as staff_name'),
+            DB::raw('
+                CASE 
+                WHEN vt.title = "Parent" 
+                    THEN concat_ws(" ", t.first_name, t.middle_name, t.last_name) 
+                ELSE 
+                    concat_ws(" ", u.first_name, u.middle_name, u.last_name) 
+                END as staff_name'),
             'vt.title as visitor_type_name')
-            ->join('tbluser as u', 'u.id', '=', 'visitor_master.to_meet')
+            ->leftjoin('tbluser as u', function($join){
+                $join->on('u.id', '=', 'visitor_master.to_meet')->where('u.status',1); // 23-04-24 by uma
+            })
+            ->leftjoin('tblstudent as t', function($join){
+                $join->on('t.id', '=', 'visitor_master.to_meet'); // 22-05-24 by rajesh
+            })
             ->join('visitor_type as vt', 'vt.id', '=', 'visitor_master.visitor_type')
             ->where(['visitor_master.sub_institute_id' => $sub_institute_id])
             ->whereBetween('meet_date', array($from_date, $to_date))
@@ -94,21 +119,30 @@ class visitor_masterController extends Controller
     {
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
+        $syear = $request->session()->get('syear');
+        
         $data['visitor_type_data'] = visitor_typeModel::where(['sub_institute_id' => $sub_institute_id])->get();
         $data['to_meet_array'] = tbluserModel::select(
             'id', DB::raw('concat(first_name," ",middle_name," ",last_name) as staff_name')
         )
-            ->where(['sub_institute_id' => $sub_institute_id])->get();
+            ->where(['sub_institute_id' => $sub_institute_id, 'status' => 1])->get();
+        
+        $data['studentData'] = DB::table('tblstudent as ts')
+            ->join('tblstudent_enrollment as tse','tse.student_id','=','ts.id')
+            ->selectRaw('ts.id,ts.enrollment_no,CONCAT_WS(" ",COALESCE(ts.first_name,"-"),COALESCE(ts.middle_name,"-"),COALESCE(ts.last_name,"-")) as student_name,ts.mobile')
+            ->where(['ts.sub_institute_id'=>$sub_institute_id,'tse.syear'=>$syear])->get()->toArray();
 
         return is_mobile($type, 'visitor_management/add_visitor_master', $data, "view");
     }
 
     public function store(Request $request)
     {
+        // echo "<pre>";print_r($request->all());exit;
         $type = $request->get('type');
 
         if ($type != "API") {
             $sub_institute_id = $request->session()->get('sub_institute_id');
+            $created_by = $request->session()->get('user_id');
         } else {
             try {
                 if (! $this->jwtToken()->validate()) {
@@ -123,6 +157,7 @@ class visitor_masterController extends Controller
             }
 
             $sub_institute_id = $request->input('sub_institute_id');
+            $created_by = $request->input('user_id');
             $appointment_type = $request->input('appointment_type');
             $visitor_type = $request->input('visitor_type');
             $name = $request->input('name');
@@ -173,6 +208,7 @@ class visitor_masterController extends Controller
             'photo'            => $newfilename,
             'file_size'        => $size,
             'file_type'        => $ext,
+            'created_by'       => $created_by,
             'meet_date'        => $meet_date,
             'in_time'          => $in_time,
             'sub_institute_id' => $sub_institute_id,
@@ -197,11 +233,11 @@ class visitor_masterController extends Controller
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $data = visitor_masterModel::find($id);
-
+        // set_time_limit(300); // to prevent maximum execution error
         $data['visitor_type_data'] = visitor_typeModel::where(['sub_institute_id' => $sub_institute_id])->get();
         $data['to_meet_array'] = tbluserModel::select(
             'id', DB::raw('concat(first_name," ",middle_name," ",last_name) as staff_name'))
-            ->where(['sub_institute_id' => $sub_institute_id])->get();
+            ->where(['sub_institute_id' => $sub_institute_id, 'status' => 1])->get();
 
         return is_mobile($type, "visitor_management/add_visitor_master", $data, "view");
     }
@@ -209,6 +245,7 @@ class visitor_masterController extends Controller
     public function update(Request $request, $id)
     {
         $sub_institute_id = $request->session()->get('sub_institute_id');
+        $created_by = $request->session()->get('user_id');
 
         $visitor = [
             'appointment_type' => $request->get('appointment_type'),
@@ -224,6 +261,7 @@ class visitor_masterController extends Controller
             'sub_institute_id' => $sub_institute_id,
             'exit_msg_sent'    => 'Y',
             'updated_at'       => now(),
+            'created_by'      => $created_by,
         ];
 
         if ($request->get('hid_out_time') == "00:00:00") {
@@ -276,7 +314,7 @@ class visitor_masterController extends Controller
 
         $data = DB::table("visitor_master as v")
             ->join('tbluser as u', function ($join) {
-                $join->whereRaw("v.to_meet = u.id");
+                $join->whereRaw("v.to_meet = u.id")->where('u.status',1);// 23-04-24 by uma
             })
             ->leftJoin('sms_api_details as s', function ($join) {
                 $join->whereRaw("s.sub_institute_id = v.sub_institute_id");
@@ -338,6 +376,162 @@ class visitor_masterController extends Controller
         }
     }
 
+    public function getStudent(Request $request){
+        // echo "<pre>";print_r($request->all());exit;
+        $type = $request->get('type');
+        if ($type != "API") {
+            $sub_institute_id = $request->session()->get('sub_institute_id');
+        } else {
+            $sub_institute_id = $request->sub_institute_id;
+        }
+       
+        $res['student_name']=$NameEnroll = $request->student_name;
+        $res['mobile']=$MobileEnroll = $request->mobile;
+        
+        $explodeName = explode(' ',$NameEnroll);
+        $first_name = $explodeName[0] ?? '';
+        $res['studentData'] = SearchStudent("","","",$sub_institute_id,"","",$first_name, "", $MobileEnroll, "","", "");
+        // echo "<pre>";print_r($res['studentData']);exit;
+        if(empty($res['studentData'])){
+            $res['status_code'] = "0";
+            $res["message"]="Student Not Found";
+            return is_mobile($type, "add_visitor_master.index", $res, "redirect");
+        }else{
+            $res['status_code'] = "1";
+            $res["message"]="Student Found successfully";
+            return is_mobile($type, "visitor_management.sendOTP", $res, "view");
+        }
+    }
+
+    public function sendOTPVisitor(Request $request){
+        $type=$request->type;
+        $student_id = $request->student_id;
+        $mobile = $request->mobile;
+        $sub_institute_id = session()->get('sub_institute_id');
+
+        if($type=="API"){
+            $sub_institute_id = $request->sub_institute_id;
+        }
+
+        // send OTP
+        $dataOTP = DB::table("tblstudent")
+        ->where(['id'=>$student_id,'mobile'=>$mobile])
+        ->value("otp");
+
+        if($dataOTP == null || $dataOTP == ''){
+            $otp = rand(100000, 999999);
+        }else{
+            $otp = $dataOTP;
+        }
+        // echo "<pre>";print_r($otp);exit;
+        if ($sub_institute_id == 49 || $sub_institute_id == 232 || $sub_institute_id == 233) {
+            $text = "Dear Student Your Application Login OTP is ".$otp;
+        }
+        else if($sub_institute_id == 47){
+            $text = "Dear Parent, Your OTP is ".$otp.". MULJIM";
+        }
+        else {
+            $text = "OTP for login is ".$otp." and is valid for 5 minutes";
+        }
+
+        $apiController = new apiController;
+        $res = $apiController->sendSMS($mobile, $text, $sub_institute_id);
+        // echo "<pre>";print_r($res);exit;
+        if ($res["error"] == 1) {
+            $errorMessage = "Please add api details first.";
+            if ($res["error"] == $errorMessage) {
+                $otp = "123456";
+            }
+            $response['message'] = $res["message"];
+
+            $response['status'] = '0';
+            $response['otp'] = $otp;
+        }else{
+            $data = DB::table("tblstudent")
+            ->where(['id'=>$student_id,'mobile'=>$mobile])
+            ->update(["otp" => $otp]);
+
+            $response['status'] = '1';
+            $response['message'] = 'success';
+            $response['otp'] = $otp;
+        }
+
+        return $response;
+    }
+
+    public function confirmOTP(Request $request){
+        $type= $request->type;
+        $sub_institute_id=session()->get('sub_institute_id');
+        $created_by=session()->get('user_id');
+        if($type=="API"){
+            try {
+                if (! $this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+
+                return response()->json($response, 401);
+            }
+            $sub_institute_id=$request->sub_institute_id;
+            $created_by=$request->user_id;
+        }
+        $person_name = $request->person_name;
+        $relation = $request->relation;
+        $enteredOTP = implode(',',$request->enteredOTP);
+        $enteredOTP = str_ireplace(',','',$enteredOTP);
+        $student_id = $request->student_id;
+        // get opt from tblstudent
+        $studata = DB::table('tblstudent')->where('id',$student_id)->first();
+
+        if(isset($studata->otp) && $studata->otp==$enteredOTP){
+
+             $visitor = [
+                'appointment_type' => "pickup",
+                'visitor_type'     => 10, // parent
+                'name'             => $person_name,
+                'contact'          => $studata->mobile,
+                'email'            => $studata->email,
+                'coming_from'      => $studata->city ?? '-',
+                'to_meet'          => $studata->id,
+                'relation'         => $relation,
+                'purpose'          => "pickup student",
+                'visitor_idcard'   => 0,
+                'meet_date'        => date('Y-m-d'),
+                'in_time'          => date('h:i:s'),
+                'out_time'         => date('h:i:s'),
+                'sub_institute_id' => $sub_institute_id,
+                'exit_msg_sent'    => 'Y',
+                'created_at'       => now(),
+                'created_by'       => $created_by,
+            ];
+    
+            $visitor_id = visitor_masterModel::insertGetId($visitor);
+            $res = [
+                "status_code" => 1,
+                "message"     => "Visitor details Added Successfully",
+            ];
+
+            return is_mobile($type, "add_visitor_master.index", $res, "redirect");
+        }else{
+        
+            if($type=="API"){
+                $res['status_code'] = 0;
+                $res['message'] = "Failed";
+                return is_mobile($type, "visitor_management.get_student", $res, "redirect");
+            }else{
+                $request->merge(['type'=>'API','sub_institute_id'=>$sub_institute_id,'radioType' => 'pickup','student_name' => $request->student_name,'mobile' => $request->mobile,'error' => "error"]);
+                $data = $this->getStudent($request);
+                // echo "<pre>";print_r(json_decode($data,true));exit;
+                $res = json_decode($data,true);
+                $res['error'] = "error";
+                return is_mobile($type, "visitor_management.sendOTP", $res, "view");
+            }
+        }
+    }
+
     public function send_sms($url)
     {
         $ch = curl_init();
@@ -378,6 +572,7 @@ class visitor_masterController extends Controller
 
         $data['to_meet_array'] = tbluserModel::select('id',
             DB::raw('concat(first_name," ",middle_name," ",last_name) as staff_name'))
+            ->where('status',1) // 23-04-24 by uma
             ->where(['sub_institute_id' => $sub_institute_id])->get();
 
         return json_encode($data);
@@ -414,7 +609,7 @@ class visitor_masterController extends Controller
         } else {
             $data = DB::table("visitor_master as v")
                 ->join('tbluser AS u', function ($join) {
-                    $join->whereRaw("u.id = v.to_meet AND u.sub_institute_id = v.sub_institute_id");
+                    $join->whereRaw("u.id = v.to_meet AND u.sub_institute_id = v.sub_institute_id")->where('u.status',1); // 23-04-24 by uma
                 })
                 ->join('visitor_type as vt', function ($join) {
                     $join->whereRaw("vt.id = v.visitor_type AND vt.sub_institute_id = v.sub_institute_id");

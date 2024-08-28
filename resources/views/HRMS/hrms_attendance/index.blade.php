@@ -39,8 +39,7 @@
             @endif
             @if($data['button'] == 'in')
                 <form action="{{ route('hrms_attendance_in_time.store') }}" method="post">
-                    @csrf
-
+                @csrf
                     <div class="row">
                         <div class="col-md-4 form-group">
                             <label>Employee List</label>
@@ -48,11 +47,9 @@
                                 <option value="">Select Employee</option>
                                 @foreach($data['employeeLists'] as $key => $employeeList)
                                     @if( $data['employee_id'] == $employeeList->id)
-                                        <option
-                                                value="{{$employeeList->id}}" selected>{{$employeeList->first_name .' '. $employeeList->last_name }}</option>
+                                        <option value="{{$employeeList->id}}" selected>{{$employeeList->first_name .' '. $employeeList->last_name }}</option>
                                     @else
-                                        <option
-                                                value="{{$employeeList->id}}">{{$employeeList->first_name .' '. $employeeList->last_name }}</option>
+                                        <option value="{{$employeeList->id}}">{{$employeeList->first_name .' '. $employeeList->last_name }}</option>
                                     @endif
                                 @endforeach
                             </select>
@@ -62,10 +59,10 @@
                         </div>
                         <div class="col-md-4 form-group">
                             <label>Date</label>
-                            <input type="date" placeholder="{{date('d/m/Y',strtotime($data['date']))}}" value="{{ date('Y-m-d',strtotime($data['date'])) }}" id="indate" name="indate" class="form-control">
-                            @error('indate')
-                            <span style="color: red">{{$message}}</span>
-                            @enderror
+                            <div class="input-daterange input-group" id="date-range">
+                                <input type="text" required class="form-control mydatepicker" placeholder="YYYY/MM/DD" name="indate" id="indate" value="{{ date('Y-m-d',strtotime($data['date'])) }}" autocomplete="off">
+                                <span class="input-group-addon"><i class="icon-calender"></i></span>
+                            </div>
                         </div>
                         <div class="col-md-4 form-group">
                             <label>Time</label>
@@ -80,7 +77,7 @@
                             <select id='employee_id' name="note" class="form-control">
                                 @if($data['note'] ==1)
                                     <option value="1" selected>Day Start</option>
-                                    <option value="2">Day End</option>
+                                    
                                 @else
                                     <option value="1">Day Start</option>
                                     <option value="2" selected>Day End</option>
@@ -107,11 +104,9 @@
                                 <option value="">Select Employee</option>
                                 @foreach($data['employeeLists'] as $key => $employeeList)
                                     @if( $data['employee_id'] == $employeeList->id)
-                                        <option
-                                                value="{{$employeeList->id}}" selected>{{$employeeList->first_name .' '. $employeeList->last_name }}</option>
+                                        <option value="{{$employeeList->id}}" selected>{{$employeeList->first_name .' '. $employeeList->last_name }}</option>
                                     @else
-                                        <option
-                                                value="{{$employeeList->id}}">{{$employeeList->first_name .' '. $employeeList->last_name }}</option>
+                                        <option value="{{$employeeList->id}}">{{$employeeList->first_name .' '. $employeeList->last_name }}</option>
                                     @endif
                                 @endforeach
                             </select>
@@ -120,11 +115,11 @@
                             @enderror
                         </div>
                         <div class="col-md-4 form-group">
-                            <label>Date </label>
-                            <input type="date" placeholder="{{date('d/m/Y',strtotime($data['date']))}}" value="{{ date('Y-m-d',strtotime($data['date'])) }}" id="indate" name="outdate" class="form-control">
-                            @error('indate')
-                            <span style="color: red">{{$message}}</span>
-                            @enderror
+                            <label>Date</label>
+                            <div class="input-daterange input-group" id="date-range">
+                                <input type="text" required class="form-control mydatepicker" placeholder="YYYY/MM/DD" name="outdate" id="outdate" value="{{ date('Y-m-d',strtotime($data['date'])) }}" autocomplete="off">
+                                <span class="input-group-addon"><i class="icon-calender"></i></span>
+                            </div>
                         </div>
                         <div class="col-md-4 form-group">
                             <label>Time</label>
@@ -137,11 +132,11 @@
                         <div class="col-md-4 form-group">
                             <label>Note</label>
                             <select id='employee_id' name="note" class="form-control">
-                                @if($data['note'] ==1)
+                                @if($data['note'] == 1)
                                     <option value="1" selected>Day Start</option>
                                     <option value="2">Day End</option>
                                 @else
-                                    <option value="1">Day Start</option>
+                                    
                                     <option value="2" selected>Day End</option>
                                 @endif
 
@@ -150,19 +145,61 @@
 
                         <input type="hidden" name="employee_id" value="{{$data['employee_id']}}">
                         <div class="col-md-12 form-group">
-                            <center>
-                                <input type="submit" name="submit" id="Submit" value="Out"
-                                       class="btn btn-success">
-                            </center>
+                            @if(empty($data['hrms_attendance']->punchout_time))
+                                <center>
+                                    <input type="submit" name="submit" id="Submit" value="Out" class="btn btn-success">
+                                </center>
+                            @endif
                         </div>
                     </div>
                 </form>
             @endif
         </div>
+        <div class="card">
+            <div class="table-responsive mt-20 tz-report-table">
+                <table id="example" class="table table-striped">
+                    <thead>
+                    <tr>
+                        <th>Sr No.</th>
+                        <th>Date</th>
+                        <th>Employee Name</th>
+                        <th>In Time</th>
+                        <th class="text-left">Out Time</th>
+                    </tr>
+                    </thead>
+                    @php
+                    $j = 1;
+                    
+                    if(isset($data['hrms_attendance'])){
+                        $user_id = $data['hrms_attendance']->user_id ?? '';
+                        $sub_institute_id = $data['hrms_attendance']->sub_institute_id ?? '';
+
+                        $get_employe_name = DB::table('tbluser')->where(['id' => $user_id, 'sub_institute_id' => $sub_institute_id])->where('status',1)->first(); 
+                    }
+                    @endphp
+                    <tbody>
+                        <tr>
+                            <td>{{ $j++ }}</td>
+                            <td>{{ $data['hrms_attendance']->day ?? '' }}</td>
+                            <td>{{ $get_employe_name->first_name ?? ''}} {{ $get_employe_name->last_name ?? ''}}</td>
+                            <td>{{ isset($data['hrms_attendance']->punchin_time) ? \Carbon\Carbon::parse($data['hrms_attendance']->punchin_time)->format('h:i A') : '-' }}</td>
+                            <td>{{ isset($data['hrms_attendance']->punchout_time) ? \Carbon\Carbon::parse($data['hrms_attendance']->punchout_time)->format('h:i A') : '-' }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
 
 @include('includes.footerJs')
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-toast-plugin/1.3.2/jquery.toast.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-toast-plugin/1.3.2/jquery.toast.min.js"></script>
+<script type="text/javascript">
+    $(document).ready(function() {
+        $('[data-toggle="tooltip"]').tooltip();
+    });
+</script>
 <script src="../../../admin_dep/js/cbpFWTabs.js"></script>
 <script>
     var indate = document.getElementById('indate');

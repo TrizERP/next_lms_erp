@@ -157,7 +157,7 @@
                 $half = $stud_data['Half Yearly'];
                 $year = $stud_data['Yearly'];
 
-                $total_unit_1 = $subject_data['total_points'][$stud_id]['UT1'];
+                $total_unit_1 = $subject_data['total_points'][$stud_id]['UT1'] ?? 0;
                 $total_unit_2 = $subject_data['total_points'][$stud_id]['UT2'];
                 $total_practical=$subject_data['total_points'][$stud_id]['Practical/ASL/Project'];
                 $total_half=$subject_data['total_points'][$stud_id]['Half Yearly'];
@@ -165,9 +165,16 @@
                
 //START MATHEMATICS ONLY
 if($subject == "MATHEMATICS"){
-	$i = round(10 * (is_numeric($unit_1) ? $unit_1 : 0) / $total_unit_1,0);
-	$j = round(10 * (is_numeric($unit_2) ? $unit_2 : 0) / $total_unit_2,0);
-	$k = round(10 * (is_numeric($half) ? $half : 0) / $total_half,0);
+    $i = $j=$k=0;
+if ($total_unit_1 != 0) {
+    $i = round(10 * (is_numeric($unit_1) ? $unit_1 : 0) / $total_unit_1, 0);
+} 
+if ($total_unit_2 != 0) {
+    $j = round(10 * (is_numeric($unit_2) ? $unit_2 : 0) / $total_unit_2,0);
+} 
+if ($total_half != 0) {
+    $k = round(10 * (is_numeric($half) ? $half : 0) / $total_half,0);
+} 
 	$marksArr = array(
 		$i,$j,$k		
 	);
@@ -224,12 +231,14 @@ $math_tot = round((array_sum($marksArrs) / 2),0) + $practical;
                 <td style="text-align:center"><?php echo $year; if(is_numeric($year)){ $theory_gain += $year; $term2_obt += $year; $theory_total += $total_year; } ?></td>
         <?php }
             else{ ?>
-                <td style="text-align:center"><?php echo $unit_1; if(is_numeric($unit_1)) { $theory_gain += $unit_1; $theory_total += $total_unit_1; } ?></td>
+                <td style="text-align:center"><?php echo $unit_1; if(is_numeric($unit_1)) 
+                { $theory_gain += $unit_1; $theory_total += $total_unit_1; } ?></td>
                 <td style="text-align:center"><?php echo $unit_2; if(is_numeric($unit_2)) { $theory_gain += $unit_2; $theory_total += $total_unit_2; } ?></td>
                 <td style="text-align:center"><?php echo $total_half; ?></td>
                 <td style="text-align:center"><?php echo $half; if(is_numeric($half)) { $theory_gain += $half; $theory_total += $total_half; } ?></td>
                 <td style="text-align:center"><?php echo $total_practical; ?></td>
-                <td style="text-align:center"><?php echo $practical; if(is_numeric($practical)){$term2_obt += $practical;} ?></td>
+                <td style="text-align:center"><?php echo $practical;
+                 if(is_numeric($practical)){$term2_obt += $practical;} ?></td>
                 <td style="text-align:center"><?php echo $total_year; ?></td>
                 <td style="text-align:center"><?php echo $year; if(is_numeric($year)){ $theory_gain += $year; $term2_obt += $year; $theory_total += $total_year; } ?></td>
         <?php }
@@ -286,6 +295,7 @@ if($subject != "MATHEMATICS"){
                     }
                     if($total_per < 33)
                         $failed++;
+                        // echo $subject.'-'.$theory_gain.'/'.$theorytotal.'<br>';
                 }
 }                
                 // $count = count($stud_data);

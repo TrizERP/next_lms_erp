@@ -1,6 +1,6 @@
-@include('includes.headcss')
-@include('includes.header')
-@include('includes.sideNavigation')
+{{-- @include('includes.headcss') @include('includes.header') @include('includes.sideNavigation') --}} 
+@extends('layout')
+@section('container')
 
 <div id="page-wrapper">
     <div class="container-fluid">
@@ -8,13 +8,14 @@
             <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
                 <h4 class="page-title">Circular</h4>
             </div>
-        </div>        
+        </div>
         <div class="card">
             <form action="{{ route('circular.store') }}" enctype="multipart/form-data" method="post">
                 {{ method_field("POST") }}
                 {{csrf_field()}}
-                
-                <div class="row">                    
+
+                <div class="row">
+               
                     {{ App\Helpers\SearchChain('4','multiple','grade,std,div') }}
                     <div class="col-md-4 form-group">
                         <label>Date</label>
@@ -34,7 +35,7 @@
 								@endforeach
 							@endif
 						</select>
-					</div>                
+					</div>
                     <div class="col-md-4 form-group">
                         <label>Message</label>
                         <textarea name="message" class="form-control"></textarea>
@@ -44,16 +45,22 @@
                         <input type="file" name="attachment[]" id="attachment[]" class="form-control" accept="image/*,application/pdf">
                         <span class="text-danger font-weight-bold">Note: Select single file from here.</span>
                     </div>
+
+                     <div class="col-md-4 form-group">
+					<label>Send To All Standard</label><br>			
+					<input name="allstd" type="checkbox" @if(isset($data['allstd'])) checked @endif>
+				</div>
                 </div>
+                
 				<div class="col-md-12 form-group">
 					<label></label><br>
 					<center>
 						<input type="submit" name="submit" value="Submit" class="btn btn-success">
 					</center>
                 </div>
-				
+
             </form>
-        </div>                    
+        </div>
         <div class="card">
             <div class="col-lg-12 col-sm-12 col-xs-12">
                 @if ($sessionData = Session::get('data'))
@@ -98,10 +105,10 @@
                                 <td style="white-space: break-spaces;">{{$data->message}}</td>
                                 <td>{{date('d-m-Y',strtotime($data->date_))}}</td>
                                 <td>{{$data->std_name}}</td>
-                                <td>{{$data->div_name}}</td>                                  
+                                <td>{{$data->div_name}}</td>
                                 <td>
                                 @if(isset($data->file_name))
-                                    <a href="<?php echo asset('storage/circular/' . $data->file_name); ?>" target="_blank">View</a>
+                                    <a href="{{ asset('storage/circular/' . $data->file_name)}}" target="_blank">View</a>
                                 @else
                                 -</td>
                                 @endif
@@ -123,7 +130,7 @@
                 </div>
             </div>
         </div>
-    </div>       
+    </div>
 </div>
 
 @include('includes.footerJs')
@@ -137,9 +144,9 @@
 <script>
     $(document).ready(function () {
 
-        $("#title").autocomplete({          
-          source: function( request, response ) 
-          {        
+        $("#title").autocomplete({
+          source: function( request, response )
+          {
             $.ajax({
                 url: "{{route('search_by_circular_title')}}",
                 type: 'POST',
@@ -160,12 +167,12 @@
     } );
 
     var table = $('#example').DataTable( {
-         select: true,          
-         lengthMenu: [ 
-                        [100, 500, 1000, -1], 
-                        ['100', '500', '1000', 'Show All'] 
+         select: true,
+         lengthMenu: [
+                        [100, 500, 1000, -1],
+                        ['100', '500', '1000', 'Show All']
         ],
-        }); 
+        });
 
         $('#example thead tr').clone(true).appendTo( '#example thead' );
         $('#example thead tr:eq(1) th').each( function (i) {
@@ -181,15 +188,7 @@
                 }
             } );
         } );
-    
 
-   /*  $('#grade').attr('required',true);
-    $('#standard').attr('required',true);
-    $('#division').attr('required',true); */
-
-    
-
-
-   
 </script>
 @include('includes.footer')
+@endsection

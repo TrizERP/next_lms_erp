@@ -1,9 +1,10 @@
-@include('includes.headcss')
+{{--@include('../includes.headcss')
+@include('../includes.header')
+@include('../includes.sideNavigation')--}}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
-
-<link href="{{ asset('/plugins/bower_components/summernote/dist/summernote.css') }}" rel="stylesheet" /> @include('includes.header')
 <script src="{{asset('/admin_dep/js/sqaa.js')}}"></script>
-@include('includes.sideNavigation')
+@extends('layout')
+@section('container')
 <style>
 	.custom-tooltip,
 	.tooltip-inner {
@@ -44,12 +45,14 @@
 				<strong>{{ $sessionData['message'] }}</strong>
 			</div>
 			@endif
-
+			<div class="alert alert-secondary alert-secondary">
+				<strong>Please Select one tab below :</strong>
+			</div>
 			<div class="row">
 				<div class="col-lg-12 col-sm-12 col-xs-12">
 					<div class="sttabs tabs-style-linemove triz-verTab bg-white style2">
 						<ul class="nav nav-tabs tab-title mb-4">
-							@php $i=0; @endphp @if(isset($data['level_1'])) @foreach($data['level_1'] as $key=>$value)
+							@php $i=1; @endphp @if(isset($data['level_1'])) @foreach($data['level_1'] as $key=>$value)
 							<li class="nav-item">
 								<a href="#section-linemove-{{$value['id']}}" class="nav-link active-link @if(isset($data['selected_1']) && $data['selected_1']==$value['id']) active @endif"
 								 aria-selected="true" data-toggle="tab" data-html="true" data-original-title="{!!$value['description']!!}">
@@ -67,8 +70,7 @@
 								@if(isset($data['level_1'])) @foreach($data['level_1'] as $key=>$value)
 								<div class="tab-pane fade called-tab" id="section-linemove-{{$value['id']}}">
 									<form action="{{route('sqaa_master.create')}}" method="get" enctype="multiple/form-data">
-										@csrf
-										<!-- TABS FOR LEVEL 2 -->
+									<!-- TABS FOR LEVEL 2 -->
 										<div class="row">
 											<!-- level 2 -->
 											<div class="col-md-4">
@@ -100,7 +102,7 @@
 													@if(isset($data['level_4_val']))
 													<option> Select Value</option>
 													 @foreach($data['level_4_val'] as $key => $value_2)
-													<option value="{{$value_2['id']}}" data-new="{{$i++}}" @if(isset($data[ 'selected_4']) && $data[ 'selected_4']==$value_2[
+													<option value="{{$value_2['id']}}" data-new="{{$i++}}" @if(isset($data['selected_4']) && $data['selected_4']==$value_2[
 													 'id']) selected @endif>{{$value_2['title']}}</option>
 													@endforeach @endif
 												</select>
@@ -111,7 +113,8 @@
 								@endforeach @endif
 							</div>
 						</div>
-						@php $style = $style_m ='display:none';
+						@php 
+						$style = $style_m ='display:none';
 						 $val=''; 
 						 if(isset($data['selected_1'])){ $style="display:block"; } 
 						if(isset($data['mark']) && $data['mark']!='' && $data['mark']!=null){
@@ -139,18 +142,16 @@
 
 					<input type="hidden" id="level_4" name="level_4" @if(isset($data[ 'level_4'])) value="{{$data['level_4']}}" @endif>
 					<input type="hidden" id="text_4" name="text_4" @if(isset($data[ 'text_4'])) value="{{$data['text_4']}}" @endif>
-
 					</form>
 
-					<form action="{{route('sqaa_master.store')}}" method="post" enctype="multiple/form-data">
+					<form action="{{route('sqaa_master.store')}}" method="post" enctype="multipart/form-data" id="document_div">
 					@csrf
 					<!-- add new row -->
 					<div class="addButtonCheckbox1" data-new="1">
 						<!-- insert or update document  -->
-						@if(isset($data['document']))
-
+						@if(isset($data['document']) && !empty($data['document']) && count($data['document'])>0)
 						
-							<input type="hidden" id="mark" name="mark" {{ $val }} class="form-control" min="1" max="4">
+						<input type="hidden" id="mark" name="mark" {{ $val }} class="form-control" min="1" max="4">
 						</div>
 
 						<input type="hidden" id="lev_1" name="lev_1" @if(isset($data[ 'level_1_1'])) value="{{$data['level_1_1']}}" @endif>
@@ -193,7 +194,7 @@
 							<div class="col-md-2">
 								<div class="form-group">
 									<label for="topicAvailability2">Files</label>
-									<input type="file" class="form-control" name="files[]" data-new="{{$j}}" accept=".pdf,.xlsx,.doc,.docx" >
+									<input type="file" class="form-control" name="doc_files[]" data-new="{{$j}}" accept=".pdf,.xlsx,.doc,.docx" >
 									@if (!empty($document->file) && $document->file !=" ")
 									<input type="hidden" name="update_file[]" id="" value="{{$document->file}}">
 										<a href="https://s3-triz.fra1.digitaloceanspaces.com/public/sqaa/{{$document->file}}" target="_blank">View</a>
@@ -226,9 +227,7 @@
 			</div>
 			</form>
 
-
 		</div>
-
 
 		<!-- for description  -->
 		<div class="modal fade" id="descriptionModal" tabindex="-1" role="dialog" aria-labelledby="descriptionModalLabel" aria-hidden="true">
@@ -336,6 +335,8 @@
 					$('#sel_level_1_' + level_2).empty();
 					$('#sel_level_2_' + level_2).empty();
 					$('#sel_level_3_' + level_2).empty();
+					$('#document_div').empty();					
+
 					$('#enter_score').hide();
 					var text_1 = $('.active-link.active span').text();
 
@@ -392,16 +393,18 @@
 			});
 
 			function get_level_2(val, sel_element, level) {
+				var tabs = $('#tabs_id').val();
 				if(level=="level_3"){
 					$('#level_2').val(val);
-					var selectedText = $('#sel_level_1_1').find('option:selected').text();
+					var selectedText = $('#sel_level_1_'+tabs).find('option:selected').text();
 					$('#text_2').val(selectedText);
 				}
 				if(level=="level_4"){
 					$('#level_3').val(val);		
-					var selectedText = $('#sel_level_2_1').find('option:selected').text();
+					var selectedText = $('#sel_level_2_'+tabs).find('option:selected').text();
 					$('#text_3').val(selectedText);			
 				}
+				
 				var dataObject = {};
 				dataObject[level] = val;
 				$(sel_element).empty();
@@ -427,19 +430,34 @@
 						console.error(error);
 					}
 				});
+				if(level=="level_3"){
+					var sel_level_1_value = $('select[name="sel_level_1"]').val();
+					$('select[name="sel_level_1"]').val(val);
+				}else{
+					var sel_level_2_value = $('select[name="sel_level_2"]').val();
+					$('select[name="sel_level_2"]').val(val);
+				}
+				$('select[name="sel_level_3"]').val('');
+				$('#enter_score').hide();				
 			}
-
-			function get_mark(val,sel_element) {
+			
+				function get_mark(val, sel_element) {
 				$('#level_4').val(val);
 				var selectedText = $(sel_element).find('option:selected').text();
-					$('#text_4').val(selectedText);
+				$('#text_4').val(selectedText);
 
 				$('#enter_score').show();
 				var enter_score = $(sel_element).find('option:selected').data('new');
+
 				if (enter_score <= 4) {
 					$('#mark').val(enter_score);
 				}
-				$(sel_element).val(val);
+
+				// Set the value of sel_level_3 in the form
+				var sel_level_3_value = $(sel_element).val();
+				$('select[name="sel_level_3"]').val(sel_level_3_value);
+
 			}
 		</script>
-		@include('includes.footer')
+@include('includes.footer')
+@endsection

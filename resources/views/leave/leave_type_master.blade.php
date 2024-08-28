@@ -12,6 +12,16 @@
         </div>
 
         <div class="card">
+        @if ($sessionData = Session::get('data'))
+            @if($sessionData->status_code == 1)
+                <div class="alert alert-success alert-block">
+            @else
+                <div class="alert alert-danger alert-block">
+            @endif
+                <button type="button" class="close" data-dismiss="alert">Ã—</button>
+                <strong>{{ $sessionData->message }}</strong>
+            </div>
+        @endif
             <div class="col-md-2">
                 <ul id="" class="nav nav-tabs justify-content-between" role="tablist">
                     <li class="nav-item" role="presentation" data-toggle="tooltip" data-placement="top"
@@ -69,7 +79,7 @@
                             </div>
                             <div class="col-lg-3 col-sm-3 col-xs-3">
                                 <a href="{{ route('add_visitor_master.create') }}" data-toggle="modal"
-                                    data-target="#addTypeMdl" class="btn btn-info add-new"><i class="fa fa-plus"></i>
+                                    data-target="#addTypeMdl" class="btn btn-info add-new" onclick="addButton()"><i class="fa fa-plus"></i>
                                     Add Leave Type</a>
                             </div>
                             <div class="col-lg-12 col-sm-12 col-xs-12">
@@ -81,10 +91,13 @@
                                                 <th data-toggle="tooltip" title="No">No</th>
                                                 <th data-toggle="tooltip" title="Leave Type Id">Leave Type Id</th>
                                                 <th data-toggle="tooltip" title="Leave Type">Leave Type</th>
-                                                <th data-toggle="tooltip" title="Action">Action</th>
+                                                <th data-toggle="tooltip" title="Sort Order">Sort Order</th>
+                                                <th data-toggle="tooltip" title="Status">Status</th>
+                                                <th data-toggle="tooltip" title="Action" class="text-left">Action</th>
                                             </tr>
                                         </thead>
                                         <tbody>
+
                                         </tbody>
 
                                     </table>
@@ -114,7 +127,18 @@
                     <div class="form-group">
                         <label for="">Leave Type Name</label>
                         <input type="hidden" name="leave_id" id="leave_id" value="">
-                        <input type="text" name="leave_type_name" id="leave_type_name">
+                        <input type="text" name="leave_type_name" id="leave_type_name" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="">Status</label>
+                        <select name="status" id="status" class="form-control">
+                            <option value="1">Active</option>
+                            <option value="0">In-Active</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="">Sort Order</label>
+                        <input type="number" name="sort_order" id="sort_order" class="form-control" @if(isset($data['maxSortOrder'])) value="{{$data['maxSortOrder']}}" @endif>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
@@ -154,6 +178,14 @@
                     name: 'leave_type'
                 },
                 {
+                    data: 'sort_order',
+                    name: 'sort_order'
+                },
+                {
+                    data: 'status',
+                    name: 'status'
+                },
+                {
                     data: 'action',
                     name: 'action',
                     orderable: true,
@@ -171,6 +203,7 @@
                 url: "{{ route('leave-type.store') }}",
                 data: formData,
                 success: function(data) {
+                    alert(data.message);
                     $('#addTypeMdl').modal('toggle');
                     $('#tblLeaveType').DataTable().ajax.reload();
                 },
@@ -203,8 +236,11 @@
                 success: function(data) {
                     $('#addTypeMdl').modal('toggle');
                     $('#leave_type_name').val(data.data.leave_type);
+                    $('#sort_order').val(data.data.sort_order);
+                    $('#status').val(data.data.status);
                     $('#leave_id').val(data.data.id);
-                },
+                    $('#sort_order').prop('readonly',false);
+              },
                 error: function(xhr) {
                     if (xhr.status == 422) {
                         var errors = JSON.parse(xhr.responseText);
@@ -231,6 +267,7 @@
                         id: id
                     },
                     success: function(data) {
+                        alert(data.message);
                         $('#tblLeaveType').DataTable().ajax.reload();
                     },
                     error: function(xhr) {
@@ -247,5 +284,12 @@
             }
         });
     });
+
+    function addButton(){
+        $('#sort_order').prop('readonly',true);
+        $('#leave_type_name').empty();
+        $('#sort_order').empty();
+        $('#leave_id').empty();
+    }
 </script>
 @include('includes.footer')

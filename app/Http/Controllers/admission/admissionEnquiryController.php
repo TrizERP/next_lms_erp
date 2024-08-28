@@ -15,6 +15,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
 use function App\Helpers\sendSMS;
+use GenTux\Jwt\GetsJwtToken;
 
 class admissionEnquiryController extends Controller
 {
@@ -23,42 +24,57 @@ class admissionEnquiryController extends Controller
      *
      * @return Response
      */
+    use GetsJwtToken;
+    
     public function index(Request $request)
     {
         $type = $request->input('type');
-        $sub_institute_id = $request->session()->get('sub_institute_id');
-        $syear = $request->session()->get('syear');
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+        
+        if($type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');            
+        }
         $marking_period_id=session()->get('marking_period_id');
 
         $data = DB::table('admission_enquiry')
-            ->leftJoin('admission_form as af', function ($join) {
-                $join->whereRaw('af.enquiry_id = admission_enquiry.id AND af.sub_institute_id = admission_enquiry.sub_institute_id');
-            })->leftJoin('tblstudent', function ($join) use($marking_period_id) {
-                $join->whereRaw('`tblstudent`.`admission_id` = `admission_enquiry`.`id`');
-                // ->when($marking_period_id,function($query) use ($marking_period_id){
-                //     $query->where('tblstudent.marking_period_id',$marking_period_id);
-                // });
-            })->leftJoin('standard', function ($join)use($marking_period_id) {
-                $join->whereRaw('`standard`.`id` = `admission_enquiry`.`admission_standard`');
-                // ->when($marking_period_id,function($query) use ($marking_period_id){
-                //     $query->where('standard.marking_period_id',$marking_period_id);
-                // });
-            })->leftJoin('follow_up as fu', function ($join) {
-                $join->whereRaw('fu.id = (SELECT id FROM follow_up AS fu1 WHERE fu1.enquiry_id = admission_enquiry.id ORDER BY fu1.id DESC LIMIT 1)');
+            ->leftJoin('admission_form as af', 'af.enquiry_id', '=', 'admission_enquiry.id')
+            //->leftJoin('tblstudent', 'tblstudent.admission_id', '=', 'admission_enquiry.id') //Hide by 02-01-2024 rajesh loading issue
+            ->Join('standard', 'standard.id', '=', 'admission_enquiry.admission_standard')
+            ->leftJoin('follow_up as fu', function ($join) {
+                $join->on('fu.id', '=', DB::raw('(SELECT id FROM follow_up AS fu1 WHERE fu1.enquiry_id = admission_enquiry.id ORDER BY fu1.id DESC LIMIT 1)'));
             })
-            ->selectRaw('admission_enquiry.*, CASE WHEN admission_enquiry.followup_date = DATE_FORMAT(NOW(),"%Y-%m-%d") THEN "#f5f777"
-                WHEN fu.follow_up_date = DATE_FORMAT(NOW(),"%Y-%m-%d") THEN "#f5f777"
+            ->selectRaw('admission_enquiry.*, 
+                CASE 
+                    WHEN admission_enquiry.followup_date = CURDATE() THEN "#f5f777"
+                    WHEN fu.follow_up_date = CURDATE() THEN "#f5f777"
                 END AS current_status_color,
-                COUNT(tblstudent.id) AS total_student_count,standard.name as std_name,
-                IF(fu.status = "close","1","0") as enquiry_status,fu.status as display_enquiry_status,
-                if(fu.status = "close","pink","") as enq_color,DATE_FORMAT(fu.follow_up_date,"%d-%m-%Y") as next_follow_up_date,
+                COUNT(af.enquiry_id) AS total_student_count,
+                standard.name as std_name,
+                IF(fu.status = "close","1","0") as enquiry_status,
+                fu.status as display_enquiry_status,
+                IF(fu.status = "close","pink","") as enq_color,
+                DATE_FORMAT(fu.follow_up_date,"%d-%m-%Y") as next_follow_up_date,
                 af.form_no as form_number,
-                if(fu.follow_up_date = DATE_FORMAT(NOW(),"%Y-%m-%d"),"#0aa884","") as todays_next_followup ')
+                IF(fu.follow_up_date = CURDATE(),"#0aa884","") as todays_next_followup ')
             ->where('admission_enquiry.sub_institute_id', $sub_institute_id)
             ->where('admission_enquiry.syear', $syear)
             ->groupBy('admission_enquiry.id')
-            ->orderByRaw('admission_enquiry.followup_date = DATE_FORMAT(NOW(),"%Y-%m-%d") desc')
-            ->get()->toArray();
+            ->orderByRaw('admission_enquiry.followup_date = CURDATE() desc')
+            ->get()->toArray();//COUNT(tblstudent.id) AS total_student_count, by rajesh update 'af.'
+
         $data = json_decode(json_encode($data), true);
 
         $res['status_code'] = 1;
@@ -79,11 +95,25 @@ class admissionEnquiryController extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
         $marking_period_id = session()->get('term_id');
-
+        if($type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');            
+        }
         $category = castModel::get()->toArray();
 
         $dataCustomFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "admission_enquiry"])
-            ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1)')
+            ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1) and user_type="" ')
             ->get();
 
         $fieldsData = tblfields_dataModel::get()->toArray();
@@ -241,8 +271,27 @@ class admissionEnquiryController extends Controller
         $sub_institute_id = $request->session()->get("sub_institute_id");
         $user_id = $request->session()->get("user_id");
         $syear = $request->session()->get("syear");
+
+        if($type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');   
+            $user_id = $request->input("user_id");
+                     
+        }
+
         $data = $request->except([
-            '_method', '_token', 'submit', 'type', 'receipt_id', 'receipt_html', 'hidden_std_id', 'original_fees_bf',
+            '_method', '_token','token','submit', 'type', 'receipt_id', 'receipt_html', 'hidden_std_id', 'original_fees_bf','user_id'
         ]);
 
         $data['syear'] = $syear;
@@ -524,13 +573,27 @@ class admissionEnquiryController extends Controller
     {
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
-
+        if($type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');            
+        }
         $editData = admissionEnquiryModel::where(['id' => $id])->get()->toArray();
 
         $category = castModel::get()->toArray();
 
         $dataCustomFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "admission_enquiry"])
-            ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1)')
+            ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1)  and user_type="" ')
             ->get();
 
         $fieldsData = tblfields_dataModel::get()->toArray();
@@ -568,11 +631,27 @@ class admissionEnquiryController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $type = $request->input("type");
+        $type = $request->get("type");
         $sub_institute_id = $request->session()->get("sub_institute_id");
         $user_id = $request->session()->get("user_id");
         $syear = $request->session()->get("syear");
-        $data = $request->except(['_method', '_token', 'submit']);
+        if($type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');           
+            $user_id = $request->get('user_id'); 
+        }
+        $data = $request->except(['_method', '_token', 'submit','token','user_id','type']);
 
         $data['syear'] = $syear;
         $data['created_by'] = $user_id;
@@ -596,6 +675,21 @@ class admissionEnquiryController extends Controller
     public function destroy(Request $request, $id)
     {
         $type = $request->input('type');
+        if($type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');            
+        }
         admissionEnquiryModel::where(["id" => $id])->delete();
         $res['status_code'] = "1";
         $res['message'] = "Deleted successfully";
@@ -692,4 +786,34 @@ class admissionEnquiryController extends Controller
         return $check_calendar_data[0]->total_rec;
 
     }
+
+    public function admissionAI(Request $request){
+        $type = $request->type;
+        $file_response = shell_exec('python3 /home/admission.py');
+        if($file_response==null){
+            echo "file has no response";
+        }else{
+            $studentData = [];
+            $fileData = json_decode($file_response,true);
+            foreach ($fileData as $key => $value) {
+                # code...
+                $getStudent =DB::table('standard')->where('id',$value['admission_standard'])->first();
+                if(!empty($getStudent)){
+                    $value['standard_name'] = $getStudent->name;                
+                    $studentData[]=$value;
+                }
+            }
+
+            $getYears = function ($subarray) {
+                return array_unique(array_filter(array_keys($subarray), function ($key) {
+                    return is_numeric($key); // Filter numeric keys
+                }));
+            };
+            $res['yearHeads'] = array_unique(call_user_func_array('array_merge', array_map($getYears, $studentData)));
+            $res['admissionData'] = $studentData;
+            // echo "<pre>";print_r($res['yearHeads']);exit;
+            return is_mobile($type, 'admission/admissionAI', $res, 'view');
+        }
+    }
+
 }

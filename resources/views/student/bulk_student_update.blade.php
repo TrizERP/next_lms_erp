@@ -45,9 +45,8 @@
                     @endif
                     <form action="{{ route('show_bulk_student') }}" enctype="multipart/form-data" method="post">
                     @csrf
-                        <div class="row">
+                    <div class="row">
                             {{ App\Helpers\SearchChain('3','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
-                        </div>
                         <div class="col-md-3 form-group">
                             <label>Order By</label>
                             <select id='order_by' name="order_by" class="form-control">
@@ -56,13 +55,14 @@
                                 <option @if($order_by == 'standard_id') selected="selected" @endif value="standard_id">{{App\Helpers\get_string('standard','request')}}</option>
                                 <option @if($order_by == 'enrollment_no') selected="selected" @endif value="enrollment_no">{{App\Helpers\get_string('grno','request')}}</option>
                                 <option @if($order_by == 'roll_no') selected="selected" @endif value="roll_no">Roll No</option>
+                                <option @if($order_by == 'last_name') selected="selected" @endif value="last_name">Last Name</option>
                             </select>
 						</div>
                         <div class="col-md-3 col-sm-offset-4 text-center form-group">
                             <input type="submit" name="submit" value="Search" class="btn btn-success triz-btn" >
                             <div class="btn btn-outline-primary btn-sm ml-2 py-2 px-3 cursor-pointer" data-toggle="modal" data-target="#modalCenter"><span class="mdi mdi-tune"></span></div>
                         </div>
-
+                    </div>
                         <!-- Modal -->
                         <div class="modal fade bd-example-modal-lg" id="modalCenter" tabindex="-1" role="dialog" aria-labelledby="modalCenterTitle" aria-hidden="true">
                             <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
@@ -101,9 +101,16 @@
                                                                 $checked = 'checked="checked"';
                                                             }
                                                         }
+                                                        $id = $key;
+                                                        if($key=="division"){
+                                                            $id = "division_id";
+                                                        }
+                                                        if($key=="standard"){
+                                                            $id = "standard_id";
+                                                        }
                                                         @endphp
-                                                        <input id="{{$key}}" {{$checked}} value="{{$key}}" class="custom-control-input" name="dynamicFields[]" type="checkbox">
-                                                        <label class="custom-control-label mb-0 pt-1" for="{{$key}}">{{$value['name']}}</label>
+                                                        <input id="{{$id}}" {{$checked}} value="{{$key}}" class="custom-control-input" name="dynamicFields[]" type="checkbox">
+                                                        <label class="custom-control-label mb-0 pt-1" for="{{$id}}">{{$value['name']}}</label>
                                                     </div>
                                                 </div>
                                                 @endforeach
@@ -137,7 +144,7 @@
                                 @foreach($data['headers'] as $hkey => $header)
                                     <th data-toggle="tooltip" title="{{$header['name']}}"> {{$header['name']}} </th>
                                 @endforeach
-                                <th data-toggle="tooltip" title="Updated On"> Updated On </th>
+                                <th data-toggle="tooltip" title="Updated On" class="text-left"> Updated On </th>
                             </tr>
                         </thead>
                         <tbody>
@@ -150,11 +157,11 @@
                                         @else
                                             @if($header['type'] == "textbox")
                                                 @if($hkey == "mobile" || $hkey == "mother_mobile")
-                                                <td><input type="text" pattern="[1-9]{1}[0-9]{9}" name="values[{{$value->id}}][{{$hkey}}]" value="{{$value->$hkey}}"></td>
+                                                <td><input type="text" pattern="[1-9]{1}[0-9]{9}" name="values[{{$value->id}}][{{$hkey}}]" value="{{$value->$hkey}}" class="form-control"></td>
                                                 @elseif($hkey == "email")
                                                 <td>{{$value->$hkey}}</td>
                                                 @else
-                                                <td><input type="text" name="values[{{$value->id}}][{{$hkey}}]" value="{{$value->$hkey}}"></td>
+                                                <td><input type="text" name="values[{{$value->id}}][{{$hkey}}]" value="{{$value->$hkey}}"  class="form-control"></td>
                                                 @endif
                                             @elseif($header['type'] == "dropdown")
                                             <td>

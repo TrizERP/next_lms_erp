@@ -26,7 +26,7 @@
                         {{ method_field("POST") }}
                         {{csrf_field()}}
                         <div class="table-responsive">
-                            <table id="example" class="table-bordered table" id="myTable" width="100%">
+                            <table id="example" class="table-bordered table" width="100%">
                                 <thead>
                                     <tr>
                                         <!--<th><input type="checkbox" name="all" id="ckbCheckAll" class="ckbox">  </th>-->
@@ -37,6 +37,7 @@
                                         <th>Apply Date</th>
                                         <th>From Date</th>
                                         <th>To Date</th>
+                                        <th>Title</th>
                                         <th>Message</th>
                                         <th>File</th>
                                         <th>Reply</th>
@@ -46,9 +47,9 @@
                                 </thead>
                                 @php
                                 $arr = $data['stu_data'];
-                                foreach ($arr as $id=>$col_arr){
                                 @endphp
                                 <tbody>
+                                    @foreach ($arr as $id=>$col_arr)
                                     <tr>
                                         <!--<td><input type="checkbox" name="@php echo 'sendsms['.$col_arr['mobile'].']'; @endphp" class="ckbox1">  </td>-->
                                         <td>{{ $id+1 }}</td>
@@ -58,12 +59,13 @@
                                         <td>{{ $col_arr['apply_date'] }}</td>
                                         <td>{{ $col_arr['from_date'] }}</td>
                                         <td>{{ $col_arr['to_date'] }}</td>
+                                        <td>{{ $col_arr['title'] }}</td>
                                         <td>{{ $col_arr['message'] }}</td>
                                         <td>
                                         @if(!empty($col_arr['files']))
                                             <a target="blank" href="/storage/leave_application/{{$col_arr['files']}}">View</a>
                                         @else
-                                            -</td>
+                                            -
                                         @endif
                                         </td>
                                         <td>
@@ -90,10 +92,8 @@
                                         @endif
                                         </td>
                                     </tr>
+                                    @endforeach
                                 </tbody>
-                                @php
-                                }
-                                @endphp
                             </table>
                         </div>
                         <div class="col-md-12 form-group">
@@ -125,42 +125,47 @@
 
 @include('includes.footerJs')
 <script>
-//    $(function () {
-//        var $tblChkBox = $("input:checkbox");
-//        $("#ckbCheckAll").on("click", function () {
-//            $($tblChkBox).prop('checked', $(this).prop('checked'));
-//        });
-//    });
-    $(document).ready(function() {
-    // Setup - add a text input to each footer cell
-    $('#example thead tr').clone(true).appendTo( '#example thead' );
-    $('#example thead tr:eq(1) th').each( function (i) {
-        var title = $(this).text();
-        $(this).html( '<input type="text" size="4" style="color:black;" placeholder="Search '+title+'" />' );
+$(document).ready(function () {
+        var table = $('#example').DataTable({
+            select: true,
+            lengthMenu: [
+                [100, 500, 1000, -1],
+                ['100', '500', '1000', 'Show All']
+            ],
+            dom: 'Bfrtip',
+            buttons: [
+                {
+                    extend: 'pdfHtml5',
+                    title: 'Leave Application Report',
+                    orientation: 'landscape',
+                    pageSize: 'LEGAL',
+                    pageSize: 'A0',
+                    exportOptions: {
+                        columns: ':visible'
+                    },
+                },
+                {extend: 'csv', text: ' CSV', title: 'Leave Application Report'},
+                {extend: 'excel', text: ' EXCEL', title: 'Leave Application Report'},
+                {extend: 'print', text: ' PRINT', title: 'Leave Application Report'},
+                'pageLength'
+            ],
+        });
 
-        $( 'input', this ).on( 'keyup change', function () {
-            if ( table.column(i).search() !== this.value ) {
-                table
-                    .column(i)
-                    .search( this.value )
-                    .draw();
-            }
+        $('#example thead tr').clone(true).appendTo('#example thead');
+        $('#example thead tr:eq(1) th').each(function (i) {
+            var title = $(this).text();
+            $(this).html('<input type="text" placeholder="Search ' + title + '" />');
+
+            $('input', this).on('keyup change', function () {
+                if (table.column(i).search() !== this.value) {
+                    table
+                        .column(i)
+                        .search( this.value )
+                        .draw();
+                }
+            } );
         } );
     } );
-
-    var table = $('#example').DataTable( {
-        orderCellsTop: true,
-        fixedHeader: true,
-        dom: 'Bfrtip',
-        buttons: [
-            'copyHtml5',
-            'excelHtml5',
-            'csvHtml5',
-            'pdfHtml5'
-        ]
-    } );
-} );
-
 </script>
 @include('includes.footer')
 @endsection

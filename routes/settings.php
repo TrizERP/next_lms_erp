@@ -6,11 +6,12 @@ use App\Http\Controllers\settings\manageInstituteController;
 use App\Http\Controllers\settings\smtpController;
 use App\Http\Controllers\settings\tblcustomfieldsController;
 use App\Http\Controllers\settings\templateMasterController;
+use App\Http\Controllers\settings\announcementController;
+use App\Http\Controllers\settings\masterSetupSelectController;
 use Illuminate\Support\Facades\Route;
 
 
-Route::group(['prefix' => 'settings', 'middleware' => ['session', 'menu', 'logRoute']], function () {
-    Route::resource('add_fields', tblcustomfieldsController::class);
+Route::group(['prefix' => 'settings', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
     Route::resource('smtp_setting', smtpController::class);
     Route::resource('biomatrix', biomatrixController::class);
     Route::get('setsession', [tblcustomfieldsController::class, 'setsession'])->name('setsession');
@@ -21,5 +22,13 @@ Route::group(['prefix' => 'settings', 'middleware' => ['session', 'menu', 'logRo
     Route::get('view_all_tag', [templateMasterController::class, 'viewAllTag'])->name('view_all_tag');
     Route::resource('institute_detail', instituteDetailController::class);
     Route::resource('manage_institute', manageInstituteController::class);
+    Route::resource('announcements', announcementController::class);
+    Route::get('announcement_dashboard',[announcementController::class,'dashboardData']);
 
+    Route::resource('master_setup', masterSetupSelectController::class);
+
+});
+// no permisson check
+Route::group(['prefix' => 'settings', 'middleware' => ['session', 'menu', 'logRoute']], function () {
+    Route::resource('add_fields', tblcustomfieldsController::class);
 });

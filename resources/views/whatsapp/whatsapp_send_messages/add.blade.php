@@ -1,7 +1,11 @@
 @include('../includes.headcss')
 @include('../includes.header')
 @include('../includes.sideNavigation')
-
+<style>
+    .control-bar a:hover, .control-bar input:hover, [contenteditable]:focus, [contenteditable]:hover{
+        background : #fff !important;
+    }
+</style>
 
 <div id="page-wrapper">
     <div class="container-fluid">
@@ -43,6 +47,7 @@
                             </div>
 
                         </div>
+                       
                         <div class="table-responsive">
                             <table class="table-bordered table" id="myTable" width="100%">
                                 <tr>
@@ -53,18 +58,15 @@
                                     <th>Mobile</th>
                                 </tr>
                                 @php
-
                                     $arr = $data['stu_data'];
                                     foreach ($arr as $id=>$col_arr){
                                 @endphp
                                 <tr>
-
                                     <td><input type="checkbox" name="@php echo 'sendNotification['.$col_arr['student_id'].']'; @endphp" class="ckbox1">  </td>
                                     <td>@php echo $id+1; @endphp</td>
                                     <td>@php echo $col_arr['name']; @endphp</td>
                                     <td>@php echo $col_arr['enrollment_no']; @endphp</td>
                                     <td>@php echo $col_arr['mobile']; @endphp</td>
-
                                 </tr>
                                 @php
                                     }
@@ -160,87 +162,6 @@
         console.log(editor.getData())
     }
 </script>
-@if (!isset($data['stu_data']))
-    @if(isset(Session::get('erpTour')['fees_collect']) && Session::get('erpTour')['fees_collect'] == 0)
-        <link rel="stylesheet" href="../../../tooltip/enjoyhint/jquery.enjoyhint.css">
-
-        <script src="../../../tooltip/bower_components/todomvc-common/base.js"></script>
-        <!-- <script src="../../../tooltip/bower_components/jquery/jquery.js"></script> -->
-        <script src="../../../tooltip/bower_components/underscore/underscore.js"></script>
-        <script src="../../../tooltip/bower_components/backbone/backbone.js"></script>
-        <script src="../../../tooltip/bower_components/backbone.localStorage/backbone.localStorage.js"></script>
-        <script src="../../../tooltip/js/models/todo.js"></script>
-        <script src="../../../tooltip/js/collections/todos.js"></script>
-        <script src="../../../tooltip/js/views/todo-view.js"></script>
-        <script src="../../../tooltip/js/views/app-view.js"></script>
-        <script src="../../../tooltip/js/routers/router.js"></script>
-        <script src="../../../tooltip/js/app.js"></script>
-        <script src="../../../tooltip/enjoyhint/enjoyhint.js"></script>
-        <script src="../../../tooltip/enjoyhint/jquery.enjoyhint.js"></script>
-        <script src="../../../tooltip/enjoyhint/kinetic.min.js"></script>
-        <script>
-            localStorage.clear();
-            var enjoyhint_script_data = [
-                {
-                    onBeforeStart: function () {
-                        $('#grade').change(function (e) {
-
-                            enjoyhint_instance.trigger('new_todo');
-
-                        });
-                    },
-                    selector: '#grade',
-                    event: 'new_todo',
-                    event_type: 'custom',
-                    description: 'Select Grade Here.'
-                },
-                {
-                    onBeforeStart: function () {
-                        $('#standard').change(function (e) {
-
-                            enjoyhint_instance.trigger('new_todo');
-
-                        });
-                    },
-                    selector: '#standard',
-                    event: 'new_todo',
-                    event_type: 'custom',
-                    description: 'Select Standard Here.'
-                },
-                {
-                    selector: '#division',
-                    event: 'change',
-                    description: 'Select Division Here.',
-                    timeout: 100
-                },
-                {
-                    selector: '.btn-success',
-                    event: 'click',
-                    description: 'Please press to search students.',
-                    timeout: 100
-                }
-            ];
-            var enjoyhint_instance = null;
-            $(document).ready(function () {
-                enjoyhint_instance = new EnjoyHint({});
-                enjoyhint_instance.setScript(enjoyhint_script_data);
-                enjoyhint_instance.runScript();
-            });
-        </script>
-
-        <script type="text/javascript">
-            var url = "http://dev.triz.co.in/tourUpdate?module=fees_collect";
-            var xhttp = new XMLHttpRequest();
-            xhttp.onreadystatechange = function () {
-                if (this.readyState == 4 && this.status == 200) {
-                    console.log("success");
-                }
-            };
-            xhttp.open("GET", url, true);
-            xhttp.send();
-        </script>
-    @endif
-@endif
 
 <script>
     $(document).ready(function () {
@@ -286,11 +207,4 @@
     });
 </script>
 
-
-@if(app('request')->input('implementation') == 1)
-    <script type="text/javascript">
-        document.body.className = document.body.className.replace("fix-header", "fix-header show-sidebar hide-sidebar");
-        document.getElementById('main-header').style.display = 'none';
-    </script>
-@endif
 @include('includes.footer')

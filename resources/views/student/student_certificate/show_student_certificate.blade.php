@@ -63,11 +63,13 @@
                         <img src="https://erp.triz.co.in/admin_dep/images/loader.gif">
                     </center>
                 </div>
-                <center>
-                    <button id="ajax_PDF_Certificate" class="btn btn-success" >Print Certificate</button>
-                    {{--onclick="certificate_save_data();"--}}
-                </center>
             </div>
+        </div>
+        <div class="row">
+                <div class="col-md-3">&nbsp;</div>
+                <div class="col-md-3"><button id="printDiv" class="btn btn-danger" onclick="printContent()">Test Print</button></div>
+                <div class="col-md-3"><button id="ajax_PDF_Certificate" class="btn btn-warning" >Print Certificate</button>
+                    {{--onclick="certificate_save_data();"--}}</div>
         </div>
         @endif
     </div>
@@ -104,7 +106,13 @@
     //             }
     //     });
     // }
-
+    function printContent() {
+    var printWindow = window.open('', '_blank');
+    var content = document.getElementById('printPage').innerHTML;
+    printWindow.document.open();
+    printWindow.document.write('<html><head><title>Print</title></head><body onload="window.print()">' + content + '</body></html>');
+    printWindow.document.close();
+}
     if ( window.history.replaceState )
     {
       window.history.replaceState( null, null, window.location.href );

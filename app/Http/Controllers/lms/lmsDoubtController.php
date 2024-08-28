@@ -12,6 +12,7 @@ use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use function App\Helpers\aut_token;
 use function App\Helpers\is_mobile;
+use Illuminate\Support\Facades\Storage;
 
 class lmsDoubtController extends Controller
 {
@@ -49,12 +50,24 @@ class lmsDoubtController extends Controller
         if (strtoupper(session()->get('user_profile_name')) == "STUDENT") {
             $student_id = session()->get('user_id');
 
-            $res = DB::select("SELECT * FROM sub_std_map s WHERE s.standard_id = 
+            /*$res = DB::select("SELECT * FROM sub_std_map s WHERE s.standard_id =
             (
-                SELECT standard_id FROM tblstudent_enrollment WHERE student_id = '".$student_id."' AND 
+                SELECT standard_id FROM tblstudent_enrollment WHERE student_id = '".$student_id."' AND
                 sub_institute_id = '".$sub_institute_id."' AND syear = '".$syear."'
             )
-            and sub_institute_id = '".$sub_institute_id."'");
+            and sub_institute_id = '".$sub_institute_id."'");*/
+            $res = DB::table('sub_std_map as s')
+                ->select('s.*')
+                ->where('s.standard_id', function ($query) use ($student_id, $sub_institute_id, $syear) {
+                    $query->select('standard_id')
+                        ->from('tblstudent_enrollment')
+                        ->where('student_id', $student_id)
+                        ->where('sub_institute_id', $sub_institute_id)
+                        ->where('syear', $syear);
+                })
+                ->where('s.sub_institute_id', $sub_institute_id)
+                ->get();
+
             $subject_arr = json_decode(json_encode($res), true);
             $data['subject_arr'] = $subject_arr;
         }
@@ -85,7 +98,9 @@ class lmsDoubtController extends Controller
             $size = $img->getSize();
             $newfilename = 'lms_'.date('Y-m-d_h-i-s').'.'.$ext;
             //$img->move(public_path().'/lms_content_file/',$newfilename);
-            $img->storeAs('public/lms_doubts/', $newfilename);
+            // $img->storeAs('public/lms_doubts/', $newfilename); 20-05-24
+            Storage::disk('digitalocean')->putFileAs('public/lms_doubts/', $img, $newfilename, 'public');
+
         }
 
         $content = array(

@@ -26,7 +26,8 @@ class houseAutomationController extends Controller
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['standard_data'] = $this->getStandards($request);
-
+        $res['data'] = session('data');
+        // echo "<pre>";print_r($res['data']);exit;
         return is_mobile($type, 'student/show_house_automation', $res, "view");
     }
 
@@ -37,128 +38,366 @@ class houseAutomationController extends Controller
         return standardModel::where(['sub_institute_id' => $sub_institute_id])->get();
     }
 
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return void
-     */
-    public function create(Request $request)
-    {
-        // 
-    }
 
+    public function getStudent($syear,$sub_institute_id,$house_id='',$standard_id,$sectionId='',$gender){
+        // db::enableQueryLog();
+        
+        $data = DB::table('tblstudent')
+        ->join('tblstudent_enrollment', function ($join) use($gender) {
+            $join->on('tblstudent.id', '=', 'tblstudent_enrollment.student_id');
+        })
+        ->where('tblstudent_enrollment.syear', $syear);
+        if($house_id!=''){
+            $data->where('tblstudent_enrollment.house_id', $house_id);
+        }
+        if($sectionId!=''){
+            $data->where('tblstudent_enrollment.section_id', $sectionId);
+        }
+       
+        // ->where('tblstudent_enrollment.section_id', $sectionId)
+        $data = $data->where('tblstudent_enrollment.standard_id', $standard_id)
+        ->where('tblstudent_enrollment.sub_institute_id', $sub_institute_id)
+        ->whereNull('tblstudent_enrollment.end_date')        
+        ->where('tblstudent.gender', '=', $gender)
+        ->get();
+        //update house
+
+        return $data;
+    }
     /**
      * Store a newly created resource in storage.
      *
      * @param  Request  $request
      * @return Response
      */
-    public function store(Request $request)
+    public function create(Request $request)
     {
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
-        $standard_id = $request->get('standard_id');
+        $res['standard_id'] = $standard_id =$request->standard_id;
+        $res['opt_sub'] = $opt_sub=$request->opt_sub;
+        $std_name = DB::table('standard')->where('id',$standard_id)->where('sub_institute_id',$sub_institute_id)->first();
+        $res['std_name'] = $std_name->name;
+        // get houses 
+        $res['house_data'] = $houseResults = DB::table('house_master')->where('sub_institute_id', $sub_institute_id)->get();
+        $res['total_house'] = $totalHouses = $houseResults->count();
 
-        $div_data = std_div_mappingModel::select('division.*')
-            ->join("division", function ($join) {
-                $join->on("division.id", "=", "std_div_map.division_id")
-                    ->on("division.sub_institute_id", "=", "std_div_map.sub_institute_id");
-            })
-            ->where(['std_div_map.standard_id' => $standard_id, 'std_div_map.sub_institute_id' => $sub_institute_id])
-            ->get()->toArray();
+        if ($totalHouses > 0) {
+            if($standard_id!=null && $opt_sub=='No'){
 
-        $house_data = houseModel::where(['sub_institute_id' => $sub_institute_id])->get();
-        $house_data = json_decode(json_encode($house_data), true);
+                $studAllM = $this->getStudent($syear,$sub_institute_id,'',$standard_id,'','M');
+                $studAllMCount = $studAllM->count();
+                $studAllF = $this->getStudent($syear,$sub_institute_id,'',$standard_id,'','F');
+                $studAllFCount = $studAllF->count();
 
-        if (count($house_data) > 0) {
-            foreach ($house_data as $i => $iValue) {
-                if (isset($iValue['id']) && $iValue['id'] != '') {
-                    $house_id = $house_data[$i]['id'];
-                } else {
-                    $house_id = '';
+            // Fetching house details
+            $sectionArray = DB::table('std_div_map as sdm')->selectRaw('count(sdm.id) as total_div,GROUP_CONCAT(sdm.division_id) as section_id')
+            ->where('sdm.standard_id', $standard_id)
+            ->where('sdm.sub_institute_id', $sub_institute_id)
+            ->groupBy('sdm.standard_id')
+            ->get();
+            // echo "<pre>";print($sectionArray[0]->section_id);exit;
+            $sectionArray = explode(",", $sectionArray[0]->section_id);
+            $section_array=array_filter($sectionArray);               
+
+            $section_array = array_merge($section_array);
+            $res['total_div'] = $totalDiv = count($section_array) ?? 0;
+            // echo "<pre>";print_r($section_array);exit;
+
+                foreach ($houseResults as $houseResult) {
+                    $studHouseM = $this->getStudent($syear,$sub_institute_id,$houseResult->id,$standard_id,'','M');
+                    $studHouseMCount = $studHouseM->count();
+                   
+                    $counter2=0;
+                     for($s=1;$s<=$studHouseMCount;$s++){
+                        if($counter2==count($section_array)){
+                            $counter2=0;
+                         }                
+                         $section_id=$section_array[$counter2];
+                            $updateQuery = DB::table('tblstudent_enrollment')
+                                ->where('syear',$syear)
+                                ->where('student_id', $studHouseM[($s-1)]->student_id)
+                                ->where('sub_institute_id', $sub_institute_id)                    
+                                ->update([
+                                    'section_id' => $section_id,
+                                    'house_id' => $houseResult->id,
+                                    ]);
+                                $counter2++;
+                        }
+                        $studHouseF = $this->getStudent($syear,$sub_institute_id,$houseResult->id,$standard_id,'','F');
+                        $studHouseFCount = $studHouseF->count();
+
+                        $counter3=0;
+                        for($sf=1;$sf<=$studHouseFCount;$sf++){
+                            if($counter3==count($section_array)){
+                                $counter3=0;
+                             }                
+                            $section_id2=$section_array[$counter3];
+                            $updateQuery = DB::table('tblstudent_enrollment')
+                                ->where('syear',$syear)
+                                ->where('student_id', $studHouseF[($sf-1)]->student_id)
+                                ->where('sub_institute_id', $sub_institute_id)                    
+                                ->update([
+                                    'section_id' => $section_id2,
+                                    'house_id' => $houseResult->id,
+                                    ]);
+                                $counter3++;
+                        }
                 }
-
-                // FOR Male 
-
-                $student_boys = DB::table('tblstudent as s')
-                    ->join('tblstudent_enrollment as se', function ($join) {
-                        $join->whereRaw('se.student_id = s.id AND se.sub_institute_id = s.sub_institute_id');
-                    })->selectRaw('s.id as student_id,se.syear,se.standard_id,se.section_id,s.gender')
-                    ->where('s.sub_institute_id', $sub_institute_id)
-                    ->where('se.standard_id', $standard_id)
-                    ->where('se.house_id', $house_id)
-                    ->where('s.gender', '=', 'M')
-                    ->where('syear', '=', $syear)
-                    ->whereNull('end_date')->get()->toArray();
-
-                $student_boys = json_decode(json_encode($student_boys), true);
-                $counter = 0;
-                foreach ($student_boys as $sValue) {
-                    if ($counter == count($div_data)) {
-                        $counter = 0;
-                    }
-
-                    $section_id = $div_data[$counter];
-
-                    $data = [
-                        'section_id' => $section_id['id'],
-                        'house_id'   => $house_id,
-                    ];
-
-                    if (isset($sValue['student_id']) && $sValue['student_id'] != '') {
-                        tblstudentEnrollmentModel::where([
-                            "syear"            => $syear,
-                            "sub_institute_id" => $sub_institute_id,
-                            "student_id"       => $sValue['student_id'],
-                        ])->update($data);
-                        $counter++;
-                    }
-
+                $formatArray = [];
+           
+            $totalBoys=$totalGirls=0;
+            
+            foreach ($sectionArray as $sectionId) {
+                $sectionResult = DB::table('division')->where('id', $sectionId)
+                    ->where('sub_institute_id', $sub_institute_id)
+                    ->first();
+            
+                $formatArrayIncermenter = $formatArrayIncermenter ?? 0;
+                $formatArray[$formatArrayIncermenter]["division"] = $sectionResult ? $sectionResult->name : '';
+                // Fetching student counts for each house and gender
+                foreach ($houseResults as $houseResult) {
+                    $house_id=$houseResult->id;
+                    // for boys 
+                    $studMaleCount = $this->getStudent($syear,$sub_institute_id,$house_id,$standard_id,$sectionId,'M');
+                    
+                    $studMCount= $studMaleCount->count();
+                    //for girls 
+                    $studFemaleCount = $this->getStudent($syear,$sub_institute_id,$house_id,$standard_id,$sectionId,'F');
+                    $studFCount= $studFemaleCount->count(); 
+                  
+                    // Populating the format array
+                    $formatArray[$formatArrayIncermenter][$houseResult->house_name . "_b"] = $studMCount ?? 0;
+                    $formatArray[$formatArrayIncermenter][$houseResult->house_name . "_g"] = $studFCount ?? 0;
+            
+                    $totalBoys += $studMCount ?? 0;
+                    $totalGirls += $studFCount ?? 0;
                 }
+            
+                $formatArrayIncermenter++;
+            }
+            // Additional data, if needed
+            $res['total_boys']=$studAllMCount;
+            $res['total_girls']=$studAllFCount;        
+            $res['student_house']=$formatArray;
+            // echo "<pre>";print_r($res);exit;        
+        }else{
+            // DB::enableQueryLog();
+                $queryResultM = DB::table('tblstudent as s')
+                ->select('se.student_id', 'se.house_id', 'se.id', 'se.syear', 'se.standard_id', 'se.section_id', 'sos.subject_id', 's.gender')
+                ->join('tblstudent_enrollment as se', function ($join) {
+                    $join->on('s.id', '=', 'se.student_id');
+                })
+                ->join('student_optional_subject as sos', 'sos.student_id', '=', 'se.student_id')
+                ->join('sub_std_map as ssm','ssm.subject_id','=','sos.subject_id')
+                ->join('subject_elective as sel','sel.subject_id','=','sos.subject_id')
+                ->where('se.syear', $syear)
+                ->where('s.sub_institute_id', $sub_institute_id)
+                ->where('se.standard_id', $standard_id)
+                ->whereNull('se.end_date')
+                ->where('s.gender', '=', 'M')->distinct()
+                ->get();
+                // dd(DB::getQueryLog($queryResultM));
+            // echo "<pre>";print_r($queryResultM);exit;        
 
-                // FOR Female 
-                $student_girls = DB::table('tblstudent as s')
-                    ->join('tblstudent_enrollment as se', function ($join) {
-                        $join->whereRaw('se.student_id = s.id AND se.sub_institute_id = s.sub_institute_id');
-                    })->selectRaw('s.id as student_id,se.syear,se.standard_id,se.section_id,s.gender')
-                    ->where('s.sub_institute_id', $sub_institute_id)
-                    ->where('se.standard_id', $standard_id)
-                    ->where('se.house_id', $house_id)
-                    ->where('s.gender', '=', 'F')
-                    ->where('syear', '=', $syear)
-                    ->whereNull('end_date')->get()->toArray();
+            $studentAllCountM = $queryResultM->count();
+           
+            $queryResultF = DB::table('tblstudent as s')
+                ->select('se.student_id', 'se.house_id', 'se.id', 'se.syear', 'se.standard_id', 'se.section_id', 'sos.subject_id', 's.gender')
+                ->join('tblstudent_enrollment as se', function ($join) {
+                    $join->on('s.id', '=', 'se.student_id');
+                })
+                ->join('student_optional_subject as sos', 'sos.student_id', '=', 'se.student_id')
+                ->join('sub_std_map as ssm','ssm.subject_id','=','sos.subject_id')                
+                ->join('subject_elective as sel','sel.subject_id','=','sos.subject_id')                
+                ->where('se.syear', $syear)
+                ->where('s.sub_institute_id', $sub_institute_id)
+                ->where('se.standard_id', $standard_id)
+                ->whereNull('se.end_date') 
+                ->where('s.gender', '=', 'F')
+                ->distinct()
+                ->get();
+            
+            $studentAllCountF = $queryResultF->count();
+            // echo "<pre>";print_r($queryResultM);exit;
+           
+            $subjectResult = DB::table('subject_elective as se')
+                ->select('se.subject_id')
+                // ->where('sos.subject_id', $subject_id)
+                ->where('se.syear', $syear)                
+                ->where('se.standard_id', $standard_id)
+                ->where('se.sub_institute_id', $sub_institute_id)
+                ->orderBy('se.subject_id')
+                ->get();
+            // echo "<pre>";print_r($subjectResult);exit;
+                
+            foreach ($subjectResult as $subject) {
+                $subject_id = $subject->subject_id;
 
-                $student_girls = json_decode(json_encode($student_girls), true);
+                $sectionResult = DB::table('subject_elective as se')
+                ->select('division_id')
+                ->distinct()
+                ->where('se.syear', $syear)                                
+                ->where('se.standard_id', $standard_id)
+                ->where('se.subject_id',$subject_id)
+                ->where('se.sub_institute_id', $sub_institute_id)
+                ->orderBy('se.division_id')
+                ->get();
+                // echo "<pre>";print_r($sectionResult);exit;
+             
+                $sectionArray = $sectionResult->pluck('division_id')->toArray();
+                // echo "<pre>";print_r($sectionArray);exit;
+               
+                $studentResultM = DB::table('student_optional_subject as SJOS')
+                ->select('HSS.id as student_id', 'CE.subject_id', 'SE.section_id','SE.house_id')
+                ->distinct()
+                ->join('tblstudent as HSS', function ($join) {
+                    $join->on('HSS.id', '=', 'SJOS.student_id');
+                })
+                ->join('tblstudent_enrollment as SE', 'HSS.id', '=', 'SE.student_id')
+                ->join('subject_elective as CE',function($join) {
+                    $join->on('CE.subject_id', '=', 'SJOS.subject_id')->on('SJOS.syear','=','CE.syear');
+                })
+                ->where('SE.syear', '=', $syear)
+                ->where('SE.standard_id', '=', $standard_id)
+                ->where('SJOS.subject_id', '=', $subject_id)
+                ->where('SJOS.sub_institute_id',$sub_institute_id)
+                ->where('HSS.gender', '=', 'M')
+                ->orderBy('SJOS.student_id')
+                ->get();
+                // echo "male";
 
-                $counter = 0;
-                foreach ($student_girls as $sValue) {
-                    if ($counter == count($div_data)) {
-                        $counter = 0;
-                    }
+                // dd(DB::getQueryLog());
+                $studAllMCount = $studentResultM->count();
+                
+                    $ct=1;
+                    $sc=array();
+                    for($j=1;$j<=count($sectionResult);$j++){
+                        $section_id = $sectionResult[($j-1)]->division_id;
+                        //display_array($section_id);
+                        $sc[$j] = $section_id;
+                            
+                    }   
+                    
+                    //display_array($sc);
+                    $s_id=[];
+                    for($s=1;$s<=count($studentResultM);$s++){
+                         $student_id = $studentResultM[($s-1)]->student_id;
+                         if($ct==count($sc)+1){
+                                $ct=1;
+                            }                            
+                            $section_id=$sc[$ct];
+                            $updateQuery = DB::table('tblstudent_enrollment')
+                            ->where('syear',$syear)
+                            ->where('student_id', $student_id)
+                            ->where('sub_institute_id', $sub_institute_id)                    
+                            ->update([
+                                'section_id' => $section_id,
+                                ]);
+                            $s_id[] = $student_id;
+                            $ct++;
+                        }
+                        // echo "<pre>";print_r($s_id);exit;
+    
+                $studentResultF = DB::table('student_optional_subject as SJOS')
+                ->select('HSS.id as student_id', 'CE.subject_id', 'SE.section_id','SE.house_id')
+                ->distinct()
+                ->join('tblstudent as HSS', function ($join) {
+                    $join->on('HSS.id', '=', 'SJOS.student_id');
+                })
+                ->join('tblstudent_enrollment as SE', 'HSS.id', '=', 'SE.student_id')
+                ->join('subject_elective as CE',function($join) {
+                    $join->on('CE.subject_id', '=', 'SJOS.subject_id')->on('SJOS.syear','=','CE.syear');
+                })
+                ->where('SE.syear', '=', $syear)
+                ->where('SE.standard_id', '=', $standard_id)
+                ->where('SJOS.subject_id', '=', $subject_id)
+                ->where('SJOS.sub_institute_id',$sub_institute_id)
+                ->where('HSS.gender', '=', 'F')
+                ->orderBy('SJOS.student_id')
+                ->get();
+                // echo "<pre>";print_r($studentResultF);
 
-                    $section_id = $div_data[$counter];
+                $studAllFCount = $studentResultF->count();
+                $ct=1;
+                    $sc=array();
+                    for($j=1;$j<=count($sectionResult);$j++){
+                        $section_id = $sectionResult[($j-1)]->division_id;
+                        //display_array($section_id);
+                        $sc[$j] = $section_id;
+                            
+                    }   
+                    //display_array($sc);
+                    for($s=1;$s<=count($studentResultF);$s++){
+                         $student_id = $studentResultF[($s-1)]->student_id;
+                         if($ct==count($sc)+1){
+                                $ct=1;
+                            }                            
+                            $section_id=$sc[$ct];
+                            $updateQuery = DB::table('tblstudent_enrollment')
+                            ->where('syear',$syear)
+                            ->where('student_id', $student_id)
+                            ->where('sub_institute_id', $sub_institute_id)                    
+                            ->update([
+                                'section_id' => $section_id,
+                                ]);
+                            
+                            $ct++;
+                        }
+               
+            }
+// exit;
+            $formatArray = [];
+            $formatArrayIncrementer = 0;
+            
+            $sectionArray = DB::table('std_div_map')->selectRaw('count(id) as total_div,GROUP_CONCAT(division_id) as section_id')
+            ->where('standard_id', $standard_id)
+            ->where('sub_institute_id', $sub_institute_id)
+            ->groupBy('standard_id')
+            ->first();
+            $res['total_div'] = $totalDiv =$sectionArray->total_div ?? 0;
+        // echo "<pre>";print();exit;
+        $sectionArray = array_filter(explode(",", $sectionArray->section_id));
+            $houseResults = DB::table('house_master')->where('sub_institute_id', $sub_institute_id)->get();
+            $totalBoys = $totalGirls=0;
 
-                    $data = [
-                        'section_id' => $section_id['id'],
-                        'house_id'   => $house_id,
-                    ];
-                    if (isset($sValue['student_id']) && $sValue['student_id'] != '') {
-                        tblstudentEnrollmentModel::where([
-                            "syear"            => $syear,
-                            "sub_institute_id" => $sub_institute_id,
-                            "student_id"       => $sValue['student_id'],
-                        ])->update($data);
-                        $counter++;
-                    }
+            foreach ($sectionArray as $sectionId) {
+                
+                $sectionResult = DB::table('division')->where('id', $sectionId)->where('sub_institute_id', $sub_institute_id)->first();
+            
+                $formatArray[$formatArrayIncrementer]["division"] = $sectionResult ? $sectionResult->name : '';
+            
+                foreach ($houseResults as $houseResult) {
+                    $houseId = $houseResult->id;
+                    // for boys
+                    $StudentM = $this->getStudent($syear,$sub_institute_id,$houseId,$standard_id,$sectionId,'M');
+                    $studentCountM = $StudentM->count();
+                    // for girls
+                    $StudentF = $this->getStudent($syear,$sub_institute_id,$houseId,$standard_id,$sectionId,'F');
+                    
+                    $studentCountF = $StudentF->count();
+            
+                    $formatArray[$formatArrayIncrementer][$houseResult->house_name . "_b"] = $studentCountM ?? 0;
+                    $formatArray[$formatArrayIncrementer][$houseResult->house_name . "_g"] = $studentCountF ?? 0;
+                    $totalBoys += $studentCountM ?? 0;
+                    $totalGirls += $studentCountF ?? 0;
                 }
-
+            
+                $formatArrayIncrementer++;
+                
+            }
+            $res['total_boys']=$studentAllCountM;
+            $res['total_girls']=$studentAllCountF;     
+            $res['student_house'] = $formatArray;            
             }
             $res['status_code'] = "1";
             $res['message'] = "Student House Allocation Successfully";
             $res['class'] = "alert-success";
-
-            return is_mobile($type, "house_automation.index", $res);
+            $res['standard_data'] = $this->getStandards($request);
+        // echo "<pre>";print_r($res);exit;
+        return is_mobile($type, 'student/show_house_automation', $res, "view");
+            
         } else {
             $res['status_code'] = "0";
             $res['message'] = "Please create house master for house automation.";
@@ -167,50 +406,5 @@ class houseAutomationController extends Controller
             return is_mobile($type, "house_automation.index", $res);
         }
 
-    }
-
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return void
-     */
-    public function show($id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return void
-     */
-    public function edit(Request $request, $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  Request  $request
-     * @param  int  $id
-     * @return void
-     */
-    public function update(Request $request, $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return void
-     */
-    public function destroy(Request $request, $id)
-    {
-        // 
     }
 }

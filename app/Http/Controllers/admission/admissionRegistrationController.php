@@ -16,10 +16,14 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
-
+use App\Models\school_setup\casteModel;
+use App\Models\school_setup\religionModel;
+use GenTux\Jwt\GetsJwtToken;
 
 class admissionRegistrationController extends Controller
 {
+    use GetsJwtToken;
+    
     /**
      * Display a listing of the resource.calendar
      *
@@ -30,21 +34,35 @@ class admissionRegistrationController extends Controller
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get("sub_institute_id");
         $syear = session()->get("syear");
-        $marking_period_id = session()->get('term_id');
+        if($type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');            
+        }
+
         $data = DB::table('admission_enquiry as ae')
             ->join('admission_form as af', function ($join) {
-                $join->whereRaw('ae.id = af.enquiry_id');
+                $join->on('ae.id', '=', 'af.enquiry_id');
             })->leftJoin('tblstudent as ts', function ($join) {
-                $join->whereRaw('ts.admission_id = ae.id AND ts.admission_year = ae.syear AND ts.sub_institute_id = ae.sub_institute_id');
-            })->leftJoin('standard as s', function ($join) use($marking_period_id) {
-                $join->whereRaw('ts.admission_id = ae.id AND ts.admission_year = ae.syear AND ts.sub_institute_id = ae.sub_institute_id');
-                // ->when($marking_period_id,function($query) use ($marking_period_id){
-                //     $query->where('s.marking_period_id',$marking_period_id);
-                // });
+                $join->on('ts.admission_id', '=', 'ae.id')->on('ts.admission_year', '=', 'ae.syear')->on('ts.sub_institute_id', '=', 'ae.sub_institute_id');
+            })->leftJoin('standard as s', function ($join) {
+                $join->on('s.id', '=', 'ae.admission_standard')->on('ts.sub_institute_id', '=', 'ae.sub_institute_id');
             })
             ->selectRaw("ae.*,COUNT(ts.id) AS total_student_count,ae.remarks AS enquiry_remark,s.name AS std_name")
             ->where('ae.sub_institute_id', $sub_institute_id)
-            ->where('ae.syear', $syear)->groupBy('ae.id')->get()->toArray();
+            ->where('ae.syear', $syear)
+            ->groupBy(['ae.first_name','ae.middle_name','ae.last_name'])
+            ->get()->toArray();
 
         $data = array_map(function ($value) {
             return (array) $value;
@@ -68,6 +86,21 @@ class admissionRegistrationController extends Controller
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $marking_period_id = session()->get('term_id');
+        if($type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');            
+        }
         if ($sub_institute_id == 198) // For Mahaeshvari school
         {
             $data = DB::table('admission_enquiry as ae')
@@ -80,10 +113,10 @@ class admissionRegistrationController extends Controller
                 ->where('ae.id', $id)->get()->toArray();
         } else {
             $data = DB::table('admission_enquiry as ae')
-                ->join('admission_form as af', function ($join) {
-                    $join->whereRaw('ae.id = af.enquiry_id');
-                })->leftJoin('admission_registration as ar', function ($join) {
-                    $join->whereRaw('ae.id = ar.enquiry_id');
+                ->join('admission_form as af', function ($join) use($sub_institute_id) {
+                    $join->on('ae.id', '=', 'af.enquiry_id')->where('af.sub_institute_id',$sub_institute_id);
+                })->leftJoin('admission_registration as ar', function ($join) use($sub_institute_id) {
+                    $join->on('ae.id', '=', 'ar.enquiry_id')->where('ar.sub_institute_id',$sub_institute_id);
                 })
                 ->selectRaw("ae.*,ar.*,ae.id as id,ae.enquiry_no as enquiry_no,ar.enquiry_id as registration_enquiry_id")
                 ->where('ae.id', $id)->get()->toArray();
@@ -92,12 +125,11 @@ class admissionRegistrationController extends Controller
         $data = array_map(function ($value) {
             return (array) $value;
         }, $data);
-
         $editData = $data;
-        $checkStudent = tblstudentModel::where(['admission_id' => $id])->get()->toArray();
+        $checkStudent = tblstudentModel::where(['admission_id' => $id])->where('sub_institute_id',$sub_institute_id)->get()->toArray();
 
         $dataCustomFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "admission_registration"])
-            ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1)')
+            ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1)  and user_type="" ')
             ->get();
 
         $fieldsData = tblfields_dataModel::get()->toArray();
@@ -109,6 +141,7 @@ class admissionRegistrationController extends Controller
             $i++;
         }
 
+        // echo "<pre>";print_r($checkStudent);exit;
 
         if (count($checkStudent) > 0) {
             $res['display_save_student'] = '0';
@@ -123,6 +156,14 @@ class admissionRegistrationController extends Controller
         } else {
             $res['new_enrollment_no'] = $this->max_enrollment_no($sub_institute_id, $editData[0]['admission_standard']);
         }
+        // if enrollment no already exists then get new enrollment and make add button hidden 
+        $checkGrnoExist = tblstudentModel::where('enrollment_no',$res['new_enrollment_no'])->where('sub_institute_id',$sub_institute_id)->get()->toArray();
+
+        if(!empty($checkGrnoExist) && $res['display_save_student']==1){
+            $res['new_enrollment_no'] = $this->max_enrollment_no($sub_institute_id, $editData[0]['admission_standard']);
+            $res['display_save_student']=0;
+        }
+        // echo "<pre>";print_r($res['display_save_student']);exit;
 
         $standard = standardModel::where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
 
@@ -150,6 +191,10 @@ class admissionRegistrationController extends Controller
         $res['standard'] = $standard;
         $res['bloodgroup_data'] = $bloodgroupData;
         $res['custom_fields'] = $dataCustomFields;
+        //  added on 2024-08-27
+        $res['religion_data'] = religionModel::select()->get();
+        $res['caste_data'] = casteModel::select()->get();
+        // end 2024-08-27
         if (count($getDiv) > 0) {
             $res['division'] = $getDiv;
         }
@@ -175,7 +220,22 @@ class admissionRegistrationController extends Controller
         $type = $request->input("type");
         $sub_institute_id = $request->session()->get("sub_institute_id");
         $user_id = $request->session()->get("user_id");
-
+        if($type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');   
+            $user_id = $request->get('user_id');                                 
+        }
         $editdata['first_name'] = $request->input("first_name");
         $editdata['middle_name'] = $request->input("middle_name");
         $editdata['last_name'] = $request->input("last_name");
@@ -186,23 +246,23 @@ class admissionRegistrationController extends Controller
         $editdata['address'] = $request->input("address");
         $editdata['previous_school_name'] = $request->input("previous_school_name");
         $editdata['source_of_enquiry'] = $request->input("source_of_enquiry");
-
+        
         admissionEnquiryModel::where(['id' => $id, 'sub_institute_id' => $sub_institute_id])->update($editdata);
 
         $data = $request->except([
-            '_method', '_token', 'submit', 'type', 'first_name', 'middle_name', 'last_name', 'mobile', 'email',
+            '_method', '_token','token','syear','sub_institute_id','user_id', 'submit', 'type', 'first_name', 'middle_name', 'last_name', 'mobile', 'email',
             'date_of_birth', 'age', 'address', 'previous_school_name', 'previous_standard', 'source_of_enquiry',
-            'admission_standard',
+            'admission_standard'
         ]); //,'remarks','followup_date'
 
-        $checkForm = admissionRegistrationModel::where(['enquiry_id' => $id])->get()->toArray();
+        $checkForm = admissionRegistrationModel::where(['enquiry_id' => $id])->where('sub_institute_id',$sub_institute_id)->get()->toArray();
         if (count($checkForm) > 0) {
             $data['enquiry_id'] = $id;
             $data['created_by'] = $user_id;
             $data['created_on'] = date('Y-m-d H:i:s');
             $data['sub_institute_id'] = $sub_institute_id;
 
-            admissionRegistrationModel::where(['enquiry_id' => $id])->update($data);
+            admissionRegistrationModel::where(['enquiry_id' => $id])->where('sub_institute_id',$sub_institute_id)->update($data);
         } else {
             $data['enquiry_id'] = $id;
             $data['created_by'] = $user_id;
@@ -215,7 +275,7 @@ class admissionRegistrationController extends Controller
         $res['status_code'] = "1";
         $res['message'] = "Added successfully";
 
-        return is_mobile($type, "admission_registration.index", $res);
+        return is_mobile($type, "admission_confirmation.index", $res);
     }
 
     /**
@@ -245,15 +305,15 @@ class admissionRegistrationController extends Controller
         $data = DB::table('admission_enquiry as ae')
             ->join('admission_form as af', function ($join) {
                 $join->whereRaw('ae.id = af.enquiry_id');
-            })->join('admission_registration as ar', function ($join) {
-                $join->whereRaw('ae.id = ar.enquiry_id');
-            })->selectRaw("ae.*,af.*,ae.id as id,ar.*")
+            })->join('admission_registration as ar', function ($join) use($sub_institute_id){
+                $join->whereRaw('ae.id = ar.enquiry_id')->where('ar.sub_institute_id',$sub_institute_id); // 2024-08-27 add sub_institute_id
+            })->selectRaw("ae.*,af.*,ae.id as id,ar.*,ar.religion as con_religion,ar.cast as con_cast")
             ->where('ae.id', $id)->get()->toArray();
 
         $data = array_map(function ($value) {
             return (array) $value;
         }, $data);
-
+        // echo "<pre>";print_r($data);exit;
         if (count($data) == 0) {
             $res['status_code'] = 0;
             $res['message'] = "Please complete admission enquiry process";
@@ -294,10 +354,12 @@ class admissionRegistrationController extends Controller
         $studentArray['bloodgroup'] = $data['blood_group'];
         $studentArray['admission_docket_no'] = $data['admission_docket_no'];
         $studentArray['registration_no'] = $data['registration_no'];
-
+        // 2024-08-27 add
+        $studentArray['religion'] = $data['con_religion'];
+        $studentArray['cast'] = $data['con_cast'];
+        // end 2024-08-27
         if (isset($data['enrollment_no']) && $data['enrollment_no'] != '') {
             $enrollment_no_sql_new = $data['enrollment_no'];
-
             DB::table('tblstudent')
                 ->insert([
                     'admission_id'        => $studentArray['admission_id'],
@@ -326,6 +388,10 @@ class admissionRegistrationController extends Controller
                     'admission_docket_no' => $studentArray['admission_docket_no'],
                     'registration_no'     => $studentArray['registration_no'],
                     'enrollment_no'       => $enrollment_no_sql_new,
+                    // 2024-08-27 add
+                    'religion'            => $studentArray['religion'],
+                    'cast'                => $studentArray['cast'],
+                    // end 2024-08-27 
                 ]);
 
             $student_id = DB::getPdo()->lastInsertId();
@@ -361,6 +427,10 @@ class admissionRegistrationController extends Controller
                     'admission_docket_no' => $studentArray['admission_docket_no'],
                     'registration_no'     => $studentArray['registration_no'],
                     'enrollment_no'       => $enrollment_no_sql_new,
+                    // 2024-08-27 add
+                    'religion'            => $studentArray['religion'],
+                    'cast'                => $studentArray['cast'],
+                    // 2024-08-27 end
                 ]);
 
             $student_id = DB::getPdo()->lastInsertId();
@@ -383,7 +453,7 @@ class admissionRegistrationController extends Controller
         $res['status_code'] = 1;
         $res['message'] = "Student added successfully";//with Enrollment Number - ".$studentArray['enrollment_no'];
 
-        return is_mobile($type, "admission_registration.index", $res);
+        return is_mobile($type, "admission_confirmation.index", $res);
     }
 
     public function max_enrollment_no($sub_institute_id, $admission_standard_id)
@@ -404,7 +474,7 @@ class admissionRegistrationController extends Controller
 
             $prefix = $get_prefix_result[0]->prefix;
 
-            if ($prefix != '') {
+            if ($prefix != '' && $prefix!=null) {
                 $enrollment_result = DB::table('tblstudent')
                     ->selectRaw('*,MAX(enrollment_no) as new_enrollment_no')
                     ->where('sub_institute_id', $sub_institute_id)
@@ -494,12 +564,12 @@ class admissionRegistrationController extends Controller
         $sub_institute_id = session()->get("sub_institute_id");
         $marking_period_id = session()->get('term_id');
         return DB::table('std_div_map as sdm')
-            ->join('standard ad s', function ($join) use($marking_period_id) {
+            ->join('standard as s', function ($join) use($marking_period_id) {
                 $join->whereRaw('s.id =sdm.standard_id AND s.sub_institute_id = sdm.sub_institute_id');
                 // ->when($marking_period_id,function($query) use ($marking_period_id){
                 //     $query->where('s.marking_period_id',$marking_period_id);
                 // });
-            })->join('division ad d', function ($join) {
+            })->join('division as d', function ($join) {
                 $join->whereRaw('d.id = sdm.division_id AND d.sub_institute_id = sdm.sub_institute_id');
             })->selectRaw("d.id,d.name,sdm.standard_id")
             ->where('sdm.sub_institute_id', $sub_institute_id)

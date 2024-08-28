@@ -33,6 +33,7 @@ class tblfeesLateController extends Controller
             ->selectRaw("standard.name as standard")
             ->join('tbluser', 'fees_late_master.created_by', '=', 'tbluser.id')
             ->join('standard', 'fees_late_master.standard_id', '=', 'standard.id')
+            ->where('tbluser.status',1)// 23-04-24 by uma
             ->where(['fees_late_master.sub_institute_id' => $sub_institute_id, 'fees_late_master.syear' => $syear])
             ->get();
 

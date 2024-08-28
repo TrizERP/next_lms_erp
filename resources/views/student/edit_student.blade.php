@@ -1,8 +1,12 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
+@include('includes.header')
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <link rel="stylesheet" href="../../../plugins/bower_components/dropify/dist/css/dropify.min.css">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/css/select2.min.css" rel="stylesheet"/>
-@include('includes.header')
-@include('includes.sideNavigation')
+<link rel="stylesheet" href="/plugins/bower_components/clockpicker/dist/jquery-clockpicker.min.css">
+
 <style>
 .select2-dropdown.select2-dropdown--below {
   width: 460px !important;
@@ -56,6 +60,12 @@ br {
     color: green;
     font-weight: bold;
 }
+
+datalist {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
 </style>
 
 <div id="page-wrapper">
@@ -99,6 +109,7 @@ br {
                             <li class="nav-item"><a href="#section-linemove-14" class="nav-link" aria-selected="false" data-toggle="tab"><span>Parent Communication</span></a></li>
                             <li class="nav-item"><a href="#section-linemove-15" class="nav-link" aria-selected="false" data-toggle="tab"><span>Leave Application</span></a></li>
                             <li class="nav-item"><a href="#section-linemove-16" class="nav-link" aria-selected="false" data-toggle="tab"><span>Transport Details</span></a></li>
+                            <li class="nav-item"><a href="#section-linemove-17" class="nav-link" aria-selected="false" data-toggle="tab"><span>Anacdotal</span></a></li>
                         </ul>
                             
                             @if(isset($data['data']))
@@ -118,7 +129,7 @@ br {
                                         {{ method_field("PUT") }}
                                             @csrf
                                         <div class="col-md-4 form-group">
-                                            <label>Student Name </label>
+                                            <label>{{App\Helpers\get_string('studentname','request')}} </label>
                                             <input type="text" id='first_name' required name="first_name" value="{{ $student_data->first_name }}" class="form-control">
                                         </div>
                                         <div class="col-md-4 form-group">
@@ -129,9 +140,9 @@ br {
                                             <label>Sur Name </label>
                                             <input type="text" onchange="getUsername();" id='last_name' required name="last_name" value="{{ $student_data->last_name }}" class="form-control">
                                         </div>
-                                        <div class="col-md-4 form-group">
+                                        <div class="col-md-4 form-group"  style="display: none;">
                                             <label>Username</label>
-                                            <input type="text" id='username' required name="username" value="{{ $student_data->username }}"  class="form-control">
+                                            <input type="text" id='username' name="username" value="{{ $student_data->username ?? '-' }}"  class="form-control">
                                         </div>
                                         <div class="col-md-4 form-group">
                                             <label>{{ App\Helpers\get_string('grno','request')}}<i class="mdi mdi-lead-pencil"></i></label>
@@ -141,10 +152,12 @@ br {
                                             <label>Mother Name</label>
                                             <input type="text" value="{{ $student_data->mother_name ? $student_data->mother_name : '-' }}" id='mother_name' name="mother_name" class="form-control" require>
                                         </div>
+                                        @if(session()->get('sub_institute_id')!=257)
                                         <div class="col-md-4 form-group">
                                             <label>{{ App\Helpers\get_string('fathername','request')}}<i class="mdi mdi-lead-pencil"></i></label>
                                             <input type="text" id='father_name' name="father_name" value="{{ $student_data->father_name }}" class="form-control">
                                         </div>
+                                        @endif
                                         <div class="col-md-4 form-group">
                                             <label>Mobile</label>
                                             <input type="text" id='mobile' required  pattern="[1-9]{1}[0-9]{9}" name="mobile" value="{{ $student_data->mobile }}" class="form-control">
@@ -174,7 +187,7 @@ br {
                                             <span><br><b>{{ $student_data->enquiry_no ? $student_data->enquiry_no : '-'}}</b></span>
                                         </div>
                                         <div class="col-md-4 form-group">
-                                            <label>Admission Year</label>
+                                            <label>Fees Year</label>
                                             <select id='admission_year' name="admission_year" class="form-control" required>
                                                 <option value="">--Select--</option>  
                                                 @if(isset($data['admission_year']))
@@ -205,6 +218,16 @@ br {
                                         </div>
                                         <div class="col-md-4 form-group">                   
                                             <label>City</label>
+                                        @if(session()->get('sub_institute_id')==195)
+                                            <input list="city" name="city" id="exampleDataList" @if(isset($student_data->city)) value="{{$student_data->city}}" @endif class="form-control"/>
+                                            <datalist id="city" height="100" style="height:100px">
+                                            @if(!empty($data['city_data']))  
+                                            @foreach($data['city_data'] as $k1 => $v1)
+                                                <option value="{{ $v1['city_name'] }}" @if(isset($student_data->city)) {{ $student_data->city == $v1['city_name'] ? 'selected' : '' }} @endif> {{ $v1['city_name'] }} </option>
+                                            @endforeach
+                                            @endif
+                                            </datalist>
+                                        @else
                                             <select class="form-control" name="city" id="city">
                                                @if(empty($data['city_data']))
                                                 <option value="">Select City</option>
@@ -215,6 +238,7 @@ br {
                                             @endforeach
                                             @endif
                                             </select>
+                                        @endif
                                         </div>
 
                                         <!-- <div class="col-md-4 form-group">
@@ -228,9 +252,10 @@ br {
                                         <div class="col-md-4 form-group">
                                             <label>Address</label>
                                             <input type="text" value="{{ $student_data->address }}" id='address' name="address" class="form-control">
+                                            <label>From Institute: {{ $data['total_distance'] }} (As per Google Map)</label>
                                         </div>
                                         <div class="col-md-4 form-group">
-                                            <label>Pincode</label>
+                                            <label>Pincode <span style="color: red;">*</span></label>
                                             <input type="text" value="{{ $student_data->pincode }}" id='pincode' name="pincode" class="form-control">
                                         </div>
 
@@ -244,18 +269,18 @@ br {
                                         <div class="col-md-4 form-group">
                                             <span id="division_error_span"></span>
                                         </div> 
-                                        @php
-                                            $disable = " ";
-
+                                          @php
+                                            $disable =$readonly= " ";
                                         @endphp
                                         <div class="col-md-4 form-group">
                                             <label>{{App\Helpers\get_string('studentquota','request')}}<i class="mdi mdi-lead-pencil"></i></label>
                                             @php 
-                                            if(session()->get('sub_institute_id') == 257){                                                $disable = " ";
-                                            }elseif($data['check_fees'] == 0){
-                                                $disable = "disabled";}
+                                            if(session()->get('sub_institute_id') != 257 && count($data['fees_data']) != 0) {
+                                                $disable = "style=pointer-events:none";
+                                                $readonly = "readonly";
+                                            }
                                             @endphp
-                                            <select id='student_quota' required name="student_quota" class="form-control" {{$disable}}>
+                                            <select id='student_quota' required name="student_quota" class="form-control" {{$disable}} {{$readonly}}>
                                                 <option value="">--Select--</option>
                                                 
                                                     @if(isset($data['student_quota']))
@@ -313,18 +338,50 @@ br {
                                         <div class="col-md-4">
                                             <label for="input-file-now">User Image</label>
                                             <input type="file" data-default-file="/storage/student/{{ $student_data->image }}" accept="image/png, image/jpg, image/jpeg" name="student_image" id="input-file-now" class="dropify" />
-                                        </div>                                          
+                                        </div>  
+                                        @if(session()->get('sub_institute_id')==254)
+                                        <div class="col-md-4 form-group">
+                                            <label>Optional Subject 4</label>
+                                            <select id='optional_subject' name="optional_subject4[]" multiple class="form-control">
+                                                @if(isset($data['optional_subject_data']))
+                                                    @foreach($data['optional_subject_data'] as $key => $value)
+                                                        <option @if( in_array($value['subject_id'],$data['student_optional_subject_data4']) ) selected @endif value="{{ $value['subject_id'] }}">{{ $value['subject_name'] }}</option>
+                                                    @endforeach
+                                                @endif                                                   
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4 form-group">
+                                            <label>Optional Subject 5</label>
+                                            <select id='optional_subject' name="optional_subject5[]" multiple class="form-control">
+                                                @if(isset($data['optional_subject_data']))
+                                                    @foreach($data['optional_subject_data'] as $key => $value)
+                                                        <option @if( in_array($value['subject_id'],$data['student_optional_subject_data5']) ) selected @endif value="{{ $value['subject_id'] }}">{{ $value['subject_name'] }}</option>
+                                                    @endforeach
+                                                @endif                                                   
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4 form-group">
+                                            <label>Optional Subject 6</label>
+                                            <select id='optional_subject' name="optional_subject6[]" multiple class="form-control">
+                                                @if(isset($data['optional_subject_data']))
+                                                    @foreach($data['optional_subject_data'] as $key => $value)
+                                                        <option @if( in_array($value['subject_id'],$data['student_optional_subject_data6']) ) selected @endif value="{{ $value['subject_id'] }}">{{ $value['subject_name'] }}</option>
+                                                    @endforeach
+                                                @endif                                                   
+                                            </select>
+                                        </div>
+                                        @elseif(session()->get('sub_institute_id')!=257)                                  
                                         <div class="col-md-4 form-group">
                                             <label>Optional Subject</label>
                                             <select id='optional_subject' name="optional_subject[]" multiple class="form-control">
                                                 @if(isset($data['optional_subject_data']))
                                                     @foreach($data['optional_subject_data'] as $key => $value)
-                                                        <option @php if( in_array($value['subject_id'],$data['student_optional_subject_data']) ){ echo "selected"; }@endphp value="{{ $value['subject_id'] }}">{{ $value['subject_name'] }}</option>
+                                                        <option @if( in_array($value['subject_id'],$data['student_optional_subject_data']) ) selected @endif value="{{ $value['subject_id'] }}">{{ $value['subject_name'] }}</option>
                                                     @endforeach
                                                 @endif                                                   
                                             </select>
                                         </div>
-                                        
+                                        @endif
                                         <div class="col-md-4 form-group">
                                             <label>Student Batch</label>
                                             <select id='studentbatch' name="studentbatch" class="form-control">
@@ -336,7 +393,7 @@ br {
                                                 @endif                                                    
                                             </select>
                                         </div>
-                                        
+                                        @if(session()->get('sub_institute_id')!=257)
                                         <div class="col-md-4 form-group">
                                             <label>Student Religion</label>
                                             <select id='religion' name="religion" class="form-control">
@@ -348,7 +405,7 @@ br {
                                                 @endif                                                  
                                             </select>
                                         </div>
-                                        
+
                                         <div class="col-md-4 form-group">
                                             <label>Student Caste Category</label>
                                             <select id='cast' name="cast" class="form-control">
@@ -360,17 +417,18 @@ br {
                                                 @endif                                                  
                                             </select>
                                         </div>
+                                        @endif
 
                                         <div class="col-md-4 form-group">
                                             <label>{{ App\Helpers\get_string('nationality','request')}}<i class="mdi mdi-lead-pencil"></i></label>
                                             <input type="text" value="{{ $student_data->nationality }}" id='nationality' name="nationality" class="form-control">
                                         </div>
-
+                                        @if(session()->get('sub_institute_id')!=257)
                                         <div class="col-md-4 form-group">
                                             <label>{{ App\Helpers\get_string('cast','request')}}<i class="mdi mdi-lead-pencil"></i></label>
                                             <input type="text" id='subcast' value="{{ $student_data->subcast }}" name="subcast" class="form-control">
                                         </div>
-
+                                       
                                         <div class="col-md-4 form-group">
                                             <label>Roll Number</label>
                                             <input type="text" id='roll_no' value="{{ $student_data->roll_no }}" name="roll_no" class="form-control">
@@ -387,16 +445,17 @@ br {
                                                 @endif                                                  
                                             </select>
                                         </div>
-                                        
+                                       
                                         <div class="col-md-4 form-group">
                                             <label>Aadhar Number</label>
                                             <input type="text" id='adharnumber' value="{{ $student_data->adharnumber }}"  name="adharnumber" class="form-control" onblur="AadharValidate();">
                                         </div>
-                                        
+                                      
                                         <div class="col-md-4 form-group">
                                             <label>{{ App\Helpers\get_string('annualincome','request')}}<i class="mdi mdi-lead-pencil"></i></label>
                                             <input type="number" id='anuualincome' value="{{ $student_data->anuualincome }}" name="anuualincome" class="form-control">
                                         </div>
+                                        @endif
                                         {{--  For Euro School --}}
                                         @if (Session::get('sub_institute_id') != '195')
                                          <div class="col-md-4 form-group">
@@ -404,23 +463,25 @@ br {
                                             <input type="text" id='uniqueid' value="{{ $student_data->uniqueid }}" name="uniqueid" class="form-control">
                                         </div> 
                                         @endif  
+                                        @if(session()->get('sub_institute_id')!=257)
                                         <div class="col-md-4 form-group">
-                                            <label>Dise Uid</label>
+                                            <label>{{ App\Helpers\get_string('udise_id','request')}}</label>
                                             <input type="text" id='dise_uid' value="{{ $student_data->dise_uid }}" name="dise_uid" class="form-control">
-                                        </div>                                                          
+                                        </div>  
                                         <div class="col-md-4 form-group">
                                             <label>Admission Docket No.</label>
                                             <input type="text" id='admission_docket_no' value="{{ $student_data->admission_docket_no }}"  name="admission_docket_no" class="form-control">
                                         </div>
+                                       
                                         <div class="col-md-4 form-group">
                                             <label>{{ App\Helpers\get_string('birthplace','request')}}<i class="mdi mdi-lead-pencil"></i></label>
                                             <input type="text" id='place_of_birth' value="{{ $student_data->place_of_birth }}"  name="place_of_birth" class="form-control">
                                         </div>
-
                                         <div class="col-md-4 form-group">
                                             <label>Registration No.</label>
                                             <input type="text" id='registration_no' value="{{ $student_data->registration_no }}"  name="registration_no" class="form-control">
                                         </div> 
+                                        @endif
 
                                         <div class="col-md-4 form-group">
                                             <label>Admission under</label>
@@ -431,7 +492,11 @@ br {
                                                 <option value="RTE" @if(isset($student_data->admission_under) && $student_data->admission_under == 'RTE') selected="selected" @endif>RTE</option>
                                             </select>
                                         </div>
-
+                                        @if(session()->get('sub_institute_id')!=257)
+                                        <div class="col-md-4 form-group text-left" >
+                                            <label>Mother Tongue<span style="color: red;">*</span></label>
+                                            <input type="text" name="mother_tongue" id='mother_tongue' class="form-control" value="{{ $student_data->mother_tongue }}">
+                                        </div>
                                         <div class="col-md-4 form-group">
                                             <label>Distance From School</label>
                                             <select id='distance_from_school' name="distance_from_school" class="form-control">
@@ -443,7 +508,7 @@ br {
                                                 @endif                                                  
                                             </select>
                                         </div>
-
+                                        @endif
                                         <div class="col-md-4 form-group">
                                             <label>Inactive Status</label>
                                             <select id='inactive_satus' name="inactive_satus" onchange="showInactive(this.value);" class="form-control">
@@ -455,7 +520,7 @@ br {
                                         <div class="col-md-4 form-group" id="end_date_div" @if(isset($student_data->end_date)) style="display: block;" @else style="display: none;" @endif>
                                             <label>Inactive Date</label>
                                             <div class="input-daterange input-group" >
-                                                <input type="text" value="{{ $student_data->end_date }}" class="form-control mydatepicker" placeholder="yyyy-mm-dd" name="end_date" autocomplete="off">
+                                                <input type="text" value="{{ $student_data->end_date }}" class="form-control mydatepicker end_date" placeholder="yyyy-mm-dd" name="end_date" autocomplete="off">
                                                 <span class="input-group-addon"><i class="icon-calender"></i></span>
                                             </div>
                                         </div>
@@ -681,6 +746,10 @@ br {
                                                     <label>Relation With Student </label>
                                                     <input type="text" id='relation_with_student' placeholder="Relation With Student" value="{{$fvalue['relation_with_student']}}" name="relation_with_students[]" class="form-control">
                                                 </div>
+                                                <div class="col-md-4 form-group">
+                                                    <label>Annual Income</label>
+                                                    <input type="text" id='annual_income' placeholder="Annual Income" value="{{$fvalue['annual_income']}}" name="annual_income[]" class="form-control">
+                                                </div>
                                                 <div style="height:60px; width:100%; clear:both;"></div>
                                             </div>
                                     </div>
@@ -711,6 +780,10 @@ br {
                                             <div class="col-md-4 form-group">
                                                 <label>Relation With Student </label>
                                                 <input type="text" id='relation_with_student' placeholder="Relation With Student" name="relation_with_students[]" class="form-control">
+                                            </div>
+                                            <div class="col-md-4 form-group">
+                                                <label>Annual Income</label>
+                                                <input type="text" id='annual_income' placeholder="Annual Income" name="annual_income[]" class="form-control">
                                             </div>
                                             <div class="clearfix"></div>
                                         </div>
@@ -748,11 +821,11 @@ br {
                                             <thead>
                                                 <tr>
                                                     <th>Sr No.</th>                                                            
-                                                    <th>Gr No.</th>
-                                                    <th>Student Name</th>
-                                                    <th>Standard</th>
-                                                    <th>Division</th>
-                                                    <th>Mobile</th>
+                                                    <th>{{App\Helpers\get_string('grno','request')}}</th>
+                                                    <th>{{App\Helpers\get_string('studentname','request')}}</th>
+                                                    <th>{{App\Helpers\get_string('standard','request')}}</th>
+                                                    <th>{{App\Helpers\get_string('division','request')}}</th>
+                                                    <th class="text-left">Mobile</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -819,31 +892,31 @@ br {
                                             <div style="height:60px; width:100%; clear:both;"></div>
                                         </div>
                                     </div>
-                                @endforeach
+                                    @endforeach
                                     <input type="hidden" name="student_id" value="{{$student_data['id']}}">
                                     <div id="parent_og">
-                                            <div class="row">
-                                                <div class="col-md-4 form-group">
-                                                    <label>Name of person on phone</label>
-                                                    <input type="text" required id='person_name' name="person_names[]" class="form-control">
-                                                </div>
-                                                <div class="col-md-4 form-group">
-                                                    <label>Purpose of phone </label>
-                                                    <input type="text" id='purpose' name="purposes[]" class="form-control">
-                                                </div>
-                                                <div class="col-md-4 form-group">
-                                                    <label>Response </label>
-                                                    <input type="text" id='response' name="responses[]" class="form-control">
-                                                </div>
-                                                <div class="col-md-4 form-group ml-0 mr-0">
-                                                    <label>Comments</label>
-                                                    <input type="text" id='comments' name="commentss[]" class="form-control">
-                                                </div>
-                                                <div class="col-md-4 form-group ml-0">
-                                                    <label>Date </label>
-                                                    <input type="text" id='date' name="dates[]" class="form-control mydatepicker" autocomplete="off">
-                                                </div>
+                                        <div class="row">
+                                            <div class="col-md-4 form-group">
+                                                <label>Name of person on phone</label>
+                                                <input type="text" required id='person_name' name="person_names[]" class="form-control">
                                             </div>
+                                            <div class="col-md-4 form-group">
+                                                <label>Purpose of phone </label>
+                                                <input type="text" id='purpose' name="purposes[]" class="form-control">
+                                            </div>
+                                            <div class="col-md-4 form-group">
+                                                <label>Response </label>
+                                                <input type="text" id='response' name="responses[]" class="form-control">
+                                            </div>
+                                            <div class="col-md-4 form-group ml-0 mr-0">
+                                                <label>Comments</label>
+                                                <input type="text" id='comments' name="commentss[]" class="form-control">
+                                            </div>
+                                            <div class="col-md-4 form-group ml-0">
+                                                <label>Date </label>
+                                                <input type="text" id='date' name="dates[]" class="form-control mydatepicker" autocomplete="off">
+                                            </div>
+                                        </div>
                                     </div>
                                     <div class="col-md-12 form-group">
                                             <label>Add </label>
@@ -1161,7 +1234,7 @@ br {
                                                     <td>{{$docdata['document_type']}}</td>
                                                     <td>{{$docdata['document_title']}}</td>
                                                     <td>{{$docdata['created_on']}}</td>
-                                                    <td><a target="_blank" href="../../../../storage/student_document/{{$docdata['file_name']}}">{{$docdata['file_name']}}</a></td>
+                                                    <td><a target="_blank" href="{{ Storage::disk('digitalocean')->url('public/student_document/'.$docdata['file_name'])}}">{{$docdata['file_name']}}</a></td>
                                                 </tr>
                                             @php
                                             $j++;
@@ -1700,7 +1773,7 @@ br {
                                                         <tr>
                                                             <td>{{ $leaveData->title }}</td>
                                                             <td>{{ $leaveData->message }}</td>
-                                                            <td><a href="<?php echo asset('storage/leave_application/' . $leaveData->files); ?>" download>Download</a></td>
+                                                            <td><a href="{{ asset('storage/leave_application/' . $leaveData->files);}}" download>Download</a></td>
                                                             <td>{{ $leaveData->apply_date }}</td>
                                                             <td>{{ $leaveData->from_date }}</td>
                                                             <td>{{ $leaveData->to_date }}</td>
@@ -1735,7 +1808,7 @@ br {
                                         </div>
                                         <div class="col-md-4 form-group">
                                         <label>Area </label>                                        
-                                        <select name="values[{{$val['student_id']}}][from_stop]" id="from_stop" class="from_stop form-control" required data-studentid="{{$val['student_id']}}">
+                                        <select name="values[{{$val['student_id']}}][from_stop]" id="from_stop" class="from_stop form-control" required data-studentid="{{$val['student_id']}}" style="pointer-events:none">
                                             <option value="">--Select--</option>
                                             @php
                                             if(isset($val['area'])){
@@ -1764,7 +1837,7 @@ br {
                                         </div> -->
                                         <div class="col-md-4 form-group">
                                             <label>Van </label>
-                                            <select name="values[{{$val['student_id']}}][van-shift]" id="van-shift" data-from_bus="$val['van-shift']" class="from_bus form-control" required data-studentid="{{$val['student_id']}}">
+                                            <select name="values[{{$val['student_id']}}][van-shift]" id="van-shift" data-from_bus="$val['van-shift']" class="from_bus form-control" required data-studentid="{{$val['student_id']}}" style="pointer-events:none">
                                             <option value="">--Select--</option>
                                             @php
                                             if(isset($val['van_shift'])){
@@ -1780,8 +1853,8 @@ br {
                                         </div>
 
                                         <div class="col-md-4 form-group">
-                                            <label>Distance </label>
-                                            <input type="number" id='distance' name="distance"  class="form-control" value="{{ $val['distance'] ?? 0 }}">
+                                            <label>Distance</label>
+                                            <input type="number" id='distance' name="distance"  class="form-control" value="{{ $val['distance'] ?? 0 }}" style="pointer-events:none">
                                         </div>
                                         <input type="hidden" name="transport_details" value="true">
                                         <div class="col-md-4 form-group">
@@ -1791,9 +1864,12 @@ br {
                                             $distance=$val['distance'] ?? 0;
                                             $shift_rate=$val['shift_rate'] ?? 0;
                                             $km_amount=$val['km_amount'] ?? 0;
-                                            $total_amt = ($shift_rate + ($distance * $km_amount));
+                                            $total_amt = ($distance == 0) ? 0 : $shift_rate + ($distance * $km_amount);
                                             @endphp
                                             <input type="text" id='amount' name="amount"  class="form-control" value="{{ $total_amt}}" readonly>
+                                            @if(isset($val['total_amount']) && $val['total_amount'] != $total_amt)
+                                            <label><span style="color: red;font-style: italic;">Field  value is {{ $val['total_amount'] }}, you can click Submit button.</span></label>
+                                            @endif
                                         </div>
                                         @endforeach
                                         </div>
@@ -1806,6 +1882,114 @@ br {
                                     </div>
                                 </div>
                                 <!-- END LEAVE APPLICATION --> 
+
+                                <!-- START Anacdotal -->
+                                <div class="tab-pane p-3" id="section-linemove-17" role="tabpanel">                          
+                                    <form action="{{ route('anacdotal.store') }}" enctype="multipart/form-data" method="post">
+                                        {{ method_field("POST") }}
+                                    @csrf
+                                    @php
+                                        if(isset($data['get_anacdotals']))
+                                        {
+                                            $get_anacdotals = $data['get_anacdotals'];
+                                        }
+                                        else
+                                        {
+                                            $get_anacdotals = array();
+                                        }
+                                    @endphp
+                                    @foreach($get_anacdotals as $get_anacdotal)
+                                    <div id="entered_og_anacdotal">
+                                        <div class="row">
+                                            <div class="col-md-4 form-group">
+                                                <label>Place</label>
+                                                <input type="text" required id="place" value="{{ $get_anacdotal['place'] }}" name="place[]" name="place[]" class="form-control">
+                                            </div>
+                                            <div class="col-md-4 form-group">
+                                                <label for="observation">Observation</label>
+                                                <textarea id="observation" name="observation[]" class="form-control">
+                                                {{ $get_anacdotal['observation'] }}
+                                                </textarea>
+                                            </div>
+                                            <div class="col-md-4 form-group ml-0">
+                                                <label>Date </label>
+                                                <input type="text" id='anacdotal_date' value="{{ $get_anacdotal['date'] }}" name="date[]" class="form-control mydatepicker">
+                                            </div>
+                                            <div class="col-md-4 form-group">
+                                                <label>Time </label>
+                                                <input type="text" id='time' required name="time[]" value="{{ $get_anacdotal['time'] }}" class="form-control batchname clockpicker">
+                                                <span class="input-group-addon"><span class="glyphicon glyphicon-time"></span></span>
+                                            </div>
+                                            <div class="col-md-4 form-group ml-0 mr-0">
+                                                <label for="life_skills">Life Skills</label>
+                                                <select id="life_skills" name="life_skills[]" class="form-control">
+                                                    <option value="1" @if ($get_anacdotal['life_skills'] == 1) selected @endif>1</option>
+                                                    <option value="2" @if ($get_anacdotal['life_skills'] == 2) selected @endif>2</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-4 form-group ml-0 mr-0">
+                                                <label for="life_values">Life Values</label>
+                                                <select id="life_values" name="life_values[]" class="form-control">
+                                                    <option value="1" @if ($get_anacdotal['life_values'] == 1) selected @endif>1</option>
+                                                    <option value="2" @if ($get_anacdotal['life_values'] == 2) selected @endif>2</option>
+                                                </select>
+                                            </div>
+                                            <div style="height:60px; width:100%; clear:both;"></div>
+                                        </div>
+                                    </div>
+                                    @endforeach
+                                    <input type="hidden" name="student_id" value="{{$student_data['id']}}">
+                                    <div id="anacdotal_og">
+                                        <div class="row">
+                                            <div class="col-md-4 form-group">
+                                                <label>Place</label>
+                                                <input type="text" required id='place' name="place[]" class="form-control">
+                                            </div>
+                                            <div class="col-md-4 form-group">
+                                                <label for="observation">Observation</label>
+                                                <textarea id="observation" name="observation[]" class="form-control"></textarea>
+                                            </div>
+                                            <div class="col-md-4 form-group ml-0">
+                                                <label>Date </label>
+                                                <input type="text" id='add_anacdotal_date' name="date[]" class="form-control mydatepicker">
+                                            </div>
+                                            <div class="col-md-4 form-group">
+                                                <label>Time </label>
+                                                <input type="text" id='time' required name="time[]" class="form-control batchname clockpicker">
+                                                <span class="input-group-addon"><span class="glyphicon glyphicon-time"></span></span>
+                                            </div>
+                                            <div class="col-md-4 form-group ml-0 mr-0">
+                                                <label for="life_skills">Life Skills</label>
+                                                <select id="life_skills" name="life_skills[]" class="form-control">
+                                                    <option value="1">1</option>
+                                                    <option value="2">2</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-4 form-group ml-0 mr-0">
+                                                <label for="life_values">Life Values</label>
+                                                <select id="life_values" name="life_values[]" class="form-control">
+                                                    <option value="1">1</option>
+                                                    <option value="2">2</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-12 form-group">
+                                            <label>Add </label>
+                                            <a href="javascript:void(0);" class="triz-add-btn" onclick="addNewRow('anacdotal_og','anacdotal_add');">
+                                                <span class="btn btn-outline-success"><i class="fa fa-plus"></i></span>
+                                            </a>
+                                        </div>
+                                    <div id="anacdotal_add">
+                                    </div>
+                                    @if(Session::get('user_profile_name') != 'Student')
+                                        <div class="col-md-12 form-group">
+                                            <input type="submit" name="submit" value="Save" class="btn btn-success triz-btn" >
+                                        </div>
+                                    @endif    
+                                    </form>
+                                </div>
+                                <!-- END Anacdotal -->
                                 
                                 <div id="overlay" style="display:none;"><img id="loading" src="https://i1.wp.com/cdnjs.cloudflare.com/ajax/libs/galleriffic/2.0.1/css/loader.gif">
                                 </div>
@@ -1884,8 +2068,10 @@ br {
 <!--Modal: Add ChapterModal-->
 
 @include('includes.footerJs')
+<script src="/plugins/bower_components/clockpicker/dist/jquery-clockpicker.min.js"></script>
 <script src="../../../admin_dep/js/cbpFWTabs.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/js/select2.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
 <script type="text/javascript">
     (function() {
         [].slice.call(document.querySelectorAll('.sttabs')).forEach(function(el) {
@@ -1893,6 +2079,24 @@ br {
         });
     })();
 
+</script>
+<script>
+    $('#single-input').clockpicker({
+    placement: 'bottom',
+    align: 'left',
+    autoclose: true,
+    'default': 'now'
+  });
+  $('.clockpicker').clockpicker({
+    donetext: 'Done',
+  }).find('input').change(function() {
+    console.log(this.value);
+  });
+  $('#check-minutes').click(function(e) {
+    // Have to stop propagation here
+    e.stopPropagation();
+    input.clockpicker('show').clockpicker('toggleView', 'minutes');
+  });
 </script>
 <script>
    $( document ).ready(function() {
@@ -1924,7 +2128,10 @@ br {
             const distance = parseFloat($('#distance').val());
             const shiftRate = parseFloat("{{ $val['shift_rate'] ?? 0 }}");
             const kmAmount = parseFloat("{{ $val['km_amount'] ?? 0 }}");
-            const totalAmt = shiftRate + (distance * kmAmount);
+            
+            // Check if distance is zero
+            const totalAmt = (distance === 0) ? 0 : shiftRate + (distance * kmAmount);
+
             $('#amount').val(totalAmt.toFixed(2));
         }
 
@@ -2096,12 +2303,14 @@ br {
                 document.getElementById("end_date_div").required = true;
                 document.getElementById("remarks_div").style.display = 'block';
                 document.getElementById("remarks_div").required = true;
+                $('.end_date').prop('required',true);
 
             }else{
                 document.getElementById("end_date_div").style.display = 'none';
                 document.getElementById("end_date_div").required = false;
                 document.getElementById("remarks_div").style.display = 'none';
                 document.getElementById("remarks_div").required = false;
+                $('.end_date').prop('required',false);
             }
         }
 </script>
@@ -2364,3 +2573,4 @@ br {
         links[j].href = url;
     }
 </script>
+@endsection

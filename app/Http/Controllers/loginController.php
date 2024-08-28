@@ -129,9 +129,9 @@ class loginController extends Controller
 
                 $rightsQuery = DB::table('tblstudent as u')
                     ->leftJoin('tblindividual_rights as i', function ($join) {
-                        $join->whereRaw('u.id = i.user_id AND u.sub_institute_id = i.sub_institute_id');
+                        $join->on('u.id', '=', 'i.user_id')->on('u.sub_institute_id', '=', 'i.sub_institute_id');
                     })->leftJoin('tblgroupwise_rights as g', function ($join) {
-                        $join->whereRaw('u.user_profile_id = g.profile_id AND u.sub_institute_id = g.sub_institute_id');
+                        $join->on('u.user_profile_id', '=', 'g.profile_id')->on('u.sub_institute_id', '=', 'g.sub_institute_id');
                     })->join('tblmenumaster as m', function ($join) use ($udata) {
                         $join->whereRaw("(i.menu_id = m.id OR g.menu_id = m.id) AND FIND_IN_SET(" . $udata['sub_institute_id'] . ",
                         m.sub_institute_id)");
@@ -141,31 +141,45 @@ class loginController extends Controller
 
             } else {
                 //START FOR MULTI-INSTITUTE
-
-                if ($udata['sub_institute_id'] == 0 && $udata['client_id'] != '' && $udata['is_admin'] == 1) {
+                if($udata['id']==1002){
+                    $rightsQuery = DB::table('tbluser as u')
+                    ->leftJoin('tblindividual_rights as i', function ($join) {
+                        $join->on('u.id', '=', 'i.user_id')->on('u.sub_institute_id', '=', 'i.sub_institute_id');
+                    })->leftJoin('tblgroupwise_rights as g', function ($join) {
+                        $join->on('u.user_profile_id', '=', 'g.profile_id')->on('u.sub_institute_id', '=', 'g.sub_institute_id');
+                    })->join('tblmenumaster as m', function ($join) use ($udata) {
+                        $join->whereRaw("(i.menu_id = m.id OR g.menu_id = m.id)");
+                    })->selectRaw('GROUP_CONCAT(distinct m.id) AS MID')
+                    // ->whereIn('u.sub_institute_id', explode(',', $udata['sub_institute_id']))
+                    ->where('u.status',1) // 23-04-24 by uma
+                    ->where('u.id', $udata['id'])->get()->toArray();
+                }
+                else if ($udata['sub_institute_id'] == 0 && $udata['client_id'] != '' && $udata['is_admin'] == 1) {
                     $rightsQuery = DB::table('tbluser as u')
                         ->leftJoin('tblindividual_rights as i', function ($join) {
-                            $join->whereRaw('u.id = i.user_id AND u.sub_institute_id = i.sub_institute_id');
+                            $join->on('u.id', '=', 'i.user_id')->on('u.sub_institute_id', '=', 'i.sub_institute_id');
                         })->leftJoin('tblgroupwise_rights as g', function ($join) {
-                            $join->whereRaw('u.user_profile_id = g.profile_id AND u.sub_institute_id = g.sub_institute_id');
+                            $join->on('u.user_profile_id', '=', 'g.profile_id')->on('u.sub_institute_id', '=', 'g.sub_institute_id');
                         })->join('tblmenumaster as m', function ($join) use ($udata) {
                             $join->whereRaw("(i.menu_id = m.id OR g.menu_id = m.id) AND FIND_IN_SET(" . $udata['client_id'] . ",
                         m.client_id)");
                         })->selectRaw('GROUP_CONCAT(distinct m.id) AS MID')
                         ->whereIn('u.sub_institute_id', explode(',', $udata['sub_institute_id']))
+                        ->where('u.status',1) // 23-04-24 by uma
                         ->where('u.id', $udata['id'])->get()->toArray();
                     //END FOR MULTI-INSTITUTE
                 } else {
                     $rightsQuery = DB::table('tbluser as u')
                         ->leftJoin('tblindividual_rights as i', function ($join) {
-                            $join->whereRaw('u.id = i.user_id AND u.sub_institute_id = i.sub_institute_id');
+                            $join->on('u.id', '=', 'i.user_id')->on('u.sub_institute_id', '=', 'i.sub_institute_id');
                         })->leftJoin('tblgroupwise_rights as g', function ($join) {
-                            $join->whereRaw('u.user_profile_id = g.profile_id AND u.sub_institute_id = g.sub_institute_id');
+                            $join->on('u.user_profile_id', '=', 'g.profile_id')->on('u.sub_institute_id', '=', 'g.sub_institute_id');
                         })->join('tblmenumaster as m', function ($join) use ($udata) {
                             $join->whereRaw("(i.menu_id = m.id OR g.menu_id = m.id) AND FIND_IN_SET(" . $udata['sub_institute_id'] . ",
                         m.sub_institute_id)");
                         })->selectRaw('GROUP_CONCAT(distinct m.id) AS MID')
                         ->whereIn('u.sub_institute_id', explode(',', $udata['sub_institute_id']))
+                        ->where('u.status',1) // 23-04-24 by uma
                         ->where('u.id', $udata['id'])->get()->toArray();
                 }
             }
@@ -205,27 +219,44 @@ class loginController extends Controller
                     $user = $user[0];
 
                     $userprofiledetails = tbluserprofilemasterModel::where(['id' => $user['user_profile_id']])->get()->toArray();
-
+                    $request->session()->put('user_profile_id', $user['user_profile_id']);
                 //START FOR MULTI-INSTITUTE
-                    if ($user['is_admin'] == 1) {
-                        $schoolData = DB::table('tblclient')->where(['id' => $user['client_id']])->get()->toArray();
+                    if ($user['is_admin'] == 1 || $user['is_admin']==2) {
+                        if($user['is_admin']==2){
+                            $schoolData = DB::table('tblclient')->get()->toArray();
+                        }else{
+                            $schoolData = DB::table('tblclient')->where(['id' => $user['client_id']])->get()->toArray();
+                        }
+                     
                         $schoolData = json_decode(json_encode($schoolData), true);
                         $ShortCode = $schoolData[0]['short_code'];
                         $SchoolName = $schoolData[0]['client_name'];
                         $Logo = $schoolData[0]['logo'];
-
-                        $getMultiInst = DB::table('tblclient')->where(['id' => $user['client_id']])->get()->toArray();
+                        if($user['is_admin']==2){
+                            $getMultiInst = DB::table('tblclient')->get()->toArray();
+                        }else{
+                            $getMultiInst = DB::table('tblclient')->where(['id' => $user['client_id']])->get()->toArray();
+                        }
                         if (isset($getMultiInst['0']->multischool)) {
                             $request->session()->put('multiSchool', $getMultiInst['0']->multischool);
                         }
-
-                        $schools = SchoolModel::where(['client_id' => $user['client_id']])->get()->toArray();
-
+                        if($user['is_admin']==2){
+                            $schools = SchoolModel::whereIn('client_id',[2,11,20,34,81])->get()->toArray();
+                        }else{
+                            $schools = SchoolModel::where(['client_id' => $user['client_id']])->get()->toArray();
+                        }
+                        // echo "<pre>";print_r($schools);exit;
                         $client_sub_institute_id = '';
                         if (count($schools) > 0) {
                             $client_sub_institute_id = $schools[0]['Id'];
+                            $request->session()->put('syear', $schools[0]['syear']);
                         }
-
+                        if($user['is_admin']==2){
+                            $getTermId = academic_yearModel::whereIn('sub_institute_id',[254,195,47,72,1])
+                            ->where('syear',session()->get('syear'))
+                            ->get()->toArray();
+                        
+                        }else{
                         $getTermId = academic_yearModel::where(['sub_institute_id' => $client_sub_institute_id])
                             ->whereRaw('"'.date('Y-m-d').'" '.'between start_date and end_date')
                             ->get()->toArray();
@@ -235,14 +266,18 @@ class loginController extends Controller
                             $res['message'] = "Academic Term Date Expired";
                             return is_mobile($type, "login", $res, "view");
                         }
+                        $request->session()->put('syear', $getTermId[0]['syear']);
+
+                    }
                         $given_hrms_rights = '';
                         $getAcademicTerms = $getAcademicYear = array();
-
-                        $getInstitutes = DB::table('school_setup')->where('client_id',
+                        if($user['is_admin']==2){
+                            $getInstitutes = DB::table('school_setup as ss')->whereIn('id',[254,195,47,72,1])->get()->toArray();
+                        }else{
+                            $getInstitutes = DB::table('school_setup')->where('client_id',
                             $user['client_id'])->get()->toArray();
-
+                        }
                         $request->session()->put('sub_institute_id', 0);
-                        $request->session()->put('syear', $getTermId[0]['syear']);
                         // if($schools[0]['institute_type']=="college"){
                             $request->session()->put('term_id', $getTermId[0]['term_id']);
                         // }
@@ -296,7 +331,8 @@ class loginController extends Controller
                         $user_group_id = DB::table('tbluserprofilemaster')->where('NAME', 'Teacher')
                             ->where('sub_institute_id', $user['sub_institute_id'])->get()->toArray();
                         $user_group_id = $user_group_id[0]->id ?? '';
-                        if ($user_group_id == session()->get('user_profile_id')) {
+                        
+                        if ($user_group_id==session()->get('user_profile_id')) {
 
                             $class_teacher = DB::table('class_teacher')->where('teacher_id', $user['id'])
                                 ->where('sub_institute_id', $user['sub_institute_id'])
@@ -317,7 +353,7 @@ class loginController extends Controller
 
 
                         $hrms_rights = DB::table('school_setup as s')->join('tblclient as c', function ($join) {
-                            $join->whereRaw('c.id = s.client_id');
+                            $join->on('c.id','=', 's.client_id');
                         })->selectRaw('if(db_hrms is null,0,1) as rights')
                             ->where('s.Id', $user['sub_institute_id'])->get()->toArray();
                         $given_hrms_rights = $hrms_rights[0]->rights;
@@ -369,8 +405,13 @@ class loginController extends Controller
                     $request->session()->put('DUSER_PWD', $user['password']);
                     $request->session()->put('hrms_rights', $given_hrms_rights);
                     $request->session()->put('client_id', $user['client_id']);
-                    $request->session()->put('is_admin', $user['is_admin']);
-                    $request->session()->put('user_profile_name', $userprofiledetails[0]['name']);
+                    if($user['is_admin']==2){
+                        $request->session()->put('is_admin', 1);
+                        $request->session()->put('user_profile_name', "Super Admin");
+                    }else{
+                        $request->session()->put('is_admin', $user['is_admin']);
+                        $request->session()->put('user_profile_name', $userprofiledetails[0]['name']);
+                    }
                     $request->session()->put('profile_parent_id', $userprofiledetails[0]['parent_id']);
                     $request->session()->put('user_name', $user['user_name']);
                     $request->session()->put('name', $user['first_name'].' '.$user['last_name']);
@@ -386,7 +427,26 @@ class loginController extends Controller
                     $res['data'] = $user;
                     $res['academicTerms'] = $getAcademicTerms;
                     $res['academicYears'] = $getAcademicYear;
+
+                    // Get server hostname and IP address
+                    $hostname = gethostname();
+                    $ip = gethostbyname($hostname);
+
+                    $user_token = rand().'_'.$user['id'];
+                    $request->session()->put('user_token', $user_token);
                     
+                    // Check if multi-login is enabled
+                    $check_multilogin = DB::table('general_data')
+                        ->where(['fieldname' => 'multi_login', 'sub_institute_id' => $user['sub_institute_id']])
+                        ->value('fieldvalue');
+
+                    // If multi-login is disabled, update user's login IP
+                    if ($check_multilogin === "No") {
+                        DB::table('tbluser')
+                            ->where(['sub_institute_id' => $user['sub_institute_id'], 'id' => $user['id']])
+                            ->update(["login_ip" => $user_token]);
+                    }
+
                     if(session()->get('is_admin') == 1){
                         return is_mobile($type, "dashboard", $res);
                     }elseif($schoolData[0]['expire_date'] == null){
@@ -416,11 +476,11 @@ class loginController extends Controller
         if ($mobile_number != '') {
             $data = DB::table('tbluser as u')
                 ->join('tbluserprofilemaster as um', function ($join) {
-                    $join->whereRaw('u.user_profile_id = um.id');
+                    $join->on('u.user_profile_id', '=', 'um.id');
                 })->join('school_setup as s', function ($join) {
-                    $join->whereRaw('.sub_institute_id = s.Id');
+                    $join->on('.sub_institute_id', '=', 's.Id');
                 })->selectRaw('u.*,um.name AS profile,s.SchoolName AS school_name')
-                ->where('u.mobile', $mobile_number)->get()->toArray();
+                ->where('u.mobile', $mobile_number)->where('u.status',1)->get()->toArray(); // 23-04-24 by uma
 
             $data = array_map(function ($value) {
                 return (array) $value;
@@ -456,4 +516,27 @@ class loginController extends Controller
         return is_mobile($type, "implementation", $res);
     }
 
+    public function check_multilogins(){
+        $sub_institute_id = session('sub_institute_id');
+        $user_id = session('user_id');
+        $user_token = session()->get('user_token');
+        
+        $status = "logging";
+    
+        $check_multilogin = DB::table('general_data')
+            ->where(['fieldname' => 'multi_login', 'sub_institute_id' => $sub_institute_id])
+            ->value('fieldvalue');
+    
+        if ($check_multilogin === "No") {
+            $hostname = gethostname();
+            $ip = gethostbyname($hostname); 
+            $stored_ip = DB::table('tbluser')->where('status',1)->where('id', $user_id)->value('login_ip'); // 23-04-24 by uma
+    
+            if ($stored_ip !== '' && $stored_ip !== $user_token) {
+                $status = "logout";            
+            }
+        }
+        return $status;
+    }
+    
 }

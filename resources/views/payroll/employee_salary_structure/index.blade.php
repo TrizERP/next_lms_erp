@@ -21,28 +21,29 @@
                                     <strong>{{ $sessionData['message'] }}</strong>
                                 </div>
                             @endif
-                            <form action="{{route('payroll.show_employee_salary_structure')}}"
+                            <form action="{{route('employee_salary_structure.index')}}"
                                   enctype="multipart/form-data"
                                   method="post">
                                 @csrf
                                 <div class="row">
+                                @php 
+                                    $dep_id = $emp_id = '';
+                                    if(isset($data['department_id'])){
+                                        $dep_id = $data['department_id'];
+                                    }
+
+                                    if(isset($data['selected_emp'])){
+                                        $emp_id = $data['selected_emp'];
+                                    }
+                                @endphp
+
+                                {!! App\Helpers\HrmsDepartments("","multiple",$dep_id,"multiple",$emp_id,"") !!}
+
                                     <div class="col-md-3 form-group">
-                                        <label>Employee List</label>
-
-                                        <select id='employee_id' name="employee_id" class="form-control">
-                                            <option value="0">Select Employee</option>
-                                            @foreach($employeeLists as $key => $employeeList)
-
-                                                @if(is_array($employees) && count($employees) == 1 && $employees[0]['id'] == $employeeList->id)
-                                                    <option
-                                                        value="{{$employeeList->id}}"
-                                                        selected>{{$employeeList->first_name .' '. $employeeList->last_name }}</option>
-                                                @else
-                                                    <option
-                                                        value="{{$employeeList->id}}">{{$employeeList->first_name .' '. $employeeList->last_name }}</option>
-                                                @endif
-                                            @endforeach
-
+                                        <label>Employee Status</label>
+                                        <select id='emp_status' name="emp_status" class="form-control">
+                                            <option @if(isset($data['emp_status']) && $data['emp_status']==1) selected @endif value="1">Active</option>
+                                            <option @if(isset($data['emp_status']) && $data['emp_status']==0) selected @endif value="0">In-active</option>
                                         </select>
                                     </div>
                                     <div class="col-md-3 col-sm-offset-4 text-center form-group">
@@ -67,7 +68,7 @@
                             </form>
                         </div>
             </div>
-            <form action="{{ route('employee_salary_structure.store') }}" enctype="multipart/form-data" method="post">
+            <form class="card" action="{{ route('employee_salary_structure.store') }}" enctype="multipart/form-data" method="post">
                 {{ method_field("POST") }}
                 @csrf
                 <div class="row">
@@ -76,45 +77,54 @@
                             <table id="example" class="table table-striped">
                                 <thead>
                                 <tr>
-                                    <th>Emp Id</th>
-                                    <th>Emp Name</th>
+                                    <th>Sr No.</th>
+                                    <th>Emp.No</th>
+                                    <th>Emp.Name</th>
+                                    <th>Department</th>
                                     <th>Gender</th>
-                                    @foreach ($payrollTypes as $payrollType)
-                                        <th>{{$payrollType->payroll_name}}</th>
+                                    @foreach ($data['payrollTypes'] as $payrollType)
+                                        <th class="text-left">{{$payrollType->payroll_name}}</th>
                                     @endforeach
                                 </tr>
                                 </thead>
                                 <tbody>
-                                @php
-                                    $j=1;
-                                @endphp
-                                @foreach($employees as $key => $data)
+                                @php $j=1; @endphp
+                                @foreach($data['employees'] as $key => $value)
                                     <tr>
-                                        <td>{{$data->id}}</td>
-                                        <td>{{$data->first_name .' '. $data->middle_name .' '.$data->last_name}}</td>
-                                        <td>{{$data->gender}}</td>
-                                        <input type="hidden" name="emp[{{$key}}][]" value="{{$data->id}}">
-                                        @foreach ($payrollTypes as $payrollType)
-                                            @if($payrollType->payroll_name == 'PF' || $payrollType->payroll_name == 'Pro.Tax')
-                                                <input type="hidden" name="emp[{{$key}}][{{$payrollType->id}}][]"
-                                                       value="{{$payrollType->id}}">
-                                                <td><input type="text" disabled
-                                                           value="{{$employeeSalaryStructures[$key][$payrollType->id] ?? 0}}">
-                                                    <input type="hidden" name="emp[{{$key}}][{{$payrollType->id}}][]"
-                                                           value="{{$employeeSalaryStructures[$key][$payrollType->id] ?? 0}}">
-                                                    <input type="hidden" name="emp[{{$key}}][{{$payrollType->id}}][]"
-                                                           value="{{$payrollType->payroll_name}}">
-                                                    <input type="hidden" name="emp[{{$key}}][{{$payrollType->id}}][]"
-                                                           value="{{$payrollType->payroll_type}}">
+                                        <td>{{$key+1}}</td>
+                                        <td>{{$value['employee_no']}}</td>
+                                        <td>{{$value['first_name'] .' '. $value['middle_name'] .' '.$value['last_name']}}</td>
+                                        <td>{{$value['department']}}</td>
+                                        <td>{{$value['gender']}}<input type="hidden" name="emp[{{$value['id']}}][]" value="{{$value['gender']}}"></td>
+                                         
+                                        @foreach ($data['payrollTypes'] as $payrollType)
+                                            @if(($payrollType->payroll_name == 'PF' || $payrollType->payroll_name == 'PT') && Session::get('sub_institute_id') != '195')
+                                                
+                                                <td>
+                                                    <input type="hidden" name="emp[{{$value['id']}}][{{$payrollType->id}}][]" value="{{$payrollType->id}}">
+
+                                                    <span id="all_values" style="display:none">{{$data['employeeSalaryStructures'][$value['id']][$payrollType->id] ?? 0}}</span>
+
+                                                    <input type="text" disabled value="{{$data['employeeSalaryStructures'][$value['id']][$payrollType->id] ?? 0}}" class="form-control" style="width:80px !important">
+
+                                                    <input type="hidden" name="emp[{{$value['id']}}][{{$payrollType->id}}][]" value="{{$data['employeeSalaryStructures'][$value['id']][$payrollType->id] ?? 0}}">
+
+                                                    <input type="hidden" name="emp[{{$value['id']}}][{{$payrollType->id}}][]" value="{{$payrollType->payroll_name}}">
+
+                                                    <input type="hidden" name="emp[{{$value['id']}}][{{$payrollType->id}}][]" value="{{$payrollType->payroll_type}}">
                                                 </td>
                                             @else
-                                                <input type="hidden" name="emp[{{$key}}][{{$payrollType->id}}][]"
-                                                       value="{{$payrollType->id}}">
-                                                <td><input type="text" name="emp[{{$key}}][{{$payrollType->id}}][]"
-                                                           value="{{$employeeSalaryStructures[$key][$payrollType->id] ?? 0}}">
-                                                    <input type="hidden" name="emp[{{$key}}][{{$payrollType->id}}][]"
-                                                           value="{{$payrollType->payroll_name}}"> <input type="hidden" name="emp[{{$key}}][{{$payrollType->id}}][]"
-                                                           value="{{$payrollType->payroll_type}}">
+                                                
+                                                <td>
+                                                    <input type="hidden" name="emp[{{$value['id']}}][{{$payrollType->id}}][]" value="{{$payrollType->id}}">
+
+                                                    <span id="all_values" style="display:none">{{$data['employeeSalaryStructures'][$value['id']][$payrollType->id] ?? 0}}</span>
+
+                                                    <input type="text" name="emp[{{$value['id']}}][{{$payrollType->id}}][]" value="{{$data['employeeSalaryStructures'][$value['id']][$payrollType->id] ?? 0}}" class="form-control" style="width:80px !important">
+
+                                                    <input type="hidden" name="emp[{{$value['id']}}][{{$payrollType->id}}][]" value="{{$payrollType->payroll_name}}"> 
+
+                                                    <input type="hidden" name="emp[{{$value['id']}}][{{$payrollType->id}}][]" value="{{$payrollType->payroll_type}}">
                                                 </td>
                                             @endif
 
@@ -141,11 +151,16 @@
 </div>
 
 @include('includes.footerJs')
-
+<style>
+    @media print {
+    .flex-on-print {
+        display: flex !important;
+    }
+}
+</style>
 <script>
     $(document).ready(function () {
         var table = $('#example').DataTable({
-            ordering: false,
             select: true,
             lengthMenu: [
                 [100, 500, 1000, -1],
@@ -155,7 +170,7 @@
             buttons: [
                 {
                     extend: 'pdfHtml5',
-                    title: 'Student Report',
+                    title: 'Salary Structure Report',
                     orientation: 'landscape',
                     pageSize: 'LEGAL',
                     pageSize: 'A0',
@@ -163,13 +178,20 @@
                         columns: ':visible'
                     },
                 },
-                {extend: 'csv', text: ' CSV', title: 'Student Report'},
-                {extend: 'excel', text: ' EXCEL', title: 'Student Report'},
-                {extend: 'print', text: ' PRINT', title: 'Student Report'},
+                {extend: 'csv', text: ' CSV', title: 'Salary Structure Report'},
+                {extend: 'excel', text: ' EXCEL', title: 'Salary Structure Report'},
+                {
+                    extend: 'print', 
+                    text: ' PRINT', 
+                    title: 'Salary Structure Report',
+                    customize: function (win) {
+                        $(win.document.body).append(`<div style="text-align: right;margin-top:20px">Printed on: {{date('d-m-Y H:i:s')}}</div>`);
+                        $('#all_values').addClass('flex-on-print');
+                    }
+                },
                 'pageLength'
             ],
         });
-        //table.buttons().container().appendTo('#example_wrapper .col-md-6:eq(0)');
 
         $('#example thead tr').clone(true).appendTo('#example thead');
         $('#example thead tr:eq(1) th').each(function (i) {

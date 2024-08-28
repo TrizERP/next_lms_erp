@@ -29,7 +29,9 @@ class templateMasterController extends Controller
 
         $data['template_data'] = templateMasterModel::select('template_master.*',
             DB::raw('concat_ws(" ",u.first_name,u.middle_name,u.last_name) as created_by'))
-            ->join('tbluser as u', 'u.id', '=', 'template_master.created_by')
+            ->join('tbluser as u', function($join){
+                $join->on('u.id', '=', 'template_master.created_by')->where('u.status',1);   // 23-04-24 by uma
+            })
             ->where(['template_master.sub_institute_id' => $sub_institute_id])
             ->get()->toArray();
 
@@ -109,10 +111,22 @@ class templateMasterController extends Controller
         <li><b><< student_uniqueid_value >></b> : Student unique ID</li>
         <li><b><< he_she_value >></b> : he/she</li>
         <li><b><< his_her_value >></b> : His/Her</li>
+        <li><b><< mr_miss >></b> : Mr./Miss.</li>
+        <li><b><< daughter_or_son >></b> : daughter/son</li>        
         <li><b><< certificate_reason >></b> : certificate reason</li>
         <li><b><< student_father_name >></b> : Father name</li>
         <li><b><< fees_details >></b> : Fees Details</li>
         <li><b><< total_amount_in_words >></b> : Total Amount in words</li>
+        <li><b><< student_last_name_value >></b> : Last Name</li>
+        <li><b><< admission_date_value >></b> : Admission</li>
+        <li><b><< short_standard_name_value >></b> : Last Standard Name</li>
+        <li><b><< short_standard_name_in_word_value >></b> : Last Standard Name in Word</li>
+        <li><b><< teacher_remark_value >></b> : Teacher Remark</li>
+        <li><b><< month_name >></b> : Month Name</li>
+        <li><b><< date_on_which_pupil_name_value >></b> : Date of application for certificate</li>
+        <li><b><< date_of_application_for_certificate_value >></b> : Date on which pupil's name was struck off the rolls of the school</li>
+        <li><b><< date_of_issue_of_certificate_new_value >></b> : Date of issue of certificate</li>
+        <li><b><< activity_tag_marks >></b> : Student Activity Report Marks</li>
         </ul>";
 
         return is_mobile($type, 'settings/view_all_tag', $data, "view");

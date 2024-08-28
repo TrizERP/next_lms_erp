@@ -25,8 +25,8 @@
                         <div class="row">
                             <div class="col-md-4 form-group">
                                 <label for="fee_interval">Select Fee Type:</label>
-                                <select name="fee_type" id="fee_type" class="form-control">
-                                    <option selected>Select Type</option>
+                                <select name="fee_type" id="fee_type" class="form-control" required>
+                                    <option value="">Select Type</option>
                                     <option value="yearly_fees">Yearly Fees</option>
                                     <option value="half_year_fees">Half Year Fees</option>
                                     <option value="quarterly_fees">Quarterly Fees</option>
@@ -35,24 +35,20 @@
                             </div>
                             <div class="col-md-4 form-group ml-0 mr-0">
                                 <label>Starting Month</label>
-                                <select name="start_month" id="start_month" class="form-control">
+                                <select name="start_month" id="start_month" class="form-control" required>
                                     <option value="">--Select--</option>
-                                    <?php
-                                    foreach ($data['data']['ddMonth'] as $id => $arr) {
-                                        echo "<option value='$id'>$arr</option>";
-                                    }
-                                    ?>
+                                  @foreach ($data['data']['ddMonth'] as $id => $arr) 
+                                    <option value='{{$id}}'>{{$arr}}</option>";
+                                    @endforeach
                                 </select>
                             </div>
                             <div class="col-md-4 form-group ml-0">
                                 <label>Ending Month</label>
-                                <select name="end_month" id="end_month" class="form-control">
+                                <select name="end_month" id="end_month" class="form-control" required>
                                     <option value="">--Select--</option>
-                                    <?php
-                                    foreach ($data['data']['ddMonth'] as $id => $arr) {
-                                        echo "<option value='$id'>$arr</option>";
-                                    }
-                                    ?>
+                                   @foreach ($data['data']['ddMonth'] as $id => $arr) 
+                                        <option value='{{$id}}'>{{$arr}}</option>
+                                   @endforeach
                                 </select>
                             </div>
 

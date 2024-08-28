@@ -23,6 +23,11 @@ class co_scholastic_marks_entry_controller extends Controller
      */
     public function index(Request $request)
     {
+
+        /* echo("<pre>");
+        print_r(session()->get('classTeacher'));
+        echo("</pre>");
+        die; */
         if (session()->has('data')) { // check if it exists
             $data_arr = session('data'); // to retrieve value
             if (isset($data_arr['message'])) {
@@ -131,7 +136,7 @@ class co_scholastic_marks_entry_controller extends Controller
         $check_approve = DB::table('result_exam_approve')->where($approve_status)->first();
         // print_r($check_approve);exit;
         if(isset($check_approve->created_by)){
-            $approved_user = DB::table('tbluser')->where('id',$check_approve->created_by)->first();
+            $approved_user = DB::table('tbluser')->where('id',$check_approve->created_by)->where('status',1)->first();   // 23-04-24 by uma
         }
         $responce_arr['approve_status'] = $check_approve;
         $responce_arr['approved_user'] = $approved_user ?? '';    
@@ -144,7 +149,7 @@ class co_scholastic_marks_entry_controller extends Controller
         $responce_arr['co_scholastic_parent_dd'] = $this->get_co_scholastic_parent_dd();
         $responce_arr['co_scholastic_parent'] = $_REQUEST['co_scholastic_parent'];
         $responce_arr['co_scholastic_dd'] = $this->get_co_scholastic_dd($_REQUEST["term"],
-            $_REQUEST['co_scholastic_parent']);
+            $_REQUEST['co_scholastic_parent'],$_REQUEST["standard"]);
         $responce_arr['co_scholastic'] = $_REQUEST['co_scholastic'];
         foreach ($student_data as $id => $arr) {
             $temp_arr = array();
@@ -192,22 +197,28 @@ class co_scholastic_marks_entry_controller extends Controller
         $where = [
             "re.sub_institute_id" => session()->get('sub_institute_id'),
         ];
+      
 
         return DB::table('result_co_scholastic_parent as re')
             ->where($where)
             ->pluck('re.title', 're.id');
     }
 
-    public function get_co_scholastic_dd($term, $parent_id)
+    public function get_co_scholastic_dd($term, $parent_id,$standard='')
     {
         $where = [
             "re.sub_institute_id" => session()->get('sub_institute_id'),
             "re.parent_id"        => $parent_id,
             "re.term_id"          => $term,
         ];
-
+        $extra_where = '1=1';
+        if($standard!=''){
+            $extra_where .=' AND re.standard_id='.$standard.' ';
+        }
+        
         return DB::table('result_co_scholastic as re')
             ->where($where)
+            ->whereRaw($extra_where)            
             ->pluck('re.title', 're.id');
     }
 
@@ -233,7 +244,7 @@ class co_scholastic_marks_entry_controller extends Controller
      */
     public function store(Request $request)
     {
-
+        // echo "<pre>";print_r($request->all());exit;
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
         $all_data = [];
@@ -254,6 +265,7 @@ class co_scholastic_marks_entry_controller extends Controller
                 'sub_institute_id' => $sub_institute_id,
                 'student_id'       => $student_id,
             ])->get()->toArray();
+            // echo "<pre>";print_r($arr['grade_opt']);
             if(!empty($check)){
                 $data = [
                     'grade_id'         => $arr['grade_id'],
@@ -265,8 +277,9 @@ class co_scholastic_marks_entry_controller extends Controller
                     'syear'            => $syear,
                 ];
                 $update = DB::table('result_co_scholastic_marks_entries')->where($data)->update([
-                'grade'=> $arr['grade'] ?? " ",
-                'points'=> $arr['points'] ?? " "
+                'grade'=> $arr['grade_opt'] ?? " ",
+                'points'=> $arr['points'] ?? " ",
+                'updated_at'=>now(),
                 ]);
             }else{
                 $data = new co_scholastic_marks_entry([ 
@@ -275,14 +288,16 @@ class co_scholastic_marks_entry_controller extends Controller
                     'term_id'          => $arr['term_id'],
                     'student_id'       => $student_id,
                     'co_scholastic_id' => $arr['co_scholastic'],
-                    'grade'            => $arr['grade'] ?? " ",
+                    'grade'            => $arr['grade_opt'] ?? " ",
                     'points'           => $arr['points'] ?? " ",
                     'sub_institute_id' => $sub_institute_id,
                     'syear'            => $syear,
+                    'created_at'       => now(),
                 ]);
                 $data->save();
+            }
         }
-        }
+        // exit;
         $res = [
             "status_code" => 1,
             "message"     => "Data Saved",

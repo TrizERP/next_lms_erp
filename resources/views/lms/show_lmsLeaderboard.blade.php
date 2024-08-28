@@ -1,7 +1,8 @@
-@include('includes.lmsheadcss')
+{{--@include('includes.lmsheadcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('lmslayout')
+@section('container')
 <!-- Content main Section -->
 @if(count($data['lb_Data']) <= 0)
 
@@ -25,12 +26,12 @@
                 <h1 class="h4 mb-3">Leader Board</h1>
                  <nav aria-label="breadcrumb">
                     <ol class="breadcrumb bg-transparent p-0">
-                        <li class="breadcrumb-item"><a href="{{route('course_master.index')}}">LMS</a></li>                                 
-                        <li class="breadcrumb-item">Engagement</li>                                                         
-                        <li class="breadcrumb-item">Show Leader Board</li>                                                         
+                        <li class="breadcrumb-item"><a href="{{route('course_master.index')}}">LMS</a></li>
+                        <li class="breadcrumb-item">Engagement</li>
+                        <li class="breadcrumb-item">Show Leader Board</li>
                     </ol>
                 </nav>
-            </div>  
+            </div>
     		<div class="col-md-4">
     			<div class="card leaderboard-box">
                     <div class="text-center card-body">
@@ -39,7 +40,7 @@
 							<!-- <a href="#">View Details</a> -->
 						</div>
                         <div class="board-details">
-                        	
+
 							<img src="../triz-lms/assets/images/lms-head.png" width="50" alt="">
 							<div class="title">{{$data['lb_Data']['total_points']}}</div>
 						</div>
@@ -95,7 +96,7 @@
 											$tot += $v;
 										}
 										echo $tot;
-										@endphp	
+										@endphp
 
 									</li>
 									@endforeach
@@ -126,7 +127,7 @@
 										<div class="total-points">{{$classval['total_points']}} Points</div>
 									</li>
 									@endforeach
-								@endif																
+								@endif
 							</ul>
 						</div>
 					</div>
@@ -139,3 +140,4 @@
 
 @include('includes.lmsfooterJs')
 @include('includes.footer')
+@endsection

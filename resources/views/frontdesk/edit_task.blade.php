@@ -25,11 +25,13 @@
                     @endif
 
                 <div class="col-lg-12 col-sm-12 col-xs-12">
-                    <form action="{{ route('task.update',$data['ID']) }}" enctype="multipart/form-data" method="post">
+                    <form action="{{ route('task.update',$data['ID']) }}" enctype="multipart/form-data" method="post" id="emailForm" novalidate>
 
                         {{ method_field("PUT") }}
                         @csrf
-
+                        @php 
+                            $taskType = ['Daily Task','Weekly Task','Monthly Task','Yearly Task'];
+                        @endphp
                         <div class="row">
                             <div class="col-md-4 form-group">
                                 <label>Title </label>
@@ -47,23 +49,55 @@
                             </div>
 
                             <div class="col-md-4 form-group">
-                                <label>User </label>                                
-                                <select id="TASK_ALLOCATED_TO" name="TASK_ALLOCATED_TO" class="form-control">
-                                    @if(isset($userList))
-                                        @foreach($userList as $key => $value)
-                                            @php 
-                                            $selected = '';
-                                            if($data['TASK_ALLOCATED_TO'] == $value['id'])
-                                            {
-                                                $selected = 'selected=selected';
-                                            }
-                                            @endphp
-                                            <option value="{{$value['id']}}" {{$selected}}> {{$value['first_name']." ".$value['last_name']}} </option>
-                                        @endforeach
+                                <label>TASK ALLOCATED </label>                                
+                                <select id="TASK_ALLOCATED" name="TASK_ALLOCATED" class="form-control" readonly>
+                                    @if(isset($data))
+                                        <option value="{{$data['TASK_ALLOCATED']}}"> {{$data['ALLOCATOR']}} </option>
+                                    @endif
+                                </select>
+                            </div>
+
+                            <div class="col-md-4 form-group">
+                                <label>TASK ALLOCATED TO </label>                                
+                                <select id="TASK_ALLOCATED_TO" name="TASK_ALLOCATED_TO" class="form-control" readonly>
+                                    @if(isset($data))
+                                        <option value="{{$data['TASK_ALLOCATED_TO']}}"> {{$data['ALLOCATED_TO']}} </option>
                                     @endif
                                 </select>
                             </div> 
-
+                             <!-- add KRA -->
+                             <div class="col-md-4  form-group">
+                                <label for="task">Add KRA</label>
+                                <input type="text" name="KRA" id="KRA" class="form-control" value="@if(isset($data['KRA'])){{ $data['KRA'] }}@endif" autocomplete="off" >
+                            </div>
+                            <!--add KPA -->
+                            <div class="col-md-4  form-group">
+                                <label for="task">Add KPA</label>
+                                <input type="text" name="KPA" id="KPA" class="form-control" value="@if(isset($data['KPA'])){{ $data['KPA'] }}@endif" autocomplete="off" >
+                            </div>
+                            <!-- add Type -->
+                            <div class="col-md-4  form-group">
+                                <label for="task">Add Type</label>
+                                <select name="selType" id="selType" class="form-control selType">
+                                    <option value="">Select Type</option>
+                                    @foreach($taskType as $key=>$value)
+                                    <option value="{{$value}}" @if(isset($data['task_type']) && $data['task_type'] == $value) selected @endif >{{$value}}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <!-- add manageby -->
+                            <div class="col-md-4 form-group">
+                                <label>Manage By </label>                                
+                                <select id="manageby" name="manageby" class="form-control" readonly>
+                                    @if(isset($data))
+                                        <option value="{{$data['manageby']}}"> {{$data['manageby']}} </option>
+                                    @endif
+                                </select>
+                            </div> 
+                            <div class="col-md-4 form-group">
+                                <label>Skills </label>
+                                <textarea class="form-control" name="skills" id="skills" @if($data['TASK_ALLOCATED_TO']==session()->get('user_id')) readonly  @endif>{{$data['required_skill']}}</textarea>
+                            </div>
                             <!-- <div class="col-md-4 form-group">
                                 <label>User </label>
                                 <input type="text" id='TASK_ALLOCATED_TO' value="@if(isset($data['ALLOCATED_TO'])){{ $data['ALLOCATED_TO'] . ' - '. $data['TASK_ALLOCATED_TO'] }}@endif" list="userAllocatedList" name="TASK_ALLOCATED_TO" class="form-control">
@@ -75,7 +109,11 @@
                                     @endif
                                 </datalist>
                             </div> -->
-
+                           
+                            <div class="col-md-4">
+                                <label for="">Observation Points</label>
+                                <textarea class="form-control" name="observation_point" id="observation_point" @if($data['TASK_ALLOCATED_TO']==session()->get('user_id')) readonly  @endif>{{$data['observation_point']}}</textarea>
+                            </div>
                             <div class="col-md-4 form-group">
                                 <label>Task Status </label>
                                 <select name='STATUS' class="form-control">
@@ -85,7 +123,6 @@
                                     @endforeach
                                 </select>
                             </div>
-
                             <div class="col-md-4 form-group">
                                 <label for="input-file-now">Task Attachment</label>
                                 <input type="file" @if(isset($data['TASK_ATTACHMENT'])) data-default-file="/storage/frontdesk/{{ $data['TASK_ATTACHMENT'] }}" @endif name="TASK_ATTACHMENT" id="input-file-now" class="dropify" />
@@ -95,6 +132,7 @@
                                 <textarea type="text" id='reply' required name='reply' class="form-control">{{ $data['reply'] }}
                                 </textarea>
                             </div>
+                            
                             <div class="col-md-12 form-group">
                                     <input type="submit" name="submit" value="Update" class="btn btn-success" >
                             </div>

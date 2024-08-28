@@ -1,7 +1,7 @@
-@include('../includes.headcss')
 <link rel="stylesheet" href="../../../plugins/bower_components/dropify/dist/css/dropify.min.css">
-@include('../includes.header')
-@include('../includes.sideNavigation')
+{{-- @include('includes.headcss') @include('includes.header') @include('includes.sideNavigation') --}} 
+@extends('layout')
+@section('container')
 
 <div id="page-wrapper">
     <div class="container-fluid">
@@ -41,15 +41,9 @@
                                 <label>Parent Co-Scholastic: </label>
                                 <select name="parent_id" class="form-control">
                                     <option value="">--Select Parent--</option>
-                                    @php
-                                    foreach ($data['ddValue'] as $id=>$arr){
-                                    $selected = "";
-                                    if($data['parent_id'] == $arr['id']){
-                                    $selected = 'selected=selected';
-                                    }
-                                    echo "<option $selected value=$arr[id]>$arr[title]</option>";
-                                    }
-                                    @endphp
+                                    @foreach ($data['ddValue'] as $id=>$arr)
+                                    <option value={{$arr['id']}} @if($data['parent_id'] == $arr['id']) selected @endif>{{$arr['title']}}</option>
+                                    @endforeach
                                 </select>
                             </div>
                             <div class="col-md-4 form-group">
@@ -84,7 +78,7 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                1
+                                                1 <input type="hidden" name="co_grade[1][id]" @isset($data['grd_data'][0]['id']) value="{{$data['grd_data'][0]['id']}}" @endisset>
                                             </td>
                                             <td>
                                                 <input type="text" name="co_grade[1][title]" value="{{ isset($data['grd_data'][0]['title']) ? $data['grd_data'][0]['title'] : '' }}" class="form-control" />
@@ -95,7 +89,7 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                2
+                                                2 <input type="hidden" name="co_grade[2][id]" @isset($data['grd_data'][1]['id']) value="{{$data['grd_data'][1]['id']}}" @endisset>
                                             </td>
                                             <td>
                                                 <input type="text" name="co_grade[2][title]" value="{{ isset($data['grd_data'][1]['title']) ? $data['grd_data'][1]['title'] : '' }}" class="form-control" />
@@ -106,7 +100,7 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                3
+                                                3 <input type="hidden" name="co_grade[3][id]" @isset($data['grd_data'][2]['id']) value="{{$data['grd_data'][2]['id']}}" @endisset>
                                             </td>
                                             <td>
                                                 <input type="text" name="co_grade[3][title]" value="{{ isset($data['grd_data'][2]['title']) ? $data['grd_data'][2]['title'] : '' }}" class="form-control" />
@@ -117,7 +111,7 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                4
+                                                4 <input type="hidden" name="co_grade[4][id]" @isset($data['grd_data'][3]['id']) value="{{$data['grd_data'][3]['id']}}" @endisset>
                                             </td>
                                             <td>
                                                 <input type="text" name="co_grade[4][title]" value="{{ isset($data['grd_data'][3]['title']) ? $data['grd_data'][3]['title'] : '' }}" class="form-control" />
@@ -128,7 +122,7 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                5
+                                                5 <input type="hidden" name="co_grade[5][id]" @isset($data['grd_data'][4]['id']) value="{{$data['grd_data'][4]['id']}}" @endisset>
                                             </td>
                                             <td>
                                                 <input type="text" name="co_grade[5][title]" value="{{ isset($data['grd_data'][4]['title']) ? $data['grd_data'][4]['title'] : '' }}" class="form-control" />
@@ -166,3 +160,4 @@
 
 @include('includes.footerJs')
 @include('includes.footer')
+@endsection

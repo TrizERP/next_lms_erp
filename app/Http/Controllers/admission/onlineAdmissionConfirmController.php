@@ -29,11 +29,15 @@ class onlineAdmissionConfirmController extends Controller
             $result = DB::table('new_admission_inquiry_registration')
                 ->selectRaw('new_admission_inquiry_registration.*,new_admission_inquiry_registration.id AS CHECKBOX')
                 ->where('admin_status', 'Verified')
-                ->where('sub_institute_id', $sub_institute_id)->get()->toArray();
+                ->where('sub_institute_id', $sub_institute_id)
+                ->where('syear', $syear)
+                ->get()->toArray();
         } else {
             $result = DB::table('new_admission_inquiry_registration')
                 ->selectRaw('new_admission_inquiry_registration.*,new_admission_inquiry_registration.id AS CHECKBOX')
-                ->where('sub_institute_id', $sub_institute_id)->get()->toArray();
+                ->where('sub_institute_id', $sub_institute_id)
+                ->where('syear', $syear)
+                ->get()->toArray();
         }
 
         $res['status_code'] = 1;
@@ -60,6 +64,7 @@ class onlineAdmissionConfirmController extends Controller
         $result = DB::table('new_admission_inquiry_registration')
             ->select('new_admission_inquiry_registration.*', 'new_admission_inquiry_registration.id as CHECKBOX')
             ->where('sub_institute_id', '=', $sub_institute_id)
+            ->where('syear', '=', $syear)
             ->when($token_no != '', function ($q) use ($token_no) {
                 $q->where('token', $token_no);
             })
@@ -100,6 +105,7 @@ class onlineAdmissionConfirmController extends Controller
             if (isset($admin_status[$student_id]) && $admin_status[$student_id] != '') {
                 $result_admin = DB::table('new_admission_inquiry_registration')->where('id', '=', $student_id)
                     ->where('sub_institute_id', '=', $sub_institute_id)
+                    ->where('syear', '=', $syear)
                     ->update(['admin_status' => $admin_status[$student_id]]);
 
                 $res['status_code'] = "1";
@@ -109,6 +115,7 @@ class onlineAdmissionConfirmController extends Controller
             if (isset($principal_status[$student_id]) && $principal_status[$student_id] != '') {
                 $result_principal = DB::table('new_admission_inquiry_registration')->where('id', '=', $student_id)
                     ->where('sub_institute_id', '=', $sub_institute_id)
+                    ->where('syear', '=', $syear)
                     ->update(['principal_status' => $principal_status[$student_id]]);
 
                 $res['status_code'] = "1";
@@ -119,6 +126,7 @@ class onlineAdmissionConfirmController extends Controller
                 $result_account = DB::table('new_admission_inquiry_registration')
                     ->where('id', '=', $student_id)
                     ->where('sub_institute_id', '=', $sub_institute_id)
+                    ->where('syear', '=', $syear)
                     ->update(['account_status' => $account_status[$student_id]]);
 
                 if ($account_status[$student_id] == 'Confirm' && $result_account == 1) {
@@ -359,6 +367,7 @@ class onlineAdmissionConfirmController extends Controller
             DB::table('new_admission_inquiry_registration')
                 ->where('id', '=', $student_id)
                 ->where('sub_institute_id', '=', $sub_institute_id)
+                ->where('syear', '=', $syear)
                 ->update(['eligible_status' => 'Yes']);
         }
         $res['status_code'] = "1";

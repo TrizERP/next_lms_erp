@@ -227,7 +227,7 @@ class cbse_1t5_t2_result_controller extends Controller {
                 AND e.syear = ' . session()->get('syear') . '  
                 AND e.standard_id = ' . $standard_id . '
                 AND e.report_card_status ="Y"
-                GROUP BY em.ExamTitle,e.title
+                GROUP BY em.ExamTitle
                 ORDER BY em.SortOrder';
 
         $result = DB::select(DB::raw($str));
@@ -322,7 +322,7 @@ class cbse_1t5_t2_result_controller extends Controller {
 
          $str = 'SELECT exm.ExamTitle,ex.id,rm.student_id,s.subject_id,s.display_name,s.elective_subject,SUM(ex.points) total_points,ex.con_point,SUM(rm.points) points,exm.Id exam_id,rm.is_absent,ex.title
                  FROM result_marks rm
-                 INNER JOIN result_create_exam ex ON ex.id = rm.exam_id AND ex.term_id = '.session()->get('term_id').' 
+                 INNER JOIN result_create_exam ex ON ex.id = rm.exam_id AND ex.term_id = 150 
                  INNER JOIN result_exam_master exm on exm.Id = ex.exam_id
                  INNER JOIN sub_std_map s ON s.subject_id = ex.subject_id and s.standard_id = ex.standard_id
                  WHERE exm.Id IN (' . $exam_id . ') AND rm.student_id IN (' . $student_id . ') 
@@ -330,9 +330,11 @@ class cbse_1t5_t2_result_controller extends Controller {
                  GROUP BY rm.student_id,s.display_name,ex.title
                  ORDER BY rm.student_id,s.display_name,exm.Id
                  ';
-//          echo $str;die();
+        //  echo $str;die();
         $result = DB::select(DB::raw($str));
-
+//         if(session()->get('term_id')==150){
+// echo "<pre>";print_r($result);exit;
+// }
         // getting data and making readable format student wise
         $marks_arr = array();
         foreach ($result as $id => $arr) 
@@ -364,6 +366,7 @@ class cbse_1t5_t2_result_controller extends Controller {
             }            
            
         }
+        // echo "<pre>";print_r($marks_arr);exit;
         // die;
         //getting grade scale data
         $grade_arr = $this->getGradeScale();
@@ -701,35 +704,33 @@ public static function getGrade($grade_arr, $total_mark, $total_gain_mark) {
         $division_id = $request->get('division_id');
         $syear = session()->get('syear');
         $sub_institute_id = session()->get('sub_institute_id');
+        $user_id = session()->get('user_id');
 
-        foreach($student_array as $key => $val)
-        {
-            $result_data['student_id'] = $val; 
-            $result_data['term_id'] = $term_id; 
-            $result_data['grade_id'] = $grade_id; 
-            $result_data['standard_id'] = $standard_id; 
-            $result_data['division_id'] = $division_id; 
-            $result_data['syear'] = $syear; 
-            $result_data['sub_institute_id'] = $sub_institute_id; 
-            $result_data['html'] = $request->get('html_'.$val); 
+        foreach ($student_array as $key => $val) {
+            $result_data['student_id'] = $val;
+            $result_data['term_id'] = $term_id;
+            $result_data['grade_id'] = $grade_id;
+            $result_data['standard_id'] = $standard_id;
+            $result_data['division_id'] = $division_id;
+            $result_data['syear'] = $syear;
+            $result_data['sub_institute_id'] = $sub_institute_id;
+            $result_data['created_by'] = $user_id;
+            $result_data['html'] = $request->get('html_' . $val);
 
-            $data = DB::select("SELECT * FROM result_html WHERE student_id = '".$val."' AND term_id = '".$request->get('term_id')."'
-                    AND grade_id = '".$request->get('grade_id')."'  AND standard_id = '".$request->get('standard_id')."'
-                     AND division_id = '".$request->get('division_id')."'  AND syear = '".$request->get('syear')."'
-                     AND sub_institute_id = '".session()->get('sub_institute_id')."'
+            $data = DB::select("SELECT * FROM result_html WHERE student_id = '" . $val . "' AND term_id = '" . $request->get('term_id') . "'
+                    AND grade_id = '" . $request->get('grade_id') . "'  AND standard_id = '" . $request->get('standard_id') . "'
+                     AND division_id = '" . $request->get('division_id') . "'  AND syear = '" . $request->get('syear') . "'
+                     AND sub_institute_id = '" . session()->get('sub_institute_id') . "'
                     ");
-            if(count($data) > 0)
-            {
-                $html = $request->get('html_'.$val);
+            if (count($data) > 0) {
+                $html = $request->get('html_' . $val);
                 $finalArray['html'] = $html;
-                $data = result_html_model::where(['student_id'=>$val,'term_id'=>$term_id,'grade_id'=>$grade_id,'standard_id'=>$standard_id,'division_id'=>$division_id,'syear'=>$syear])->update($finalArray);
+                $finalArray['updated_by'] = $user_id;
+                $finalArray['updated_on'] = NOW();
+                $data = DB::table('result_html')->where(['student_id' => $val, 'term_id' => $term_id, 'grade_id' => $grade_id, 'standard_id' => $standard_id, 'division_id' => $division_id, 'syear' => $syear])->update($finalArray);
 
-                // DB::table("result_html")->update(["html"=>$html])
-                // ->where(['student_id'=>$val,'term_id'=>$term_id,'grade_id'=>$grade_id,'standard_id'=>$standard_id,'division_id'=>$division_id,'syear'=>$syear]);        
-            }
-            else
-            {
-                DB::table("result_html")->insert($result_data);        
+            } else {
+                DB::table("result_html")->insert($result_data);
             }
         }
         return 1;

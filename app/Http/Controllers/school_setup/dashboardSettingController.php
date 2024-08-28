@@ -48,6 +48,7 @@ class dashboardSettingController extends Controller
                     $join->whereRaw("(i.menu_id = m.id OR g.menu_id = m.id) AND FIND_IN_SET(".$sub_institute_id.", m.sub_institute_id)
                         AND m.dashboard_menu != '' ");
                 })->selectRaw("m.id,m.name,m.dashboard_menu")
+                ->where('u.status',1)   // 23-04-24 by uma
                 ->whereRaw("u.sub_institute_id IN ('".$sub_institute_id."') AND u.id = '".$user_id."'")->get()->toArray();
         } else {
             $rightsQuery = DB::table('tblstudent as u')

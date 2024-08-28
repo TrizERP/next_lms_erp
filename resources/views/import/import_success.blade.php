@@ -31,7 +31,7 @@
                         </div>
                         <div class="col-md-3">
                             @if(count($failedFields)>0)
-                                <p>
+                                <p style="color:red">
                                     @foreach($failedFields as $key => $fields)
                                         {{$fields}} {{count($failedFields) == $key + 1 ? '' :','}}
                                     @endforeach

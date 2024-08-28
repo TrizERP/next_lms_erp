@@ -1,8 +1,8 @@
-@include('../includes.headcss')
-@include('../includes.header')
-@include('../includes.sideNavigation')
-
-
+{{-- @include('includes.headcss')
+@include('includes.header')
+@include('includes.sideNavigation') --}}
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">
     <div class="row bg-title">
@@ -17,9 +17,7 @@
                 </div>
                 @endif
                 <div class="col-lg-12 col-sm-12 col-xs-12">
-                    @php
-                    if(isset($data['stu_data'])){
-                    @endphp
+                    @if(isset($data['stu_data']))
                     <form action="{{ route('parent_communication.store') }}" enctype="multipart/form-data" method="post">
                         {{ method_field("POST") }}
                         {{csrf_field()}}
@@ -38,33 +36,30 @@
                                 <th>Message</th>
                                 <th>Reply</th>
                                 <th>Reply By</th>
+                                <th class="text-left">Reply On</th>
                             </tr>
                             </thead>
                             @php
-
                             $arr = $data['stu_data'];
-                            foreach ($arr as $id=>$col_arr){
                             @endphp
+                            @foreach ($arr as $id=>$col_arr)                            
                             <tr>
-
-                                <!--<td><input type="checkbox" name="@php echo 'sendsms['.$col_arr['mobile'].']'; @endphp" class="ckbox1">  </td>-->
-                                <td>@php echo $id+1; @endphp</td>
-                                <td>@php echo $col_arr['name']; @endphp</td>
-                                <td>@php echo $col_arr['stddiv']; @endphp</td>
-                                <td>@php echo $col_arr['mobile']; @endphp</td>
-                                <td>@php echo $col_arr['date_']; @endphp</td>
-                                <td>@php echo $col_arr['title']; @endphp</td>
-                                <td style="white-space: break-spaces;">@php echo $col_arr['message']; @endphp</td>
+                                <td>{{ $id+1 }}</td>
+                                <td>{{ $col_arr['name'] }}</td>
+                                <td>{{ $col_arr['stddiv'] }}</td>
+                                <td>{{ $col_arr['mobile'] }}</td>
+                                <td>{{ $col_arr['date_'] }}</td>
+                                <td>{{ $col_arr['title'] }}</td>
+                                <td style="white-space: break-spaces;">{{ $col_arr['message'] }}</td>
                                 @php if(!empty($col_arr['reply'])){ @endphp
-                                <td>@php echo $col_arr['reply']; @endphp</td>    
+                                <td>{{ $col_arr['reply'] }}</td>    
                                 @php }else{ @endphp
-                                <td><textarea class="form-control" name="reply[<?php echo $col_arr['parent_communication_id']; ?>]" >@php echo $col_arr['reply']; @endphp</textarea></td>
+                                <td><textarea class="form-control" name="reply[{{$col_arr['parent_communication_id']}}]" >{{ $col_arr['reply'] }}</textarea></td>
                                 @php } @endphp
-                                <td>@php echo $col_arr['reply_by']; @endphp</td>
+                                <td>{{ $col_arr['reply_by'] }}</td>
+                                <td>{{ $col_arr['reply_on'] }}</td>
                             </tr>
-                            @php
-                            }
-                            @endphp
+                            @endforeach
                         </table>
                         </div>
 
@@ -75,11 +70,9 @@
                         </div>
 
                     </form>
-                    @php
-                    }else{
-                    echo "No Student Found.";
-                    }
-                    @endphp
+                    @else
+                    No Student Found.
+                    @endif
                 </div>
                 @if (count($errors) > 0)
                 <div class="alert alert-danger">
@@ -137,3 +130,4 @@ $(document).ready(function() {
 
 </script>
 @include('includes.footer')
+@endsection

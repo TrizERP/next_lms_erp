@@ -106,12 +106,12 @@ class leaveApplicationController extends Controller
                 $join->whereRaw("pc.student_id = s.id AND se.syear = pc.syear");
             })
             ->leftJoin('tbluser as u', function ($join) {
-                $join->whereRaw("u.id = pc.reply_by");
+                $join->whereRaw("u.id = pc.reply_by")->where('u.status',1);  // 23-04-24 by uma
             })
             ->selectRaw("s.*,se.syear,se.student_id,se.grade_id,se.standard_id,se.section_id,se.student_quota,
                     se.start_date,se.end_date,se.enrollment_code,se.drop_code,se.drop_remarks,se.drop_remarks,se.term_id,se.remarks,
                     se.admission_fees,se.house_id,se.lc_number,st.name standard_name,d.name as division_name,pc.id AS leave_app_id,
-                    pc.syear,pc.student_id,pc.message,pc.reply,pc.apply_date,ifnull(pc.status,'') status,pc.from_date,
+                    pc.syear,pc.student_id,pc.title,pc.message,pc.reply,pc.apply_date,ifnull(pc.status,'') status,pc.from_date,
                     pc.to_date,pc.files,CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name) as reply_by")
             ->where("s.sub_institute_id", "=", session()->get('sub_institute_id'))
             ->where("se.syear", "=", session()->get('syear'))
@@ -148,6 +148,7 @@ class leaveApplicationController extends Controller
             $responce_arr['stu_data'][$id]['leave_app_id'] = $arr->leave_app_id;
             $responce_arr['stu_data'][$id]['stddiv'] = $arr->standard_name."/".$arr->division_name;
             $responce_arr['stu_data'][$id]['mobile'] = $arr->mobile;
+            $responce_arr['stu_data'][$id]['title'] = $arr->title;
             $responce_arr['stu_data'][$id]['message'] = $arr->message;
             $responce_arr['stu_data'][$id]['files'] = $arr->files;
             $responce_arr['stu_data'][$id]['status'] = $arr->status;
@@ -253,6 +254,7 @@ class leaveApplicationController extends Controller
                             $gcmRegIds[] = $val1->gcm_regid;
                         }
                     }
+                    sendNotification($app_notification_content);
 
                     $bunch_arr = array_chunk($gcmRegIds, 1000);
                     if (! empty($bunch_arr)) {
@@ -267,7 +269,7 @@ class leaveApplicationController extends Controller
                                     'image' => $schoolLogo,
                                 );
                                 $pushStatus = send_FCM_Notification($val, $message, session()->get('sub_institute_id'));
-                                sendNotification($app_notification_content);
+                                // sendNotification($app_notification_content);
                                 }
                             }
                         }
@@ -475,7 +477,7 @@ class leaveApplicationController extends Controller
                     $join->whereRaw("ct.standard_id = se.standard_id and ct.division_id = se.section_id and se.sub_institute_id = ct.sub_institute_id");
                 })
                 ->leftJoin('tbluser as u', function ($join) {
-                    $join->whereRaw("u.id=la.reply_by AND u.sub_institute_id = la.sub_institute_id");
+                    $join->whereRaw("u.id=la.reply_by AND u.sub_institute_id = la.sub_institute_id")->where('u.status',1);  // 23-04-24 by uma
                 })
                 ->selectRaw("la.id as leave_app_id,concat_ws(' ',s.first_name,s.middle_name,s.last_name) as student_name,
                     if(s.image = '','',concat('https://".$_SERVER['SERVER_NAME']."/storage/student/',s.image)) as student_image,
@@ -513,32 +515,46 @@ class leaveApplicationController extends Controller
             return response()->json($response, 401);
         }
 
-        $type = $request->input("type");
-        $teacher_id = $request->input("teacher_id");
-        $leave_app_id = $request->input("leave_app_id");
-        $reply = $request->input("reply");
-        $status = $request->input("status");
-        $sub_institute_id = $request->input("sub_institute_id");
-        $syear = $request->input("syear");
+        $validator = Validator::make($request->all(), [
+            'reply' => 'required',
+            'status' => 'required|in:Approved,Rejected',
+            // Add any other validation rules for other fields if needed
+        ]);
 
-        if ($teacher_id != "" && $sub_institute_id != "" && $syear != "" && $leave_app_id != "" && $reply != "" && $status != "") {
-            DB::table('leave_applications')
-                ->where('id', $leave_app_id)
-                ->where('sub_institute_id', $sub_institute_id)
-                ->where('syear', $syear)
-                ->update([
-                    'reply'    => $reply,
-                    'status'   => $status,
-                    'reply_on' => date('Y-m-d H:i:s'),
-                    'reply_by' => $teacher_id,
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => '0',
+                'message' => $validator->errors()->first(),
+            ], 422);
+        }else{
 
-                ]);
+            $type = $request->input("type");
+            $teacher_id = $request->input("teacher_id");
+            $leave_app_id = $request->input("leave_app_id");
+            $reply = $request->input("reply");
+            $status = $request->input("status");
+            $sub_institute_id = $request->input("sub_institute_id");
+            $syear = $request->input("syear");
 
-            $res['status'] = 1;
-            $res['message'] = "Success";
-        } else {
-            $res['status'] = 0;
-            $res['message'] = "Parameter Missing";
+            if ($teacher_id != "" && $sub_institute_id != "" && $syear != "" && $leave_app_id != "" && $reply != "" && $status != "") {
+                DB::table('leave_applications')
+                    ->where('id', $leave_app_id)
+                    ->where('sub_institute_id', $sub_institute_id)
+                    ->where('syear', $syear)
+                    ->update([
+                        'reply'    => $reply,
+                        'status'   => $status,
+                        'reply_on' => date('Y-m-d H:i:s'),
+                        'reply_by' => $teacher_id,
+
+                    ]);
+
+                $res['status'] = 1;
+                $res['message'] = "Success";
+            } else {
+                $res['status'] = 0;
+                $res['message'] = "Parameter Missing";
+            }
         }
 
         return json_encode($res);

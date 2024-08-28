@@ -15,13 +15,6 @@ class requisitionController extends Controller
 {
     public function index(Request $request)
     {
-        if (session()->has('data')) { // check if it exists
-            $data_arr = session('data'); // to retrieve value
-            if (isset($data_arr['message'])) {
-                $requisition_data['message'] = $data_arr['message'];
-            }
-        }
-
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
         $user_id = $request->session()->get('user_id');
@@ -29,10 +22,10 @@ class requisitionController extends Controller
 
         $data = DB::table("inventory_requisition_details as ir")
             ->join('tbluser as tu', function ($join) {
-                $join->whereRaw("tu.id = ir.requisition_by");
+                $join->whereRaw("tu.id = ir.requisition_by")->where('tu.status',1);   // 23-04-24 by uma
             })
             ->leftJoin('tbluser as ira', function ($join) {
-                $join->whereRaw("ira.id = ir.requisition_approved_by");
+                $join->whereRaw("ira.id = ir.requisition_approved_by")->where('ira.status',1);   // 23-04-24 by uma
             })
             ->join('inventory_item_master as i', function ($join) {
                 $join->whereRaw("i.id = ir.item_id");
@@ -82,7 +75,9 @@ class requisitionController extends Controller
                 if ($user_profile != 'admin') {
                     $q->where('id', $user_id);
                 }
-            })->get()->toArray();
+            })
+            ->where('status',1)  // 23-04-24 by uma
+            ->get()->toArray();
 
         $item_data = DB::table('inventory_item_master')
             ->where('sub_institute_id', $sub_institute_id)
@@ -91,7 +86,7 @@ class requisitionController extends Controller
 
         $item_setting_data = inventory_master_setupModel::where([
             'sub_institute_id' => $sub_institute_id, 'syear' => $syear,
-        ])->get()->toArray();
+        ])->whereNotNull('ITEM_SETTING_FOR_REQUISITION')->get()->toArray();
 
         if (count($item_setting_data) == 0) {
             $res['status_code'] = "0";
@@ -103,12 +98,15 @@ class requisitionController extends Controller
 
         $item_setting_data_value = '';
 
-        if (isset($item_setting_data[0]['ITEM_SETTING_FOR_REQUISITION']) &&
-            $item_setting_data[0]['ITEM_SETTING_FOR_REQUISITION'] != '') {
-
+        if (isset($item_setting_data[0]['ITEM_SETTING_FOR_REQUISITION']) && $item_setting_data[0]['ITEM_SETTING_FOR_REQUISITION'] != '') {
             $item_setting_data_value = $item_setting_data[0]['ITEM_SETTING_FOR_REQUISITION'];
-        }
+        }else {
+            $res['status_code'] = "0";
+            $res['message'] = "ITEM_SETTING_FOR_REQUISITION Not set in masters please set";
+            $type = $request->input('type');
 
+            return is_mobile($type, "add_requisition.index", $res, "redirect");
+        }
 
         $FORM_NO = $this->generate_requisition_no($sub_institute_id, $syear);
 
@@ -185,6 +183,7 @@ class requisitionController extends Controller
         $user_data = DB::table("tbluser")
             ->selectRaw('*,concat_ws(" ",first_name,middle_name,last_name) as requisition_name')
             ->where("sub_institute_id", "=", $sub_institute_id)
+            ->where('status',1)  // 23-04-24 by uma
             ->get()->toArray();
 
         $item_data = DB::table("inventory_item_master")

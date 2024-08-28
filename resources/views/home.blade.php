@@ -68,8 +68,10 @@
 .progress-bar {
   background-color: #ffc107;
 }
+.modal-dialog {
+		max-width: 1050px !important;
+	}
 </style>
-
 
 <div class="content-main flex-fill">
     <div class="container-fluid">        
@@ -81,6 +83,13 @@
         @endif
             <button type="button" class="close" data-dismiss="alert">×</button>
             <strong>{{ $sessionData['message'] }}</strong>
+        </div>
+        @endif
+
+        @if(isset($_REQUEST['err']) && $_REQUEST['err'] == 1)
+        <div class="alert alert-danger alert-block" style="width:fit-content !important;padding:0.25rem" id="err_msg">
+            <button type="button" class="close" data-dismiss="alert">×</button>
+            <strong>{{ $_REQUEST['err_msg'] }}</strong>
         </div>
         @endif
         
@@ -161,7 +170,7 @@
                             <div class=" text-center">
                                 <h3>{{$data['totalFees']}}</h3>
                             </div>
-                            <div class="text-overline mb-3 font-weight-bolder">Total Income</div>
+                            <div class="text-overline mb-3 font-weight-bolder">Today Income</div>
                             <div class="progress">
                                 <div class="progress-bar bg-danger" role="progressbar" style="width: 55%" aria-valuenow="{{$data['totalFees']}}" aria-valuemin="0" aria-valuemax="100"></div>
                             </div>
@@ -234,7 +243,49 @@
                     </div>
                 </div>
                 @endif
-
+                <!-- announcement start  -->
+                @if(isset($data['announcements']))
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100">
+                        <h3 class="card-title">Notice & Announcements</h3>
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <th>Sr.No.</th>
+                                    <th>Title</th>
+                                    <th>Description</th>
+                                    <th>Attachment</th>
+                                    <th>From Date</th>
+                                    <th class="text-left">To date</th>
+                                    @if(session()->get('user_profile_name')=="Admin" || session()->get('user_profile_name')=="Super Admin")
+                                    <th class="text-left">User Profile</th>
+                                    @endif
+                                </thead>
+                                <tbody>
+                                @if(isset($data['announcements']['announcementDetails']) && !empty($data['announcements']['announcementDetails']))
+                                @foreach($data['announcements']['announcementDetails'] as $key=>$value)
+                                <tr>
+                                    <td>{{$key+1}}</td>
+                                    <td>{{$value->title}}</td>
+                                    <td>{{$value->description}}</td>
+                                    <td>@if(isset($value->attachment))<a href="{{$value->attachment_url}}" target="_blank">View</a>  @else N/A @endif </td>
+                                    <td>{{ ($value->from_date!="0000-00-00") ? $value->from_date : '-'}}</td>
+                                    <td>{{ ($value->to_date!="0000-00-00") ? $value->to_date : '-'}}</td>
+                                    @if(session()->get('user_profile_name')=="Admin" || session()->get('user_profile_name')=="Super Admin")
+                                    <td>{{$value->name}}</td>
+                                    @endif
+                                </tr>
+                                @endforeach
+                                @else
+                                    <tr><td colspan="{{ (session()->get('user_profile_name')=='Admin' || session()->get('user_profile_name')=='Super Admin') ? '7' : '6'}}" class="font-weight-bold"><center>No Records</center></td></tr>
+                                @endif
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                @endif
+                <!-- announcement end  -->
                 @if(isset($data['visitorBlock']))
                 <div class="col-md-6 mb-4">
                     <div class="card h-100">
@@ -268,7 +319,194 @@
                     </div>
                 </div>
                 @endif
+                @php
+                $syear = session()->get('syear');
+                $month_syear = ["1".$syear=>"Jan/".$syear,"2".$syear=>"Feb/".$syear,"3".$syear=>"Mar/".$syear,"4".$syear=>"Apr/".$syear,"5".$syear=>"May/".$syear,"6".$syear=>"June/".$syear,"7".$syear=>"Jul/".$syear,"8".$syear=>"Aug/".$syear,"9".$syear=>"Sep/".$syear,"10".$syear=>"Oct/".$syear,"11".$syear=>"Nov/".$syear,"12".$syear=>"Dec/".$syear];
+                @endphp
+                <!-- cn dashboard monthwise active student  -->
+                @if(session()->get('sub_institute_id')==257 && isset($data['cn_monthwise_active']))
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100">
+                        <h3 class="card-title">Monthwise Active Students</h3>
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>No.</th>
+                                        <th>Month</th>
+                                        <th class="text-left">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                @php 
+                                $i=1;
+                                $all_student=0;
+                                @endphp 
+                                @foreach($data['cn_monthwise_active'] as $key => $value)
+                                    @php 
+                                    $thisMonth =isset($data['months_name'][$value->term_id]) ? $data['months_name'][$value->term_id] : $month_syear[$value->term_id]
+                                    @endphp
+                                <tr>
+                                <td>{{$i++}}</td>
+                                <td>{{ $thisMonth }}</td>
+                                <td><a href="#" class="get-details-link" data-modelName="active_student" data-thismonth="{{$thisMonth}}" data-details="{{ json_encode($data['cn_monthwise_active'][$key]) }}">{{$value->student_count}}</a></td>
+                                </tr>
+                                @php 
+                                $all_student+=$value->student_count;
+                                @endphp
+                                @endforeach
+                                <!--<tr>
+                                <td colspan="2">Total</td>
+                                <td>{{$all_student}}</td>
+                                </tr>-->
+                                </tbody>
+                            </table>
+                        </div>
+                        <p style="color:red">*Note: Number of students based on fees paid in a specific month.</p>
+                    </div>
+                </div>
+                @endif
 
+   <!-- cn dashboard Payout  -->
+   @if(session()->get('sub_institute_id')==257 && isset($data['cn_payout']))
+                <div class="col-md-6 mb-4" style="height:600px;overflow-y:scroll !important">
+                    <div class="card">
+                        <h3 class="card-title">Coach & Batch Wise Data of Students</h3>
+                        <p style="color:red">*Note: Number of students determined by fees paid in the month of {{ now()->format('F') }}.</p>
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                <tr>
+                                <th colspan="5" class="text-center"><b>{{isset($data['months_name'][$data['month_payout']]) ? $data['months_name'][$data['month_payout']] : $month_syear[$data['month_payout']]}}</b></th>
+                                </tr>
+                                    <tr>
+                                        <th>No.</th>
+                                        <th>Sport</th>
+                                        <th>Coach Name</th>
+                                        <th>Batch</th>                                        
+                                        <th class="text-left">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                @php 
+                                $i=1;
+                                $all_student = 0;
+                                @endphp 
+                                @foreach($data['cn_payout'] as $key => $value)
+                                @php $all_student+=$value->tot_stu;@endphp
+                                <tr>
+                                <td>{{$i++}}</td>
+                                <td>{{$value->sport}}</td>   
+                                <td>{{$value->coach}}</td>   
+                                <td>{{$value->batch}}</td>                                   
+                               <td><a href="#" class="get-details-link" data-modelName="coach&bacth" data-thismonth="{{$value->coach.'/'.$value->batch}}" data-details="{{ json_encode($data['cn_payout'][$key]) }}">{{$value->tot_stu}}</a></td>
+                                </tr>
+                                @endforeach
+                                <tr>
+                                <td colspan="4">Total</td>
+                                <td>{{$all_student}}</td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                @endif
+                
+                <!-- cn dashboard monthwise fees collectoion  -->
+                @if(session()->get('sub_institute_id')==257 && isset($data['cn_monthwise_collect']))
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100">
+                        <h3 class="card-title">Monthly Fees Collection</h3>
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                               <tr>        
+                               <th>Month</th>                        
+                                @foreach($data['cn_monthwise_collect']['heading_arr'] as $key => $value)
+                               <th ><b>{{$value}}</b></th>
+                               @endforeach
+                               <th class="text-left"><b>Total</b></th>
+                               </tr>                               
+                                </thead>
+                                <tbody>
+                                @php 
+                                $i=1;
+                                $totals = [];
+                                @endphp 
+                               @foreach($data['cn_monthwise_collect']['report_data'] as $key => $value)
+                               <tr>                               
+                               <td class="text-left"><b>{{ isset($data['months_name'][$key]) ? $data['months_name'][$key] : $month_syear[$key] }}</b></td>
+                               @php 
+                               $col_total=0;
+                               @endphp                               
+                               @foreach($value as $key2 => $value2)
+                               <td>{{$value2}}</td>
+                               @php
+                                    $col_total += $value2;
+                                    if (!isset($totals[$key2])) {
+                                        $totals[$key2] = 0;
+                                    }   
+                                    $totals[$key2] += $value2;
+                                @endphp
+                               @endforeach
+                               <td>{{$col_total}}</td>  
+                                @php 
+                                if (!isset($totals['total'])) {
+                                        $totals['total'] = 0;
+                                    }  
+                                $totals['total'] += $col_total;
+                                @endphp                                              
+                               </tr>
+                               @endforeach
+                               <tr>
+                                <td><b>Total</b></td>
+                                @foreach($totals as $key => $value)
+                                <td>{{$value}}</td>                                
+                                @endforeach
+                               </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <p style="color:red">*Note: Deduct the discount from the total amount.</p>
+                    </div>
+                </div>
+                @endif
+                <!-- modal  -->
+            <div class="modal fade" id="studentDetailModal" tabindex="-1" aria-labelledby="studentDetailModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="studentDetailModalLabel">Student Details</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                    <div class="row">
+                        </div>
+                        <table class="table" id="monthwiseTable">
+                            <thead>
+                                <tr><th colspan="6" id="getMonthName" style="text-align:center"></th></tr>
+                                <tr>
+                                    <th>Sr No.</th>
+                                    <th>Student Name</th>
+                                    <th>Sport</th>
+                                    <th>Coach</th>
+                                    <th>Batch</th>
+                                    <th class="text-left">Mobile</th>
+                                </tr>
+                            </thead>
+                            <tbody id="studentDetailsBody"></tbody>
+                        </table>
+                        <div class="row mt-2">
+                            <div class="col-md-12" id="exportButton">
+                           
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            </div>
+            <!-- cn dashboard end  -->
                 @if(isset($data['smsNotificationBlock']))
                 <div class="col-md-6 mb-4">
                     <div class="card h-100">
@@ -340,7 +578,7 @@
                             <h3 class="card-title">Recent fees collection</h3>
                             <div class="row sales-report mb-3">
                                 <div class="col-md-6 col-sm-6 col-xs-6">                                   
-                                    <div class="mt-0 h4">{{date('M Y')}}</div>
+                                    <!--<div class="mt-0 h4">{{date('M Y')}}</div>-->
                                     <p class="mb-0">FEES REPORT</p>
                                 </div>
                                 <div class="col-md-6 col-sm-6 col-xs-6">
@@ -578,8 +816,126 @@
 
 <script type="text/javascript">
 $(document).ready(function(){
-    $('[data-toggle="tooltip"]').tooltip();   
+    if (window.location.search) {
+    // Get the current URL without the query string
+    var baseUrl = window.location.href.split('?')[0];
+
+    // Use replaceState to update the URL without refreshing the page
+    window.history.replaceState({}, document.title, baseUrl);
+}
+    $('[data-toggle="tooltip"]').tooltip();  
+// student model
+    $('.get-details-link').on('click', function() {
+    var details = JSON.parse($(this).attr('data-details'));
+    var monthName = $(this).attr('data-thismonth');
+    var modelName = $(this).attr('data-modelName');
+    
+    var filename = monthName.replace('/', '-');
+
+    $('#getMonthName').empty().text(monthName);
+    $('#studentDetailsBody').empty();
+    $('#exportButton').empty();
+    
+    var students = details.students.split(',').map(function(student, index) {
+        return {
+            name: details.name.split(',')[index],
+            middle_name: details.middle_name.split(',')[index],
+            last_name: details.last_name.split(',')[index],
+            sport: details.standard_name.split(',')[index],
+            coach: details.coach_name.split(',')[index],
+            batch: details.batch_name.split(',')[index],
+            mobile: details.mobile.split(',')[index]
+        };
+    });
+
+    students.sort(function(a, b) {
+        function compareValues(aValue, bValue) {
+            if (aValue === bValue) {
+                return 0;
+            }
+            if (aValue === undefined) {
+                return 1; 
+            }
+            if (bValue === undefined) {
+                return -1; 
+            }
+            return aValue.localeCompare(bValue);
+        }
+
+        var standardComparison = compareValues(a.sport, b.sport);
+        var coachComparison = compareValues(a.coach, b.coach);
+        var batchComparison = compareValues(a.batch, b.batch);
+
+        if (standardComparison !== 0) {
+            return standardComparison;
+        }
+
+        if (coachComparison !== 0) {
+            return coachComparison;
+        }
+
+        return batchComparison;
+    });
+
+    var j = 1;
+    // console.log(students);
+    students.forEach(function(student) {
+        // if(student.name!=undefined){
+        $('#studentDetailsBody').append('<tr><td>' + (j++) + '</td><td>' + student.name + ' ' + student.middle_name + ' ' + student.last_name + '</td><td>' + student.sport + '</td><td>' + student.coach + '</td><td>' + student.batch + '</td><td>' + student.mobile + '</td></tr>');
+        // }
+    });
+
+    $('#studentDetailModal').modal('show');
+    if(modelName==='active_student'){
+        $('#exportButton').append(`<center><button onclick="exportTableToCSV('${filename}.csv')" class="btn btn-primary">Export to CSV</button></center>`);
+    }
 });
+
+
+});
+function downloadCSV(csv, filename) {
+        let csvFile;
+        let downloadLink;
+
+        // CSV file
+        csvFile = new Blob([csv], {type: 'text/csv'});
+
+        // Download link
+        downloadLink = document.createElement('a');
+
+        // File name
+        downloadLink.download = filename;
+
+        // Create a link to the file
+        downloadLink.href = window.URL.createObjectURL(csvFile);
+
+        // Hide download link
+        downloadLink.style.display = 'none';
+
+        // Add the link to the DOM
+        document.body.appendChild(downloadLink);
+
+        // Click download link
+        downloadLink.click();
+    }
+
+    function exportTableToCSV(filename) {
+        let csv = [];
+        let rows = document.querySelectorAll('#monthwiseTable tr');
+
+        for (let i = 0; i < rows.length; i++) {
+            let row = [], cols = rows[i].querySelectorAll('td, th');
+
+            for (let j = 0; j < cols.length; j++) {
+                row.push(cols[j].innerText);
+            }
+
+            csv.push(row.join(','));
+        }
+
+        // Download CSV file
+        downloadCSV(csv.join('\n'), filename);
+    }
 </script>
 
 @if(isset($data['standardsJson']))
@@ -596,7 +952,7 @@ $(document).ready(function(){
         text: 'Student Attendance'
     },
     xAxis: {
-        categories: <?php echo $data['presantsJson']; ?>//{{$data['standardsJson']}} //['CBSE-1', 'CBSE-2']
+        categories: <?php echo $data['standardsJson']; ?>//{{$data['standardsJson']}} //['CBSE-1', 'CBSE-2']
     },
     yAxis: {
         title: {

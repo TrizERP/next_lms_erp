@@ -24,8 +24,8 @@ $school_logo = session()->get('school_logo');
                 @foreach ($menuMaster as $key => $value)
                 @php
                 $icon_name = $value['icon'];
-                $icon_nrml = env('APP_URL') . "/admin_dep/images/menu-$icon_name.png";
-                $icon_hvr = env('APP_URL') . "/admin_dep/images/menu-$icon_name-white.png";
+                $icon_nrml = "../admin_dep/images/menu-$icon_name.png"; //env('APP_URL') . 
+                $icon_hvr = "../admin_dep/images/menu-$icon_name-white.png"; //env('APP_URL') . 
                 @endphp
                 <a class="nav-link" id="menu-{{ $i }}-tab" data-toggle="pill" href="#menu-{{ $i }}" role="tab" aria-controls="menu-{{ $i }}" aria-selected="false">
                     <span class="menu-main-icon">
@@ -109,7 +109,7 @@ $school_logo = session()->get('school_logo');
 
                     $dailylms_link = "dailylmslogin.php?SUB_INSTITUTE_ID=" . $sub_institute_id . "&U=" . base64_encode($DUSER_ID) . "&P=" . base64_encode($DUSER_PWD) . "";
 
-                    if ($hrms_rights == 1 && Session::get('user_profile_name') != 'Student') {
+                    if ($hrms_rights == 1 && Session::get('user_profile_name') == 'Admin') {//!= 'Student'
                 ?>
 
                         <a class="nav-link" target="_blank" href="http://150.129.172.110/new_hrms/Products/hrms/login.php{{ $hrms_link }}">

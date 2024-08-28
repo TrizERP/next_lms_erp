@@ -104,46 +104,65 @@ class tallyExportReportController extends Controller
             return (array)$value;
         }, $fees_heads);
 
-        $tuition_fees_head_sum = $academic_fees_head_sum = $concate_heads = $other_concate_heads = "";
+        $tuition_fees_head_sum = $admission_fees_head_sum = $academic_fees_head_sum = $tuition_heads = $admission_heads = $academic_heads = "";
         foreach ($fees_heads as $key => $value) {
             if (strstr($value['fees_title'], "title")) {
                 $tuition_fees_head_sum .= " SUM(fc." . $value['fees_title'] . ") + ";
-                $concate_heads .= "CASE WHEN " . $value['fees_title'] . " != 0 THEN '" . $value['display_name'] . " ,' ELSE '' END,";
+                $tuition_heads .= "CASE WHEN " . $value['fees_title'] . " != 0 THEN '" . $value['append_name'] . " ,' ELSE '' END,";
+            } else if (strstr($value['fees_title'], "admission")) {
+                $admission_fees_head_sum .= " SUM(fc." . $value['fees_title'] . ") + ";
+                $admission_heads .= "CASE WHEN " . $value['fees_title'] . " != 0 THEN '" . $value['append_name'] . " ,' ELSE '' END,";
             } else {
                 $academic_fees_head_sum .= " SUM(fc." . $value['fees_title'] . ") + ";
-                $other_concate_heads .= "CASE WHEN " . $value['fees_title'] . " != 0 THEN '" . $value['display_name'] . " ,' ELSE '' END,";
+                $academic_heads .= "CASE WHEN " . $value['fees_title'] . " != 0 THEN '" . $value['append_name'] . " ,' ELSE '' END,";
             }
         }
+/* ##############################################  */
         $tuition_fees_head_sum = rtrim($tuition_fees_head_sum, "+ ");
-        $concate_heads = rtrim($concate_heads, ", ");
+        $tuition_heads = rtrim($tuition_heads, ", ");
+
+        $admission_fees_head_sum = rtrim($admission_fees_head_sum, "+ ");
+        $admission_heads = rtrim($admission_heads, ", ");
 
         $academic_fees_head_sum = rtrim($academic_fees_head_sum, "+ ");
-        $other_concate_heads = rtrim($other_concate_heads, ", ");
-
+        $academic_heads = rtrim($academic_heads, ", ");
+/* ##############################################  */
         if (isset($tuition_fees_head_sum) && $tuition_fees_head_sum != '') {
             $extra_tuition = "($tuition_fees_head_sum)";
         } else {
             $extra_tuition = "' '";
         }
 
+        if (isset($admission_fees_head_sum) && $admission_fees_head_sum != '') {
+            $extra_admission = "($admission_fees_head_sum)";
+        } else {
+            $extra_admission = "' '";
+        }
+
         if (isset($academic_fees_head_sum) && $academic_fees_head_sum != '') {
-            $extra_annual = "($academic_fees_head_sum)";
+            $extra_academic = "($academic_fees_head_sum)";
         } else {
-            $extra_annual = "' '";
+            $extra_academic = "' '";
+        }
+/* ##############################################  */
+        if (isset($tuition_heads) && $tuition_heads != '') {
+            $tuition_concate = "CONCAT_WS(' '," . $tuition_heads . ")";
+        } else {
+            $tuition_concate = "' '";
         }
 
-        if (isset($concate_heads) && $concate_heads != '') {
-            $extra_concate = "CONCAT_WS(' '," . $concate_heads . ")";
+        if (isset($admission_heads) && $admission_heads != '') {
+            $admission_concate = "CONCAT_WS(' '," . $admission_heads . ")";
         } else {
-            $extra_concate = "' '";
+            $admission_concate = "' '";
         }
 
-        if (isset($other_concate_heads) && $other_concate_heads != '') {
-            $extra_other_concate = "CONCAT_WS(' '," . $other_concate_heads . ")";
+        if (isset($academic_heads) && $academic_heads != '') {
+            $academic_concate = "CONCAT_WS(' '," . $academic_heads . ")";
         } else {
-            $extra_other_concate = "' '";
+            $academic_concate = "' '";
         }
-
+/* ##############################################  */
         $fees_data = DB::table('fees_collect as fc')
             ->join('tblstudent as ts', function ($join) {
                 $join->whereRaw('ts.id = fc.student_id AND ts.sub_institute_id = fc.sub_institute_id');
@@ -163,17 +182,24 @@ class tallyExportReportController extends Controller
             })->selectRaw("fc.id,fc.student_id,CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name) AS student_name,
                 ts.enrollment_no,ts.admission_year,ts.mobile,ts.email,date_format(ts.dob,'%d-%m-%Y') AS dob,a.title AS section,
                 s.name AS std_name,d.name AS div_name,sq.title AS stu_qouta,SUM(fc.fees_discount) AS tot_fees_discount,
-                GROUP_CONCAT(fc.receipt_no) AS vchno,fc.receiptdate,fc.cheque_no,fc.cheque_date,fc.bank_name,fc.bank_branch,
-                fc.remarks,$extra_tuition as tuition_fees,$extra_annual as annual_fees,$extra_concate AS tuition_fees_narration,
-                $extra_other_concate AS annual_fees_narration,SUM(fc.fine) AS total_fine")
+                GROUP_CONCAT(fc.receipt_no) AS vchno,fc.receiptdate,fc.cheque_no,fc.cheque_date,fc.cheque_bank_name,fc.bank_branch,
+                fc.remarks,
+                $extra_tuition as tuition_fees,
+                $extra_admission as admission_fees,
+                $extra_academic as academic_fees,
+                $tuition_concate AS tuition_fees_narration,
+                $admission_concate AS admission_fees_narration,
+                'Tuition_Fee, ' AS tf,
+                $academic_concate AS academic_fees_narration,
+                SUM(fc.fine) AS total_fine")
             ->whereRaw($extraSearchArrayRaw)
             ->where('se.syear', $syear)
+            ->where('fc.syear', $syear)
             ->where('s.sub_institute_id', $sub_institute_id)
             ->where('fc.is_deleted', '=', 'N')
             ->whereNull('se.end_date')
             ->groupByRaw('fc.student_id,fc.receipt_no')
             ->orderByRaw('fc.receipt_no')->get()->toArray();
-
 
         $fees_data = array_map(function ($value) {
             return (array)$value;

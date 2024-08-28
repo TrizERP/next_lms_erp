@@ -21,12 +21,12 @@ class courseController extends Controller
     {
 
         $data = $this->getData($request);
-   
         $type = $request->input('type');
         $res['status_code'] = 1;
         $res['message'] = "SUCCESS";
         $res['lms_subject'] = $data['mycourse_arr'];
-        $res['content_category'] = $data['content_category'];
+		$res['content_category'] = $data['content_category'];
+		$res['sub_institute_id'] = session()->get('sub_institute_id');
         return is_mobile($type, 'lms/show_course', $res, "view");
     }
 
@@ -55,7 +55,10 @@ class courseController extends Controller
 	                FROM academic_section
 	                WHERE sub_institute_id = '" . $sub_institute_id . "' AND title = 'Other')
 	                )
-	            )";
+				)";
+			// Rajesh = Below $extra added for optional subject displaying of mapping  particualr student...
+			$extra .= " AND (s.elective_subject != 'Yes' OR s.subject_id IN (SELECT sos.subject_id FROM student_optional_subject sos 
+			WHERE sos.sub_institute_id = '" . $sub_institute_id . "' AND sos.syear = '" . $syear . "' AND sos.student_id = '" . $student_id . "'))";
 	    }
 
 	    $getIsLms = DB::table('school_setup')
@@ -68,7 +71,7 @@ class courseController extends Controller
 	        $arr = DB::table('sub_std_map as s')
 	            ->selectRaw("STD.name AS standard_name,s.display_name AS subject_name,s.subject_id,STD.id AS standard_id,
 	                s.display_image,GROUP_CONCAT(DISTINCT(CONCAT_WS('/',cp.chapter_name,cp.id))SEPARATOR '#') AS chapter_list,
-	                IFNULL(s.subject_category,'My Course') AS content_category")
+	                IFNULL(s.subject_category,'My Course') AS content_category,s.sub_institute_id")
 	            ->join('standard AS STD', 'STD.id', '=', 's.standard_id')
 	            ->Join('timetable AS t', function ($join) use ($user_id, $syear, $sub_institute_id, $extra) {
 	                $join->on('t.standard_id', '=', 's.standard_id')
@@ -96,7 +99,7 @@ class courseController extends Controller
 	        $arr = DB::table('sub_std_map as s')
 	            ->selectRaw("STD.name AS standard_name,s.display_name AS subject_name,s.subject_id,STD.id AS standard_id,
 	                s.display_image,GROUP_CONCAT(DISTINCT(CONCAT_WS('/',cp.chapter_name,cp.id))SEPARATOR '#') AS chapter_list,
-	                IFNULL(s.subject_category,'My Course') AS content_category")
+	                IFNULL(s.subject_category,'My Course') AS content_category,s.sub_institute_id")
 	            ->join('standard AS STD', 'STD.id', '=', 's.standard_id')
 	            ->leftJoin('chapter_master AS cp', function ($join) {
 	                $join->on('cp.subject_id', '=', 's.subject_id')
@@ -170,7 +173,7 @@ class courseController extends Controller
             $extra .= " AND STD.id = '".$standard."'";
         }
 
-        $arr = DB::select("SELECT STD.name AS standard_name,s.display_name AS subject_name,s.subject_id,STD.id AS standard_id,
+        $arr = DB::select("SELECT STD.name AS standard_name,s.display_name AS subject_name,s.subject_id,STD.id AS standard_id,s.sub_institute_id,
                 s.display_image,GROUP_CONCAT(DISTINCT(CONCAT_WS('/',cp.chapter_name,cp.id))) AS chapter_list,
                 ifnull(s.subject_category,'My Course') AS content_category
                 FROM sub_std_map s
@@ -197,6 +200,7 @@ class courseController extends Controller
         $res['message'] = "SUCCESS";
         $res['grade'] = $grade;
         $res['standard'] = $standard;
+		$res['sub_institute_id'] = $sub_institute_id;
 
         return is_mobile($type, 'lms/show_course', $res, "view");
     }

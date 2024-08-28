@@ -1,7 +1,8 @@
-@include('includes.lmsheadcss')
+{{--@include('includes.lmsheadcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('lmslayout')
+@section('container')
 <div class="content-main flex-fill">
     <div class="container-fluid mb-5">
 		<div class="course-grid-tab tab-pane fade show active" id="grid" role="tabpanel" aria-labelledby="grid-tab">
@@ -21,9 +22,9 @@
 			</ul>
 			<div class="tab-content" id="pills-tabContent">
 				<div class="tab-pane fade show active" id="notification" role="tabpanel" aria-labelledby="notification-tab">
-					
+
 					@if(count($data['doubt_data']) > 0)
-						@php $k=1; @endphp							
+						@php $k=1; @endphp
 						@foreach($data['doubt_data'] as $key => $val)
 						<div class="accordion-card collapsed px-2 pt-2 border-0" data-toggle="collapse" href="#collapseExample{{$k}}" role="button" aria-expanded="false" aria-controls="collapseExample">
 							<div class="notification-box card icon-card">
@@ -34,8 +35,8 @@
 									<div class="noti-title">{!!$val['description']!!}</div>
 									<div class="noti-des d-flex align-items-center">
 										<div class="mr-3">By {{$val['student_name']}}</div>
-										<div class="mr-3 border-left px-3 d-flex">										
-											<a class="mdi mdi-comment-outline mdi-18px mr-2" data-toggle="modal" 
+										<div class="mr-3 border-left px-3 d-flex">
+											<a class="mdi mdi-comment-outline mdi-18px mr-2" data-toggle="modal"
 											onclick="javascript:add_data({{$val['id']}});" style="color:#000000;">Comments</a>
 										</div>
 									</div>
@@ -47,9 +48,9 @@
 								@else
 									<div class="time">{{$val['totaldays']}} Days ago</div>
 								@endif
-								
+
 							</div>
-						</div>						
+						</div>
 						<div class="video-list mt-4 mb-4 ml-4 collapse"  id="collapseExample{{$k}}">
 							@if(isset($data['doubt_conversation_data'][$val['id']]))
 								@foreach($data['doubt_conversation_data'][$val['id']] as $key1 => $val1)
@@ -58,10 +59,10 @@
 										<div class="border-left mr-3 px-3 d-flex">By {{$val1['student_name']}}</div>
 									</div>
 								@endforeach
-							@endif							
+							@endif
 						</div>
-						@php $k++; @endphp			
-						
+						@php $k++; @endphp
+
 						@endforeach
 					@endif
 				</div>
@@ -89,9 +90,9 @@
             </div>
 
             <!--Body-->
-            <form action="{{ route('lmsDoubtConversation.store') }}" method="post" id="comment_form">                          	           
-	            {{ method_field("POST") }}	            
-	            @csrf 
+            <form action="{{ route('lmsDoubtConversation.store') }}" method="post" id="comment_form">
+	            {{ method_field("POST") }}
+	            @csrf
 	            <div class="modal-body">
 	                <div class="row">
 	                    <div class="white-box">
@@ -108,16 +109,16 @@
                                     <input type="hidden" id="doubt_id" name="doubt_id" />
                                 </div>
 	                        </div>
-	                    </div>                                
+	                    </div>
 	                </div>
 	            </div>
-            
+
 
 	            <!--Footer-->
 	            <div class="modal-footer flex-center">
 	                <input type="submit" id="submit" name="submit" value="Save" class="btn btn-success" >
-	            </div>          
-			</form> 
+	            </div>
+			</form>
         </div>
         <!--/.Content-->
     </div>
@@ -127,9 +128,10 @@
 @include('includes.lmsfooterJs')
 <script type="text/javascript">
 function add_data(id)
-{       
+{
     $('#doubt_id').val(id);
     $('#CommentModal').modal('show');
 }
 </script>
 @include('includes.footer')
+@endsection

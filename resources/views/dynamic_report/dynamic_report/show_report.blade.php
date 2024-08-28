@@ -1,7 +1,8 @@
-@include('includes.headcss')
-@include('includes.header')
-@include('includes.sideNavigation')
-
+{{--@include('../includes.headcss')
+@include('../includes.header')
+@include('../includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">       
             <div class="card">
@@ -21,7 +22,7 @@
                             <thead>
                                 <tr>
                                     @foreach($data['tbl_heading'] as $key => $val)
-                                    <th>{!! $val !!}</th>
+                                    <th class="text-left">{!! $val !!}</th>
                                     @endforeach
                                 </tr>
                             </thead>
@@ -118,3 +119,4 @@
 </script>
 
 @include('includes.footer')
+@endsection

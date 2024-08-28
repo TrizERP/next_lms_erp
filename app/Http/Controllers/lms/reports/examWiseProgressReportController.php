@@ -35,6 +35,7 @@ class examWiseProgressReportController extends Controller
         $division = $request->input('division');
         $subject = $request->input('subject');
         $exams = $request->input('exam_id');
+        $exam_type = $request->input('exam_type');
         $type = $request->input('type');
         $marking_period_id = session()->get('term_id');
 
@@ -58,9 +59,9 @@ class examWiseProgressReportController extends Controller
         $exam_ids = implode(',', $exams);
 
         $marks_array = $grade_array = $all_marks = array();
-        $data = DB::table('tblstudent as s')
+        /*$data = DB::table('tblstudent as s')
             ->join('tblstudent_enrollment as se', function ($join) use ($syear) {
-                $join->whereRaw("se.student_id = s.id AND se.sub_institute_id = s.sub_institute_id AND se.syear 
+                $join->whereRaw("se.student_id = s.id AND se.sub_institute_id = s.sub_institute_id AND se.syear
                     = '".$syear."' AND se.end_date IS NULL");
             })->join('academic_section as ac', function ($join) {
                 $join->whereRaw('ac.id = se.grade_id AND ac.sub_institute_id = se.sub_institute_id');
@@ -83,15 +84,60 @@ class examWiseProgressReportController extends Controller
             ->where('se.standard_id', $standard)
             ->where('qp.id', $exams)
             ->groupByRaw('s.id,qp.id')
-            ->orderByRaw('s.roll_no ASC')->get()->toArray();
+            ->orderByRaw('s.roll_no ASC')->get()->toArray();*/
             // echo "<pre>";print_r($data);exit;
+//DB::enableQueryLog();
+        $data = DB::table('tblstudent as s')
+            ->join('tblstudent_enrollment as se', function ($join) use ($syear,$sub_institute_id) {
+                $join->on('se.student_id', '=', 's.id')
+                    ->where('se.sub_institute_id', '=', $sub_institute_id)
+                    ->where('se.syear', '=', $syear)
+                    ->whereNull('se.end_date');
+            })
+            ->join('academic_section as ac', 'ac.id', '=', 'se.grade_id')
+            ->join('standard as st', function ($join) use ($marking_period_id,$sub_institute_id) {
+                $join->on('st.id', '=', 'se.standard_id')
+                    ->where('st.sub_institute_id', '=', $sub_institute_id);
+            })
+            ->leftJoin('division as d', 'd.id', '=', 'se.section_id')
+            ->join('question_paper as qp', function ($join) use ($sub_institute_id) {
+                $join->on('qp.standard_id', '=', 'se.standard_id')
+                    ->on('qp.grade_id', '=', 'se.grade_id')
+                    ->where('qp.sub_institute_id', '=', $sub_institute_id);
+            });
+
+            if($exam_type==0){
+                $data->Join('lms_online_exam as le', function ($join) {
+                    $join->on('le.question_paper_id', '=', 'qp.id')
+                        ->on('le.student_id', '=', 's.id');
+                }); 
+            }else{
+                $data->leftJoin('lms_online_exam as le', function ($join) {
+                    $join->on('le.question_paper_id', '=', 'qp.id')
+                        ->on('le.student_id', '=', 's.id');
+                });
+            }
+        $data = $data->selectRaw("s.id, s.enrollment_no, CONCAT_WS(' ', s.first_name, s.middle_name, s.last_name) AS student_name,
+                st.name AS std_name, d.name AS div_name, se.standard_id, se.grade_id, group_concat(DISTINCT qp.id) AS question_paper_id, group_concat(DISTINCT qp.paper_name) as paper_name,
+                qp.total_marks, ifnull(MAX(le.total_right), '-') AS obtain_marks, GROUP_CONCAT(IFNULL(le.total_right, '-')) as all_marks")
+            ->where('s.sub_institute_id', $sub_institute_id)
+            ->where('se.grade_id', $grade)
+            ->where('se.standard_id', $standard)
+            ->whereIn('qp.id', $exams)
+            ->groupByRaw('s.id')
+            ->orderBy('se.roll_no', 'ASC')
+            ->get()->toArray();
+//dd(DB::getQueryLog());
 
         $data = json_decode(json_encode($data), true);
         foreach ($data as $k => $v) {
-            $marks_array[$v['id']][$v['question_paper_id']] = $v['obtain_marks'];
+            $explodeQuestion = explode(',',$v['question_paper_id']);
+            foreach ($explodeQuestion as $key => $value) {
+                $marks_array[$v['id']][$value] = $v['obtain_marks'];
+            }
         }
         $maxCount = 0;
-
+        
         foreach ($data as $k => $v) {
             $all_marks[$v['id']][$v['question_paper_id']] = $v['all_marks'];
             if (is_string($all_marks[$v['id']][$v['question_paper_id']])) {
@@ -100,7 +146,7 @@ class examWiseProgressReportController extends Controller
                 $maxCount = max($maxCount, $count);
             }
         }
-        
+
         $grade_data = DB::table('result_std_grd_maping as rgm')
             ->join('grade_master_data as gm', function ($join) {
                 $join->whereRaw('gm.grade_id = rgm.grade_scale AND gm.sub_institute_id = rgm.sub_institute_id');
@@ -115,9 +161,9 @@ class examWiseProgressReportController extends Controller
 
         $res['status_code'] = 1;
         $res['message'] = "Success";
-        $res['student_data'] = $student_data;
+        $res['student_data'] = $data;
         $res['marks_data'] = $marks_array;
-        $res['all_marks_col']= $maxCount;        
+        $res['all_marks_col']= $maxCount;
         $res['all_marks'] = $all_marks;
         $res['grade_data'] = $grade_data;
         $res['grade_id'] = $grade;
@@ -125,9 +171,10 @@ class examWiseProgressReportController extends Controller
         $res['division_id'] = $division;
         $res['subject_id'] = $subject;
         $res['exam_id'] = $exams;
+        $res['exam_type'] = $exam_type;
         $res['exams_data'] = $examData;
         $res['subject_data'] = $subject_data;
-            
+            // echo "<pre>";print_r($res['student_data']);exit;
         return is_mobile($type, "lms/reports/show_examwise_progress_report", $res, "view");
     }
 

@@ -1,17 +1,40 @@
-@include('includes.headcss')
-<link rel="stylesheet" href="../../../plugins/bower_components/dropify/dist/css/dropify.min.css">
+{{-- @include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
+@include('includes.sideNavigation') --}}
+<link rel="stylesheet" href="../../../plugins/bower_components/dropify/dist/css/dropify.min.css">
+@extends('layout')
+@section('container')
 <style type="text/css">
 br {
      display: block;
+}
+.dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: #f9f9f9;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    padding: 10px;
+    z-index: 1;
+    width: 100%;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    margin-top: 2px;
+}
+
+.dropdown-content label {
+    display: block;
+    padding: 5px 0;
+}
+
+.dropdown-content input[type="checkbox"] {
+    margin-right: 10px;
 }
 </style>
 
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row bg-title">
-            <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
+            <div class="col-lg-9 col-md-4 col-sm-4 col-xs-12">
                 <h4 class="page-title">Edit User</h4>
             </div>
         </div>
@@ -25,7 +48,26 @@ br {
             @endif
             <div class="row">
                 <div class="col-lg-12 col-sm-12 col-xs-12">
+                    <div class="sttabs tabs-style-linemove triz-verTab bg-white style2">
+                        <center>
+                        <ul class="nav nav-tabs tab-title mb-4">
+                            <li class="nav-item"><a href="#section-linemove-1" class="nav-link active" aria-selected="true" data-toggle="tab"><span>Personal Details</span></a></li>
+                            <li class="nav-item"><a href="#section-linemove-2" class="nav-link" aria-selected="false" data-toggle="tab"><span>Upload Document</span></a></li>
+                            <li class="nav-item"><a href="#section-linemove-3" class="nav-link" aria-selected="false" data-toggle="tab"><span>Job Focus</span></a></li>
+                            <li class="nav-item"><a href="#section-linemove-4" class="nav-link" aria-selected="false" data-toggle="tab"><span>Soft Skills</span></a></li>
+                            <li class="nav-item"><a href="#section-linemove-5" class="nav-link" aria-selected="false" data-toggle="tab"><span>Technical Skills</span></a></li>
+                            <li class="nav-item"><a href="#section-linemove-6" class="nav-link" aria-selected="false" data-toggle="tab"><span>Certifications</span></a></li>
+                        </ul>
+                        </center>
+
                     @php
+                    $departments = $data['departments'];
+                    $new_emp_code = $data['new_emp_code'];
+                    $qualificationList = $data['qualificationList'];
+                    $masterSetups = $data['masterSetups'];
+                    $occupationList = $data['occupationList'];
+                    $documentTypeLists = $data['documentTypeLists'];
+                    $documentLists = $data['documentLists'];
                     $employees = $data['employees'];
                     $job_titles = $data['job_titles'];
                     $user_profiles = $data['user_profiles'];
@@ -34,9 +76,11 @@ br {
                     $custom_fields = $data['custom_fields'];
                     $data_fields = $data['data_fields'];
                     $data = $data['data'];
-
-
                     @endphp
+                    <!-- tabs starts  -->
+                    <div class="tab-content">
+                    <!-- tab 1 start  -->
+                    <div class="tab-pane p-3 active" id="section-linemove-1" role="tabpanel">      
                     <form action="{{ route('add_user.update', $data['id']) }}" enctype="multipart/form-data" method="post">
                     {{ method_field("PUT") }}
                     @csrf
@@ -140,10 +184,12 @@ br {
                                 <label>Total Lectures</label>
                                 <input type="number" id='total_lecture' name="total_lecture" class="form-control" value="@if(isset($data['total_lecture'])){{$data['total_lecture']}}@endif">
                             </div>
+                            @if(session()->get('sub_institute_id')!=47)
                             <div class="col-md-4 form-group">
                                 <label>Join Year</label>
                                 <input type="number" value="@if(isset($data['join_year'])){{$data['join_year']}}@endif" id='join_year' required name="join_year" class="form-control">
                             </div>
+                            @endif
                             <div class="col-md-4 form-group">
                                 <label>Password</label>
                                 <input type="password" value="@if(isset($data['password'])){{ $data['password'] }}@endif" id='password' required name="password" class="form-control">
@@ -232,12 +278,100 @@ br {
                                     @endforeach
                                 </select>
                             </div>
+                        <!-- employee load  -->
+                        <div class="col-md-4 form-group">
+                            <label>Week Load</label>
+                            <input type="number" id='load' name="load" class="form-control" value="@if(isset($data['load'])){{$data['load']}}@endif">
+                        </div>
 
+                        <!-- employee department  -->
                             <div class="col-md-4 form-group">
                                 <label>Department Id</label>
-                                <input type="text" id='department_id' name="department_id" value="{{$data['department_id']}}" class="form-control">
+                                <select id='department_id' name="department_id" class="form-control">
+                                    <option value="0">Select Title</option>
+                                    @foreach($departments as $title)
+                                            <option value="{{$title->id}}" @if($data['department_id'] == $title->id) selected @endif>{{$title->department}}</option>
+                                    @endforeach
+                                </select>
+                                <!-- <input type="text" id='department_id' name="department_id" value="{{$data['department_id']}}" class="form-control"> -->
                             </div>
+                            <div class="col-md-4 form-group">
+                                <label>Employee Id</label>
+                                <input type="text" id='employee_no' name="employee_no" class="form-control"  value="{{$new_emp_code}}">
+                            </div>
+                            <!-- qualification and occupation  -->
+                            <div class="col-md-4 form-group">
+                                @if(isset($masterSetups['Qualification']) && !empty($masterSetups['Qualification']))
+                                    @php 
+                                        $options  = explode('||',$masterSetups['Qualification']['fieldvalue']);
+                                    @endphp
+                                    <label>{{$masterSetups['Qualification']['fieldname']}}</label>
+                                    <div class="dropdown">
+                                    <input type="text" id="qualification-input" class="form-control" value="{{ isset($data['qualification']) ? $data['qualification'] : '' }}" name="qualification" autocomplete="off"/>
+                                    <div class="dropdown-content" id="dropdown-content">
+                                    @foreach($options as $key => $value)
+                                        <label><input type="checkbox" value="{{$value}}">{{$value}}</label>
+                                    @endforeach
+                                    </div>
+                                </div>
+                                @else
+                                    <label>Qualification</label>
+                                    <input type="text" id='qualification' list="qualifications"  name="qualification" class="form-control" value="{{$data['qualification']}}">
+                                    <datalist id="qualifications" height="100" style="height:100px">
+                                    @if(!empty($qualificationList))
+                                        @foreach($qualificationList as $key => $value)
+                                            <option value="{{$value}}" {{ isset($data['qualification']) && $data['qualification'] == $value ? 'selected' : '' }}>{{$value}}</option>
+                                        @endforeach
+                                    @endif
+                                @endif
+                                </datalist>
+                            </div>
+                            <!-- end qulifications -->
 
+                            <div class="col-md-4 form-group">
+                                <label>Occupation</label>
+                                <input type="text" id='occupation'  list="occupations" name="occupation" class="form-control" value="{{$data['occupation']}}" {{ $data['terminated_date'] ? date('Y-m-d',strtotime($data['terminated_date'])) : '' }}>
+                                <datalist id="occupations" height="100" style="height:100px">
+                                @if(!empty($occupationList))
+                                    @foreach($occupationList as $key => $value)
+                                        <option value="{{$value}}" {{ isset($data['occupation']) && $data['occupation'] == $value ? 'selected' : '' }}>{{$value}}</option>
+                                    @endforeach
+                                @endif 
+                                </datalist>
+                            </div>
+                            <!-- end qualification and occupation -->
+                            <!--  added on 01-08-2024 mmis -->
+                            @php 
+                                $radioArr = ['tds_deduction'=>'TDS Deduction','pf_deduction'=>'PF Deduction','pt_deduction'=>'PT Deduction'];
+                                $textArr = ['pf_no'=>"PF No",'pan_no'=>"PAN No",'aadhar_no'=>"Aadhar No",'esic_no'=>"ESIC No",'uan_no'=>"UAN No"];
+                            @endphp
+                            @foreach($radioArr as $k => $v)
+                            <div class="col-md-4 from-group">
+                                @php $checked = $data[$k]; @endphp
+                                <label for="{{$k}}">{{$v}}</label>
+                                <div class="radio-list">
+                                    <label class="radio-inline p-0">
+                                        <div class="radio radio-success">
+                                            <input type="radio" name="{{$k}}" id="{{$k}}" value="Y" {{ ($checked=='Y') ? 'Checked' : '' }}>
+                                            <label for="Eligible">Eligible</label>
+                                        </div>
+                                    </label>
+                                    <label class="radio-inline">
+                                        <div class="radio radio-success">
+                                            <input type="radio" name="{{$k}}" id="{{$k}}" value="N" {{ ($checked=='N') ? 'Checked' : '' }}>
+                                            <label for="Non-Eligible">Non-Eligible</label>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                            @endforeach
+                            @foreach($textArr as $k => $v)
+                            <div class="col-md-4 form-group">
+                                <label>{{$v}}</label>
+                                <input type="text" id='{{$k}}' name="{{$k}}" class="form-control" value="{{$data[$k]}}">
+                            </div>
+                            @endforeach
+                            <!--  added on 01-08-2024 mmis  -->
                             <div class="col-md-4 form-group">
                                 <label>Joining Date</label>
                                 <input type="date" id='joined_date' name="joined_date" value="{{ $data['joined_date'] ? date('Y-m-d',strtotime($data['joined_date'])) : '' }}" class="form-control">
@@ -275,7 +409,7 @@ br {
                                 <input type="text" id='noticereason' value="{{$data['noticereason']}}" name="noticereason" class="form-control">
                             </div>
                             <div class="col-md-4 form-group">
-                                <label>Opening Leave</label>
+                                <label>EL Opening Leave</label>
                                 <input type="text" id='openingleave' value="{{$data['openingleave']}}" name="openingleave" class="form-control">
                             </div>
 
@@ -292,7 +426,10 @@ br {
                                 <label>CL Opening Leave</label>
                                 <input type="text" id='CL_opening_leave' value="{{$data['CL_opening_leave']}}" name="CL_opening_leave" class="form-control">
                             </div>
-
+                            <div class="col-md-4 form-group">
+                                <label>Total Experience</label>
+                                <input type="text" id='total_experience' value="{{$data['total_experience']}}" name="total_experience" class="form-control">
+                            </div>
                             <div class="col-md-12 form-group">
                                 <h4>Report To</h4>
                             </div>
@@ -401,14 +538,14 @@ br {
                                 <label>Fri</label>
                                 <input type="checkbox" id='friday' name="friday" value="1" {{$data['friday'] ? 'checked' :''}} class="">
                             </div>
-                            <div class="col-md-1 form-group">
+                            <div class="col-md-3 form-group">
                                 <label>Sat</label>
                                 <input type="checkbox" id='saturday' name="saturday" value="1" {{$data['saturday'] ? 'checked' :''}} class="">
                             </div>
-                            <div class="col-md-1 form-group">
+                            <!-- <div class="col-md-1 form-group">
                                 <label>Sun</label>
                                 <input type="checkbox" id='sunday' name="sunday" value="1"  {{$data['sunday'] ? 'checked' :''}} class="">
-                            </div>
+                            </div> -->
 
                             <div class="col-md-6 form-group">
                                 <label>Monday In Date</label>
@@ -464,14 +601,14 @@ br {
                                 <input type="time" id='saturday_out_date'   value="{{ $data['saturday_out_date'] ? date('H:i',strtotime($data['saturday_out_date'])) : '' }}" name="saturday_out_date" class="form-control">
                             </div>
 
-                            <div class="col-md-6 form-group">
+                            <!-- <div class="col-md-6 form-group">
                                 <label>Sunday In Date</label>
                                 <input type="time" id='sunday_in_date'  value="{{ $data['sunday_in_date'] ? date('H:i',strtotime($data['sunday_in_date'])) : '' }}" name="sunday_in_date" class="form-control">
-                            </div>
-                            <div class="col-md-6 form-group">
+                            </div> -->
+                            <!-- <div class="col-md-6 form-group">
                                 <label>Sunday Out Date</label>
                                 <input type="time" id='sunday_out_date'  value="{{ $data['sunday_out_date'] ? date('H:i',strtotime($data['sunday_out_date'])) : '' }}" name="sunday_out_date" class="form-control">
-                            </div>
+                            </div> -->
 
                             <div class="col-md-12 form-group mt-2">
                                 <center>
@@ -480,8 +617,19 @@ br {
                             </div>
                         </div>
                     </form>
+                    </div>
+                    <!-- tab 1 ends  -->
+                    <!-- tab 2 start  -->
+                    <div class="tab-pane p-3" id="section-linemove-2" role="tabpanel">
+                        @include('user.documentModel')
+                    </div>
+                    <!-- tab 2 ends  -->
+                </div>
+                <!-- tabs ends  -->
                 </div>
             </div>
+        </div>
+
         </div>
     </div>
 </div>
@@ -563,5 +711,29 @@ br {
             var username = first_name.toLowerCase()+"_"+last_name.toLowerCase();
             document.getElementById("user_name").value = username;
         }
+
+    $(document).ready(function() {
+        $('#qualification-input').on('click', function() {
+            $('#dropdown-content').toggle();
+        });
+
+        $('.dropdown-content input[type="checkbox"]').on('change', function() {
+            var selectedFruits = [];
+            $('.dropdown-content input[type="checkbox"]:checked').each(function() {
+                selectedFruits.push($(this).val());
+            });
+            $('#qualification-input').val(selectedFruits.join(', '));
+        });
+
+        // Hide dropdown when clicking outside
+        $(document).on('click', function(event) {
+            if (!$(event.target).closest('.dropdown').length) {
+                $('#dropdown-content').hide();
+            }
+        });
+    });
+
     </script>
+
 @include('includes.footer')
+@endsection

@@ -1,7 +1,8 @@
-@include('includes.headcss')
+{{-- @include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation') --}}
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row bg-title">            
@@ -28,10 +29,10 @@
                                 <input type="submit" name="submit" value="Search" class="btn btn-success triz-btn" >
                             </center>
                         </div>
-
-                        <div class="col-md-12 form-group">
-                        </div>
 						</div>
+                        <div class="row" style="visibility:hidden !important">
+                        {{ App\Helpers\SearchChain('4','single','grade,std,div') }}
+                        </div>
                     </form>
                 </div>          
         
@@ -41,3 +42,4 @@
 @include('includes.footerJs')
 
 @include('includes.footer')
+@endsection

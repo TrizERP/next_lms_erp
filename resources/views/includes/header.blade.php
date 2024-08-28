@@ -14,6 +14,29 @@
         border-radius: 0%;
         padding: 19px 8px;
     }
+    .abtn span{
+        font-size:1.5rem;
+    }
+    .abtn {
+        position: relative;
+        display: inline-block;
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .abtn:hover::after {
+        content: "Notice & Announcement";
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: rgba(0, 0, 0, 0.8);
+        color: #fff;
+        padding: 5px 10px;
+        border-radius: 5px;
+        white-space: nowrap;
+        z-index: 1;
+    }
 </style>
 
 <body class="fix-header">
@@ -41,6 +64,9 @@ $academicTerms = session()->get('academicTerms');
                       // }else{ -->
                            $col_md = "col-md-4";
                        // } -->
+                       if(session()->get('user_id')==1002 || session()->get('user_profile_name')=="Super Admin"){
+                        $col_md = "col-md-3";          
+                       }
                         if($school_logo != ""){
                         @endphp
                         <a class="navbar-brand" href="{{ route('dashboard') }}"><img
@@ -49,8 +75,13 @@ $academicTerms = session()->get('academicTerms');
                         }
                         else
                         {
-                        $words = explode(" ", Session::get('name'));
-                        $name_initial = strtoupper($words[0][0] . $words[1][0]);
+                            $words = explode(" ", Session::get('name'));
+                            $name_initial = '';
+                            if (isset($words[0][0]) && isset($words[1][0])) {
+                                $name_initial = strtoupper($words[0][0] . $words[1][0]);
+                            } elseif (isset($words[0][0])) {
+                                $name_initial = strtoupper($words[0][0]);
+                            }
                         @endphp
                         <div id="profileImage">{{$name_initial}}</div>
                         @php
@@ -141,8 +172,8 @@ $academicTerms = session()->get('academicTerms');
                       
                     </div>
                 </div>
+
                 <div class="d-xl-flex d-md-block d-flex flex-wrap align-items-center justify-content-between">
-                  
                     <div class="dropdown user-dropdown">
                         <button class="dropdown-toggle d-flex align-items-center" type="button" id="dropdownMenuButton"
                                 data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -162,7 +193,11 @@ $academicTerms = session()->get('academicTerms');
                             <a class="dropdown-item" href="{{route('implementation')}}"><i
                                     class="mdi mdi-checkerboard"></i> Implementation</a>
                             <a class="dropdown-item" href="{{route('Onboarding')}}"><i
-                                    class="mdi mdi-checkerboard"></i> Onboarding</a>
+                                    class="mdi mdi-view-module"></i> Onboarding</a>
+                            @if(session()->get('sub_institute_id')==1)
+                            <a class="dropdown-item" href="{{route('requirements.index')}}"><i
+                                    class="mdi mdi-note-plus"></i> Add Process</a>
+                            @endif
                             @if(Session::get('user_profile_name') == 'Admin')
                                 <a class="dropdown-item" href="{{route('norm-clature.index')}}"><i
                                         class="mdi mdi-wallet-travel"></i> Language Setting</a>
@@ -187,6 +222,13 @@ $academicTerms = session()->get('academicTerms');
                         </div>
                     </div>
                 </div>
+              
+                <div class="d-xl-flex d-md-block d-flex flex-wrap align-items-center justify-content-between">
+                    <div style="padding-left:0px">
+                        <a class="btn abtn" href="{{route('announcements.index')}}"><span class="mdi mdi-bell"></span></a>
+                    </div>
+                </div>
+                
             </div>
         </header>
 

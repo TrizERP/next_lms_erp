@@ -287,15 +287,8 @@ class timetableController extends Controller
         return is_mobile($type, "timetable.index", $res, "redirect");
     }
 
-    public function getTimetable_data(
-        Request $request,
-        $academic_section_id,
-        $standard_id,
-        $division_id,
-        $sub_institute_id,
-        $syear,
-        $marking_period_id=''
-    ) {
+    public function getTimetable_data(Request $request,$academic_section_id,$standard_id,$division_id,$sub_institute_id,$syear,$marking_period_id='') 
+    {
         $html = "";
         $timetable_data = timetableModel::
         where([
@@ -307,6 +300,10 @@ class timetableController extends Controller
             //'marking_period_id'   => $marking_period_id,            
         ])->get()->toArray();
 
+        // check_permission in general data 
+        $check_general_data = DB::table('general_data')->where(['sub_institute_id'=>$sub_institute_id,'fieldname'=>'timetable_teacher'])->first();
+        
+        // echo "<pre>";print_r($check_general_data);exit;
         foreach ($timetable_data as $k => $p) {
             $old_timetable_data[$p['week_day']][$p['period_id']]['SUBJECT_ID'][] = $p['subject_id'];
             $old_timetable_data[$p['week_day']][$p['period_id']]['TEACHER_ID'][] = $p['teacher_id'];
@@ -448,7 +445,7 @@ class timetableController extends Controller
                         }
                         $old_assigned_teacher_ids = implode(",", $old_assigned_teacher_id_array);
                         $extra_where = '';
-                        if ($old_assigned_teacher_ids != '') {
+                        if ($old_assigned_teacher_ids != '' && (empty($check_general_data) || $check_general_data->fieldvalue!='Yes')) {
                             $extra_where = 'AND tbluser.id NOT IN (' . $old_assigned_teacher_ids . ') ';
                         }
 
@@ -562,7 +559,7 @@ class timetableController extends Controller
                     //END Check Allocated Teachers - 16/11/2021
 
                     $extra_where = '';
-                    if ($assigned_teacher_ids != '') {
+                    if ($assigned_teacher_ids != ''  && (empty($check_general_data) || $check_general_data->fieldvalue!='Yes')) {
                         $extra_where = 'AND tbluser.id NOT IN (' . $assigned_teacher_ids . ') ';
                     }
 
@@ -675,7 +672,7 @@ class timetableController extends Controller
 
         $teacher_data = tbluserModel::select('tbluser.*')
             ->join('tbluserprofilemaster', 'tbluserprofilemaster.id', "=", 'tbluser.user_profile_id')
-            ->where(['tbluser.sub_institute_id' => $sub_institute_id, 'tbluserprofilemaster.name' => 'Teacher', 'status' => 1])
+            ->where(['tbluser.sub_institute_id' => $sub_institute_id, 'tbluserprofilemaster.name' => 'Teacher', 'tbluser.status' => 1])
             // ->when($marking_period_id,function($query) use ($marking_period_id){
             //     $query->where('marking_period_id',$marking_period_id);
             // })
@@ -783,7 +780,7 @@ class timetableController extends Controller
 
         $teacher_data = tbluserModel::select('tbluser.*')
             ->join('tbluserprofilemaster', 'tbluserprofilemaster.id', "=", 'tbluser.user_profile_id')
-            ->where(['tbluser.sub_institute_id' => $sub_institute_id, 'tbluserprofilemaster.name' => 'Teacher', 'status' => 1])
+            ->where(['tbluser.sub_institute_id' => $sub_institute_id, 'tbluserprofilemaster.name' => 'Teacher', 'tbluser.status' => 1])
             ->get();
 
         $standard_data = standardModel::where(['sub_institute_id' => $sub_institute_id])

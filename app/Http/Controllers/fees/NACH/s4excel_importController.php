@@ -572,7 +572,7 @@ class s4excel_importController extends Controller {
         	"SELECT CONCAT_WS(' ',s.first_name,s.last_name) AS FULL_NAME ,s.enrollment_no as ENROLLMENT_NO,s.id AS STUDENT_ID
 			,s.admission_year,a.title AS ACADEMIC_YEAR,st.name AS BRANCH,sq.title AS STUDENT_QUOTA,se.standard_id as STANDARD_ID,
 			d.name AS SECTION_NAME,se.section_id as SECTION_ID,se.student_quota AS STUDENT_QUOTA1,se.start_date AS STUDENT_ENROLLMENT_DATE,
-			s.roll_no AS STUDENT_ROLL_NO,s.gender AS STUDENT_GENDER,se.grade_id as GRADE_ID,s.mobile as MOBILE_NUMBER,
+			se.roll_no AS STUDENT_ROLL_NO,s.gender AS STUDENT_GENDER,se.grade_id as GRADE_ID,s.mobile as MOBILE_NUMBER,
 			s.uniqueid as UNIQUEID
 			FROM tblstudent s
 			INNER JOIN tblstudent_enrollment se ON s.id = se.student_id

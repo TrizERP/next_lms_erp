@@ -6,6 +6,7 @@ use App\Http\Controllers\fees\fees_report\otherNewfeesReportController;
 use App\Models\tblmenumasterModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\URL;
 use PHPMailer\PHPMailer;
 use function App\Helpers\FeeBreackoff;
 use function App\Helpers\FeeBreakoffHeadWise;
@@ -14,19 +15,26 @@ use function App\Helpers\htmlToPDF;
 use function App\Helpers\htmlToPDFLandscape;
 use function App\Helpers\htmlToPDFLandscapeCertificate;
 use function App\Helpers\htmlToPDFPortrait;
+use function App\Helpers\htmlToPDFPortraitLetter;
 use function App\Helpers\OtherBreackOff;
-
 use function App\Helpers\OtherBreackOffHead;
 // use function App\Helpers\OtherBreackOffHeadlast;
 use function App\Helpers\OtherBreackOfMonth;
 use App\Models\school_setup\standardModel;
 use App\Models\school_setup\divisionModel;
 use App\Models\school_setup\academic_sectionModel;
+use App\Models\lmslmsData;
 use function App\Helpers\get_string;
 //use function App\Helpers\FeeBreakoffHeadWise;
 use GuzzleHttp\Client;
 use Illuminate\Support\Facades\Http;
 use function App\Helpers\is_mobile;
+use Symfony\Component\Process\Process;
+use Symfony\Component\Process\Exception\ProcessFailedException;
+use Spatie\Async\Pool;
+use Gemini\Laravel\Facades\Gemini;
+use Log;
+use function App\Helpers\getSubCordinates;
 
 class AJAXController extends Controller
 {
@@ -61,8 +69,8 @@ class AJAXController extends Controller
             })->join('question_paper as qp', function ($join) {
                 $join->whereRaw('qp.subject_id = ssm.subject_id and qp.standard_id = sdm.standard_id');
             })->join('lms_question_master as lqm', function ($join) {
-                $join->whereRaw('lqm.subject_id = ssm.subject_id and lqm.standard_id = sdm.standard_id and lqm.id in
-                (SELECT lqm.id FROM lms_question_master as lqm,question_paper as qp2 WHERE qp.id = qp2.id AND FIND_IN_SET(lqm.id, qp.question_ids))');
+                $join->whereRaw('lqm.subject_id = ssm.subject_id and lqm.standard_id = sdm.standard_id and lqm.id in and lqm.status = 1
+                (SELECT lqm.id FROM lms_question_master as lqm,question_paper as qp2 WHERE qp.id = qp2.id AND status = 1 AND FIND_IN_SET(lqm.id, qp.question_ids))');
             })->join('lms_online_exam_answer as am', function ($join) {
                 $join->whereRaw('am.question_paper_id = qp.id and am.student_id = ts.id and am.question_id = lqm.id');
             })
@@ -163,7 +171,7 @@ class AJAXController extends Controller
 
     public function getStandardList(Request $request)
     {
-        $path = $_SERVER['HTTP_REFERER'];
+        $path = $_SERVER['HTTP_REFERER'] ?? URL::current();
 
         if ($path) {
             $parsedUrl = parse_url($path);
@@ -174,16 +182,42 @@ class AJAXController extends Controller
                 if (isset($pathParts['filename'])) {
                     $module_name = $pathParts['filename'];
                 }
+                if($parsedUrl['path'] == '/lms/question_paper/create' || $parsedUrl['path'] == '/lms/question_paper/search'){
+                    $module_name = 'question_paper';
+                }
+               
+                $path2 = "/student/student_homework/create";
+                $keyword2 = "create";
+              
+                if (strpos($path2, $keyword2) !== false) {
+                    $module_name = "student_homework";
+                }
             }
         }
 
         $module_array = [
             '1' => 'student_homework',
             '2' => 'marks_entry',
+            '3' => 'dicipline',
+            '4' => 'lmsExamwise_progress_report',
+            '5' => 'questionReport',
+            '6' => 'parent_communication',
+            '7' => 'question_paper',
+            '8' => 'co_scholastic_marks_entry',                        
         ];
 
         $explode = explode(',', $request->grade_id);
+        // menu_ids to get class teacher class only
+        // menu_ids to get class teacher class only
+        if(session()->get('sub_institute_id')==195){
+            $menu_ids = [80,102];
+        }else{
+            // $menu_ids = [80,102,156];
+            $menu_ids=[];
 
+        }
+
+        $getClass=DB::table('class_teacher')->whereRaw('sub_institute_id='.session()->get('sub_institute_id').' and teacher_id ='.session()->get('user_id').' and syear="'.session()->get('syear').'"')->first();
         if (count($explode) > 1) {
             $query = DB::table('standard');
             $query->whereIn('grade_id', $explode)->get();
@@ -197,14 +231,22 @@ class AJAXController extends Controller
                 $checkstd = '1=1';
             }
             if ($checkstd && $classTeacherStdArr != "" && !in_array($module_name, $module_array)) {
-                $query->whereIn('id', $classTeacherStdArr);
+                if(in_array(session()->get('right_menu_id'),$menu_ids) && session()->get('user_profile_name')=="Teacher"){
+                    $query->where('id', $getClass->standard_id);
+                }else{
+                    $query->whereIn('id', $classTeacherStdArr);
+                }
             }
             //END Check for class teacher assigned standards
 
             //START Check for subject teacher assigned
             $subjectTeacherStdArr = session()->get('subjectTeacherStdArr');
             if ($subjectTeacherStdArr != "" && ($classTeacherStdArr == "" || in_array($module_name, $module_array))) {
+                if(in_array(session()->get('right_menu_id'),$menu_ids) && session()->get('user_profile_name')=="Teacher"){
+                    $query->where('id', $getClass->standard_id);
+                }else{
                 $query->whereIn('id', $subjectTeacherStdArr);
+                }
             }
             //END Check for subject teacher assigned
 
@@ -222,19 +264,27 @@ class AJAXController extends Controller
                 $checkstd = '1=1';
             }
             if ($checkstd && $classTeacherStdArr != "" && !in_array($module_name, $module_array)) {
+                if(in_array(session()->get('right_menu_id'),$menu_ids) && session()->get('user_profile_name')=="Teacher"){
+                    $query->where('id', $getClass->standard_id);
+                }else{
                 $query->whereIn('id', $classTeacherStdArr);
+                }
             }
             //END Check for class teacher assigned standards
 
             //START Check for subject teacher assigned
             $subjectTeacherStdArr = session()->get('subjectTeacherStdArr');
             if ($subjectTeacherStdArr != "" && ($classTeacherStdArr == "" || in_array($module_name, $module_array))) {
+                if(in_array(session()->get('right_menu_id'),$menu_ids) && session()->get('user_profile_name')=="Teacher" && isset($getClass->standard_id)){
+                    $query->where('id', $getClass->standard_id);
+                }else{
                 $query->whereIn('id', $subjectTeacherStdArr);
+                }
             }
             //END Check for subject teacher assigned
             $standard = $query->pluck("name", "id");
         }
-
+        // echo session()->get('right_menu_id')
         return response()->json($standard);
         // return $classTeacherStdArr;
     }
@@ -252,13 +302,47 @@ class AJAXController extends Controller
                 if (isset($pathParts['filename'])) {
                     $module_name = $pathParts['filename'];
                 }
+                if($parsedUrl['path'] == '/lms/question_paper/create'){
+                    $module_name = 'question_paper';
+                }
+                if($parsedUrl['path'] == '/student/student_homework_submission/create'){
+                    $module_name = 'student_homework_submission';
+                }
+                $path = "/student/student_homework/create";
+                $keyword = "student_homework";
+                
+                if (strpos($path, $keyword) !== false) {
+                    $module_name = "student_homework";
+                }
             }
         }
 
         $module_array = [
             '1' => 'student_homework',
             '2' => 'marks_entry',
+            '3' => 'dicipline',
+            '4' => 'lmsExamwise_progress_report',
+            '5' => 'questionReport',
+            '6' => 'parent_communication',
+            '7' => 'question_paper',
+            '8' => 'co_scholastic_marks_entry', 
+            '11' => 'student_homework_submission', // 2024-07-25          
         ];
+        // search student want divisions timetable wise 14-06-2024
+        if(in_array(session()->get('sub_institute_id'),[61])){
+            $module_array["9"]="search_student";
+            $module_array["10"]="show_search_student";
+        }
+       // menu_ids to get class teacher class only
+       if(session()->get('sub_institute_id')==195){
+            $menu_ids = [80,102];
+        }else{
+            // $menu_ids = [80,102,156];
+            $menu_ids=[];
+
+        }
+
+        $getClass=DB::table('class_teacher')->whereRaw('sub_institute_id='.session()->get('sub_institute_id').' and teacher_id ='.session()->get('user_id').' and syear="'.session()->get('syear').'"')->first();
 
         $standard_id = $request->standard_id;
 
@@ -308,12 +392,18 @@ class AJAXController extends Controller
             //START Check for class teacher assigned standards
             $subjectTeacherDivArr = session()->get('subjectTeacherDivArr');
             if ($subjectTeacherDivArr != "" && ($classTeacherDivArr == "" || in_array($module_name, $module_array))) {
-                $query->whereIn('division.id', function ($sub_query) use ($standard_id) {
+                if(in_array(session()->get('right_menu_id'),$menu_ids) && session()->get('user_profile_name')=="Teacher"){
+                    $query->where('division.id',$getClass->division_id);
+                }else{
+                $query->whereIn('division.id', function ($sub_query) use ($subjectTeacherDivArr,$standard_id) {
                     $sub_query->select('division_id')
                         ->from('timetable')
                         ->where('teacher_id', session()->get('user_id'))
-                        ->where('standard_id', $standard_id);
+                        ->where('standard_id',$standard_id)
+                        ->whereIn('division_id', $subjectTeacherDivArr)
+                        ->where('syear',session()->get('syear'));
                 });
+                }
             }
             //END Check for class teacher assigned standards
 
@@ -336,8 +426,10 @@ class AJAXController extends Controller
             }
         }
         $refer_arr = explode('/', $HTTP_REFERER);
+        $requestUri = $request->server->get('REQUEST_URI');
 
-        if ($refer_arr[count($refer_arr) - 2] == 'exam_creation' || in_array('marks_entry', $refer_arr)) {
+        // echo "<pre>";print_r($standard_id);exit;
+        if (strpos($requestUri, 'lms/pal') !== false || (isset($refer_arr[count($refer_arr) - 2]) || $refer_arr[count($refer_arr) - 2] == 'exam_creation') || in_array('marks_entry', $refer_arr)) {
             $where = array(
                 "sub_std_map.sub_institute_id" => session()->get('sub_institute_id'),
                 "sub_std_map.allow_grades" => "Yes",
@@ -430,10 +522,22 @@ class AJAXController extends Controller
             "re.standard_id" => $request->standard_id,
             "re.subject_id" => $request->subject_id,
         );
+        if(isset($request->exam_id) && $request->exam_id != ''){
+            $where = [
+                "re.sub_institute_id" => session()->get('sub_institute_id'),
+                "re.syear" => session()->get('syear'),
+                "re.standard_id"=>$request->standard_id,
+                "re.exam_id"=>$request->exam_id
+            ];
+            $group = "re.title";
+        }
 
         $std_sub_map = DB::table('result_create_exam as re')
-            ->where($where)
-            ->pluck('re.title', 're.id');
+            ->where($where);
+            if(isset($group)){
+                $std_sub_map->groupBy($group);
+            }
+          $std_sub_map = $std_sub_map->pluck('re.title', 're.id');
 
         return response()->json($std_sub_map);
     }
@@ -492,6 +596,7 @@ class AJAXController extends Controller
 
         $bus = DB::table('transport_vehicle as tv')
             ->where($where)
+            ->orderBy('tv.title')
             ->pluck('tv.title', 'tv.id');
 
         return response()->json($bus);
@@ -550,21 +655,25 @@ class AJAXController extends Controller
                 $search_ids2[] = $id;
             }
         }
-        $other_bk_off_month_wise2 = OtherBreackOfMonth($stu_arr,$last_syear); //for previous year
 
         $search_ids = $months;
         $reg_bk_off = FeeBreackoff($stu_arr); // for current year
         $other_bk_off = OtherBreackOff($stu_arr, $search_ids); // for current year
         $other_bk_off_month_wise = OtherBreackOfMonth($stu_arr);// for current year
         $year_arr = FeeMonthId();// for current year
-
-        $reg_bk_off2 = FeeBreackoff($stu_arr,'',$last_syear);
-        $other_bk_off2 = OtherBreackOff($stu_arr, $search_ids2,'','','',$last_syear);
-
-
-        $head_wise_fees = FeeBreakoffHeadWise($stu_arr); //for previous year
-        $head_wise_fees2 = FeeBreakoffHeadWise($stu_arr,'','','',$last_syear);//for previous year
-
+        $head_wise_fees = FeeBreakoffHeadWise($stu_arr); //for current year
+//   if($student_id==95642){
+//             echo "<pre>";print_r($head_wise_fees);exit;
+//         }
+        
+        $other_bk_off_month_wise2 = $reg_bk_off2 = $other_bk_off2 = $head_wise_fees2 = array();
+        if(session()->get('sub_institute_id')!=48 && session()->get('sub_institute_id')!=61){
+            $other_bk_off_month_wise2 = OtherBreackOfMonth($stu_arr,$last_syear); //for previous year
+            $reg_bk_off2 = FeeBreackoff($stu_arr,'',$last_syear); //for previous year
+            $other_bk_off2 = OtherBreackOff($stu_arr, $search_ids2,'','','',$last_syear); //for previous year
+            $head_wise_fees2 = FeeBreakoffHeadWise($stu_arr,'','','',$last_syear);//for previous year
+        }
+     
         $till_now_breckoff = $till_now_breckoff2 = array();
         foreach ($search_ids as $id => $val) {
             foreach ($head_wise_fees as $temp_id => $arr) {
@@ -597,21 +706,35 @@ class AJAXController extends Controller
                     if (!isset($reg_bk_month_wise[$arr['title']])) {
                         $reg_bk_month_wise[$arr['title']] = 0;
                     }
-                    $reg_bk_month_wise[$arr['title']] += $arr['amount'];
+                    // 03-06-24 by uma for institute_id =248 // commented on 2024-07-30
+                    // if(isset($arr['disc_amount']) && $arr['disc_amount']>0 && $arr['amount']>=$arr['disc_amount']){
+                    //     $reg_bk_month_wise[$arr['title']] += ($arr['amount']-$arr['disc_amount']); 
+                    // }else{
+                        $reg_bk_month_wise[$arr['title']] += ($arr['amount']);
+                    // }
                     $final_bk_name[$arr['title']] = $head_name;
                 }
             }
         }
+      
         // return $final_bk_name;exit;
         foreach ($till_now_breckoff2 as $month_id => $fees_detail) {
             foreach ($fees_detail as $head_name => $arr) {
                 if (!isset($reg_bk_month_wise2[$arr['title']])) {
                     $reg_bk_month_wise2[$arr['title']] = 0;
                 }
-                $reg_bk_month_wise2[$arr['title']] += $arr['amount'];
+                // commented on 2024-07-30
+                // if(isset($arr['disc_amount']) && $arr['disc_amount']>0 && $arr['amount']>=$arr['disc_amount']){
+                //     $reg_bk_month_wise2[$arr['title']] += ($arr['amount']-$arr['disc_amount']); 
+                // }else{
+                    $reg_bk_month_wise2[$arr['title']] += ($arr['amount']);
+                // }
+                // $reg_bk_month_wise2[$arr['title']] += $arr['amount'];
                 $final_bk_name[$arr['title']] = $head_name;
             }
         }
+        
+        // echo "<pre>";print_r($other_bk_off);exit;
 
         $full_bk = array_merge($reg_bk_month_wise, $other_bk_off);
 
@@ -634,11 +757,12 @@ class AJAXController extends Controller
         $previous = array_sum($full_bk2);
 
         if ($previous > 0) {
+        // if ($previous > 0) {            
             $full_bk['Previous Fees'] = $previous;
             $final_bk_name["Previous Fees"] = "previous_fees";
 
         }
-
+        // echo "<pre>";print_r($full_bk);exit;
         foreach ($full_bk as $id => $val) {
             $total = $total + $val;
         }
@@ -667,10 +791,14 @@ class AJAXController extends Controller
                     </tr>';
         foreach ($full_bk as $id => $val) {
             if($val!=0){
+                $ids ='';
+                if($id=="Total"){
+                    $ids='id="all_total"';
+                }
             $response .= "
                  <tr>
                     <td style='width: 20%'>$id</td>
-                    <td style='width: 20%'>$val</td>
+                    <td style='width: 20%' $ids>$val</td>
             ";
             if ($id != 'Total') {
                 // $response .= "<td style='width: 20%'><input type='number' min=0 max=$val  value='" . $val . "' name='fees_data[" . $final_bk_name[$id] . "]' class='form-control allField1'></td>";
@@ -765,7 +893,7 @@ class AJAXController extends Controller
             $response .= "
                  <tr>
 
-                    <td style='width: 20%'>$id</td>
+                    <td style='width: 20%' class='allField1' id='".$id."'>$id</td>
                     <td style='width: 20%'>$val</td>
             ";
             if ($id == 'Total') {
@@ -837,12 +965,12 @@ class AJAXController extends Controller
         foreach ($other_fee_title as $id => $arr) {
             foreach ($full_bk as $title => $val) {
                 if ($title == $arr->display_name) {
-                    $final_bk_name[$title] = $arr->other_fee_id;
+                    $final_bk_name[$title] = ($arr->other_fee_id>0) ? $arr->other_fee_id : 0;
                 }
             }
         }
 
-        $full_bk["Total"] = $total;
+        $full_bk["Total"] = ($total>0) ? $total : 0;
 
         return $full_bk;
     }
@@ -908,15 +1036,17 @@ class AJAXController extends Controller
         $mobile = $_REQUEST["mobile_number"];
 
         $all_student = DB::table("tblstudent as s")
+        ->join('tblstudent_enrollment as se','se.student_id','=','s.id')
             ->join('fees_online_maping as fo', 'fo.sub_institute_id', '=', 's.sub_institute_id')
             ->join('school_setup as ss', 'ss.id', '=', 'fo.sub_institute_id')
             ->select(
                 DB::raw("CONCAT(s.first_name,' ',s.last_name,' - ',ss.shortcode) AS name"),
                 's.id',
                 'fo.bank_name',
-                's.sub_institute_id'
+                's.sub_institute_id',
+                'se.end_date'
             )
-            ->where(['s.mobile' => $mobile]) //,'fo.sub_institute_id' => $sub_institute_id
+            ->where(['s.mobile' => $mobile,'se.syear' => DB::raw('ss.syear')]) //,'fo.sub_institute_id' => $sub_institute_id
             ->get();
 
         return response()->json($all_student);
@@ -979,6 +1109,7 @@ class AJAXController extends Controller
             })
             ->selectRaw('distinct(m.id),m.*,mm.link')
             ->where('u.sub_institute_id', $sub_institute_id)
+            ->where('u.status',1) // 23-04-24 by uma
             ->where('u.id', $user_id)
             ->where('m.main_menu_id', $main_menu_id)->get()->toArray();
 
@@ -1065,8 +1196,16 @@ class AJAXController extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
 
         $mail = DB::table('smtp_details')->where('sub_institute_id', $sub_institute_id)->get()->toArray();
-        $mail = json_decode(json_encode($mail), true);
-        $smtp_details = $mail[0];
+
+        if (!empty($mail)) {
+            $mail = json_decode(json_encode($mail), true);
+            $smtp_details = $mail[0];
+            // Now you can use $smtp_details without the "Undefined array key 0" error
+        } else {
+            // Handle the case when no results are returned, e.g., provide a default value or show an error message.
+            $smtp_details = null; // or any default value
+        }
+
 
         if (count($mail) > 0) {
             $from = $smtp_details['gmail'];
@@ -1151,8 +1290,11 @@ class AJAXController extends Controller
 
             $html = '';
             $html .= $fees_receipt_html;
-            $path = 'src="https://' . $_SERVER['HTTP_HOST'];
-            $html = str_replace('src="', $path, $html);
+
+            //Hide By Rajesh display Logo proper but in PDF not see = 11-06-2024
+            //$path = 'src="https://' . $_SERVER['HTTP_HOST'];
+            //$html = str_replace('src="', $path, $html);
+
             $html = str_replace('##HTML_SEC##', $html, $dom);
 
             $html_file_path = $save_path . '/' . $html_filename;
@@ -1250,8 +1392,11 @@ class AJAXController extends Controller
 
                 $html = '';
                 $html .= $fees_receipt_html;
-                $path = 'src="https://' . $_SERVER['HTTP_HOST'];
-                $html = str_replace('src="', $path, $html);
+
+                //Hide By Rajesh display Logo proper but in PDF not see = 11-06-2024
+                //$path = 'src="https://' . $_SERVER['HTTP_HOST'];
+                //$html = str_replace('src="', $path, $html);
+                
                 $html = str_replace('##HTML_SEC##', $html, $dom);
 
                 $html_file_path = $save_path . '/' . $html_filename;
@@ -1327,17 +1472,37 @@ class AJAXController extends Controller
 
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
+      
         $student_id = $request->input('student_id');
         $receipt_id = $request->input('receipt_id_html');
         $action = $request->input('action');
         $paper_size = $request->input('paper_size');
+        if($request->has('type') && $request->input('type')=="API"){
+            $sub_institute_id = $request->input('sub_institute_id');
+            $syear = $request->input('syear');
+            $get_page_size = DB::table('fees_config_master')->where('sub_institute_id',$sub_institute_id)->where('syear',$syear)->first();
+            $paper_size = $get_page_size->fees_receipt_template;
+        }
 
-
-        $fees_receipt_html = $this->get_FeesHtml($student_id, $action, $receipt_id);
+        // $fees_receipt_html = $this->get_FeesHtml($student_id, $action, $receipt_id);
+        $fees_receipt_html = $this->get_FeesHtml($student_id, $action, $receipt_id,$sub_institute_id,$syear);
         $fees_css = $this->get_FeesCss($action);
         $fees_receipt_css = "<style>" . $fees_css . "</style>";
 
+        if($fees_receipt_html=="No Receipt Found"){
+            $message = array(
+                "message"=>"No Record Found",
+                "Receipt NO"=> $receipt_id,
+                "syear"=>$syear,
+            );
+                return json_encode($message,JSON_PRETTY_PRINT);
+        }
         if ($fees_receipt_html != '') {
+            if (is_array($fees_receipt_html) == 1 && $sub_institute_id==49) {
+             $print = 2;
+            } else {
+             $print = 1;
+            }
             $dom = '<!DOCTYPE html>
                     <html>
                         <head>
@@ -1349,7 +1514,7 @@ class AJAXController extends Controller
             $dom .= $fees_receipt_css;
             $dom .= '</head>
                         <body>';
-            $dom .= $this->get_PageSetup($paper_size);
+            $dom .= $this->get_PageSetup($paper_size,$print);
 
             $dom .= '</body>
                 </html>';
@@ -1370,8 +1535,9 @@ class AJAXController extends Controller
             }
 
             if ($action != 'certificate_re_receipt') {
-                $path = 'src="https://' . $_SERVER['HTTP_HOST'];
-                $html = str_replace('src="', $path, $html);
+                //Hide By Rajesh display Logo proper but in PDF not see = 11-06-2024
+                //$path = 'src="https://' . $_SERVER['HTTP_HOST'];
+                //$html = str_replace('src="', $path, $html);
             }
 
             $html = str_replace('##HTML_SEC##', $html, $dom);
@@ -1451,8 +1617,15 @@ class AJAXController extends Controller
                 $pdf_file_path = $save_path . '/' . $pdf_filename;
                 file_put_contents($html_file_path, $html);
 
-                if ($action == 'Bonafide' || $action == 'Character Certificate' || $action == 'other_fees_collect_receipt' || $action == 'imprest_fees_cancel_refund_receipt') {
-                    htmlToPDFLandscapeCertificate($html_file_path, $pdf_file_path);
+                if (($action == 'Bonafide' || $action == 'Character Certificate' || $action == 'other_fees_collect_receipt' || $action == 'imprest_fees_cancel_refund_receipt') && $sub_institute_id != 254) {
+                    if($sub_institute_id == 48){
+                        htmlToPDFPortrait($html_file_path, $pdf_file_path);
+                    }else{
+                        htmlToPDFLandscapeCertificate($html_file_path, $pdf_file_path);
+                    }
+                }else if(in_array($sub_institute_id,[254,47]) && $action == 'Transfer Certificate'){
+                   htmlToPDFPortraitLetter($html_file_path, $pdf_file_path);
+                //    echo '<pre>';print_r($letter);exit;
                 } else {
                     htmlToPDF($html_file_path, $pdf_file_path);
                 }
@@ -1466,10 +1639,12 @@ class AJAXController extends Controller
 
     }
 
-    public function get_FeesHtml($student_id, $action, $receipt_id)
+    public function get_FeesHtml($student_id, $action, $receipt_id,$sub_institute_id='',$syear='')
     {
-        $sub_institute_id = session()->get('sub_institute_id');
-        $syear = session()->get('syear');
+       if($sub_institute_id=='' || $syear ==''){
+            $sub_institute_id = session()->get('sub_institute_id');
+            $syear = session()->get('syear');
+        }
 
         if ($action == 'imprest_ledger_view') {
             $NewRequest = new Request();
@@ -1536,44 +1711,87 @@ class AJAXController extends Controller
             //     ->union($unionQuery)->groupBy('fees_html')->get()->toArray();
 
     // 04-10-23 by uma lions double fees_recipt
-    $get_data = DB::table(function ($query) use ($sub_institute_id, $syear, $student_id, $receipt_id) {
-    $query->selectRaw('fc.id, fc.student_id, fc.receipt_no, fc.fees_html')
-        ->from('fees_collect as fc')
-        ->join('fees_receipt as fr', function ($join) {
-            $join->whereRaw('FIND_IN_SET(fc.id, fr.FEES_ID) AND fr.SUB_INSTITUTE_ID = fc.sub_institute_id');
-        })
-        ->where('fc.sub_institute_id', $sub_institute_id)
-        ->where('fc.syear', $syear)
-        ->where('fc.student_id', $student_id)
-        ->whereRaw("(fr.RECEIPT_ID_1 = '" . $receipt_id . "' OR fr.RECEIPT_ID_2 = '" . $receipt_id . "' OR fr.RECEIPT_ID_3 = '" . $receipt_id . "'
-            OR fr.RECEIPT_ID_4 = '" . $receipt_id . "' OR fr.RECEIPT_ID_5 = '" . $receipt_id . "' OR fr.RECEIPT_ID_6 = '" . $receipt_id . "' OR fr.RECEIPT_ID_7 = '" . $receipt_id . "' OR fr.RECEIPT_ID_8 = '" . $receipt_id . "'
-            OR fr.RECEIPT_ID_9 = '" . $receipt_id . "' OR fr.RECEIPT_ID_10 = '" . $receipt_id . "')")
-        ->groupBy('fc.fees_html')
-        ->unionAll(
-            DB::table('fees_paid_other as fo')
-                ->selectRaw('fo.id, fo.student_id, fo.reciept_id AS receipt_no, fo.paid_fees_html AS fees_html')
-                ->join('fees_receipt as fro', function ($join) {
-                    $join->whereRaw('FIND_IN_SET(fo.id, fro.OTHER_FEES_ID) AND fro.SUB_INSTITUTE_ID = fo.sub_institute_id');
-                })
-                ->where('fo.sub_institute_id', $sub_institute_id)
-                ->where('fo.syear', $syear)
-                ->where('fo.student_id', $student_id)
-                ->whereRaw("(fro.RECEIPT_ID_1 = '" . $receipt_id . "' OR fro.RECEIPT_ID_2 = '" . $receipt_id . "' OR fro.RECEIPT_ID_3 = '" . $receipt_id . "' OR fro.RECEIPT_ID_4 = '" . $receipt_id . "' OR fro.RECEIPT_ID_5 = '" . $receipt_id . "' OR fro.RECEIPT_ID_6 = '" . $receipt_id . "' OR fro.RECEIPT_ID_7 = '" . $receipt_id . "' OR fro.RECEIPT_ID_8 = '" . $receipt_id . "'
-                    OR fro.RECEIPT_ID_9 = '" . $receipt_id . "' OR fro.RECEIPT_ID_10 = '" . $receipt_id . "')")
-                ->groupBy('fo.paid_fees_html')
-        );
-})
-->selectRaw('student_id, receipt_no, fees_html')
-->groupBy('student_id')
-->get()
-->toArray();
+//     $get_data = DB::table(function ($query) use ($sub_institute_id, $syear, $student_id, $receipt_id) {
+//     $query->selectRaw('fc.id, fc.student_id, fc.receipt_no, fc.fees_html')
+//         ->from('fees_collect as fc')
+//         ->join('fees_receipt as fr', function ($join) {
+//             $join->whereRaw('FIND_IN_SET(fc.id, fr.FEES_ID) AND fr.SUB_INSTITUTE_ID = fc.sub_institute_id');
+//         })
+//         ->where('fc.sub_institute_id', $sub_institute_id)
+//         ->where('fc.syear', $syear)
+//         ->where('fc.student_id', $student_id)
+//         ->where('fc.receipt_no', $receipt_id)
+//         ->whereRaw("(fr.RECEIPT_ID_1 = '" . $receipt_id . "' OR fr.RECEIPT_ID_2 = '" . $receipt_id . "' OR fr.RECEIPT_ID_3 = '" . $receipt_id . "'
+//             OR fr.RECEIPT_ID_4 = '" . $receipt_id . "' OR fr.RECEIPT_ID_5 = '" . $receipt_id . "' OR fr.RECEIPT_ID_6 = '" . $receipt_id . "' OR fr.RECEIPT_ID_7 = '" . $receipt_id . "' OR fr.RECEIPT_ID_8 = '" . $receipt_id . "'
+//             OR fr.RECEIPT_ID_9 = '" . $receipt_id . "' OR fr.RECEIPT_ID_10 = '" . $receipt_id . "')")
+//         ->groupBy('fc.fees_html')
+//         ->unionAll(
+//             DB::table('fees_paid_other as fo')
+//                 ->selectRaw('fo.id, fo.student_id, fo.reciept_id AS receipt_no, fo.paid_fees_html AS fees_html')
+//                 ->join('fees_receipt as fro', function ($join) {
+//                     $join->whereRaw('FIND_IN_SET(fo.id, fro.OTHER_FEES_ID) AND fro.SUB_INSTITUTE_ID = fo.sub_institute_id');
+//                 })
+//                 ->where('fo.sub_institute_id', $sub_institute_id)
+//                 ->where('fo.syear', $syear)
+//                 ->where('fo.student_id', $student_id)
+//                 ->where('fo.reciept_id', $receipt_id)
+//                 ->whereRaw("(fro.RECEIPT_ID_1 = '" . $receipt_id . "' OR fro.RECEIPT_ID_2 = '" . $receipt_id . "' OR fro.RECEIPT_ID_3 = '" . $receipt_id . "' OR fro.RECEIPT_ID_4 = '" . $receipt_id . "' OR fro.RECEIPT_ID_5 = '" . $receipt_id . "' OR fro.RECEIPT_ID_6 = '" . $receipt_id . "' OR fro.RECEIPT_ID_7 = '" . $receipt_id . "' OR fro.RECEIPT_ID_8 = '" . $receipt_id . "'
+//                     OR fro.RECEIPT_ID_9 = '" . $receipt_id . "' OR fro.RECEIPT_ID_10 = '" . $receipt_id . "')")
+//                 ->groupBy('fo.paid_fees_html')
+//         );
+// })
+// ->selectRaw('student_id, receipt_no, fees_html')
+// ->groupBy('student_id')
+// ->get()
+// ->toArray();
 
+    // 25-12-23 by uma sggv double fees_recipt
+
+// if($student_id==118159 && $sub_institute_id==49){
+           $get_data = DB::table(function ($query) use ($sub_institute_id, $syear, $student_id, $receipt_id) {
+            $query->selectRaw('fc.id, fc.student_id, fc.receipt_no, fc.fees_html')
+                ->from('fees_collect as fc')
+                ->join('fees_receipt as fr', function ($join) {
+                    $join->whereRaw('FIND_IN_SET(fc.id, fr.FEES_ID) AND fr.SUB_INSTITUTE_ID = fc.sub_institute_id');
+                })
+                ->where('fc.sub_institute_id', $sub_institute_id)
+                ->where('fc.syear', $syear)
+                ->where('fc.student_id', $student_id)
+                // ->where('fc.receipt_no', $receipt_id)
+                ->whereRaw("(fr.RECEIPT_ID_1 = '" . $receipt_id . "' OR fr.RECEIPT_ID_2 = '" . $receipt_id . "' OR fr.RECEIPT_ID_3 = '" . $receipt_id . "'
+                    OR fr.RECEIPT_ID_4 = '" . $receipt_id . "' OR fr.RECEIPT_ID_5 = '" . $receipt_id . "' OR fr.RECEIPT_ID_6 = '" . $receipt_id . "' OR fr.RECEIPT_ID_7 = '" . $receipt_id . "' OR fr.RECEIPT_ID_8 = '" . $receipt_id . "'
+                    OR fr.RECEIPT_ID_9 = '" . $receipt_id . "' OR fr.RECEIPT_ID_10 = '" . $receipt_id . "')")
+                ->groupBy('fc.fees_html')
+                ->unionAll(
+                    DB::table('fees_paid_other as fo')
+                        ->selectRaw('fo.id, fo.student_id, fo.reciept_id AS receipt_no, fo.paid_fees_html AS fees_html')
+                        ->join('fees_receipt as fro', function ($join) {
+                            $join->whereRaw('FIND_IN_SET(fo.id, fro.OTHER_FEES_ID) AND fro.SUB_INSTITUTE_ID = fo.sub_institute_id');
+                        })
+                        ->where('fo.sub_institute_id', $sub_institute_id)
+                        ->where('fo.syear', $syear)
+                        ->where('fo.student_id', $student_id)
+                        // ->where('fo.reciept_id', $receipt_id)
+                        ->whereRaw("(fro.RECEIPT_ID_1 = '" . $receipt_id . "' OR fro.RECEIPT_ID_2 = '" . $receipt_id . "' OR fro.RECEIPT_ID_3 = '" . $receipt_id . "' OR fro.RECEIPT_ID_4 = '" . $receipt_id . "' OR fro.RECEIPT_ID_5 = '" . $receipt_id . "' OR fro.RECEIPT_ID_6 = '" . $receipt_id . "' OR fro.RECEIPT_ID_7 = '" . $receipt_id . "' OR fro.RECEIPT_ID_8 = '" . $receipt_id . "'
+                            OR fro.RECEIPT_ID_9 = '" . $receipt_id . "' OR fro.RECEIPT_ID_10 = '" . $receipt_id . "')")
+                        ->groupBy('fo.paid_fees_html')
+                );
+            })
+            ->selectRaw('student_id, receipt_no, fees_html')
+            ->groupBy('student_id', 'fees_html')
+            ->get()
+            ->toArray();
+// }
          $fees_collection_data = json_decode(json_encode($get_data), true);
             if (count($fees_collection_data) > 1) {
                 $fees_receipt_html = $fees_collection_data;
             } else {
-                $fees_collection_data = $fees_collection_data[0];
-                $fees_receipt_html = $fees_collection_data['fees_html'];
+                $fees_collection_data = isset($fees_collection_data[0]) ? $fees_collection_data[0] : '';
+                if($fees_collection_data!=''){
+                    $fees_receipt_html = $fees_collection_data['fees_html']; 
+                }else{
+                    $fees_receipt_html = "No Receipt Found";
+                }
             }
         }
 
@@ -1627,7 +1845,7 @@ class AJAXController extends Controller
             $html_array['fees_receipt_html'] = $fees_circular_data['FEES_CIRCULAR_HTML'];
         }
 
-        if ($action == 'Bonafide' || $action == 'Character Certificate' || $action == 'Transfer Certificate' || $action == 'Fees Statement') {
+        if ($action == 'Bonafide' || $action == 'Character Certificate' || $action == 'Transfer Certificate' || $action == 'Fees Statement' || $action == 'No Dues Certificate') {
             $get_data = DB::table('certificate_history')
                 ->where('sub_institute_id', $sub_institute_id)
                 ->where('syear', $syear)
@@ -1671,10 +1889,15 @@ class AJAXController extends Controller
         return $fees_receipt_css;
     }
 
-    public function get_PageSetup($paper_size)
+    public function get_PageSetup($paper_size,$print='')
     {
         $sub_institute_id = session()->get('sub_institute_id');
-        $four_res = [239];
+        if($print==2){
+            $four_res = [239,49];
+        }else{
+            $four_res = [239];
+        }
+        
         $syear = session()->get('syear');
 
         $extra_html = '';
@@ -1750,6 +1973,9 @@ class AJAXController extends Controller
             htmlToPDFLandscape($html_file_path, $pdf_file_path);
         } elseif ($paper_size == "A4DB") {
             htmlToPDFPortrait($html_file_path, $pdf_file_path);
+        } 
+        elseif ($paper_size == "letter") {
+            htmlToPDFPortraitLetter($html_file_path, $pdf_file_path);
         } else {
             htmlToPDF($html_file_path, $pdf_file_path);
         }
@@ -1769,7 +1995,9 @@ class AJAXController extends Controller
             })->join('tblmenumaster as m', function ($join) use ($sub_institute_id) {
                 $join->whereRaw("(i.menu_id = m.id OR g.menu_id = m.id) AND FIND_IN_SET(" . $sub_institute_id . ", m.sub_institute_id)");
             })->selectRaw('GROUP_CONCAT(distinct m.id) AS MID')
-            ->where('u.sub_institute_id', $sub_institute_id)->where('u.id', $user_id)->get()->toArray();
+            ->where('u.sub_institute_id', $sub_institute_id)
+            ->where('u.status',1) // 23-04-24 by uma
+            ->where('u.id', $user_id)->get()->toArray();
 
         $rightsQuery = array_map(function ($value) {
             return (array)$value;
@@ -1886,20 +2114,21 @@ class AJAXController extends Controller
         $question = $request->question;
         $standard = $request->standard;
         $type_name = $request->type_depth;
-        $type_bloom = $request->type_bloom;
+        //$type_bloom = $request->type_bloom;
         $type_learning = $request->type_learning;
-        
+        $sub_institute_id=session()->get('sub_institute_id');
+        $bloom = $depth = $learning = $reason_bloom =$reason_depth= '';
         if($request->has('question') && $question!==''){
             if($request->type_depth){
                 $options = DB::table('lms_mapping_type')->select(DB::raw('group_concat(name) as type_name'))->where('parent_id',$request->type_depth)->first();                
                 $depth = "'".$question."' give answer from given options in one word this question for standard '".$standard."' student from these options $options->type_name ";
                 $reason_depth = "if its one of $options->type_name then why it is give reason";
             }
-             if ($request->type_bloom){
+             /*if ($request->type_bloom){
                 $options = DB::table('lms_mapping_type')->select(DB::raw('group_concat(name) as type_name'))->where('parent_id',$request->type_bloom)->first();
                 $bloom = "'".$question."' give answer from given options in one word this question for Blooms Taxonomy? from these options $options->type_name";
                 $reason_bloom = "if its one of $options->type_name then why it is give reason from this reasons 'factual','conceptual','procedural','metacoganitive'";                
-            }
+            }*/
             if ($request->type_learning){
                 // $options = DB::table('lms_mapping_type')->select(DB::raw('group_concat(name) as type_name'))->where('parent_id',$request->type_learning)->first();
                 $learning = "'".$question."' according to this question What will be the learning outcome for standard '".$standard."' student ?";
@@ -1908,17 +2137,30 @@ class AJAXController extends Controller
             $message = array(
                 array("question_depth"=>$depth,
                 "reason_depth"=>$reason_depth,                
-                "question_bloom"=>$bloom,
-                "reason_bloom"=>$reason_bloom,                
-                "question_learning"=>$learning), 
-                // array("reason_learning"=>$reason_learning),                                 
-                // array("always give  questions answer in one array with vlaue only")               
+                //"question_bloom"=>$bloom,
+                //"reason_bloom"=>$reason_bloom,                
+                "question_learning"=>$learning),              
             );
+        }else if(isset($request->search) && $request->search=="question"){
+            // db::enableQueryLog();
+            $topics='';
+            if(isset($request->topic_id) && $request->topic_id!=''){
+                $topics = " and topic_id ='".$request->topic_id."'";
+            }
+           $getAllQuestion = DB::table('lms_question_master')->whereRaw('sub_institute_id = '.$sub_institute_id.' and standard_id='.$standard.' and chapter_id ='.$request->chapter_id.$topics.' ')->where('status',1)->pluck('question_title');
+            $message=array($request->question_prompt,"search only 1 question from mentioned standard and subject and chapter and topic and get different question which are not in this '".$getAllQuestion."'");
+            // return $message;exit;
+        }else if(isset($request->search) && $request->search=="summernote"){
+            $lang='';
+            if($request->sub_val!=''){
+                $lang=' translate into '.$request->sub_val;
+            }
+            $message = array("my prompt is ".$request->prompt.$lang.", for given prompt create html div with style make ".$request->searchType." without background color and font color must be only black in html, Also give only main contents not extra paras from your side. i dont want paras like 'This HTML code ' ");
         }else{
             $message = array($request->message);            
         }
-        $apiKey ='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';
-      
+        $apiKey ='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'; //'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';
+        // echo "<pre>";print_r('API');exit;
         $endpoint = "https://api.openai.com/v1/chat/completions";
 
         $data = [
@@ -1950,4 +2192,180 @@ class AJAXController extends Controller
         }
        return $res['answer'];
     }
+
+    public function geminiAI(Request $request){
+        $question = $request->question;
+        $standard = $request->standard;
+        $type_name = $request->type_depth;
+        $type_bloom = $request->type_bloom;
+        $type_learning = $request->type_learning;
+        $sub_institute_id = session()->get('sub_institute_id');
+        $message=$request->message;
+
+        if($request->has('question') && $question!==''){
+            $depth = $reason_depth= $bloom =$reason_bloom=$learning='';
+            if($request->type_depth){
+                $options = DB::table('lms_mapping_type')->select(DB::raw('group_concat(name) as type_name'))->where('parent_id',$request->type_depth)->first();                
+                $depth = "'".$question."' give answer from given options in one word this question for standard '".$standard."' student from these options $options->type_name ";
+                $reason_depth = "if its one of $options->type_name then why it is give reason";
+            }
+            // echo "<pre>";print_r($request->all());exit;
+            
+             if ($request->type_bloom){
+                $options = DB::table('lms_mapping_type')->select(DB::raw('group_concat(name) as type_name'))->where('parent_id',$request->type_bloom)->first();
+                $bloom = "'".$question."' give answer from given options in one word this question for Blooms Taxonomy? from these options $options->type_name";
+                $reason_bloom = "if its one of $options->type_name then why it is give reason from this reasons 'factual','conceptual','procedural','metacoganitive'";                
+            }
+            if ($request->type_learning){
+                $learning = "'".$question."' according to this question What will be the learning outcome for standard '".$standard."' student ?";
+            }
+            $data = array(
+                "give response in array"=>array(
+                "question_depth"=>$depth,
+                "reason_depth"=>$reason_depth,                
+                "question_bloom"=>$bloom,
+                "reason_bloom"=>$reason_bloom,                
+                "question_learning"=>$learning
+            )
+        );
+            
+            $message = array(
+                json_encode($data),
+            );
+        }
+        else if(isset($request->search) && $request->search=="summernote"){
+            $lang='';
+            if($request->sub_val!=''){
+                $lang=' translate into '.$request->sub_val;
+            }
+            $message = array("my prompt is ".$request->prompt.$lang.", for given prompt create html div with style make ".$request->searchType." without background color and font color must be only black in html, Also give only main contents not extra paras from your side. i dont want paras like 'This HTML code ' or '```html' and '```' ");
+        }
+        else if(isset($request->search) && $request->search=="lessonplan"){
+            $extra_text ='';
+            if(isset($request->topic) && $request->topic !="Select Topic"){
+                $extra_text = ' and for topic="'.$request->topic.'"';
+            }
+            $main_prompt = $request->prompt." for standard name =".$request->standard." and subject name =".$request->subject." and chapter name =".$request->chapter.$extra_text." , In response array give Short and simple Answer";
+            $message = array($main_prompt);
+        }
+        else if(isset($request->search) && $request->search=="question"){
+            // db::enableQueryLog();
+            $topics='';
+            if(isset($request->topic_id) && $request->topic_id!=''){
+                $topics = " and topic_id ='".$request->topic_id."'";
+            }
+           $getAllQuestion = DB::table('lms_question_master')->whereRaw('sub_institute_id = '.$sub_institute_id.' and standard_id='.$standard.' and chapter_id ='.$request->chapter_id.$topics.' ')->where('status',1)->pluck('question_title');
+            
+           $message=array($request->question_prompt,"search only 1 question from mentioned standard and subject and chapter and topic and get different question which are not in this '".$getAllQuestion."'");
+            // return $message;exit;
+        }
+
+        $result = Gemini::geminiPro()->generateContent($message);
+
+        $text = $result->text(); // Hello! How can I assist you today?
+        return $text;
+    }
+
+    public function getActivityMasterList(Request $request)
+    {
+        // echo("hi");die;
+        $where = array(
+            "ram.sub_institute_id" => session()->get('sub_institute_id'),
+            "ram.skill_id" => $request->skillset_id,
+        );
+        
+        $std_sub_map = DB::table('result_activity_master as ram')
+            ->where($where);
+        
+        $std_sub_map = $std_sub_map->pluck('ram.title', 'ram.id');
+
+        return response()->json($std_sub_map);
+    }
+
+    public function lmsDataApi(Request $request){
+    	
+        if($request->table == 'lms_lesson_plan' && $request->sub_institute_id){
+        	$data = DB::table($request->table)->where('sub_institute_id', $request->sub_institute_id)
+                  ->limit(25)
+                  ->get()
+                  ->toArray();
+        }elseif($request->table && $request->sub_institute_id){
+            $data = DB::table($request->table)->where('sub_institute_id', $request->sub_institute_id)->get()->toArray();
+        }elseif($request->table){
+            $data = DB::table($request->table)->get()->toArray();
+        }else{
+           $data = DB::table('lms_data')->get()->toArray();
+            // $data = DB::select("SELECT * FROM lms_data");
+        }
+        return response()->json($data);
+    }
+
+    public function pythonTimetable(Request $request){
+        $sub_institute_id = session()->get('sub_institute_id');
+        $file_response = shell_exec('python3 /home/admission.py');
+        if($file_response==null){
+            echo "file has no response";
+        }else{
+            echo "<pre>";print_r($file_response);
+        }
+        exit; 
+        $file_response = shell_exec('python3 /home/fees_analysis_1.py ' . escapeshellarg($sub_institute_id));
+
+        // Decode the JSON string
+        $json_data = json_decode($file_response, true);
+
+        // Check if decoding was successful
+        if ($json_data === null) {
+            // Handle error if JSON decoding failed
+            $errorMessage = "Error: Unable to decode JSON data. Error: " . json_last_error_msg();
+            Log::error($errorMessage);
+            return $errorMessage;
+        }
+        
+        // Check if 'analysis' key exists in the decoded data
+        if (!isset($json_data['analysis'])) {
+            // Handle error if 'analysis' key is not found
+            $errorMessage = "Error: 'analysis' key not found in JSON data.";
+            Log::error($errorMessage);
+            return $errorMessage;
+        }
+
+        // Extract the 'analysis' data
+        $analysis_data = $json_data['analysis'];
+
+        // Return the analysis data
+        return $analysis_data;
+
+    }
+
+    // department wise emp 
+    public function getDepEmployeeLists(Request $request)
+    {
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $department_id = explode(',',$request->get('department_id'));
+        // 02-08-2024 
+        $userId= session()->get('user_id');
+        $userProfileName= session()->get('user_profile_name');
+        $SubCordinates =[];
+        $profileArr = ["Admin","Super Admin","School Admin","Assistant Admin"];
+        if(!in_array($userProfileName,$profileArr)){
+            $SubCordinates = getSubCordinates($sub_institute_id,$userId);
+        }
+        // end 02-08-2024
+        $employees = DB::table('tbluser')->join('tbluserprofilemaster as upm', 'upm.id', '=', 'tbluser.user_profile_id')
+        ->selectRaw('tbluser.id,CONCAT_WS(" ",COALESCE(tbluser.first_name, "-"),COALESCE(tbluser.last_name, "-")) as full_name, tbluser.sub_institute_id, IfNULL(upm.name,"-") as user_profile')
+        ->where('tbluser.sub_institute_id', $sub_institute_id)
+        ->whereRaw('tbluser.department_id in ('.implode(',',$department_id).') ')
+        ->where('tbluser.status', 1)
+        ->when(!empty($SubCordinates),function($q) use($SubCordinates){
+            $q->whereIn('tbluser.id', $SubCordinates);
+        })
+        ->orderBy('tbluser.first_name')
+        ->groupBy('tbluser.id')
+        ->get()
+        ->toArray();   
+
+        return $employees;
+    }
+
 }

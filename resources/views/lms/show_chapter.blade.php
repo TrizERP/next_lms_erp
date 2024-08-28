@@ -1,6 +1,8 @@
-@include('includes.lmsheadcss')
+{{--@include('includes.lmsheadcss')
 @include('includes.header')
-@include('includes.sideNavigation')
+@include('includes.sideNavigation')--}}
+@extends('lmslayout')
+@section('container')
 use DB;
 <!-- Content main Section -->
 <div class="content-main flex-fill">
@@ -25,7 +27,10 @@ use DB;
         if(isset($_REQUEST['preload_lms'])) {
             $readonly="pointer-events: none";
             $preload_lms = "preload_lms=preload_lms";
-        } 
+        }
+        if(!isset($_REQUEST['perm'])) {
+            $_REQUEST['perm'] = session()->get('sub_institute_id');
+        }
 
     @endphp
 
@@ -33,13 +38,12 @@ use DB;
         <div class="col-md-6 mb-3">
         </div>
         <div class="col-md-6 mb-3">
-        @if($show_block == 'YES')
+        @if($show_block == 'YES' && $_REQUEST['perm']==$data['sub_institute_id'])
             <!-- <a href="{{ route('chapter_master.create') }}" class="btn btn-info add-new"><i class="fa fa-plus"></i> Add New Chapter</a>                    -->
             <button type="button" class="btn btn-info float-right" data-toggle="modal" onclick="javascript:add_data();"><i class="fa fa-plus"></i> Add New Chapter</button>
             @endif
         </div>
     </div>
-
 
     <div class="container-fluid mb-5">
         <div class="coursr-chp-list" id="cource-chap-list">
@@ -62,7 +66,7 @@ use DB;
                                 @php if ( $data['show_content'] == 'chapterwise' ) { @endphp
                                 <span>{{$chdata->chapter_name}}</span>
                                 @php } else { @endphp
-                                <a href="{{ route('topic_master.index',['id'=>$chdata->id,'standard_id'=>$_REQUEST['standard_id']]) }}">{{$chdata->chapter_name}}
+                                <a href="{{ route('topic_master.index',['id'=>$chdata->id,'standard_id'=>$_REQUEST['standard_id'],'perm'=>$_REQUEST['perm']]) }}">{{$chdata->chapter_name}}
                                     @php } @endphp
                                     {{-- @php
                                         if($chdata->chapter_desc){
@@ -90,7 +94,7 @@ use DB;
                                     <a href="{{ route('topic_master.index',['id'=>$chdata->id,'content_category'=>'OER']) }}"
                                        class="btn btn-outline-dark mx-1 my-1">OER</a>
                                 @endif
-                                @if( $data['show_content'] == 'chapterwise' )
+                                @if( $data['show_content'] == 'chapterwise' && $_REQUEST['perm'] == $data['sub_institute_id'] )
                                     <a target="_blank"
                                        href="{{ route('lms_teacherResource.index',['standard_id'=>$chdata->standard_id,'subject_id'=>$chdata->subject_id,'chapter_id'=>$chdata->id,$preload_lms ?? '']) }}"
                                        class="btn btn-outline-dark mx-1 my-1">Teacher Resource</a>
@@ -109,7 +113,7 @@ use DB;
                                     $chapter_desc = addslashes($chdata->chapter_desc);
                                 @endphp
 
-                                @if( $data['show_content'] == 'chapterwise' )
+                                @if( $data['show_content'] == 'chapterwise' && $_REQUEST['perm'] == $data['sub_institute_id'])
                                     {{-- Add Chapter wise content : START --}}
                                     <a target="_blank"
                                        href="{{ route('create_content_master', ['chapter_id' => $chdata->id]) }}"
@@ -152,12 +156,14 @@ use DB;
                         </ul>
                     </span>
                     @endif
+                    @if($_REQUEST['perm']==$data['sub_institute_id'])                    
                     <span class="pr-2 mr-1 border-right">
                         <a target="_blank" href="{{ route('subjectwise_graph.show',['subjectwise_graph'=>$chdata->subject_id,'standard_id'=>$chdata->standard_id,'chapter_id'=>$chdata->id,'chapter_name'=>$chdata->chapter_name,'action'=>'chapterwise']) }}">
                             <img src="../../../admin_dep/images/graph_icon.png"
                                  style="float:right;height:25px;width:25px;margin-top:-12px;margin-right:5px;">
                         </a>
                     </span>
+                    @endif
                                 {{-- @if(Session::get('user_profile_name') != 'Student')
                                 <span class="submenu-box pr-1 mr-1 border-right">
                                     <i class="mdi mdi-dots-vertical-circle-outline"></i>
@@ -201,9 +207,9 @@ use DB;
                         {{-- <i class="mdi mdi-file-video-outline"></i> <span>{{$chdata->total_content}}</span> --}}
                         <i class="mdi mdi-file-video-outline"></i> <span>{{ $totalContentCount }}</span>
                     </span>
-
-
                                 @endif
+
+                                @if($_REQUEST['perm']==$data['sub_institute_id'])
                                 <a href="javascript:edit_data('{{route('chapter_master.update',$chdata->id)}}','{{$chdata->id}}','{{$chdata->standard_id}}','{{$chapter_name}}','{{$chapter_desc}}','{{$chdata->availability}}','{{$chdata->show_hide}}','{{$chdata->sort_order}}');"
                                    class="pr-1 mr-1 border-right text-dark"><i
                                         class="mdi mdi-pencil-outline m-0"></i></a>
@@ -217,6 +223,7 @@ use DB;
                                     <!-- <a href="#" onclick="document.myform.submit()" class="d-block mx-2"><i class="mdi mdi-delete-outline"></i></a> -->
                                 </form>
                             @endif
+                            @endif                            
                         </div>
                     </div>
                     @if( (isset($data['content_data'][$chdata->id]) && !empty($data['content_data'][$chdata->id])) &&  ($data['show_content'] == 'chapterwise') )
@@ -237,7 +244,7 @@ use DB;
                             echo "<pre>"; print_r($content); exit;
                         @endphp --}}
                     <div class="chapter-content-list-cola mb-4 collapse" id="chapter-content-tar-list-{{ $chdata->id }}-{{ $subColapse }}" data-parent="#cource-chap-list" style="">
-                         @php 
+                         @php
                         $no = 1;
                         @endphp
                         @foreach( $content as $single_content )
@@ -248,14 +255,14 @@ use DB;
                         <div class="row chapter-content-box my-2 py-2 mx-0">
                             <div class="col-md-1 chapter-img-box">
                                 @php
-                                    if ( $single_content['url'] != '' ) {
-                                        $content_file_url = $single_content['url'];
+                                    if ($single_content['filename'] != '' && $single_content['file_type']=='link') {
+                                        $content_file_url = $single_content['filename'];
                                     } else {
-                                        $content_file_url = url('storage'.$single_content['file_folder'].'/'.$single_content['filename']);
+                                        $content_file_url = Storage::disk('digitalocean')->url('public'.$single_content['file_folder'].'/'.$single_content['filename']);
                                     }
                                     $icons = ['pdf'=> 'mdi mdi-file-pdf-box', 'mp4' => 'mdi mdi-video','link' => 'mdi mdi-file-link', 'html' => 'mdi mdi-language-html5', 'mov' => 'mdi mdi-movie', 'docx' => 'mdi mdi-file-document' ];
                                     $ext = pathinfo($single_content['title'], PATHINFO_EXTENSION);
-                                    if(empty($ext)){
+                                    if(empty($ext)){    
                                         $ext = "pdf";
                                     }
                                 @endphp
@@ -271,7 +278,7 @@ use DB;
 
                                 <div class="chapter-des">{{ $single_content['description'] }}</div>
                             </div>
-                           
+                            @if($_REQUEST['perm'] == $data['sub_institute_id'])
                             <div class="col-md-2 time text-secondary d-flex justify-content-end"
                                  style="font-size: 20px;" >
                                 <a href="{{ route('lms_flashcard.index',['content_id' => $single_content['id'],$preload_lms ?? '' ])}}"
@@ -291,6 +298,7 @@ use DB;
                                         <i class="mdi mdi-delete-outline"></i></button>
                                 </form>
                             </div>
+                            @endif
                         </div>
                         @endforeach
                     </div>
@@ -468,3 +476,4 @@ use DB;
 </script>
 @include('includes.lmsfooterJs')
 @include('includes.footer')
+@endsection

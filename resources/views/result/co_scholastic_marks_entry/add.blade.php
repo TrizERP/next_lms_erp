@@ -1,6 +1,6 @@
-@include('../includes.headcss')
-@include('../includes.header')
-@include('../includes.sideNavigation')
+{{-- @include('includes.headcss') @include('includes.header') @include('includes.sideNavigation') --}} 
+@extends('layout')
+@section('container')
 
 <div id="page-wrapper">
     <div class="container-fluid">        
@@ -28,15 +28,9 @@
                                 <label for="title">Select Co-Scholastic Parent:</label>
                                 <select name="co_scholastic_parent" id="co_scholastic_parent" class="form-control">
                                     <option value="">Select</option>
-                                    @php
-                                    foreach ($data['co_scholastic_parent_dd'] as $id_dd=>$arr_dd){
-                                    $selected = "";
-                                    if($data['co_scholastic_parent'] == $id_dd){
-                                    $selected = 'selected=selected';
-                                    }
-                                    echo "<option $selected value=$id_dd>$arr_dd</option>";
-                                    }
-                                    @endphp
+                                    @foreach ($data['co_scholastic_parent_dd'] as $id_dd=>$arr_dd)
+                                   <option value={{$id_dd}} @if($data['co_scholastic_parent'] == $id_dd) selected @endif>{{$arr_dd}}</option>
+                                    @endforeach
                                 </select>
                             </div>
 
@@ -44,15 +38,9 @@
                                 <label for="title">Select Co-Scholastic:</label>
                                 <select name="co_scholastic" id="co_scholastic" class="form-control">
                                     <option value="">Select</option>
-                                    @php
-                                    foreach ($data['co_scholastic_dd'] as $id_dd=>$arr_dd){
-                                    $selected = "";
-                                    if($data['co_scholastic'] == $id_dd){
-                                    $selected = 'selected=selected';
-                                    }
-                                    echo "<option $selected value=$id_dd>$arr_dd</option>";
-                                    }
-                                    @endphp
+                                    @foreach ($data['co_scholastic_dd'] as $id_dd=>$arr_dd)
+                                   <option value={{$id_dd}} @if($data['co_scholastic'] == $id_dd) selected @endif>{{$arr_dd}}</option>
+                                    @endforeach
                                 </select>
                             </div>
 
@@ -99,9 +87,7 @@
                         @endif
 
                 <div class="col-lg-12 col-sm-12 col-xs-12">
-                    @php
-                    if(isset($data['stu_data'])){
-                    @endphp
+                    @if(isset($data['stu_data']))
                     <form action="{{ route('co_scholastic_marks_entry.store') }}" enctype="multipart/form-data" method="post">
                         {{ method_field("POST") }}
                         {{csrf_field()}}
@@ -110,69 +96,56 @@
                             <tr>
                                 <th>No</th>
                                 <th>Student Name</th>
-                                @php
-                                if($data['mark_type'] == 'GRADE'){
-                                echo "<th>Grade</th>";
-                                }
-                                else{
-                                echo "<th>Marks</th>";
-                                }
-                                @endphp
+                                @if($data['mark_type'] == 'GRADE')
+                                <th>Grade</th>
+                                @else
+                                <th>Marks</th>
+                                @endif
                             </tr>
                             @php
-
                             $arr = $data['stu_data'];
-                            foreach ($arr as $id=>$col_arr){
                             @endphp
+                            
+                            @foreach ($arr as $id=>$col_arr)
                             <tr>
                             <input type="hidden" name="values[{{ $col_arr['student_id'] }}][term_id]" value="{{$data['term_id']}}" />
                             <input type="hidden" name="values[{{ $col_arr['student_id'] }}][grade_id]" value="{{$data['grade']}}" />
                             <input type="hidden" name="values[{{ $col_arr['student_id'] }}][standard_id]" value="{{$data['standard']}}" />
                             <input type="hidden" name="values[{{ $col_arr['student_id'] }}][division_id]" value="{{$data['division']}}" />
                             <input type="hidden" name="values[{{ $col_arr['student_id'] }}][co_scholastic]" value="{{$data['co_scholastic']}}" />
-                            <td>@php echo $id+1; @endphp</td>
-                            <td>@php echo $col_arr['name']; @endphp</td>
+                            <td>{{ $id+1 }}</td>
+                            <td>{{ $col_arr['name'] }}</td>
                             @php
                             $disable = "";
-                            
-                            if($data['mark_type'] == 'GRADE'){
-                           
-                            $name = "values[".$col_arr['student_id']."][grade]";
-                            if(isset($data['approve_status']) && $data['approve_status']->status ==1  && $data['co_scholastic']==$data['approve_status']->exam_id){
-                                $disable="disabled";
+                            $name = "values[".$col_arr['student_id']."][grade]";                            
                             @endphp
-                                <input type="hidden" name="{{$name}}" value="{{$data['stu_data'][$id][$col_arr['student_id']]['grade_marks']}}">
-                            @php
-                            }
-                            echo "<td>
-                                <select name=$name id='grade' class='form-control' $disable>
-                                    <option value=''>Select</option>";
-                                    foreach ($data["co_scholastic_grade_dd"] as $id_dd=>$arr_dd){
-                                    $selected = "";
-                                    if($col_arr["grade"] == $id_dd){
-                                    $selected = "selected=selected";
-                                    }
-                                    echo "<option $selected value=$id_dd>$arr_dd</option>";
-                                    }
-                            echo '        
-                                </select>
-                            </td>';
-                            }
-                            else{
-                                if(isset($data['approve_status']) && $data['approve_status']->status ==1 && $data['co_scholastic']==$data['approve_status']->exam_id){
+                            @if($data['mark_type'] == 'GRADE')
+                            @if(isset($data['approve_status']) && $data['approve_status']->status ==1  && $data['co_scholastic']==$data['approve_status']->exam_id)
                                 $disable="disabled";
-                            }
+                            @endif
+                                <input type="hidden" name="{{$name}}" value="{{$data['stu_data'][$id][$col_arr['student_id']]['grade_marks']}}">
+                            <td>
+                                <select name="values[{{ $col_arr['student_id'] }}][grade_opt]" id='grade' class='form-control' {{$disable}}>
+                                    <option value=''>Select</option>"
+                                    @foreach ($data["co_scholastic_grade_dd"] as $id_dd=>$arr_dd)
+                                   <option value={{$id_dd}} @if($col_arr["grade"] == $id_dd) selected @endif>{{$arr_dd}}</option>
+                                   @endforeach     
+                                </select>
+                            </td>
+                            @else
+                                @if(isset($data['approve_status']) && $data['approve_status']->status ==1 && $data['co_scholastic']==$data['approve_status']->exam_id)
+                                $disable="disabled";
+                                @endif
+                                @php
                             $name = "values[".$col_arr['student_id']."][points]";
                             $value = $col_arr['points'];
                             $max_mark = $col_arr['outof'];
-                            echo '<td> <input type="text" class="att" name="' . $name . '" style="width: 50px;" onchange="check_input(this, ' . $col_arr["outof"] . ')" ' . $disable . ' value="' . $value . '" /> Out Of <label>' . $max_mark . '</label></td>';
-}
                             @endphp
-
+                           <td> <input type="text" class="att" name={{$name}} style="width: 50px;" onchange="check_input(this, {{$col_arr['outof']}}}"  {{$disable}}  value={{$value}} /> Out Of <label>{{$max_mark}}</label></td>
+                           @endif
+                           
                             </tr>
-                            @php
-                            }
-                            @endphp
+                            @endforeach
                         </table>
                         </div>
 
@@ -188,11 +161,9 @@
                     </form>
 
               
-                    @php
-                    }else{
-                    echo "No Student Found.";
-                    }
-                    @endphp
+                    @else
+                     No Student Found
+                    @endif
                 </div>
                 @if (count($errors) > 0)
                 <div class="alert alert-danger">
@@ -325,3 +296,4 @@
 
 </script>
 @include('includes.footer')
+@endsection

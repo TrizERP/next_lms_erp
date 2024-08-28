@@ -240,16 +240,22 @@ class calendar_controller extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
 
+        $standard = $request->get('standard');
+        if (is_string($standard)) {
+            // Convert the string to an array
+            $standard = explode(',', $standard);
+        }
+        
         $finalArray = [
             'title'            => $request->get('title'),
             'description'      => $request->get('description'),
             'event_type'       => $request->get('event_type'),
-            'standard'         => implode($request->get('standard'), ","),
+            'standard'         => is_array($standard) ? implode(',', $standard) : null,
             'school_date'      => date("Y-m-d", $request->get('school_date') / 1000),
             'syear'            => $syear,
             'sub_institute_id' => $sub_institute_id,
         ];
-
+        
         calendar::where(["id" => $id])->update($finalArray);
 
         return;

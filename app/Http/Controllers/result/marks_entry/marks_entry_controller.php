@@ -259,7 +259,7 @@ class marks_entry_controller extends Controller
         ];
         $check_approve = DB::table('result_exam_approve')->where($approve_status)->first();
         if(isset($check_approve->created_by)){
-            $approved_user = DB::table('tbluser')->where('id',$check_approve->created_by)->first();
+            $approved_user = DB::table('tbluser')->where('id',$check_approve->created_by)->where('status',1)->first();   // 23-04-24 by uma
         }
         $responce_arr['approve_status'] = $check_approve;
         $responce_arr['approved_user'] = $approved_user ?? '';        
@@ -621,6 +621,7 @@ class marks_entry_controller extends Controller
                         'comment'          => $arr['comment'],
                         'is_absent'        => $arr['points'],
                         'sub_institute_id' => $sub_institute_id,
+                        'updated_at'       => now(),
                     ]; 
                 }else{
                     $data =[
@@ -632,6 +633,7 @@ class marks_entry_controller extends Controller
                         'comment'          => $arr['comment'],
                         'is_absent'        => "AB",
                         'sub_institute_id' => $sub_institute_id,
+                        'updated_at'       => now(),
                     ];   
                     }
                     marks_entry::where([
@@ -652,6 +654,7 @@ class marks_entry_controller extends Controller
                         'is_absent'        => '',
                         'comment'          => $arr['comment'],
                         'sub_institute_id' => $sub_institute_id,
+                        'updated_at'       => now(),
                     ];
                     marks_entry::where([
                         'sub_institute_id' => $sub_institute_id,

@@ -22,14 +22,24 @@
                             @endif
                             <form action="{{route('payroll.show_payroll_report')}}"
                                   enctype="multipart/form-data"
-                                  method="post">
+                                  method="post" class="row">
                                 @csrf
+                                @php 
+                                $currentMonth = date('M');
+                                $currentYear = date('Y');
+                                $dep_id = '';
+                                if(isset($data['department_id']))
+                                {
+                                    $dep_id = $data['department_id'];
+                                }
+                                @endphp 
+                                {!! App\Helpers\HrmsDepartments("","multiple",$dep_id,"none","","") !!}
                                 <div class="col-md-3 form-group">
                                     <label>Select Month</label>
                                     <select id='year' name="month" class="form-control">
                                         <option value="0">Select Month</option>
-                                        @foreach($months as $month)
-                                            @if(isset($list['month']) && $list['month'] == $month)
+                                        @foreach($data['months'] as $month)
+                                            @if((isset($data['month']) && $data['month'] == $month) || $month==$currentMonth)
                                                 <option selected>{{$month}}</option>
                                             @else
                                                 <option>{{$month}}</option>
@@ -41,8 +51,8 @@
                                     <label>Select Year</label>
                                     <select id='year' name="year" class="form-control">
                                         <option value="0">Select Year</option>
-                                        @foreach($years as $year)
-                                            @if(isset($list['year']) && $list['year'] == $year)
+                                        @foreach($data['years'] as $year)
+                                            @if((isset($data['year']) && $data['year'] == $year) || ($year == $currentYear))
                                                 <option selected>{{$year}}</option>
                                             @else
                                                 <option>{{$year}}</option>
@@ -54,31 +64,17 @@
                                         <input type="submit" name="submit" value="Search" class="btn btn-success">
                                     </div>
                                 </div>
-                                <!-- Modal -->
-                                <div class="modal fade bd-example-modal-lg" id="exampleModal" tabindex="-1"
-                                     role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-                                    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-                                        <div class="modal-content">
-                                            <div class="modal-header">
-                                                <h5 class="modal-title" id="exampleModalLabel">Choose Field</h5>
-                                                <button type="button" class="close" data-dismiss="modal"
-                                                        aria-label="Close">
-                                                    <span aria-hidden="true">x</span>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                                
                             </form>
                         </div>
             </div>
-
+            @if(isset($data['employeeDetails']) && !empty($data['employeeDetails']))
                 <div class="card">
                     <div class="table-responsive mt-20 tz-report-table">
                         <table id="example" class="table table-striped">
                             <thead>
                             <tr>
-                                <th>Employee Id</th>
+                                <th>Emp No</th>
                                 <th>Employee Name</th>
                                 <th>Total Day</th>
                                 <th>Total</th>
@@ -89,11 +85,11 @@
                             <form action="{{route('payroll.store_monthly_payroll_report')}}" method="post">
                                 @csrf
                                 <tbody>
-                                @foreach($employees as $employeeDetail)
+                                @foreach($data['employeeDetails'] as $employeeDetail)
                                 <tr>
-                                    <td>{{$employeeDetail['employee_id']}}</td>
-                                    <td>{{$employeeDetail->getUser['first_name'] .' '. $employeeDetail->getUser['last_name']}}</td>
-                                    <td>{{$employeeDetail->total_day}}</td>
+                                    <td>{{$employeeDetail->employee_no}}</td>
+                                    <td>{{$employeeDetail->first_name .' '. $employeeDetail->last_name}}</td>
+                                    <td>{{ round($employeeDetail->total_day,2) }}</td>
                                     <td>{{$employeeDetail->total_payment + $employeeDetail->total_deduction}}</td>
                                     <td>{{$employeeDetail->total_deduction}}</td>
                                     <td>{{$employeeDetail->total_payment}}</td>
@@ -104,6 +100,7 @@
                         </table>
                     </div>
                 </div>
+                @endif
         </div>
     </div>
 
@@ -111,7 +108,6 @@
     <script>
         $(document).ready(function () {
             var table = $('#example').DataTable({
-                ordering: false,
                 select: true,
                 lengthMenu: [
                     [100, 500, 1000, -1],

@@ -14,8 +14,9 @@ use function App\Helpers\is_mobile;
 
 class lessonplanningController extends Controller
 {
-    public function index(Request $request)
+    /*public function index(Request $request)
     {
+
         $user_profile_id = $request->session()->get('user_profile_id');
         $user_profile_name = $request->session()->get('user_profile_name');
 
@@ -58,7 +59,53 @@ class lessonplanningController extends Controller
         $res['division_data'] = json_encode($this->getDivisionData($request), true);
 
         return is_mobile($type, 'school_setup/show_lessonplanning', $res, "view");
+    }*/
+
+    public function index(Request $request)
+    {
+        $userProfileName = $request->session()->get('user_profile_name');
+        $editable = ($userProfileName != 'Admin') ? 'true' : 'false';
+
+        $data = $this->getData($request);
+        $calendarData = [];
+
+        if (count($data) > 0) {
+            foreach ($data as $val) {
+                $calendarData[] = [
+                    'id' => $val['id'],
+                    'title' => $val['title'],
+                    'description' => $val['description'],
+                    'standard_id' => $val['standard_id'],
+                    'standard_name' => $val['standard_name'],
+                    'division_id' => $val['division_id'],
+                    'division_name' => $val['division_name'],
+                    'subject_id' => $val['subject_id'],
+                    'subject_name' => $val['subject_name'],
+                    'start' => $val['school_date'],
+                    'teacher_name' => $val['teacher_name'],
+                    'lessonplan_date' => $val['lessonplan_date'],
+                    'lessonplan_status' => $val['lessonplan_status'],
+                    'lessonplan_reason' => $val['lessonplan_reason'],
+                    'lessonplan_id' => $val['lessonplan_id'],
+                    'className' => 'bg-info',
+                ];
+            }
+        }
+
+        $res = [
+            'editable' => $editable,
+            'status_code' => 1,
+            'calendarData' => json_encode($calendarData, true),
+            'standard_data' => json_encode($this->getStandardData($request), true),
+            'subject_data' => json_encode($this->getSubjectData($request), true),
+            'division_data' => json_encode($this->getDivisionData($request), true),
+        ];
+
+        $type = $request->input('type');
+
+        return is_mobile($type, 'school_setup/show_lessonplanning', $res, "view");
     }
+
 
     public function store(Request $request)
     {
@@ -167,7 +214,9 @@ class lessonplanningController extends Controller
             })
             ->join('division as d', 'd.id', '=', 'lp.division_id')
             ->join('subject as sub', 'sub.id', '=', 'lp.subject_id')
-            ->join('tbluser as t', 't.id', '=', 'lp.teacher_id')
+            ->join('tbluser as t',function($join){
+                $join->on('t.id', '=', 'lp.teacher_id')->where('t.status',1);  // 23-04-24 by uma
+            })
             ->leftjoin('lessonplan_execution as l', 'l.lessonplan_id', '=', 'lp.id')
             ->where($extra)
             ->get()->toArray();
@@ -180,7 +229,7 @@ class lessonplanningController extends Controller
         $user_profile_name = $request->session()->get('user_profile_name');
         $user_id = $request->session()->get('user_id');
 
-        return timetableModel::from("timetable as t")
+        /*return timetableModel::from("timetable as t")
             ->select(DB::raw('distinct(t.standard_id) as std_id'), 's.name as std_name', 's.grade_id')
             ->join('standard as s',function($join) use($marking_period_id){
                 $join->on('s.id', '=', 't.standard_id');
@@ -189,7 +238,30 @@ class lessonplanningController extends Controller
                 // });
             })
             ->where(['t.sub_institute_id' => $sub_institute_id, 't.teacher_id' => $user_id])
-            ->get()->toArray();
+            ->get()->toArray();*/
+
+       /* return timetableModel::from("timetable as t")
+            ->select(DB::raw('distinct(t.standard_id) as std_id'), 's.name as std_name', 's.grade_id')
+            ->join('standard as s',function($join) {
+                $join->on('s.id', '=', 't.standard_id');
+                // ->when($marking_period_id,function($query) use($marking_period_id){
+                //     $query->where('s.marking_period_id',$marking_period_id);
+                // });
+            })
+            ->where(['t.sub_institute_id' => $sub_institute_id, 't.teacher_id' => $user_id])
+            ->get()->toArray();*/
+
+        return timetableModel::from("timetable as t")
+            ->select(
+                DB::raw('distinct(t.standard_id) as std_id'),
+                's.name as std_name',
+                's.grade_id'
+            )
+            ->join('standard as s', 's.id', '=', 't.standard_id')
+            ->where(['t.sub_institute_id' => $sub_institute_id, 't.teacher_id' => $user_id])
+            ->get()
+            ->toArray();
+
     }
 
     public function getSubjectData(Request $request, $standard_id = "")

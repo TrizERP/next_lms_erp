@@ -1,7 +1,6 @@
-@include('../includes.headcss')
-@include('../includes.header')
-@include('../includes.sideNavigation')
-
+{{-- @include('includes.headcss') @include('includes.header') @include('includes.sideNavigation') --}} 
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">       
             <div class="card">
@@ -25,15 +24,9 @@
                                 <label for="title">Select Subject:</label>
                                 <select name="subject" id="subject" class="form-control" required>
                                     <option value="">Select</option>
-                                    @php
-                                    foreach ($data['subject_dd'] as $id_dd=>$arr_dd){
-                                    $selected = "";
-                                    if($data['subject'] == $id_dd){
-                                    $selected = 'selected=selected';
-                                    }
-                                    echo "<option $selected value=$id_dd>$arr_dd</option>";
-                                    }
-                                    @endphp
+                                    @foreach ($data['subject_dd'] as $id_dd=>$arr_dd)
+                                    <option value={{$id_dd}} @if($data['subject'] == $id_dd) selected @endif>{{$arr_dd}}</option>
+                                    @endforeach
                                 </select>
                             </div>
 
@@ -41,15 +34,9 @@
                                 <label for="title">Select Exam:</label>
                                 <select name="exam" id="exam" class="form-control" required>
                                     <option value="">Select</option>
-                                    @php
-                                    foreach ($data['exam_dd'] as $id_dd=>$arr_dd){
-                                    $selected = "";
-                                    if($data['exam'] == $id_dd){
-                                    $selected = 'selected=selected';
-                                    }
-                                    echo "<option $selected value=$id_dd>$arr_dd</option>";
-                                    }
-                                    @endphp
+                                    @foreach ($data['exam_dd'] as $id_dd=>$arr_dd)
+                                    <option value={{$id_dd}} @if($data['exam'] == $id_dd) selected @endif>{{$arr_dd}}</option>
+                                    @endforeach
                                 </select>
                             </div>
 
@@ -94,9 +81,7 @@
                     </form>
                         @endif
               
-                    @php
-                    if(isset($data['stu_data'])){
-                    @endphp
+                    @if(isset($data['stu_data']))
                         <div class="row mb-2">  
                     <div class="col-lg-12 col-sm-12 col-xs-12">
                         <span class="d-block p-2  alert-secondary">Note: Please consider this spelling while adding "AB", "N.A." ,"EX".</span>
@@ -127,8 +112,8 @@
                             <input type="hidden" class="total_days" value="{{ $col_arr['outof'] }}" />
                             <input type="hidden" name="values[{{ $col_arr['student_id'] }}][exam_id]" value="{{$data['exam']}}" />
                            
-                            <td>@php echo $col_arr['roll_no']; @endphp</td>
-                            <td>@php echo $col_arr['name']; @endphp</td>
+                            <td>{{$col_arr['roll_no']}}</td>
+                            <td>{{$col_arr['name']}}</td>
                             <td> 
                                 <input type="text" class="att" name="values[{{ $col_arr['student_id'] }}][points]" style="width: 100px;" value="{{ $col_arr['points'] }}" onchange="check_input(this,{{$col_arr['outof']}})" {{$disable}} />
                                 Out Of 
@@ -155,11 +140,9 @@
                         </div>
                         @endif
                     </form>
-                    @php
-                    }else{
-                    echo "No Student Found.";
-                    }
-                    @endphp
+                    @else
+                    No Student Found.
+                    @endif
                 </div>
                 @if (count($errors) > 0)
                 <div class="alert alert-danger">
@@ -379,3 +362,4 @@
 
 </script>
 @include('includes.footer')
+@endsection

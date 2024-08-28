@@ -25,33 +25,25 @@
                                   method="post">
                                 @csrf
                                 <div class="row">
-                                    <div class="col-md-3 form-group">
-                                        <label>Employee List</label>
-                                        <select id='employee_id' name="employee_id" class="form-control">
-                                            <option value="0">Select Employee</option>
-                                            @foreach($employeeLists as $employee)
-                                                @if(isset($list['employee_id']))
-                                                    <option
-                                                        value="{{$employee->id}}" {{$list['employee_id'] == $employee->id ? 'selected':''}}>{{$employee->first_name .' '. $employee->last_name }}</option>
-                                                @else
-                                                    <option
-                                                        value="{{$employee->id}}">{{$employee->first_name .' '. $employee->last_name }}</option>
-                                                    @endif
+                                @php 
+                                    $dep_id = $emp_id = '';
+                                    $currentYear = date('Y');
+                                    if(isset($data['selDept'])){
+                                        $dep_id = $data['selDept'];
+                                    }
 
-                                            @endforeach
+                                    if(isset($data['selEmp'])){
+                                        $emp_id = $data['selEmp'];
+                                    }
+                                @endphp
 
-                                        </select>
-                                    </div>
+                                {!! App\Helpers\HrmsDepartments("","multiple",$dep_id,"multiple",$emp_id,"") !!}
                                     <div class="col-md-3 form-group">
                                         <label>Select Year</label>
                                         <select id='year' name="year" class="form-control">
                                             <option value="0">Select Year</option>
-                                            @foreach($years as $year)
-                                                @if(isset($list['year']) && $list['year'] == $year)
-                                                    <option selected>{{$year}}</option>
-                                                @else
-                                                    <option>{{$year}}</option>
-                                                @endif
+                                            @foreach($data['years'] as $year)
+                                                <option @if(isset($data['selYear']) && $data['selYear'] == $year) selected @elseif($year==$currentYear) Selected @endif>{{$year}}</option>
                                             @endforeach
                                         </select>
                                     </div>
@@ -59,21 +51,7 @@
                                         <input type="submit" name="submit" value="Search" class="btn btn-success">
                                     </div>
                                 </div>
-                                <!-- Modal -->
-                                <div class="modal fade bd-example-modal-lg" id="exampleModal" tabindex="-1"
-                                     role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-                                    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-                                        <div class="modal-content">
-                                            <div class="modal-header">
-                                                <h5 class="modal-title" id="exampleModalLabel">Choose Field</h5>
-                                                <button type="button" class="close" data-dismiss="modal"
-                                                        aria-label="Close">
-                                                    <span aria-hidden="true">x</span>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                                
                             </form>
                         </div>
             </div>
@@ -83,27 +61,29 @@
                         <table id="example" class="table table-striped">
                             <thead>
                             <tr>
+                                <th>Emp No</th>
+                                <th>Emp Name</th>
                                 <th>Month -Year </th>
-                                <th>Employee Id</th>
                                 <th>Total Day</th>
-                                @foreach($header as $hkey => $col)
+                                @foreach($data['header'] as $hkey => $col)
                                     <th>{{$col}} </th>
                                 @endforeach
                                 <th>Total Deduction</th>
-                                <th>Total Payment</th>
+                                <th class="text-left">Total Payment</th>
                             </tr>
                             </thead>
                             <form action="{{route('payroll.store_monthly_payroll_report')}}" method="post">
                                 @csrf
                                 <tbody>
 
-                                    @foreach($currentYearemployeeDetails as $employee)
+                                    @foreach($data['currentYearemployeeDetails'] as $employee)
                                         <tr>
+                                        <td>{{$employee['employee_no']}}</td>
+                                        <td>{{$employee['employee_name']}}</td>
                                         <td>{{$employee['month'] .'/'. $employee['year']}}</td>
-                                        <td>{{$employee['employee_id']}}</td>
-                                        <td>{{$employee['total_day']}}</td>
-                                        @foreach($header as $hkey => $col)
-                                            <td>{{$employee['data'][$hkey]}}</td>
+                                        <td>{{round($employee['total_day'],2)}}</td>
+                                        @foreach($data['header'] as $hkey => $col)
+                                            <td>{{$employee['data'][$hkey] ?? '0' }}</td>
                                         @endforeach
                                         <td>{{$employee['total_deduction']}}</td>
                                         <td>{{$employee['total_payment']}}</td>
@@ -111,18 +91,18 @@
                                     @endforeach
 
 
-                                    @foreach($nextYearemployeeDetails as $employee)
+                               {{--     @foreach($data['nextYearemployeeDetails'] as $employee)
                                         <tr>
                                         <td>{{$employee['month'] .'/'. $employee['year']}}</td>
                                         <td>{{$employee['employee_id']}}</td>
                                         <td>{{$employee['total_day']}}</td>
-                                        @foreach($header as $hkey => $col)
-                                            <td>{{$employee['data'][$hkey]}}</td>
+                                        @foreach($data['header'] as $hkey => $col)
+                                            <td>{{$employee['data'][$hkey] ?? '0' }}</td>
                                         @endforeach
                                         <td>{{$employee['total_deduction']}}</td>
                                         <td>{{$employee['total_payment']}}</td>
                                         </tr>
-                                    @endforeach
+                                    @endforeach --}}
 
                                 </tbody>
                             </form>
@@ -136,7 +116,6 @@
     <script>
         $(document).ready(function () {
             var table = $('#example').DataTable({
-                ordering: false,
                 select: true,
                 lengthMenu: [
                     [100, 500, 1000, -1],

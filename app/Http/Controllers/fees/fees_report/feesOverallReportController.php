@@ -81,18 +81,15 @@ class feesOverallReportController extends Controller
         if ($last_name != '') {
             $extraSearchArrayRaw .= "  AND tblstudent.last_name like '%" . $last_name . "%' ";
         }
-        $extraSearchArrayRaw .= "  AND tblstudent_enrollment.end_date IS NULL ";
+        // $extraSearchArrayRaw .= "  AND tblstudent_enrollment.end_date IS NULL ";
         $extraSearchArray['tblstudent_enrollment.syear'] = $syear;
         $extraSearchArray['tblstudent.sub_institute_id'] = $sub_institute_id;
 
-        $feesData = tblstudentModel::selectRaw("tblstudent.id,CONCAT_WS(' ',tblstudent.first_name,tblstudent.middle_name,tblstudent.last_name) AS student_name,academic_section.title as grade,standard.name as standard_name,division.name as division_name,tblstudent.enrollment_no,tblstudent.mobile,tblstudent.uniqueid")
+        $feesData = tblstudentModel::selectRaw("tblstudent.id,CONCAT_WS(' ',tblstudent.first_name,tblstudent.middle_name,tblstudent.last_name) AS student_name,academic_section.title as grade,standard.name as standard_name,division.name as division_name,tblstudent.enrollment_no,tblstudent.mobile,tblstudent.uniqueid,(CASE WHEN tblstudent_enrollment.end_date IS null THEN 'active' ELSE 'In-active' END) AS status")
             ->join('tblstudent_enrollment', 'tblstudent.id', '=', 'tblstudent_enrollment.student_id')
             ->join('academic_section', 'academic_section.id', '=', 'tblstudent_enrollment.grade_id')
             ->join('standard', function($join) use($marking_period_id){
                 $join->on('standard.id', '=', 'tblstudent_enrollment.standard_id');
-                // ->when($marking_period_id,function($query) use($marking_period_id){
-                //     $query->where('standard.marking_period_id',$marking_period_id);
-                // });
             })
             ->join('division', 'division.id', '=', 'tblstudent_enrollment.section_id')
             ->where($extraSearchArray)
@@ -120,18 +117,24 @@ class feesOverallReportController extends Controller
 
         $final_array = array();
 
-
+        // set_time_limit(300); // to prevent maximum execution error
         foreach ($feesData as $key => $value) {
             $bk_data = $controller->getBk($request, $value['id']);
-            if (count($bk_data) > 0) {
+            if (count($bk_data) > 0 && isset($bk_data['stu_data'])) {
                 $final_array[$value['id']]['enrollment'] = $bk_data['stu_data']['enrollment'];
                 $final_array[$value['id']]['name'] = $bk_data['stu_data']['name'];
                 $final_array[$value['id']]['stddiv'] = $bk_data['stu_data']['stddiv'];
                 $final_array[$value['id']]['admission'] = $bk_data['stu_data']['admission'];
                 $final_array[$value['id']]['email'] = $bk_data['stu_data']['email'];
-                $final_array[$value['id']]['pending'] = $bk_data['stu_data']['pending'];
+                if($value['status']=="In-active"){
+                    $final_array[$value['id']]['pending'] = 0;
+                }else{
+                    $final_array[$value['id']]['pending'] = $bk_data['stu_data']['pending'];
+                }
                 $final_array[$value['id']]['mobile'] = $bk_data['stu_data']['mobile'];
                 $final_array[$value['id']]['uniqueid'] = $bk_data['stu_data']['uniqueid'];
+                $final_array[$value['id']]['status'] = $value['status'];
+
                 $total_fees_array = array();
                 foreach ($bk_data as $stu_id => $total_fees) {
                     $total_fees_array[] = $total_fees;
@@ -143,27 +146,28 @@ class feesOverallReportController extends Controller
                         }
                     }
                 }
-            }
-            if (isset($fees_fine_discount_data[$value['id']])) {
-                $final_array[$value['id']]['fine'] = $fees_fine_discount_data[$value['id']]['total_fine'];
-                $final_array[$value['id']]['discount'] = $fees_fine_discount_data[$value['id']]['total_disc'];
-            } 
+                if (isset($fees_fine_discount_data[$value['id']])) {
+                    $final_array[$value['id']]['fine'] = $fees_fine_discount_data[$value['id']]['total_fine'];
+                    $final_array[$value['id']]['discount'] = $fees_fine_discount_data[$value['id']]['total_disc'];
+                } 
 
-        if (isset($final_array[$value['id']])) {
-            $student_data = $final_array[$value['id']];
-            $total_paid_student =  $total_remain_student =  $total_bk_student = 0;
+                if (isset($final_array[$value['id']])) {
+                    $student_data = $final_array[$value['id']];
+                    $total_paid_student =  $total_remain_student =  $total_bk_student = 0;
 
-            foreach ($student_data as $key => $data) {
-                if ($key !== 'total_bk' && is_array($data) && isset($data['bk']) ||  isset($data['paid']) ||  isset($data['remain']) ) {
-                    $total_paid_student += $data['paid'];
-                    $total_remain_student += $data['remain'];
-                    $total_bk_student += $data['bk'];            
-                    $final_array[$value['id']]['-']['paid'] = $total_paid_student;
-                    $final_array[$value['id']]['-']['remain'] = $total_remain_student; 
-                    $final_array[$value['id']]['-']['bk'] = $total_bk_student; 
-                }
+                    foreach ($student_data as $key => $data) {
+                        if ($key !== 'total_bk' && is_array($data) && isset($data['bk']) ||  isset($data['paid']) ||  isset($data['remain']) ) {
+                            $total_paid_student += $data['paid'];
+                            $total_remain_student += $data['remain'];
+                            $total_bk_student += $data['bk'];            
+                            $final_array[$value['id']]['-']['paid'] = $total_paid_student;
+                            $final_array[$value['id']]['-']['remain'] = $total_remain_student; 
+                            $final_array[$value['id']]['-']['bk'] = $total_bk_student; 
+                        }
+                    }
+                } 
             }
-        } 
+
         }
 
         $res['status_code'] = 1;

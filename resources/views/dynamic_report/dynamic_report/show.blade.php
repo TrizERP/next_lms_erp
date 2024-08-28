@@ -1,16 +1,21 @@
-@include('includes.headcss')
-@include('includes.header')
-@include('includes.sideNavigation')
-
+{{--@include('../includes.headcss')
+@include('../includes.header')
+@include('../includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">       
             <div class="card">
-                @if(!empty($data['message']))
-                <div class="alert alert-success alert-block">
-                    <button type="button" class="close" data-dismiss="alert">×</button>
-                    <strong>{{ $data['message'] }}</strong>
-                </div>
-                @endif
+            @if ($sessionData = Session::get('data'))
+                    @if($sessionData['status_code'] == 1)
+                    <div class="alert alert-success alert-block">
+                    @else
+                    <div class="alert alert-danger alert-block">
+                    @endif
+                        <button type="button" class="close" data-dismiss="alert">×</button>
+                        <strong>{{ $sessionData['message'] }}</strong>
+                    </div>
+            @endif
                 <div class="row">                    
                     <div class="col-lg-3 col-sm-3 col-xs-3">
                         <a href="{{ route('dynamic_report.create') }}" class="btn btn-info add-new"><i class="fa fa-plus"></i> Add New</a>
@@ -73,3 +78,4 @@ $(document).ready(function () {
 
 </script>
 @include('includes.footer')
+@endsection

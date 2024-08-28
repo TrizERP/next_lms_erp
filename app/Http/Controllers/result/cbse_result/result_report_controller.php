@@ -36,7 +36,7 @@ class result_report_controller extends Controller
     {
         $syear = session()->get('syear');
         $sub_institute_id = session()->get('sub_institute_id');
-        $term_id = session()->get('term_id');
+        $term_id = $request->get('term');
         $type = $request->input('type');
         $report_of = $request->input('report_of');
         $grade_id = $request->input('grade');
@@ -169,7 +169,7 @@ class result_report_controller extends Controller
                 $responce_arr_term2[$cur_student_id]['grade_range'] = $all_grd_data;
             }
 
-//FOR TERM-3
+            //FOR TERM-3
             if (isset($academicTerms[2]->term_id) && $academicTerms[2]->term_id != null) {
                 session()->put('term_id', $academicTerms[2]->term_id);
             //getting all exam name with mark
@@ -198,7 +198,7 @@ class result_report_controller extends Controller
                     $responce_arr_term3[$cur_student_id]['final_grade'] = $controller->getFinalGrade($responce_arr_term3[$cur_student_id]['per']);
                 }
             }
-//FOR TERM-4
+            //FOR TERM-4
             if (isset($academicTerms[3]->term_id) && $academicTerms[3]->term_id != null) {
 
                 session()->put('term_id', $academicTerms[3]->term_id);
@@ -295,7 +295,6 @@ class result_report_controller extends Controller
                 $student_id_arr[] = $arr['student_id'];
             }
 
-
             $result = DB::table("result_create_exam as e")
                 ->join('sub_std_map as s', function ($join) {
                     $join->whereRaw("s.subject_id = e.subject_id AND s.sub_institute_id = e.sub_institute_id AND s.standard_id = e.standard_id");
@@ -303,8 +302,7 @@ class result_report_controller extends Controller
                 ->leftJoin('result_marks as rm', function ($join) {
                     $join->whereRaw("rm.sub_institute_id = e.sub_institute_id AND rm.exam_id = e.id");
                 })
-                ->selectRaw("e.title as ExamTitle, IF((e.con_point IS NULL) OR (e.con_point = ''),e.points,e.con_point) AS
-                    total_points,e.subject_id,s.display_name as subject_name,date_format(e.exam_date,'%d-%m-%Y') as exam_date,
+                ->selectRaw("e.title as ExamTitle, e.points AS total_points,e.subject_id,s.display_name as subject_name,date_format(e.exam_date,'%d-%m-%Y') as exam_date,
                     dayname(e.exam_date) as exam_day,rm.student_id,rm.points as obtained_points")
                 ->where("e.term_id", "=", $term_id)
                 ->where("e.sub_institute_id", "=", $sub_institute_id)
@@ -313,6 +311,7 @@ class result_report_controller extends Controller
                 ->where("e.subject_id", "=", $subject)
                 ->where("e.report_card_status", "=", 'Y')
                 ->whereIn("student_id", $student_id_arr);
+                //Rajesh = 18_12_2023 IF((e.con_point IS NULL) OR (e.con_point = ''),e.points,e.con_point) AS total_points
 
             if ($exam_type != '') {
                 $result = $result->where('e.exam_id', $exam_type);
@@ -349,7 +348,7 @@ class result_report_controller extends Controller
             foreach ($all_student as $key => $value) {
                 $students_data[$value['id']] = $value;
             }
-
+            $exam_create = $request->exam_create;
             //getting all exam marks
             $all_WRT_data = $this->getClasswise(
                 $all_student,
@@ -357,6 +356,7 @@ class result_report_controller extends Controller
                 $subject,
                 $type,
                 $exam_type,
+                $exam_create,                
                 $from_date,
                 $to_date,
                 //$additional_subjects
@@ -394,7 +394,9 @@ class result_report_controller extends Controller
                 //->whereIn("e.subject_id", $additional_subjects)
                 ->whereIn("student_id", $student_id_arr);
 
-            if ($exam_type != '') {
+                if ($exam_create != '') {
+                    $result = $result->where('e.title', $exam_create);
+                }else if ($exam_type != '') {
                 $result = $result->where('e.exam_id', $exam_type);
             }
 
@@ -426,7 +428,6 @@ class result_report_controller extends Controller
 
         if ($report_of == 'marks_report') 
         {
-            
             $all_student = SearchStudent($grade_id, $standard_id, $division_id, $sub_institute_id, $syear, $roll_no);
             $students_data = [];
             foreach ($all_student as $key => $value) {
@@ -505,6 +506,146 @@ class result_report_controller extends Controller
             $data['all_student'] = $students_data;
 
             return is_mobile($type, "result/result_report/classwise_report_show", $data, "view");
+        }
+
+        if ($report_of == 'weightage_conversion_report') 
+        {
+            $all_student = SearchStudent($grade_id, $standard_id, $division_id, $sub_institute_id, $syear, $roll_no);
+            $students_data = [];
+            foreach ($all_student as $key => $value) {
+                $students_data[$value['id']] = $value;
+            }
+            
+            $get_exam_master_heading = DB::table("result_exam_master")
+            ->where("SubInstituteId", "=", $sub_institute_id)
+            ->where("standard_id", "=", $standard_id)
+            ->where("term_id", "=", $term_id)
+            ->get()->toArray();
+            
+            $get_exam_masters = DB::table("result_exam_master")
+            ->selectRaw('group_concat(id) as exam_id')
+            ->selectRaw('GROUP_CONCAT(weightage) as total_weightage')
+            ->where("SubInstituteId", "=", $sub_institute_id)
+            ->where("standard_id", "=", $standard_id)
+            ->where("term_id", "=", $term_id)
+            ->groupBy('standard_id')->first();
+
+            $student_id_arr = [];
+            foreach ($all_student as $id => $arr) {
+                $student_id_arr[] = $arr['student_id'];
+            }
+            $student_id = implode(',', $student_id_arr);
+
+            // db::enableQueryLog();
+            $result = DB::table('result_create_exam as e')
+                ->select('rem.ExamTitle', DB::raw('SUM(e.points) as total_points'),
+                    'e.subject_id', 's.display_name as subject_name',
+                    'rm.student_id', DB::raw('SUM(rm.points) as obtained_points'), DB::raw('GROUP_CONCAT(rm.points) as marks_point'), DB::raw('GROUP_CONCAT(e.points) as total_point'), DB::raw('GROUP_CONCAT(e.title) as exam_create'),DB::raw('GROUP_CONCAT(e.exam_id) as exam_id'),  DB::raw('GROUP_CONCAT(rem.weightage) as total_weightage'))
+                ->join('sub_std_map as s', function ($join) {
+                    $join->whereRaw("s.subject_id = e.subject_id AND s.standard_id = e.standard_id");
+                })
+                ->join('result_exam_master as rem', 'rem.Id', '=', 'e.exam_id')
+                ->leftJoin('result_marks as rm', function ($join) use ($student_id){
+                    $join->on('rm.exam_id', '=', 'e.id');
+                })
+                ->where('e.term_id', $term_id)
+                ->where('e.sub_institute_id', $sub_institute_id)
+                ->where('e.syear', $syear)
+                ->where('e.standard_id', $standard_id)
+                ->where('e.report_card_status', 'Y')
+                ->where('e.subject_id', $subject)
+                ->whereRaw('rm.student_id IN ('.$student_id.')')
+                ->whereRaw("e.exam_id IN (".$get_exam_masters->exam_id.")");
+
+            $result = $result->groupByRaw('rm.student_id,e.subject_id')
+                ->orderBy('e.sort_order')->get()->toArray();
+
+            // dd(DB::getQueryLog($result));
+            $result = json_decode(json_encode($result), true);
+            
+            $date_arr = [];
+            $to_marks=[];
+            $to_weight=[];
+            $obtained_marks=[];
+
+            foreach ($result as $id => $arr) 
+            {
+                $marksArray = explode(',', $arr['marks_point']);
+                $totalPointArray = explode(',', $arr['total_point']);
+                $totalweightageArray = explode(',', $arr['total_weightage']);
+                $ExamIdArray = explode(',', $arr['exam_id']);
+                
+                $date_arr[$arr['subject_name']] = $arr['subject_name'] . '(' . $arr['total_points'] . ')';
+
+                if (count($marksArray) > 0) 
+                {
+                    foreach ($marksArray as $key => $mark) 
+                    {
+                        if((float)$mark != $totalweightageArray)
+                        {
+                            $convert_five = ($totalweightageArray[$key] * (float)$mark) / $totalPointArray[$key];
+                            
+                            $to_marks[$arr['student_id']][$ExamIdArray[$key]] = $totalweightageArray[0];
+                        }
+                        else
+                        {
+                            $convert_five = (float)$mark;
+                            $to_marks[$arr['student_id']][$ExamIdArray[$key]] = $totalweightageArray;
+                        }
+
+                        $obtained_marks[$arr['student_id']][$ExamIdArray[$key]][] = round($convert_five);
+                        $to_weight[$arr['student_id']][$ExamIdArray[$key]][] = (float)$totalweightageArray[$key];
+                    }
+                } 
+                else 
+                {
+                    $date_arr['final_weightage'] = 0;
+                }
+            } 
+            
+            $ob_main_mark = 0;
+            $convert_mark=[];
+
+            if (!empty($obtained_marks)) 
+            {
+                foreach ($obtained_marks as $student_id => $marksArray) 
+                {
+                    $t_m = 0;
+                    $t_w = 0;
+
+                    foreach ($marksArray as $index => $value) 
+                    {
+                        $w_m = isset($to_marks[$student_id][$index]) ? $to_marks[$student_id][$index] : 0; 
+                        
+                        // Sort 'best_two_sum' array and take the best two values
+                        $bestTwoSum = $value;
+                        rsort($bestTwoSum);
+                        $bestTwoValues = array_slice($bestTwoSum, 0, 2);
+                        // Sum the two best values
+                        $sumOfBestTwoValues = array_sum($bestTwoValues);
+
+                        $bestTwoSumW = $to_weight[$student_id][$index];
+                        rsort($bestTwoSumW);
+                        // Take the two best values
+                        $bestTwoW = array_slice($bestTwoSumW, 0, 2);
+                        // Sum the two best values
+                        $sumOfBestTwoW = array_sum($bestTwoW);
+                        
+                        $convert_mark[$student_id][$index][] = round(($w_m * $sumOfBestTwoValues) / $sumOfBestTwoW);
+                    }
+                }
+            }
+           
+            $data['grade_id'] = $grade_id;
+            $data['standard_id'] = $standard_id;
+            $data['division_id'] = $division_id;
+            $data['date_arr'] = $date_arr;
+            $data['mark_arr'] = $convert_mark;
+            $data['all_student'] = $students_data;
+            $data['get_exam_masters'] = $get_exam_masters;
+            $data['get_exam_master_heading'] = $get_exam_master_heading;
+
+            return is_mobile($type, "result/result_report/weightage_conversion_report_show", $data, "view");
         }
     }
 
@@ -600,6 +741,7 @@ class result_report_controller extends Controller
         $subject,
         $type,
         $exam_type = null,
+        $exam_create = null,        
         $from_date = null,
         $to_date = null,
         //$additional_subjects = null
@@ -640,7 +782,10 @@ class result_report_controller extends Controller
             //->whereIn("e.subject_id", $additional_subjects)
             ->whereIn("student_id", $student_id_arr);
 
-        if ($exam_type != '') {
+            if ($exam_create != '') {
+                $result = $result->where('e.title', $exam_create);
+            }
+            else if ($exam_type != '') {
             $result = $result->where('e.exam_id', $exam_type);
         }
 
@@ -809,7 +954,7 @@ class result_report_controller extends Controller
                 $join->whereRaw("rc.id = rm.exam_id AND rc.sub_institute_id = rm.sub_institute_id
     AND rc.standard_id = se.standard_id AND rc.syear = '" . $syear . "' AND rc.term_id = '" . $term_id . "'");
             })
-            ->selectRaw("s.id AS student_id,s.roll_no,concat_ws(' ',s.first_name,s.middle_name,s.last_name) as student_name,
+            ->selectRaw("s.id AS student_id,se.roll_no,concat_ws(' ',s.first_name,s.middle_name,s.last_name) as student_name,
     SUM(IFNULL(rm.points,0)) AS obtainedMarks,SUM(IFNULL(rc.points,0)) AS totalMarks,
     ((SUM(IFNULL(rm.points,0))/ SUM(IFNULL(rc.points,0)))*100) AS percentage,COUNT(if(((IFNULL(rm.points,0)/rc.points)*100)
     < " . $passing_ratio . ",1, NULL)) AS failed")
@@ -825,7 +970,7 @@ class result_report_controller extends Controller
         }
 
         $rank_data = $rank_data->limit($top_students)->groupBy('s.id')
-            ->orderByRaw('percentage DESC,s.roll_no ASC')
+            ->orderByRaw('percentage DESC,se.roll_no ASC')
             ->get()->toarray();
 
         $rank_data = json_decode(json_encode($rank_data), true);

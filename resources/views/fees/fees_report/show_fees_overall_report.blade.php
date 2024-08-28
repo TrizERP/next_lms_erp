@@ -101,6 +101,7 @@
                             <th>{{ App\Helpers\get_string('std/div','request')}}</th>
                             <th>Mobile No.</th>
                             <th>{{ App\Helpers\get_string('uniqueid','request')}}</th>
+                            <th>Status</th>
                             <th style="background-color:#7befef;">Total Breakoff</th>
                             @if(isset($data['month_arr']))
                                  @foreach($data['month_arr'] as $month_id => $month_val)
@@ -132,6 +133,9 @@
 
                     @if(isset($data['fees_data']))
                         @foreach($fees_data as $key => $fees_value)
+                        @if(isset($fees_value['-']['paid']) && $fees_value['-']['paid']==0 && $fees_value['status']=="In-active")
+                         <!-- do not show in-active who didn't paid fees for curremt year -->
+                        @else
                         <tr>
                             <td>{{$j}}</td>
                             <td>{{$fees_value['enrollment']}}</td>
@@ -139,6 +143,7 @@
                             <td>{{$fees_value['stddiv']}}</td>
                             <td>{{$fees_value['mobile']}}</td>
                             <td>{{$fees_value['uniqueid']}}</td>
+                            <td>{{$fees_value['status']}}</td>
                             <td style="background-color:#7befef;">{{$fees_value['-']['bk'] ?? 0 }}</td>
                             @foreach($data['month_arr'] as $month_id => $month_val)
                                 @php
@@ -177,7 +182,7 @@
                             <td style="background-color:#7befef;">{{$fees_value['-']['paid'] ?? 0 }}</td>
                             @foreach($data['month_arr'] as $month_id => $month_val)
                                 @php
-                                if(isset($fees_value[$month_id]['remain']))
+                                if(isset($fees_value[$month_id]['remain']) &&  $fees_value['status'] != "In-active")
                                 {
                                     echo "<td>".$fees_value[$month_id]['remain']."</td>";
                                     $var1 = "amount_unpaid_".$month_id;
@@ -188,18 +193,21 @@
                                     echo "<td>0</td>";
                                 }
                                 @endphp
+
                             @endforeach
-                            <td style="background-color:#7befef;">{{$fees_value['-']['remain'] ?? 0}}</td>
+                            <td style="background-color:#7befef;">{{ ($fees_value['status'] != "In-active" && isset($fees_value['-']['remain'])) ? $fees_value['-']['remain'] : 0}}</td>
                             @php
-                            $total_unpaid += $fees_value['-']['remain'] ?? 0;
+                            $total_unpaid += ($fees_value['status'] != "In-active" && isset($fees_value['-']['remain'])) ? $fees_value['-']['remain'] : 0;
                             @endphp
                         </tr>
                     @php
                     $j++;
                     @endphp
+                    @endif
                         @endforeach
                         <tr class="font-weight-bold">
                             <td>{{$j++}}</td>
+                            <td></td>
                             <td></td>
                             <td></td>
                             <td></td>
@@ -220,6 +228,7 @@
                                 $var1 = "amount_unpaid_".$month_id;
                                 echo "<td>".$$var1."</td>";
                             @endphp
+
                             @endforeach
                             <td>{{$total_unpaid}}</td>
                         </tr>

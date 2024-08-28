@@ -37,6 +37,7 @@
                                     <th>Doctor Name</th>
                                     <th>Doctor Contact</th>
                                     <th>Date</th>
+                                    <th>Remarks</th>
                                     <th>File</th>
                                     <th>Action</th>
                                 </tr>
@@ -53,6 +54,7 @@
                                     <td>{{$pvalue['doctor_name']}}</td>
                                     <td>{{$pvalue['doctor_contact']}}</td>
                                     <td>{{$pvalue['date']}}</td>
+                                    <td>{{$pvalue['remarks']}}</td>
                                     <td><a target="_blank" href="../storage/frontdesk/{{$pvalue['file']}}">{{$pvalue['file']}}</a></td>
                                     <td>
                                         <div class="d-inline">

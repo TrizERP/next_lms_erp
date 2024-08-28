@@ -152,9 +152,20 @@ class transferStudentController extends Controller
         $stud_ids = $request->input("stud_ids");
         $type = $request->input('type');
 
-        $standard_data = DB::select("select a.rollover_id,b.grade_id from (
-		select rollover_id from standard where sub_institute_id = '".$sub_institute_id."' and id = '".$standard_id."') as  a
-		inner join standard as b on b.id = a.rollover_id");
+        // $standard_data = DB::select("select a.rollover_id,b.grade_id from (
+		// select rollover_id from standard where sub_institute_id = '".$sub_institute_id."' and id = '".$standard_id."') as  a
+        // inner join standard as b on b.id = a.rollover_id");
+        $standard_data = DB::table('standard as a')
+        ->select('a.rollover_id', 'b.grade_id')
+        ->joinSub(function ($query) use ($sub_institute_id, $standard_id) {
+            $query->select('rollover_id')
+                ->from('standard')
+                ->where('sub_institute_id', $sub_institute_id)
+                ->where('id', $standard_id)
+                ->limit(1);
+        }, 'a')
+        ->join('standard as b', 'b.id', '=', 'a.rollover_id')
+        ->get();
 
         $next_standard_id = $standard_data[0]->rollover_id;
         $next_grade_id = $standard_data[0]->grade_id;

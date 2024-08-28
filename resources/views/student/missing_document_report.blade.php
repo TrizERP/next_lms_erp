@@ -1,7 +1,8 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row">
@@ -35,7 +36,17 @@
                 <div class="row">                    
                     {{ App\Helpers\SearchChain('4','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
                     <div class="col-md-4 form-group mt-3">
-                        <input type="submit" name="submit" value="Search" class="btn btn-success" >                     
+                        <label for="">User Type</label>
+                        <select name="user_type" id="user_type" class="form-control">
+                            <option value="student" {{ (isset($data['user_type']) && $data['user_type']=='student') ? 'Selected' : '' }}>Student</option>
+                            <option value="staff" {{ (isset($data['user_type']) && $data['user_type']=='staff') ? 'Selected' : '' }}>Staff</option>
+                        </select>                     
+                    </div>
+
+                    <div class="col-md-12 form-group mt-3">
+                        <center>
+                        <input type="submit" name="submit" value="Search" class="btn btn-success" >  
+                        </center>                   
                     </div>
                 </div>              
             </form>
@@ -56,12 +67,16 @@
                     <thead>
                         <tr>
                             <th>Sr No</th>
+                            @if(isset($data['user_type']) && $data['user_type']=='student')
                             <th>{{App\Helpers\get_string('grno','request')}}</th>
+                            @endif
                             <th>{{App\Helpers\get_string('studentname','request')}}</th>
+                            @if(isset($data['user_type']) && $data['user_type']=='student')
                             <th>{{App\Helpers\get_string('standard','request')}}</th>
                             <th>{{App\Helpers\get_string('division','request')}}</th>
+                            @endif
                                @foreach($data['docment_type_data'] as $key => $val)
-                                    <th>{{$val['document_type']}}</th>
+                                    <th class="text-left">{{$val['document_type']}}</th>
                                @endforeach
                         </tr>
                     </thead>
@@ -69,10 +84,14 @@
                         @foreach($result_report as $stud_key => $stud_data)
                             <tr>
                                 <td>{{$j++}}</td>
+                                @if(isset($data['user_type']) && $data['user_type']=='student')
                                 <td> {{$stud_data->enrollment_no}} </td>
+                                @endif
                                 <td> {{$stud_data->student_name}} </td>
+                                @if(isset($data['user_type']) && $data['user_type']=='student')
                                 <td> {{$stud_data->standard_name}} </td>
                                 <td> {{$stud_data->division_name}} </td>
+                                @endif
                                 @php
                                 if($stud_data->document_list != "")
                                 {
@@ -126,7 +145,24 @@
 
 @include('includes.footerJs')
 <script>
+
 $(document).ready(function() {
+
+    $('#grade').prop('required',true);
+    $('#standard').prop('required',true);
+
+    $('#user_type').on('change',function(){
+        var val = $(this).val();
+        if(val==='staff'){
+            $('#grade').prop('required',false);
+            $('#standard').prop('required',false);
+        }else{
+            $('#grade').prop('required',true);
+            $('#standard').prop('required',true);
+        }
+        // alert(val);
+    })
+
     var table = $('#example').DataTable( {
          select: true,          
          lengthMenu: [ 
@@ -153,6 +189,7 @@ $(document).ready(function() {
                 title: 'Missing Document Report',
                 customize: function (win) {
                     $(win.document.body).prepend(`{!! App\Helpers\get_school_details("$grade_id", "$standard_id", "$division_id") !!}`);
+                    $(win.document.body).append(`<div style="text-align: right;margin-top:20px">Printed on: {{date('d-m-Y H:i:s')}}</div>`);
                 }
             },
             'pageLength' 
@@ -175,4 +212,4 @@ $(document).ready(function() {
     } );
 </script>
 @include('includes.footer')
-
+@endsection

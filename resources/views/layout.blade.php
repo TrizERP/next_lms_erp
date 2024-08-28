@@ -70,6 +70,23 @@
         .ui-datepicker-inline {
             display: none !important;
         }
+        #loading-overlay {
+		position: fixed;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		background-color: rgb(251 251 252); /*rgba(0, 0, 0, 0.5); /* Adjust the opacity as needed */
+		z-index: 9999;
+	}
+
+	#loading-overlay center {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	}
+
     </style>
 
     <!-- Global site tag (gtag.js) - Google Analytics -->
@@ -244,6 +261,7 @@ $academicTerms = session()->get('academicTerms');
                             <span class="notify-dot"></span>
                         </div>
                     </div>-->
+                    
                     <div class="dropdown user-dropdown">
                         <button class="dropdown-toggle d-flex align-items-center" type="button" id="dropdownMenuButton"
                                 data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -262,6 +280,12 @@ $academicTerms = session()->get('academicTerms');
                                     class="mdi mdi-content-save-settings-outline"></i> ERP Status</a>
                             <a class="dropdown-item" href="{{route('implementation')}}"><i
                                     class="mdi mdi-checkerboard"></i> Implementation</a>
+                            <a class="dropdown-item" href="{{route('Onboarding')}}"><i
+                                    class="mdi mdi-view-module"></i> Onboarding</a>
+                            @if(session()->get('sub_institute_id')==1)
+                            <a class="dropdown-item" href="{{route('requirements.index')}}"><i
+                                    class="mdi mdi mdi-note-plus"></i> Add Process</a>
+                            @endif
                             @if(Session::get('user_profile_name') == 'Admin')
                                 <a class="dropdown-item" href="{{route('norm-clature.index')}}"><i
                                         class="mdi mdi-wallet-travel"></i> Language Setting</a>
@@ -285,6 +309,13 @@ $academicTerms = session()->get('academicTerms');
                             @endif
                         </div>
                     </div>
+
+                <div class="d-xl-flex d-md-block d-flex flex-wrap align-items-center justify-content-between">
+                    <div style="padding-left:0px">
+                        <a class="btn abtn" href="{{route('announcements.index')}}"><span class="mdi mdi-bell"></span></a>
+                    </div>
+                </div>
+            
                 </div>
             </div>
         </header>
@@ -478,7 +509,7 @@ $academicTerms = session()->get('academicTerms');
 
                             $dailylms_link = "dailylmslogin.php?SUB_INSTITUTE_ID=" . $sub_institute_id . "&U=" . base64_encode($DUSER_ID) . "&P=" . base64_encode($DUSER_PWD) . "";
 
-                        if ($hrms_rights == 1 && Session::get('user_profile_name') != 'Student') {
+                        if ($hrms_rights == 1 && Session::get('user_profile_name') == 'Admin') {//!= 'Student'
                             ?>
 
                         <a class="nav-link" target="_blank" href="http://150.129.172.110/new_hrms/Products/hrms/login.php{{ $hrms_link }}">

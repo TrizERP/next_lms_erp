@@ -1,7 +1,6 @@
-@include('includes.headcss')
-@include('includes.header')
-@include('includes.sideNavigation')
-
+{{-- @include('includes.headcss') @include('includes.header') @include('includes.sideNavigation') --}} 
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="card">
@@ -20,17 +19,15 @@
                         <table id="example" class="table table-striped">
                             <thead>
                                 <tr>
-                                    <th>Term</th>
                                     <th>Title</th>
                                     <th>Remark Status</th>
                                     <th>Sort Order</th>
-                                    <th>Action</th>
+                                    <th class="text-align">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach($data['data'] as $key => $data)
                                 <tr>    
-                                    <td>{{$data->term_name}}</td>
                                     <td>{{$data->title}}</td>
                                     <td>{{$data->remark_status}}</td>
                                     <td>{{$data->sort_order}}</td>                 
@@ -70,3 +67,4 @@ $(document).ready(function () {
 
 </script>
 @include('includes.footer')
+@endsection

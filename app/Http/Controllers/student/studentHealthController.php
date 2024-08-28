@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use function App\Helpers\is_mobile;
 use function App\Helpers\get_string;
+use Log;
 
 class studentHealthController extends Controller
 {
@@ -33,7 +34,7 @@ class studentHealthController extends Controller
             ->join('tblstudent as s', function ($join) {
                 $join->whereRaw('si.student_id = s.id');
             })
-            ->selectRaw("si.*, CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS '".get_string('studentname','request')."'")
+            ->selectRaw("si.*, CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name")
             ->where('si.sub_institute_id', $sub_institute_id)
             ->orderBy('si.id', 'DESC')->get()->toArray();
 
@@ -74,10 +75,18 @@ class studentHealthController extends Controller
         $user_id = $request->session()->get('user_id');
 
         $finalArray = $request->except('_method', '_token', 'submit', 'file');
-
+        
         $STUDENT = $request->input("student_id");
-        $STUDENT = explode("-", $STUDENT);
-        $finalArray['student_id'] = trim($STUDENT[1]);
+        if (is_string($STUDENT)) {
+            $STUDENT = explode("-", $STUDENT);
+            if (isset($STUDENT[1])) {
+                $finalArray['student_id'] = trim($STUDENT[1]);
+            } else {
+                Log::error('Array key 1 is undefined in $STUDENT array');
+            }
+        } else {
+            Log::error('Input for "student_id" is not a string');
+        }
 
         $file_name = $ext = $file_size = "";
         if ($request->hasFile('file')) {
@@ -220,11 +229,19 @@ class studentHealthController extends Controller
         $syear = $request->input("syear");
 
         if ($student_id != "" && $sub_institute_id != "" && $syear != "") {
-            $data = DB::select("SELECT doctor_name,doctor_contact,DATE_FORMAT(date,'%d-%m-%Y') AS date, if(file = '','',concat('https://".$_SERVER['SERVER_NAME']."/storage/frontdesk/',file)) as file
-            FROM student_health
-            WHERE syear = '".$syear."' AND sub_institute_id = '".$sub_institute_id."'
-            AND student_id = '".$student_id."'
-            ORDER BY date");
+            // $data = DB::select("SELECT doctor_name,doctor_contact,DATE_FORMAT(date,'%d-%m-%Y') AS date, if(file = '','',concat('https://".$_SERVER['SERVER_NAME']."/storage/frontdesk/',file)) as file
+            // FROM student_health
+            // WHERE syear = '".$syear."' AND sub_institute_id = '".$sub_institute_id."'
+            // AND student_id = '".$student_id."'
+            // ORDER BY date");
+            $data = DB::table('student_health')
+            ->select('doctor_name', 'doctor_contact', 'remarks', DB::raw("DATE_FORMAT(date, '%d-%m-%Y') AS date"), DB::raw("IF(file = '', CONCAT('https://".$_SERVER['SERVER_NAME']."/storage/frontdesk/noimages.png'), CONCAT('https://".$_SERVER['SERVER_NAME']."/storage/frontdesk/', file)) AS file"))
+            ->where('syear', $syear)
+            ->where('sub_institute_id', $sub_institute_id)
+            ->where('student_id', $student_id)
+            ->orderBy('date')
+            ->get();
+
 
             $res['status'] = 1;
             $res['message'] = "Success";

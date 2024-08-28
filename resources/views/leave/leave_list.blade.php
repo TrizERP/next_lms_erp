@@ -12,19 +12,34 @@
         </div>
 
         <div class="card">
+            
             <div class="col-md-12 mt-2">
+            @if ($sessionData = Session::get('data'))
+                @if($sessionData['status_code'] == 1)
+                <div class="alert alert-success alert-block">
+                @else
+                <div class="alert alert-danger alert-block">
+                @endif
+                    <button type="button" class="close" data-dismiss="alert">×</button>
+                    <strong>{{ $sessionData['message'] }}</strong>
+                </div>
+            @endif
+            @php 
+                $currentYear = date('Y');
+            @endphp
                 <div class="col-lg-12 col-sm-3 col-xs-3 row">
                     <div class="col-md-3 pull-right">
                         <select id="cmbyear" class="form-control" name="cmbyear"
-                            onchange="getyearwise_holiday(this.value);">
-                            <option value="">Select Year</option>
-                            <option value="2023">2023-2024</option>
-                            <option value="2022">2022-2023</option>
-                            <option value="2021">2021-2022</option>
+                        onchange="getYearwiseLeave(this.value);">
+                            @foreach($data['allyears'] as $key=>$value)
+                            <option value="{{$key}}">{{$value}}</option>
+                            @endforeach
                         </select>
                     </div>
                 </div>
-                <div class="col-lg-12 col-sm-12 col-xs-12">
+                <form action="{{route('my_leave_update')}}" method="post">
+                @csrf
+                <div class="col-lg-12 col-sm-12 col-xs-12 mt-4">
                     <div class="table-responsive">
                         <table id="tblLeaves" class="table table-striped table-bordered" style="width:100%">
                             <thead>
@@ -33,6 +48,7 @@
                                     <th data-toggle="tooltip" title="From Date">From Date</th>
                                     <th data-toggle="tooltip" title="To Date">To Date</th>
                                     <th data-toggle="tooltip" title="No of Days">No of Days</th>
+                                    <th data-toggle="tooltip" title="Day type">Day Type</th>
                                     <th data-toggle="tooltip" title="Leave Type">Leave Type</th>
                                     <th data-toggle="tooltip" title="Reason">Reason</th>
                                     <th data-toggle="tooltip" title="HOD's Comment">HOD's Comment</th>
@@ -45,10 +61,15 @@
                             </thead>
                             <tbody>
                             </tbody>
-
                         </table>
-                    </div>
+                    </div>                    
                 </div>
+                <div class="col-md-12">
+                        <center>
+                            <input type="submit" value="Save" id="save" class="btn btn-success hide">
+                        </center>
+                    </div>
+                    </form>
             </div>
             <!-- Tabs content -->
         </div>
@@ -57,6 +78,8 @@
 @include('includes.footerJs')
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-toast-plugin/1.3.2/jquery.toast.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-toast-plugin/1.3.2/jquery.toast.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+
 <script type="text/javascript">
     $(document).ready(function() {
         $('[data-toggle="tooltip"]').tooltip();
@@ -65,145 +88,94 @@
 
 <script>
     $(document).ready(function() {
-        var table = $('#tblLeaves').DataTable({
-            processing: true,
-            serverSide: true,
-            ajax: "{{ route('my-leave') }}",
-            columns: [{
-                    data: 'DT_RowIndex',
-                    name: 'DT_RowIndex'
-                },
-                {
-                    data: 'from_date',
-                    name: 'from_date'
-                },
-                {
-                    data: 'to_date',
-                    name: 'to_date'
-                },
-                {
-                    data: 'days',
-                    name: 'days'
-                },
-                {
-                    data: 'leave_type',
-                    name: 'leave_type'
-                },
-                {
-                    data: 'comment',
-                    name: 'comment'
-                },
-                {
-                    data: 'hod_comment',
-                    name: 'hod_comment'
-                },
-                {
-                    data: 'hod_comment_date',
-                    name: 'hod_comment_date'
-                },
-                {
-                    data: 'hr_remarks',
-                    name: 'hr_remarks'
-                },
-                {
-                    data: 'hr_remark_date',
-                    name: 'hr_remark_date'
-                },
-                {
-                    data: 'approved_by',
-                    name: 'approved_by'
-                },
-                {
-                    data: 'status',
-                    name: 'status'
-                },
-            ]
-        });
-
-        $(document).on("submit", "#frmLeaveType", function(e) {
-            e.preventDefault();
-            var formData = $("#frmLeaveType").serialize();
-            /**Ajax code**/
-            $.ajax({
-                type: "post",
-                url: "{{ route('leave-type.store') }}",
-                data: formData,
-                success: function(data) {
-                    $('#addTypeMdl').modal('toggle');
-                    $('#tblLeaves').DataTable().ajax.reload();
-                },
-                error: function(xhr) {
-                    if (xhr.status == 422) {
-                        var errors = JSON.parse(xhr.responseText);
-                        $.each(errors.errors, function(i, error) {
-                            $('#' + i).after(
-                                '<span class="text-strong text-danger">' +
-                                error + '</span>')
-                        })
-                    }
-                }
-            });
-        });
-
-        $(document).on("click", ".btn-edit", function(e) {
-            e.preventDefault();
-            $('.error').remove()
-            var id = $(this).data('id');
-            var url = "{{ route('leave-type.edit', ':id') }}";
-            url = url.replace(':id', id);
-            /**Ajax code**/
-            $.ajax({
-                type: "get",
-                url: url,
-                data: {
-                    id: id
-                },
-                success: function(data) {
-                    $('#addTypeMdl').modal('toggle');
-                    $('#leave_type_name').val(data.data.leave_type);
-                    $('#leave_id').val(data.data.id);
-                },
-                error: function(xhr) {
-                    if (xhr.status == 422) {
-                        var errors = JSON.parse(xhr.responseText);
-                        $.each(errors.errors, function(i, error) {
-                            $('#' + i).after(
-                                '<span class="text-strong text-danger error">' +
-                                error + '</span>')
-                        })
-                    }
-                }
-            });
-        });
-        $(document).on("click", ".btn-delete", function(e) {
-            e.preventDefault();
-            var id = $(this).data('id');
-            var url = "{{ route('leave-type.destroy', ':id') }}";
-            url = url.replace(':id', id);
-            /**Ajax code**/
-            if (confirm('Are you sure to delete leave type')) {
-                $.ajax({
-                    type: "delete",
-                    url: url,
-                    data: {
-                        id: id
-                    },
-                    success: function(data) {
-                        $('#tblLeaves').DataTable().ajax.reload();
-                    },
-                    error: function(xhr) {
-                        if (xhr.status == 422) {
-                            var errors = JSON.parse(xhr.responseText);
-                            $.each(errors.errors, function(i, error) {
-                                $('#' + i).after(
-                                    '<span class="text-strong text-danger">' +
-                                    error + '</span>')
-                            })
-                        }
-                    }
-                });
-            }
-        });
+        var CurrentYear = "{{$currentYear}}";
+        getYearwiseLeave(CurrentYear);
     });
 </script>
+<script>
+    function getYearwiseLeave(selectedYear) {
+        // Make an Ajax request
+        $('#cmbyear').val(selectedYear);
+        $.ajax({
+            type: 'GET',
+            url: '/get-leave',
+            data: { year: selectedYear },
+            success: function(data) {
+                // Update the table body with the received data
+                updateTableBody(data);
+            },
+            error: function(error) {
+                console.error('Error fetching data:', error);
+            }
+        });
+    }
+
+    function updateTableBody(data) {
+        $('#save').removeClass('show');
+        $('#save').addClass('hide');
+        var tableBody = $('#tblLeaves tbody');
+        tableBody.empty(); // Clear existing rows
+
+        if (data.length > 0) {
+            $.each(data, function(index, item) {
+                var comment  = (item.comment!==null) ? item.comment : '-';
+                var hod_comment  = (item.hod_comment!==null) ? item.hod_comment : '-';
+                var hod_comment_date  = (item.hod_comment_date!==null) ? item.hod_comment_date : '-';
+                var hr_remarks  = (item.hr_remarks!==null) ? item.hr_remarks : '-';
+                var hr_remark_date  = (item.hr_remark_date!==null) ? item.hr_remark_date : '-';
+                var approved_by  = (item.approved_by!==null) ? item.approved_by : '-';
+                var status  = (item.status!==null) ? item.status : '-';
+
+                if(item.status=="pending"){
+                    $('#save').removeClass('hide');
+                    $('#save').addClass('show');
+                    comment = '<input class="form-control" name="LeaveUpdate['+item.id+'][comment]">';
+                    hod_comment = '<input class="form-control" name="LeaveUpdate['+item.id+'][hod_comment]">';
+                    hr_remarks = '<input class="form-control" name="LeaveUpdate['+item.id+'][hr_remarks]">';
+                    status = '<select class="form-control" name="LeaveUpdate['+item.id+'][status]"><option value="pending">Pending</option><option value="cancelled">Cancelled</option></select>';
+
+                }
+                var from_date = item.from_date;
+                var to_date = item.to_date;
+                var day_type = parseFloat(item.day_type); 
+
+                var fromDate = moment(from_date);
+                var toDate = moment(to_date);
+                var dayCount = 0;
+
+                for (var date = fromDate.clone(); date.isSameOrBefore(toDate); date.add(1, 'day')) {
+                    dayCount = dayCount+day_type;
+                }
+                console.log('Number of days counted:', dayCount);
+                var day = "Half Day";
+                if(day_type >= 1){
+                    var day = "Full Day";
+                }
+                // Append a new row for each item in the data
+                var row = '<tr>' +
+                    '<td>' + (index + 1) + '</td>' +
+                    '<td>' + item.from_date + '</td>' +
+                    '<td>' + item.to_date + '</td>' +
+                    '<td>' + dayCount + '</td>' +
+                    '<td>' + day + '</td>' +
+                    '<td>' + item.leave_type_name + '</td>' +
+                    '<td>' + comment + '</td>' +
+                    '<td>' + hod_comment + '</td>' +
+                    '<td>' + hod_comment_date + '</td>' +
+                    '<td>' + hr_remarks + '</td>' +
+                    '<td>' + hr_remark_date + '</td>' +
+                    '<td>' + item.approved_by + '</td>' +
+                    '<td>' + status + '</td>' +
+                    '</tr>';
+
+                tableBody.append(row);
+            });
+        } else {
+            // Display a message if there is no data for the selected year
+            var noDataRow = '<tr><td colspan="12">No data available for the selected year.</td></tr>';
+            tableBody.append(noDataRow);
+        }
+    }
+</script>
+
 @include('includes.footer')

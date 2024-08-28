@@ -51,6 +51,7 @@ class van_wise_report_controller extends Controller
         return DB::table('transport_vehicle')
             ->select('transport_vehicle.title', 'transport_vehicle.id')
             ->where("transport_vehicle.sub_institute_id", session()->get('sub_institute_id'))
+            ->orderBy('transport_vehicle.title')
             ->pluck('title', 'id');
     }
 
@@ -138,8 +139,8 @@ class van_wise_report_controller extends Controller
             ->join('transport_vehicle as tv', function ($join) use ($search) {
                 $join->whereRaw("tv.id = tm.".$search."_bus_id");
             })
-            ->join('transport_school_shift as ss', function ($join) {
-                $join->whereRaw("ss.id = tv.school_shift");
+            ->join('transport_school_shift as ss', function ($join) use ($search) {
+                $join->whereRaw("ss.id = tm.".$search."_shift_id");
             })
             ->join('transport_stop as st', function ($join) use ($search) {
                 $join->whereRaw("st.id = tm.".$search."_stop");
@@ -151,14 +152,14 @@ class van_wise_report_controller extends Controller
                 $join->whereRaw("tr.id = rb.route_id");
             })
             ->join('transport_driver_detail as dd', function ($join) {
-                $join->whereRaw("dd.id = tv.driver");
+                $join->whereRaw("dd.id = tv.driver")->where('dd.status', 'Active');
             })
             ->leftJoin('transport_driver_detail as cd', function ($join) {
-                $join->whereRaw("cd.id = tv.conductor");
+                $join->whereRaw("cd.id = tv.conductor")->where('cd.status', 'Active');
             })
             ->selectRaw("ts.id AS student_id,CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name) name, 
-    concat(s.name,'/',d.name) as stddiv,ts.mobile,ts.enrollment_no,ts.address, tr.route_name, tv.title as bus_name, st.stop_name,
-    dd.first_name driver, cd.first_name conductor")
+    concat(s.name,'/',d.name) as stddiv,ts.mobile,ts.enrollment_no,ts.address, tr.route_name, ss.shift_title,tv.title as bus_name, st.stop_name,
+    dd.first_name driver, cd.first_name conductor, tm.amount as van_vise_amount")
             ->whereRaw($where)
             ->groupBy('student_id')
             ->get()->toarray();

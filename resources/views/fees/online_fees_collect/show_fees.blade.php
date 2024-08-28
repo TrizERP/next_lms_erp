@@ -1,142 +1,154 @@
 @include('includes.headcss')
-
 <style>
     tr.spaceUnder>th {
         padding-bottom: 1em !important;
     }
+
     #page-wrapper {
         margin: 0px;
         padding: 20px;        
     }
+
     .footer {
-        left:0;
+        left: 0;
     }
 </style>
 <div id="page-wrapper" style="color:#000;">
     <div class="container-fluid">
         <div class="row bg-title">
-            <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
-                <h4 class="page-title">Fees Collect</h4> </div>
+            <div class="col-md-12">
+                <h4 class="page-title text-center">Fees Collect</h4>
+            </div>
         </div>
-        <div class="row" >
-            <div class="white-box" >
-                <div class="panel-body">
-                    @if ($sessionData = Session::get('data'))
-                    @if($sessionData['status_code'] == 1)
-                    <div class="alert alert-success alert-block">
-                        @else
-                        <div class="alert alert-danger alert-block">
-                            @endif
-                            <button type="button" class="close" data-dismiss="alert">×</button>
-                            <strong>{{ $sessionData['message'] }}</strong>
+        <div class="card">
+            <form action="<?php echo $data['redirect_url']; ?>" id="myForm" method="post">
+                @csrf
+                <input type="hidden" name="student_id" value=<?php echo $data['student_id']; ?>>
+                <div class="row">
+                    <div class="col-md-4">
+                        <label for="year">Choose Year:</label>
+                        <select name="syear" id="year" onchange="this.form.submit();" class="form-control">
+                            <?php foreach ($data["dd_arr"] as $id => $val) {
+                                $selected = "";
+                                if ($val == $data["cur_year"]) {
+                                    $selected = "selected";
+                                } else {
+                                    $selected = "";
+                                }
+                                ?>
+                                <option {{$selected}} value={{$id}}>{{$val}}</option>
+                            <?php } ?>
+                        </select>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="card">
+            @if ($sessionData = Session::get('data'))
+            @if($sessionData['status_code'] == 1)
+            <div class="alert alert-success alert-block">
+                @else
+                <div class="alert alert-danger alert-block">
+                    @endif
+                    <button type="button" class="close" data-dismiss="alert">×</button>
+                    <strong>{{ $sessionData['message'] }}</strong>
+                </div>
+                @endif
+                <div class="row">
+                    <div class="col-md-4 col-lg-4 col-sm-4 col-xs-4">
+                        <div class="box-title">
+                            <label>Fees Structure</label>
                         </div>
-                        @endif
-                        <div class="col-md-4 col-lg-4 col-sm-4 col-xs-4">
-                            <div class="box-title">
-                                <label>Fees Structure</label>
-                            </div>
-                            <div class="table-responsive">
-                                <table class="table table-stripped" style="color:#000 !important;">
-                                    <tr>
-                                        <th>Month</th>
-                                        <th>Fees</th>
-                                        <th>Paid </th>
-                                        <th>Remaining </th>
-                                    </tr>
-                                    <?php 
-                                    $remainFees = 0; 
-                                    $feesDetails = [];
-                                foreach ($data['total_fees'] as $id => $arr) { 
-                                    $feesDetails[$arr['month']] = $arr['remain'];
-                                    ?>
-                                    <tr>
-                                        <td><?php echo $arr['month']; ?></td>
-                                        <td><?php echo $arr['bk']; ?></td>
-                                        <td><?php echo $arr['paid']; ?></td>
-                                        <td><?php echo $arr['remain']; ?></td>
-                                    </tr>
-                                <?php 
-                                    $remainFees += $arr['remain'];
+                        <div class="table-responsive">
+                            <table class="table table-stripped" style="color:#000 !important;">
+                                <tr>
+                                    <th>Month</th>
+                                    <th>Fees</th>
+                                    <th>Paid</th>
+                                    <th>Remaining</th>
+                                </tr>
+                                <?php
+                                $remainFees = 0;
+                                $feesDetails = [];
+                                foreach ($data['total_fees'] as $id => $arr) {
+                                $feesDetails[$arr['month']] = $arr['remain'];
+                                ?>
+                                <tr>
+                                    <td><?php echo $arr['month']; ?></td>
+                                    <td><?php echo $arr['bk']; ?></td>
+                                    <td><?php echo $arr['paid']; ?></td>
+                                    <td><?php echo $arr['remain']; ?></td>
+                                </tr>
+                                <?php
+                                $remainFees += $arr['remain'];
                                 } ?>
-
-                                </table>
-                            </div>
+                            </table>
                         </div>
-                        <div class="col-md-8 col-lg-8 col-sm-8 col-xs-8">
-                            <div class="box-title">
-                                <label>Fees Collection</label>
-                            </div>
-                            <div class="table-responsive col-md-6">
-                                <table class="table table-stripped">
-                                    <tr>
-                                        <td>{{ App\Helpers\get_string('uniqueid','request')}}</td>
-                                        <td><?php echo $data['stu_data']['student_id']; ?></td>
-                                    </tr>
-                                    <tr>
-                                        <td>{{ App\Helpers\get_string('studentname','request')}}</td>
-                                        <td><?php echo $data['stu_data']['name']; ?></td>
-                                    </tr>
-                                    <tr>
-                                        <td>Admission Year</td>
-                                        <td><?php echo $data['stu_data']['admission']; ?></td>
-                                    </tr>
-<!--                                    <tr>
-                                        <td>Roll No.</td>
-                                        <td>12</td>
-                                    </tr>-->
-                                    <tr>
-                                        <td>Parent Email</td>
-                                        <td><?php echo $data['stu_data']['email']; ?></td>
-                                    </tr>
-                                </table>
-                            </div>
-                            <div class="table-responsive col-md-6">
-                                <table class="table table-stripped">
-                                    <tr>
-                                        <td>{{ App\Helpers\get_string('grno','request')}}</td>
-                                        <td><?php echo $data['stu_data']['enrollment']; ?></td>
-                                    </tr>
-                                    <tr>
-                                        <td>{{ App\Helpers\get_string('std/div','request')}}</td>
-                                        <td><?php echo $data['stu_data']['stddiv']; ?></td>
-                                    </tr>
-<!--                                    <tr>
-                                        <td>Student Quota</td>
-                                        <td>General</td>
-                                    </tr>-->
-                                    <tr>
-                                        <td>Contact No</td>
-                                        <td><?php echo $data['stu_data']['mobile']; ?></td>
-                                    </tr>
-                                    <tr style="color: red;">
-                                        <td>Pending Fees</td>
-                                        <td><?php echo $data['stu_data']['pending']; ?></td>
-                                    </tr>
-                                </table>
-                            </div>
-                            <form action="{{ route('hdfc_request_handler') }}" enctype="multipart/form-data" method="post">
-                                @csrf
-                                <input type="hidden" name="grade_id" value="<?php echo $data['stu_data']['grade_id']; ?>">
-                                <input type="hidden" name="standard_id" value="<?php echo $data['stu_data']['std_id']; ?>">
-                                <input type="hidden" name="div_id" value="<?php echo $data['stu_data']['div_id']; ?>">
-                                <input type="hidden" name="student_id" value="<?php echo $data['stu_data']['student_id']; ?>">
-                                <input type="hidden" name="std_div" value="<?php echo $data['stu_data']['stddiv']; ?>">
-                                <input type="hidden" name="full_name" value="<?php echo $data['stu_data']['name']; ?>">
+                    </div>
+                    <div class="col-md-8 col-lg-8 col-sm-8 col-xs-8">
+                        <div class="box-title">
+                            <label>Fees Collection</label>
+                        </div>
+                        <div class="table-responsive col-md-6">
+                            <table class="table table-stripped">
+                                <tr>
+                                    <td>{{ App\Helpers\get_string('uniqueid','request')}}</td>
+                                    <td><?php echo $data['stu_data']['student_id']; ?></td>
+                                </tr>
+                                <tr>
+                                    <td>{{ App\Helpers\get_string('studentname','request')}}</td>
+                                    <td><?php echo $data['stu_data']['name']; ?></td>
+                                </tr>
+                                <tr>
+                                    <td>Admission Year</td>
+                                    <td><?php echo $data['stu_data']['admission']; ?></td>
+                                </tr>
+                                <tr>
+                                    <td>Parent Email</td>
+                                    <td><?php echo $data['stu_data']['email']; ?></td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="table-responsive col-md-6">
+                            <table class="table table-stripped">
+                                <tr>
+                                    <td>{{ App\Helpers\get_string('grno','request')}}</td>
+                                    <td><?php echo $data['stu_data']['enrollment']; ?></td>
+                                </tr>
+                                <tr>
+                                    <td>{{ App\Helpers\get_string('std/div','request')}}</td>
+                                    <td><?php echo $data['stu_data']['stddiv']; ?></td>
+                                </tr>
+                                <tr>
+                                    <td>Contact No</td>
+                                    <td><?php echo $data['stu_data']['mobile']; ?></td>
+                                </tr>
+                                <tr style="color: red;">
+                                    <td>Pending Fees</td>
+                                    <td><?php echo $data['stu_data']['pending']; ?></td>
+                                </tr>
+                            </table>
+                        </div>
+                        <form action="{{ route('hdfc_request_handler') }}" enctype="multipart/form-data" method="post">
+                            @csrf
+                            <input type="hidden" name="grade_id" value="<?php echo $data['stu_data']['grade_id']; ?>">
+                            <input type="hidden" name="standard_id" value="<?php echo $data['stu_data']['std_id']; ?>">
+                            <input type="hidden" name="div_id" value="<?php echo $data['stu_data']['div_id']; ?>">
+                            <input type="hidden" name="student_id" value="<?php echo $data['stu_data']['student_id']; ?>">
+                            <input type="hidden" name="std_div" value="<?php echo $data['stu_data']['stddiv']; ?>">
+                            <input type="hidden" name="full_name" value="<?php echo $data['stu_data']['name']; ?>">
 
-                                <div class="table-responsive col-md-12" style="border-top: 2px solid black;">
-                                    <table class="table table-stripped">
-                                        <tr>
-<!--                                            <td>
-                                                <div class="checkbox checkbox-info">
-                                                    <input id="months" onclick="checkedAll();" type="checkbox">
-                                                    <label for="months"> Months </label>
-                                                </div>
-                                            </td>-->
-
-                                            <?php
-                                        $no = 0;
+                            <div class="col-md-12" style="border-top: 2px solid black;">
+                                <div style="display:flex; flex-wrap:wrap; justify-content: space-between;">
+                                    <tr>
+                                        <?php
+                                        $no = $pay_amount = 0;
+                                        $i = 1;
                                         foreach ($data['month_arr'] as $id => $val) {
                                             $no++;
+                                            if ($i == 1) {
+                                                echo "<tr>";
+                                            }
                                             $slected = "";
                                             if (in_array($id, $data['search_ids'])) {
                                                 $slected = '';
@@ -147,104 +159,166 @@
                                                 $slected = 'checked';
                                                
                                             }
+
                                             ?>
                                             <td>
                                                 <div class="checkbox checkbox-info">
-                                                    <input id="<?php echo $id; ?>" name="months[<?php echo $id; ?>]" value="<?php echo $id; ?>" <?php echo $slected; ?> class="months" type="checkbox" @php echo $disabled; echo 'data-no='.$no; @endphp>
+                                                    <input id="<?php echo $id; ?>" name="months[<?php echo $id; ?>]" value="<?php echo $id; ?>" <?php echo $slected; ?> class="months" type="checkbox" 
+                                                    @php echo $disabled; echo 'data-no='.$no; @endphp>
                                                     <label for="<?php echo $id; ?>"><?php echo $val; ?></label>
                                                 </div>
                                             </td>
-                                        <?php } ?>
+                                        <?php 
+                                        if ($i == 6) {
+                                            echo "</tr>";
+                                        }
+                                        $i++;
+                                        } 
+                                        ?>
 
-                                        </tr>
-                                    </table>                            
+                                    </tr>
                                 </div>
-                                <div class="table-responsive col-md-12">
-                                    <table class="table table-stripped" border="0" width="100%">
-<!--                                        <tr>
-                                            <th colspan="2" style="width: 40%">Particular</th>
-                                            <th style="width: 20%">Amount</th>
-                                            <th style="width: 20%">Collection Amount</th>
-                                            <th style="width: 20%">Discount</th>
-                                        </tr>-->
-                                        <!--<span id="fees_head">-->
-                                        <tr>
-                                            <td colspan="5">
-                                                <table width="100%" border="0" id="fees_head">
-                                                    <tr class="spaceUnder">
-                                                        <!--<th colspan="2" align="center" style="width: 40%;align-content: center;">Particular</th>-->
-                                                        <th  align="center" style="width: 30%;padding-left: 15px;">Particular</th>
-                                                        <th style="width: 10%;padding-left: 15px;">Amount</th>
-                                                        <!-- <th style="width: 20%;padding-left: 15px;">Collection Amount</th> -->
-                                                        <!-- <th style="width: 20%;padding-left: 15px;">Discount</th>
-                                                        <th style="width: 20%;padding-left: 15px;">Fine</th> -->
-                                                    </tr>
-                                                    <?php foreach ($data['final_fee'] as $id => $val) { ?>
-                                                        <tr>
-                                                            <!--<td style="width: 20%"></td>-->
-                                                            <td style="width: 20%"><?php echo $id; ?></td>
-                                                            <td style="width: 20%"><?php echo $val; ?></td>
+                            </div>
+                            <div class="table-responsive col-md-12">
+                                <table class="table table-stripped" border="0" width="100%">
+                                    <tr>
+                                        <td colspan="5">
+                                            <table width="100%" border="0" id="fees_head">
+                                                <tr class="spaceUnder">
+                                                    <th align="center" style="width: 30%;padding-left: 15px;">Particular</th>
+                                                    <th style="width: 10%;padding-left: 15px;">Amount</th>
+                                                </tr>
+                                                <?php
+                                                $total = [];
+                                                $cheque_return_charges0 = $data['cheque_return_charges'][0] ?? 0; 
+                                                $cheque_return_charges = $data['fees_config_data'][0]['late_fees_amount'] ?? 0;
+                                                $sub_institute_id=[257];
+                                                
+                                                // Get the current date
+                                                $currentDate = new DateTime();
+                                                $currentMonth = $currentDate->format('Y-m');
+                                                $thirdDateOfMonth = new DateTime($currentMonth . '-02');
 
-                                                            <?php
-                                                            if ($id != 'Total') {
-                                                                // echo "<td style='width: 20%'><input type='number'  min=0 max=$val value=" . $val . " name='fees_data[" . $data['final_fee_name'][$id] . "]' class='form-control allField1'></td>";
-                                                                // echo "<td style='width: 20%'><input type='number'  min=0 max=$val value=0 name='discount_data[" . $data['final_fee_name'][$id] . "]' class='form-control allDisField' style='min-width:150px;'></td>";
-                                                                // echo "<td style='width: 20%'><input type='number'  min=0 value=0 name='fine_data[" . $data['final_fee_name'][$id] . "]' class='form-control allFinField' style='min-width:150px;'></td>";
-                                                            } else {
-                                                                echo "<input type='hidden' id='totalVal' name='total' value=" . $val . " class='form-control'>";
-                                                                // echo "<td style='width: 25%'><input id='totalVal' type='text' name='total' value=" . $val . " class='form-control'></td>";
-                                                                // echo "<td style='width: 25%'><input id='totalDis' type='text' name='totalDis' value=0 class='form-control'></td>";
-                                                                // echo "<td style='width: 25%'><input id='totalFin' type='text' name='totalFin' value=0 class='form-control'></td>";
-                                                            }
-                                                            ?>
-                                                            <!--<td style="width: 25%"><input type="text" class="form-control"></td>-->
-                                                        </tr>
-                                                    <?php } ?>
+                                                 foreach ($data['final_fee'] as $id => $val) { ?>
                                                     
-                                                </table>
-                                            </td>
+                                                    <tr>
+                                                        <td style="width: 20%" class="allField1" id="{{$id}}">{{$id}}</td>
+                                                        
+                                                        <td style="width: 20%">{{$val}}</td>
+
+                                                        <?php
+                                                        //echo "<pre>";print_r($id);
+                                                        if ($id != 'Total') {
+
+                                                        } else {
+                                                            echo "<input type='hidden' id='totalVal' name='total' value=" . $val . " class='form-control'>";
+                                                            $pay_amount = $val;
+                                                            
+                                                            $total[] =$val ?? 0;
+                                                            
+                                                            //echo "<pre>";print_r($total);
+                                                            
+                                                        }
+                                                        ?>
+                                                        
+                                                    </tr>
+                                                    
+                                                <?php
+                                                                                                                                                        
+                                                }
+                                                  $total_amt= array_sum($total);
+                                            ?>
+
+                                            </table>
+                                        </td>
+                                    </tr>
+                                    
+                                    <?php if ($data["fees_type"] != "fix") { ?>
+                                        <tr>
+                                            <td></td>
+                                            <td>Discount</td>
+                                            <td></td>
+                                            <td><input type="text" name="totalDis" id="totalDiscount" readonly></td>
+                                            
                                         </tr>
-                                        <?php if($data["fees_type"] != "fix") { ?>
-                                       <tr>
+                                        <tr>
+                                            <td></td>
+                                            <td>Fine</td>
+                                            <td></td>
+                                            <td>@if(in_array(session()->get('sub_institute_id'), $sub_institute_id))
+                                                <input type="text" name="fees_data[fine]" id="cheque_return_charges1" class="form-control cheque_return_charges1" value="@if($currentDate > $thirdDateOfMonth && isset($total_amt) && $total_amt!=0 && $data['admission_under'] == 'Old') {{ $data['fees_config_data'][0]['late_fees_amount'] }} @else {{ $cheque_return_charges0 ?? 0 }} @endif" readonly="readonly">
+                                                <input type="hidden" name="hidden_cheque_return_charges" id="hidden_cheque_return_charges" class="form-control cheque_return_charges1" value="@if($currentDate > $thirdDateOfMonth && isset($total_amt) && $total_amt!=0 && $data['admission_under'] == 'Old') {{  $data['fees_config_data'][0]['late_fees_amount'] }} @else {{ $cheque_return_charges0 ?? 0 }} @endif">
+
+                                                <input type="hidden" name="for_cn_only" id="hidden_cheque_return_charges2" value="@if($currentDate > $thirdDateOfMonth && isset($total_amt) && $total_amt!=0 && $data['admission_under'] == 'Old') {{  $data['fees_config_data'][0]['late_fees_amount'] }} @else {{ $cheque_return_charges0 ?? 0 }} @endif"> 
+
+                                            @else
+                                                <input type="text" name="fees_data[fine]" id="cheque_return_charges" class="form-control" value="@php if(isset($cheque_return_charges0)) echo $cheque_return_charges0; @endphp" readonly="readonly">
+                                                <input type="hidden" name="hidden_cheque_return_charges" id="hidden_cheque_return_charges" class="form-control" value="@if(isset($cheque_return_charges0)){{ $cheque_return_charges0 }}@endif">
+                                            @endif</td>
+                                            
+                                        </tr>
+                                        @php
+                                            // START 30-12-2021 Added for include cheque return charges in grand total
+
+                                            if (isset($cheque_return_charges) && $cheque_return_charges != '') {
+                                                if(in_array(session()->get('sub_institute_id'), $sub_institute_id) && $data['admission_under'] != 'Old'){
+                                                    $grand_total_with_cheque_charges = $data['final_fee']['Total'] + $cheque_return_charges0;
+                                                }else{
+                                                    $grand_total_with_cheque_charges = $data['final_fee']['Total'] + $cheque_return_charges;
+                                                }
+                                            } else {
+                                                $grand_total_with_cheque_charges = $data['final_fee']['Total'];
+                                            }
+                                            // END 30-12-2021 Added for include cheque return charges in grand total
+
+                                        @endphp
+                                        <tr>
                                             <td></td>
                                             <td>Collection Amount</td>
                                             <td></td>
-                                            <td><input type="number"  id="pay_amount" name="pay_amount" max="{{$data['final_fee']['Total']}}" class="form-control" value = "{{$data['final_fee']['Total']}}"></td>
+                                            <td><input type="number" id="pay_amount" name="pay_amount" max="<?php echo $grand_total_with_cheque_charges; ?>" class="form-control" value="<?php echo $grand_total_with_cheque_charges; ?>" readonly="readonly"></td>
                                         </tr>
-                                        <?php } ?>                                        
-                                    </table>
+                                    <?php } ?>
+                                </table>
+                            </div>
+                            <div class="table-responsive col-md-12">
+                                <div class="col-md-4 text-center form-group"></div>
+                                <div class="col-md-4 text-center form-group">
+                                    <?php
+                                    if ($data['error'] == "") {
+                                        ?>
+                                        <input type="submit" name="submit" value="Pay Now" class="btn btn-success">
+                                    <?php
+                                    } else {
+                                        ?>
+                                        <label style="color:red;">Please pay previous year fees first.</label>
+                                    <?php
+                                    }
+                                    ?>
                                 </div>
-                                <div class="table-responsive col-md-12" >
-                                    <div class="col-md-6 form-group">
-                                        <!--                                        <div class="checkbox checkbox-info">
-                                                                                    <input id="sendsms" name="send_sms" type="checkbox">
-                                                                                    <label for="sendsms"> SEND SMS </label>
-                                                                                </div>-->
-                                    </div>
-                                    <div class="col-md-6 form-group">
-                                        <input type="submit" name="submit" value="Pay Now" class="btn btn-success" >    
-                                    </div>
-                                </div>
-                            </form>
-                        </div>
+                                <div class="col-md-4 text-center form-group"></div>
+                            </div><br/><br/><br/>
+                        </form>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+</div>
 
-    @include('includes.footerJs')
+@include('includes.footerJs')
     <script>
         document.body.className = document.body.className.replace("fix-header", "fix-header show-sidebar hide-sidebar");
         var elements = document.querySelectorAll('input,select,textarea');
 
-        for (var i = elements.length; i--; ) {
-            elements[i].addEventListener('invalid', function () {
+        for (var i = elements.length; i--;) {
+            elements[i].addEventListener('invalid', function() {
                 this.scrollIntoView(false);
             });
         }
+
         function checkForm() {
-//            alert("checkForm");
+            //            alert("checkForm");
             if ($('#payment_mode').val() == '') {
                 alert("Please Select Payment Mode.");
                 return false;
@@ -270,51 +344,49 @@
                     alert("Please Select Bank Branch.");
                     return false;
                 }
-//                var n = $("#cheque_no").length;
+                //                var n = $("#cheque_no").length;
                 var n = $("#cheque_no").val().length;
                 if (n != 6) {
                     alert("Cheque/DD Number Must Be 6 Digit.");
                     return false;
                 }
-//                alert(n);
+                //                alert(n);
 
             }
             return true;
         }
-        // in another js file, far, far away
-//        $('.allField1').on('change', function () {
-        $('#fees_head').on('change', '.allField1', function () {
+        $('#fees_head').on('change', '.allField1', function() {
             var sum = 0;
-            $('.allField1').each(function () {
+            $('.allField1').each(function() {
                 var amount;
                 amount = parseFloat($(this).val());
-                sum += amount;  // Or this.innerHTML, this.innerText
+                sum += amount; // Or this.innerHTML, this.innerText
             });
 
             $("#totalVal").val(sum);
             calculateTotal();
         });
 
-//        $('.allDisField').on('change', function () {
-        $('#fees_head').on('change', '.allDisField', function () {
-//            alert("asds");
+        //        $('.allDisField').on('change', function () {
+        $('#fees_head').on('change', '.allDisField', function() {
+            //            alert("asds");
             var sum = 0;
-            $('.allDisField').each(function () {
+            $('.allDisField').each(function() {
                 var amount;
                 amount = parseFloat($(this).val());
-                sum += amount;  // Or this.innerHTML, this.innerText
+                sum += amount; // Or this.innerHTML, this.innerText
             });
 
-            $("#totalDis").val(sum);
+            // $("#totalDis").val(sum);
             calculateTotal();
         });
-        $('#fees_head').on('change', '.allFinField', function () {
-//            alert("asds");
+        $('#fees_head').on('change', '.allFinField', function() {
+            //            alert("asds");
             var sum = 0;
-            $('.allFinField').each(function () {
+            $('.allFinField').each(function() {
                 var amount;
                 amount = parseFloat($(this).val());
-                sum += amount;  // Or this.innerHTML, this.innerText
+                sum += amount; // Or this.innerHTML, this.innerText
             });
 
             $("#totalFin").val(sum);
@@ -322,21 +394,38 @@
         });
 
         function calculateTotal() {
-            tot = parseFloat($("#totalVal").val());
-            fin = parseFloat($("#totalFin").val());
-            dis = parseFloat($("#totalDis").val());
-
-            if (dis > tot && dis != 0) {
-                alert("Discount Can Not Be More Then Total Amount.");
-                $("#discount").val(0);
-            } else {
-                if (isNaN(dis)) {
-                } else {
-                    tot = (tot - dis) + fin;
+            tot =  isNaN($("#totalVal").val()) ? 0 : parseFloat($("#totalVal").val());
+            fin =  isNaN($("#totalFin").val()) ? 0 : parseFloat($("#totalFin").val());
+            dis =  isNaN($("#totalDiscount").val()) ? 0 : parseFloat($("#totalDiscount").val());
+            // console.log('tot '+tot);
+            // console.log('fin '+fin);
+            // console.log('dis '+dis);
+            
+            if({{session()->get('sub_institute_id')}} == 257){
+                    cheque_return_charges = isNaN($("#cheque_return_charges1").val()) ? 0 : parseFloat($("#cheque_return_charges1").val());
+                }else{
+                    cheque_return_charges = isNaN($("#hidden_cheque_return_charges").val()) ? 0 : parseFloat($("#hidden_cheque_return_charges").val());
                 }
-                $("#grandTotal").val(tot);
-            }
+
+                if (dis > tot && dis != 0) {
+                    alert("Discount Can Not Be More Then Total Amount.");
+                    $("#totalDiscount").val(0);
+                    // $("#totalDis").val(0)
+                } else {
+                    if (!isNaN(dis)) {
+                        tot = (tot - dis) + fin;
+                    }
+                    tot = tot + cheque_return_charges;
+                   
+                    $("#pay_amount").val(tot);
+                }
         }
+
+        $(document).on('change', '.cheque_return_charges1', function() {
+        calculateTotal();
+        });
+        
+
         function sh_bankDetail(selectedVal) {
             if (selectedVal == 'Cash') {
                 $('.bnakDetail').hide();
@@ -344,99 +433,184 @@
                 $('.bnakDetail').show();
             }
         }
-//         $('.months').click(function () {
-//             var checkedMonths = new Array();
-//             var j = 0;
-//             for (var i = 0; i < document.getElementsByClassName('months').length; i++)
-//             {
-//                 if (document.getElementsByClassName('months')[i].checked) {
-//                     checkedMonths[j] = document.getElementsByClassName('months')[i].value;
-//                     j = j + 1;
-//                 }
-//             }
-//             console.log(checkedMonths);
-//             $.ajax({
-//                 type: "POST",
-//                 url: "{{route('get-online-fees-list')}}",
-// //                url: "/api/get-standard-list?grade_id=1",
-//                 data: {
-//                     checkedMonths: checkedMonths, 
-//                     student_id: <?php echo $data['stu_data']['student_id']; ?>,
-//                     fees_type: "<?php echo $data['fees_type']; ?>"
-//                     }, //--> send id of checked checkbox on other page
-//                 success: function (data) {
-//                     $("#fees_head").empty();
-//                     $("#fees_head").html(data);
-//                     tot = $("#totalVal").val();
-//                     $("#discount").val(0);
-// //                    if (isNaN(dis)) {
-// //                    } else {
-// //                        tot = tot - dis;
-// //                    }
-//                     $("#grandTotal").val(tot);
+        // $('.months').click(function() {
+        //     var checkedMonths = new Array();
+        //     var j = 0;
+        //     for (var i = 0; i < document.getElementsByClassName('months').length; i++) {
+        //         if (document.getElementsByClassName('months')[i].checked) {
+        //             checkedMonths[j] = document.getElementsByClassName('months')[i].value;
+        //             j = j + 1;
+        //         }
+        //     }
+        //     console.log(checkedMonths);
+        //     $.ajax({
+        //         type: "POST",
+        //         url: "{{route('get-online-fees-list')}}",
+        //         data: {
+        //             checkedMonths: checkedMonths,
+        //             student_id: <?php echo $data['stu_data']['student_id']; ?>,
+        //             fees_type: "<?php echo $data['fees_type']; ?>"
+        //         }, //--> send id of checked checkbox on other page
+        //         success: function(data) {
+        //             $("#fees_head").empty();
+        //             $("#fees_head").html(data);
+        //             tot = $("#totalVal").val();
+        //             $("#discount").val(0);
+        //             $("#pay_amount").val(tot);//grandTotal
 
-//                 }
-//             });
-//         });
+        //             fin = parseFloat($("#totalFin").val());
+        //             cheque_return_charges = $("#hidden_cheque_return_charges").val();
+        //             sum = fin + parseFloat(cheque_return_charges);
+        //             $("#cheque_return_charges").val(sum);
+        //             calculateTotal();
+        //         }
+        //     });
+        // });
 
-        $('.months').click(function() {
-				var currentCheckedIndex = $('.months').index(this); 
+             $('.months').click(function() {
+                var currentCheckedIndex = $('.months').index(this); 
 
-				$('.months').each(function(index) {
-					if (index <= currentCheckedIndex) {
-					$(this).prop('checked', true);
-					} else {
-					$(this).prop('checked', false);
-					}
-				});
+                $('.months').each(function(index) {
+                    if (index <= currentCheckedIndex) {
+                    $(this).prop('checked', true);
+                    } else {
+                    $(this).prop('checked', false);
+                    }
+                });
 
-  			monthCheck();
-			});
+            monthCheck();
+            });
 
-			function monthCheck() {
-				var checkedMonths = new Array();
-					var j = 0;
-				for (var i = 0; i < document.getElementsByClassName('months').length; i++) {
-					if (document.getElementsByClassName('months')[i].checked) {
-						checkedMonths[j] = document.getElementsByClassName('months')[i].value;
-						j = j + 1;
-					}
-				}
+            function monthCheck() {
+                var checkedMonths = new Array();
+                    var j = 0;
+                    for (var i = 0; i < document.getElementsByClassName('months').length; i++) {
+                        var monthElement = document.getElementsByClassName('months')[i];
+                        
+                        if (monthElement.checked && !monthElement.disabled) {
+                            checkedMonths[j] = monthElement.value;
+                            j = j + 1;
+                        }
+                    }
 
-				$.ajax({
-					type: "POST",
-					url: "{{route('get-online-fees-list')}}",
-					data: {
+                $.ajax({
+                    type: "POST",
+                    url: "{{route('get-online-fees-list')}}",
+                    data: {
                     checkedMonths: checkedMonths, 
                     student_id: <?php echo $data['stu_data']['student_id']; ?>,
                     fees_type: "<?php echo $data['fees_type']; ?>"
                     },
-					//--> send id of checked checkbox on other page
-					success: function(data) {
+                    //--> send id of checked checkbox on other page
+                    success: function(data) {
+                        // console.log(data);
                         $("#fees_head").empty();
-                    $("#fees_head").html(data);
-                    tot = $("#totalVal").val();
-                    $("#discount").val(0);
+                        $("#fees_head").html(data);
+                        tot = $("#totalVal").val();
+                        // $("#totalDiscount").val(0);
+                        $("#pay_amount").val(tot);//grandTotal
 
-                    $("#grandTotal").val(tot);
+                    
+                    calculateTotal();
+                        // 26/08/2021 Start Added for The Millennium School for Advanced Imprest Collection payment .prop('disabled')
+                        $('.allField1').each(function() {
+                            var new_name = $(this).attr('name');
+                            amount = $('input[name="' + new_name + '"]').val();
+                            if (amount < 0) {
+                                $(this).attr('readonly', true);
+                            }
+                        });
+                        // 26/08/2021 END Added for The Millennium School for Advanced Imprest Collection payment
+                        @if(session()->get('sub_institute_id') == 257)
+                            var k = 0;
+                            var checkedTitle = new Array();
+                            var currentMonth = "{{date('n')}}{{date('Y')}}";
 
-						// 26/08/2021 Start Added for The Millennium School for Advanced Imprest Collection payment
-						$('.allField1').each(function() {
-							var new_name = $(this).attr('name');
-							amount = $('input[name="' + new_name + '"]').val();
-							if (amount < 0) {
-								$(this).attr('readonly', true);
-							}
-						});
-						// 26/08/2021 END Added for The Millennium School for Advanced Imprest Collection payment
-					}
-				});
-			}
+                                $('.allField1').each(function() {
+                                    checkedTitle[k] = $(this).attr('id');
+                                    k= k+1;
+                                });
+                                // console.log(checkedTitle);
+
+                                // uniform and recovery fees 
+                                if (checkedTitle.length > 0 && !checkedTitle.includes('Sports Fees') && !checkedTitle.includes('3')) {
+                                    fineZero(0);
+                                }
+                                // advance fees 
+                                else if(checkedMonths.length > 0 && !checkedMonths.includes(currentMonth)){
+                                    lastMonth = checkedMonths[checkedMonths.length - 1];
+                                    
+                                    let greaterMonths = checkedMonths.filter(month => month > currentMonth);
+                                    if (greaterMonths.length > 0) {
+                                        fineZero(0);
+                                        // console.log('no current month');
+                                    }
+                                    else{
+                                        var charge = $('#hidden_cheque_return_charges2').val();
+                                        var fine = parseFloat(charge);
+                                        fineZero(fine);
+                                    }
+                                }
+                                else{
+                                    var charge = $('#hidden_cheque_return_charges2').val();
+                                    var fine = parseFloat(charge);
+                                    fineZero(fine);
+                                }
+                                CalDis();
+                            @endif
+
+                            cheque_return_charges = parseFloat($("#hidden_cheque_return_charges").val());
+                              
+                            // 03-07-2024 
+                            var totPay = parseFloat($('#pay_amount').val()); 
+                            var payFin = (totPay+cheque_return_charges);
+                            $('#pay_amount').val(payFin);                 
+                    }
+                });
+
+            function fineZero(cheque_return_charges){
+                $('#cheque_return_charges1').val(cheque_return_charges);
+                $('#hidden_cheque_return_charges').val(cheque_return_charges);
+            }
+
+                // get discount amount 14-06-2024
+            function CalDis(){  
+                var general_setting  = @json($data['discountData']);
+                var currentMonth = "{{$data['currentMonth']}}";
+                
+                if(general_setting && Object.keys(general_setting).length > 0){
+                    if (checkedMonths.length > 0) {
+                        lastMonth = checkedMonths[checkedMonths.length - 1];
+                        // get months greater then equal to current month
+                        let greaterMonthsdis = checkedMonths.filter(month => month >= currentMonth);
+                        // console.log(greaterMonthsdis);
+                        // if(lastMonth >= currentMonth && checkedMonths.length>=3){
+                        if (lastMonth >= currentMonth && greaterMonthsdis.length >= 3) {
+                            var totalVal = parseFloat($('#totalVal').val());
+                            var dicountPer = general_setting.extra_field1;
+                            var perVal = Math.round((dicountPer/100) * totalVal); 
+
+                            $('#totalDiscount').val(perVal);
+                            var totalAmt = parseFloat($('#pay_amount').val());
+                            var NewTot = (totalAmt - perVal);
+                            $('#pay_amount').val(NewTot);
+                        }else{
+                            $('#totalDiscount').val(0);
+                            var totalVal = parseFloat($('#totalVal').val());
+                            $('#pay_amount').val(totalVal);
+                        }
+                    }else{
+                        $('#totalDiscount').val(0);
+                    }
+                }
+            }
+                // end discount amount 14-06-2024
+            }
     </script>
     @if(app('request')->input('implementation') == 1)
-<script type="text/javascript">
-    document.body.className = document.body.className.replace("fix-header", "fix-header show-sidebar hide-sidebar");
-    document.getElementById('main-header').style.display = 'none';
-</script>
-@endif
+    <script type="text/javascript">
+        document.body.className = document.body.className.replace("fix-header", "fix-header show-sidebar hide-sidebar");
+        document.getElementById('main-header').style.display = 'none';
+    </script>
+    @endif
     @include('includes.footer')

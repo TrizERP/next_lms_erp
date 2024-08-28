@@ -1,6 +1,8 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <style type="text/css">
     .label{
         color:black;
@@ -153,29 +155,30 @@
                 @if(count($data['result'])>0)
                     <thead>
                         <tr>
-                            <th rowspan="3">Date</th>
+                            <th rowspan="3">
+                            <div class="text-center"> Date </div></th>
                             <th rowspan="3">{{ App\Helpers\get_string('standard','request')}}</th>
                             <th rowspan="3">Total</th>
                             <!-- general -->
                             @if(isset($data['general']))
-                                <th colspan="{{ count($data['general'])+2 }}"  class="text-center">General</th>
+                                <th colspan="{{ (count($data['general'])*2)+1 }}"  class="text-center">General</th>
                             @endif
 
                             <!-- religion -->
                             @if(isset($data['religion']))
-                                <th colspan="{{ count($data['religion'])+2 }}"  class="text-center">Religion</th>
+                                <th colspan="{{ (count($data['religion'])*2)+1 }}"  class="text-center">Religion</th>
                             @endif
                             <!-- strength -->
                             @if(isset($data['strength']))
-                                <th colspan="{{ count($data['strength'])+2 }}" class="text-center">Strength</th>
+                                <th colspan="{{ (count($data['strength']))+1 }}" class="text-center">Strength</th>
                             @endif
                             <!-- cast -->
                             @if(isset($data['cast']))
-                                <th colspan="{{ count($data['cast'])+2 }}" class="text-center">Cast</th>
+                                <th colspan="{{ (count($data['cast'])*2)+1 }}" class="text-center">Cast</th>
                             @endif
                             <!-- quota -->
                             @if(isset($data['quota']))
-                                <th colspan="{{ count($data['quota'])+2 }}" class="text-center">Quota</th>
+                                <th colspan="{{ (count($data['quota'])*2)+1 }}" class="text-center">Quota</th>
                             @endif
                         </tr>
                         <tr>
@@ -197,7 +200,7 @@
                                 <!-- strength -->
                                 @if(isset($data['strength']))
                                     @foreach($data['strength'] as $strength)
-                                        <th colspan="2">{{ $strength }}</th>
+                                        <th rowspan="2">{{ $strength }}</th>
                                     @endforeach
                                     <th rowspan="2">Total</th>
                                 @endif
@@ -239,14 +242,14 @@
                                 @endforeach
                             @endif
 
-                            @if(isset($data['quota']))
-                                @foreach($data['quota'] as $key => $quotaId)
-                                    @if($quotaId == $quot[$key]->id)
-                                        <th>M</th>
-                                        <th>F</th>
-                                    @endif
-                                @endforeach
-                            @endif
+                           @if(isset($data['quota']))
+                                    @foreach($data['quota'] as $key => $quotaId)
+                                        @if($quotaId == $quot[$key]->id)
+                                            <th>M</th>
+                                            <th>F</th>                                            
+                                        @endif
+                                    @endforeach
+                                @endif
                         </tr>
                     </thead>
                     <tbody>
@@ -254,7 +257,7 @@
                         $generalTotal = 0;
                         if(isset($data['religion'])){  $mreligionTotals =  array_fill(0, count($data['religion']), 0); }
                         if(isset($data['religion'])){  $freligionTotals =  array_fill(0, count($data['religion']), 0); }
-                        if(isset($data['strength'])){  $strengthTotals = array_fill(0, count($data['strength']), 0); }
+                        if(isset($data['strength'])){  $strengthTotals = array(); }
                         if(isset($data['cast'])){ $mcastTotals = array_fill(0, count($data['cast']), 0); }
                         if(isset($data['cast'])){ $fcastTotals = array_fill(0, count($data['cast']), 0); }
                         if(isset($data['quota'])){ $mquotaTotals = array_fill(0, count($data['quota']), 0); }
@@ -299,8 +302,22 @@
                                 @foreach ($data['strength'] as $gender)
                                     @php
                                         $genderTotal = $value->$gender ?? 0;
-                                        $genderIndex = ($gender == 'M') ? 0 : 1;
-                                        $strengthTotals[$genderIndex] += $genderTotal;
+                                        if(count($data['strength']) > 2){
+                                            $genderIndex = ($gender == 'M') ? 0 : 1;
+                                        }else{
+                                            if($gender=="M"){
+                                                $genderIndex = ($gender == 'M') ? 0 : 1;
+                                            }
+                                            else if($gender=="F"){
+                                                $genderIndex = ($gender == 'F') ? 0 : 1;
+                                            }else{
+                                                $genderIndex = 0;
+                                            }
+                                        }
+                                        if(!isset($strengthTotals[$gender])){
+                                            $strengthTotals[$gender] = 0;
+                                        }
+                                        $strengthTotals[$gender] += $genderTotal;
                                     @endphp
                                     <td>{{$genderTotal}}</td>
                                 @endforeach
@@ -471,6 +488,7 @@
                 title: 'Inactive Student Report',
                 customize: function (win) {
                     $(win.document.body).prepend(`{!! App\Helpers\get_school_details("$grade_id", "$standard_id", "$division_id") !!}`);
+                    $(win.document.body).append(`<div style="text-align: right;margin-top:20px">Printed on: {{date('d-m-Y H:i:s')}}</div>`);
                 }
             },
             'pageLength' 
@@ -494,4 +512,4 @@
 </script>
 
 @include('includes.footer')
-
+@endsection

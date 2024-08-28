@@ -13,6 +13,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
+use function App\Helpers\FeeMonthId;
 use function App\Helpers\is_mobile;
 
 class feesRefundController extends Controller
@@ -116,14 +117,20 @@ class feesRefundController extends Controller
         $PAID_DATA = json_decode(json_encode($fees_paid_data), true);
 
         $paid_data_title_wise = array();
-        // echo "<pre>";print_r($fees_title);exit;                    
+        // echo "<pre>";print_r($fees_title);exit;                     
         foreach ($PAID_DATA as $key => $val) {
             foreach ($fees_title as $fees_title_name => $fees_title_id) {
                 if(isset($val[$fees_title_id])){
-                $paid_data_title_wise[$fees_title_id] = $val[$fees_title_id].'/'.$fees_title_name;
+                    if(!isset($paid_data_title_wise[$fees_title_id][$fees_title_name])){
+                        $paid_data_title_wise[$fees_title_id][$fees_title_name]= 0;
+                    }
+                    // $paid_data_title_wise[$fees_title_id][] = $val[$fees_title_id].'/'.$fees_title_name;
+                    $paid_data_title_wise[$fees_title_id][$fees_title_name] += $val[$fees_title_id];
                 }
             }
         }
+        // echo "<pre>";print_r($paid_data_title_wise);exit;
+        $res['feesMonths'] = FeeMonthId($syear,$sub_institute_id);      
         $res['stu_data'] = $getBk['stu_data'];
         $res['paid_data_title_wise'] = $paid_data_title_wise;
         $res['bank_data'] = bankmasterModel::get()->toArray();
@@ -567,14 +574,14 @@ class feesRefundController extends Controller
         $feesRefundLog['cheque_no'] = $cheque_no;
         $feesRefundLog['bank_name'] = $bank_name;
         $feesRefundLog['bank_branch'] = $bank_branch;
-        $feesRefundLog['refund_remarks'] = $refund_remarks;
+        $feesRefundLog['remarks'] = $refund_remark;
 
         foreach ($fees_title as $fees_title_name => $fees_title_id) {
             $feesRefundLog[$fees_title_id] = $refund_amount[$fees_title_id];
         }
 
         $feesRefundLog['amount'] = $total_refund_amt;
-        $feesRefundLog['created_date'] = date('Y-m-d h:i:s');
+        $feesRefundLog['created_date'] = date('Y-m-d H:i:s');
         $feesRefundLog['created_by'] = $user_id;
         $feesRefundLog['created_ip_address'] = $_SERVER['REMOTE_ADDR'];
 

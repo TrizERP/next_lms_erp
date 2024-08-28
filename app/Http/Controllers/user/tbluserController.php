@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use function App\Helpers\is_mobile;
+use Illuminate\Support\Facades\Storage;
 
 class tbluserController extends Controller
 {
@@ -43,15 +44,14 @@ class tbluserController extends Controller
     {
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $data = tbluserprofilemasterModel::where(['sub_institute_id' => $sub_institute_id, 'status' => '1'])->get()->toArray();
-        $dataCustomFields = tblcustomfieldsModel::where([
-            'sub_institute_id' => $sub_institute_id, 'status' => "1", 'table_name' => "tbluser",
-        ])
-            ->get();
+
+        $dataCustomFields = tblcustomfieldsModel::where(['sub_institute_id' => $sub_institute_id, 'status' => "1", 'table_name' => "tbluser","user_type"=>""])->get();
+
 
         $subject_data = subjectModel::where(['sub_institute_id' => $sub_institute_id])->get();
-        $employees = tbluserModel::where('sub_institute_id',$sub_institute_id)->get();
+        $employees = tbluserModel::where('sub_institute_id',$sub_institute_id)->where('status',1)->get();
         $job_titles = HrmsJobTitle::where('sub_institute_id',$sub_institute_id)->get();
-
+        $departments = DB::table('hrms_departments')->where('sub_institute_id',$sub_institute_id)->where('status',1)->get()->toArray();
         $fieldsData = tblfields_dataModel::get()->toArray();
         $i = 0;
         $finalfieldsData = [];
@@ -64,11 +64,45 @@ class tbluserController extends Controller
         if (count($finalfieldsData) > 0) {
             view()->share('data_fields', $finalfieldsData);
         }
+
+        // auto increament 20-04-24
+        $maxEmpCode = DB::table('tbluser')->selectRaw("MAX(CAST(employee_no AS INT)) AS new_emp_code")
+        ->where('sub_institute_id', $sub_institute_id)->whereRaw('employee_no is not null')->limit(1)->orderBy('id')->get()->toArray();
+
+            $maxEmpCode = array_map(function ($value) {
+                return (array) $value;
+            }, $maxEmpCode);
+
+        $new_emp_code = ($maxEmpCode['0']['new_emp_code'] + 1) ?? 1;
+
+        $qualificationList = tbluserModel::where('sub_institute_id',$sub_institute_id)->where('status',1)->whereNotNull('qualification')->groupBy('qualification')->pluck('qualification');
+
+        $occupationList = tbluserModel::where('sub_institute_id',$sub_institute_id)->where('status',1)->whereNotNull('occupation')->groupBy('occupation')->pluck('occupation');
+
+         // start 30-07-2024
+         $masterSetups = DB::table('master_setup_select')->select('type','fieldname',DB::raw('GROUP_CONCAT(fieldValue SEPARATOR "||") as selOptions'))->where('sub_institute_id',$sub_institute_id)->groupBy('type')->get()->toArray();
+         $pluckedData = [];
+         foreach ($masterSetups as $setup) {
+             if (!isset($pluckedData[$setup->type])) {
+                 $pluckedData[$setup->type] = [];
+             }
+             $pluckedData[$setup->type]['fieldname'] = $setup->fieldname;
+             $pluckedData[$setup->type]['fieldvalue'] = $setup->selOptions; // array ['skills']['select skill']=skill1 || skill 2 || skill 3
+         }
+         // end 30-07-2024
+
+        view()->share('qualificationList', $qualificationList);
+        view()->share('occupationList', $occupationList);
+            
+        view()->share('new_emp_code', $new_emp_code);
+        // end 20-04-24
         view()->share('custom_fields', $dataCustomFields);
         view()->share('subject_data', $subject_data);
         view()->share('user_profiles', $data);
         view()->share('job_titles', $job_titles);
         view()->share('employees', $employees);
+        view()->share('departments', $departments);
+        view()->share('masterSetups', $pluckedData);
 
         return view('user/add_user');
     }
@@ -210,9 +244,9 @@ class tbluserController extends Controller
         }
 
         $dataCustomFields = tblcustomfieldsModel::where([
-            'sub_institute_id' => $sub_institute_id, 'status' => "1", 'table_name' => "tbluser",
-        ])
-            ->get();
+            'sub_institute_id' => $sub_institute_id, 'status' => "1", 'table_name' => "tbluser","user_type"=>""
+        ])->get();
+
 
         $fieldsData = tblfields_dataModel::get()->toArray();
         $i = 0;
@@ -226,14 +260,59 @@ class tbluserController extends Controller
         if (count($finalfieldsData) > 0) {
             $res['data_fields'] = $finalfieldsData;
         }
+
+        // auto increament 20-04-24
+        $empCode = DB::table('tbluser')->where('id',$id)->first();
+
+        if(!isset($empCode->employee_no) || $empCode->employee_no=='' || $empCode->employee_no==null){
+            $maxEmpCode = DB::table('tbluser')->selectRaw("MAX(CAST(employee_no AS INT)) AS new_emp_code")
+            ->where('sub_institute_id', $sub_institute_id)->whereRaw('employee_no is not null')->limit(1)->orderBy('id')->get()->toArray();
+
+            $maxEmpCode = array_map(function ($value) {
+                    return (array) $value;
+                }, $maxEmpCode);
+
+            $new_emp_code = ($maxEmpCode['0']['new_emp_code'] + 1) ?? 1;
+        }else{
+            $new_emp_code = $empCode->employee_no ? $empCode->employee_no : 1;
+        }
+
+        $res['qualificationList'] = tbluserModel::where('sub_institute_id',$sub_institute_id)->where('status',1)->whereNotNull('qualification')->groupBy('qualification')->pluck('qualification');
+
+        $res['occupationList'] = tbluserModel::where('sub_institute_id',$sub_institute_id)->where('status',1)->whereNotNull('occupation')->groupBy('occupation')->pluck('occupation');
+
+        $res['documentTypeLists'] = DB::table('student_document_type')->where('status',1)->where('user_type','staff')->get()->toArray();
+        $res['documentLists'] = DB::table('staff_document')->select('staff_document.*', 'd.document_type')
+        ->join('student_document_type as d', 'd.id', 'staff_document.document_type_id')
+        ->where(['sub_institute_id' => $sub_institute_id, 'user_id' => $id])
+        ->get()
+        ->toArray();
+        // end  20-04-24
+
+        $departments = DB::table('hrms_departments')->where('sub_institute_id',$sub_institute_id)->where('status',1)->get()->toArray();
+
+        // start 29-07-2024
+        $masterSetups = DB::table('master_setup_select')->select('type','fieldname',DB::raw('GROUP_CONCAT(fieldValue SEPARATOR "||") as selOptions'))->where('sub_institute_id',$sub_institute_id)->groupBy('type')->get()->toArray();
+        $pluckedData = [];
+        foreach ($masterSetups as $setup) {
+            if (!isset($pluckedData[$setup->type])) {
+                $pluckedData[$setup->type] = [];
+            }
+            $pluckedData[$setup->type]['fieldname'] = $setup->fieldname;
+            $pluckedData[$setup->type]['fieldvalue'] = $setup->selOptions; // array ['skills']['select skill']=skill1 || skill 2 || skill 3
+        }
+        // end 29-07-2024
+        $res['masterSetups'] = $pluckedData;
+        $res['departments'] = $departments;
         $res['employees'] = tbluserModel::where('sub_institute_id',$sub_institute_id)->get();
         $res['job_titles'] = HrmsJobTitle::where('sub_institute_id',$sub_institute_id)->get();
         $res['custom_fields'] = $dataCustomFields;
         $res['subject_data'] = $subject_data;
         $res['subject_data_selected_arr'] = $subject_data_selected_arr;
         $res['user_profiles'] = $data;
+        $res['new_emp_code'] = $new_emp_code;
         $res['data'] = $editData;
-
+        // echo "<pre>";print_r($res['masterSetups']);exit;
         return is_mobile($type, "user/edit_user", $res, "view");
     }
 
@@ -256,7 +335,7 @@ class tbluserController extends Controller
         }
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $type = $request->input('type');
-
+        // echo "<pre>";print_r($request->all());exit;
         $file_name = "";
         if ($request->hasFile('user_image')) {
             $file = $request->file('user_image');
@@ -350,4 +429,45 @@ class tbluserController extends Controller
         return json_encode($res);
     }
 
+    function addUserDocument(Request $request,$id){
+        $type = $request->type;
+        $document = $request->document;
+        $doc_type= $request->document_type_id; 
+        $document_title = $request->document_title;
+        $sub_institute_id = session()->get('sub_institute_id');
+        if($type=="API"){
+            $sub_institute_id= $request->sub_institute_id;
+        }
+        $filename='';
+        if($request->hasFile('document')){
+            $file = $request->file('document');
+            $originalname = $file->getClientOriginalName();
+            $name = $id.date('YmdHis');
+            $ext = File::extension($originalname);
+            $file_name = $name.'.'.$ext;
+            // $path = $file->storeAs('public/student_document/', $file_name);
+            Storage::disk('digitalocean')->putFileAs('public/staff_document/', $file, $file_name, 'public');
+        }
+
+        $data = [
+            'user_id'          => $id,
+            'document_title'   => $request->get('document_title'),
+            'document_type_id' => $request->get('document_type_id'),
+            'file_name'        => $file_name,
+            'sub_institute_id' => $sub_institute_id,
+            'created_at'       => now(),
+        ];
+
+        $insert = DB::table('staff_document')->insert($data);
+
+        if($insert){
+            $res['success'] = 1;
+            $res['message'] = "Document Added successfully";
+        }else{
+            $res['fail'] = 0;
+            $res['message'] = "Failed to Add Document";
+        }
+
+        return is_mobile($type, "add_user.index", $res);
+    }
 }

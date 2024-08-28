@@ -1,7 +1,8 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row bg-title">
@@ -112,7 +113,7 @@
                                     <td>{{$data['HOMEWORK_DATE']}}</td>
                                     <td>{{$data['title']}}</td>
                                     <td>{{$data['description']}}</td>
-                                    <td><a target="blank" href="/storage/student/{{$data['image']}}">view</a> </td>
+                                    <td>@if($data['image']!=null && $data['image']!=='')<a target="blank" href="/storage/student/{{$data['image']}}">view</a>@else - @endif</td>
                                     <td>{{$data['SUBMISSION_DATE']}}</td>
                                     <td>{{$data['submission_remarks']}}</td>
                                     <td>{{$data['submission_taken_by']}}</td>
@@ -161,6 +162,7 @@
                     title: 'Student Homework Submission Report',
                     customize: function (win) {
                         $(win.document.body).prepend(`{!! App\Helpers\get_school_details("$grade_id", "$standard_id", "$division_id") !!}`);
+                        $(win.document.body).append(`<div style="text-align: right;margin-top:20px">Printed on: {{date('d-m-Y H:i:s')}}</div>`);
                     }
                 },
                 'pageLength'
@@ -184,3 +186,4 @@
 </script>
 
 @include('includes.footer')
+@endsection

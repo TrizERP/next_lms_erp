@@ -171,14 +171,27 @@ class ImportController extends Controller
             array_pop($fileDetails);
         }
 
-        // array_pop($fileDetails);
+        // Clean the data to remove any non-UTF-8 characters
+        $fileDetailsCleaned = array_map(function($row) {
+            return array_map('utf8_encode', $row);
+        }, $fileDetails);
+
+        // Encode the cleaned data as JSON
+        $fileDetailsjson = json_encode($fileDetailsCleaned);
+
+        // Check for JSON encoding errors
+        $error_code = json_last_error();
+        if ($error_code !== JSON_ERROR_NONE) {
+            $error_message = json_last_error_msg();
+        } 
 
         if (count($fileDetails) > 0) {
             $csv_data = $fileDetails[0];
             $csv_data_id = DB::table('csv_data')->insertGetId([
                 'csv_filename' => $request->file('csv_file')->getClientOriginalName(),
                 'csv_header' => $request->has('header'),
-                'csv_data' => json_encode($fileDetails),
+                'csv_data' => $fileDetailsjson ?? $csv_data,
+                'created_at' => now(),
             ]);
 
             if ($request->tablename == 'tblstudent') {
@@ -225,8 +238,11 @@ class ImportController extends Controller
                     $failedFields[] = $re_field;
                 }
             }
-            if (count($failedFields) > 0) return view('import.import_success', compact('totalRecordCount', 'totalFailedRecordCount', 'totalOverwiteRecordCount', 'totalInsertRecordCount', 'failedFields', 'totalSkipRecordCount', 'totalFailedRecordArray', 'totalOverwiteRecordArray', 'totalSkipRecordArray'));
+            if (count($failedFields) > 0) {
+                return view('import.import_success', compact('totalRecordCount', 'totalFailedRecordCount', 'totalOverwiteRecordCount', 'totalInsertRecordCount', 'failedFields', 'totalSkipRecordCount', 'totalFailedRecordArray', 'totalOverwiteRecordArray', 'totalSkipRecordArray'));
+            }
         }
+       
         if (is_array($csv_data)) {
             $totalRecordCount = count($csv_data);
             foreach ($csv_data as $rowKey => $row) {
@@ -329,12 +345,12 @@ class ImportController extends Controller
                         unset($prepareData['enrollment_no'],$condition['enrollment_no'],$condition['standard_id']);
                         $fees_receipt_data = [];
                         $fees_receipt_data['STANDARD'] = $prepareData['standard_id'] ?? null;
-                        $fees_receipt_data['SYEAR'] = $prepareData['syear'] = session()->get('syear');
+                        $fees_receipt_data['SYEAR'] = (isset($prepareData['syear'])) ? $prepareData['syear'] : session()->get('syear');
                         $fees_receipt_data['SUB_INSTITUTE_ID'] = $prepareData['sub_institute_id'] = session()->get('sub_institute_id');
                         $found = false;
                         if (isset($data->is_skip) && $data->is_skip !== null) {
                             if ($data->is_skip == 1) {
-                                $is_found = DB::table($request->table_name)->where([['student_id', $student_id->id], ['sub_institute_id', session()->get('sub_institute_id')]])->where('syear', $syear)->where($condition)->first();
+                                $is_found = DB::table($request->table_name)->where([['student_id', $student_id->id], ['sub_institute_id', session()->get('sub_institute_id')]])->where('syear', $syear)->where('is_deleted','N')->where($condition)->first();
                                 if ($is_found) {
                                     $found = true;
                                     $totalSkipRecordCount = $totalSkipRecordCount + 1;
@@ -352,8 +368,9 @@ class ImportController extends Controller
                             }
                         }
                         if (!$found) {
+                            $prepareData['created_date'] = now();
                             $fees_id = DB::table($request->table_name)->insertGetId($prepareData);
-                            $fees_receipt_data['FEES_ID'] = $fees_id;
+                            $fees_receipt_data['FEES_ID'] = $fees_id;                 
                             DB::table('fees_receipt')->insert($fees_receipt_data);
                             $totalInsertRecordCount = $totalInsertRecordCount + 1;
                         }
@@ -365,32 +382,37 @@ class ImportController extends Controller
 
                 if ($request->table_name == 'tblstudent') {
                     $student_enroll_data = [];
+                    $sub_institute_id = isset($prepareData['sub_institute_id']) ? $prepareData['sub_institute_id'] : session()->get('sub_institute_id');
                     if (isset($prepareData['grade_id'])) {
-                        $grade_id = DB::table('academic_section')->select('id')->where([['title', $prepareData['grade_id']], ['sub_institute_id', session()->get('sub_institute_id')]])->first();
+                        $grade_id = DB::table('academic_section')->select('id')->where([['title', $prepareData['grade_id']], ['sub_institute_id', $sub_institute_id]])->first();
                         if ($grade_id) $student_enroll_data['grade_id'] = $grade_id->id;
                     }
+                    if (isset($prepareData['roll_no'])) {
+                       $student_enroll_data['roll_no'] =  $prepareData['roll_no'];
+                    }
                     if (isset($prepareData['standard_id'])) {
-                        $standard_id = DB::table('standard')->select('id')->where([['name', $prepareData['standard_id']], ['sub_institute_id', session()->get('sub_institute_id')]])->first();
+                        $standard_id = DB::table('standard')->select('id')->where([['name', $prepareData['standard_id']], ['sub_institute_id', $sub_institute_id]])->first();
                         if ($standard_id) $student_enroll_data['standard_id'] = $standard_id->id;
                     }
                     if (isset($prepareData['section_id'])) {
-                        $section_id = DB::table('division')->select('id')->where([['name', $prepareData['section_id']], ['sub_institute_id', session()->get('sub_institute_id')]])->first();
+                        $section_id = DB::table('division')->select('id')->where([['name', $prepareData['section_id']], ['sub_institute_id', $sub_institute_id]])->first();
                         if ($section_id) $student_enroll_data['section_id'] = $section_id->id;
                     }
                     if (isset($prepareData['student_quota'])) {
-                        $student_quota = DB::table('student_quota')->select('id')->where([['title', $prepareData['student_quota']], ['sub_institute_id', session()->get('sub_institute_id')]])->first();
+                        $student_quota = DB::table('student_quota')->select('id')->where([['title', $prepareData['student_quota']], ['sub_institute_id', $sub_institute_id]])->first();
                         if ($student_quota) $student_enroll_data['student_quota'] = $student_quota->id;
                     }
                     if (isset($prepareData['house_id'])) {
-                        $house_id = DB::table('house_master')->select('id')->where([['house_name', $prepareData['house_id']], ['sub_institute_id', session()->get('sub_institute_id')]])->first();
+                        $house_id = DB::table('house_master')->select('id')->where([['house_name', $prepareData['house_id']], ['sub_institute_id',$sub_institute_id]])->first();
                         if ($house_id) $student_enroll_data['house_id'] = $house_id->id;
                     }
                     $student_enroll_data['syear'] = $prepareData['syear'] ?? session()->get('syear');
                     $student_enroll_data['start_date'] = $prepareData['start_date'] ?? date('Y-m-d');
                     $student_enroll_data['adhar'] = $prepareData['adhar'] ?? 0;
+                    // remove from tblstudent values
+                    unset($prepareData['student_id'], $prepareData['grade_id'], $prepareData['standard_id'], $prepareData['section_id'], $prepareData['student_quota'], $prepareData['house_id'], $prepareData['syear'], $prepareData['start_date'], $prepareData['term_id'], $prepareData['adhar'], $prepareData['roll_no']);
 
-                    unset($prepareData['student_id'], $prepareData['grade_id'], $prepareData['standard_id'], $prepareData['section_id'], $prepareData['student_quota'], $prepareData['house_id'], $prepareData['syear'], $prepareData['start_date'], $prepareData['term_id'], $prepareData['adhar']);
-                    $student_enroll_data['sub_institute_id'] = $prepareData['sub_institute_id'] = session()->get('sub_institute_id');
+                    $student_enroll_data['sub_institute_id'] = $prepareData['sub_institute_id'] = $sub_institute_id;
 
                     $found = false;
                     $student_id = DB::table($request->table_name)->where($condition)->where('sub_institute_id', $sub_institute_id)->first();

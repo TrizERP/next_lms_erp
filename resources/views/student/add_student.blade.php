@@ -1,8 +1,11 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
+@include('includes.header')
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <link rel="stylesheet" href="../../../plugins/bower_components/dropify/dist/css/dropify.min.css">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/css/select2.min.css" rel="stylesheet"/>
-@include('includes.header')
-@include('includes.sideNavigation')
+
 <style>
 .select2-dropdown.select2-dropdown--below {
   width: 460px !important;
@@ -86,7 +89,7 @@
                             </div>-->
 
                             <div class="col-md-4 form-group text-left">
-                                <label>Student Name<span style="color: red;">*</span></label>
+                                <label>{{App\Helpers\get_string('studentname','request')}}<span style="color: red;">*</span></label>
                                 <input type="text" id='first_name' required name="first_name" class="form-control">
                             </div>
                             <div class="col-md-4 form-group text-left">
@@ -99,20 +102,22 @@
                             </div>
                             <div class="col-md-4 form-group text-left" style="display: none;">
                                 <label>Username<span style="color: red;">*</span></label>
-                                <input type="text" id='username' required name="username" class="form-control">
+                                <input type="text" id='username' value="-" name="username" class="form-control">
                             </div>
                             <div class="col-md-4 form-group text-left">
                                 <label>{{ App\Helpers\get_string('grno','request')}}<span style="color: red;">*</span></label>
                                 <input type="text" id='enrollment_no' required name="enrollment_no" class="form-control" value="@if(isset($data['new_enrollment_no'])){{$data['new_enrollment_no']}}@endif">
                             </div>
                             <div class="col-md-4 form-group text-left">
-                                <label>Mother Name<span style="color: red;">*</span></label>
+                                <label>Mother Name</label>
                                 <input type="text" id='mother_name' name="mother_name" class="form-control" require>
                             </div>
+                            @if(session()->get('sub_institute_id')!=257)
                             <div class="col-md-4 form-group text-left">
                                 <label>{{ App\Helpers\get_string('fathername','request')}}</label>
                                 <input type="text" id='father_name' name="father_name" class="form-control">
                             </div>
+                            @endif
                             <div class="col-md-4 form-group text-left">
                                 <label>SMS Number<span style="color: red;">*</span></label>
                                 <input type="text" id='mobile' pattern="[1-9]{1}[0-9]{9}" required name="mobile" class="form-control">
@@ -138,8 +143,8 @@
                             
                             </div> -->
                             <div class="col-md-4 form-group text-left">
-                                <label>Mother Mobile<span style="color: red;">*</span></label>
-                                <input type="text" id='mother_mobile'  pattern="[1-9]{1}[0-9]{9}" required name="mother_mobile" class="form-control">
+                                <label>Mother Mobile</label>
+                                <input type="text" id='mother_mobile'  pattern="[1-9]{1}[0-9]{9}" name="mother_mobile" class="form-control">
                             </div>                            
                             <div class="col-md-4 form-group text-left">
                                 <label>Email / Username<span style="color: red;">*</span></label>                                
@@ -147,7 +152,7 @@
                                 <span id="email_error_span"></span>
                             </div>
                             <div class="col-md-4 form-group text-left">
-                                <label>Admission Year</label>
+                                <label>Fees Year</label>
                                 <select id='admission_year' name="admission_year" class="form-control">
                                 @if(isset($data['admission_year']))
                                     @foreach($data['admission_year'] as $key => $value)
@@ -173,8 +178,12 @@
                             <div class="col-md-4 form-group text-left">                   
                                 <label>State</label>
                                 <select class="form-control" name="state" id="state" onchange="getStatewiseCity(this.value);">
+                                @if(empty($data['city_data']) && session()->get('sub_institute_id')==257)
                                     <option value="Gujarat">Gujarat</option>
+                                    @endif
+
                                 @if(!empty($data['state_data']))  
+                                <option value="">Select State</option> 
                                 @foreach($data['state_data'] as $key => $value)
                                     <option value="{{ $value['state_name'] }}" @if(isset($data->state)) {{ $data->state == $value['state_name'] ? 'selected' : '' }} @endif> {{ $value['state_name'] }} </option>
                                 @endforeach
@@ -183,14 +192,26 @@
                             </div>
                             <div class="col-md-4 form-group">                   
                                 <label>City</label>
-                                <select class="form-control" name="city" id="city">
-                                   @if(empty($data['city_data']))
-                                    <option value="Ahmedabad">Ahmedabad</option>
+                                @if(session()->get('sub_institute_id')==195)
+                                    <input list="city" name="city" id="exampleDataList" class="form-control"/>
+                                    <datalist id="city" height="100" style="height:100px">
+                                    @if(!empty($data['city_data']))  
+                                    @foreach($data['city_data'] as $k1 => $v1)
+                                        <option value="{{ $v1['city_name'] }}" @if(isset($student_data->city)) {{ $student_data->city == $v1['city_name'] ? 'selected' : '' }} @endif> {{ $v1['city_name'] }} </option>
+                                    @endforeach
                                     @endif
-                                @if(!empty($data['city_data']))  
-                                @foreach($data['city_data'] as $k1 => $v1)
-                                    <option value="{{ $v1['city_name'] }}" @if(isset($data->city)) {{ $data->city == $v1['city_name'] ? 'selected' : '' }} @endif> {{ $v1['city_name'] }} </option>
-                                @endforeach
+                                    </datalist>
+                                @else
+                                    <select class="form-control" name="city" id="city">
+                                    @if(empty($data['city_data']) && session()->get('sub_institute_id')==257)
+                                        <option value="Ahmedabad">Ahmedabad</option>
+                                        @endif
+                                    @if(!empty($data['city_data'])) 
+                                    <option value="">Select City</option> 
+                                    @foreach($data['city_data'] as $k1 => $v1)
+                                        <option value="{{ $v1['city_name'] }}" @if(isset($data->city)) {{ $data->city == $v1['city_name'] ? 'selected' : '' }} @endif> {{ $v1['city_name'] }} </option>
+                                    @endforeach
+                                    @endif
                                 @endif
                                 </select>
                             </div>
@@ -203,7 +224,7 @@
                                 <input type="text" id='state' name="state" class="form-control">
                             </div> -->                            
                             <div class="col-md-4 form-group text-left">
-                                <label>Pincode</label>
+                                <label>Pincode <span style="color: red;">*</span></label>
                                 <input type="text" id='pincode' name="pincode" class="form-control">
                             </div>
                             
@@ -231,8 +252,8 @@
                             </div> 
 
                             <div class="col-md-4 form-group">
-                                <label>{{ App\Helpers\get_string('house','request')}}</label>
-                                <select id='house' name="house" class="form-control">
+                                <label>{{ App\Helpers\get_string('house','request')}} @if(session()->get('sub_institute_id')==257) <span style="color: red;">*</span>@endif</label>
+                                <select id='house' name="house" class="form-control" @if(session()->get('sub_institute_id')==257) required @endif>
                                     <option value="">--Select--</option>  
                                     @if(isset($data['house_data']))
                                         @foreach($data['house_data'] as $key => $value)
@@ -269,21 +290,21 @@
                                 <label for="input-file-now">User Image</label>
                                 <input type="file" accept="image/png, image/jpg, image/jpeg" name="student_image" id="input-file-now" class="dropify" /> 
                             </div>
-                            
+                            @if(session()->get('sub_institute_id')!=257)
                             <div class="col-md-4 form-group text-left">
                                 <label>Optional Subject</label>
                                 <select id='optional_subject' name="optional_subject[]" multiple class="form-control">
                                     <option value="">--Select--</option>                                                    
                                 </select>
                             </div>
-                            
+                            @endif
                             <div class="col-md-4 form-group text-left">
                                 <label>Student Batch</label>
                                 <select id='studentbatch' name="studentbatch" class="form-control">
                                     <option value="">--Select--</option>                                                    
                                 </select>
                             </div>
-                            
+                            @if(session()->get('sub_institute_id')!=257)
                             <div class="col-md-4 form-group text-left">
                                 <label>Student Religion</label>
                                 <select id='religion' name="religion" class="form-control">
@@ -312,7 +333,7 @@
                                 <label>Sub Caste</label>
                                 <input type="text" id='subcast' name="subcast" class="form-control">
                             </div>
-
+                           
                             <div class="col-md-4 form-group text-left">
                                 <label>Roll No.</label>
                                 <input type="text" id='roll_no' name="roll_no" class="form-control">
@@ -329,7 +350,9 @@
                                     @endif                                                  
                                 </select>
                             </div>
-                            
+                            @endif
+                            <!-- end CN remove roll no and blood group 07-08-2024 -->
+                            @if(session()->get('sub_institute_id')!=257)
                             <div class="col-md-4 form-group text-left">
                                 <label>Aadhar Number</label>
                                 <input type="text" id='adharnumber' name="adharnumber" class="form-control" onblur="AadharValidate();">
@@ -339,7 +362,7 @@
                                 <label>{{ App\Helpers\get_string('annualincome','request')}}</label>
                                 <input type="number" id='anuualincome' name="anuualincome" class="form-control">
                             </div>
-                            
+                            @endif
                              {{--  For Euro School --}}
                         @if (Session::get('sub_institute_id') != '195')
                         
@@ -352,6 +375,13 @@
                             <label>{{ App\Helpers\get_string('nationality','request')}}<i class="mdi mdi-lead-pencil"></i></label>
                             <input type="text" id='nationality' name="nationality" class="form-control">
                         </div>    
+                        @if(session()->get('sub_institute_id')!=257)
+                            <div class="col-md-4 form-group text-left" >
+                                <label>Mother Tongue<span style="color: red;">*</span></label>
+                                <input type="text" name="mother_tongue" id='mother_tongue' class="form-control">
+                            </div>
+                        @endif
+
                             @if(isset($data['custom_fields']))
                             @foreach($data['custom_fields'] as $key => $value)
                             <div class="col-md-4 form-group text-left">
@@ -458,6 +488,26 @@
     </div>
 </div>
 
+
+<!-- check student Model  -->
+<div class="modal fade" id="studentModal" tabindex="-1" role="dialog" aria-labelledby="studentModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="studentModalLabel">Student Details</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <table class="table table-bordered">
+                    <tbody id="studentData"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
 @include('includes.footerJs')
 <script src="../../../admin_dep/js/cbpFWTabs.js"></script>
 <script type="text/javascript">
@@ -541,8 +591,20 @@
                 {
                     $("#studentbatch").append($("<option></option>").val(result[i]['id']).html(result[i]['title']));
                 }
+            },error: function(xhr, status, error) {
+                 alert(JSON.parse(xhr.responseText).message);
             }
         });
+    })
+    // check student lists
+    $("#mobile").change(function(){
+      checkStudentExists();
+    })
+    $('#first_name').change(function(){
+      checkStudentExists();
+    })
+    $('#last_name').change(function(){
+      checkStudentExists();
     })
     //END Bind Batch
     
@@ -711,5 +773,65 @@
         return $result;
       }
     });
+ function checkStudentExists(){
+        var first_name = $('#first_name').val();
+        var last_name = $('#last_name').val();
+        var mobile = $('#mobile').val();
+        // alert(first_name);
+       $.ajax({
+        url : "{{route('checkExists')}}",
+        data : {first_name:first_name,last_name:last_name,mobile:mobile},
+        type:'GET',
+        success: function (response) {
+            console.log(response);
+
+            if (response && Object.keys(response).length !== 0) {
+                $('#studentData').empty();
+
+                var grno = "{{ App\Helpers\get_string('grno','request')}}";
+                var house = "{{ App\Helpers\get_string('house','request')}}";
+                var grade = "{{ App\Helpers\get_string('searchsection','request')}}";
+                var std = "{{ App\Helpers\get_string('searchstandard','request')}}";
+                var div = "{{ App\Helpers\get_string('searchdivision','request')}}";
+                var uniqueid = "{{ App\Helpers\get_string('uniqueid','request')}}";
+                var nationality = "{{ App\Helpers\get_string('nationality','request')}}";
+
+                var dobParts = response.dob.split('-');
+                var formattedDate = dobParts[2] + '-' + dobParts[1] + '-' + dobParts[0];
+
+                $('#studentData').append(`
+                    <tr>
+                        <td><b>Full Name : </b>${response.student_name}</td>
+                        <td><b>SMS Number : </b>${response.mobile}</td>
+                        <td><b>Birthdate : </b>${formattedDate}</td>
+                    </tr>
+                    <tr>
+                        <td><b>${grno} : </b>${response.enrollment_no}</td>
+                        <td><b>${house} : </b>${response.house}</td>
+                        <td><b>Batch : </b>${response.batch}</td>
+                    </tr>
+                    <tr>
+                        <td><b>${grade} : </b>${response.grade}</td>
+                        <td><b>${std} : </b>${response.standard}</td>
+                        <td><b>${div} : </b>${response.division}</td>
+                    </tr>
+                    <tr>
+                        <td><b>${uniqueid} : </b>${response.uniqueid}</td>
+                        <td><b>${nationality} : </b>${response.nationality}</td>
+                        <td><b>Status : </b>${response.status}</td>
+                    </tr>`);
+
+                $('#studentModal').modal('show');
+                console.log(response.student_name); // Assuming 'student_name' is a field in your 'students' table
+            } else {
+                console.error("Student not found");
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error(xhr.responseText);
+         }
+       })
+ }
 </script>
 @include('includes.footer')
+@endsection

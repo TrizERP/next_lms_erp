@@ -33,6 +33,7 @@
                                 <option value="classwise_report">Classwise Report</option>
                                 <option value="overall_report">Overall Report</option>
                                 <option value="marks_report">Marks Report</option>
+                                <option value="weightage_conversion_report">Weightage Conversion Report</option>
                             </select>
                         </div>
 
@@ -84,6 +85,14 @@
                             </select>
                         </div>
 
+                         <div class="col-md-4 form-group" id="exam_create_div">
+                            <label>Select Exam</label>
+                            <select name="exam_create" id="exam_create" class="form-control">
+                                <option value="">Select</option>
+                              
+                            </select>
+                        </div>
+
                         <div class="col-md-12 form-group">
                             <center>
                                 <input type="submit" name="submit" value="Search" class="btn btn-success">
@@ -112,6 +121,7 @@
     $('#grade').prop('required', true);
     $('#standard').prop('required', true);
     $('#division').prop('required', true);
+    $('#exam_create_div').hide();
 
     $("#standard").change(function(){
         var std_id = $("#standard").val();
@@ -150,7 +160,6 @@
                         $.each(res, function (key, value) {
                             $("#exam_type").append('<option value="' + key + '">' + value + '</option>');
                         });
-
                     } else {
                         $("#exam_type").empty();
                     }
@@ -162,6 +171,31 @@
             if (termID == "") {
                 alert("Please Select Term.");
             }
+        }
+    })
+    $("#exam_type").change(function(){
+        $('#exam_create_div').show();
+        $('#exam_create').empty();        
+        var exam_id = $("#exam_type").val();
+        var std_id = $("#standard").val();
+        
+        if (exam_id) {
+            $.ajax({
+                type: "GET",
+                url: "/api/get-exam-list?standard_id=" + std_id +
+                        "&exam_id=" + exam_id,
+                success: function (res) {
+                    if (res) {
+                        $("#exam_create").empty();
+                        $("#exam_create").append('<option value="">Select</option>');
+                        $.each(res, function (key, value) {
+                            $("#exam_create").append('<option value="' + value + '">' + value + '</option>');
+                        });
+                    } else {
+                        $("#exam_create").empty();
+                    }
+                }
+            });
         }
     })
 
@@ -215,6 +249,17 @@
             document.getElementById('for_to_date').style.display = 'block';
             document.getElementById('for_additional_subjects').style.display = 'block';
             $('#additional_subjects').prop('required', true);
+        }
+
+        if (report_val == 'weightage_conversion_report') {
+            document.getElementById('for_top_students').style.display = 'none';
+            document.getElementById('for_subject').style.display = 'block';
+            document.getElementById('for_roll_no').style.display = 'none';
+            document.getElementById('for_exam_type').style.display = 'none';
+            document.getElementById('for_from_date').style.display = 'none';
+            document.getElementById('for_to_date').style.display = 'none';
+            document.getElementById('for_additional_subjects').style.display = 'none';
+            $('#subject').prop('required', true);
         }
 
         if (report_val == '') {

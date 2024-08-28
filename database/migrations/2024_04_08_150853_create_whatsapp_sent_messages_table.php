@@ -21,12 +21,13 @@ return new class extends Migration
             $table->unsignedBigInteger('division_id');
             $table->unsignedBigInteger('student_id');
             $table->unsignedBigInteger('created_by');
-            $table->string('created_by_name');
+            $table->string('created_by_name')->nullable();
             $table->text('message')->nullable();
             $table->string('attachment')->nullable();
             $table->date('sent_date');
             $table->timestamps();
         });
+        
     }
 
     /**

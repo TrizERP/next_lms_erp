@@ -1,6 +1,8 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 
 <div id="page-wrapper">
     <div class="container-fluid">
@@ -40,7 +42,7 @@
                                     <option value=""> Select User </option>
                                     @if ( isset( $data['users'] ) )        
                                         @foreach ( $data['users'] as $user )
-                                            <option value="{{ $user->id }}" @php echo ( isset($data['ser_user']) && $data['ser_user'] == $user->id ) ? 'selected' : '' @endphp >{{ $user->first_name.' '.$user->last_name }}</option>
+                                            <option value="{{ $user->id }}" @if( isset($data['ser_user']) && $data['ser_user'] == $user->id ) selected @endif >{{ $user->first_name.' '.$user->last_name }}</option>
                                         @endforeach
                                     @endif
                                 </select>
@@ -251,6 +253,7 @@ $(document).ready(function(){
                 title: 'Admission Enquiry Report',
                 customize: function (win) {
                     $(win.document.body).prepend(`{!! App\Helpers\get_school_details("", "", "") !!}`);
+					$(win.document.body).append(`<div style="text-align: right;margin-top:20px">Printed on: {{date('d-m-Y H:i:s')}}</div>`);                                                            
                 }
             },
             'pageLength' 
@@ -274,3 +277,4 @@ $(document).ready(function(){
     } );
 </script>
 @include('includes.footer')
+@endsection

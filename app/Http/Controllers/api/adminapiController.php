@@ -75,7 +75,9 @@ class adminapiController extends Controller
                 } else {
                     //$text = "Dear Parent, Your OTP is ".$otp;
                     if ($sub_institute_id == 49 || $sub_institute_id == 232 || $sub_institute_id == 233) {
-                        $text = "Dear Teacher your 0TP is ".$otp;
+                        $text = "Dear Teacher your OTP is ".$otp;
+                    }else if($sub_institute_id == 47){
+                        $text = "Dear Parent, Your OTP is ".$otp." MULJIM";
                     } else {
                         $text = "OTP for login is ".$otp." and is valid for 5 minutes";
                     }
@@ -91,6 +93,7 @@ class adminapiController extends Controller
 //DB::enableQueryLog();
                 $data = DB::table("tbluser AS tu")
                     ->join('tbluserprofilemaster AS tpm', 'tpm.id', '=', 'tu.user_profile_id')
+                    ->where('tu.status',1) // 23-04-24 by uma
                     ->where(["tu.mobile" => $_REQUEST['mobile'], "tpm.parent_id" => '1'])
                     ->update(["tu.otp" => $otp]);
 //dd(DB::getQueryLog($data));                    
@@ -126,7 +129,7 @@ class adminapiController extends Controller
                     $join->whereRaw("ss.id = u.sub_institute_id");
                 })
                 ->selectRaw("u.id,u.user_name,u.first_name,u.middle_name,u.last_name,u.sub_institute_id,
-                    u.email,u.mobile,u.birthdate,u.address,u.gender,u.join_year,
+                    u.email,u.mobile,u.otp,u.birthdate,u.address,u.gender,u.join_year,
                     if(u.image = '','',concat('https://".$_SERVER['SERVER_NAME']."/storage/user/',u.image)) as image,
                     p.name as user_profile_name,u.user_profile_id,ss.syear,ss.SchoolName,ss.Logo")
                 ->where('u.status', '1')
@@ -163,6 +166,7 @@ class adminapiController extends Controller
                     'sub_institute_id'  => $data['sub_institute_id'],
                     'email'             => $data['email'],
                     'mobile'            => $data['mobile'],
+                    'otp'            => $data['otp'],
                     'birthdate'         => $data['birthdate'],
                     'address'           => $data['address'],
                     'gender'            => $data['gender'],
@@ -450,7 +454,7 @@ class adminapiController extends Controller
                 })->join('division as d', function ($join) {
                     $join->whereRaw('d.id = se.section_id');
                 })->selectRaw("s.id, CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name,
-                    se.syear,s.enrollment_no,s.roll_no,s.dob,s.address,s.mobile,s.email,
+                    se.syear,s.enrollment_no,se.roll_no,s.dob,s.address,s.mobile,s.email,
                     if(s.image = '','https://".$_SERVER['SERVER_NAME']."/storage/student/noimages.png',
                     concat('https://".$_SERVER['SERVER_NAME']."/storage/student/',s.image)) as student_image,se.standard_id,
                     se.section_id AS division_id,ac.title AS academic_section,st.name AS standard_name,d.name AS division_name,
@@ -467,7 +471,7 @@ class adminapiController extends Controller
                     if ($division_id != '') {
                         $q->where('se.section_id', $division_id);
                     }
-                })->groupBy('s.roll_no')->get()->toArray();
+                })->groupBy('s.id')->get()->toArray();
 
             if (count($data) > 0) {
                 $response['status'] = 1;
@@ -516,6 +520,7 @@ class adminapiController extends Controller
                     u.join_year,if(u.image = '','',concat('https://".$_SERVER['SERVER_NAME']."/storage/user/',u.image)) as image,
                     up.name as user_profile_name,u.user_profile_id")
                 ->where('u.sub_institute_id', $sub_institute_id)
+                ->where('u.status',1) // 23-04-24 by uma
                 ->where('up.name', 'like', '%Teacher%')->get()->toArray();
 
             if (count($data) > 0) {
@@ -566,7 +571,7 @@ class adminapiController extends Controller
                 })->join('division as di', function ($join) {
                     $join->whereRaw("di.id = se.section_id");
                 })->leftJoin('tbluser as u', function ($join) {
-                    $join->whereRaw("u.id = la.reply_by");
+                    $join->whereRaw("u.id = la.reply_by")->where('u.status',1); // 23-04-24 by uma
                 })
                 ->selectRaw("la.id as leave_app_id,concat_ws(' ',s.first_name,s.middle_name,s.last_name) as student_name,
                     if(s.image = '','',concat('https://".$_SERVER['SERVER_NAME']."/storage/student/',s.image)) as student_image,
@@ -676,7 +681,7 @@ class adminapiController extends Controller
                 })->join('division as d', function ($join) {
                     $join->whereRaw("d.id = se.section_id");
                 })->leftJoin('tbluser as tu', function ($join) {
-                    $join->whereRaw("tu.id = pc.reply_by");
+                    $join->whereRaw("tu.id = pc.reply_by")->where('tu.status',1); // 23-04-24 by uma
                 })
                 ->selectRaw("pc.id as parent_comm_id,concat_ws(' ',ts.first_name,ts.middle_name,ts.last_name) as student_name,
                     if(ts.image = '','',concat('https://".$_SERVER['SERVER_NAME']."/storage/student/',ts.image)) as student_image,
@@ -830,6 +835,12 @@ class adminapiController extends Controller
         }
 
         $response = [];
+        $types_req = "";
+        if($request->type=="Photo"){
+            $types_req="attachment";
+        }else if($request->type=="Video"){
+            $types_req="youtube_link";
+        }
         $validator = Validator::make($request->all(), [
             'sub_institute_id' => 'required|numeric',
             'syear'            => 'required|numeric',
@@ -840,7 +851,7 @@ class adminapiController extends Controller
             'title'            => 'required',
             'album_title'      => 'required',
             'type'             => 'required|in:Photo,Video',
-            'attachment'       => 'required',
+            $types_req       => 'required',
         ]);
 
         if ($validator->fails()) {
@@ -855,8 +866,8 @@ class adminapiController extends Controller
             $_REQUEST['action'] = "API";
 
             $ph_object = new photo_video_gallaryController;
-            $result = $ph_object->store($request);
-
+            $result = $ph_object->store($request);  
+            
             if ($result == 1) {
                 $response['status'] = 1;
                 $response['message'] = "Record Added";
@@ -904,7 +915,7 @@ class adminapiController extends Controller
                 })->join('tblstudent_enrollment as se', function ($join) {
                     $join->whereRaw('se.student_id = s.id and se.sub_institute_id = s.sub_institute_id AND se.end_date is NULL');
                 })->leftJoin('tbluser as u', function ($join) {
-                    $join->whereRaw('u.id = pb.PTM_ATTENDED_BY and u.sub_institute_id = pb.SUB_INSTITUTE_ID');
+                    $join->whereRaw('u.id = pb.PTM_ATTENDED_BY and u.sub_institute_id = pb.SUB_INSTITUTE_ID')->where('u.status',1); // 23-04-24 by uma
                 })
                 ->selectRaw("pb.ID,pb.DATE,pb.TEACHER_ID,pb.TIME_SLOT_ID,pb.CONFIRM_STATUS,pb.STUDENT_ID,pb.CREATED_ON,
                     pb.SUB_INSTITUTE_ID,CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name) as PTM_ATTENDED_BY_NAME,
@@ -958,7 +969,7 @@ class adminapiController extends Controller
                 ->join('visitor_type as vt', function ($join) {
                     $join->whereRaw('vt.id = v.visitor_type AND vt.sub_institute_id = v.sub_institute_id AND vt.status = 1');
                 })->join('tbluser as u', function ($join) {
-                    $join->whereRaw('u.id = v.to_meet AND u.sub_institute_id = v.sub_institute_id');
+                    $join->whereRaw('u.id = v.to_meet AND u.sub_institute_id = v.sub_institute_id')->where('u.status',1); // 23-04-24 by uma
                 })
                 ->selectRaw("v.*,CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name) as staff_name,vt.title as visitor_type_name,
                     if(v.photo = '','',concat('https://".$_SERVER['SERVER_NAME']."/storage/visitor_photo/',v.photo)) as visitor_photo")
@@ -1501,11 +1512,11 @@ class adminapiController extends Controller
 
             $data = DB::table('task as t')
                 ->join('tbluser as u', function ($join) {
-                    $join->whereRaw('t.TASK_ALLOCATED = u.id AND u.sub_institute_id = t.sub_institute_id');
+                    $join->whereRaw('t.TASK_ALLOCATED = u.id AND u.sub_institute_id = t.sub_institute_id')->where('u.status',1); // 23-04-24 by uma
                 })->join('tbluser as u2', function ($join) {
-                    $join->whereRaw('t.TASK_ALLOCATED_TO = u2.id AND u2.sub_institute_id = t.sub_institute_id');
+                    $join->whereRaw('t.TASK_ALLOCATED_TO = u2.id AND u2.sub_institute_id = t.sub_institute_id')->where('u2.status',1); // 23-04-24 by uma
                 })->leftJoin('tbluser as u3', function ($join) {
-                    $join->whereRaw('t.approved_by = u3.id AND u3.sub_institute_id = t.sub_institute_id');
+                    $join->whereRaw('t.approved_by = u3.id AND u3.sub_institute_id = t.sub_institute_id')->where('u3.status',1); // 23-04-24 by uma
                 })
                 ->selectRaw("t.*, CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name) AS ALLOCATOR, 
                     CONCAT_WS(' ',u2.first_name,u2.middle_name,u2.last_name) AS ALLOCATED_TO,
@@ -1625,9 +1636,9 @@ class adminapiController extends Controller
 
             $data = DB::table('complaint as t')
                 ->join('tbluser as u', function ($join) {
-                    $join->whereRaw('t.COMPLAINT_BY = u.id AND u.sub_institute_id = t.sub_institute_id');
+                    $join->whereRaw('t.COMPLAINT_BY = u.id AND u.sub_institute_id = t.sub_institute_id')->where('u.status',1); // 23-04-24 by uma
                 })->join('tbluser as u3', function ($join) {
-                    $join->whereRaw('t.COMPLAINT_SOLUTION_BY = u3.id AND u3.sub_institute_id = t.sub_institute_id');
+                    $join->whereRaw('t.COMPLAINT_SOLUTION_BY = u3.id AND u3.sub_institute_id = t.sub_institute_id')->where('u3.status',1); // 23-04-24 by uma
                 })
                 ->selectRaw("t.*, CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name) AS COMPLAINT_BY,
                     CONCAT_WS(' ',u3.first_name,u3.middle_name,u3.last_name) AS COMPLAINT_SOLUTION_BY,
@@ -1745,9 +1756,9 @@ class adminapiController extends Controller
 
             $data = DB::table('inventory_requisition_details as ir')
                 ->join('tbluser as tu', function ($join) {
-                    $join->whereRaw("tu.id = ir.requisition_by");
+                    $join->whereRaw("tu.id = ir.requisition_by")->where('tu.status',1); // 23-04-24 by uma
                 })->leftJoin('tbluser as ira', function ($join) {
-                    $join->whereRaw("ira.id = ir.requisition_approved_by");
+                    $join->whereRaw("ira.id = ir.requisition_approved_by")->where('ira.status',1); // 23-04-24 by uma
                 })->join('inventory_item_master as i', function ($join) {
                     $join->whereRaw("i.id = ir.item_id");
                 })->join('inventory_requisition_status_master as irs', function ($join) {
@@ -1799,7 +1810,7 @@ class adminapiController extends Controller
         } else {
             $data = DB::table('tbluser')
                 ->selectRaw("id as user_id,user_name,CONCAT_WS(' ',first_name,middle_name,last_name) AS requisition_name,mobile,email")
-                ->where('sub_institute_id', $sub_institute_id)->get()->toArray();
+                ->where('sub_institute_id', $sub_institute_id)->where('status',1)->get()->toArray();
 
             if (count($data) > 0) {
                 $response['status'] = 1;
@@ -2173,7 +2184,7 @@ class adminapiController extends Controller
             $schoolName = $schoolData[0]['SchoolName'];
             $schoolLogo = '';
 
-            $i = 0;
+            $i =$j= 0;
             foreach ($student_id as $key => $val) {
                 $student_data = DB::table('tblstudent_enrollment as se')
                     ->join('tblstudent as s', function ($join) {
@@ -2184,53 +2195,57 @@ class adminapiController extends Controller
                     ->where('se.syear', $syear)
                     ->whereNull('se.end_date')
                     ->where('se.sub_institute_id', $sub_institute_id)->get()->toArray();
+                if(!empty($student_data)){
+                    $student_mobile = $student_data[0]->mobile;
 
-                $student_mobile = $student_data[0]->mobile;
+                    $app_notification_content = [
+                        'NOTIFICATION_TYPE'        => 'Notification',
+                        'NOTIFICATION_DATE'        => now(),
+                        'STUDENT_ID'               => $val,
+                        'NOTIFICATION_DESCRIPTION' => $description,
+                        'STATUS'                   => 0,
+                        'SUB_INSTITUTE_ID'         => $sub_institute_id,
+                        'SYEAR'                    => $syear,
+                        'SCREEN_NAME'              => 'general',
+                        'CREATED_BY'               => $user_id,
+                        'CREATED_IP'               => $_SERVER['REMOTE_ADDR'],
+                    ];
 
-                $app_notification_content = [
-                    'NOTIFICATION_TYPE'        => 'Notification',
-                    'NOTIFICATION_DATE'        => now(),
-                    'STUDENT_ID'               => $val,
-                    'NOTIFICATION_DESCRIPTION' => $description,
-                    'STATUS'                   => 0,
-                    'SUB_INSTITUTE_ID'         => $sub_institute_id,
-                    'SYEAR'                    => $syear,
-                    'SCREEN_NAME'              => 'general',
-                    'CREATED_BY'               => $user_id,
-                    'CREATED_IP'               => $_SERVER['REMOTE_ADDR'],
-                ];
+                    $gcm_data = DB::table('gcm_users')
+                        ->where('mobile_no', $student_mobile)
+                        ->where('sub_institute_id', $sub_institute_id)->get()->toArray();
 
-                $gcm_data = DB::table('gcm_users')
-                    ->where('mobile_no', $student_mobile)
-                    ->where('sub_institute_id', $sub_institute_id)->get()->toArray();
-
-                $gcmRegIds = [];
-                if (count($gcm_data) > 0) {
-                    foreach ($gcm_data as $key1 => $val1) {
-                        $gcmRegIds[] = $val1->gcm_regid;
-                    }
-                }
-
-                $pushMessage = $description;
-
-                $bunch_arr = array_chunk($gcmRegIds, 1000);
-                if (! empty($bunch_arr)) {
-                    foreach ($bunch_arr as $bval) {
-                        if (isset($bval, $pushMessage)) {
-                            $type = 'Notification';
-                            $message = [
-                                'body'    => $pushMessage,
-                                'TYPE'    => $type,
-                                'USER_ID' => $student_id,
-                                'title'   => $schoolName,
-                                'image'   => $schoolLogo,
-                            ];
-
-                            $pushStatus = send_FCM_Notification($bval, $message, $sub_institute_id);
-                            sendNotification($app_notification_content);
+                    $gcmRegIds = [];
+                    if (count($gcm_data) > 0) {
+                        foreach ($gcm_data as $key1 => $val1) {
+                            $gcmRegIds[] = $val1->gcm_regid;
                         }
                     }
-                    $i++;
+
+                    $pushMessage = $description;
+                    sendNotification($app_notification_content);
+
+                    $bunch_arr = array_chunk($gcmRegIds, 1000);
+                    if (! empty($bunch_arr)) {
+                        foreach ($bunch_arr as $bval) {
+                            if (isset($bval, $pushMessage)) {
+                                $type = 'Notification';
+                                $message = [
+                                    'body'    => $pushMessage,
+                                    'TYPE'    => $type,
+                                    'USER_ID' => $student_id,
+                                    'title'   => $schoolName,
+                                    'image'   => $schoolLogo,
+                                ];
+
+                                $pushStatus = send_FCM_Notification($bval, $message, $sub_institute_id);
+                                // sendNotification($app_notification_content);
+                            }
+                        }
+                        $i++;
+                    }
+                }else{
+                    $j++;
                 }
             }
             if (! empty($i)) {
@@ -2238,7 +2253,12 @@ class adminapiController extends Controller
                     "status"  => 1,
                     "message" => "Notification Sent successfully.",
                 ];
-            } else {
+            } else if(! empty($j)) {
+                $response = [
+                    "status"  => 0,
+                    "message" => "Student Not Found with syear ".$_REQUEST['syear'],
+                ];
+            }else{
                 $response = [
                     "status"  => 0,
                     "message" => "Notification Not Sent.",
@@ -2278,8 +2298,8 @@ class adminapiController extends Controller
             'sub_institute_id' => 'required|numeric',
             'student_id'       => 'required|numeric',
             'syear'            => 'required',
-            'from_date'        => 'required|date',
-            'to_date'          => 'required|date',
+            'from_date'        => 'nullable',
+            'to_date'          => 'nullable',
             'exam_type'        => 'nullable',
         ]);
 
@@ -2298,7 +2318,7 @@ class adminapiController extends Controller
                     $join->whereRaw('d.id = se.section_id');
                 })
                 ->selectRaw("s.id,s.id AS student_id,CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name,
-                    se.syear,s.enrollment_no,s.roll_no,s.dob,s.address,s.mobile,s.email,if(s.image = '','',
+                    se.syear,s.enrollment_no,se.roll_no,s.dob,s.address,s.mobile,s.email,if(s.image = '','',
                     concat('https://".$_SERVER['SERVER_NAME']."/storage/student/',s.image)) as student_image,se.standard_id,
                     se.section_id AS division_id,ac.title AS academic_section,st.name AS standard_name,d.name AS division_name,
                     s.gender,s.admission_year,s.mother_name,s.father_name")
@@ -2602,19 +2622,17 @@ class adminapiController extends Controller
                 $data['title'] = 'WRT Progress Report';
                 $data['file_name'] = "https://".$_SERVER['SERVER_NAME']."/storage/WRT_result_pdf/".$pdf_filename;
 
-                $res['status'] = 1;
-                $res['message'] = "Success";
-                $res['data'] = $data;
+                $response['status'] = 1;
+                $response['message'] = "Success";
+                $response['data'] = $data;
 
             } else {
-                $res['status'] = 0;
-                $res['message'] = "No Record";
+                $response['status'] = 0;
+                $response['message'] = "No Record";
             }
-
-
         }
 
-        return json_encode($res);
+        return json_encode($response);
     }
 
     public function add_studentCapturePhotosAPI(Request $request)
@@ -2652,7 +2670,7 @@ class adminapiController extends Controller
                 ->selectRaw('COUNT(*) AS total_record,group_concat(stu_image) as stu_images')
                 ->where('student_id', $student_id)
                 ->where('sub_institute_id', $sub_institute_id)
-                ->where('syear', $syear)->get()->toArray();
+                ->where('syear', $syear)->where('type_id',$request->type_id)->get()->toArray();
 
             if ($check_data[0]->total_record > 0) {
                 $files_array = explode(',', $check_data[0]->stu_images);
@@ -2668,7 +2686,7 @@ class adminapiController extends Controller
                 $delete_record = DB::table('student_capture_photos')
                     ->where('student_id', $student_id)
                     ->where('sub_institute_id', $sub_institute_id)
-                    ->where('syear', $syear)->delete();
+                    ->where('syear', $syear)->where('type_id',$request->type_id)->delete();
 
                 if ($request->hasFile('stu_image')) {
                     foreach ($request->file('stu_image') as $key => $file_data) {
@@ -2687,6 +2705,7 @@ class adminapiController extends Controller
                         $data['sub_institute_id'] = $sub_institute_id;
                         $data['student_id'] = $student_id;
                         $data['stu_image'] = $file_name;
+                        $data['type_id'] = $request->type_id ?? null;
                         $data['created_on'] = date('Y-m-d_h-i-s');
 
                         studentCapturePhotosModel::insert($data);
@@ -2712,6 +2731,7 @@ class adminapiController extends Controller
                         $data['sub_institute_id'] = $sub_institute_id;
                         $data['student_id'] = $student_id;
                         $data['stu_image'] = $file_name;
+                        $data['type_id'] = $request->type_id ?? null;
                         $data['created_on'] = date('Y-m-d_h-i-s');
 
                         studentCapturePhotosModel::insert($data);
@@ -2873,9 +2893,12 @@ class adminapiController extends Controller
 
             $data = DB::table('student_capture_photos as s')
                 ->selectRaw("s.syear,s.sub_institute_id,s.student_id,if(s.stu_image = '','',
-                    CONCAT('http://".$_SERVER['SERVER_NAME']."/storage/capture_photos/".$student_id."/',s.stu_image)) as stu_image")
+                    CONCAT('https://".$_SERVER['SERVER_NAME']."/storage/capture_photos/".$student_id."/',s.stu_image)) as stu_image")
                 ->where('s.student_id', $student_id)
                 ->where('s.sub_institute_id', $sub_institute_id)
+                ->when($request->type_id,function($query) use($request){
+                    $query->where('type_id',$request->type_id);
+                })
                 ->where('s.syear', $syear)->get()->toArray();
 
             if (count($data) > 0) {

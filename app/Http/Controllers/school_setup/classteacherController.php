@@ -51,8 +51,13 @@ class classteacherController extends Controller
                 // });
             })
             ->join('division as d', 'd.id', '=', 'ct.division_id')
-            ->join('tbluser as u', 'u.id', '=', 'ct.teacher_id')
+            ->join('tbluser as u',function($join){
+                $join->on('u.id', '=', 'ct.teacher_id')->where('u.status',1);  // 23-04-24 by uma
+            })
             ->where(['ct.sub_institute_id' => $sub_institute_id, 'ct.syear' => $syear])
+            ->orderBy('a.sort_order')
+            ->orderBy('s.sort_order')
+            ->orderBy('d.name')
             ->get();
     }
 
@@ -63,7 +68,7 @@ class classteacherController extends Controller
         return tbluserModel::select('tbluser.*',
             DB::raw('concat(tbluser.first_name," ",tbluser.middle_name," ",tbluser.last_name) as teacher_name'))
             ->join('tbluserprofilemaster', 'tbluserprofilemaster.id', "=", 'tbluser.user_profile_id')
-            ->where(['tbluser.sub_institute_id' => $sub_institute_id, 'tbluserprofilemaster.name' => 'Teacher'])
+            ->where(['tbluser.sub_institute_id' => $sub_institute_id, 'tbluserprofilemaster.name' => 'Teacher', 'tbluser.status' => 1])
             ->orderby('tbluser.first_name')
             ->get();
     }
@@ -81,19 +86,21 @@ class classteacherController extends Controller
         $syear = $request->session()->get('syear');
 
         //check for exisiting classteacher
-        $data = classteacherModel::select('*')
+        $data = classteacherModel::Join('tbluser as u','u.id','=','class_teacher.teacher_id')
             ->where([
-                'sub_institute_id' => $sub_institute_id,
-                'grade_id'         => $request->get('grade'),
-                'standard_id'      => $request->get('standard'),
-                'division_id'      => $request->get('division'),
-                'syear'            => $syear,
+                'class_teacher.sub_institute_id' => $sub_institute_id,
+                'class_teacher.grade_id'         => $request->get('grade'),
+                'class_teacher.standard_id'      => $request->get('standard'),
+                'class_teacher.division_id'      => $request->get('division'),
+                'class_teacher.syear'            => $syear,
             ])
-            ->get();
-        if (isset($data) && count($data) > 0) {
+            ->where('u.status',1)   // 23-04-24 by uma
+            ->first();
+        // display teacher name whom lecture is assigned
+        if (!empty($data) && isset($data->first_name)) {
             $res = [
                 "status_code" => 1,
-                "message"     => "Class Teacher Already Exist",
+                "message"     => "Class Teacher Already Exist to teacher ".$data->first_name.' '.$data->last_name,
                 "class"       => "alert-danger",
             ];
         } else {

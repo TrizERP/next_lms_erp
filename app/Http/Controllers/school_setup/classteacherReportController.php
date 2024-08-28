@@ -44,7 +44,9 @@ class classteacherReportController extends Controller
                 // });
             })
             ->join('division as d', 'd.id', '=', 'ct.division_id')
-            ->join('tbluser as u', 'u.id', '=', 'ct.teacher_id')
+            ->join('tbluser as u', function($join){
+                $join->on('u.id', '=', 'ct.teacher_id')->where('u.status',1);   // 23-04-24 by uma
+            })
             ->where(['ct.sub_institute_id' => $sub_institute_id])
             ->get();
     }
@@ -56,7 +58,7 @@ class classteacherReportController extends Controller
         return tbluserModel::select('tbluser.*',
             DB::raw('concat(tbluser.first_name," ",tbluser.middle_name," ",tbluser.last_name) as teacher_name'))
             ->join('tbluserprofilemaster', 'tbluserprofilemaster.id', "=", 'tbluser.user_profile_id')
-            ->where(['tbluser.sub_institute_id' => $sub_institute_id, 'tbluserprofilemaster.name' => 'Teacher'])
+            ->where(['tbluser.sub_institute_id' => $sub_institute_id, 'tbluserprofilemaster.name' => 'Teacher', 'tbluser.status' => 1])
             ->get();
     }
 
@@ -111,7 +113,9 @@ class classteacherReportController extends Controller
                 // });
             })
             ->join('division as d', 'd.id', '=', 'ct.division_id')
-            ->join('tbluser as u', 'u.id', '=', 'ct.teacher_id')
+            ->join('tbluser as u', function($join){
+                $join->on('u.id', '=', 'ct.teacher_id')->where('u.status',1);   // 23-04-24 by uma
+            })
             ->where($extraSearchArray)
             ->whereRaw($extraSearchArrayRaw)
             ->get()

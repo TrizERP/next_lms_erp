@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use function App\Helpers\is_mobile;
+use Illuminate\Support\Facades\Storage;
 
 
 class lmsPortfolioController extends Controller
@@ -34,6 +35,7 @@ class lmsPortfolioController extends Controller
         $res['status_code'] = 1;
         $res['message'] = "SUCCESS";
         $res['data'] = $data['portfolio_data'];
+
         if (strtoupper(session()->get('user_profile_name')) == "STUDENT") {
             return is_mobile($type, 'lms/show_student_lmsPortfolio', $res, "view");
         } else {
@@ -59,7 +61,8 @@ class lmsPortfolioController extends Controller
                 CONCAT_WS(" ",u.first_name,u.middle_name,u.last_name) as teacher_name'))
                 ->leftjoin("tbluser as u", function ($join) {
                     $join->on("u.id", "=", "lms_portfolio.feedback_by")
-                        ->on("u.sub_institute_id", "=", "lms_portfolio.sub_institute_id");
+                        ->on("u.sub_institute_id", "=", "lms_portfolio.sub_institute_id")
+                        ->where('u.status',1);  // 23-04-24 by uma
                 })
                 ->where([
                     'lms_portfolio.sub_institute_id' => $sub_institute_id, 'lms_portfolio.user_id' => $user_id,
@@ -107,12 +110,25 @@ class lmsPortfolioController extends Controller
         if (strtoupper(session()->get('user_profile_name')) == "STUDENT") {
             $student_id = session()->get('user_id');
 
-            $res = DB::select("SELECT * FROM sub_std_map s WHERE s.standard_id = 
+            /*$res = DB::select("SELECT * FROM sub_std_map s WHERE s.standard_id =
             (
-                SELECT standard_id FROM tblstudent_enrollment WHERE student_id = '".$student_id."' AND 
+                SELECT standard_id FROM tblstudent_enrollment WHERE student_id = '".$student_id."' AND
                 sub_institute_id = '".$sub_institute_id."' AND syear = '".$syear."'
             )
-            and sub_institute_id = '".$sub_institute_id."'");
+            and sub_institute_id = '".$sub_institute_id."'");*/
+
+            $res = DB::table('sub_std_map as s')
+                ->where('s.standard_id', function ($query) use ($student_id, $sub_institute_id, $syear) {
+                    $query->select('standard_id')
+                        ->from('tblstudent_enrollment')
+                        ->where('student_id', $student_id)
+                        ->where('sub_institute_id', $sub_institute_id)
+                        ->where('syear', $syear);
+                })
+                ->where('s.sub_institute_id', $sub_institute_id)
+                ->get();
+
+
             $subject_arr = json_decode(json_encode($res), true);
             $data['subject_arr'] = $subject_arr;
         }
@@ -143,7 +159,9 @@ class lmsPortfolioController extends Controller
             $size = $img->getSize();
             $newfilename = 'lms_'.date('Y-m-d_h-i-s').'.'.$ext;
             //$img->move(public_path().'/lms_content_file/',$newfilename);
-            $img->storeAs('public/lms_portfolio/', $newfilename);
+            // $img->storeAs('public/lms_portfolio/', $newfilename); 20-05-24
+            Storage::disk('digitalocean')->putFileAs('public/lms_portfolio/', $img, $newfilename, 'public');
+
         }
 
         $content = [
@@ -236,7 +254,8 @@ class lmsPortfolioController extends Controller
             $size = $img->getSize();
             $newfilename = 'lms_'.date('Y-m-d_h-i-s').'.'.$ext;
             //$img->move(public_path().'/lms_content_file/',$newfilename);
-            $img->storeAs('public/lms_portfolio/', $newfilename);
+            // $img->storeAs('public/lms_portfolio/', $newfilename); 20-05-24
+            Storage::disk('digitalocean')->putFileAs('public/lms_portfolio/', $img, $newfilename, 'public');
 
             $image_data = [
                 'file_name' => $newfilename,

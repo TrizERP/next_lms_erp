@@ -225,7 +225,7 @@ class used_storage_graphController extends Controller
                 
                 $get_petty_cash_data = DB::table('petty_cash as p')
                     ->join('tbluser as u', function ($join) {
-                        $join->whereRaw("u.id = p.user_id AND p.sub_institute_id = u.sub_institute_id");
+                        $join->whereRaw("u.id = p.user_id AND p.sub_institute_id = u.sub_institute_id")->where('u.status',1); // 23-04-24 by uma
                     })
                     ->selectRaw("SUM(IFNULL(p.file_size,0)) AS total_size, CONCAT_WS(' ',u.first_name,u.last_name) AS user_name")
                     ->whereRaw("p.sub_institute_id = '".$sub_institute_id."' $extra")
@@ -266,7 +266,7 @@ class used_storage_graphController extends Controller
                 } else {
                     $get_homework_data = DB::table('homework as p')
                         ->join('tbluser as u', function ($join) {
-                            $join->whereRaw("u.id = p.created_by AND p.sub_institute_id = u.sub_institute_id");
+                            $join->whereRaw("u.id = p.created_by AND p.sub_institute_id = u.sub_institute_id")->where('u.status',1); // 23-04-24 by uma
                         })
                         ->selectRaw("IFNULL(SUM(DISTINCT p.image_size),0) AS total_size, CONCAT_WS(' ',u.first_name,u.last_name) AS user_name, p.image_size")
                         ->where("p.sub_institute_id", $sub_institute_id)
@@ -308,7 +308,7 @@ class used_storage_graphController extends Controller
                 } else {
                     $get_homework_submission_data = DB::table('homework as p')
                         ->join('tbluser as u', function ($join) {
-                            $join->whereRaw("u.id = p.created_by AND p.sub_institute_id = u.sub_institute_id");
+                            $join->whereRaw("u.id = p.created_by AND p.sub_institute_id = u.sub_institute_id")->where('u.status',1); // 23-04-24 by uma
                         })
                         ->selectRaw("IFNULL(SUM(DISTINCT p.submission_image_size),0) AS total_size, CONCAT_WS(' ',u.first_name,u.last_name) AS user_name, p.submission_image_size")
                         ->where("p.sub_institute_id", $sub_institute_id)
@@ -364,7 +364,7 @@ class used_storage_graphController extends Controller
                 
                 $get_frontdesk_data = DB::table('front_desk as f')
                     ->join('tbluser as u', function ($join) {
-                        $join->whereRaw('u.id = f.CREATED_BY AND f.SUB_INSTITUTE_ID = u.sub_institute_id');
+                        $join->whereRaw('u.id = f.CREATED_BY AND f.SUB_INSTITUTE_ID = u.sub_institute_id')->where('u.status',1); // 23-04-24 by uma
                     })
                     ->selectRaw("SUM(IFNULL(f.FILE_SIZE,0)) AS total_size, CONCAT_WS(' ',u.first_name,u.last_name) AS user_name")
                     ->whereRaw("f.SUB_INSTITUTE_ID = '".$sub_institute_id."' $extra")->groupBy("f.CREATED_BY")->get()->toArray();
@@ -392,7 +392,7 @@ class used_storage_graphController extends Controller
                 
                 $get_task_data = DB::table('task as f')
                     ->join('tbluser as u', function ($join) {
-                        $join->whereRaw('u.id = f.CREATED_BY AND f.SUB_INSTITUTE_ID = u.sub_institute_id');
+                        $join->whereRaw('u.id = f.CREATED_BY AND f.SUB_INSTITUTE_ID = u.sub_institute_id')->where('u.status',1); // 23-04-24 by uma
                     })
                     ->selectRaw("SUM(IFNULL(f.FILE_SIZE,0)) AS total_size, CONCAT_WS(' ',u.first_name,u.last_name) AS user_name")
                     ->whereRaw("f.SUB_INSTITUTE_ID = '".$sub_institute_id."' $extra")->groupBy("f.CREATED_BY")->get()->toArray();
@@ -420,7 +420,7 @@ class used_storage_graphController extends Controller
                 
                 $get_complaint_data = DB::table('complaint as f')
                     ->join('tbluser as u', function ($join) {
-                        $join->whereRaw('u.id = f.COMPLAINT_BY AND f.SUB_INSTITUTE_ID = u.sub_institute_id');
+                        $join->whereRaw('u.id = f.COMPLAINT_BY AND f.SUB_INSTITUTE_ID = u.sub_institute_id')->where('u.status',1); // 23-04-24 by uma
                     })
                     ->selectRaw("SUM(IFNULL(f.FILE_SIZE,0)) AS total_size, CONCAT_WS(' ',u.first_name,u.last_name) AS user_name")
                     ->whereRaw("f.SUB_INSTITUTE_ID = '".$sub_institute_id."' $extra")->groupBy("f.COMPLAINT_BY")->get()->toArray();
@@ -483,7 +483,7 @@ class used_storage_graphController extends Controller
 
                 $get_student_health_data = DB::table('student_health as f')
                     ->join('tbluser as u', function ($join) {
-                        $join->whereRaw('u.id = f.created_by AND f.sub_institute_id = u.sub_institute_id');
+                        $join->whereRaw('u.id = f.created_by AND f.sub_institute_id = u.sub_institute_id')->where('u.status',1); // 23-04-24 by uma
                     })
                     ->selectRaw("SUM(IFNULL(f.file_size,0)) AS total_size, CONCAT_WS(' ',u.first_name,u.last_name) AS user_name")
                     ->whereRaw("f.sub_institute_id = '".$sub_institute_id."' $extra")->groupBy('f.created_by')

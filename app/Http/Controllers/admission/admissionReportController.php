@@ -6,15 +6,21 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
+use GenTux\Jwt\GetsJwtToken;
 
 class admissionReportController extends Controller
 {
+    use GetsJwtToken;
 
     public function enquiryReport(Request $request)
     {
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
         $type = $request->input('type');
+        if($type=="API"){
+            $sub_institute_id=$request->sub_institute_id;
+            $syear=$request->syear;
+        }
         $report = $request->input('report');
         $from_date = $request->input('from_date');
         $to_date = $request->input('to_date');
@@ -28,6 +34,7 @@ class admissionReportController extends Controller
                 $query->select(DB::raw('distinct(created_by)'))
                     ->from('admission_registration');
             })
+            ->where('status',1) // 23-04-24 by uma
             ->get();
 
         if (isset($report)) {
@@ -40,7 +47,7 @@ class admissionReportController extends Controller
             
             $getQuery = DB::table('admission_enquiry as ai')
                 ->join('tbluser as ts', function ($join) {
-                    $join->whereRaw('ts.id = ai.created_by AND ts.sub_institute_id = ai.sub_institute_id');
+                    $join->whereRaw('ts.id = ai.created_by AND ts.sub_institute_id = ai.sub_institute_id')->where('ts.status',1); // 23-04-24 by uma
                 })->leftJoin('caste as cs', function ($join) {
                     $join->whereRaw('cs.id = ai.category');
                 })->leftJoin('follow_up as fu', function ($join) {
@@ -55,7 +62,7 @@ class admissionReportController extends Controller
                     ai.gender, ai.mobile, ai.email, ai.address, DATE_FORMAT(ai.date_of_birth, '%d-%m-%Y') as date_of_birth, ai.age, ai.syear, ai.previous_school_name,s_previous.name as previous_standard,
                     s.name as admission_standard, ai.remarks,fu.status as enquiry_status, ai.source_of_enquiry, ai.created_by,
                     ai.counciler_name, ai.father_name,CONCAT_WS(' ',ts.first_name,ts.last_name) AS created_by, cs.caste_name $extra")
-                ->whereRaw("(DATE_FORMAT(ai.created_on, '%Y-%m-%d') BETWEEN '" . $from_date . "' AND '" . $to_date . "')
+                ->whereRaw("(ai.created_on BETWEEN '" . $from_date . "' AND '" . $to_date . "')
                     AND ai.sub_institute_id = '" . $sub_institute_id . "' AND ai.syear = '" . $syear . "'");
 
             if ($standard != '') {
@@ -293,6 +300,21 @@ class admissionReportController extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
         $type = $request->input('type');
+        if($type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');            
+        }
         $report = $request->input('report');
         $from_date = $request->input('from_date');
         $to_date = $request->input('to_date');
@@ -330,7 +352,7 @@ class admissionReportController extends Controller
                 ->join('admission_enquiry as ai', function ($join) {
                     $join->whereRaw('ar.enquiry_id = ai.id');
                 })->join('tbluser as ts', function ($join) {
-                    $join->whereRaw('ts.id = ar.created_by AND ts.sub_institute_id = ai.sub_institute_id');
+                    $join->whereRaw('ts.id = ar.created_by AND ts.sub_institute_id = ai.sub_institute_id')->where('ts.status',1); // 23-04-24 by uma
                 })->join('standard as s', function ($join) use($marking_period_id) {
                     $join->whereRaw('s.id = ai.admission_standard AND s.sub_institute_id = ai.sub_institute_id');
                     // ->when($marking_period_id,function($query) use($marking_period_id){

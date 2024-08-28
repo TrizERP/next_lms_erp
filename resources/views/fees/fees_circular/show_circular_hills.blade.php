@@ -35,13 +35,12 @@ use DB;
                 $division_id = $data['division_id'];
             }
 
-        @endphp
-        <?php
+        
             $file_name = "fees_circular/templates/hills_challan.html";
             $fin = fopen($file_name, 'r') or die("Selected Certificate Template is not in proper format .");
             $string = fread($fin, filesize($file_name));
             fclose($fin);
-        ?>
+        @endphp
         @if(isset($data['data']))
         @php
             $all_inserted_id = '';
@@ -52,14 +51,11 @@ use DB;
         @endphp
         @foreach($student_data as $key => $value)
 
-        <?php
+       @php
 $table = '';
 $total = 0;
 
 $sub_institute_id = session()->get('sub_institute_id');
-
-
-
 if (isset($data['breakoff'][$value['id']]))
 {
     foreach ($data['breakoff'][$value['id']] as $dhead => $damount) {
@@ -107,10 +103,10 @@ if (isset($data['feesCircularMaster']))
     $str = str_replace(htmlspecialchars("<<branch>>"), $data['feesCircularMaster']['branch'], $str);
     $str = str_replace(htmlspecialchars("<<current_date>>"), date('d-m-Y'), $str);
 }
-?>
+@endphp
 
                 <div class="card">
-                    <?php
+                    @php
                         echo $str;
 
                         $inserted_ids_arr = explode(',',$data['last_inserted_ids']);
@@ -121,8 +117,7 @@ if (isset($data['feesCircularMaster']))
                             $update_sql = "UPDATE fees_circular_log SET FEES_CIRCULAR_HTML = '".$new_str."' WHERE STUDENT_ID = '".$value['id']."'   AND id = '".$v."' ";
                             $sql_data = DB::select($update_sql);
                         }
-                    ?>
-
+                    @endphp
                 </div>
 
         @endforeach

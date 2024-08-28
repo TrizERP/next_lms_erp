@@ -1,8 +1,8 @@
-@include('includes.headcss')
-
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row bg-title">
@@ -11,12 +11,18 @@
             </div>
         </div>
         @php
-        $grade_id = $standard_id = $division_id = '';
+        $grade_id = $standard_id = $division_id = $from_date = $to_date='';
 
             if(isset($data['grade_id'])){
                 $grade_id = $data['grade_id'];
                 $standard_id = $data['standard_id'];
                 $division_id = $data['division_id'];
+            }
+            if(isset($data['from_date'])){
+                $from_date = $data['from_date'];
+            }
+            if(isset($data['to_date'])){
+                $to_date = $data['to_date'];
             }
         @endphp
         <div class="card">
@@ -57,15 +63,14 @@
                                         </option>
                                     </select>
                     </div>
-                    <div class="col-md-4 form-group">
-                        <label>From Date </label>
-                        <input type="text" id='from_date' value="@if(isset($data['from_date'])) {{$data['from_date']}} @endif" required name='from_date' class="form-control mydatepicker" autocomplete="off">
-                    </div>
-                    <div class="col-md-4 form-group">
-                        <label>To Date </label>
-                        <input type="text" id='to_date' value="@if(isset($data['to_date'])) {{$data['to_date']}} @endif"
-                               required name='to_date' class="form-control mydatepicker" autocomplete="off">
-                    </div>
+                        <div class="col-md-4 form-group">
+                            <label>From Date </label>
+                            <input type="text" id='from_date' @if(isset($from_date)) value="{{$from_date}}" @endif name='from_date' class="form-control mydatepicker">
+                        </div>
+                        <div class="col-md-4 form-group">
+                            <label>To Date </label>
+                            <input type="text" id='to_date' @if(isset($to_date)) value="{{$to_date}}" @endif name='to_date' class="form-control mydatepicker" >
+                        </div>
 
                                 <div class="col-md-12 form-group">
                                     <center>
@@ -77,38 +82,40 @@
                         </form>
                     </div>
 
-                    @if(isset($data['health_data']))
+        @if(isset($data['health_data']))
         @php
             if(isset($data['health_data'])){
                 $health_data = $data['health_data'];
             }
+            $health =isset($data['health_type']) ? $data['health_type'] : '';
+            $from_date =isset($data['from_date']) ? date('d-m-Y', strtotime($data['from_date'])) : '';
+            $to_date = isset($data['to_date']) ? date('d-m-Y', strtotime($data['to_date'])) : '';
         @endphp
                         <div class="card">
                             <div class="table-responsive">
-                            @php
-                                echo App\Helpers\get_school_details($grade_id, $standard_id, $division_id);
-                                echo '<br><center><span style="font-size: 14px; font-weight: 600; font-family: Arial, Helvetica, sans-serif !important">';
-                                echo 'Health : ' . (isset($data['health_type']) ? $data['health_type'] : '');
-                                echo '</span> <span style="font-size: 14px; font-weight: 600; font-family: Arial, Helvetica, sans-serif !important">';
-                                echo 'From Date : ' . (isset($data['from_date']) ? date('d-m-Y', strtotime($data['from_date'])) : '') . ' - ';
-                                echo '</span><span style="font-size: 14px; font-weight: 600; font-family: Arial, Helvetica, sans-serif !important">';
-                                echo 'To Date : ' . (isset($data['to_date']) ? date('d-m-Y', strtotime($data['to_date'])) : '') . '</span></center><br>';
-                            @endphp
+                            {!! App\Helpers\get_school_details($grade_id, $standard_id, $division_id) !!}
+                               <br><center><span style="font-size: 14px; font-weight: 600; font-family: Arial, Helvetica, sans-serif !important">
+                              Health : {{$health}}
+                                </span> <span style="font-size: 14px; font-weight: 600; font-family: Arial, Helvetica, sans-serif !important">
+                              From Date : {{$from_date}};
+                             </span><span style="font-size: 14px; font-weight: 600; font-family: Arial, Helvetica, sans-serif !important">
+                              To Date : {{$to_date}}</span></center><br>
+                            
                                 <table id="example" class="table table-striped">
                                     <thead>
                                     <tr>
-                                        @foreach($data['headers'] as $hkey => $header)
-                                <th> {{$header}} </th>
-                            @endforeach
+                                    @foreach($data['headers'] as $hkey => $header)
+                                        <th> {{$header}} </th>
+                                    @endforeach
                                     </tr>
                                     </thead>
                                     <tbody>
                                     @foreach($health_data as $key => $value)
-                                        <tr>
-                                            @foreach($data['headers'] as $hkey => $header)
-                                <td> {{$value->$hkey}} </td>
-                                            @endforeach
-                            </tr>
+                                    <tr>
+                                        @foreach($data['headers'] as $hkey => $header)
+                                            <td> {{$value->$hkey}} </td>
+                                        @endforeach
+                                     </tr>
                                     @endforeach
                     </tbody>
                 </table>
@@ -148,6 +155,7 @@
                         title: 'Student Health Report',
                         customize: function (win) {
                             $(win.document.body).prepend(`{!! App\Helpers\get_school_details("$grade_id", "$standard_id", "$division_id") !!}`);
+                            $(win.document.body).append(`<div style="text-align: right;margin-top:20px">Printed on: {{date('d-m-Y H:i:s')}}</div>`);
                         }
                     },
                     'pageLength'
@@ -171,3 +179,4 @@
 </script>
 
 @include('includes.footer')
+@endsection

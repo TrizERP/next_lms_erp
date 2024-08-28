@@ -1,8 +1,6 @@
-@include('../includes.headcss')
-@include('../includes.header')
-@include('../includes.sideNavigation')
-
-
+{{-- @include('includes.headcss') @include('includes.header') @include('includes.sideNavigation') --}} 
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="card">
@@ -18,7 +16,7 @@
                         {{ method_field("POST") }}
                         {{csrf_field()}}
                         <div class="row">                            
-                            {{ App\Helpers\TermDD() }}                            
+                            <!-- {{ App\Helpers\TermDD() }} -->                            
                             <div class="col-md-4 form-group">
                                 <label>Title</label>
                                 <input type="text" id='title' required name="title" value="" class="form-control">
@@ -59,3 +57,4 @@
 
 @include('includes.footerJs')
 @include('includes.footer')
+@endsection

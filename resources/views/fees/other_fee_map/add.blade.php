@@ -28,7 +28,7 @@
                     @php
                     if(isset($data['stu_data'])){
                     @endphp
-                    <form action="{{ route('other_fee_map.store') }}" enctype="multipart/form-data" method="post">
+                    <form action="{{ route('other_fee_map.store') }}" enctype="multipart/form-data" method="post"  id="myForm" onsubmit="return validateForm()">
                         {{ method_field("POST") }}
                         {{csrf_field()}}
                         <input type="hidden" name="grade" value="{{$data['grade']}}">
@@ -47,9 +47,10 @@
                                         $arr_title = $data['month_head'];
                                         @endphp
                                         @foreach ($arr_title as $id=>$tit_arr)
-                                        <th class="text-left">{{$tit_arr}} </th>
+                                            @foreach ($tit_arr as $id2=>$tit_arr2)
+                                                <th class="text-left">{{$tit_arr2}} </th>
+                                            @endforeach
                                         @endforeach
-
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -70,8 +71,15 @@
                                             @foreach ($month as $key=>$month_id)
 
                                             @foreach ($arr_title['data'] as $ids=>$tit_arr)
-
-                                            <th><input type="text" value="@if(isset($col_arr[$month_id][$tit_arr['display_name']]['amount'])){{ $col_arr[$month_id][$tit_arr['display_name']]['amount']}}@endif" name="values[{{$col_arr['student_id']}}][{{$month_id}}][{{$tit_arr['fees_title']}}]"></th>
+                                            @php
+                                                $attr = '';
+                                                $set_amount = $col_arr[$month_id][$tit_arr['display_name']]['amount'];
+                                                $paid = $col_arr[$month_id][$tit_arr['display_name']]['paid'];
+                                                if($paid!=0){
+                                                    $attr="readonly";
+                                                }
+                                            @endphp
+                                            <th><input type="text" value="@if(isset($set_amount)){{ $set_amount}}@endif" name="values[{{$col_arr['student_id']}}][{{$month_id}}][{{$tit_arr['fees_title']}}]" {{$attr}}></th>
                                             @endforeach
                                         @endforeach
                                     </tr>
@@ -106,15 +114,26 @@
     </div>
 </div>
 
-
 @include('includes.footerJs')
 <script>
-    $(function () {
-        var $tblChkBox = $("input:checkbox");
-        $("#ckbCheckAll").on("click", function () {
-            $($tblChkBox).prop('checked', $(this).prop('checked'));
-        });
+    function validateForm() {
+    var checkboxes = document.querySelectorAll('input[name^="student_id["]');
+    var anyChecked = false;
+    
+    checkboxes.forEach(function(checkbox) {
+        if (checkbox.checked) {
+            anyChecked = true;
+        }
     });
+    
+    if (!anyChecked) {
+        alert("Please select at least one checkbox");
+        return false; 
+    }
+    
+    return true;
+}
+
 </script>
 <script>
 $(document).ready(function () {

@@ -53,7 +53,6 @@ class studentReportController extends Controller
 
     public function edit(Request $request,$id)
     {
-
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
 
@@ -117,19 +116,19 @@ class studentReportController extends Controller
         /* END Get All Attempted Paper of Selected Suject */
 
         /* START Get Cumulative LO/LI percentage */
-        $lo_arr = array();
+        /*$lo_arr = array();
         if (count($exam_arr) > 0) {
             foreach ($exam_arr as $key => $val) {
                 if ($val['online_exam_ids'] != "") {
                     $lo_sql = "SELECT *,'100' AS total_percentage, ifnull(ROUND(((a.right_answer*100)/total_question),2),0) AS obtained_percentage
                     FROM (
-                        SELECT lt.id,lt.name, COUNT(mapping_type_id) AS total_question, GROUP_CONCAT(e.question_id) AS ques_list, 
+                        SELECT lt.id,lt.name, COUNT(mapping_type_id) AS total_question, GROUP_CONCAT(e.question_id) AS ques_list,
                         SUM((CASE WHEN e.ans_status = 'right' THEN '1' END)) AS right_answer
                         FROM lms_question_mapping l
                         INNER JOIN lms_mapping_type lt ON lt.id = l.mapping_value_id
-                        LEFT JOIN lms_online_exam_answer e ON e.question_id = l.questionmaster_id AND e.question_paper_id = '".$val['paper_id']."' AND 
+                        LEFT JOIN lms_online_exam_answer e ON e.question_id = l.questionmaster_id AND e.question_paper_id = '".$val['paper_id']."' AND
                          e.student_id = '".$id."' AND e.online_exam_id in (".$val['online_exam_ids'].")
-                        WHERE questionmaster_id IN 
+                        WHERE questionmaster_id IN
                         (
                             SELECT question_id
                             FROM lms_online_exam_answer
@@ -147,7 +146,48 @@ class studentReportController extends Controller
                     $lo_arr[$val['paper_name']] = $lo_data;
                 }
             }
+        }*/
+
+        $lo_arr = [];
+
+        if (count($exam_arr) > 0) {
+            foreach ($exam_arr as $key => $val) {
+                if ($val['online_exam_ids'] != "") {
+                    $lo_result = DB::table('lms_question_mapping as l')
+                        ->selectRaw("lt.id, lt.name, COUNT(mapping_type_id) AS total_question,
+                    GROUP_CONCAT(e.question_id) AS ques_list,
+                    IFNULL(ROUND(((SUM(CASE WHEN e.ans_status = 'right' THEN 1 ELSE 0 END) * 100) / COUNT(*)), 2), 0) AS obtained_percentage")
+                        ->join('lms_mapping_type as lt', 'lt.id', '=', 'l.mapping_value_id')
+                        ->leftJoin('lms_online_exam_answer as e', function ($join) use ($val, $id) {
+                            $join->on('e.question_id', '=', 'l.questionmaster_id')
+                                ->on('e.question_paper_id', '=', DB::raw("'" . $val['paper_id'] . "'"))
+                                ->on('e.student_id', '=', DB::raw("'" . $id . "'"))
+                                ->whereIn('e.online_exam_id', explode(",", $val['online_exam_ids']));
+                        })
+                        ->whereIn('questionmaster_id', function ($query) use ($val, $id) {
+                            $query->select('question_id')
+                                ->from('lms_online_exam_answer')
+                                ->where('question_paper_id', $val['paper_id'])
+                                ->where('student_id', $id)
+                                ->whereIn('online_exam_id', explode(",", $val['online_exam_ids']));
+                        })
+                        ->groupBy('mapping_value_id')
+                        ->orderBy('mapping_type_id')
+                        ->orderBy('mapping_value_id')
+                        ->get();
+
+                    $lo_data = [];
+
+                    foreach ($lo_result as $k => $v) {
+                        $lo_data[$v->name] = $v->obtained_percentage;
+                    }
+
+                    $lo_arr[$val['paper_name']] = $lo_data;
+                }
+            }
         }
+
+
         /* END Get Cumulative LO/LI percentage */
 
 

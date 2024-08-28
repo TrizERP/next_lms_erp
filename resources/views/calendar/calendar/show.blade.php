@@ -93,9 +93,9 @@
     var standard = "<div class='form-group'>";
     standard = standard + "<label class='control-label'>Standard</label>";
     standard = standard + "    <select class='form-control' id='std' multiple name='standard[]' required>";
-    <?php foreach ($data['standardData'] as $id => $val) { ?>
-        standard = standard + "        <option value='<?php echo $id; ?>'><?php echo $val; ?></option>";
-    <?php } ?>
+   @foreach ($data['standardData'] as $id => $val) 
+        standard = standard + "<option value='{{$id}}'>{{$val}}</option>";
+   @endforeach
     standard = standard + "    </select></div>";
 
     // alert(standard);
@@ -170,8 +170,10 @@
                 });
                 $this.$modal.find('.delete-event').show().end().find('.save-event').hide().end().find('.modal-body').empty().prepend(form).end().find('.delete-event').unbind('click').click(function() {
                     var hid_id = form.find("input[id='hid_id']").val();
-                    var hostname = "https://" + window.location.host;
-                    var path = hostname + "/calendar/calendar/" + hid_id;
+                    // var hostname = "https://" + window.location.host;
+                    var hostname = "{{ env('APP_URL') }}";
+
+                    var path = hostname + "calendar/calendar/" + hid_id;
                     //                    alert(path);
                     $.ajax({
                         url: path,
@@ -194,8 +196,10 @@
 
                 $this.$modal.find('form').on('submit', function() {
                     var hid_id = form.find("input[id='hid_id']").val();
-                    var hostname = "https://" + window.location.host;
-                    var path = hostname + "/calendar/calendar/" + hid_id;
+                    // var hostname = "https://" + window.location.host;
+                    var hostname = "{{ env('APP_URL') }}";
+
+                    var path = hostname + "calendar/calendar/" + hid_id;
                     //                    if (title == null || title == "") {
                     //                        alert("Please Fill Proper Values");
                     //                        return false;
@@ -208,7 +212,8 @@
                         type: "PUT",
                         url: path,
                         data: $("#update_item_form").serialize(),
-                        success: function(data) {
+                        success: function(result) {
+                            console.log(result);
                             window.location.href = "{{ route('calendar.index') }}";
                             // return false;
                         }

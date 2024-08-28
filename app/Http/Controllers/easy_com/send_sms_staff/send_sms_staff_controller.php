@@ -63,6 +63,7 @@ class send_sms_staff_controller extends Controller
             ->where([
                 'sub_institute_id' => session()->get('sub_institute_id'),
                 'user_profile_id'  => $_REQUEST['staff'],
+                'status'  => 1,
             ])
             ->get();
 
@@ -153,7 +154,7 @@ class send_sms_staff_controller extends Controller
             ->where([
                 'sub_institute_id' => session()->get('sub_institute_id'),
                 'user_profile_id'  => $_REQUEST['group_id'],
-            ])->get();
+            ])->where('status',1)->get(); // 23-04-24 by uma
         $data = [];
 
         foreach ($alldata as $object) {

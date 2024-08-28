@@ -1,8 +1,8 @@
 <table style="border-collapse: collapse;" border="1" width="100%">
     <tr>
         <td colspan=4 align="center">
-            <h2>Muljibhai Mehta International School</h2>
-            <h4>Pay Slip For The Month Of : April 2023</h4>
+            <h2>{{ $employeeData['school_name']->ReceiptHeader }}</h2>
+            <h4>Pay Slip For The Month Of : {{ $employeeData['month'] }} {{ $employeeData['year'] }}</h4>
         </td>
     </tr>
     <tr>
@@ -13,13 +13,13 @@
     </tr>
     <tr>
         <td>Designation</td>
-        <td>Accounts Assistant</td>
+        <td>{{ $employeeData['profile_name'] }}</td>
         <td>Date Of Joining</td>
-        <td>2021-03-08</td>
+        <td>{{ $employeeData['join_date'] }}</td>
     </tr>
     <tr>
         <td>Bank A/C No</td>
-        <td>{{$employeeData['bank_no']}}</td>
+        <td>{{ isset($employeeData['bank_no']) ? $employeeData['bank_no'] : '-'}}</td>
         <td>Days Present</td>
         <td>{{$employeeData['total_day']}}</td>
     </tr>
@@ -59,7 +59,7 @@
             <td align="right">{{ $employeeSalary[0][3] == 'allowance' ? $employeeSalary[0][1]: '-'}}</td>
             <td align="right">{{$employeeSalary[0][3] == 'allowance' ? $employeeSalary[0][2] : '-'}}</td>
             @if(isset($employeeSalary[1]))
-                @if($employeeSalary[1][3] == 'allowance')
+                @if(isset($employeeSalary[1][3]) && $employeeSalary[1][3] == 'allowance')
                     <td>&nbsp;&nbsp;-</td>
                     <td align="right">-</td>
                     </tr>
@@ -71,8 +71,8 @@
                     <td align="right">-</td>
                     </tr>
                 @else
-                    <td>&nbsp;&nbsp;{{$employeeSalary[1][3] == 'deduction' ? $employeeSalary[1][0] : '-'}}</td>
-                    <td align="right">{{$employeeSalary[1][3] == 'deduction' ? $employeeSalary[1][2] : '-'}}</td>
+                    <td>&nbsp;&nbsp;{{ isset($employeeSalary[1][3]) && $employeeSalary[1][3] == 'deduction' ? $employeeSalary[1][0] : '-'}}</td>
+                    <td align="right">{{ isset($employeeSalary[1][3]) && $employeeSalary[1][3] == 'deduction' ? $employeeSalary[1][2] : '-'}}</td>
                 @endif
             @else
                 <td>&nbsp;&nbsp;-</td>
@@ -102,9 +102,11 @@
     <tr>
         <td colspan="4" align="center"><b>Leave Record</b></td>
         <td align="center" rowspan=5>
-            <b>From Muljibhai Mehta International School</b>
+            <b>From {{ $employeeData['school_name']->ReceiptHeader }}</b>
             <br>
-            <img src="http://apps.triz.co.in/mmiserp/Products/cms/assets/fees_logo/mmis.jpg" height="100" width="100">
+            
+            <br>
+            <br>
             <br>
             <b>Authorised Signatory</b>
         </td>

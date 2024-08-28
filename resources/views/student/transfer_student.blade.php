@@ -1,8 +1,8 @@
-@include('includes.headcss')
-
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <style>
     .filter-button {
         margin: 0;
@@ -128,3 +128,4 @@ function check_validation() {
 }
 </script>
 @include('includes.footer')
+@endsection 

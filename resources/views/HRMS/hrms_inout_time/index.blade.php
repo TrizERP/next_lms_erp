@@ -30,12 +30,17 @@
         </div>
         <div class="card">
             <!-- @TODO: Create a saperate tmplate for messages and include in all tempate -->
-            @if ($message = Session::get('message'))
+            @if ($message = session()->get('data'))
+            @if($message['status_code']==1)
                 <div class="alert alert-success alert-block">
+                @else
+                <div class="alert alert-danger alert-block">
+            @endif                
                     <button type="button" class="close" data-dismiss="alert">×</button>
-                    <strong>{{ $message }}</strong>
+                    <strong>{{ $message['message'] }}</strong>
                 </div>
             @endif
+
             @if($data['button'] == 'in')
                 <form action="{{ route('hrms_in_time.store') }}" method="post">
                     @csrf
@@ -84,13 +89,49 @@
 
                         <input type="hidden" name="id" value="{{$data['id']}}">
                         <div class="col-md-12 form-group">
-                            <center>
-                                <input type="submit" name="submit" id="Submit" {{$data['button_disable'] ? 'disabled' : ''}} value="Out" class="btn btn-success">
-                            </center>
+                            @if(empty($data['hrms_attendance']->punchout_time))
+                                <center>
+                                    <input type="submit" name="submit" id="Submit" {{$data['button_disable'] ? 'disabled' : ''}} value="Out" class="btn btn-success">
+                                </center>
+                            @endif
                         </div>
                     </div>
                 </form>
             @endif
+        </div>
+        <div class="card">
+            <div class="table-responsive mt-20 tz-report-table">
+                <table id="example" class="table table-striped">
+                    <thead>
+                    <tr>
+                        <th>Sr No.</th>
+                        <th>Date</th>
+                        <th>Employee Name</th>
+                        <th>In Time</th>
+                        <th class="text-left">Out Time</th>
+                    </tr>
+                    </thead>
+                    @php
+                    $j = 1;
+                    
+                    if(isset($data['hrms_attendance'])){
+                        $user_id = $data['hrms_attendance']->user_id ?? '';
+                        $sub_institute_id = $data['hrms_attendance']->sub_institute_id ?? '';
+
+                        $get_employe_name = DB::table('tbluser')->where(['id' => $user_id, 'sub_institute_id' => $sub_institute_id])->where('status',1)->first();
+                    }
+                    @endphp
+                    <tbody>
+                        <tr>
+                            <td>{{ $j++ }}</td>
+                            <td>{{ $data['hrms_attendance']->day ?? '' }}</td>
+                            <td>{{ $get_employe_name->first_name ?? ''}} {{ $get_employe_name->last_name ?? ''}}</td>
+                            <td>{{ isset($data['hrms_attendance']->punchin_time) ? \Carbon\Carbon::parse($data['hrms_attendance']->punchin_time)->format('h:i A') : 'N/A' }}</td>
+                            <td>{{ isset($data['hrms_attendance']->punchout_time) ? \Carbon\Carbon::parse($data['hrms_attendance']->punchout_time)->format('h:i A') : 'N/A' }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>

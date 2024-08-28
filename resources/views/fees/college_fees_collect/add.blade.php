@@ -123,7 +123,7 @@
             <div id="printableArea" class="row" style=" margin-top: 25px;">
                 <div class="panel-body white-box">
                     <div class="col-lg-12 col-sm-12 col-xs-12">
-                        <?php echo $data['data']; ?>
+                       {{$data['data']}}
 
                     </div>
                 </div>

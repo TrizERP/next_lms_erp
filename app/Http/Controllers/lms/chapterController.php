@@ -19,7 +19,9 @@ class chapterController extends Controller
     public function index(Request $request)
     {
         $data = $this->getData($request);
+        
         $type = $request->input('type');
+        $res['sub_institute_id'] = session()->get('sub_institute_id');
         $res['status_code'] = 1;
         $res['message'] = "SUCCESS";
         $res['data'] = $data['chapter_data'];
@@ -45,10 +47,7 @@ class chapterController extends Controller
             $syear = $request->session()->get('syear');
             $user_profile_name = $request->session()->get('user_profile_name');
         }
-// <<<<<<< HEAD
 
-// =======
-// >>>>>>> 5711c69549bbcd152bf4c8020191d51575f0ee7c
         $getIsLms = DB::table('school_setup')
             ->where('Id', $sub_institute_id)
             ->value('is_Lms');
@@ -179,8 +178,8 @@ class chapterController extends Controller
 
         return redirect()->route('chapter_master.index',
             [
-                'standard_id' => $request->get('standard'), 'subject_id' => $request->get('subject'),
-            ]);//->with(['data' => $res]);        
+                'standard_id' => $request->get('standard'), 'subject_id' => $request->get('subject'),'perm'=>$sub_institute_id
+            ]);//->with(['data' => $res]);
     }
 
     public function edit(Request $request, $id)
@@ -228,13 +227,14 @@ class chapterController extends Controller
 
         return redirect()->route('chapter_master.index',
             [
-                'subject_id' => $request->get('subject'), 'standard_id' => $request->get('standard'),
+                'subject_id' => $request->get('subject'), 'standard_id' => $request->get('standard'),'perm'=>$sub_institute_id
             ]);//->with(['data' => $res]);
     }
 
     public function destroy(Request $request, $id)
     {
         $type = $request->input('type');
+        $sub_institute_id = session()->get('sub_institute_id');
         $chapterdata = chapterModel::where(["id" => $id])->get()->toArray();
         $subject_id = $chapterdata[0]['subject_id'];
         $standard_id = $chapterdata[0]['standard_id'];
@@ -242,7 +242,7 @@ class chapterController extends Controller
         $res['status_code'] = "1";
         $res['message'] = "Chapter Deleted Successfully";
 
-        return redirect()->route('chapter_master.index', ['subject_id' => $subject_id, 'standard_id' => $standard_id]);
+        return redirect()->route('chapter_master.index', ['subject_id' => $subject_id, 'standard_id' => $standard_id,'perm'=>$sub_institute_id]);
     }
 
     public function StandardwiseSubject(Request $request)
@@ -348,12 +348,12 @@ class chapterController extends Controller
         {
             $standard_id = $request->get('standard_id');
 
-            //START Get subject name          
+            //START Get subject name
             $subject = DB::table('sub_std_map')->where('subject_id', $subject_id)
                 ->where('standard_id', $standard_id)->get()->toArray();
 
             $subject_name = str_replace($this->searchArr, $this->replaceArr, $subject[0]->display_name);
-            //END Get subject name 
+            //END Get subject name
 
             $graph_data .= $this->get_chapter_data($request, $subject_id, $standard_id, $subject_name);
 
@@ -396,7 +396,7 @@ class chapterController extends Controller
         $sub_institute_id = $request->session()->get("sub_institute_id");
         $syear = $request->session()->get("syear");
 
-        //START Get all Chapter data 
+        //START Get all Chapter data
         $chapters = DB::table('chapter_master as c')
             ->where('c.sub_institute_id', $sub_institute_id)
             ->where('c.standard_id', $standard_id)
@@ -414,12 +414,12 @@ class chapterController extends Controller
             $chapter_data .= "'".$subject_name."','".$chapter_name."'";
             $chapter_data .= ",'red',4,'dot'],";
 
-            //START Get topic data         
+            //START Get topic data
             $chapter_data .= $this->get_topic_data($request, $chapter_name, $cval['id']);
-            //END Get topic data 
+            //END Get topic data
         }
 
-        //END Get all Chapter data 
+        //END Get all Chapter data
 
         return $chapter_data;
     }
@@ -444,13 +444,13 @@ class chapterController extends Controller
             $topic_data .= "[";
             $topic_data .= "'".$chapter_name."','".$topic_name."'";
             $topic_data .= "],";
-            //START Get content data         
+            //START Get content data
             $topic_data .= $this->get_content_data($request, $topic_name, $tval['id']);
-            //END Get content data  
+            //END Get content data
 
-            //START Get Question & Answer data         
+            //START Get Question & Answer data
             $topic_data .= $this->get_question_data($request, $topic_name, $tval['id']);
-            //END Get Question & Answer data          
+            //END Get Question & Answer data
 
         }
 
@@ -485,9 +485,9 @@ class chapterController extends Controller
             $content_data .= "[";
             $content_data .= "'".$topic_content_label."','".$content_title."'";
             $content_data .= ",'green',4,'LongDashDotDot'],";
-            //START Get content mapping data         
+            //START Get content mapping data
             $content_data .= $this->get_content_mapping_data($request, $content_title, $tval['id']);
-            //END Get content mapping data         
+            //END Get content mapping data
         }
 
         return $content_data;
@@ -529,6 +529,7 @@ class chapterController extends Controller
             ->selectRaw("*,SUBSTRING(q.question_title,1,20) as ques_title")
             ->where('q.sub_institute_id', $sub_institute_id)
             ->where('q.topic_id', $topic_id)
+            ->where('status',1)
             ->get()->toArray();
 
         $question_arr = json_decode(json_encode($questions), true);
@@ -549,9 +550,9 @@ class chapterController extends Controller
             $question_data .= "[";
             $question_data .= "'".$topic_question_label."','".$ques_title."'";
             $question_data .= "],";
-            //START Get Question mapping data         
+            //START Get Question mapping data
             $question_data .= $this->get_question_mapping_data($request, $ques_title, $tval['id']);
-            //END Get Question mapping data         
+            //END Get Question mapping data
         }
 
         return $question_data;
@@ -569,6 +570,7 @@ class chapterController extends Controller
             })
             ->selectRaw("c.*,SUBSTRING(CONCAT_WS(' ',t1.name,' => ',t2.name),1,35) as mapping_value")
             ->where('q.questionmaster_id', $question_id)
+            ->where('q.status',1)
             ->get()->toArray();
 
         $questionMapping_arr = json_decode(json_encode($questionMappings), true);

@@ -14,10 +14,12 @@
             $grade_id = $data['grade_id']; 
             $standard_id= $data['standard_id']; 
             $division_id = $data['division_id']; 
-    } 
+    }
+
     @endphp
 		<div class="card">
-			@if(!empty($data['message'])) @if($data['status_code'] == 1)
+			@if(!empty($data['message']))
+			 @if($data['status_code'] == 1)
 			<div class="alert alert-success alert-block">
 				@else
 				<div class="alert alert-danger alert-block">
@@ -136,21 +138,27 @@
 			}
 		}
 
-		function check_validation() {
-			var checked_questions = err = 0;
+		
+	function check_validation() {
+		var checked_questions = err = 0;
 
-			$("input[name='students[]']:checked").each(function() {
-				checked_questions = checked_questions + 1;
-			});
-			if (checked_questions == 0) {
-				alert("Please Select Atleast one Student from search");
-				err = 1;
-				return false;
-			} else {
-				return true;
-			}
+		$("input[name='students[]']:checked").each(function() {
+		checked_questions = checked_questions + 1;
+		});
+
+		if (checked_questions == 0) {
+		alert("Please Select Atleast one Student from search");
+		err = 1;
 		}
-	</script>
+
+		if (err == 1) {
+		event.preventDefault();
+		}
+
+		return err;
+	}
+
+</script>
 
 	<!-- <script>
 $(document).ready(function () {

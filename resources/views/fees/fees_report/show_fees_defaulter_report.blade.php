@@ -95,14 +95,15 @@
                 <table id="example" class="table table-striped">
                     <thead>
                         <tr>
-                            <th>Sr No.</th>
+                            <th>Sr.</th>
+                            <th>Roll No.</th>
+                            <!--<th>{{ App\Helpers\get_string('uniqueid','request')}}</th>-->
                             <th>{{ App\Helpers\get_string('grno','request')}}</th>
                             <th>{{ App\Helpers\get_string('studentname','request')}}</th>
                             <th>{{ App\Helpers\get_string('std/div','request')}}</th>
+                            <th>Quota</th>
                             <th>Mobile No.</th>
-                            <th>{{ App\Helpers\get_string('uniqueid','request')}}</th>
-                            <th>Roll No.</th>
-                            <th style="background-color:#7befef;">Transport Fees</th>
+                            <th style="background-color:#7befef;">Bus</th>
                             <th style="background-color:#7befef;">Regular</th>
                             <th style="background-color:#7befef;">Reg+Bus</th>
                             @foreach($data['fees_titles'] as $values)
@@ -120,7 +121,8 @@
                         $j=1;
                         $total_breakoff = $total_paid = $total_unpaid = 0;
                         $totalSum = 0;
-                        $toSum = 0;
+                        $toSum = $regularTotal= $rgBusTotal =$transTotal = 0;
+                        $feesTotal = [];
                         $displayNamesToExclude = ['Transport Fees', '2017-2018', '2018-2019', '2019-2020', '2020-2021', '2021-2022', '2022-2023'];
                         @endphp
 
@@ -128,12 +130,13 @@
                             @foreach($fees_data as $key => $fees_value)
                             <tr>
                                 <td>{{$j}}</td>
+                                <td>{{isset($fees_value['roll_no']) ? $fees_value['roll_no'] : ''}}</td>                                
+                                <!--<td>{{isset($fees_value['uniqueid']) ? $fees_value['uniqueid'] : ''}}</td>-->
                                 <td>{{isset($fees_value['enrollment']) ? $fees_value['enrollment'] : ''}}</td>
                                 <td>{{isset($fees_value['name']) ? $fees_value['name'] : ''}}</td>
                                 <td>{{isset($fees_value['stddiv']) ? $fees_value['stddiv'] : ''}}</td>
+                                <td>{{isset($fees_value['student_quota']) ? $fees_value['student_quota'] : ''}}</td>
                                 <td>{{isset($fees_value['mobile']) ? $fees_value['mobile'] : ''}}</td>
-                                <td>{{isset($fees_value['uniqueid']) ? $fees_value['uniqueid'] : ''}}</td>
-                                <td>{{isset($fees_value['roll_no']) ? $fees_value['roll_no'] : ''}}</td>
                                 <td style="background-color:#7befef;">{{ $fees_value['final_fee']['Transport Fees'] ?? 0 }}</td>
                                 @php
                                     $regBk = $fees_value['-']['bk'] ?? 0;
@@ -150,6 +153,9 @@
                                     $toSum = $regBk - $excSum;
 
                                     $regbus = ($fees_value['final_fee']['Transport Fees'] ?? 0) + $toSum;
+                                    $rgBusTotal +=$regbus;
+                                    $regularTotal += $toSum ?? 0;
+                                    $transTotal += $fees_value['final_fee']['Transport Fees'] ?? 0;
                                 @endphp
                                 <td style="background-color:#7befef;">{{ $toSum ?? 0 }}</td>
                                 <td style="background-color:#7befef;">{{ $regbus }}</td>
@@ -167,6 +173,11 @@
                                     @if ($values->display_name !== 'Transport Fees')
                                         <td style="background-color:#7befef;">{{ $fee }}</td>
                                         @php
+                                        if(!isset($feesTotal[$values->display_name])){
+                                            $feesTotal[$values->display_name] = 0;
+                                        }else{
+                                            $feesTotal[$values->display_name] +=$fee;
+                                        }
                                             $totalSum += $fee;
                                         @endphp
                                     @endif
@@ -198,23 +209,26 @@
                             $total_unpaid += $fees_value['-']['remain'] ?? 0;
                             @endphp
                             @endforeach
+                         
                             <tr class="font-weight-bold">
                                 <td>{{$j++}}</td>
                                 <td></td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
+                                <!--<td></td>-->
                                 <td></td>
                                 <td></td>
                                 <td></td>
                                 <td></td>
                                 <td>Total</td>
+                                <td>{{$transTotal}}</td>
+                                <td>{{$regularTotal}}</td>
+                                <td>{{$rgBusTotal}}</td>
+                               @foreach($data['fees_titles'] as $key => $value)
+                                    @if ($values->display_name !== 'Transport Fees')
+                                        <td>{{ $feesTotal[$values->display_name] }}</td>
+                                    @else
+                                        <td></td>
+                                    @endif
+                               @endforeach
                                 <td>{{$total_breakoff}}</td>
                                 <td>{{$total_paid}}</td>
                                 <td>{{$total_unpaid}}</td>
@@ -268,7 +282,7 @@
         buttons: [
             {
                 extend: 'pdfHtml5',
-                title: 'Fees Overall Report',
+                title: 'Fees Defaulter Report',
                 orientation: 'landscape',
                 pageSize: 'LEGAL',
                 pageSize: 'A0',
@@ -276,9 +290,25 @@
                      columns: ':visible'
                 },
             },
-            { extend: 'csv', text: ' CSV', title: 'Fees Overall Report' },
-            { extend: 'excel', text: ' EXCEL', title: 'Fees Overall Report' },
-            { extend: 'print', text: ' PRINT', title: 'Fees Overall Report' },
+            { extend: 'csv', text: ' CSV', title: 'Fees Defaulter Report' },
+            { extend: 'excel', text: ' EXCEL', title: 'Fees Defaulter Report' },
+            { 
+                extend: 'print', 
+                text: ' PRINT', 
+                title: 'Fees Defaulter Report',
+                orientation: 'landscape',
+                pageSize: 'LEGAL',
+                exportOptions: {
+                     columns: ':visible'
+                },
+                customize: function (win) {
+                $(win.document.body)
+                    .append(
+                        '<style>' +
+                        '@page { size: legal landscape; }</style>'
+                    );
+                }
+            },
             'pageLength'
         ],
         });

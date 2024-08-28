@@ -48,10 +48,11 @@ use App\Http\Controllers\student\teacherIcardController;
 use App\Http\Controllers\student\transferStudentController;
 use App\Http\Controllers\student\studentBulkUpdateController;
 use App\Http\Controllers\student\studentOptionalSubjectController;
+use App\Http\Controllers\student\studentAnacdotalController;
 use Illuminate\Support\Facades\Route;
 
 
-Route::group(['prefix' => 'student', 'middleware' => ['session', 'menu', 'logRoute']], function () {
+Route::group(['prefix' => 'student', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
     Route::resource('add_student', tblstudentController::class);
     Route::resource('add_house', houseController::class);
     Route::resource('past_education', tblstudentPastEducationController::class);
@@ -87,6 +88,7 @@ Route::group(['prefix' => 'student', 'middleware' => ['session', 'menu', 'logRou
     Route::resource('house_automation', houseAutomationController::class);
     Route::resource('student_bulk_update', studentBulkUpdateController::class);
     Route::resource('student_optional_subject', studentOptionalSubjectController::class);
+    Route::resource('anacdotal', studentAnacdotalController::class);
 
     Route::get('selected_student_view', [rollOverController::class, 'selected_student_view'])->name("selected_student_view");
 
@@ -95,6 +97,8 @@ Route::group(['prefix' => 'student', 'middleware' => ['session', 'menu', 'logRou
     Route::post('ajax_toDivisions', [studentTransferController::class, 'ajax_toDivisions'])->name('ajax_toDivisions');
 
     Route::get('student_homework_report_index', [studentHomeworkController::class, 'studentHomeworkReportIndex'])->name("student_homework_report_index");
+    Route::post('delete-selected-students', [studentHomeworkController::class, 'multipleDelete'])->name('delete_selected_students');
+
     Route::post('student_homework_report', [studentHomeworkController::class, 'studentHomeworkReport'])->name("student_homework_report");
     Route::get('student_homework_submission_report_index', [studentHomeworkSubmissionController::class, 'studentHomeworkSubmissionReportIndex'])->name("student_homework_submission_report_index");
 
@@ -135,7 +139,7 @@ Route::group(['prefix' => 'student', 'middleware' => ['session', 'menu', 'logRou
     Route::post('student_icard/show_student', ['as' => 'student_icard.show_student', 'uses' => 'student\studentIcardController@showStudent']);
     Route::post('teacher_icard/show_teacher', ['as' => 'teacher_icard.show_teacher', 'uses' => 'student\teacherIcardController@showTeacher']);
 
-    Route::post('view_samples', [studentIcardController::class, 'viewSamples'])->name("view_samples");
+    Route::get('view_samples', [studentIcardController::class, 'viewSamples'])->name("view_samples");
     Route::post('view_samples_user', [teacherIcardController::class, 'viewSamples'])->name("view_samples_user");
 
     Route::post('student_icard/show_student_icard', [studentIcardController::class, 'showStudentIcard'])->name('show_student_icard');
@@ -144,13 +148,12 @@ Route::group(['prefix' => 'student', 'middleware' => ['session', 'menu', 'logRou
     Route::post('student_certificate/show_student', ['as' => 'student_certificate.show_student', 'uses' => 'student\studentCertificateController@showStudent']);
 
     Route::post('student_certificate/show_student_certificate', [studentCertificateController::class, 'showStudentCertificate'])->name('show_student_certificate');
-    Route::get('ajax_getBatch', [tblstudentController::class, 'ajax_getBatch'])->name('ajax_getBatch');
-    Route::get('ajax_getOptionalSubject', [tblstudentController::class, 'ajax_getOptionalSubject'])->name('ajax_getOptionalSubject');
 
     Route::get('ajax_getHomeworkSubjects', [studentHomeworkController::class, 'ajax_getHomeworkSubjects'])->name('ajax_getHomeworkSubjects');
 
 });
-
+Route::get('ajax_getBatch', [tblstudentController::class, 'ajax_getBatch'])->name('ajax_getBatch');
+Route::get('ajax_getOptionalSubject', [tblstudentController::class, 'ajax_getOptionalSubject'])->name('ajax_getOptionalSubject');
 
 Route::get('ajax_saveData', 'student\studentCertificateController@ajax_saveData')->name('ajax_saveData');
 
@@ -216,6 +219,13 @@ Route::get('ajax_checkEmailExist', [tblstudentController::Class, 'ajax_checkEmai
 Route::get('ajax_checkDivisionCapacity', [tblstudentController::class, 'ajax_checkDivisionCapacity'])->name('ajax_checkDivisionCapacity');
 Route::get('ajax_StatewiseCity', [tblstudentController::class, 'ajax_StatewiseCity'])->name('ajax_StatewiseCity');
 Route::get('get_batch', [studentAttendanceController::class, 'get_batch'])->name('get_batch');
+
+Route::get('document_details', [studentTransferController::class, 'DocumentTypeDetails'])->name('document_details');
+
+// url with parameter http://127.0.0.1:8000/add_students?sub_institute_id=257&syear=2024&type=web
+Route::get('add_students', [tblstudentController::class,'index'])->name('add_students.index');
+Route::post('add_students/store', [tblstudentController::class,'store'])->name('add_students.store');
+Route::get('checkExists', [tblstudentController::class,'checkExists'])->name('checkExists');
 // Route::post('front_desk/leave_application/add_leave_application', function(){
 //     echo "asds";
 // });

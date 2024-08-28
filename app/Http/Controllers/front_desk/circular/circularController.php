@@ -41,8 +41,16 @@ class circularController extends Controller
                 $school_data['message'] = $data_arr['message'];
             }
         }
-
-        $data = $this->getData();
+        $type = $request->type;
+        if($type=='API'){
+            $sub_institute_id = $request->sub_institute_id;
+            $syear = $request->syear;
+        }else{
+            $sub_institute_id = session()->get('sub_institute_id');
+            $syear = session()->get('syear');            
+        }
+        $data = $this->getData($syear,$sub_institute_id,$request);
+        // echo "<pre>";print_r($data);exit;
         $school_data['data'] = $data['data'];
         $school_data['circular_type'] = $data['circular_type'];
 
@@ -51,9 +59,13 @@ class circularController extends Controller
         return is_mobile($type, "front_desk/circular/show", $school_data, "view");
     }
 
-    function getData()
+    function getData($syear,$sub_institute_id,$request)
     {
-        $result['data'] = DB::table("circular as c")
+        $classTeacherStdArr = session()->get('classTeacherStdArr') ?? $request->standard_id;
+        $classTeacherDivArr = session()->get('classTeacherDivArr') ?? $request->division_id;
+        
+// return $classTeacherGrdArr;exit;
+        $query = DB::table("circular as c")
             ->join('standard as s', function ($join) {
                 $join->whereRaw("s.id = c.standard_id");
             })
@@ -62,13 +74,24 @@ class circularController extends Controller
             })
             ->join('division as d', function ($join) {
                 $join->whereRaw("d.id = c.division_id AND d.sub_institute_id = c.sub_institute_id");
-            })
-            ->selectRaw('c.*,s.name as std_name,t.type as circular_type,d.name as div_name')
-            ->where("c.syear", "=", session()->get('syear'))
-            ->where("c.sub_institute_id", "=", session()->get('sub_institute_id'))
+            });
+
+            if (isset($classTeacherStdArr)) {
+                if (count($classTeacherStdArr) > 0) {
+                    $query->whereIn('s.id', $classTeacherStdArr);
+                }
+            }
+            if (isset($classTeacherDivArr)) {
+                if (count($classTeacherDivArr) > 0) {
+                    $query->whereIn('d.id', $classTeacherDivArr);
+                }
+            }
+           $query = $query->selectRaw('c.*,s.name as std_name,t.type as circular_type,d.name as div_name')
+            ->where("c.syear", "=", $syear)
+            ->where("c.sub_institute_id", "=", $sub_institute_id)
             ->orderBy('c.id', 'DESC')->limit(400)
             ->get()->toArray();
-
+        $result['data'] = $query;
         $result['circular_type'] = DB::table('circular_type')->get()->toArray();
 
         return $result;
@@ -204,11 +227,17 @@ class circularController extends Controller
                 ->where("c.standard_id", "=", $standard_id)
                 ->where("c.syear", "=", $syear)
                 ->where("c.sub_institute_id", "=", $sub_institute_id)
+                ->orderBy('c.id','DESC')
                 ->get()->toArray();
 
-            $response['data'] = $result_data;
-            $response['message'] = "Success";
-            $response['status'] = "1";
+            if(!empty($result_data)){
+                $response['message'] = "Success";
+                $response['status'] = "1";
+                $response['data'] = $result_data;
+            }else{
+                $response['message'] = "Circular Not Found with syear ".$syear;
+                $response['status'] = "0";
+            }
         }
 
         return json_encode($response);
@@ -243,6 +272,12 @@ class circularController extends Controller
             $sub_institute_id = session()->get('sub_institute_id');
             $user_id = session()->get('user_id');
         }
+        $stds = $_REQUEST['standard'] ?? '';
+        $divs = $_REQUEST['division'] ?? '';        
+        if(isset($_REQUEST['allstd'])){
+            $stds = DB::table('standard')->where('sub_institute_id',$sub_institute_id)->pluck('id');
+            $divs = DB::table('division')->where('sub_institute_id',$sub_institute_id)->pluck('id');
+        }
 
         if ($request->hasFile('attachment')) {
             foreach ($request->file('attachment') as $key => $file_data) {
@@ -253,9 +288,9 @@ class circularController extends Controller
                 $file_name = $name.'.'.$ext;
                 $path = $file_data->storeAs('public/circular/', $file_name);
 
-                if (isset($_REQUEST['standard'])) {
-                    foreach ($_REQUEST['standard'] as $id => $std) {
-                        foreach ($_REQUEST['division'] as $ids => $div_id) {
+                if (isset($stds)) {
+                    foreach ($stds as $id => $std) {
+                        foreach ($divs as $ids => $div_id) {
 
                             $values = [
                                 'syear'            => $syear,
@@ -324,6 +359,7 @@ class circularController extends Controller
                                             $gcmRegIds[] = $val1->gcm_regid;
                                         }
                                     }
+                                    sendNotification($app_notification_content);
 
                                     $bunch_arr = array_chunk($gcmRegIds, 1000);
                                     if (! empty($bunch_arr)) {
@@ -336,7 +372,7 @@ class circularController extends Controller
                                                     'image'   => $schoolLogo,
                                                 );
                                                 $pushStatus = send_FCM_Notification($val, $message, $sub_institute_id);
-                                                sendNotification($app_notification_content);
+                                                // sendNotification($app_notification_content);
                                             }
                                         }
                                     }
@@ -349,9 +385,9 @@ class circularController extends Controller
                 }
             }
         } else {
-            if (isset($_REQUEST['standard'])) {
-                foreach ($_REQUEST['standard'] as $id => $std) {
-                    foreach ($_REQUEST['division'] as $ids => $div_id) {
+            if (isset($stds)) {
+                foreach ($stds as $id => $std) {
+                    foreach ($divs as $ids => $div_id) {
                         $values = [
                             'syear'            => $syear,
                             'standard_id'      => $std,
@@ -417,6 +453,7 @@ class circularController extends Controller
                                         $gcmRegIds[] = $val1->gcm_regid;
                                     }
                                 }
+                                sendNotification($app_notification_content);
 
                                 $bunch_arr = array_chunk($gcmRegIds, 1000);
                                 if (! empty($bunch_arr)) {
@@ -429,7 +466,7 @@ class circularController extends Controller
                                                 'image'   => $schoolLogo,
                                             );
                                             $pushStatus = send_FCM_Notification($val, $message, $sub_institute_id);
-                                            sendNotification($app_notification_content);
+                                            // sendNotification($app_notification_content);
                                         }
                                     }
                                 }

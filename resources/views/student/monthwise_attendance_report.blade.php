@@ -1,7 +1,8 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row bg-title">
@@ -85,17 +86,17 @@
                                 }
                         @endphp
                         <div class="card">
-                    @php
-                        echo App\Helpers\get_school_details($grade_id,$standard_id,$division_id);
-                        echo '<br><center><span style=" font-size: 14px;font-weight: 600;font-family: Arial, Helvetica, sans-serif !important">Month : '.$month_name[$data['month']].' / </span><span style=" font-size: 14px;font-weight: 600;font-family: Arial, Helvetica, sans-serif !important">Year : '.$data['year'].'</span></center><br>';
-                    @endphp                        
+                   {!! App\Helpers\get_school_details($grade_id,$standard_id,$division_id); !!}
+                    <br><center><span style=" font-size: 14px;font-weight: 600;font-family: Arial, Helvetica, sans-serif !important">Month : {{$month_name[$data['month']]}} / </span><span style=" font-size: 14px;font-weight: 600;font-family: Arial, Helvetica, sans-serif !important">Year : {{$data['year']}}</span></center><br>
                             <div class="table-responsive">
                                 <table id="example" class="table display" style="border:none !important">
                                     <thead>
-                                    <tr id="head-table" style="border:none !important"></tr>
+                                    <!--<tr id="head-table" style="border:none !important"></tr>-->
                                     <tr id="heads">
-                                        <th>Sr No</th>
-                                        <th>{{App\Helpers\get_string('standard','request')}}/{{App\Helpers\get_string('division','request')}}<th>{{App\Helpers\get_string('grno','request')}}</th>
+                                        <th>Sr.No</th>
+                                        <th>Month/Year</th>
+                                        <th>{{App\Helpers\get_string('standard','request')}}/{{App\Helpers\get_string('division','request')}}</th>
+                                        <th>{{App\Helpers\get_string('grno','request')}}</th>
                                         <th>{{App\Helpers\get_string('studentname','request')}}</th>
                                         @if(isset($data['batch_id']) && !empty($data['batchs']))
                                         <th>Batch</th>
@@ -105,7 +106,8 @@
                                         @endfor
                                         <th>Total Working Days</th>
                                         <th>Total Presant</th>
-                                        <th>Total Absent</th>
+                                        <th class="text-left">Total Absent</th>
+                                        <th class="text-left">Per %</th>
                                     </tr>
                                     </thead>
                                     <tbody>
@@ -117,6 +119,7 @@
                                             $totalA = 0;
                                             @endphp
                                             <td>{{$j++}}</td>
+                                            <td>{{ $month_name[$data['month']] .'/'. $data['year']; }}</td>
                                             <td>{{ $value['standard_name'] . ' / ' . $value['division_name'] }}</td>
                                             <td>{{$value['enrollment_no']}}</td>
                                             <td>{{$value['first_name']." ".$value['middle_name']." ".$value['last_name']}}</td>
@@ -155,6 +158,10 @@
                                             <td>{{$totalWorkingDays}}</td>
                                             <td>{{$totalP}}</td>
                                             <td>{{$totalA}}</td>
+                                            @php 
+                                                $per = ($totalWorkingDays>0) ? round((($totalP*100) / $totalWorkingDays),2) : 0;
+                                            @endphp
+                                            <td>{{$per}}%</td>
                                         </tr>
                                     @endforeach
                                     </tbody>
@@ -180,8 +187,7 @@
                         extend: 'pdfHtml5',
                         title: 'Monthwise Attendance Report',
                         orientation: 'landscape',
-                        pageSize: 'LEGAL',
-                        pageSize: 'A0',
+                        pageSize: 'Legal',
                         exportOptions: {
                             columns: ':visible'
                         },
@@ -194,6 +200,7 @@
                         title: 'Monthwise Attendance Report',
                         customize: function (win) {
                             $(win.document.body).prepend(`{!! App\Helpers\get_school_details("$grade_id", "$standard_id", "$division_id") !!}`);
+                            $(win.document.body).append(`<div style="text-align: right;margin-top:20px">Printed on: {{date('d-m-Y H:i:s')}}</div>`);
                         }
                     },
                     'pageLength'
@@ -207,7 +214,7 @@
 
             var d = document.getElementById("division");
             var division = d.options[d.selectedIndex].text;
-            $('#example thead #head-table').html('<th style="border:none !important;text-align:center;font-weight:700 !important" colspan="18"><h4>Academic Section : ' + grade + ' | Standard : ' + standard + ' | Division : ' + division + '</h4></th>');
+            //$('#example thead #head-table').html('<th style="border:none !important;text-align:center;font-weight:700 !important" colspan="18"><h4>Academic Section : ' + grade + ' | Standard : ' + standard + ' | Division : ' + division + '</h4></th>');
             $('#example thead #heads').clone(true).appendTo('#example thead');
             $('#example thead #heads:eq(1) th').each(function (i) {
                 var title = $(this).text();
@@ -273,3 +280,4 @@ $(document).on('change', '#division', function () {
 
 </script>
 @include('includes.footer')
+@endsection

@@ -66,13 +66,14 @@
 
     #l2>li>*:first-child:before {
         counter-increment: c2;
-        content: "(" counter(c2, lower-latin)") ";
+        content: "(" counter(c2, decimal)") ";
         color: black;
         font-family: "Times New Roman", serif;
         font-style: normal;
         font-weight: normal;
         text-decoration: none;
         font-size: 11.5pt;
+        /* vertical-align: -6pt; */
     }
 
     #l2>li:first-child>*:first-child:before {
@@ -225,7 +226,7 @@
         font-weight: normal;
         text-decoration: none;
         font-size: 11.5pt;
-        vertical-align: -6pt;
+        vertical-align: 0pt;
     }
 
     #l9>li:first-child>*:first-child:before {
@@ -247,974 +248,1154 @@
         </div>
         <div class="card">
             <div class="card-body">
-                @if ($sessionData = Session::get('data'))
-                    @if($sessionData['status_code'] == 1)
+                @if (isset($data['status_code']))
+                    @if($data['status_code'] == 1)
                         <div class="alert alert-success alert-block">
-                            @else
-                                <div class="alert alert-danger alert-block">
-                                    @endif
-                                    <button type="button" class="close" data-dismiss="alert">×</button>
-                                    <strong>{{ $sessionData['message'] }}</strong>
-                                </div>
-                            @endif
-                            <form action="" enctype="multipart/form-data"
-                                  method="post">
-                                @csrf
-                                <div class="row">
-                                    <div class="col-md-3 form-group">
-                                        <label>Employee List</label>
-                                        <select id='employee_id' name="employee_id" class="form-control">
-                                            <option value="0">Select Employee</option>
-                                            @foreach($employees as $employee)
-                                                <option
-                                                    value="{{$employee->employee_id}}">{{$employee->getUser->first_name .' '. $employee->getUser->last_name }}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    <div class="col-md-3 form-group">
-                                        <label>Select Year</label>
-                                        <select id='year' name="year" class="form-control">
-                                            <option>Select Year</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-3 col-sm-offset-4 text-center form-group">
-                                        <input type="submit" name="submit" value="Submit" class="btn btn-success">
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-md-3 form-group">
-                                        <h4>Allowance</h4>
-                                        @foreach($payrollTypes['allowance'] as $payrollType)
-                                            <input type="checkbox" name="allowance[]" value="{{$payrollType->id}}"> {{$payrollType->payroll_name}}
-                                        @endforeach
-
-                                    </div>
-                                    <div class="col-md-3 form-group">
-                                        <h4>Deduction</h4>
-                                        @foreach($payrollTypes['deduction'] as $payrollType)
-                                            <input type="checkbox" name="deduction[]" value="{{$payrollType->id}}"> {{$payrollType->payroll_name}}
-                                        @endforeach
-                                    </div>
-                                </div>
-                                <!-- Modal -->
-                                <div class="modal fade bd-example-modal-lg" id="exampleModal" tabindex="-1"
-                                     role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-                                    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-                                        <div class="modal-content">
-                                            <div class="modal-header">
-                                                <h5 class="modal-title" id="exampleModalLabel">Choose Field</h5>
-                                                <button type="button" class="close" data-dismiss="modal"
-                                                        aria-label="Close">
-                                                    <span aria-hidden="true">x</span>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </form>
+                    @else
+                        <div class="alert alert-danger alert-block">
+                    @endif
+                            <button type="button" class="close" data-dismiss="alert">×</button>
+                            <strong>{{ $data['message'] }}</strong>
                         </div>
+                @endif
+                <form action="{{ route('form16.report') }}" enctype="multipart/form-data" method="post">
+                @csrf
+                    <div class="row">
+                        @php 
+                            $dep_id = $emp_id='';
+                            if(isset($data['department_id'])){
+                                $dep_id=$data['department_id'];
+                            }
+                            if(isset($data['employee_id'])){
+                                $emp_id=$data['employee_id'];
+                            }
+                        @endphp 
+                    {!! App\Helpers\HrmsDepartments("","",$dep_id,"",$emp_id,"") !!}
+                        <div class="col-md-3 form-group">
+                            <label>Select Year</label>
+                            <select id='year' name="year" class="form-control">
+                                @foreach($data['years'] as $key => $value)
+                                <option value="{{$key}}" @if(isset($data['year']) && $data['year'] == $key) selected @elseif($data['DefaultYear']==$key) selected @endif>{{$value}}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-3 col-sm-offset-4 text-center form-group">
+                            <input type="submit" name="submit" value="Submit" class="btn btn-success">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-3 form-group">
+                            <h4>Allowance</h4>
+                            @foreach($data['allowance'] as $payrollType)
+                                <input type="checkbox" name="allowance[]" value="{{$payrollType->id}}" checked> {{$payrollType->payroll_name}}
+                            @endforeach
+
+                        </div>
+                        <div class="col-md-3 form-group">
+                            <h4>Deduction</h4>
+                            @foreach($data['deduction'] as $payrollType)
+                                @if($payrollType->payroll_name == "PT")
+                                    <input type="checkbox" name="deduction[]" value="{{$payrollType->id}}" checked> {{$payrollType->payroll_name}}
+                                @else
+                                    <input type="checkbox" name="deduction[]" value="{{$payrollType->id}}"> {{$payrollType->payroll_name}}
+                                @endif
+                            @endforeach
+                        </div>
+                    </div>
+                    
+                </form>
             </div>
         </div>
-
-        <table style="border-collapse:collapse;margin-left:6.07943pt" cellspacing="0">
-            <tr style="height:16pt">
-                <td style="width:600pt;border-top-style:solid;border-top-width:2pt;border-left-style:solid;border-left-width:1pt;border-bottom-style:solid;border-bottom-width:1pt;border-right-style:solid;border-right-width:1pt"
-                    colspan="4">
-                    <p class="s1" style="padding-left: 69pt;padding-right: 68pt;text-indent: 0pt;text-align: center;">FORM
-                        NO. 16</p>
-                </td>
-            </tr>
-            <tr style="height:30pt">
-                <td style="width:600pt;border-top-style:solid;border-top-width:1pt;border-left-style:solid;border-left-width:1pt;border-bottom-style:solid;border-bottom-width:1pt;border-right-style:solid;border-right-width:1pt"
-                    colspan="4">
-                    <p class="s1"
-                       style="padding-top: 7pt;padding-left: 69pt;padding-right: 68pt;text-indent: 0pt;text-align: center;">
-                        PART A</p>
-                </td>
-            </tr>
-            <tr style="height:16pt">
-                <td style="width:600pt;border-top-style:solid;border-top-width:1pt;border-left-style:solid;border-left-width:1pt;border-bottom-style:solid;border-bottom-width:1pt;border-right-style:solid;border-right-width:1pt"
-                    colspan="4">
-                    <p class="s1" style="padding-left: 69pt;padding-right: 68pt;text-indent: 0pt;text-align: center;">
-                        Certificate under section 203 of the income-tax Act, 1961 for tax deducted at source on salary.</p>
-                </td>
-            </tr>
-            <tr style="height:16pt">
-                <td
-                    style="width:300pt;border-top-style:solid;border-top-width:1pt;border-left-style:solid;border-left-width:1pt;border-bottom-style:solid;border-bottom-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p class="s1" style="padding-left: 63pt;text-indent: 0pt;text-align: left;">Name and Address of the
-                        Employer</p>
-                </td>
-                <td style="width:300pt;border-top-style:solid;border-top-width:1pt;border-left-style:solid;border-left-width:1pt;border-bottom-style:solid;border-bottom-width:1pt;border-right-style:solid;border-right-width:1pt"
-                    colspan="3">
-                    <p class="s1" style="padding-left: 63pt;text-indent: 0pt;text-align: left;">Name and Address of the
-                        Employee</p>
-                </td>
-            </tr>
-            <tr style="height:45pt">
-                <td
-                    style="width:300pt;border-top-style:solid;border-top-width:1pt;border-left-style:solid;border-left-width:1pt;border-bottom-style:solid;border-bottom-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p class="s2" style="padding-left: 3pt;text-indent: 0pt;text-align: left;">Muljibhai Mehta International
-                        school</p>
-                    <p class="s2" style="padding-top: 9pt;padding-left: 3pt;text-indent: 0pt;text-align: left;">Gokul
-                        TownShip, Bolinj Road Virar ( W )</p>
-                </td>
-                <td style="width:300pt;border-top-style:solid;border-top-width:1pt;border-left-style:solid;border-left-width:1pt;border-bottom-style:solid;border-bottom-width:1pt;border-right-style:solid;border-right-width:1pt"
-                    colspan="3">
-                    <p class="s2" style="padding-left: 4pt;text-indent: 0pt;text-align: left;">KIRTANE AMRUTA AJIT</p>
-                    <p class="s2" style="padding-top: 3pt;padding-left: 4pt;text-indent: 0pt;text-align: left;">423,
-                        Gurukrupa, Dr. P. N. Kirtane lean,Near Old Jain Mandir, Chalpeth, Aagashi,Virar,401301</p>
-                </td>
-            </tr>
-            <tr style="height:16pt">
-                <td
-                    style="width:150pt;border-top-style:solid;border-top-width:1pt;border-left-style:solid;border-left-width:1pt;border-bottom-style:solid;border-bottom-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p class="s1" style="padding-left: 23pt;text-indent: 0pt;text-align: left;">PAN of the Deductor</p>
-                </td>
-                <td
-                    style="width:150pt;border-top-style:solid;border-top-width:1pt;border-left-style:solid;border-left-width:1pt;border-bottom-style:solid;border-bottom-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p class="s1" style="padding-left: 23pt;text-indent: 0pt;text-align: left;">TAN of the Deductor</p>
-                </td>
-                <td style="width:300pt;border-top-style:solid;border-top-width:1pt;border-left-style:solid;border-left-width:1pt;border-bottom-style:solid;border-bottom-width:1pt;border-right-style:solid;border-right-width:1pt"
-                    colspan="2">
-                    <p class="s1" style="padding-left: 98pt;text-indent: 0pt;text-align: left;">PAN of the Employee</p>
-                </td>
-            </tr>
-            <tr style="height:16pt">
-                <td
-                    style="width:150pt;border-top-style:solid;border-top-width:1pt;border-left-style:solid;border-left-width:1pt;border-bottom-style:solid;border-bottom-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                </td>
-                <td
-                    style="width:150pt;border-top-style:solid;border-top-width:1pt;border-left-style:solid;border-left-width:1pt;border-bottom-style:solid;border-bottom-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                </td>
-                <td style="width:300pt;border-top-style:solid;border-top-width:1pt;border-left-style:solid;border-left-width:1pt;border-bottom-style:solid;border-bottom-width:1pt;border-right-style:solid;border-right-width:1pt"
-                    colspan="2">
-                    <p class="s1" style="padding-left: 4pt;text-indent: 0pt;text-align: left;">BWHPS6252A</p>
-                </td>
-            </tr>
-            <tr style="height:16pt">
-                <td
-                    style="width:300pt;border-top-style:solid;border-top-width:1pt;border-left-style:solid;border-left-width:1pt;border-bottom-style:solid;border-bottom-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p class="s1" style="padding-left: 124pt;padding-right: 123pt;text-indent: 0pt;text-align: center;">
-                        CIT(TDS)</p>
-                </td>
-                <td style="width:119pt;border-top-style:solid;border-top-width:1pt;border-left-style:solid;border-left-width:1pt;border-bottom-style:solid;border-bottom-width:1pt;border-right-style:solid;border-right-width:1pt"
-                    rowspan="2">
-                    <p class="s1" style="padding-top: 9pt;padding-left: 19pt;text-indent: 0pt;text-align: left;">Assessment
-                        Year</p>
-                </td>
-                <td style="width:181pt;border-top-style:solid;border-top-width:1pt;border-left-style:solid;border-left-width:1pt;border-bottom-style:solid;border-bottom-width:1pt;border-right-style:solid;border-right-width:1pt"
-                    colspan="2" rowspan="2">
-                    <p class="s1"
-                       style="padding-top: 9pt;padding-left: 73pt;padding-right: 72pt;text-indent: 0pt;text-align: center;">
-                        Period</p>
-                </td>
-            </tr>
-            <tr style="height:16pt">
-                <td
-                    style="width:300pt;border-top-style:solid;border-top-width:1pt;border-left-style:solid;border-left-width:1pt;border-bottom-style:solid;border-bottom-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p class="s1" style="padding-left: 3pt;text-indent: 0pt;text-align: left;">Address</p>
-                </td>
-            </tr>
-            <tr style="height:16pt">
-                <td
-                    style="width:300pt;border-top-style:solid;border-top-width:1pt;border-left-style:solid;border-left-width:1pt;border-bottom-style:solid;border-bottom-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                </td>
-                <td style="width:119pt;border-top-style:solid;border-top-width:1pt;border-left-style:solid;border-left-width:1pt;border-bottom-style:solid;border-bottom-width:1pt;border-right-style:solid;border-right-width:1pt"
-                    rowspan="2">
-                    <p class="s1" style="padding-top: 9pt;padding-left: 35pt;text-indent: 0pt;text-align: left;">2023-2024
-                    </p>
-                </td>
-                <td
-                    style="width:90pt;border-top-style:solid;border-top-width:1pt;border-left-style:solid;border-left-width:1pt;border-bottom-style:solid;border-bottom-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p class="s1" style="padding-left: 30pt;padding-right: 30pt;text-indent: 0pt;text-align: center;">From
-                    </p>
-                </td>
-                <td
-                    style="width:91pt;border-top-style:solid;border-top-width:1pt;border-left-style:solid;border-left-width:1pt;border-bottom-style:solid;border-bottom-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p class="s1" style="padding-left: 14pt;padding-right: 14pt;text-indent: 0pt;text-align: center;">To</p>
-                </td>
-            </tr>
-            <tr style="height:16pt">
-                <td
-                    style="width:300pt;border-top-style:solid;border-top-width:1pt;border-left-style:solid;border-left-width:1pt;border-bottom-style:solid;border-bottom-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p class="s2" style="padding-left: 3pt;text-indent: 0pt;text-align: left;">City Pin code</p>
-                </td>
-                <td
-                    style="width:90pt;border-top-style:solid;border-top-width:1pt;border-left-style:solid;border-left-width:1pt;border-bottom-style:solid;border-bottom-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p class="s2" style="padding-left: 15pt;text-indent: 0pt;text-align: left;">01/Apr/2022</p>
-                </td>
-                <td
-                    style="width:91pt;border-top-style:solid;border-top-width:1pt;border-left-style:solid;border-left-width:1pt;border-bottom-style:solid;border-bottom-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p class="s2" style="padding-left: 14pt;padding-right: 14pt;text-indent: 0pt;text-align: center;">
-                        31/Mar/2023</p>
-                </td>
-            </tr>
-            <tr style="height:30pt">
-                <td style="width:600pt;border-top-style:solid;border-top-width:1pt;border-left-style:solid;border-left-width:1pt;border-bottom-style:solid;border-bottom-width:1pt;border-right-style:solid;border-right-width:1pt"
-                    colspan="4">
-                    <p class="s1"
-                       style="padding-top: 7pt;padding-left: 69pt;padding-right: 68pt;text-indent: 0pt;text-align: center;">
-                        PART B (Annexure)</p>
-                </td>
-            </tr>
-            <tr style="height:16pt">
-                <td style="width:600pt;border-top-style:solid;border-top-width:1pt;border-left-style:solid;border-left-width:1pt;border-bottom-style:solid;border-bottom-width:1pt;border-right-style:solid;border-right-width:1pt"
-                    colspan="4">
-                    <p class="s2" style="padding-left: 69pt;padding-right: 68pt;text-indent: 0pt;text-align: center;">
-                        Details of Salary paid and any other income and tax deducted</p>
-                </td>
-            </tr>
-            <tr style="height:500pt">
-                <td
-                    style="width:244pt;border-top-style:solid;border-top-width:1pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <ol id="l1">
-                        <li data-list-text="1">
-                            <p class="s2" style="padding-left: 22pt;text-indent: -15pt;text-align: left;">Gross Salary</p>
-                            <ol id="l2">
-                                <li data-list-text="(a)">
-                                    <p class="s2"
-                                       style="padding-top: 5pt;padding-left: 45pt;padding-right: 8pt;text-indent: -18pt;line-height: 92%;text-align: left;">
-                                        Salary as per provisions contained in sec. 17(1)</p>
-                                </li>
-                                <li data-list-text="(b)">
-                                    <p class="s2"
-                                       style="padding-top: 7pt;padding-left: 49pt;padding-right: 17pt;text-indent: -21pt;text-align: left;">
-                                        Value of perquisites u/s 17(2) (as per Form No. 12BA, wherever applicable)</p>
-                                </li>
-                                <li data-list-text="(c)">
-                                    <p class="s2"
-                                       style="padding-top: 8pt;padding-left: 45pt;padding-right: 13pt;text-indent: -18pt;line-height: 94%;text-align: left;">
-                                        Profits in lieu of salary under section 17(3) (as per Form No. 12BA, wherever
-                                        applicable)</p>
-                                </li>
-                                <li data-list-text="(d)">
-                                    <p class="s2"
-                                       style="padding-top: 7pt;padding-left: 49pt;text-indent: -21pt;text-align: left;">
-                                        Total</p>
-                                </li>
-                            </ol>
-                        </li>
-                        <li data-list-text="2">
-                            <p class="s2"
-                               style="padding-top: 6pt;padding-left: 22pt;padding-right: 17pt;text-indent: -15pt;line-height: 65%;text-align: left;">
-                                Less : Allowance to the extent exempt under section 10</p>
-                            <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                        </li>
-                        <li data-list-text="3">
-                            <p class="s2" style="padding-left: 22pt;text-indent: -15pt;text-align: left;">Balance (1 - 2)
-                            </p>
-                        </li>
-                        <li data-list-text="4">
-                            <p class="s2" style="padding-top: 5pt;padding-left: 22pt;text-indent: -15pt;text-align: left;">
-                                Deductions :</p>
-                            <ol id="l3">
-                                <li data-list-text="(a)">
-                                    <p class="s2"
-                                       style="padding-top: 3pt;padding-left: 37pt;text-indent: -15pt;text-align: left;">
-                                        Entertainment allowance</p>
-                                </li>
-                                <li data-list-text="(b)">
-                                    <p class="s2"
-                                       style="padding-top: 5pt;padding-left: 38pt;text-indent: -16pt;text-align: left;">Tax
-                                        on employment</p>
-                                </li>
-                            </ol>
-                        </li>
-                        <li data-list-text="5">
-                            <p class="s2" style="padding-top: 5pt;padding-left: 22pt;text-indent: -15pt;text-align: left;">
-                                Aggregate of 4 (a) and (b)</p>
-                        </li>
-                        <li data-list-text="6">
-                            <p class="s2"
-                               style="padding-top: 5pt;padding-left: 22pt;padding-right: 5pt;text-indent: -15pt;line-height: 65%;text-align: left;">
-                                Income chargeable under the head &#39;Salaries&#39; (3-5)</p>
-                        </li>
-                        <li data-list-text="7">
-                            <p class="s2"
-                               style="padding-top: 4pt;padding-left: 22pt;padding-right: 38pt;text-indent: -15pt;line-height: 65%;text-align: left;">
-                                Add : Any other income reported by the employee</p>
-                            <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                        </li>
-                        <li data-list-text="8">
-                            <p class="s2" style="padding-left: 22pt;text-indent: -15pt;text-align: left;">Gross total income
-                                (6 + 7)</p>
-                            <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                        </li>
-                        <li data-list-text="9">
-                            <p class="s2" style="padding-left: 22pt;text-indent: -15pt;text-align: left;">Deductions under
-                                Chapter VIA</p>
-                        </li>
-                    </ol>
-                </td>
-                <td
-                    style="width:118pt;border-top-style:solid;border-top-width:1pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                    <p class="s2" style="padding-left: 5pt;text-indent: 0pt;text-align: left;">Rs. 189789</p>
-                    <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                    <p class="s2" style="padding-left: 5pt;text-indent: 0pt;text-align: left;">Rs.</p>
-                    <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                    <p class="s2" style="padding-left: 5pt;text-indent: 0pt;text-align: left;">Rs.</p>
-                    <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                    <p class="s2" style="padding-top: 9pt;padding-left: 5pt;text-indent: 0pt;text-align: left;">Rs.</p>
-                    <p class="s2" style="padding-top: 5pt;padding-left: 5pt;text-indent: 0pt;text-align: left;">Rs.</p>
-                </td>
-                <td
-                    style="width:120pt;border-top-style:solid;border-top-width:1pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                    <p class="s2" style="padding-top: 7pt;padding-left: 5pt;text-indent: 0pt;text-align: left;">Rs. 189789
-                    </p>
-                    <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                    <p class="s2" style="padding-left: 5pt;text-indent: 0pt;text-align: left;">Rs. 0</p>
-                    <p class="s2" style="padding-top: 8pt;padding-left: 5pt;text-indent: 0pt;text-align: left;">Rs. 189789
-                    </p>
-                    <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                    <p class="s2" style="padding-left: 5pt;text-indent: 0pt;text-align: left;">Rs. 0</p>
-                    <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                    <p class="s2" style="padding-left: 5pt;text-indent: 0pt;text-align: left;">Rs. 0</p>
-                </td>
-                <td
-                    style="width:118pt;border-top-style:solid;border-top-width:1pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                    <p class="s2" style="padding-left: 4pt;text-indent: 0pt;text-align: left;">Rs. 189789</p>
-                    <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                    <p class="s2" style="padding-top: 8pt;padding-left: 4pt;text-indent: 0pt;text-align: left;">Rs. 189789
-                    </p>
-                </td>
-            </tr>
-        </table>
-        <table style="border-collapse:collapse" cellspacing="0">
-            <tr style="height:16pt">
-                <td
-                    style="width:130pt;border-top-style:solid;border-top-width:1pt;border-left-style:solid;border-left-width:1pt;border-bottom-style:solid;border-bottom-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p class="s2" style="padding-left: 40pt;text-indent: 0pt;text-align: left;">Allowance</p>
-                </td>
-                <td
-                    style="width:87pt;border-top-style:solid;border-top-width:1pt;border-left-style:solid;border-left-width:1pt;border-bottom-style:solid;border-bottom-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p class="s2" style="padding-left: 35pt;padding-right: 34pt;text-indent: 0pt;text-align: center;">Rs.
-                    </p>
-                </td>
-            </tr>
-            <tr style="height:16pt">
-                <td
-                    style="width:130pt;border-top-style:solid;border-top-width:1pt;border-left-style:solid;border-left-width:1pt;border-bottom-style:solid;border-bottom-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p class="s2" style="padding-left: 3pt;text-indent: 0pt;text-align: left;">u/s. 10</p>
-                </td>
-                <td
-                    style="width:87pt;border-top-style:solid;border-top-width:1pt;border-left-style:solid;border-left-width:1pt;border-bottom-style:solid;border-bottom-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p class="s2" style="padding-right: 3pt;text-indent: 0pt;text-align: right;">0</p>
-                </td>
-            </tr>
-            <tr style="height:16pt">
-                <td
-                    style="width:130pt;border-top-style:solid;border-top-width:1pt;border-left-style:solid;border-left-width:1pt;border-bottom-style:solid;border-bottom-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                </td>
-                <td
-                    style="width:87pt;border-top-style:solid;border-top-width:1pt;border-left-style:solid;border-left-width:1pt;border-bottom-style:solid;border-bottom-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                </td>
-            </tr>
-            <tr style="height:16pt">
-                <td
-                    style="width:130pt;border-top-style:solid;border-top-width:1pt;border-left-style:solid;border-left-width:1pt;border-bottom-style:solid;border-bottom-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                </td>
-                <td
-                    style="width:87pt;border-top-style:solid;border-top-width:1pt;border-left-style:solid;border-left-width:1pt;border-bottom-style:solid;border-bottom-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                </td>
-            </tr>
-        </table>
-        <p style="text-indent: 0pt;text-align: left;" />
-        <table style="border-collapse:collapse" cellspacing="0">
-            <tr style="height:16pt">
-                <td
-                    style="width:130pt;border-top-style:solid;border-top-width:1pt;border-left-style:solid;border-left-width:1pt;border-bottom-style:solid;border-bottom-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p class="s2" style="padding-left: 46pt;padding-right: 46pt;text-indent: 0pt;text-align: center;">Income
-                    </p>
-                </td>
-                <td
-                    style="width:87pt;border-top-style:solid;border-top-width:1pt;border-left-style:solid;border-left-width:1pt;border-bottom-style:solid;border-bottom-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p class="s2" style="padding-left: 35pt;padding-right: 34pt;text-indent: 0pt;text-align: center;">Rs.
-                    </p>
-                </td>
-            </tr>
-            <tr style="height:16pt">
-                <td
-                    style="width:130pt;border-top-style:solid;border-top-width:1pt;border-left-style:solid;border-left-width:1pt;border-bottom-style:solid;border-bottom-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                </td>
-                <td
-                    style="width:87pt;border-top-style:solid;border-top-width:1pt;border-left-style:solid;border-left-width:1pt;border-bottom-style:solid;border-bottom-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                </td>
-            </tr>
-            <tr style="height:16pt">
-                <td
-                    style="width:130pt;border-top-style:solid;border-top-width:1pt;border-left-style:solid;border-left-width:1pt;border-bottom-style:solid;border-bottom-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                </td>
-                <td
-                    style="width:87pt;border-top-style:solid;border-top-width:1pt;border-left-style:solid;border-left-width:1pt;border-bottom-style:solid;border-bottom-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                </td>
-            </tr>
-        </table>
-        <p style="text-indent: 0pt;text-align: left;" />
-        <table style="border-collapse:collapse;margin-left:6.07943pt" cellspacing="0">
-            <tr style="height:33pt">
-                <td style="width:244pt;border-left-style:solid;border-left-width:1pt;border-bottom-style:dotted;border-bottom-width:1pt;border-right-style:solid;border-right-width:1pt"
-                    rowspan="7">
-                    <ol id="l4">
-                        <li data-list-text="(A)">
-                            <p class="s2" style="padding-left: 41pt;text-indent: -18pt;text-align: left;">Sections 80C,
-                                80CCC and 80 CCD</p>
-                            <ol id="l5">
-                                <li data-list-text="(a)">
-                                    <p class="s2"
-                                       style="padding-top: 2pt;padding-left: 52pt;text-indent: -29pt;text-align: left;">
-                                        Section 80C</p>
-                                    <ol id="l6">
-                                        <li data-list-text="(i)">
-                                            <p class="s2"
-                                               style="padding-top: 5pt;padding-bottom: 1pt;padding-left: 50pt;text-indent: -19pt;text-align: left;">
-                                                Standard Deduction</p>
-                                            <p
-                                                style="padding-left: 46pt;text-indent: 0pt;line-height: 1pt;text-align: left;" />
-                                        </li>
-                                        <li data-list-text="(ii)">
-                                            <p class="s2"
-                                               style="padding-top: 5pt;padding-bottom: 1pt;padding-left: 50pt;text-indent: -22pt;text-align: left;">
-                                                PF</p>
-                                            <p
-                                                style="padding-left: 46pt;text-indent: 0pt;line-height: 1pt;text-align: left;" />
-                                        </li>
-                                        <li data-list-text="(iii)">
-                                            <p class="s2"
-                                               style="padding-top: 5pt;padding-bottom: 1pt;padding-left: 53pt;text-indent: -25pt;text-align: left;">
-                                                ProfTax</p>
-                                            <p
-                                                style="padding-left: 49pt;text-indent: 0pt;line-height: 1pt;text-align: left;" />
-                                        </li>
-                                        <li data-list-text="(iv)">
-                                            <p class="s2"
-                                               style="padding-top: 6pt;padding-left: 48pt;text-indent: -21pt;text-align: left;">
-                                                <u>&nbsp;
-                                                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                                                    &nbsp;</u></p>
-                                        </li>
-                                        <li data-list-text="(v)">
-                                            <p class="s2"
-                                               style="padding-top: 8pt;padding-left: 46pt;text-indent: -18pt;text-align: left;">
-                                                <u>&nbsp;
-                                                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                                                    &nbsp;</u></p>
-                                        </li>
-                                        <li data-list-text="(vi)">
-                                            <p
-                                                style="padding-top: 7pt;padding-left: 40pt;text-indent: -16pt;text-align: left;">
-                                                <br /></p>
-                                        </li>
-                                    </ol>
-                                </li>
-                            </ol>
-                        </li>
-                    </ol>
-                </td>
-                <td
-                    style="width:118pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                </td>
-                <td style="width:119pt;border-left-style:solid;border-left-width:1pt;border-bottom-style:solid;border-bottom-width:2pt;border-right-style:solid;border-right-width:1pt"
-                    rowspan="28">
-                    <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                    <p class="s1" style="padding-left: 6pt;padding-right: 5pt;text-indent: 0pt;text-align: center;">Gross
-                        Amount</p>
-                    <p class="s2"
-                       style="padding-top: 7pt;padding-left: 6pt;padding-right: 5pt;text-indent: 0pt;text-align: center;">
-                        Rs. 999</p>
-                    <p class="s2"
-                       style="padding-top: 8pt;padding-left: 6pt;padding-right: 5pt;text-indent: 0pt;text-align: center;">
-                        Rs. 16867</p>
-                    <p class="s2"
-                       style="padding-top: 8pt;padding-left: 6pt;padding-right: 5pt;text-indent: 0pt;text-align: center;">
-                        Rs. 2500</p>
-                    <p class="s2" style="padding-top: 8pt;padding-left: 5pt;text-indent: 0pt;text-align: left;">Rs.</p>
-                    <p class="s2" style="padding-top: 8pt;padding-left: 5pt;text-indent: 0pt;text-align: left;">Rs.</p>
-                    <p class="s2" style="padding-top: 6pt;padding-left: 5pt;text-indent: 0pt;text-align: left;">Rs.</p>
-                    <p class="s2" style="padding-top: 8pt;padding-left: 5pt;text-indent: 0pt;text-align: left;">Rs.</p>
-                    <p class="s2"
-                       style="padding-top: 8pt;padding-left: 6pt;padding-right: 5pt;text-indent: 0pt;text-align: center;">
-                        Rs. 20366</p>
-                    <p class="s2" style="padding-top: 5pt;padding-left: 5pt;text-indent: 0pt;text-align: left;">Rs.</p>
-                    <p class="s2" style="padding-top: 5pt;padding-left: 5pt;text-indent: 0pt;text-align: left;">Rs.</p>
-                    <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                    <p class="s1" style="padding-left: 6pt;padding-right: 5pt;text-indent: 0pt;text-align: center;">Rs.<span
-                            class="s2"> 20366</span></p>
-                    <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                    <p class="s2" style="padding-left: 5pt;text-indent: 0pt;text-align: left;">Rs.</p>
-                    <p class="s1"
-                       style="padding-top: 10pt;padding-left: 6pt;padding-right: 5pt;text-indent: 0pt;text-align: center;">
-                        Qualifying Amount</p>
-                    <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                    <p class="s2" style="padding-left: 5pt;text-indent: 0pt;text-align: left;">Rs.</p>
-                    <p class="s2" style="padding-top: 8pt;padding-left: 5pt;text-indent: 0pt;text-align: left;">Rs.</p>
-                    <p class="s2" style="padding-top: 8pt;padding-left: 5pt;text-indent: 0pt;text-align: left;">Rs.</p>
-                    <p class="s2" style="padding-top: 8pt;padding-left: 5pt;text-indent: 0pt;text-align: left;">Rs.</p>
-                    <p class="s2" style="padding-top: 8pt;padding-left: 5pt;text-indent: 0pt;text-align: left;">Rs.</p>
-                </td>
-                <td
-                    style="width:119pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                    <p class="s1" style="padding-left: 11pt;text-indent: 0pt;text-align: left;">Deductible Amount</p>
-                </td>
-            </tr>
-            <tr style="height:20pt">
-                <td
-                    style="width:118pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                </td>
-                <td
-                    style="width:119pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p class="s2" style="padding-top: 2pt;padding-left: 5pt;text-indent: 0pt;text-align: left;">Rs. 999</p>
-                </td>
-            </tr>
-            <tr style="height:21pt">
-                <td
-                    style="width:118pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                </td>
-                <td
-                    style="width:119pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p class="s2" style="padding-top: 3pt;padding-left: 5pt;text-indent: 0pt;text-align: left;">Rs. 16867
-                    </p>
-                </td>
-            </tr>
-            <tr style="height:21pt">
-                <td
-                    style="width:118pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                </td>
-                <td
-                    style="width:119pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p class="s2" style="padding-top: 3pt;padding-left: 5pt;text-indent: 0pt;text-align: left;">Rs. 2500</p>
-                </td>
-            </tr>
-            <tr style="height:21pt">
-                <td
-                    style="width:118pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                </td>
-                <td
-                    style="width:119pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p class="s2" style="padding-top: 3pt;padding-left: 5pt;text-indent: 0pt;text-align: left;">Rs.</p>
-                </td>
-            </tr>
-            <tr style="height:20pt">
-                <td
-                    style="width:118pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                </td>
-                <td
-                    style="width:119pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p class="s2" style="padding-top: 3pt;padding-left: 5pt;text-indent: 0pt;text-align: left;">Rs.</p>
-                </td>
-            </tr>
-            <tr style="height:16pt">
-                <td
-                    style="width:118pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                </td>
-                <td
-                    style="width:119pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p class="s2" style="padding-top: 1pt;padding-left: 5pt;text-indent: 0pt;text-align: left;">Rs.</p>
-                </td>
-            </tr>
-            <tr style="height:24pt">
-                <td style="width:244pt;border-top-style:dotted;border-top-width:1pt;border-left-style:solid;border-left-width:1pt;border-bottom-style:solid;border-bottom-width:2pt;border-right-style:solid;border-right-width:1pt"
-                    rowspan="21">
-                    <p class="s2" style="padding-top: 4pt;padding-left: 27pt;text-indent: 0pt;text-align: left;">(vii)
-                        <u>&nbsp;</u></p>
-                    <p class="s2" style="padding-top: 8pt;padding-left: 50pt;text-indent: 0pt;text-align: left;">Total of
-                        Section 80C</p>
-                    <ol id="l7">
-                        <li data-list-text="(b)">
-                            <p class="s2" style="padding-top: 6pt;padding-left: 52pt;text-indent: -30pt;text-align: left;">
-                                Section 80CCC</p>
-                        </li>
-                        <li data-list-text="(c)">
-                            <p class="s2" style="padding-top: 5pt;padding-left: 52pt;text-indent: -29pt;text-align: left;">
-                                Section 80CCD</p>
-                            <p class="s1"
-                               style="padding-top: 7pt;padding-left: 50pt;padding-right: 16pt;text-indent: 0pt;text-align: left;">
-                                Aggregate amount deductible under the three section, i.e., 80C, 80CCC and 80CCD</p>
-                            <p class="s2"
-                               style="padding-top: 8pt;padding-left: 27pt;text-indent: 0pt;line-height: 13pt;text-align: left;">
-                                Note: Aggregate amount deductible under</p>
-                            <ol id="l8">
-                                <li data-list-text="1">
-                                    <p class="s2"
-                                       style="padding-left: 61pt;padding-right: 11pt;text-indent: -14pt;text-align: left;">
-                                        section 80C shall not exceed 1.5 lakh rupees.</p>
-                                </li>
-                                <li data-list-text="2">
-                                    <p class="s2"
-                                       style="padding-top: 4pt;padding-left: 61pt;padding-right: 11pt;text-indent: -14pt;text-align: left;">
-                                        Aggregate amount deductible under the three sections, i.e., 80C, 80CCC and 80CCD
-                                        shall not exceed 1.5 lakh rupees</p>
-                                </li>
-                            </ol>
-                        </li>
-                        <li data-list-text="(d)">
-                            <p class="s2" style="padding-top: 6pt;padding-left: 52pt;text-indent: -30pt;text-align: left;">
-                                Section 80CCD (1B)</p>
-                        </li>
-                    </ol>
-                    <p class="s2" style="padding-top: 4pt;padding-left: 22pt;text-indent: 0pt;text-align: left;">(B) Other
-                        sections (e.g. 80E, 80G, 80TTA,etc.) under Chapter VI-A</p>
-                    <p class="s2" style="padding-top: 6pt;padding-left: 30pt;text-indent: 0pt;text-align: left;">(i)
-                        <u>&nbsp;</u></p>
-                    <p class="s2" style="padding-top: 8pt;padding-left: 27pt;text-indent: 0pt;text-align: left;">(ii)
-                        <u>&nbsp;</u></p>
-                    <p class="s2" style="padding-top: 8pt;padding-left: 27pt;text-indent: 0pt;text-align: left;">(iii)
-                        <u>&nbsp;</u></p>
-                    <p class="s2" style="padding-top: 8pt;padding-left: 27pt;text-indent: 0pt;text-align: left;">(iv)
-                        <u>&nbsp;</u></p>
-                    <p class="s2" style="padding-top: 8pt;padding-left: 28pt;text-indent: 0pt;text-align: left;">(v)
-                        <u>&nbsp;</u></p>
-                    <ol id="l9">
-                        <li data-list-text="10">
-                            <p class="s2"
-                               style="padding-top: 6pt;padding-left: 22pt;padding-right: 39pt;text-indent: -18pt;line-height: 65%;text-align: left;">
-                                Aggregate of deductible amounts under Chapter VIA</p>
-                            <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                        </li>
-                        <li data-list-text="11">
-                            <p class="s2" style="padding-left: 22pt;text-indent: -18pt;text-align: left;">Total income
-                                (8-10)</p>
-                        </li>
-                        <li data-list-text="12">
-                            <p class="s2" style="padding-top: 5pt;padding-left: 22pt;text-indent: -18pt;text-align: left;">
-                                Tax on total income</p>
-                        </li>
-                        <li data-list-text="13">
-                            <p class="s2"
-                               style="padding-top: 4pt;padding-left: 22pt;padding-right: 15pt;text-indent: -18pt;text-align: left;">
-                                Education cess @ 3% (on tax computed at S. No. 12)</p>
-                        </li>
-                        <li data-list-text="14">
-                            <p class="s2" style="padding-top: 4pt;padding-left: 22pt;text-indent: -18pt;text-align: left;">
-                                Tax Payable (12+13)</p>
-                        </li>
-                        <li data-list-text="15">
-                            <p class="s2" style="padding-top: 5pt;padding-left: 22pt;text-indent: -18pt;text-align: left;">
-                                Less: Relief under section 89 (attach details)</p>
-                        </li>
-                        <li data-list-text="16">
-                            <p class="s2" style="padding-top: 5pt;padding-left: 22pt;text-indent: -18pt;text-align: left;">
-                                Tax payable (14-15)</p>
-                        </li>
-                        <li data-list-text="17">
-                            <p class="s2" style="padding-top: 5pt;padding-left: 22pt;text-indent: -18pt;text-align: left;">
-                                Tax deducted at source u/s 192</p>
-                        </li>
-                        <li data-list-text="18">
-                            <p class="s2" style="padding-top: 5pt;padding-left: 22pt;text-indent: -18pt;text-align: left;">
-                                Balance (16-17)</p>
-                        </li>
-                    </ol>
-                </td>
-                <td
-                    style="width:118pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                </td>
-                <td
-                    style="width:119pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p class="s2" style="padding-top: 6pt;padding-left: 5pt;text-indent: 0pt;text-align: left;">Rs.</p>
-                </td>
-            </tr>
-            <tr style="height:19pt">
-                <td
-                    style="width:118pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                </td>
-                <td
-                    style="width:119pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p class="s2" style="padding-top: 2pt;padding-left: 5pt;text-indent: 0pt;text-align: left;">Rs. 20366
-                    </p>
-                </td>
-            </tr>
-            <tr style="height:17pt">
-                <td
-                    style="width:118pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                </td>
-                <td
-                    style="width:119pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p class="s2" style="padding-top: 1pt;padding-left: 5pt;text-indent: 0pt;text-align: left;">Rs.</p>
-                </td>
-            </tr>
-            <tr style="height:32pt">
-                <td
-                    style="width:118pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                </td>
-                <td
-                    style="width:119pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p class="s2" style="padding-top: 1pt;padding-left: 5pt;text-indent: 0pt;text-align: left;">Rs.</p>
-                </td>
-            </tr>
-            <tr style="height:83pt">
-                <td
-                    style="width:118pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                </td>
-                <td
-                    style="width:119pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                    <p class="s1" style="padding-left: 5pt;text-indent: 0pt;text-align: left;">Rs.<span class="s2">
-                        20366</span></p>
-                </td>
-            </tr>
-            <tr style="height:71pt">
-                <td
-                    style="width:118pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                </td>
-                <td
-                    style="width:119pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                    <p class="s2" style="padding-left: 5pt;text-indent: 0pt;text-align: left;">Rs. 0</p>
-                </td>
-            </tr>
-            <tr style="height:24pt">
-                <td
-                    style="width:118pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p class="s1" style="padding-top: 3pt;padding-left: 23pt;text-indent: 0pt;text-align: left;">Gross
-                        Amount</p>
-                </td>
-                <td
-                    style="width:119pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p class="s1" style="padding-top: 3pt;padding-left: 11pt;text-indent: 0pt;text-align: left;">Deductible
-                        Amount</p>
-                </td>
-            </tr>
-            <tr style="height:24pt">
-                <td
-                    style="width:118pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p class="s2" style="padding-top: 5pt;padding-left: 5pt;text-indent: 0pt;text-align: left;">Rs.</p>
-                </td>
-                <td
-                    style="width:119pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p class="s2" style="padding-top: 5pt;padding-left: 5pt;text-indent: 0pt;text-align: left;">Rs.</p>
-                </td>
-            </tr>
-            <tr style="height:21pt">
-                <td
-                    style="width:118pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p class="s2" style="padding-top: 3pt;padding-left: 5pt;text-indent: 0pt;text-align: left;">Rs.</p>
-                </td>
-                <td
-                    style="width:119pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p class="s2" style="padding-top: 3pt;padding-left: 5pt;text-indent: 0pt;text-align: left;">Rs.</p>
-                </td>
-            </tr>
-            <tr style="height:21pt">
-                <td
-                    style="width:118pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p class="s2" style="padding-top: 3pt;padding-left: 5pt;text-indent: 0pt;text-align: left;">Rs.</p>
-                </td>
-                <td
-                    style="width:119pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p class="s2" style="padding-top: 3pt;padding-left: 5pt;text-indent: 0pt;text-align: left;">Rs.</p>
-                </td>
-            </tr>
-            <tr style="height:21pt">
-                <td
-                    style="width:118pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p class="s2" style="padding-top: 3pt;padding-left: 5pt;text-indent: 0pt;text-align: left;">Rs.</p>
-                </td>
-                <td
-                    style="width:119pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p class="s2" style="padding-top: 3pt;padding-left: 5pt;text-indent: 0pt;text-align: left;">Rs.</p>
-                </td>
-            </tr>
-            <tr style="height:24pt">
-                <td
-                    style="width:118pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p class="s2" style="padding-top: 3pt;padding-left: 5pt;text-indent: 0pt;text-align: left;">Rs.</p>
-                </td>
-                <td
-                    style="width:119pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p class="s2" style="padding-top: 3pt;padding-left: 5pt;text-indent: 0pt;text-align: left;">Rs.</p>
-                </td>
-            </tr>
-            <tr style="height:30pt">
-                <td
-                    style="width:118pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                </td>
-                <td
-                    style="width:119pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p class="s2" style="padding-top: 6pt;padding-left: 5pt;text-indent: 0pt;text-align: left;">Rs. 20366
-                    </p>
-                </td>
-            </tr>
-            <tr style="height:25pt">
-                <td
-                    style="width:118pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                </td>
-                <td
-                    style="width:119pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p class="s2" style="padding-top: 9pt;padding-left: 5pt;text-indent: 0pt;text-align: left;">Rs. 169423
-                    </p>
-                </td>
-            </tr>
-            <tr style="height:22pt">
-                <td
-                    style="width:118pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                </td>
-                <td
-                    style="width:119pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p class="s2" style="padding-top: 1pt;padding-left: 5pt;text-indent: 0pt;text-align: left;">Rs. 0</p>
-                </td>
-            </tr>
-            <tr style="height:22pt">
-                <td
-                    style="width:118pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                </td>
-                <td
-                    style="width:119pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p class="s2" style="padding-top: 6pt;padding-left: 5pt;text-indent: 0pt;text-align: left;">Rs. 0</p>
-                </td>
-            </tr>
-            <tr style="height:17pt">
-                <td
-                    style="width:118pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                </td>
-                <td
-                    style="width:119pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p class="s2" style="padding-top: 1pt;padding-left: 5pt;text-indent: 0pt;text-align: left;">Rs. 0</p>
-                </td>
-            </tr>
-            <tr style="height:17pt">
-                <td
-                    style="width:118pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                </td>
-                <td
-                    style="width:119pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p class="s2" style="padding-top: 1pt;padding-left: 5pt;text-indent: 0pt;text-align: left;">Rs. 0</p>
-                </td>
-            </tr>
-            <tr style="height:17pt">
-                <td
-                    style="width:118pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                </td>
-                <td
-                    style="width:119pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p class="s2" style="padding-top: 1pt;padding-left: 5pt;text-indent: 0pt;text-align: left;">Rs. 0</p>
-                </td>
-            </tr>
-            <tr style="height:17pt">
-                <td
-                    style="width:118pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                </td>
-                <td
-                    style="width:119pt;border-left-style:solid;border-left-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p class="s2" style="padding-top: 1pt;padding-left: 5pt;text-indent: 0pt;text-align: left;">Rs. 0</p>
-                </td>
-            </tr>
-            <tr style="height:18pt">
-                <td
-                    style="width:118pt;border-left-style:solid;border-left-width:1pt;border-bottom-style:solid;border-bottom-width:2pt;border-right-style:solid;border-right-width:1pt">
-                    <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                </td>
-                <td
-                    style="width:119pt;border-left-style:solid;border-left-width:1pt;border-bottom-style:solid;border-bottom-width:2pt;border-right-style:solid;border-right-width:1pt">
-                    <p class="s2" style="padding-top: 1pt;padding-left: 5pt;text-indent: 0pt;text-align: left;">Rs. 0</p>
-                </td>
-            </tr>
-            <tr style="height:27pt">
-                <td style="width:600pt;border-top-style:solid;border-top-width:2pt;border-left-style:solid;border-left-width:1pt;border-bottom-style:solid;border-bottom-width:1pt;border-right-style:solid;border-right-width:1pt"
-                    colspan="4">
-                    <p class="s4"
-                       style="padding-top: 5pt;padding-left: 270pt;padding-right: 270pt;text-indent: 0pt;text-align: center;">
-                        Verification</p>
-                </td>
-            </tr>
-        </table>
-        <table style="border-collapse:collapse;margin-left:6.07943pt" cellspacing="0">
-            <tr style="height:42pt">
-                <td style="width:600pt;border-top-style:solid;border-top-width:1pt;border-left-style:solid;border-left-width:1pt;border-bottom-style:solid;border-bottom-width:1pt;border-right-style:solid;border-right-width:1pt"
-                    colspan="3">
-                    <p class="s2" style="padding-left: 3pt;text-indent: 0pt;line-height: 13pt;text-align: left;">I
-                        <b>CHIMANLAL MEHTA </b>, son/daughter of MEHTA working in the capacity of Trustee Department
-                        (designation) do hereby</p>
-                    <p class="s2" style="padding-left: 3pt;text-indent: 0pt;text-align: left;">certify that the information
-                        given above is true, complete and correct and is based on the books of account, documents, and other
-                        available records.</p>
-                </td>
-            </tr>
-            <tr style="height:16pt">
-                <td
-                    style="width:116pt;border-top-style:solid;border-top-width:1pt;border-left-style:solid;border-left-width:1pt;border-bottom-style:solid;border-bottom-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p class="s2" style="padding-left: 3pt;text-indent: 0pt;text-align: left;">Place:</p>
-                </td>
-                <td
-                    style="width:150pt;border-top-style:solid;border-top-width:1pt;border-left-style:solid;border-left-width:1pt;border-bottom-style:solid;border-bottom-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                </td>
-                <td style="width:334pt;border-top-style:solid;border-top-width:1pt;border-left-style:solid;border-left-width:1pt;border-bottom-style:solid;border-bottom-width:1pt;border-right-style:solid;border-right-width:1pt"
-                    rowspan="2">
-                    <p style="text-indent: 0pt;text-align: left;"><br /></p>
-                    <p class="s2" style="padding-left: 3pt;text-indent: 0pt;text-align: left;">(Signature of person
-                        responsible for deduction of tax)</p>
-                </td>
-            </tr>
-            <tr style="height:16pt">
-                <td
-                    style="width:116pt;border-top-style:solid;border-top-width:1pt;border-left-style:solid;border-left-width:1pt;border-bottom-style:solid;border-bottom-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p class="s2" style="padding-left: 3pt;text-indent: 0pt;text-align: left;">Date:</p>
-                </td>
-                <td
-                    style="width:150pt;border-top-style:solid;border-top-width:1pt;border-left-style:solid;border-left-width:1pt;border-bottom-style:solid;border-bottom-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p class="s2" style="padding-right: 3pt;text-indent: 0pt;text-align: right;">13-05-2023</p>
-                </td>
-            </tr>
-            <tr style="height:16pt">
-                <td
-                    style="width:116pt;border-top-style:solid;border-top-width:1pt;border-left-style:solid;border-left-width:1pt;border-bottom-style:solid;border-bottom-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p class="s2" style="padding-left: 3pt;text-indent: 0pt;text-align: left;">Designation:</p>
-                </td>
-                <td
-                    style="width:150pt;border-top-style:solid;border-top-width:1pt;border-left-style:solid;border-left-width:1pt;border-bottom-style:solid;border-bottom-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p class="s2" style="padding-right: 3pt;text-indent: 0pt;text-align: right;">Trustee Department</p>
-                </td>
-                <td
-                    style="width:334pt;border-top-style:solid;border-top-width:1pt;border-left-style:solid;border-left-width:1pt;border-bottom-style:solid;border-bottom-width:1pt;border-right-style:solid;border-right-width:1pt">
-                    <p class="s2" style="padding-left: 3pt;text-indent: 0pt;text-align: left;">Full Name: CHIMANLAL MEHTA
-                    </p>
-                </td>
-            </tr>
-        </table>
     </div>
+    @if(isset($data['search']) && $data['search']==1)
+        <table style="border-collapse:collapse;" id="table_60" width="100%" cellspacing="0" cellpadding="0">
+            <tbody><tr>
+                <td>
+						<table style="width:100%; border-collapse:collapse; border-color:#000; display:table;" width="800px" cellspacing="0" cellpadding="0" border="1">
+					<tbody>
+			
+						<tr>
+                            <th colspan="5" style="padding-left: 69pt;padding-right: 68pt;text-indent: 0pt;text-align: center;">FORM NO. 16</th>
+                        </tr>
+                        <tr>
+                            <th colspan="5" style="padding-left: 69pt;padding-right: 68pt;text-indent: 0pt;text-align: center;"><h4 style="margin:10px 0;">PART A</h4></th>
+                        </tr>
+                        <tr>
+                            <th colspan="5" style="padding-left: 69pt;padding-right: 68pt;text-indent: 0pt;text-align: center;"><span>Certificate under section 203 of the income-tax Act, 1961 for tax deducted at source on salary.</span></th>
+                        </tr>
+						<tr>
+							<th colspan="2" style="padding:2px 5px;text-align: center;" width="50%">Name and Address of the Employer</th>
+							<th colspan="3" style="padding:2px 5px;text-align: center;" width="50%">Name and Address of the Employee</th>
+						</tr>
+                        
+						<tr>
+							<td colspan="2" style="padding:2px 5px; border-bottom: 1px solid transparent !important;">{{ $data['get_school_detail']->ReceiptHeader ?? '' }}</td>
+							<td colspan="3" style="padding:2px 5px; border-bottom: 1px solid transparent !important;">{{ $data['get_employee_detail']->first_name ?? '' }} {{ $data['get_employee_detail']->middle_name ?? '' }} {{ $data['get_employee_detail']->last_name ?? '' }}</td>
+						</tr>
+						<tr>
+							<td colspan="2" style="padding:2px 5px;">{{ $data['get_school_detail']->ReceiptAddress ?? '' }}</td>
+							<td colspan="3" style="padding:2px 5px;">{{ $data['get_employee_detail']->address ?? ''}}</td>
+						</tr>
+						<tr>
+							<td style="padding:2px 5px;" align="center"><b>PAN of the Deductor</b></td>
+							<td style="padding:2px 5px;" align="center"><b>TAN of the Deductor</b></td>
+							<td colspan="3" style="padding:2px 5px;" align="center"><b>PAN of the Employee</b></td>
+						</tr>
+						<tr>
+							<td style="padding:2px 5px;" align="center"><b><b></b></b></td>
+							<td style="padding:2px 5px;" align="center"><b><b></b></b></td>
+							<td colspan="3" style="padding:2px 5px;" align="left"><b>{{ $data['get_employee_detail']->pancard ?? '' }}</b></td>
+						</tr>
+						<tr>
+							<td colspan="2" style="padding:2px 5px;" align="center"><b>CIT(TDS)</b></td>
+							<td rowspan="2" style="padding:2px 5px;" align="center"><b>Assessment Year</b></td>
+							<td colspan="2" rowspan="2" style="padding:2px 5px;" align="center"><b>Period</b></td>
+						</tr>
+						<tr>
+							<td colspan="2" style="padding:2px 5px;"><b>Address</b></td>
+						</tr>
+						<tr>
+							<td style="padding:2px 5px;" colspan="2"></td>
+							<td rowspan="2" style="padding:2px 5px;" align="center"><b>
+                               {{ $data['years'][$data['year']] ?? '-'}}
+                               </b></td>
+							<td style="padding:2px 5px;" align="center"><b>From</b></td>
+							<td style="padding:2px 5px;" align="center"><b>To</b></td>
+						</tr>
+						<tr>
+							<td colspan="2" style="padding:2px 5px;"><span>City</span>     <span>Pin code </span>   </td>
+							<td style="padding:2px 5px;" align="center">{{ $data['from_date'] ?? '' }}</td>
+							<td style="padding:2px 5px;" align="center">{{ $data['to_date'] ?? '' }}</td>
+						</tr>
+						</tbody>
+					</table>
+                </td>
+            </tr>
+            @php 
+                $amount = !empty($data['get_employee_salary']) ? json_decode($data['get_employee_salary']->employee_salary_data, true) : [];
+                $total = $total_allowances = $tot_pf = $total_deductions = $total_ps = $total_pt = 0;
+                foreach($data['selected_allowances'] as $key => $allowances)
+                {
+                    $total +=  $amount[$allowances] ?? 0;
+
+                    $total_allowances = $total * 12;
+                }
+                $deductions_titles = $total_deductions = [];
+
+                foreach($data['selected_deductions'] as $key => $deductions)
+                {
+                    $get_payroll_names = DB::table('payroll_types')->where('id', $deductions)->first(['payroll_name']);
+                    $deductions_titles[] = $get_payroll_names->payroll_name;
+                    if($deductions == 1)
+                    {
+                        $tot_pf += $amount[$deductions] ?? 0;
+
+                        $total_deductions[] = $tot_pf * 12;
+                    }
+
+                    if($deductions == 2)
+                    {
+                        $total_deductions[] = $amount[$deductions] ?? 0;
+
+                        $total_pt = $amount[$deductions] ?? 0;
+                    }
+                }
+            @endphp
+            <tr>
+                <td style="padding:0;">
+                    <table style="border-collapse:collapse; border-color:#000; border-left:1px solid; border-right:1px solid; border-bottom:1px solid;" width="100%" cellspacing="0" cellpadding="0">
+
+                        <tbody><tr>
+							<td colspan="5" style="padding:2px 5px;" valign="middle" align="center"><h4 style="margin:10px 0;">PART B (Annexure)</h4></td>
+						</tr>
+                        <tr>
+                            <td colspan="5" style="padding:2px 5px; border:1px solid;" align="center">
+                               Details of Salary paid and any other income and tax deducted
+                            </td>	
+                        </tr>
+                        <tr>
+                            <td style="padding:2px 5px; border-left: 1px solid;" width="2%" align="center">1</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="38%">Gross Salary</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:2px 5px; border-left: 1px solid;" width="2%">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="38%">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">(a) </td>
+                                        <td style="border-right:none;">Salary as per provisions contained in sec. 17(1)</td>
+                                    </tr>
+                                </tbody></table>
+                            </td>
+                            <td style="border-right: 1px solid;" width="20%">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">{{ $total_allowances }}</td>
+                                    </tr>
+                                </tbody></table>
+                            </td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:2px 5px; border-left: 1px solid;" width="2%">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="38%">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">(b) </td>
+                                        <td style="border-right:none; padding:2px 5px;">Value of perquisites u/s 17(2) (as per Form No. 12BA, wherever applicable)</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                            <td style="padding: 2px 0; border-right: 1px solid;" width="20%">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right"></td>
+                                    </tr>
+                                </tbody></table>
+                            </td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:2px 5px; border-left: 1px solid;" width="2%">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="38%">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">(c) </td>
+                                        <td style="border-right:none;">Profits in lieu of salary under section 17(3) (as per Form No. 12BA, wherever applicable)</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                            <td style="padding: 2px 0; border-right: 1px solid;" width="20%">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none;" align="right"></td>
+                                    </tr>
+                                </tbody></table>
+                            </td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:2px 5px; border-left: 1px solid;" width="2%">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="38%">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">(d) </td>
+                                        <td style="border-right:none; padding:2px 5px;">Total</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding: 2px 0; border-right: 1px solid;" width="20%">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">{{ $total_allowances }}</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:2px 5px; border-left: 1px solid;" width="2%" align="center">2</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="38%"> Less : Allowance to the extent exempt under section 10 </td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="150px">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="150px">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="150px">&nbsp;</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:2px 5px; border-left: 1px solid;" width="2%"></td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="38%"> 
+                                <table style="width:100%; border-collapse:collapse; border-color:#000;" width="350px" cellspacing="0" cellpadding="0" border="1">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="60%" align="center">Allowance</td>
+                                        <td class="border-right-none" style="padding:2px 5px;" width="40%" align="center">Rs.</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:2px 5px;">u/s. 10</td>
+                                        <td class="border-right-none" style="padding:2px 5px;" align="right">0</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:2px 5px;">&nbsp;</td>
+                                        <td class="border-right-none" style="padding:2px 5px;">&nbsp;</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:2px 5px;">&nbsp;</td>
+                                        <td class="border-right-none" style="padding:2px 5px;">&nbsp;</td>
+                                    </tr>
+                                </tbody></table>
+                            </td>
+                            <td style="padding:2px 5px; border-right: 1px solid; border-bottom-color:#fff;" width="20%">&nbsp;</td>
+                            <td style="padding: 2px 0; border-right: 1px solid; border-bottom-color:#fff;" width="20%" valign="bottom">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">0</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:2px 5px; border-left: 1px solid;" width="2%" align="center">3</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="38%">Balance (1 - 2) </td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding:2px 0px; border-right: 1px solid;" width="20%">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">{{ $total_allowances }}</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:2px 5px; border-left: 1px solid;" width="2%" align="center">4</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="38%">Deductions : </td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:2px 5px; border-left: 1px solid;" width="2%">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="38%">(a) Entertainment allowance</td>
+                            <td style="padding: 0 0; border-right: 1px solid;" width="20%">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">&nbsp;</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:2px 5px; border-left: 1px solid;" width="2%">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="38%">(b) Tax on employment</td>
+                            <td style="padding: 0 0; border-right: 1px solid;" width="20%">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">&nbsp;</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:2px 5px; border-left: 1px solid;" width="2%" align="center">5</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="38%">Aggregate of 4 (a) and (b)</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding: 0 0; border-right: 1px solid;" width="20%">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">0</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:2px 5px; border-left: 1px solid;" width="2%" align="center">6</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="38%">Income chargeable under the head 'Salaries' (3-5)</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding: 0 0; border-right: 1px solid;" width="20%">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">{{ $total_allowances }}</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding:2px 5px; border-left: 1px solid;" width="2%" align="center">7</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="38%">Add : Any other income reported by the employee</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:2px 5px; border-left: 1px solid;" width="2%" align="center">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="38%">
+                                <table style="width:100%; border-collapse:collapse; border-color:#000;" width="350px" cellspacing="0" cellpadding="0" border="1">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="60%" align="center">Income</td>
+                                        <td class="border-right-none" style="padding:2px 5px;" width="40%" align="center">Rs.</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:2px 5px;">&nbsp;</td>
+                                        <td class="border-right-none" style="padding:2px 5px;">&nbsp;</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:2px 5px;">&nbsp;</td>
+                                        <td class="border-right-none" style="padding:2px 5px;">&nbsp;</td>
+                                    </tr>
+                                </tbody></table>
+                            </td>
+                            <td style="padding:2px 5px; border-right: 1px solid; border-bottom-color:#fff;" width="20%">&nbsp;</td>
+                            <td style="padding: 0 0; border-right: 1px solid; border-bottom-color:#fff;" width="20%" valign="bottom">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">0</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:2px 5px; border-left: 1px solid;" width="2%" align="center">8</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="38%">Gross total income (6 + 7)</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding: 0 0; border-right: 1px solid;" width="20%" valign="bottom">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">{{ $total_allowances }}</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding:2px 5px; border-left: 1px solid;" width="2%" align="center">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="38%">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:2px 5px; border-left: 1px solid;" width="2%" align="center">9</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="38%">Deductions under Chapter VIA</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:2px 5px; border-left: 1px solid;" width="2%">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="38%">(A) Sections 80C, 80CCC and 80 CCD</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%" align="center">&nbsp;</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:2px 5px; border-left: 1px solid;" width="2%"></td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="38%">(a) &nbsp;&nbsp;&nbsp;&nbsp; Section 80C</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%" align="center"><b>Gross Amount</b></td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%" align="center"><b>Deductible Amount</b></td>
+                        </tr>
+                        <tr>
+                            <td style="padding:2px 5px; border-left: 1px solid;" width="2%">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="38%">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="10%" align="right"> (i) </td>
+                                        <td style="border-right:none;border-bottom: 1px dotted #000; padding:2px 5px;">{{ isset($deductions_titles[0]) ? $deductions_titles[0] : ''}}</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding: 0 0; border-right: 1px solid;" width="20%" valign="bottom">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">{{ isset($total_deductions[0]) ? $total_deductions[0] : 0}}</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                            <td style="padding:0 0; border-right: 1px solid;" width="20%" valign="bottom">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">{{ isset($total_deductions[0]) ? $total_deductions[0] : 0}}</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding:2px 5px; border-left: 1px solid;" width="2%">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="38%">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="10%" align="right"> (ii) </td>
+                                        <td style="border-right:none;border-bottom: 1px dotted #000; padding:2px 5px;">{{ isset($deductions_titles[1]) ? $deductions_titles[1] : ''}}</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding: 0 0; border-right: 1px solid;" width="20%" valign="bottom">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">{{ isset($total_deductions[1]) ? $total_deductions[1] : 0}}</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                            <td style="padding: 0 0; border-right: 1px solid;" width="20%" valign="bottom">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">{{ isset($total_deductions[1]) ? $total_deductions[1] : 0}}</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding:2px 5px; border-left: 1px solid;" width="2%">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="38%">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="10%" align="right"> (iii) </td>
+                                        <td style="border-right:none;border-bottom: 1px dotted #000; padding:2px 5px;">{{ isset($deductions_titles[2]) ? $deductions_titles[2] : ''}}</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding: 0 0; border-right: 1px solid;" width="20%" valign="bottom">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">{{ isset($total_deductions[2]) ? $total_deductions[2] : 0}}</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                            <td style="padding: 0 0; border-right: 1px solid;" width="20%" valign="bottom">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">{{ isset($total_deductions[2]) ? $total_deductions[2] : 0}}</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                        </tr>
+						<tr>
+                            <td style="padding:2px 5px; border-left: 1px solid;" width="2%">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="38%">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="10%" align="right"> (iv) </td>
+                                        <td style="border-right:none;border-bottom: 1px dotted #000; padding:2px 5px;">{{ isset($deductions_titles[3]) ? $deductions_titles[3] : ''}}</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding: 0 0; border-right: 1px solid;" width="20%" valign="bottom">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">{{ isset($total_deductions[3]) ? $total_deductions[3] : 0}}</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                            <td style="padding: 0 0; border-right: 1px solid;" width="20%" valign="bottom">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">{{ isset($total_deductions[3]) ? $total_deductions[3] : 0}}</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                        </tr>
+						<tr>
+                            <td style="padding:2px 5px; border-left: 1px solid;" width="2%">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="38%">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="10%" align="right"> (v) </td>
+                                        <td style="border-right:none;border-bottom: 1px dotted #000; padding:2px 5px;">{{ isset($deductions_titles[4]) ? $deductions_titles[4] : ''}}</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding: 0 0; border-right: 1px solid;" width="20%" valign="bottom">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">{{ isset($total_deductions[4]) ? $total_deductions[4] : 0}}</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                            <td style="padding: 0 0; border-right: 1px solid;" width="20%" valign="bottom">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">{{ isset($total_deductions[4]) ? $total_deductions[4] : 0}}</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                        </tr>
+						<tr>
+                            <td style="padding:2px 5px; border-left: 1px solid;" width="2%">&nbsp;</td>
+                            <td style="border-right: 1px solid;" width="38%">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="10%" align="right"> (vi) </td>
+                                        <td style="border-right:none;border-bottom: 1px dotted #000; padding:2px 5px;">{{ isset($deductions_titles[5]) ? $deductions_titles[5] : ''}}</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding: 0 0; border-right: 1px solid;" width="20%" valign="bottom">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">{{ isset($total_deductions[5]) ? $total_deductions[5] : 0}}</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                            <td style="padding: 0 0; border-right: 1px solid;" width="20%" valign="bottom">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">{{ isset($total_deductions[5]) ? $total_deductions[5] : 0}}</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                        </tr>
+						<tr>
+                            <td style="padding:2px 5px; border-left: 1px solid;" width="2%">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="38%">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="10%" align="right"> (vii) </td>
+                                        <td style="border-right:none;border-bottom: 1px dotted #000; padding:2px 5px;">{{ isset($deductions_titles[6]) ? $deductions_titles[6] : ''}}</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding: 0 0; border-right: 1px solid;" width="20%" valign="bottom">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">{{ isset($total_deductions[6]) ? $total_deductions[6] : 0}}</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                            <td style="padding: 0 0; border-right: 1px solid;" width="20%" valign="bottom">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">{{ isset($total_deductions[6]) ? $total_deductions[6] : 0}}</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                        </tr>
+                        @php
+                            $total_deductions_sum = array_sum($total_deductions);
+                        @endphp
+                        <tr>
+                            <td style="padding:2px 5px; border-left: 1px solid;" width="2%"></td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="38%">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="10%" align="right">&nbsp;</td>
+                                        <td style="border-right:none; padding:2px 5px;">Total of Section 80C</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding: 0 0; border-right: 1px solid;" width="20%" valign="bottom">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">{{ $total_deductions_sum }}</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                            <td style="padding: 0 0; border-right: 1px solid;" width="20%" valign="bottom">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">{{ $total_deductions_sum }}</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding:2px 5px; border-left: 1px solid;" width="2%"></td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="38%">(b) &nbsp;&nbsp;&nbsp;&nbsp; Section 80CCC</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding: 0 0; border-right: 1px solid;" width="20%" valign="bottom">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">&nbsp;</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                            <td style="padding: 0 0; border-right: 1px solid;" width="20%" valign="bottom">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">&nbsp;</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding:2px 5px; border-left: 1px solid;" width="2%"></td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="38%">(c) &nbsp;&nbsp;&nbsp;&nbsp; Section 80CCD</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding: 0 0; border-right: 1px solid;" width="20%" valign="bottom">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">&nbsp;</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                            <td style="padding: 0 0; border-right: 1px solid;" width="20%" valign="bottom">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">&nbsp;</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding:2px 5px; border-left: 1px solid;" width="2%"></td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="38%">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="10%" align="right">&nbsp;</td>
+                                        <td style="border-right:none; padding:2px 5px;"><b>Aggregate amount deductible under the three section, i.e., 80C, 80CCC and 80CCD</b></td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding: 0 0; border-right: 1px solid;" width="20%" valign="bottom">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top"><b>Rs. </b></td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">{{$total_deductions_sum}}</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                            <td style="padding: 0 0; border-right: 1px solid;" width="20%" valign="bottom">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top"><b>Rs. </b></td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">{{ $total_deductions_sum }}</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding:2px 5px; border-left: 1px solid;" width="2%"></td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="38%">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="10%" valign="top" align="right">Note: 1</td>
+                                        <td style="border-right:none; padding:2px 5px;">Aggregate amount deductible under section 80C shall not exceed 1.5 lakh rupees.</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:2px 5px;" width="10%" valign="top" align="right">2</td>
+                                        <td style="border-right:none; padding:2px 5px;">Aggregate amount deductible under the three sections, i.e., 80C, 80CCC and 80CCD shall not exceed 1.5 lakh rupees</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:2px 5px; border-left: 1px solid;" width="2%"></td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="38%">(d) &nbsp;&nbsp;&nbsp;&nbsp; Section 80CCD (1B)</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding: 0 0; border-right: 1px solid;" width="20%" valign="bottom">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">&nbsp;</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                            <td style="padding: 0 0; border-right: 1px solid;" width="20%" valign="bottom">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">0</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding:2px 5px; border-left: 1px solid;" width="2%">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="38%">(B) Other sections (e.g. 80E, 80G, 80TTA,etc.) under Chapter VI-A</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%" align="center"><b>Gross Amount</b></td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%" align="center"><b>Qualifying Amount</b></td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%" align="center"><b>Deductible Amount</b></td>
+                        </tr>
+                        <tr>
+                            <td style="padding:2px 5px; border-left: 1px solid;" width="2%">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="38%">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="10%" align="right"> (i) </td>
+                                        <td style="border-right:none;border-bottom: 1px dotted #000; padding:2px 5px;">&nbsp;</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                            <td style="padding: 0 0; border-right: 1px solid;" width="20%" valign="bottom">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">&nbsp;</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                            <td style="padding: 0 0; border-right: 1px solid;" width="20%" valign="bottom">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">&nbsp;</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                            <td style="padding: 0 0; border-right: 1px solid;" width="20%" valign="bottom">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">&nbsp;</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding:2px 5px; border-left: 1px solid;" width="2%">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="38%">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="10%" align="right"> (ii) </td>
+                                        <td style="border-right:none;border-bottom: 1px dotted #000; padding:2px 5px;">&nbsp;</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                            <td style="padding: 0 0; border-right: 1px solid;" width="20%" valign="bottom">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">&nbsp;</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                            <td style="padding: 0 0; border-right: 1px solid;" width="20%" valign="bottom">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">&nbsp;</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                            <td style="padding: 0 0; border-right: 1px solid;" width="20%" valign="bottom">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">&nbsp;</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding:2px 5px; border-left: 1px solid;" width="2%">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="38%">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="10%" align="right"> (iii) </td>
+                                        <td style="border-right:none;border-bottom: 1px dotted #000; padding:2px 5px;">&nbsp;</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                            <td style="padding: 0 0; border-right: 1px solid;" width="20%" valign="bottom">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">&nbsp;</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                            <td style="padding: 0 0; border-right: 1px solid;" width="20%" valign="bottom">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">&nbsp;</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                            <td style="padding: 0 0; border-right: 1px solid;" width="20%" valign="bottom">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">&nbsp;</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding:2px 5px; border-left: 1px solid;" width="2%">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="38%">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="10%" align="right"> (iv) </td>
+                                        <td style="border-right:none;border-bottom: 1px dotted #000; padding:2px 5px;">&nbsp;</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                            <td style="padding: 0 0; border-right: 1px solid;" width="20%" valign="bottom">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">&nbsp;</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                            <td style="padding: 0 0; border-right: 1px solid;" width="20%" valign="bottom">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">&nbsp;</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                            <td style="padding: 0 0; border-right: 1px solid;" width="20%" valign="bottom">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">&nbsp;</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding:2px 5px; border-left: 1px solid;" width="2%">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="38%">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="10%" align="right"> (v) </td>
+                                        <td style="border-right:none;border-bottom: 1px dotted #000; padding:2px 5px;">&nbsp;</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                            <td style="padding: 0 0; border-right: 1px solid;" width="20%" valign="bottom">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">&nbsp;</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                            <td style="padding: 0 0; border-right: 1px solid;" width="20%" valign="bottom">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">&nbsp;</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                            <td style="padding: 0 0; border-right: 1px solid;" width="20%" valign="bottom">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">&nbsp;</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding:2px 5px; border-left: 1px solid;" width="2%" align="center">10</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="38%">Aggregate of deductible amounts under Chapter VIA</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding: 0 0; border-right: 1px solid;" width="20%" valign="bottom">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">{{ $total_deductions_sum }}</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding:2px 5px; border-left: 1px solid;" width="2%">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="38%">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                        </tr>
+                        @php 
+                            $total_amount = $total_allowances - $total_deductions_sum;
+                        @endphp
+                        <tr>
+                            <td style="padding:2px 5px; border-left: 1px solid;" width="2%" align="center">11</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="38%">Total income (8-10)</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding: 0 0; border-right: 1px solid;" width="20%" valign="bottom">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">{{ $total_amount }}</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding:2px 5px; border-left: 1px solid;" width="2%" align="center">12</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="38%">Tax on total income</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding: 0 0; border-right: 1px solid;" width="20%" valign="bottom">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">0</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding:2px 5px; border-left: 1px solid;" width="2%" valign="top" align="center">13</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="38%">Education cess @ 3% (on tax computed at S. No. 12)</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding: 0 0; border-right: 1px solid;" width="20%" valign="bottom">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">0</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding:2px 5px; border-left: 1px solid;" width="2%" align="center">14</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="38%">Tax Payable (12+13)</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding: 0 0; border-right: 1px solid;" width="20%" valign="bottom">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">0</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding:2px 5px; border-left: 1px solid;" width="2%" align="center">15</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="38%">Less: Relief under section 89 (attach details)</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding: 0 0; border-right: 1px solid;" width="20%" valign="bottom">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">0</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding:2px 5px; border-left: 1px solid;" width="2%" align="center">16</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="38%">Tax payable (14-15)</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding: 0 0; border-right: 1px solid;" width="20%" valign="bottom">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">0</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding:2px 5px; border-left: 1px solid;" width="2%" align="center">17</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="38%"> Tax deducted at source u/s 192</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding: 0 0; border-right: 1px solid;" width="20%" valign="bottom">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">0</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding:2px 5px; border-left: 1px solid; border-bottom:1px solid;" width="2%" align="center">18</td>
+                            <td style="padding:2px 5px; border-right: 1px solid; border-bottom:1px solid;" width="38%">Balance (16-17)</td>
+                            <td style="padding:2px 5px; border-right: 1px solid; border-bottom:1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding:2px 5px; border-right: 1px solid; border-bottom:1px solid;" width="20%">&nbsp;</td>
+                            <td style="padding: 0 0; border-right: 1px solid; border-bottom:1px solid;" width="20%" valign="bottom">
+                                <table width="100%">
+                                    <tbody><tr>
+                                        <td style="padding:2px 5px;" width="5%" valign="top">Rs. </td>
+                                        <td style="border-right:none; padding:2px 5px;" align="right">0</td>
+                                    </tr>
+                                </tbody></table> 
+                            </td>
+                        </tr>
+                    </tbody></table>
+                </td>
+            </tr>
+			<tr>
+				<td>
+					<table style="border-collapse:collapse; border-color:#000; display: table; width:100%; " cellspacing="0" cellpadding="0" border="1">
+						<tbody><tr>
+						 <td colspan="3" style="padding-left:5px; font-weight:bold; padding:10px 5px;" align="center"><i>Verification</i></td>
+						</tr>
+						<tr>
+						<td colspan="3" style="padding:2px 5px;" align="left">
+										I <b>{{ strtoupper($data['get_employee_detail']->first_name ?? '') }} {{ strtoupper($data['get_employee_detail']->last_name ?? '') }}</b> , son/daughter of {{ strtoupper($data['get_employee_detail']->last_name ?? '') }} working in the capacity of {{ $data['department_name']->department_name ?? ''}} (designation) do hereby certify that the information given above is true, complete and correct and is based on the books of account, documents, and other available records.
+						  </td>
+						</tr>
+					  <tr>
+						<td style="padding:2px 5px;" align="left">Place:</td>
+						<td style="1px solid #000; padding:2px 5px;" align="right"></td>
+						<td rowspan="2" style="padding:2px 5px;" valign="bottom">(Signature of person responsible for deduction of tax)</td>
+					  </tr>
+					  <tr>
+						<td style="padding:2px 5px;" align="left">Date:</td>
+						<td style="padding:2px 5px;" align="right">{{ date('d-m-Y') }}</td>
+					  </tr>
+					   <tr>
+						<td style="padding:2px 5px;" align="left">Designation:</td>
+						<td style="padding:2px 5px;" align="right">{{ $data['department_name']->department_name ?? '' }}</td>
+						<td style="padding:2px 5px;" align="left">Full Name: {{ strtoupper($data['get_employee_detail']->first_name ?? '') }} {{ strtoupper($data['get_employee_detail']->middle_name ?? '') }} {{ strtoupper($data['get_employee_detail']->last_name ?? '') }}</td>
+					  </tr>
+					</tbody></table>
+					
+				</td>
+			</tr>
+        </tbody>
+    </table>
+    <br />
+    <input class="btn btn-warning mb-4" type="button" onclick="printDiv('table_60');" value="Print" style="margin-left: 520px;"/>
+    @endif
+</div>
 
     @include('includes.footerJs')
     <script>
         $(document).ready(function () {
             var table = $('#example').DataTable({
-                ordering: false,
                 select: true,
                 lengthMenu: [
                     [100, 500, 1000, -1],
@@ -1256,4 +1437,55 @@
             });
         });
     </script>
+<script>
+    @if(isset($data['department_id']) && $data['department_id']!=='')
+        var departmentId = "{{$data['department_id']}}";
+        getEmpList(departmentId);
+    @endif
+
+    $(document).on("change", "#department_id", function(e) {
+        var departmentId = $(this).val();
+        getEmpLists(departmentId);
+    });
+
+    function getEmpLists(departmentId){
+        $('#employee_id').empty();
+        $.ajax({
+            type: "post",
+            url: "{{ route('form16.get.employees.list') }}",
+            data: { department_id: departmentId },
+            success: function(data) {
+                var options = '';
+                $.each(data.employees, function(index, employee) {
+                    options += '<option value="' + employee.id + '" >' + employee.first_name + ' ' + employee.last_name + '  ('+employee.user_profile+')</option>';
+                });
+                $('#employee_id').append(options);
+            },
+            error: function(xhr) {
+                console.error(xhr.responseText);
+            }
+        });
+    }
+</script>
+<script>
+    function printDiv(divName) 
+    {
+        var divToPrint = document.getElementById(divName).innerHTML;
+        var popupWin = window.open('', '_blank', 'width=300,height=300');
+        popupWin.document.open();
+        popupWin.document.write('<html>');
+        popupWin.document.write('<head><style>body{margin:0;padding:0}</style></head>');
+        popupWin.document.write('<body>');
+        popupWin.document.write('<div id="' + divName + '">' + divToPrint + '</div>');
+        popupWin.document.write('</body></html>');
+        popupWin.document.close();
+
+        // Wait for content to load before printing
+        popupWin.onload = function() {
+            setTimeout(function() {
+                popupWin.print();
+            }, 1000);
+        };
+    }
+</script>
 @include('includes.footer')

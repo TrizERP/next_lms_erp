@@ -181,7 +181,7 @@ class NewLMS_StudentApiController extends Controller
                             "tblstudent.last_name",
                             "tblstudent.sub_institute_id",
                             "tblstudent.mobile",
-                            "tblstudent.roll_no",
+                            "tblstudent_enrollment.roll_no",
                             "standard.name as std_name",
                             "division.name as division",
                             "tblstudent.dob",
@@ -306,18 +306,16 @@ class NewLMS_StudentApiController extends Controller
     public function insert_tblstudent($data)
     {
         $maxEnrollment = DB::table('tblstudent')
-            ->selectRaw("(MAX(CAST(enrollment_no AS INT)) + 1) AS new_enrollment_no,(MAX(CAST(roll_no AS INT)) + 1) AS new_roll_no")
+            ->selectRaw("(MAX(CAST(enrollment_no AS INT)) + 1) AS new_enrollment_no")
             ->where('sub_institute_id', '1')->orderBy('id', 'DESC')->limit(1)->get()->toArray();
 
         $new_enrollment_no = $maxEnrollment[0]->new_enrollment_no;
-        $new_roll_no = $maxEnrollment[0]->new_roll_no;
         $user_name = $data->first_name.'_'.$data->last_name;
         $password = md5('student');
 
         $insert_stu = DB::table('tblstudent')
             ->insert([
                 'enrollment_no'    => $new_enrollment_no,
-                'roll_no'          => $new_roll_no,
                 'first_name'       => $data->first_name,
                 'last_name'        => $data->last_name,
                 'gender'           => $data->gender,

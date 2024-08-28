@@ -1,6 +1,8 @@
-@include('includes.headcss')
-@include('includes.header')
-@include('includes.sideNavigation')
+{{--@include('../includes.headcss')
+@include('../includes.header')
+@include('../includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 
 <style>
     .breadcrumb1-arrow {
@@ -182,9 +184,9 @@
                                 <!-- <select class="form-control" onchange="loadSubModule(this.value)" name="main_module"> -->
                                 <select class="form-control" id="main_module" name="main_module">
                                     <option value="">-Select-</option>
-                                    <?php foreach ($data["main_module"] as $id => $val) { ?>
-                                        <option value="<?php echo $id; ?>"><?php echo $val; ?></option>
-                                    <?php } ?>
+                                    @foreach ($data["main_module"] as $id => $val)
+                                        <option value="{{$id}}">{{$val}}</option>
+                                   @endforeach
                                 </select>
                             </div>
                         </div>
@@ -272,3 +274,4 @@
     }
 </script>
 @include('includes.footer')
+@endsection

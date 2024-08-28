@@ -1,7 +1,8 @@
-@include('includes.lmsheadcss')
+{{--@include('includes.lmsheadcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('lmslayout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row bg-title align-items-center justify-content-between">
@@ -61,7 +62,7 @@
                                                         style="font-size: 28px;color: black;font-weight: bolder;">...</span>
                                                 </td>
                                                 <td>{{$portfolio['type']}}</td>
-                                                <td>@if($portfolio['file_name'] != ""){{$portfolio['file_name']}}@else
+                                                <td>@if($portfolio['file_name'] != "")<a href="{{ Storage::disk('digitalocean')->url('public/lms_portfolio/'.$portfolio['file_name'])}}" target="_blank">{{$portfolio['file_name']}}</a>@else
                                                         - @endif</td>
                                                 <td>{{$portfolio['created_at']}}</td>
                                                 <td>
@@ -104,3 +105,4 @@
     });
 </script>
 @include('includes.footer')
+@endsection

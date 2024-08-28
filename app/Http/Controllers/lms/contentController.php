@@ -12,6 +12,7 @@ use App\Models\school_setup\sub_std_mapModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
+use Illuminate\Support\Facades\Storage;
 
 class contentController extends Controller
 {
@@ -75,7 +76,7 @@ class contentController extends Controller
         $breadcrum_data = $breadcrum_data->get()->toArray();
         // dd($breadcrum_data);
         if(isset($breadcrum_data[0]) && $breadcrum_data != " "){
-        return $breadcrum_data[0];
+        return $breadcrum_data[0] ?? [];
         }
         else{
             return back();
@@ -220,7 +221,9 @@ class contentController extends Controller
             $newfilename = 'lms_'.date('Y-m-d_h-i-s').'.'.$ext;             
             $file_folder = '/lms_content_file';
             //$img->move(public_path().'/lms_content_file/',$newfilename);
-            $img->storeAs('public/lms_content_file/',$newfilename);
+            // $img->storeAs('public/lms_content_file/',$newfilename); 20-05-2024
+            Storage::disk('digitalocean')->putFileAs('public/lms_content_file/', $img, $newfilename, 'public');
+
         }
 
         if($request->get('contentType') == "link")
@@ -232,7 +235,7 @@ class contentController extends Controller
         $chapter_data = chapterModel::select('*')        
         ->where(['chapter_master.sub_institute_id'=>$sub_institute_id,'chapter_master.id'=>$request->get('hid_chapter_id')])         
         ->get()->toArray(); 
-        $chapter_data = $chapter_data[0]; 
+        $chapter_data = $chapter_data[0] ?? []; 
 
         $pre_topic = $post_topic = $cross_curriculum_topic = "";
         if($request->get('prechapter') != "")
@@ -298,9 +301,9 @@ class contentController extends Controller
         //return is_mobile($type, "content_master.index", $res, "redirect");
         // return redirect()->route('topic_master.index', ['id' => $request->get('hid_chapter_id')]);
         if ( $request->has('hid_topic_id') ) {
-            return redirect()->route('topic_master.index', ['id' => $request->get('hid_chapter_id'),'standard_id' => $chapter_data['standard_id']]);
+            return redirect()->route('topic_master.index', ['id' => $request->get('hid_chapter_id'),'standard_id' => $chapter_data['standard_id'],'perm'=>$sub_institute_id]);
         } else {
-            return redirect()->route('chapter_master.index', ['standard_id' => $chapter_data['standard_id'], 'subject_id' => $chapter_data['subject_id']]);
+            return redirect()->route('chapter_master.index', ['standard_id' => $chapter_data['standard_id'], 'subject_id' => $chapter_data['subject_id'],'perm'=>$sub_institute_id]);
         }
     }
 
@@ -326,7 +329,8 @@ class contentController extends Controller
             $newfilename = 'lms_'.date('Y-m-d_h-i-s').'.'.$ext;             
             $file_folder = '/lms_content_file';
             //$img->move(public_path().'/lms_content_file/',$newfilename);
-            $img->storeAs('public/lms_content_file/',$newfilename);
+            // $img->storeAs('public/lms_content_file/',$newfilename);  20-05-24
+            Storage::disk('digitalocean')->putFileAs('public/lms_content_file/', $img, $newfilename, 'public');
         }
 
         if($request->get('contentType') == "link")
@@ -338,7 +342,7 @@ class contentController extends Controller
         $chapter_data = chapterModel::select('*')        
         ->where(['chapter_master.sub_institute_id'=>$sub_institute_id,'chapter_master.id'=>$request->get('hid_chapter_id')])         
         ->get()->toArray(); 
-        $chapter_data = $chapter_data[0]; 
+        $chapter_data = $chapter_data[0] ?? []; 
 
         $pre_topic = $post_topic = $cross_curriculum_topic = "";
         if($request->get('prechapter') != "")
@@ -405,7 +409,7 @@ class contentController extends Controller
 		);
         $type = $request->input('type');
         //return is_mobile($type, "content_master.index", $res, "redirect");
-        return redirect()->route('chapter_master.index', ['standard_id' => $request->get('hid_standard_id'), 'subject_id' => $request->get('hid_subject_id')]);
+        return redirect()->route('chapter_master.index', ['standard_id' => $request->get('hid_standard_id'), 'subject_id' => $request->get('hid_subject_id'),'perm'=>$sub_institute_id]);
     }
 		
     public function edit(Request $request,$id){
@@ -460,8 +464,8 @@ class contentController extends Controller
         $data['pretopicData'] = [];
         if ($data['content_data']['pre_grade_topic'] != "") {
             $pre_arr = explode("####", $data['content_data']['pre_grade_topic']);
-            $pre_arr_chapter_id = $pre_arr[0];
-            $pre_arr_topic_id = $pre_arr[1];
+            $pre_arr_chapter_id = $pre_arr[0] ?? '-';
+            $pre_arr_topic_id = $pre_arr[1] ?? '-';
 
             //If both chapter and topic are mapped
             if ($pre_arr_chapter_id != "" && $pre_arr_topic_id != "") {
@@ -482,7 +486,7 @@ class contentController extends Controller
             }
 
             $pretopicData = json_decode(json_encode($pretopicData), true);
-            $data['pretopicData'] = $pretopicData[0];            
+            $data['pretopicData'] = $pretopicData[0] ?? [];            
         }
         //END Get Pre Topic  
 
@@ -491,8 +495,8 @@ class contentController extends Controller
         if($data['content_data']['post_grade_topic'] != "")
         {
             $post_arr = explode("####",$data['content_data']['post_grade_topic']);
-            $post_arr_chapter_id = $post_arr[0];
-            $post_arr_topic_id = $post_arr[1];
+            $post_arr_chapter_id = $post_arr[0] ?? '-';
+            $post_arr_topic_id = $post_arr[1] ?? '-';
 
             //If both chapter and topic are mapped
             if($post_arr_chapter_id != "" && $post_arr_topic_id != "" ) {
@@ -510,7 +514,7 @@ class contentController extends Controller
 
             }           
             $posttopicData = json_decode(json_encode($posttopicData),true);
-            $data['posttopicData'] = $posttopicData[0];            
+            $data['posttopicData'] = $posttopicData[0] ?? [];            
         }
         //END Get Post Topic 
 
@@ -560,22 +564,34 @@ class contentController extends Controller
         $show_hide = $request->get('show_hide');
         $show_hide_val = $show_hide ?? '';
         $filePath = "public/lms_content_file/"; 
-
+        $url = $request->get('link');
         $image_data = [];
         if ($request->hasFile('filename')) {
             if ($request->has('hid_filename')) {
-                        if (file_exists($filePath.$request->hasFile('filename'))){
+                /* if (file_exists($filePath.$request->hasFile('filename'))){
+                 unlink('storage'.$request->input('hid_filename'));
+                }*/
 
-                unlink('storage'.$request->input('hid_filename'));
+                // delete file from digital ocean 
+                /*
+                $digiPath  = 'public/' . $request->has('hid_filename');
+                if (Storage::disk('digitalocean')->exists($digiPath)) {
+                    Storage::disk('digitalocean')->delete($digiPath);
+                    if (!Storage::disk('digitalocean')->exists($digiPath)) {
+                        $message="file deleted";
+                    }   
+                } 
+                */
             }
-            }
+
             $img = $request->file('filename');
             $filename = $img->getClientOriginalName();
             $ext = $img->getClientOriginalExtension();
             $size = $img->getSize();
             $newfilename = 'lms_'.date('Y-m-d_h-i-s').'.'.$ext;
             //$img->move(public_path().'/lms_content_file/',$newfilename);
-            $img->storeAs('public/lms_content_file/', $newfilename);
+            // $img->storeAs('public/lms_content_file/', $newfilename);
+            Storage::disk('digitalocean')->putFileAs('public/lms_content_file/', $img, $newfilename, 'public');
 
             $image_data = [
                 'file_folder' => '/lms_content_file',
@@ -590,6 +606,7 @@ class contentController extends Controller
                 'filename'  => $request->get('link'),
                 'file_type' => "link",
             ];
+            $url='';
         }   
 
         $pre_topic = $post_topic = $cross_curriculum_topic = "";
@@ -618,7 +635,7 @@ class contentController extends Controller
             'content_category'             => $request->get('content_category'),
             'created_by'                   => $user_id,
             'sub_institute_id'             => $sub_institute_id,
-            'url'                          => $request->get('link'),
+            'url'                          => $url,
             'restrict_date'                => $request->get('restrict_date'),
             'pre_grade_topic'              => $pre_topic,
             'post_grade_topic'             => $post_topic,
@@ -655,12 +672,12 @@ class contentController extends Controller
         $type = $request->input('type');
 
         // return redirect()->route('topic_master.index', ['id' => $request->get('chapter')]);
-        return redirect('/lms/chapter_master?standard_id='.$request->get('standard').'&subject_id='.$request->get('subject').' ');
+        return redirect('/lms/chapter_master?standard_id='.$request->get('standard').'&subject_id='.$request->get('subject').'&perm='.$sub_institute_id.' ');
     }
 
     public function destroy(Request $request,$id){
         $type = $request->input('type');
-        
+        $sub_institute_id = session()->get('sub_institute_id');
         $contentdata = contentModel::where(["id" => $id])->get()->toArray();
         $chapter_id = $contentdata[0]['chapter_id'];
         $std = $contentdata[0]['standard_id'];
@@ -668,7 +685,7 @@ class contentController extends Controller
         contentModel::where(["id" => $id])->delete();
         $res['status_code'] = "1";
         $res['message'] = "Content Deleted Successfully";
-        return redirect()->route('topic_master.index', ['id' => $chapter_id,'standard_id' => $std]);
+        return redirect()->route('topic_master.index', ['id' => $chapter_id,'standard_id' => $std,'perm'=>$sub_institute_id]);
     }
 	
     public function ajax_LMS_MappingValue(Request $request)

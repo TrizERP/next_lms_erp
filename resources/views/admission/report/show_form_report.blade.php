@@ -1,7 +1,8 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <style >
     .filter-button 
     {
@@ -193,6 +194,7 @@ function checkedAll()
                 title: 'Admission Form Report',
                 customize: function (win) {
                     $(win.document.body).prepend(`{!! App\Helpers\get_school_details("", "", "") !!}`);
+                    $(win.document.body).append(`<div style="text-align: right;margin-top:20px">Printed on: {{date('d-m-Y H:i:s')}}</div>`);
                 }
             },
             'pageLength' 
@@ -216,3 +218,4 @@ function checkedAll()
     } );
 </script>
 @include('includes.footer')
+@endsection

@@ -39,7 +39,7 @@
                 <div class="row">
                     <div class="col-md-4 form-group">
                         <label>Job Title </label>
-                        <input type="text" id='title' required name="title" class="form-control" value="{{$hrmsJobTitle['title']}}">
+                        <input type="text" id='title' required name="title" class="form-control" value="{{$data['title']}}">
                         @error('title')
                         <span style="color: red">{{$message}}</span>
                         @enderror
@@ -47,7 +47,7 @@
                     <div class="col-md-4 form-group">
                         <label>Status</label>
                         <select name="status" id="status" class="form-control">
-                            @if($hrmsJobTitle['is_active'] == 1)
+                            @if($data['is_active'] == 1)
                                 <option value="0"> Disable </option>
                                 <option value="1" selected> Enable </option>
                             @else
@@ -60,12 +60,12 @@
                         @enderror
                     </div>
 
-                    <div class="col-md-12 form-group">
+                    <div class="col-md-6 form-group">
                         <label>Description </label>
-                        <input name="description"  class="form-control" value="{{$hrmsJobTitle['description']}}"/>
+                        <input name="description"  class="form-control" value="{{$data['description']}}"/>
                     </div>
 
-                    <input type="hidden" name="id" value="{{$hrmsJobTitle['id']}}">
+                    <input type="hidden" name="id" value="{{$data['id']}}">
                     <div class="col-md-12 form-group">
                         <center>
                             <input type="submit" name="submit" id="Submit" value="Save" class="btn btn-success" >

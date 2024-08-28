@@ -234,8 +234,10 @@ class photo_video_gallaryController extends Controller
             $sub_institute_id = session()->get('sub_institute_id');
             $user_id = session()->get('user_id');
         }
+        $status = 1;
 
         if ($_REQUEST['type'] == 'Photo') {
+            // return "photo";exit;
             if ($request->hasFile('attachment')) {
                 foreach ($request->file('attachment') as $key => $file_data) {
                     $file_name = $file_size = $ext = "";
@@ -264,6 +266,7 @@ class photo_video_gallaryController extends Controller
                                     'created_at'       => now(),
                                     'updated_at'       => now(),
                                 ];
+                                
                                 DB::table('photo_video_gallary')->insert($values);
 
                                 //START Send Notification Code
@@ -326,6 +329,7 @@ class photo_video_gallaryController extends Controller
                                                 array_push($gcmRegIds, $val1->gcm_regid);
                                             }
                                         }
+                                        sendNotification($app_notification_content);
 
                                         $bunch_arr = array_chunk($gcmRegIds, 1000);
                                         if (! empty($bunch_arr)) {
@@ -341,7 +345,7 @@ class photo_video_gallaryController extends Controller
                                                     Rajesh: stop push notification for photo-video gallery
                                                     $pushStatus = send_FCM_Notification($val, $message, $sub_institute_id);
                                                     */
-                                                    sendNotification($app_notification_content);
+                                                    // sendNotification($app_notification_content);
                                                 }
                                             }
                                         }
@@ -353,12 +357,19 @@ class photo_video_gallaryController extends Controller
                         }
                     }
                 }
+            }else{
+                $status = 0;
             }
         } else {
             if (isset($_REQUEST['standard'])) {
                 foreach ($_REQUEST['standard'] as $id => $std) {
                     foreach ($_REQUEST['division'] as $ids => $div_id) {
-                        $file_name = $_REQUEST['attachment'];
+                        $file_name="";
+                        if(isset($_REQUEST['attachment'])){
+                            $file_name = $_REQUEST['attachment'];
+                        }else if($_REQUEST['youtube_link']){
+                            $file_name = $_REQUEST['youtube_link'];
+                        }
                         $values = [
                             'syear'            => $syear,
                             'standard_id'      => $std,
@@ -372,7 +383,21 @@ class photo_video_gallaryController extends Controller
                             'created_at'       => now(),
                             'updated_at'       => now(),
                         ];
-                        DB::table('photo_video_gallary')->insert($values);
+                        $check = DB::table('photo_video_gallary')->where([
+                            'syear'            => $syear,
+                            'standard_id'      => $std,
+                            'division_id'      => $div_id,
+                            'title'            => $_REQUEST['title'],
+                            'album_title'      => $_REQUEST['album_title'],
+                            'type'             => $_REQUEST['type'],
+                            'file_name'        => $file_name,
+                            'date_'            => $_REQUEST['date_'],
+                            'sub_institute_id' => $sub_institute_id,
+                        ])->get()->toArray();
+
+                        if(empty($check)){
+                            DB::table('photo_video_gallary')->insert($values);
+                        }
 
                         //START Send Notification Code
                         $student_data = DB::table("tblstudent_enrollment as se")
@@ -432,6 +457,7 @@ class photo_video_gallaryController extends Controller
                                         $gcmRegIds[] = $val1->gcm_regid;
                                     }
                                 }
+                                sendNotification($app_notification_content);
 
                                 $bunch_arr = array_chunk($gcmRegIds, 1000);
                                 if (! empty($bunch_arr)) {
@@ -447,7 +473,7 @@ class photo_video_gallaryController extends Controller
                                             Rajesh: stop push notification for photo-video gallery
                                             $pushStatus = send_FCM_Notification($val, $message, $sub_institute_id);
                                             */
-                                            sendNotification($app_notification_content);
+                                            // sendNotification($app_notification_content);
                                         }
                                     }
                                 }
@@ -461,7 +487,7 @@ class photo_video_gallaryController extends Controller
         }
 
         if (isset($_REQUEST['action']) && $_REQUEST['action'] == "API") {
-            return 1;
+            return $status;
         } else {
             $res = [
                 "status"  => 1,

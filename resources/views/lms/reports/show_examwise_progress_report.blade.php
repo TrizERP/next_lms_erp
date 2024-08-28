@@ -1,6 +1,8 @@
-@include('includes.lmsheadcss')
+{{--@include('includes.lmsheadcss')
 @include('includes.header')
-@include('includes.sideNavigation')
+@include('includes.sideNavigation')--}}
+@extends('lmslayout')
+@section('container')
 
 <div id="page-wrapper">
     <div class="container-fluid">
@@ -18,14 +20,21 @@
         </div>
 
         @php
-            $grade_id = $standard_id = $division_id = '';
+            $grade_id = $standard_id = $division_id=$exam_type = '';
 
             if(isset($data['grade_id'])){
                 $grade_id = $data['grade_id'];
                 $standard_id = $data['standard_id'];
                 $division_id = $data['division_id'];
             }
-
+            $exam_id = [];
+            if(isset($data['exam_id'])){
+                $exam_id = $data['exam_id'];
+            }
+            if(isset($data['exam_type'])){
+                $exam_type = $data['exam_type'];
+            }
+            $attempedArr = ['Not Attempted','Attempted'];
         @endphp
             <div class="card">
                 <div class="card-body">
@@ -55,16 +64,20 @@
                             </div>
                             <div class="col-md-3 form-group">
                                 <label for="exam">Select Exam</label>
-                                <select class="cust-select form-control mb-0" name="exam_id[]" multiple="multiple"
-                                        required="required">
-                                    @if(!empty($data['exams_data']))
-                                        @foreach($data['exams_data'] as $k => $v)
-                                            <option
-                                                value="{{$v->id}}" @if(isset($data->exam_id)){{$data->exam_id == $v->id ? 'selected=selected' : '' }} @endif>{{$v->paper_name}}</option>
-                                        @endforeach
-                                    @endif
+                                <select class="cust-select form-control mb-0" name="exam_id[]" multiple="multiple" required="required">
+                                    
                                 </select>
                             </div>
+
+                            <div class="col-md-3 form-group">
+                                <label for="exam">Select Exam Type</label>
+                                <select class="form-control mb-0" name="exam_type">
+                                    @foreach($attempedArr as $key => $value)
+                                        <option value="{{$key}}" @if(isset($exam_type) && $exam_type==$key) selected @endif>{{$value}}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
                             <div class="col-md-2 form-group mt-4">
                                 <br>
                                 <input type="submit" name="submit" value="Search" class="btn btn-success">
@@ -138,14 +151,14 @@
                                                 $j=1;
                                                 $grade = '';
                                             @endphp
-                                            @foreach($student_data as $key => $data)
+                                            @foreach($student_data as $key => $studata)
                                             <tr>
                                                 <td>{{$j}}</td>
-                                                <td>{{$data['first_name']}} {{$data['middle_name']}} {{$data['last_name']}}</td>
-                                                <td>{{$data['enrollment_no']}}</td>
+                                                <td>{{$studata['student_name']}}</td>
+                                                <td>{{$studata['enrollment_no']}}</td>
                                                 <!-- al marks -->
-                                                @if (isset($all_marks[$data['id']]))
-                                                @foreach ($all_marks[$data['id']] as $question_paper_id => $all_markss)
+                                                @if (isset($all_marks[$studata['id']]))
+                                                @foreach ($all_marks[$studata['id']] as $question_paper_id => $all_markss)
                                                     @php
                                                         $m = explode(',', $all_markss);
                                                         $m = array_pad($m, $numColumns, '-');
@@ -154,24 +167,30 @@
                                                         <td>{{ $am }}</td>
                                                     @endforeach
                                                 @endforeach
+                                               
                                                 @endif
 
                                                 <!-- best of 5 -->
                                                 @php
-                                                $total_obtain_marks = $obtain_per  = 0;
+                                                $total_obtain_marks = 0;
+                                                $obtain_per = 0;
                                                 @endphp
-                                                @if(isset($marks_data[$data['id']]))
-                                                @foreach($marks_data[$data['id']] as $question_paper_id => $obtain_marks)
-                                                @php
-                                                    if($obtain_marks != '-')
-                                                    {
-                                                        $total_obtain_marks = $total_obtain_marks + $obtain_marks;
-                                                        $obtain_per = number_format(($total_obtain_marks/$total_marks) * 100,2);
-                                                    }
-                                                @endphp
-                                                <td>{{$obtain_marks}}</td>
-                                                    @endforeach
+
+                                                @foreach($data['exams_data'] as $k => $exam_name)
+                                                @if(isset($marks_data[$studata['id']][$exam_name['id']]) && $marks_data[$studata['id']][$exam_name['id']] != '-')
+                                                    @php
+                                                    $ob_mark = $marks_data[$studata['id']][$exam_name['id']];
+                                                    $total_obtain_marks += $ob_mark;
+
+                                                    // Calculate obtain percentage only if $total_marks is not zero
+                                                    $obtain_per = ($total_marks != 0) ? (($ob_mark * 100) / $total_marks) : 0;
+                                                    @endphp
+                                                    <td>{{ $ob_mark }}</td>
+                                                @else
+                                                    <td>-</td>
                                                 @endif
+                                                @endforeach
+
                                                 <td>{{$total_obtain_marks}}/{{$total_marks}}</td>
                                                 <td>{{$obtain_per}}%</td>
                                                 @php
@@ -209,6 +228,15 @@
 </div>
 @include('includes.lmsfooterJs')
 <script>
+    $(document).ready(function() {
+        @if($standard_id != '')
+            var selExam = @json($exam_id);
+            if (typeof selExam === 'string') {
+                selExam = JSON.parse(selExam); 
+            }
+            get_sub(selExam);
+        @endif
+    });
     $("#standard").change(function () {
         var std_id = $("#standard").val();
         var path = "{{ route('ajax_LMS_StandardwiseSubject') }}";
@@ -222,22 +250,35 @@
         });
     })
 
-    $("#subject").change(function(){
-        var std_id = $("#standard").val();
-        var sub_id = $("#subject").val();
-        var path = "{{ route('ajax_LMS_SubjectWiseExam') }}";
-        $.ajax({
-            url: path,
-            data: 'std_id=' + std_id + '&sub_id=' + sub_id,
-            success: function (result) {
-                var e = $('select[name="exam_id[]"]');
-                $(e).find('option').remove().end();
-                for (var i = 0; i < result.length; i++) {
-                    $(e).append($("<option></option>").val(result[i]['id']).html(result[i]['paper_name']));
-                }
-            }
-        });
+    $("#subject").on('change',function(){
+        get_sub();
     })
+
+    function get_sub(selExam = []) {
+    var std_id = $("#standard").val();
+    var sub_id = $("#subject").val();
+    var path = "{{ route('ajax_LMS_SubjectWiseExam') }}";
+
+    $.ajax({
+        url: path,
+        data: 'std_id=' + std_id + '&sub_id=' + sub_id,
+        success: function(result) {
+            var e = $('select[name="exam_id[]"]');
+            $(e).find('option').remove().end();
+            for (var i = 0; i < result.length; i++) {
+                var option = $("<option></option>")
+                    .val(result[i]['id'])
+                    .html(result[i]['paper_name']);
+
+            if (selExam.includes(result[i]['id'].toString())) { // Convert ID to string for comparison
+                option.attr("selected", "selected");
+                }
+
+                $(e).append(option);
+            }
+        }
+    });
+    }
 
     $(document).ready(function () {
         $('#grade').attr("required", true);
@@ -288,3 +329,4 @@
 </script>
 
 @include('includes.footer')
+@endsection

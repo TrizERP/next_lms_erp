@@ -443,7 +443,9 @@ class TemplateResult extends Controller
             ->join('academic_section as a', 'a.id', '=', 'ct.grade_id')
             ->join('standard as s', 's.id', '=', 'ct.standard_id')
             ->join('division as d', 'd.id', '=', 'ct.division_id')
-            ->join('tbluser as u', 'u.id', '=', 'ct.teacher_id')
+            ->join('tbluser as u', function($join){
+                $join->on('u.id', '=', 'ct.teacher_id')->where('u.status',1);   // 23-04-24 by uma
+            })
             ->where([
                 'ct.sub_institute_id' => $sub_institute_id,
                 'ct.syear'            => $syear,
@@ -819,6 +821,7 @@ class TemplateResult extends Controller
         $division_id = $request->get('division_id');
         $syear = session()->get('syear');
         $sub_institute_id = session()->get('sub_institute_id');
+        $user_id = session()->get('user_id');
 
         foreach ($student_array as $key => $val) {
             $result_data['student_id'] = $val;
@@ -828,34 +831,25 @@ class TemplateResult extends Controller
             $result_data['division_id'] = $division_id;
             $result_data['syear'] = $syear;
             $result_data['sub_institute_id'] = $sub_institute_id;
-            $result_data['html'] = $request->get('html_'.$val);
+            $result_data['created_by'] = $user_id;
+            $result_data['html'] = $request->get('html_' . $val);
 
-
-            $data = DB::table("result_html")
-                ->where("student_id", "=", $val)
-                ->where("term_id", "=", $request->get('term_id'))
-                ->where("grade_id", "=", $request->get('grade_id'))
-                ->where("standard_id", "=", $request->get('standard_id'))
-                ->where("division_id", "=", $request->get('division_id'))
-                ->where("syear", "=", $request->get('syear'))
-                ->where("sub_institute_id", "=", session()->get('sub_institute_id'))
-                ->get()->toArray();
+            $data = DB::select("SELECT * FROM result_html WHERE student_id = '" . $val . "' AND term_id = '" . $request->get('term_id') . "'
+                    AND grade_id = '" . $request->get('grade_id') . "'  AND standard_id = '" . $request->get('standard_id') . "'
+                     AND division_id = '" . $request->get('division_id') . "'  AND syear = '" . $request->get('syear') . "'
+                     AND sub_institute_id = '" . session()->get('sub_institute_id') . "'
+                    ");
             if (count($data) > 0) {
-                $html = $request->get('html_'.$val);
+                $html = $request->get('html_' . $val);
                 $finalArray['html'] = $html;
-                $data = result_html_model::where([
-                    'student_id'  => $val,
-                    'term_id'     => $term_id,
-                    'grade_id'    => $grade_id,
-                    'standard_id' => $standard_id,
-                    'division_id' => $division_id,
-                    'syear'       => $syear,
-                ])->update($finalArray);
+                $finalArray['updated_by'] = $user_id;
+                $finalArray['updated_on'] = NOW();
+                $data = DB::table('result_html')->where(['student_id' => $val, 'term_id' => $term_id, 'grade_id' => $grade_id, 'standard_id' => $standard_id, 'division_id' => $division_id, 'syear' => $syear])->update($finalArray);
+
             } else {
                 DB::table("result_html")->insert($result_data);
             }
         }
-
         return 1;
     }
 

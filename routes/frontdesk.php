@@ -11,9 +11,13 @@ use App\Http\Controllers\frontdesk\PettyCashController;
 use App\Http\Controllers\frontdesk\PettyCashMasterController;
 use App\Http\Controllers\frontdesk\PettyCashReportController;
 use App\Http\Controllers\frontdesk\taskController;
+use App\Http\Controllers\front_desk\timetableController;
+use App\Http\Controllers\front_desk\timetableAiController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\school_setup\timetableController as oldtimetableController;
+use App\Http\Controllers\front_desk\castController;
 
-Route::group(['prefix' => 'frontdesk', 'middleware' => ['session', 'menu', 'logRoute']], function () {
+Route::group(['prefix' => 'frontdesk', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
     Route::resource('frontdesk', frontdeskController::class);
     Route::resource('task', taskController::class);
     Route::resource('complaint', complaintController::class);
@@ -35,3 +39,13 @@ Route::group(['prefix' => 'frontdesk', 'middleware' => ['session', 'menu', 'logR
 	Route::post('ajax_getpettycashreport', [PettyCashReportController::class, 'getpettycashreport'])->name('ajax_getpettycashreport');
 });
 
+Route::group(['prefix' => 'front_desk', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
+	Route::resource('timetableAI', timetableController::class);	
+	Route::resource('timetableAIV1', timetableAiController::class);	
+	Route::resource('create-timetable', oldtimetableController::class);
+    Route::get('add_remove_Batch_Timetable', [oldtimetableController::class, 'getBatchTimetable'])->name('add_remove_Batch_Timetable');
+	Route::get('Delete_Timetable', [oldtimetableController::class, 'deleteTimetable'])->name('Delete_Timetable');
+    Route::get('add_new_stdandardDiv', [oldtimetableController::class, 'addNewStdandardDiv'])->name('add_new_stdandardDiv');	
+	Route::resource('add_cast', castController::class);
+
+});

@@ -39,6 +39,7 @@ use App\Http\Controllers\result\GradeMaster\GradeMasterController;
 use App\Http\Controllers\result\marks_entry\marks_entry_controller;
 use App\Http\Controllers\result\result_book_master\result_book_master_controller;
 use App\Http\Controllers\result\result_master\result_master_controller;
+use App\Http\Controllers\result\result_api\resultAPIController;
 use App\Http\Controllers\result\result_remark_master\result_remark_master_controller;
 use App\Http\Controllers\result\std_grd_maping\std_grd_maping_controller;
 use App\Http\Controllers\result\student_attendance_master\student_attendance_master_controller;
@@ -48,9 +49,15 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Import\ExcelDownloadController;
 use App\Http\Controllers\result\new_result\templateController;
 use App\Http\Controllers\result\new_result\studentResultController;
+use App\Http\Controllers\result\new_result\studentResultRemarksController;
 use App\Http\Controllers\result\approve_mobile_result\approve_mobile_result_controller;
+use App\Http\Controllers\result\result_skillset\resultSkillsetController;
+use App\Http\Controllers\result\result_activity_master\resultActivityMasterController;
+use App\Http\Controllers\result\result_activity_marks\resultActivityMarksController;
+use App\Http\Controllers\lms\pal\resultPersonalizeMarksController;
+use App\Http\Controllers\result\new_result\allResultController;
 
-Route::group(['prefix' => 'result', 'middleware' => ['session', 'menu', 'logRoute']], function () {
+Route::group(['prefix' => 'result', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
     Route::resource('exam_type_master', ExamTypeMasterController::class);
     Route::resource('exam_master', ExamMasterController::class);
     Route::resource('grade_master', GradeMasterController::class);
@@ -71,10 +78,15 @@ Route::group(['prefix' => 'result', 'middleware' => ['session', 'menu', 'logRout
     Route::resource('cbse_1t5_t2_result', cbse_1t5_t2_result_controller::class);
     Route::resource('overall_mark_report', overall_mark_report_controller::class);
     Route::resource('result-marks-excel', ExcelDownloadController::class);
-    Route::resource('result-template', templateController::class);   
+    Route::resource('result-template', templateController::class);    
     Route::resource('student-result', studentResultController::class);    
+    Route::resource('student-result-remarks', studentResultRemarksController::class);    
     Route::get('view_all_result_tag', [templateController::class, 'viewAllTag'])->name('view_all_result_tag');
     Route::resource('approve_mobile_result', approve_mobile_result_controller::class);
+    Route::resource('result_skillset', resultSkillsetController::class);
+    Route::resource('result_activity_master', resultActivityMasterController::class);
+    Route::resource('result_activity_marks', resultActivityMarksController::class);
+    Route::resource('all_results', allResultController::class);    
 
     Route::post('cbse_1t5_result/show_result', ['as' => 'cbse_1t5_result.show_result', 'uses' => 'result\cbse_result\cbse_1t5_result_controller@show_result']);
     Route::post('cbse_1t5_t2_result/show_result', ['as' => 'cbse_1t5_t2_result.show_result', 'uses' => 'result\cbse_result\cbse_1t5_t2_result_controller@show_result']);
@@ -94,7 +106,11 @@ Route::group(['prefix' => 'result', 'middleware' => ['session', 'menu', 'logRout
 
     Route::resource('upload_result', upload_result_controller::class);
     // Route::GET('student_homework_submission_report_index', 'student\studentHomeworkSubmissionController@studentHomeworkSubmissionReportIndex')->name("student_homework_submission_report_index");
+    
+    Route::get('result_personalize_marks', [resultAPIController::class,'resultPersonalize'])->name('result_personalize_marks');
 
+    Route::get('current_result', [resultAPIController::class,'currentResult'])->name('current_result');    
+    
 //    Route::post('cbse_1t5_result', 'result\cbse_result\cbse_1t5_result_controller');
 });
 
@@ -118,12 +134,13 @@ Route::get('api/get-topic-list', [AJAXController::class, 'getTopicList']);
 Route::get('api/get-exam-list', [AJAXController::class, 'getExamList']);
 Route::get('api/get-co-scholastic-parent-list', [AJAXController::class, 'getCoScholasticParentList']);
 Route::get('api/get-co-scholastic-list', [AJAXController::class, 'getCoScholasticList']);
+Route::get('api/get-activity-master-list', [AJAXController::class, 'getActivityMasterList']);
 
 Route::GET('ajax_sendEmailFeesReceipt', [AJAXController::class, 'ajax_sendEmailFeesReceipt'])->name('ajax_sendEmailFeesReceipt');
 Route::GET('ajax_sendBulkEmailFeesReceipt', [AJAXController::class, 'ajax_sendBulkEmailFeesReceipt'])->name('ajax_sendBulkEmailFeesReceipt');
 
 // Route::group(['prefix' => 'easy_com', 'middleware' => ['session', 'mastersetup_menu']], function () {
-Route::group(['prefix' => 'easy_com', 'middleware' => ['session', 'menu', 'logRoute']], function () {
+Route::group(['prefix' => 'easy_com', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
     Route::resource('manage_sms_api', manage_sms_api_controller::class);
     Route::resource('send_sms_parents', send_sms_parents_controller::class);
     Route::resource('send_email_report', send_email_report_controller::class);
@@ -142,7 +159,7 @@ Route::group(['prefix' => 'easy_com', 'middleware' => ['session', 'menu', 'logRo
 });
 Route::POST('announcement', [send_sms_staff_controller::class, 'GetStudentAnnouncement']);
 
-Route::group(['prefix' => 'learning_outcome', 'middleware' => ['session', 'menu', 'logRoute']], function () {
+Route::group(['prefix' => 'learning_outcome', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
     Route::resource('lo_master', lo_masterController::class);
     Route::resource('indicator_mapping', indicator_mappingController::class);
     Route::post('indicator_mapping/get_indicator', [indicator_mappingController::class, 'get_indicator'])->name('get_indicator');
@@ -163,7 +180,7 @@ Route::POST('api/get_co_scholastic_marks_dd', [marks_entry_controller::class, 'g
 Route::POST('api/get_result', [marks_entry_controller::class, 'get_result']);
 
 
-Route::group(['prefix' => 'report', 'middleware' => ['session', 'menu']], function () {
+Route::group(['prefix' => 'report', 'middleware' => ['session', 'menu','check_permissions']], function () {
     Route::resource('dynamic_report', dynamic_report_controller::class);
     // exam report
     Route::get('student-mark-report', [StudentsMarksReportController::class, 'index'])->name('student-mark-report');
@@ -198,4 +215,7 @@ Route::post('studentResultPDFAPI', [cbse_1t5_result_controller::class, 'studentR
 //});
 
 Route::get('cbse_1t5_result/download_overall_report', [result_report_controller::class, 'downloadOverAllReportExcel']);
+Route::get('result_personal_marks_api', [resultPersonalizeMarksController::class, 'resultPersonalMarksApi']);
+Route::get('question_lists_api', [resultPersonalizeMarksController::class, 'questionListsAPI']);
+Route::resource('result_personalize_marks', resultPersonalizeMarksController::class);
 //Route::resource('result-template', result_TemplateController::class);

@@ -75,29 +75,44 @@
             </div>
             <div class="card">
                 <div class="table-responsive mt-20 tz-report-table">
-
+                {!! App\Helpers\get_school_details("","","") !!}
                     <table id="example" class="table table-striped">
                         <thead>
                         <tr>
-                            <th>Employee Id</th>
+                            <th>Emp No</th>
                             <th>Employee Name</th>
                             <th>Bank Name</th>
                             <th>A/C No.</th>
                             <th>IFSC Code</th>
-                            <th>Net Payable Amount</th>
+                            <th class="text-left">Net Payable Amount</th>
                         </tr>
                         </thead>
                         <tbody>
-                        @foreach($employees as $employee)
+                        @php $allTotal = $empTotal= 0; @endphp
+                        @foreach($employees as $key=> $employee)
                         <tr>
-                            <td>{{$employee['id']}}</td>
-                            <td>{{$employee->getUser['first_name'] .' '. $employee->getUser['last_name']}}</td>
-                            <td>{{$employee->getUser['bank_name']}}</td>
-                            <td>{{$employee->getUser['account_no']}}</td>
-                            <td>{{$employee->getUser['ifsc_code']}}</td>
-                            <td>{{$employee['total_payment']}}</td>
+                            <td>{{$employee->employee_no}}</td>
+                            <td>{{$employee->first_name .' '. $employee->last_name}}</td>
+                            <td>{{$employee->bank_name}}</td>
+                            <td>{{$employee->account_no}}</td>
+                            <td>{{$employee->ifsc_code}}</td>
+                            <td>{{$employee->total_payment}}</td>
                         </tr>
+                        @php 
+                            $allTotal += $employee->total_payment;
+                            $empTotal = ($key+1);
+                        @endphp
                         @endforeach
+                        @if(!empty($employees))
+                        <tr>
+                            <td><b>Total</b></td>
+                            <td><b>{{$empTotal}}</b></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td><b>{{$allTotal}}</b></td>
+                        </tr>
+                        @endif  
                         </tbody>
                     </table>
 
@@ -110,7 +125,6 @@
     <script>
         $(document).ready(function () {
             var table = $('#example').DataTable({
-                ordering: false,
                 select: true,
                 lengthMenu: [
                     [100, 500, 1000, -1],
@@ -120,7 +134,7 @@
                 buttons: [
                     {
                         extend: 'pdfHtml5',
-                        title: 'Student Report',
+                        title: 'Bankwise Payroll Report',
                         orientation: 'landscape',
                         pageSize: 'LEGAL',
                         pageSize: 'A0',
@@ -128,9 +142,17 @@
                             columns: ':visible'
                         },
                     },
-                    {extend: 'csv', text: ' CSV', title: 'Student Report'},
-                    {extend: 'excel', text: ' EXCEL', title: 'Student Report'},
-                    {extend: 'print', text: ' PRINT', title: 'Student Report'},
+                    {extend: 'csv', text: ' CSV', title: 'Bankwise Payroll Report'},
+                    {extend: 'excel', text: ' EXCEL', title: 'Bankwise Payroll Report'},
+                    {
+                        extend: 'print',
+                        text: ' PRINT',
+                        title: 'Enquiry Followup Report',
+                        customize: function (win) {
+                            $(win.document.body).prepend(`{!! App\Helpers\get_school_details("", "", "") !!}`);
+                            $(win.document.body).append(`<div style="text-align: right;margin-top:20px">Printed on: {{date('d-m-Y H:i:s')}}</div>`);                                       
+                        }
+                    },
                     'pageLength'
                 ],
             });

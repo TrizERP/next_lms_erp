@@ -28,6 +28,7 @@
                             <th>Mobile</th>
                             <th>Icard Icon</th>
                             <th>Type</th>
+                            <th>Status</th>
                             <th>Action</th>
                         </tr>
                     </thead>
@@ -39,6 +40,7 @@
                             <td>{{$data->mobile}}</td>
                             <td><img src="/storage/driver/{{$data->icard_icon}}" style="height: 70px;width: 70px;"></td>
                             <td>{{$data->type}}</td>
+                            <td>{{$data->status}}</td>
                             <td>
                                 <div class="d-inline">
                                     <a href="{{ route('add_driver.edit',$data->id)}}" class="btn btn-info btn-outline">

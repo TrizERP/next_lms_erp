@@ -27,6 +27,7 @@ use GenTux\Jwt\GetsJwtToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Storage;
 
 class teacherapiController extends Controller
 {
@@ -169,7 +170,7 @@ class teacherapiController extends Controller
                 foreach ($doubtdata as $key => $val) {
                     $unionQuery = DB::table('lms_doubt_conversation as l')
                         ->join('tbluser as u', function ($join) {
-                            $join->whereRaw('u.id = l.user_id');
+                            $join->whereRaw('u.id = l.user_id')->where('u.status',1); // 23-04-24 by uma
                         })
                         ->selectRaw('l.*,CONCAT_WS(" ",u.first_name,u.middle_name,u.last_name) AS student_name,                    
                             CONCAT("'.$path.'user/",IFNULL(u.image,"no-image.jpg")) as image,
@@ -236,7 +237,7 @@ class teacherapiController extends Controller
             $response['response'] = $validator->messages();
         } else {
             $teacher_id = $request->input("teacher_id");
-            $user_data = tbluserModel::select("*")->where('id', "=", $teacher_id)->get()->toArray();
+            $user_data = tbluserModel::select("*")->where('id', "=", $teacher_id)->where('status',1)->get()->toArray(); // 23-04-24 by uma
             $user_profile_id = $user_data[0]['user_profile_id'];
 
             $data = [
@@ -303,7 +304,8 @@ class teacherapiController extends Controller
                 $size = $img->getSize();
                 $newfilename = 'lms_'.date('Y-m-d_h-i-s').'.'.$ext;
                 $file_folder = '/lms_content_file';
-                $img->storeAs('public/lms_content_file/', $newfilename);
+                // $img->storeAs('public/lms_content_file/', $newfilename);
+                Storage::disk('digitalocean')->putFileAs('public/lms_content_file/', $img, $newfilename, 'public');
             }
 
             if ($request->get('file_type') == "link") {
@@ -446,7 +448,7 @@ class teacherapiController extends Controller
                 })->join('topic_master as t', function ($join) {
                     $join->whereRaw('t.id = v.topic_id AND t.sub_institute_id = v.sub_institute_id');
                 })->join('tbluser as u', function ($join) {
-                    $join->whereRaw('u.id = v.created_by');
+                    $join->whereRaw('u.id = v.created_by')->where('u.status',1); // 23-04-24 by uma
                 })->selectRaw("st.name AS standard_name,sub.subject_name,c.chapter_name,t.name AS topic_name,v.syear,
                     v.sub_institute_id,v.room_name,v.description,v.event_date,v.from_time,v.to_time,v.recurring,v.url,v.password,
                     CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name) AS teacher_name")
@@ -489,7 +491,7 @@ class teacherapiController extends Controller
 
         //START Columns from field setting
         $dataCustomFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "lms_teacher_resource"])
-            ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1)')
+            ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1)  and user_type="" ')
             ->get();
         //END Columns from field setting
 
@@ -554,7 +556,7 @@ class teacherapiController extends Controller
                 })->join('topic_master as t', function ($join) {
                     $join->whereRaw('t.id = v.topic_id AND t.sub_institute_id = v.sub_institute_id');
                 })->join('tbluser as u', function ($join) {
-                    $join->whereRaw('u.id = v.created_by');
+                    $join->whereRaw('u.id = v.created_by')->where('u.status',1); // 23-04-24 by uma
                 })->selectRaw("v.syear,v.sub_institute_id,st.name AS standard_name,sub.subject_name,c.chapter_name,
                     t.name AS topic_name,v.title,if(v.file_name = '','',concat('https://".$_SERVER['SERVER_NAME']."/storage/lms_teacher_resource/',
                     v.file_name)) as file_name,CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name) AS teacher_name")
@@ -645,7 +647,7 @@ class teacherapiController extends Controller
 
             //START Add Dynamic Field data
             $dataCustomFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "lms_teacher_resource"])
-                ->whereRaw('(sub_institute_id = '.$request->get('sub_institute_id').' OR common_to_all = 1)')
+                ->whereRaw('(sub_institute_id = '.$request->get('sub_institute_id').' OR common_to_all = 1)  and user_type="" ')
                 ->get();
 
             foreach ($dataCustomFields as $key => $val) {
@@ -777,7 +779,7 @@ class teacherapiController extends Controller
             $response['response'] = $validator->messages();
         } else {
             $result = DB::table('tbluser')->selectRaw("CONCAT(first_name,' ',last_name) as name")
-                ->where('id', $request->get('teacher_id'))->get()->toArray();
+                ->where('id', $request->get('teacher_id'))->where('status',1)->get()->toArray(); // 23-04-24 by uma
 
             $teacher_name = $result[0]->name;
 
@@ -869,8 +871,7 @@ class teacherapiController extends Controller
             $chapterdata = DB::table('chapter_master')
                 ->where('sub_institute_id', $sub_institute_id)
                 ->where('subject_id', $subject_id)
-                ->where('syear', $syear)
-                ->where('standard_id', $standard_id)->get()->toArray();
+                ->where('standard_id', $standard_id)->get()->toArray();//->where('syear', $syear)
 
             $chapterdata = json_decode(json_encode($chapterdata), true);
             $finaldata = [];
@@ -897,10 +898,9 @@ class teacherapiController extends Controller
                                     file_folder,'/',filename)) as full_path ")
                                 ->where('sub_institute_id', $sub_institute_id)
                                 ->where('chapter_id', $chapter_id)
-                                ->where('syear', $syear)
                                 ->where('topic_id', $tval['id'])
                                 ->where('subject_id', $subject_id)
-                                ->get()->toArray();
+                                ->get()->toArray();//->where('syear', $syear)
 
                             $contentData = json_decode(json_encode($contentData), true);
                             $finaldata[$chapter_id]['topicData'][$tkey]['contentData'] = $contentData;
@@ -954,7 +954,7 @@ class teacherapiController extends Controller
             $data = timetableModel::from("timetable as t")
                 ->select(DB::raw('distinct(t.standard_id) as std_id'), 's.name as std_name', 's.grade_id')
                 ->join('standard as s', 's.id', '=', 't.standard_id')
-                ->where(['t.sub_institute_id' => $sub_institute_id, 't.teacher_id' => $teacher_id])
+                ->where(['t.sub_institute_id' => $sub_institute_id, 't.teacher_id' => $teacher_id, 't.syear' => $syear])
                 ->get()->toArray();
 
             $response['status'] = 1;
@@ -1001,8 +1001,10 @@ class teacherapiController extends Controller
                 ->select(DB::raw('distinct(t.subject_id) as sub_id'), 's.subject_name as sub_name')
                 ->join('subject as s', 's.id', '=', 't.subject_id')
                 ->where([
-                    't.sub_institute_id' => $sub_institute_id, 't.teacher_id' => $teacher_id,
-                    't.standard_id'      => $standard_id,
+                    't.sub_institute_id' => $sub_institute_id,
+                    't.teacher_id' => $teacher_id,
+                    't.standard_id' => $standard_id,
+                    't.syear' => $syear,
                 ])
                 ->get()->toArray();
 
@@ -1059,7 +1061,7 @@ class teacherapiController extends Controller
                 ->join('division as d', 'd.id', '=', 't.division_id')
                 ->where([
                     't.sub_institute_id' => $sub_institute_id, 't.teacher_id' => $teacher_id,
-                    't.standard_id'      => $standard_id,
+                    't.standard_id'      => $standard_id, 't.syear' => $syear,
                 ])
                 ->orderBy('d.name', 'asc')
                 ->get()->toArray();
@@ -1439,7 +1441,9 @@ class teacherapiController extends Controller
                 $size = $img->getSize();
                 $newfilename = 'lms_'.date('Y-m-d_h-i-s').'.'.$ext;
                 $file_folder = '/lms_content_file';
-                $img->storeAs('public/lms_content_file/', $newfilename);
+                // $img->storeAs('public/lms_content_file/', $newfilename);
+                Storage::disk('digitalocean')->putFileAs('public/lms_content_file/', $img, $newfilename, 'public');
+
             }
 
             if ($request->get('file_type') == "link") {
@@ -1498,11 +1502,11 @@ class teacherapiController extends Controller
         } else {
             $data = DB::table('task as t')
                 ->join('tbluser as u', function ($join) {
-                    $join->whereRaw('t.TASK_ALLOCATED = u.id AND u.sub_institute_id = t.sub_institute_id');
+                    $join->whereRaw('t.TASK_ALLOCATED = u.id AND u.sub_institute_id = t.sub_institute_id')->where('u.status',1); // 23-04-24 by uma
                 })->join('tbluser as u2', function ($join) {
-                    $join->whereRaw('t.TASK_ALLOCATED_TO = u2.id AND u2.sub_institute_id = t.sub_institute_id');
+                    $join->whereRaw('t.TASK_ALLOCATED_TO = u2.id AND u2.sub_institute_id = t.sub_institute_id')->where('u2.status',1); // 23-04-24 by uma
                 })->join('tbluser as u3', function ($join) {
-                    $join->whereRaw('t.approved_by = u3.id AND u3.sub_institute_id = t.sub_institute_id');
+                    $join->whereRaw('t.approved_by = u3.id AND u3.sub_institute_id = t.sub_institute_id')->where('u3.status',1); // 23-04-24 by uma
                 })
                 ->selectRaw("t.*, CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name) AS ALLOCATOR, 
                     CONCAT_WS(' ',u2.first_name,u2.middle_name,u2.last_name) AS ALLOCATED_TO,
@@ -1625,9 +1629,9 @@ class teacherapiController extends Controller
 
             $data = DB::table('inventory_requisition_details as ir')
                 ->join('tbluser as tu', function ($join) {
-                    $join->whereRaw('tu.id = ir.requisition_by');
+                    $join->whereRaw('tu.id = ir.requisition_by')->where('u.status',1);// 23-04-24 by uma
                 })->leftJoin('tbluser as ira', function ($join) {
-                    $join->whereRaw('ira.id = ir.requisition_approved_by');
+                    $join->whereRaw('ira.id = ir.requisition_approved_by')->where('ira.status',1);// 23-04-24 by uma
                 })->join('inventory_item_master as i', function ($join) {
                     $join->whereRaw('i.id = ir.item_id');
                 })->join('inventory_requisition_status_master as irs', function ($join) {
@@ -1761,10 +1765,10 @@ class teacherapiController extends Controller
         } else {
             $data = DB::table('complaint as t')
                 ->join('tbluser as u', function ($join) {
-                    $join->whereRaw('t.COMPLAINT_BY = u.id AND u.sub_institute_id = t.sub_institute_id');
+                    $join->whereRaw('t.COMPLAINT_BY = u.id AND u.sub_institute_id = t.sub_institute_id')->where('u.status',1); // 23-04-24 by uma
                 })
                 ->leftJoin('tbluser as u3', function ($join) {
-                    $join->whereRaw('t.COMPLAINT_SOLUTION_BY = u3.id AND u3.sub_institute_id = t.sub_institute_id');
+                    $join->whereRaw('t.COMPLAINT_SOLUTION_BY = u3.id AND u3.sub_institute_id = t.sub_institute_id')->where('u3.status',1);// 23-04-24 by uma
                 })
                 ->selectRaw("t.*, CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name) AS COMPLAINT_BY,
                     CONCAT_WS(' ',u3.first_name,u3.middle_name,u3.last_name) AS COMPLAINT_SOLUTION_BY,

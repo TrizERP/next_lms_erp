@@ -11,9 +11,12 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
+use GenTux\Jwt\GetsJwtToken;
 
 class feesCancelController extends Controller
 {
+    use GetsJwtToken;
+    
     /**
      * Display a listing of the resource.
      *
@@ -23,9 +26,10 @@ class feesCancelController extends Controller
     public function index(Request $request)
     {
         $type = $request->input('type');
+
         $syear = $request->session()->get('syear');
         $sub_institute_id = $request->session()->get('sub_institute_id');
-
+        
         $fees_config = DB::table('fees_config_master as fc')
             ->join('fees_receipt_css as frc', function ($join) {
                 $join->whereRaw('frc.receipt_id = fc.fees_receipt_template');
@@ -51,73 +55,7 @@ class feesCancelController extends Controller
         return is_mobile($type, "fees/fees_cancel/index", $res, "view");
     }
 
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return void
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  Request  $request
-     * @return void
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return void
-     */
-    public function show($id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return void
-     */
-    public function edit($id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  Request  $request
-     * @param  int  $id
-     * @return void
-     */
-    public function update(Request $request, $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return void
-     */
-    public function destroy($id)
-    {
-        //
-    }
-
-    public function showFees(Request $request)
+    public function create(Request $request)
     {
         $type = $request->input("type");
         $grade = $request->input('grade');
@@ -131,6 +69,10 @@ class feesCancelController extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $marking_period_id = session()->get('term_id');
 
+        if($type=="API"){
+            $syear = $request->syear;
+            $sub_institute_id = $request->sub_institute_id;
+        }
         $extraSearchArray = $other_extraSearchArray = [];
         $other_extraSearchArrayRaw = " fees_paid_other.is_deleted = 'N'  ";
         $extraSearchArrayRaw = " fees_collect.is_deleted = 'N' ";
@@ -184,7 +126,7 @@ class feesCancelController extends Controller
         $other_extraSearchArray['fees_paid_other.sub_institute_id'] = $sub_institute_id;
 
         $other_fees_paid = $feesData = tblstudentModel::selectRaw("'OTHER' as fees_type,fees_paid_other.id,fees_paid_other.reciept_id as
-            receipt_no,fees_paid_other.paid_fees_html,fees_paid_other.receiptdate,fees_paid_other.payment_mode,fees_paid_other.month_id as month_id,
+            receipt_no,fees_paid_other.paid_fees_html,fees_paid_other.receiptdate,fees_paid_other.payment_mode,fees_paid_other.bank_branch,fees_paid_other.month_id as month_id,
             SUM(fees_paid_other.actual_amountpaid) as total_amount,CONCAT_WS(' ',tblstudent.first_name,tblstudent.middle_name,
             tblstudent.last_name) AS student_name,academic_section.title as grade,standard.name as standard_name,division.name as
             division_name,tblstudent.enrollment_no,date_format(fees_paid_other.created_date,'%Y-%m-%d %H:%i:%s') as created_on,
@@ -203,7 +145,7 @@ class feesCancelController extends Controller
             ->whereRaw($other_extraSearchArrayRaw)
             ->groupby('fees_paid_other.syear', 'fees_paid_other.reciept_id', 'fees_paid_other.student_id');
 
-        $feesData = tblstudentModel::selectRaw("'REGULAR' as fees_type,fees_collect.id,fees_collect.receipt_no,fees_collect.fees_html,fees_collect.receiptdate,fees_collect.payment_mode ,fees_collect.term_id as month_id,
+        $feesData = tblstudentModel::selectRaw("'REGULAR' as fees_type,fees_collect.id,fees_collect.receipt_no,fees_collect.fees_html,fees_collect.receiptdate,fees_collect.payment_mode ,fees_collect.bank_branch,fees_collect.term_id as month_id,
             SUM(fees_collect.amount) as total_amount,CONCAT_WS(' ',tblstudent.first_name,tblstudent.middle_name,tblstudent.last_name) AS student_name,academic_section.title as grade,standard.name as standard_name,division.name as division_name,tblstudent.enrollment_no,date_format(fees_collect.created_date,'%Y-%m-%d %H:%i:%s') as created_on,tblstudent.id as student_id")
             ->join('tblstudent_enrollment', 'tblstudent.id', '=', 'tblstudent_enrollment.student_id')
             ->join('academic_section', 'academic_section.id', '=', 'tblstudent_enrollment.grade_id')
@@ -264,9 +206,11 @@ class feesCancelController extends Controller
         return is_mobile($type, "fees/fees_cancel/index", $res, "view");
     }
 
-    public function cancelFees(Request $request)
+    public function store(Request $request)
     {
+        // echo "<pre>";print_r($request->all());exit;
         $type = $request->input('type');
+      
         $receipt_nos_a = $request->input('receipt_no');
         $cancel_type = $request->input('cancel_type');
         $student_id = $request->input('student_id');
@@ -277,7 +221,22 @@ class feesCancelController extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $user_id = $request->session()->get('user_id');
         // return $receipt_nos;exit;
-
+        if($type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');  
+            $user_id = $request->get('user_id');            
+        }
         if($receipt_nos_a == '') {
             $res['status_code'] = 0;
             $res['message'] = "Please select receipt no to cancel fees";

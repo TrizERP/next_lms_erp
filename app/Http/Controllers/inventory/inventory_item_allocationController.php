@@ -44,7 +44,7 @@ class inventory_item_allocationController extends Controller
                 $join->whereRaw("rs.id = ird.requisition_status");
             })
             ->join('tbluser as tu', function ($join) {
-                $join->whereRaw("tu.id = ird.requisition_by AND tu.sub_institute_id = ird.sub_institute_id");
+                $join->whereRaw("tu.id = ird.requisition_by AND tu.sub_institute_id = ird.sub_institute_id")->where('tu.status',1);  // 23-04-24 by uma
             })
             ->selectRaw('ird.requisition_by,tu.id,CONCAT_WS(" ",tu.first_name,tu.middle_name,tu.last_name) AS requisition_by_name')
             ->where("ird.sub_institute_id", "=", $sub_institute_id)
@@ -62,7 +62,7 @@ class inventory_item_allocationController extends Controller
                 $join->whereRaw("IIM.ID = IRD.ITEM_ID");
             })
             ->join('tbluser AS u', function ($join) {
-                $join->whereRaw("u.id = IRD.requisition_by");
+                $join->whereRaw("u.id = IRD.requisition_by")->where('u.status',1);  // 23-04-24 by uma
             })
             ->leftJoin('inventory_item_type as IIT', function ($join) {
                 $join->whereRaw("IIT.ID = IIM.ITEM_TYPE_ID");
@@ -125,7 +125,7 @@ class inventory_item_allocationController extends Controller
                 $join->whereRaw("rs.id = ird.requisition_status");
             })
             ->join('tbluser as tu', function ($join) {
-                $join->whereRaw("tu.id = ird.requisition_by AND tu.sub_institute_id = ird.sub_institute_id");
+                $join->whereRaw("tu.id = ird.requisition_by AND tu.sub_institute_id = ird.sub_institute_id")->where('tu.status',1); // 23-04-24 by uma
             })
             ->selectRaw("ird.requisition_by,tu.id,CONCAT_WS(' ',tu.first_name,tu.middle_name,tu.last_name) AS requisition_by_name")
             ->where("ird.sub_institute_id", "=", $sub_institute_id)
@@ -143,7 +143,7 @@ class inventory_item_allocationController extends Controller
                 $join->whereRaw("IIM.ID = IRD.ITEM_ID");
             })
             ->join('tbluser AS u', function ($join) {
-                $join->whereRaw("u.id = IRD.requisition_by");
+                $join->whereRaw("u.id = IRD.requisition_by")->where('u.status',1);  // 23-04-24 by uma
             })
             ->leftJoin('inventory_item_type as IIT', function ($join) {
                 $join->whereRaw("IIT.ID = IIM.ITEM_TYPE_ID");

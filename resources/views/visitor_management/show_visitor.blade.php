@@ -44,7 +44,8 @@
                                 <th data-toggle="tooltip" title="Coming From">Coming From</th>
                                 <th data-toggle="tooltip" title="To Meet">To Meet</th>
                                 <th data-toggle="tooltip" title="Relation">Relation</th>
-								<th data-toggle="tooltip" title="Purpose">Purpose</th>                                
+								<th data-toggle="tooltip" title="Purpose">Purpose</th>  
+								<th data-toggle="tooltip" title="Purpose">Created By</th>                                
                             </tr>
                         </thead>
                         <tbody>
@@ -63,7 +64,7 @@
                                 <td>{{date('d-m-Y',strtotime($data->meet_date))}}</td>
                                 <td>{{$data->in_time}}</td>
                                 <td>{{$data->out_time}}</td>
-                                <td>{{$data->appointment_type}} Appointment</td>
+                                <td>{{$data->appointment_type}}</td>
                                 <td>{{$data->visitor_type_name}}</td>
                                 <td>{{$data->name}}</td>
                                 <td>{{$data->contact}}</td>
@@ -73,7 +74,8 @@
                                 <td>{{$data->coming_from}}</td>
                                 <td>{{$data->staff_name}}</td>
                                 <td>{{$data->relation}}</td>
-                                <td>{{$data->purpose}}</td>                                
+                                <td>{{$data->purpose}}</td> 
+                                <td>{{$data->created_by}}</td>                                
                             </tr>
                             @endforeach
 

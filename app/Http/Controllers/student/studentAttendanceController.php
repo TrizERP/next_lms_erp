@@ -12,6 +12,9 @@ use function App\Helpers\getCountDays;
 use function App\Helpers\is_mobile;
 use function App\Helpers\SearchStudent;
 use function Symfony\Component\HttpKernel\Profiler\read;
+use function App\Helpers\send_FCM_Notification;
+use function App\Helpers\sendNotification;
+use App\Models\school_setup\SchoolModel;
 
 class studentAttendanceController extends Controller
 {
@@ -34,19 +37,21 @@ class studentAttendanceController extends Controller
             $user_id = $request->input('user_id');
 
             $result = DB::table('class_teacher as ct')
-                ->join('standard as s', function ($join) {
-                    $join->whereRaw('ct.standard_id = s.id AND ct.sub_institute_id = s.sub_institute_id');
-                    // ->when($marking_period_id,function($query) use ($marking_period_id){
-                    //     $query->where('s.marking_period_id',$marking_period_id);
-                    // });
-                })->join('division as d', function ($join) {
-                    $join->whereRaw('d.id = ct.division_id AND d.sub_institute_id = ct.sub_institute_id');
-                })
-                ->selectRaw('ct.standard_id,ct.division_id,s.name as standard_name,d.name as division_name')
-                ->where('ct.sub_institute_id', $sub_institute_id)
-                ->where('syear', $syear)
-                ->where('ct.teacher_id', $user_id)
-                ->get()->toArray();
+            ->join('standard as s', function ($join) use ($syear) {
+                $join->on('ct.standard_id', '=', 's.id')
+                    ->where('ct.sub_institute_id', '=', 's.sub_institute_id')
+                    ->where('syear', '=', $syear);
+            })
+            ->join('division as d', function ($join) {
+                $join->on('d.id', '=', 'ct.division_id')
+                    ->where('d.sub_institute_id', '=', 'ct.sub_institute_id');
+            })
+            ->select('ct.standard_id', 'ct.division_id', 's.name as standard_name', 'd.name as division_name')
+            ->where('ct.sub_institute_id', $sub_institute_id)
+            ->where('ct.teacher_id', $user_id)
+            ->get()
+            ->toArray();
+
 
             $result = array_map(function ($value) {
                 return (array)$value;
@@ -65,21 +70,19 @@ class studentAttendanceController extends Controller
     {
         $type = $request->input('type');
         $date = $request->input('date');
-        $marking_period_id = session()->get('term_id');
+       
+        $term_id = $request->session()->get('term_id');
+        $syear = $request->session()->get('syear');
+        $sub_institute_id = $request->session()->get('sub_institute_id');
 
         if ($type == "API") {
             $term_id = $request->input('term_id');
             $syear = $request->input('syear');
             $sub_institute_id = $request->input('sub_institute_id');
-        } else {
-            $term_id = $request->session()->get('term_id');
-            $syear = $request->session()->get('syear');
-            $sub_institute_id = $request->session()->get('sub_institute_id');
         }
+
         $standard_division_orignal = $request->input('standard_division');
-        $standard_division = explode("||", $standard_division_orignal);
-        $standard = $standard_division[0];
-        $division = $standard_division[1];
+        list($standard, $division) = explode("||", $standard_division_orignal);
         $grade = '';
 
         $sundays = getCountDays($date, $date);
@@ -87,21 +90,21 @@ class studentAttendanceController extends Controller
         $holidays = DB::table("calendar_events")
             ->where('school_date', '=', $date)
             ->whereIn('event_type',['holiday','event'])
-            ->where('sub_institute_id', '=', session()->get('sub_institute_id'))
-            ->where('syear', '=', session()->get('syear'))
+            ->where('sub_institute_id', '=', $sub_institute_id)
+            ->where('syear', '=', $syear)
             ->get()
             ->toArray();
 
         $single_standard = DB::table("standard")
             ->select('name')
             ->where('id', '=', $standard)
-            ->where('sub_institute_id', '=', session()->get('sub_institute_id'))
+            ->where('sub_institute_id', '=',$sub_institute_id)
             ->first();
         
         $single_division = DB::table("division")
             ->select('name')
             ->where('id', '=', $division)
-            ->where('sub_institute_id', '=', session()->get('sub_institute_id'))
+            ->where('sub_institute_id', '=', $sub_institute_id)
             ->first();
             
         if(!empty($sundays))
@@ -118,7 +121,7 @@ class studentAttendanceController extends Controller
         $extraSearchArray = [];
         $extraSearchArray['tblstudent.sub_institute_id'] = $sub_institute_id;
         $extraSearchArray['tblstudent_enrollment.syear'] = $syear;
-        $extraSearchArray['tblstudent.status'] = 1;
+        //$extraSearchArray['tblstudent.status'] = 1;
         if ($standard != '') {
             $extraSearchArray['tblstudent_enrollment.standard_id'] = $standard;
         }
@@ -139,11 +142,10 @@ class studentAttendanceController extends Controller
 
         $classTeacherStdArr = session()->get('classTeacherStdArr');
         if (isset($classTeacherStdArr)) {
+            $extraRaw = "standard.id IN (' ')";            
             if (count($classTeacherStdArr) > 0) {
                 $extraRaw = "standard.id IN (" . implode(",", $classTeacherStdArr) . ")";
-            } else {
-                $extraRaw = "standard.id IN (' ')";
-            }
+            } 
         }
 
         $classTeacherDivArr = session()->get('classTeacherDivArr');
@@ -154,34 +156,27 @@ class studentAttendanceController extends Controller
         }
         //END Check for class teacher assigned standards
 
-
         $student_data = tblstudentModel::select('tblstudent_enrollment.*', 'tblstudent.*', 'standard.name as standard',
             'division.name as division', 'academic_section.title as grade','batch.id as batch_id','batch.title as batch_title')
             ->join("tblstudent_enrollment", function ($join) {
                 $join->on("tblstudent_enrollment.student_id", "=", "tblstudent.id")
-                    ->on("tblstudent_enrollment.sub_institute_id", "=", "tblstudent.sub_institute_id")
                     ->whereNull('tblstudent_enrollment.end_date');
             })
             ->join("academic_section", function ($join) {
-                $join->on("academic_section.id", "=", "tblstudent_enrollment.grade_id")
-                    ->on("academic_section.sub_institute_id", "=", "tblstudent_enrollment.sub_institute_id");
+                $join->on("academic_section.id", "=", "tblstudent_enrollment.grade_id");
             })
-            ->join("standard", function ($join) use($marking_period_id) {
-                $join->on("standard.id", "=", "tblstudent_enrollment.standard_id")
-                    ->on("standard.sub_institute_id", "=", "tblstudent_enrollment.sub_institute_id");
-                    // ->when($marking_period_id,function($query) use($marking_period_id){
-                    //     $query->where('standard.marking_period_id',$marking_period_id);
-                    // });
+            ->join("standard", function ($join) {
+                $join->on("standard.id", "=", "tblstudent_enrollment.standard_id");
             })
             ->join("division", function ($join) {
-                $join->on("division.id", "=", "tblstudent_enrollment.section_id")
-                    ->on("division.sub_institute_id", "=", "tblstudent_enrollment.sub_institute_id");
+                $join->on("division.id", "=", "tblstudent_enrollment.section_id");
             })
             ->leftJoin('batch','batch.id','=','tblstudent.studentbatch')
             ->where($extraSearchArray)
             ->whereRaw($extraRaw)
-            ->orderby('tblstudent.roll_no')
+            ->orderby('tblstudent_enrollment.roll_no')
             ->get()->toArray();
+
         if (count($student_data) == 0) {
             $res['status_code'] = 0;
             $res['message'] = "No Student Data Found";
@@ -234,7 +229,9 @@ class studentAttendanceController extends Controller
 
     public function saveStudentAttendance(Request $request)
     {
-        $date = $request->input('date');
+        $dateTime = new \DateTime($request->input('date'));
+        $date = $dateTime->format('Y-m-d');
+        //$date = $request->input('date');
         $type = $request->input('type');
         $students = $request->input('student');
 
@@ -293,6 +290,12 @@ class studentAttendanceController extends Controller
                 DB::table("attendance_student")->where(['id' => $data[0]->id])->update($attendanceArray);
             } else {
                 DB::table("attendance_student")->insert($attendanceArray);
+
+                $sendRequest = new Request(['student_id'=>$student_id,'attendance'=>$attendance,'date'=>$date,'created_by'=>$user_id,'syear'=>$syear,'sub_institute_id'=>$sub_institute_id]);
+            
+                if($date == date('Y-m-d')){
+                    $sendNotification= $this->sendNotificationAtt($sendRequest);
+                }
             }
         }
 
@@ -384,23 +387,21 @@ class studentAttendanceController extends Controller
         $date = $request->input('date');
         $taken = $request->input('taken');
         $syear = $request->session()->get('syear');
-        $term_id = $request->session()->get('term_id');
         $sub_institute_id = $request->session()->get('sub_institute_id');
-        $marking_period_id=session()->get('term_id');
-
+        if($type=="API"){
+            $sub_institute_id=$request->sub_institute_id;
+            $syear = $request->syear;
+        }
         $data = DB::table('tblstudent as s')
             ->join('tblstudent_enrollment as se', function ($join) use ($syear) {
                 $join->whereRaw("s.id = se.student_id AND se.syear = '" . $syear . "' AND s.sub_institute_id = se.sub_institute_id
                 AND se.end_date IS NULL");
-            })->join('standard as sm', function ($join) use($marking_period_id) {
+            })->join('standard as sm', function ($join) {
                 $join->whereRaw('se.standard_id = sm.id');
-                // ->when($marking_period_id,function($query) use($marking_period_id){
-                //     $query->where('sm.marking_period_id',$marking_period_id);
-                // });
             })->join('division as dm', function ($join) {
-                $join->whereRaw('se.section_id = dm.id');
+                $join->on('se.section_id', '=', 'dm.id');
             })->leftJoin('attendance_student as a', function ($join) use ($date, $syear) {
-                $join->whereRaw("s.id = a.student_id AND sm.id = a.standard_id AND dm.id = a.section_id
+                $join->on('s.id', '=', 'a.student_id')->whereRaw("sm.id = a.standard_id AND dm.id = a.section_id
                     AND s.sub_institute_id = a.sub_institute_id AND a.attendance_date = '" . $date . "' and a.syear = '" . $syear . "'");
             })->selectRaw("CONCAT_WS('/',sm.name,dm.name) AS standard_name, dm.name AS division_name,se.standard_id,
                 se.section_id,se.student_id,a.attendance_code,s.gender, SUM(CASE WHEN s.gender = 'M' THEN 1 ELSE 0 END) AS BOY,
@@ -411,13 +412,13 @@ class studentAttendanceController extends Controller
             ->where('s.sub_institute_id', $sub_institute_id)
             ->groupBy('se.standard_id', 'se.section_id');
 
-        if ($taken == 'no') {
-            $data = $data->havingNull('attendance_code');
-        } else {
-            $data = $data->havingNotNull('attendance_code');
-        }
-
-        $data = $data->orderBy('sm.sort_order', 'ASC')->get()->toArray();
+            if ($taken == 'no') {
+                $data = $data->havingNull('attendance_code');
+            } else if ($taken == 'yes'){
+                $data = $data->havingNotNull('attendance_code');
+            }
+    
+            $data = $data->orderBy('sm.sort_order', 'ASC')->orderBy('dm.id', 'ASC')->get()->toArray();
 
         $res['status_code'] = 1;
         $res['message'] = "Success";
@@ -441,15 +442,20 @@ class studentAttendanceController extends Controller
     public function showMonthwiseStudentAttendance(Request $request)
     {
         $type = $request->input('type');
-        $month = $request->input('month');
-        $grade_id = $request->input("grade");
-        $standard_id = $request->input("standard");
-        $division_id = $request->input("division");
-        $selected_year = $request->input("year");
+        $month = $res['month'] =  $request->input('month');
+        $grade_id = $res['grade_id'] = $request->input("grade");
+        $standard_id = $res['standard_id'] = $request->input("standard");
+        $division_id = $res['division_id'] =  $request->input("division");
+        $selected_year = $res['year'] = $request->input("year");
         $syear = $request->session()->get('syear');
-        $term_id = $request->session()->get('term_id');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $batch="";
+
+        if($type=="API"){
+            $syear = $request->get('syear');
+            $sub_institute_id = $request->get('sub_institute_id');
+        }
+
         if($request->has('batch_sel')){
             $batchs = DB::table('batch')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear,'standard_id'=>$standard_id,'division_id'=>$division_id])->get()->toArray();
             $res['batch_id'] = $request->batch_sel;    
@@ -459,7 +465,7 @@ class studentAttendanceController extends Controller
         }
 
         // get student list 
-        $student_data = SearchStudent($grade_id, $standard_id, $division_id,"","", "","","", "", "","",$batch);
+        $student_data = $res['student_data'] =  SearchStudent($grade_id, $standard_id, $division_id,"","", "","","", "", "","",$batch);
 
         $from_date = $selected_year . "-" . $month . "-01";
         $to_date = date('Y-m-t', strtotime($selected_year . "-" . $month));
@@ -488,13 +494,7 @@ class studentAttendanceController extends Controller
         foreach ($events as $event) {
             $eventsArray[] = $event->DATE; // Add event date to the array without event type
         }
-        
-        /* echo("<pre>");
-        print_r($holidays);
-        print_r($eventsArray);
-        die; */
-
-        // $whereAtt['term_id'] = $term_id;
+   
         if(isset($standard_id)){
             $whereAtt['standard_id'] = $standard_id;
         }
@@ -527,12 +527,6 @@ class studentAttendanceController extends Controller
         // echo "<pre>";print_r($student_data);exit;
         $res['status_code'] = 1;
         $res['message'] = "Success";
-        $res['month'] = $month;
-        $res['year'] = $selected_year;
-        $res['grade_id'] = $grade_id;
-        $res['standard_id'] = $standard_id;
-        $res['division_id'] = $division_id;
-        $res['student_data'] = $student_data;
         $res['attendance_data'] = $finalAttendanceArray;
         $res['sundays'] = $sundays;
         $res['holidays'] = $holidays;
@@ -643,22 +637,24 @@ class studentAttendanceController extends Controller
                 $standard_id = $stud_data[0]->standard_id;
                 $section_id = $stud_data[0]->section_id;
 
-//DB::enableQueryLog();
+                //DB::enableQueryLog();
                 $data = DB::table('timetable as t')->select(
-        DB::raw("CONCAT_WS(' ', u.first_name, u.middle_name, u.last_name) AS teacher_name"),
-        DB::raw("IF(u.image = '', 'https://" . $_SERVER['SERVER_NAME'] . "/storage/student/noimages.png', CONCAT('https://" . $_SERVER['SERVER_NAME'] . "/storage/user/', u.image)) AS image"),
-        'u.mobile',
-        DB::raw("GROUP_CONCAT(DISTINCT s.display_name) AS subject_name")
-    )->join('tbluser as u', 'u.id', '=', 't.teacher_id')
-    ->join('sub_std_map as s', 's.subject_id', '=', 't.subject_id')
-    ->where('t.syear', '=', $syear)
-    ->where('t.sub_institute_id', '=', $sub_institute_id)
-    ->where('t.standard_id', '=', $standard_id)
-    ->where('t.division_id', '=', $section_id)
-    ->groupBy('t.teacher_id')
-    ->orderBy('teacher_name')
-    ->get()->toArray();
-//dd(DB::getQueryLog($data));die();
+                    DB::raw("CONCAT_WS(' ', u.first_name, u.middle_name, u.last_name) AS teacher_name"),
+                    DB::raw("IF(u.image = '', 'https://" . $_SERVER['SERVER_NAME'] . "/storage/student/noimages.png', CONCAT('https://" . $_SERVER['SERVER_NAME'] . "/storage/user/', u.image)) AS image"),
+                    'u.mobile',
+                    DB::raw("GROUP_CONCAT(DISTINCT s.display_name) AS subject_name")
+                )->join('tbluser as u',function($join){
+                    $join->on('u.id', '=', 't.teacher_id')->where('u.status',1);  // 23-04-24 by uma
+                })
+                ->join('sub_std_map as s', 's.subject_id', '=', 't.subject_id')
+                ->where('t.syear', '=', $syear)
+                ->where('t.sub_institute_id', '=', $sub_institute_id)
+                ->where('t.standard_id', '=', $standard_id)
+                ->where('t.division_id', '=', $section_id)
+                ->groupBy('t.teacher_id')
+                ->orderBy('teacher_name')
+                ->get()->toArray();
+                //dd(DB::getQueryLog($data));die();
 
                 $res['status'] = 1;
                 $res['message'] = "Success";
@@ -721,5 +717,77 @@ class studentAttendanceController extends Controller
         }
 
         return json_encode($res);
+    }
+
+    public function sendNotificationAtt(Request $request){
+        $sub_institute_id = $request->sub_institute_id;
+        $syear = $request->syear;
+
+        $getStudent = DB::table('tblstudent')->select('*',DB::raw('CONCAT_WS(" ",COALESCE(first_name,"-"),COALESCE(middle_name,"-"),COALESCE(last_name,"-")) as student_name'))->where('id',$request->student_id)->where('sub_institute_id',$sub_institute_id)->first();
+        // echo "<pre>";print_r($getStudent);exit;
+        $getCreatedBy = DB::table('tbluser')->select('*',DB::raw('CONCAT_WS(" ",COALESCE(first_name,"-"),COALESCE(middle_name,"-"),COALESCE(last_name,"-")) as full_name'))->where('id',$request->created_by)->where('sub_institute_id',$sub_institute_id)->first();
+
+        $text = '';
+        if($request->attendance == "P"){
+            $text .= $getStudent->student_name." is present on ".$request->date.', Attendance Taken by '.$getCreatedBy->full_name;
+        }elseif($request->attendance == "A"){
+            $text .= $getStudent->student_name." is absent on ".$request->date.', Attendance Taken by '.$getCreatedBy->full_name;
+        }
+
+           $app_notification_content = [
+                'NOTIFICATION_TYPE'        => 'TakeAttendance',
+                'NOTIFICATION_DATE'        => now(),
+                'STUDENT_ID'               => $request->student_id,
+                'NOTIFICATION_DESCRIPTION' => $text,
+                'STATUS'                   => 0,
+                'SUB_INSTITUTE_ID'         => $sub_institute_id,
+                'SYEAR'                    => $syear,
+                'SCREEN_NAME'              => 'student_attendance',
+                'CREATED_BY'               => $request->created_by,
+                'CREATED_IP'               => $_SERVER['REMOTE_ADDR'],
+            ];
+
+            $gcm_data = DB::table('gcm_users')->where('mobile_no', $getStudent->mobile)
+                ->where('sub_institute_id', $sub_institute_id)->get()->toArray();
+
+            $gcmRegIds = [];
+            if (count($gcm_data) > 0) {
+                foreach ($gcm_data as $key1 => $val1) {
+                    $gcmRegIds[] = $val1->gcm_regid;
+                }
+            }
+
+            $pushMessage = $text;
+
+            $bunch_arr = array_chunk($gcmRegIds, 1000);
+
+            $res = 0;
+            $schoolData = SchoolModel::where(['id' => $sub_institute_id])->get()->toArray();
+
+            $schoolName = $schoolData[0]['SchoolName'];
+            $schoolLogo = $_SERVER['APP_URL'].'/admin_dep/images/'.$schoolData[0]['Logo'];
+
+            if (!empty($bunch_arr)) {
+                foreach ($bunch_arr as $val) {
+                    if (isset($val, $pushMessage)) {
+                        $type1 = 'Notification';
+                        $message = [
+                            'body'  => $pushMessage, 'TYPE' => $type1, 'USER_ID' => $request->student_id,
+                            'title' => $schoolName, 'image' => $schoolLogo,
+                        ];
+
+                        if($request->date == date('Y-m-d')){
+                            $pushStatus = send_FCM_Notification($val, $message, $sub_institute_id);
+                        }
+
+                        if($request->attendance == "A"){
+                            sendNotification($app_notification_content);
+                        }                        
+                    }
+                }
+                
+              $res = 1;
+            }
+        return $res;
     }
 }

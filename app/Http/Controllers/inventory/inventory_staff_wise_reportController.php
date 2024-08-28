@@ -22,7 +22,7 @@ class inventory_staff_wise_reportController extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
         $users = tbluserModel::select('id', 'user_name', 'first_name', 'middle_name', 'last_name')
-            ->where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
+            ->where(['sub_institute_id' => $sub_institute_id, 'status' => 1])->get()->toArray();
 
         $res['status_code'] = 1;
         $res['message'] = "Success";
@@ -54,7 +54,7 @@ class inventory_staff_wise_reportController extends Controller
                 $join->whereRaw("IIC.ID = IIM.CATEGORY_ID");
             })
             ->join('tbluser as u', function ($join) {
-                $join->whereRaw("u.id = IRD.requisition_by");
+                $join->whereRaw("u.id = IRD.requisition_by")->where('u.status',1);   // 23-04-24 by uma
             })
             ->where("IRD.sub_institute_id", "=", $sub_institute_id)
             ->where(function ($q) use ($from_date, $to_date, $requisition_by) {
@@ -70,7 +70,7 @@ class inventory_staff_wise_reportController extends Controller
 
 
         $users = tbluserModel::select('id', 'user_name', 'first_name', 'middle_name', 'last_name')
-            ->where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
+            ->where(['sub_institute_id' => $sub_institute_id, 'status' => 1])->get()->toArray();
 
         $res['status_code'] = 1;
         $res['message'] = "Success";

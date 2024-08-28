@@ -1,7 +1,8 @@
-@include('includes.lmsheadcss')
+{{--@include('includes.lmsheadcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('lmslayout')
+@section('container')
 <!-- Content main Section -->
 <div class="content-main flex-fill">
     <div class="row">
@@ -28,6 +29,9 @@
                 {
                     $show_block = 'YES';
                 }
+                if(!isset($_REQUEST['perm'])) {
+                    $_REQUEST['perm'] = session()->get('sub_institute_id');
+                } 
             @endphp
 
             <div class="course-select-grid">
@@ -66,7 +70,7 @@
                             </li>
                         @endif
                         <li>
-                            @if($show_block == 'YES')
+                            @if($show_block == 'YES' && $_REQUEST['perm']==$data['sub_institute_id'])
                                 <button type="button" class="btn btn-light" data-toggle="modal"
                                         onclick="javascript:add_data();"><i class="fa fa-plus"></i> Add New Topic
                                 </button>
@@ -278,7 +282,7 @@
                                                         <video controls="true" width="220" height="140"
                                                                controlsList="nodownload">
                                                             <source
-                                                                src="../../../storage{{$cval['file_folder']}}/{{$cval['filename']}}"
+                                                                src="{{ Storage::disk('digitalocean')->url('public'.$cval['file_folder'].'/'.$cval['filename'])}}"
                                                                 type="video/mp4"/>
                                                         </video>
                                                     </div>
@@ -458,7 +462,7 @@
                             $j++;
                         @endphp
                         @if(strtoupper($user_profile) == 'LMS TEACHER' || strtoupper($user_profile) == 'TEACHER')
-                            <div class="accordion-card collapsed card px-2 pt-2 border-0 course-box"
+                            <div class="accordion-card collapsed card py-3 px-3 border-0 course-box"
                                  data-toggle="collapse" href="#collapseExample{{$k}}" role="button"
                                  aria-expanded="false" aria-controls="collapseExample">
                                 @php
@@ -468,10 +472,13 @@
                                     }
                                 @endphp
                                 <div class="row align-items-center" style="{{$blur_block_style}}">
-                                    <div class="col-md-4 mb-2">
+                                    <div class="col-md-4 ">
                                         <div class="video-sec-title mb-0">
                                             <div class="icon-box"><i class="mdi mdi-video-check-outline"></i></div>
                                             <div class="h4 mb-0 d-flex">{{$list_topicvalue->name}}</div>
+                                            <div class="help-arraw ml-auto">
+                                                <i class="mdi mdi-chevron-down"></i>
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="col-md-8 mb-2 d-md-flex align-items-center justify-content-end">
@@ -502,15 +509,14 @@
                                                             }
                                                         @endphp
                                                         <li>
-                                                            <a target="_blank" href="{{$file_name}}"
-                                                               class="text-dark">{{$book_data['title']}}</a>
+
                                                         </li>
                                                     @endforeach
                                                 </ul>
                                             </div>
                                         @endif
 
-
+                                        @if($data['sub_institute_id']==$list_topicvalue->sub_institute_id)
                                         <a target="_blank"
                                            href="{{ route('subjectwise_graph.show',['subjectwise_graph'=>$list_topicvalue->subject_id,'topic_id'=> $list_topicvalue->id,'topic_name'=>$list_topicvalue->name,'action'=>'topicwise']) }}">
                                             <img src="../../../admin_dep/images/graph_icon.png"
@@ -520,7 +526,7 @@
                                            href="{{ route('lms_teacherResource.index',['standard_id'=>$list_topicvalue->standard_id,'subject_id'=>$list_topicvalue->subject_id,'chapter_id' => $_REQUEST['id'],'topic_id' => $list_topicvalue->id]) }}"
                                            class="btn btn-outline-dark  mx-1">Teacher Resource</a>
                                         <a target="_blank"
-                                           href="{{ route('lms_lessonplan.index',['standard_id'=>$list_topicvalue->standard_id,'subject_id'=>$list_topicvalue->subject_id,'title'=>$lp_title]) }}"
+                                           href="{{ route('lms_lessonplan.index',['standard_id'=>$list_topicvalue->standard_id,'subject_id'=>$list_topicvalue->subject_id,'title'=>$lp_title,'chapter_id' => $_REQUEST['id']]) }}"
                                            class="btn btn-outline-dark  mx-1">Lesson Planning</a>
                                         <a target="_blank"
                                            href="{{ route('lmsmapping.index',['topic_id'=>$list_topicvalue->id]) }}"
@@ -534,6 +540,7 @@
                                         <a target="_blank"
                                            href="{{ route('virtual_classroom_master.create', ['chapter_id' => $_REQUEST['id'],'topic_id' => $list_topicvalue->id]) }}"
                                            class="btn btn-outline-dark  mx-1 my-1">Virtual Classroom</a>
+                                           
                                         <!-- <a target="_blank" class="btn btn-outline-dark mx-1 my-1">Flash Card</a> -->
                                         @if(strtoupper($user_profile) == 'LMS TEACHER' || strtoupper($user_profile) == 'TEACHER')
                                             <a href="javascript:edit_data('{{route('topic_master.update',$list_topicvalue->id)}}','{{$list_topicvalue->id}}','{{$list_topicvalue->name}}','{{$list_topicvalue->description}}','{{$list_topicvalue->topic_sort_order}}','{{$list_topicvalue->topic_show_hide}}');"
@@ -551,6 +558,8 @@
                                                 <!-- <a href="#" onclick="document.myform.submit()" class="d-block mx-2"><i class="mdi mdi-delete-outline"></i></a> -->
                                             </form>
                                         @endif
+                                        @endif
+                                        
                                     </div>
                                 </div>
                             <!-- <div id="topic1" class="collapse show" aria-labelledby="headingOne" data-parent="#accordion">
@@ -568,81 +577,67 @@
                                         </div> -->
                             </div>
                         @endif
-
-                        <div class="video-list mb-4 collapse" id="collapseExample{{$k}}" data-parent="#list">
+                        <div class="video-list mb-4 mt-4 collapse" id="collapseExample{{$k}}" data-parent="#list">
+                        <div class="video-list mb-4" id="accordion">
                             @if(isset($data['content_data'][$list_topicvalue->id]))
-                                @foreach($data['content_data'][$list_topicvalue->id] as $ckey => $cval)
-                                    @php
-                                        $blur_content_style = "";
-                                        if($cval['show_hide'] != 1){
-                                            $blur_content_style = "background-color: #817979 !important;";
-                                        }
-                                    @endphp
-                                    <div class="video-box mb-2" style="{{$blur_content_style}}">
-                                        @if($cval['file_type'] == "link")
-                                            <a target="_blank" href="{{$cval['filename']}}"><img
-                                                    src="../admin_dep/images/clickhere.jpg" width="100px"/></a>
-                                        @else
-                                            <div class="video-img-box">
-                                                <div class="video-img">
-                                                    <!-- <img src="assets/images/slide1.jpg" alt=""> -->
-                                                <!-- <iframe width="560" height="315" src="../../../storage{{$cval['file_folder']}}/{{$cval['filename']}}" frameborder="0" allowfullscreen></iframe> -->
-                                                <!--
-                                                    @if($cval['file_type'] == "pptx")
-                                                    <iframe width="560" height="315" src="../../../storage{{$cval['file_folder']}}/{{$cval['filename']}}" frameborder="0" allowfullscreen></iframe>
-                                                    @else
+                                @php
+                                    $categories = collect($data['content_data'][$list_topicvalue->id])->groupBy('content_category');
+                                @endphp
 
-                                                @endif -->
-                                                    <video controls="true" width="220" height="140"
-                                                           controlsList="nodownload">
-                                                        <source
-                                                            src="../../../storage{{$cval['file_folder']}}/{{$cval['filename']}}"
-                                                            type="video/mp4"/>
-                                                    </video>
-
-                                                </div>
-
-                                                <a href="{{route('topic_master.show',$cval['id'])}}" target="_blank"
-                                                   class="view-box">
-                                                    <i class="mdi mdi-eye-outline"></i>
-                                                </a>
-
-                                            <!-- <a href="../../../storage{{$cval['file_folder']}}/{{$cval['filename']}}#toolbar=0" target="_blank" class="view-box">
-                                                    <i class="mdi mdi-eye-outline"></i>
-                                                </a> -->
+                                @foreach($categories as $category => $contentItems)
+                                    <div class="card ml-5 mt-2">
+                                        <div class="mb-2  mt-2 chapter-content-single p-2 d-flex align-items-center" data-toggle="collapse" id="heading{{$category}}" aria-controls="collapse{{$category}}" data-target="#collapse{{str_replace(' ', '', $category)}}">
+                                            <div class="content-category">{{ $category }}</div>
+                                            <div class="help-arraw">
+                                                <i class="mdi mdi-chevron-down"></i>
                                             </div>
-                                        @endif
-                                        <div class="video-details">
-                                        <!-- <a href="{{route('topic_master.show',$cval['id'])}}" class="video-title">{{$cval['title']}}</a> -->
-                                            <a class="video-title">{{$cval['title']}}</a>
-                                            <div class="video-des">{{$cval['description']}}</div>
                                         </div>
-                                        @if(strtoupper($user_profile) == 'LMS TEACHER' || strtoupper($user_profile) == 'TEACHER')
-                                            <div class="time text-secondary d-flex" style="font-size: 20px;">
-                                                <a href="{{ route('lms_flashcard.index',['content_id'=>$cval['id']])}}"
-                                                   target="_blank" class="btn btn-outline-warning btn-sm mx-1"
-                                                   data-toggle="tooltip" title="Add Flash Card"><i
-                                                        class="mdi mdi-cards-playing-outline"></i></a>
-                                                <a href="{{ route('content_master.edit',[$cval['id'],$cval['standard_id']])}}"
-                                                   class="btn btn-outline-success btn-sm mx-1"><i
-                                                        class="mdi mdi-pencil-outline"></i></a>
-                                                <form action="{{ route('content_master.destroy', $cval['id'] )}}"
-                                                      method="post">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <input type="hidden" name="standard_id" value="{{$_REQUEST['standard_id']}}">
 
-                                                    <button onclick="return confirmDelete();" type="submit"
-                                                            class="btn btn-outline-danger btn-sm mx-1">
-                                                        <i class="mdi mdi-delete-outline"></i></button>
-                                                </form>
-                                            </div>
-                                        @endif
+                                        <div id="collapse{{str_replace(' ', '', $category)}}" class="collapse" aria-labelledby="heading{{$category}}" data-parent="#accordion">
+                                            @foreach($contentItems as $cval)
+                                                <div class="video-box mb-2">
+
+                                                    @if($cval['file_type'] == "link")
+                                                        <a target="_blank" href="{{$cval['filename']}}"><img src="../admin_dep/images/clickhere.jpg" width="100px"/></a>
+                                                    @else
+                                                        <div class="video-img-box">
+                                                            <div class="video-img">
+                                                                <video controls="true" width="10" height="10" controlsList="nodownload">
+                                                                    <source src="{{ Storage::disk('digitalocean')->url('public'.$cval['file_folder'].'/'.$cval['filename'])}}"/>
+                                                                </video>
+                                                            </div>
+                                                            <a href="{{route('topic_master.show',$cval['id'])}}" target="_blank" class="view-box">
+                                                                <i class="mdi mdi-eye-outline"></i>
+                                                            </a>
+                                                        </div>
+                                                    @endif
+                                                    <div class="video-details">
+                                                        <a class="video-title">{{$cval['title']}}</a>
+                                                        <div class="video-des">{{$cval['description']}}</div>
+                                                    </div>
+                                                    @if((strtoupper($user_profile) == 'LMS TEACHER' || strtoupper($user_profile) == 'TEACHER') && $data['sub_institute_id']===$cval['sub_institute_id'])
+                                                
+                                                        <div class="time text-secondary d-flex" style="font-size: 20px;">
+                                                            <a href="{{ route('lms_flashcard.index',['content_id'=>$cval['id']])}}" target="_blank" class="btn btn-outline-warning btn-sm mx-1" data-toggle="tooltip" title="Add Flash Card"><i class="mdi mdi-cards-playing-outline"></i></a>
+                                                            <a href="{{ route('content_master.edit',[$cval['id'],$cval['standard_id']])}}" class="btn btn-outline-success btn-sm mx-1"><i class="mdi mdi-pencil-outline"></i></a>
+                                                            <form action="{{ route('content_master.destroy', $cval['id'] )}}" method="post">
+                                                                @csrf
+                                                                @method('DELETE')
+                                                                <input type="hidden" name="standard_id" value="{{$_REQUEST['standard_id']}}">
+                                                                <button onclick="return confirmDelete();" type="submit" class="btn btn-outline-danger btn-sm mx-1"><i class="mdi mdi-delete-outline"></i></button>
+                                                            </form>
+                                                        </div>
+                                                    @endif
+                                                </div>
+                                            @endforeach
+                                        </div>
                                     </div>
-
                                 @endforeach
                             @endif
                         </div>
+                        </div>
+
+
                         @php
                             $k++;
                         @endphp
@@ -694,14 +689,14 @@
                                     <input type="hidden" id='hidchapter_id' name='hidchapter_id'
                                            value="{{$_REQUEST['id']}}" class="form-control">
                                        <input type="hidden" name="standard_id" value="{{$_REQUEST['standard_id']}}">
-                                           
+
                                     <div class="addButtonCheckbox">
                                         <div class="col-md-12 form-group">
                                             <label>Topic Name</label>
                                             <input type="text" id='topic_name' required name="topic_name[]"
                                                    class="form-control">
                                         </div>
-                                        
+
                                         <div class="col-md-12 form-group">
                                             <label>Description</label>
                                             <textarea id="topic_desc" name="topic_desc[]"
@@ -743,7 +738,7 @@
 <script src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.10.19/js/dataTables.bootstrap.min.js"></script>
 <script>
- 
+
     function edit_data(url, topic_id, topic_name, topic_desc, topic_sort_order, topic_show_hide) {
         $("#topic_name").val(topic_name);
         $("#topic_desc").val(topic_desc);
@@ -751,7 +746,7 @@
         if (topic_show_hide == 1) {
             $('#topic_show_hide').prop('checked', true);
         }
-        
+
         $('#submit').val('Update');
         $('#heading').html('Update Topic');
         $('#topic_form').attr('action', url);
@@ -813,3 +808,4 @@
 </script>
 
 @include('includes.footer')
+@endsection

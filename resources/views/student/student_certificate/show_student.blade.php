@@ -27,7 +27,7 @@
                                 <div class="alert alert-danger alert-block">
                                     @endif
                                     <button type="button" class="close" data-dismiss="alert">×</button>
-                                    <strong>{{ $data['message'] }}</strong>
+                                    <strong>{!! $data['message'] !!}</strong>
                                 </div>
                             @endif
             <form action="{{ route('student_certificate.show_student') }}" enctype="multipart/form-data" method="post">
@@ -35,6 +35,25 @@
             @csrf
                 <div class="row">
                     {{ App\Helpers\SearchChain('4','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
+                    <div class="col-md-4 form-group">
+                        <label>{{App\Helpers\get_string('studentname')}}<i class="mdi mdi-lead-pencil"></i></label>
+                        <input type="text" id="stu_name" placeholder="{{App\Helpers\get_string('studentname')}}" name="stu_name" class="form-control" @if(isset($data['stu_name'])) value="{{$data['stu_name']}}" @endif>
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label>{{App\Helpers\get_string('uniqueid')}}<i class="mdi mdi-lead-pencil"></i></label>
+                        <input type="text" id="uniqueid" placeholder="{{App\Helpers\get_string('uniqueid')}}" name="uniqueid" class="form-control" @if(isset($data['uniqueid'])) value="{{$data['uniqueid']}}" @endif>
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label>Mobile</label>
+                        <input type="text" id="mobile" placeholder="Mobile" name="mobile" class="form-control" @if(isset($data['mobile'])) value="{{$data['mobile']}}" @endif>
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label>{{App\Helpers\get_string('grno')}}<i class="mdi mdi-lead-pencil"></i></label>
+                        <input type="text" id="grno" placeholder="{{App\Helpers\get_string('grno')}}" name="grno" class="form-control" @if(isset($data['grno'])) value="{{$data['grno']}}" @endif>
+                        @if(app('request')->input('implementation') == 1)
+                        <input type="hidden" name="implementation" value="1">
+                        @endif
+                    </div>
                     <div class="col-md-12 form-group">
                         <center>
                             <input type="submit" name="submit" value="Search" class="btn btn-success" >
@@ -62,6 +81,7 @@
                                             <option value="Character Certificate">Character Certificate</option>
                                             <option value="Transfer Certificate">Transfer Certificate</option>
                                             <option value="Fees Statement">Fees Statement</option>
+                                            <option value="No Dues Certificate">No Dues Certificate</option>
                                         </select>
                                     </div>
                                     <div class="col-md-4 form-group">

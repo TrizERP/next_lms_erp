@@ -1,7 +1,8 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row bg-title">
@@ -74,8 +75,14 @@
                         <div class="table-responsive">
                             {!! App\Helpers\get_school_details("$grade_id","$standard_id","$division_id") !!}
                             <table id="example" class="table table-striped">
+                                <form action="{{ route('delete_selected_students') }}" method="POST" id="delete-form">
+                                @csrf
+                                <input type="hidden" name="selected_students" value="">
+                                <button type="submit" name="delete_action" class="btn btn-danger" id="delete-button">Delete</button>
+
                                 <thead>
                                 <tr>
+                                    <th><input id="checkall" onchange="checkAll(this);" type="checkbox"></th>
                                     <th>Sr.No.</th>
                                     <th>{{App\Helpers\get_string('studentname','request')}}</th>
                                     <th>Title</th>
@@ -92,11 +99,12 @@
                                     @endphp
                                 @foreach($report_data as $key => $data)
                                 <tr>
+                                    <td><input id="{{$data['id']}}" value="{{$data['id']}}" name="students[]" type="checkbox"></td>
                                     <td>{{$j}}</td>
                                     <td>{{$data['student_name']}}</td>
                                     <td>{{$data['title']}}</td>
                                     <td>{{$data['description']}}</td>
-                                    <td><a target="blank" href="/storage/student/{{$data['image']}}">view</a> </td>
+                                    <td>@if($data['image']!=null && $data['image']!=='')<a target="blank" href="/storage/student/{{$data['image']}}">view</a>@else - @endif</td>
                                     <td>{{$data['standard_name']}} - {{$data['division_name']}} </td>
                                     <td>{{$data['subject_name']}}</td>
                                     <td>{{date('d-m-Y',strtotime($data['date']))}}</td>
@@ -107,6 +115,7 @@
                                 @endforeach
                             </tbody>
                         </table>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -116,6 +125,39 @@
 </div>
 
 @include('includes.footerJs')
+
+<script>
+    function checkAll(ele) {
+        var checkboxes = document.querySelectorAll('input[type="checkbox"]');
+        for (var i = 0; i < checkboxes.length; i++) {
+            checkboxes[i].checked = ele.checked;
+        }
+    }
+
+    $(document).ready(function () {
+        // Handle the "Delete" button click
+        $("#delete-button").click(function (e) {
+            e.preventDefault();
+
+            var selectedStudents = [];
+
+            // Find all selected checkboxes and add their values (student IDs) to the array
+            $('input[name="students[]"]:checked').each(function () {
+                selectedStudents.push($(this).val());
+            });
+
+            if (selectedStudents.length === 0) {
+                alert("Please select at least one student to delete.");
+            } else {
+                // Set the selected student IDs as a comma-separated string in a hidden field
+                $('input[name="selected_students"]').val(selectedStudents.join(','));
+
+                // Submit the form for deletion
+                $('#delete-form').submit();
+            }
+        });
+    });
+</script>
 
 <script>
     $(document).ready(function () {
@@ -145,6 +187,7 @@
                     title: 'Student Homework Report',
                     customize: function (win) {
                         $(win.document.body).prepend(`{!! App\Helpers\get_school_details("$grade_id", "$standard_id", "$division_id") !!}`);
+                        $(win.document.body).append(`<div style="text-align: right;margin-top:20px">Printed on: {{date('d-m-Y H:i:s')}}</div>`);
                     }
                 },
                 'pageLength'
@@ -167,3 +210,4 @@
     } );
 </script>
 @include('includes.footer')
+@endsection

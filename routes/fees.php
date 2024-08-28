@@ -51,10 +51,14 @@ use App\Http\Controllers\fees\tblfeesHeadTypeMasterController;
 use App\Http\Controllers\fees\tblfeesLateController;
 use App\Http\Controllers\fees\update_fees_breackoff\update_fees_breackoff_controller;
 use App\Http\Controllers\fees\fees_breackoff\monthlyBreakoffController;
-
+use App\Http\Controllers\fees\fees_month_header\feesMonthHeadercontroller;
+use App\Http\Controllers\fees\fees_report\studentBreakoffReportController;
+use App\Http\Controllers\fees\fees_reconciliation\fees_reconciliation_upload_sheet_controller;
+use App\Http\Controllers\fees\feesAIController;
+use App\Http\Controllers\fees\fees_report\monthwiseReceiptPdfController;
 use Illuminate\Support\Facades\Route;
 
-Route::group(['prefix' => 'fees', 'middleware' => ['session', 'menu', 'logRoute']], function () {
+Route::group(['prefix' => 'fees', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
     Route::resource('fees_config_master', tblfeesConfigController::class);
     Route::resource('fees_circular_master', feesCircularMasterController::class);
     Route::resource('fees_late_master', tblfeesLateController::class);
@@ -71,6 +75,8 @@ Route::group(['prefix' => 'fees', 'middleware' => ['session', 'menu', 'logRoute'
     Route::resource('NACH_s4excel_import', s4excel_importController::class);
     Route::resource('daily_voucher', daily_voucherController::class);
     Route::resource('monthly_breakoff', monthlyBreakoffController::class);    
+    Route::resource('fees_month_header', feesMonthHeadercontroller::class);    
+    Route::resource('student_breakoff_report', studentBreakoffReportController::class);    
 
     Route::get('ajax_ledgerData', [otherNewfeesReportController::class, 'ajax_ledgerData'])->name('ajax_ledgerData');
 
@@ -82,7 +88,7 @@ Route::group(['prefix' => 'fees', 'middleware' => ['session', 'menu', 'logRoute'
     Route::resource('fees_overall_report', feesOverallReportController::class);
     Route::resource('fees_defaulter_report', feesDefaulterReportController::class);
     Route::resource('fees_status_report', feesStatusController::class);
-
+    Route::resource('monthly_receipt_pdf',monthwiseReceiptPdfController::class);
     // Remain fees send SMS
     Route::post('fees_remain_sms', [feesStatusController::class, 'ajaxRemainFeesSMSsend'])->name('remainFeesNotification');
 
@@ -102,10 +108,15 @@ Route::group(['prefix' => 'fees', 'middleware' => ['session', 'menu', 'logRoute'
     Route::resource('online_fees', online_fees_settigs_controller::class);
     Route::resource('online_fees_split', online_fees_split_controller::class);
     Route::resource('cheque_reconciliation', ChequeReconciliationController::class);
+    Route::resource('feesAI', feesAIController::class);    
 
     // Route::get('online_fees\show_online_type', 'fees\online_fees\online_fees_collect_controller@showTypes')->name('online_show_type');
     Route::get('show_details', [ChequeReconciliationController::class, 'show_details'])->name('show_details');
     Route::get('search_details', [ChequeReconciliationController::class, 'search_details'])->name('search_details');
+
+    //Fees Reconciliation
+    Route::get('fees_reconciliation_upload_sheet', [fees_reconciliation_upload_sheet_controller::class, 'fees_reconciliation'])->name('fees_reconciliation_upload_sheet');
+    Route::post('store_fees_reconciliation_sheet_data', [fees_reconciliation_upload_sheet_controller::class, 'store_fees_reconciliation_data'])->name('store_fees_reconciliation_sheet_data');
 
     Route::get('hdfcpayment', function ($id = null) {
         return view('fees/online_fees/hdfcpayment', ['name' => 'James']);
@@ -139,7 +150,8 @@ Route::get('payphi', function ($id = null) {
         Route::post('fees_circular/show_circular', 'showCircular')->name('show_circular');
     });
 
-
+    // check_reciept_book
+    Route::get('get_receipt_book_data',[fees_collect_controller::class,'checkReceiptBookMaster'])->name('check_reciept_book');
     Route::resource('fees_cancel', feesCancelController::class);
     Route::controller(feesCancelController::class)->group(function () {
         Route::post('fees/fees_cancel', 'showFees')->name('show_cancel_fees');
@@ -203,16 +215,16 @@ Route::get('payphi', function ($id = null) {
 
 });
 
-Route::post('api/get-online-fees-list', [AJAXController::class, 'getOnlineFees'])->name('get-online-fees-list');
+Route::post('api/', [AJAXController::class, 'getOnlineFees'])->name('get-online-fees-list');
 Route::post('fees/PaidUnpaid', [fees_collect_controller::class, 'PaidUnpaid']);
 Route::post('fees/PaidUnpaidTeacher', [fees_collect_controller::class, 'PaidUnpaidTeacher']);
-Route::group(['prefix' => 'report', 'middleware' => ['session', 'menu', 'logRoute']], function () {
+Route::group(['prefix' => 'report', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
     Route::resource('report_module', 'report\report_module\report_module_controller');
 });
 //online routes
 Route::get('/fees/feesDetails/getDetails/{id}/{stud}', [fees_collect_controller::class, 'retrieveDataByUserId']);
 Route::controller(online_fees_collect_controller::class)->group(function () {
-    Route::get('fees/online_fees_collect', 'index');
+    Route::get('fees/online_fees_collect', 'index')->name('online_fees_collect.index');
 
     Route::post('fees/hdfc/online_fees_collect', 'hdfc')->name("hdfc_fees_collect");
     Route::post('fees/hdfc/online_fees_hdfcRequestHandler', 'hdfc_request_handler')->name("hdfc_request_handler");
@@ -239,6 +251,10 @@ Route::controller(online_fees_collect_controller::class)->group(function () {
     Route::post('fees/payphi/online_fees_payphiRequestHandler', 'payphi_request_handler')->name("payphi_request_handler");
     Route::post('fees/payphi/online_fees_handleInitiateSaleResponse', 'handle_initiatesale_response')->name("handle_initiatesale_response");
     Route::post('fees/payphi/online_fees_payphiResponseHandler', 'payphi_response_handler')->name("payphi_response_handler");
+
+    Route::post('fees/abcmapp/online_fees_abcmappResponseHandler', 'abcmapp_response_handler')->name("abcmapp_response_handler");
+
+    Route::post('fees/get_online_receipt', 'OnlineReceipt')->name("get_online_receipt");
 
 });
 

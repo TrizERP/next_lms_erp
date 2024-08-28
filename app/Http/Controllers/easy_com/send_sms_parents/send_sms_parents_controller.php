@@ -57,6 +57,8 @@ class send_sms_parents_controller extends Controller
             $responce_arr['stu_data'][$id]['name'] = $arr['first_name'].' '.$arr['middle_name'].' '.$arr['last_name'];
             $responce_arr['stu_data'][$id]['student_id'] = $arr['student_id'];
             $responce_arr['stu_data'][$id]['mobile'] = $arr['mobile'];
+            $responce_arr['stu_data'][$id]['standard_name'] = $arr['standard_name'];
+            $responce_arr['stu_data'][$id]['division_name'] = $arr['division_name'];
         }
 
         return is_mobile($type, "easy_comm/send_sms_parents/add", $responce_arr, "view");
@@ -119,12 +121,16 @@ class send_sms_parents_controller extends Controller
             $errorMessage = true;
 
             $text = urlencode($text);
-            $data['last_var'] = urlencode($data['last_var']);
+            //$data['last_var'] = urlencode($data['last_var']);
+            /*
             if($template_id !=''){
                 $data['last_var'] = $template_id;
             }
+            */
 
-            $url = $data['url'].$data['pram'].$data['mobile_var'].$mobile.$data['text_var'].$text.$data['last_var'];
+            $url = $data['url'].$data['pram'].$template_id.$data['mobile_var'].$mobile.$data['text_var'].$text;
+            //echo $url;
+            //die();
             $ch = curl_init();
 
             // Ignore SSL certificate verification

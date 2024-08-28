@@ -496,6 +496,12 @@ if ($("#ajax_PDF_Certificate").length != 0)
 {
     $('#ajax_PDF_Certificate').on('click', function () 
     {
+        var confirmation = confirm("Are you sure you want to submit?");
+        
+        // If the user confirms, return true to proceed with form submission
+        if (!confirmation) {
+            return false;
+        } else{
         $("#overlay").css("display","block");
         var action = $("#action").val();
         var insert_student_ids = $("#insert_ids").val();
@@ -514,6 +520,52 @@ if ($("#ajax_PDF_Certificate").length != 0)
                     });   
                 }
         });
+        }
     });
 }
 /* End Open Student Certificate Bulk PDF instead of print receipt */
+
+
+// depratmewnt and emp lists 
+// $('#department_ids').on('change',function(){
+//     var department_ids = $('#department_ids').val();
+//     var department_ids_str = department_ids.join(',');
+//     getEmpList(department_ids_str);
+// })
+$('#department_ids').on('change', function() {
+    var department_ids = $(this).val();
+    
+    if (!Array.isArray(department_ids)) {
+        department_ids = [department_ids];
+    }
+
+     if (department_ids.length > 1) {
+         var department_ids_str = department_ids.join(',');
+    } else {
+      department_ids_str = department_ids[0]; 
+    }
+
+    getEmpList(department_ids_str);
+  });
+  
+
+function getEmpList(department_id){
+    $('#emp_id').empty(); 
+    $.ajax({
+        url: '/departmentwise-emplist',
+        data: { department_id: department_id },
+        type: 'GET',
+        success: function(result) {
+            if (Array.isArray(result) && department_id!=0) {
+                $('#emp_id').empty(); 
+                $('#emp_id').append(`<option value=0>select emp</option>`);
+                result.forEach(value => {
+                    $('#emp_id').append(`<option value="${value.id}">${value.full_name} (${value.user_profile})</option>`); // corrected the syntax here
+                });
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Error:', error);
+        }
+    });
+}

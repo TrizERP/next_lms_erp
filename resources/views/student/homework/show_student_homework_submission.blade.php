@@ -1,6 +1,8 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 
 <div id="page-wrapper">
     <div class="container-fluid">
@@ -79,7 +81,7 @@
                                         <th>Homework File</th>
                                         <th>Submission Date</th>
                                         <th>Remarks</th>
-                                        <th>Submission File</th>
+                                        <th class="text-center">Submission File</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -132,8 +134,19 @@
 
 @include('includes.footerJs')
 <script>
-    $(document).on('change', '#standard', function () {
-        var standard_id = $(this).val();
+    $(document).ready(function () {
+        $('#standard').on('change',function () {
+            var standard_id = $(this).val();
+            getSubject(standard_id);
+        })
+
+       @if($standard_id!='')
+            var standard_id = "{{$standard_id}}";
+            getSubject(standard_id);
+       @endif 
+    });
+    function getSubject(standard_id){
+        var sub = "{{isset($data['subject']) ? $data['subject'] : 0 }}";
         var path = "{{ route('ajax_getHomeworkSubjects') }}";
         $.ajax({
             url: path,
@@ -143,11 +156,19 @@
                 $(e).find('option').remove().end();
                 $(e).append($("<option></option>").val("").html('Select Subject'));
                 for (var i = 0; i < result.length; i++) {
-                    $(e).append($("<option></option>").val(result[i]['subject_id']).html(result[i]['display_name']));
+                    var option = $("<option></option>")
+                        .val(result[i]['subject_id'])
+                        .html(result[i]['display_name']);
+                    
+                    if (result[i]['subject_id'] == sub) {
+                        option.prop('selected', true);
+                    }
+
+                    $(e).append(option);
                 }
             }
         });
-    });
+    }
 	function checkAll(ele) {
 	     var checkboxes = document.getElementsByTagName('input');
 	     if (ele.checked) {
@@ -172,3 +193,4 @@ $(document).ready(function () {
 });
 </script>
 @include('includes.footer')
+@endsection

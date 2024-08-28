@@ -85,7 +85,7 @@ class feesDefaulterReportController extends Controller
         $extraSearchArray['tblstudent_enrollment.syear'] = $syear;
         $extraSearchArray['tblstudent.sub_institute_id'] = $sub_institute_id;
 
-        $feesData = tblstudentModel::selectRaw("tblstudent.id,CONCAT_WS(' ',tblstudent.first_name,tblstudent.middle_name,tblstudent.last_name) AS student_name,academic_section.title as grade,standard.name as standard_name,division.name as division_name,tblstudent.enrollment_no,tblstudent.mobile,tblstudent.uniqueid,tblstudent.roll_no")
+        $feesData = tblstudentModel::selectRaw("tblstudent.id,CONCAT_WS(' ',tblstudent.first_name,tblstudent.middle_name,tblstudent.last_name) AS student_name,academic_section.title as grade,standard.name as standard_name,division.name as division_name,tblstudent.enrollment_no,tblstudent.mobile,tblstudent.uniqueid,tblstudent_enrollment.roll_no")
             ->join('tblstudent_enrollment', 'tblstudent.id', '=', 'tblstudent_enrollment.student_id')
             ->join('academic_section', 'academic_section.id', '=', 'tblstudent_enrollment.grade_id')
             ->join('standard', function($join) use($marking_period_id){
@@ -97,7 +97,7 @@ class feesDefaulterReportController extends Controller
             ->join('division', 'division.id', '=', 'tblstudent_enrollment.section_id')
             ->where($extraSearchArray)
             ->whereRaw($extraSearchArrayRaw)
-            ->orderByRaw('standard.sort_order, division.id, tblstudent.roll_no')
+            ->orderByRaw('standard.sort_order, division.id, tblstudent_enrollment.roll_no')
             ->get()
             ->toArray();
 
@@ -133,6 +133,7 @@ class feesDefaulterReportController extends Controller
                 $final_array[$value['id']]['email'] = $bk_data['stu_data']['email'];
                 $final_array[$value['id']]['pending'] = $bk_data['stu_data']['pending'];
                 $final_array[$value['id']]['mobile'] = $bk_data['stu_data']['mobile'];
+                $final_array[$value['id']]['student_quota'] = $bk_data['stu_data']['student_quota'];
                 $final_array[$value['id']]['uniqueid'] = $bk_data['stu_data']['uniqueid'];
                 $final_array[$value['id']]['roll_no'] = $bk_data['stu_data']['roll_no'];
                 $total_fees_array = array();

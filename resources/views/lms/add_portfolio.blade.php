@@ -1,13 +1,15 @@
-@include('includes.lmsheadcss')
+{{--@include('includes.lmsheadcss')
 @include('includes.header')
-@include('includes.sideNavigation')
+@include('includes.sideNavigation')--}}
+@extends('lmslayout')
+@section('container')
 
 <link href="{{ asset('/plugins/bower_components/summernote/dist/summernote.css') }}" rel="stylesheet" />
 
 <!-- Content main Section -->
 <div class="content-main flex-fill">
     <div class="row">
-        <div class="col-md-6">           
+        <div class="col-md-6">
             <h1 class="h4 mb-3">
             @if(!isset($data))
             Add Portfolio
@@ -17,41 +19,41 @@
             </h1>
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb bg-transparent p-0">
-                    <li class="breadcrumb-item"><a href="{{route('course_master.index')}}">LMS</a></li>                    
+                    <li class="breadcrumb-item"><a href="{{route('course_master.index')}}">LMS</a></li>
                     <li class="breadcrumb-item active" aria-current="page">Portfolio</li>
                 </ol>
             </nav>
-        </div>        
-    </div>    
+        </div>
+    </div>
 
     <div class="container-fluid mb-5">
         <div class="card border-0">
-            <div class="card-body">                                                        
+            <div class="card-body">
                 <form action="@if (isset($data['portfolio_data']))
                           {{ route('lmsPortfolio.update', $data['portfolio_data']['id']) }}
                           @else
                           {{ route('lmsPortfolio.store') }}
                           @endif" enctype="multipart/form-data" method="post">
-                            
+
                     @if(!isset($data['portfolio_data']))
                     {{ method_field("POST") }}
                     @else
                     {{ method_field("PUT") }}
                     @endif
-                    @csrf               
-           
+                    @csrf
+
                     @if($data['action']  == 'coursewise' && !isset($data['portfolio_data']) )
                     <div class="row">
                         <div class="col-md-3">
-                            <div class="form-group">                                
+                            <div class="form-group">
                                 <label for="description">Subject</label>
                                 <select id="subject" name="subject" class="cust-select form-control" required>
                                     <option value="">Select Subject</option>
-                                    @if(isset($data['subject_arr'])) 
+                                    @if(isset($data['subject_arr']))
                                         @foreach($data['subject_arr'] as $key => $value)
                                         <option value="{{$value['subject_id']}}">{{$value['display_name']}}</option>
-                                        @endforeach                      
-                                    @endif  
+                                        @endforeach
+                                    @endif
                                 </select>
                             </div>
                         </div>
@@ -71,32 +73,32 @@
                                 </select>
                             </div>
                         </div>
-                    </div>                                        
+                    </div>
                     @endif
 
                     @php
                     $title_readonly = "";
                     if($data['action']  == 'coursewise')
                     {
-                        $title_readonly = "readonly";                         
+                        $title_readonly = "readonly";
                     }
                     @endphp
                     <div class="row">
                         <div class="col-md-8">
                             <div class="form-group">
-                                <label for="description">Title</label>
+                                <label for="title">Title</label>
                                 <input {{$title_readonly}} type="text" class="form-control" id="title" name="title" placeholder="Title" value="@if(isset($data['portfolio_data']['title'])){{$data['portfolio_data']['title']}}@endif" required>
                             </div>
                         </div>
-                    </div>  
-                    <input type="hidden" name="type" id="type" value="{{$data['action']}}">                  
-                      
-                    <div class="row">    
+                    </div>
+                    <input type="hidden" name="type" id="type" value="{{$data['action']}}">
+
+                    <div class="row">
                         <div class="col-md-8">
                             <div class="form-group">
-                                <label for="description">Description</label> 
+                                <label for="description">Description</label>
 
-                                <textarea class="summernote" id="description" name="description">
+                                <textarea id="description" name="description" class="form-control summernote" rows="3" cols="100" >
                                 @if(isset($data['portfolio_data']['description'])){{$data['portfolio_data']['description']}}@endif
                                 </textarea>
 
@@ -111,21 +113,21 @@
                             <div class="form-group">
                                 <label for="title">Upload</label>
                                 <input type="file" id='filename' name="filename" class="form-control">
-                                @if( isset($data['portfolio_data']['file_name']) && $data['portfolio_data']['file_name'] != "" )                               
+                                @if( isset($data['portfolio_data']['file_name']) && $data['portfolio_data']['file_name'] != "" )
                                 <a target="_blank" href="../../../storage/lms_portfolio/{{$data['portfolio_data']['file_name']}}">{{$data['portfolio_data']['file_name']}}</a>
                                 <input type="hidden" name="hid_filename" id="hid_filename" value="{{$data['portfolio_data']['file_name']}}">
                                 @endif
                             </div>
                         </div>
-                    </div>           
+                    </div>
 
-                                    
+
                     <button class="btn btn-primary" type="submit">Save</button>
-                   
+
                 </form>
             </div>
         </div>
-    </div>        
+    </div>
 </div>
 
 @include('includes.lmsfooterJs')
@@ -133,7 +135,7 @@
 
 <script>
 
-$( document ).ready(function() {   
+$( document ).ready(function() {
 
     $('.summernote').summernote({
         height: 200, // set editor height
@@ -169,15 +171,16 @@ $( document ).ready(function() {
 
         title_val = $("#title").val() + ' / ' + $("#chapter option:selected").text();
         $("#title").val(title_val);
-    })  
+    })
 
     $("#topic").change(function(){
         title_val = $("#title").val() + ' / ' + $("#topic option:selected").text();
         $("#title").val(title_val);
-    })      
-        
+    })
+
 });
 
 
 </script>
 @include('includes.footer')
+@endsection

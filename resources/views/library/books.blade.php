@@ -1,7 +1,10 @@
-@include('includes.headcss')
-<link rel="stylesheet" href="../../../tooltip/enjoyhint/jquery.enjoyhint.css">
+
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
+@include('includes.sideNavigation')--}}
+@extends('layout')
+<link rel="stylesheet" href="../../../tooltip/enjoyhint/jquery.enjoyhint.css">
+@section('container')
 
 <div id="page-wrapper">
     <div class="container-fluid">
@@ -20,7 +23,7 @@
                             aria-controls="right-tab-2" aria-selected="true">Book List</a>
                     </li>
                     <li class="nav-item" role="presentation" data-toggle="tooltip" data-placement="top"
-                        title="Create Book">
+                        title="Create Book" id="create-book">
                         <a class="nav-link" data-toggle="tab" href="#right-tab-1" role="tab"
                             aria-controls="right-tab-1" aria-selected="false">Create Book</a>
                     </li>
@@ -31,6 +34,10 @@
                     <div class="tab-pane show active" id="right-tab-2" role="tabpanel">
                         <div class="row">
                             <div class="col-lg-12 col-sm-3 col-xs-3 row">
+                                <div class="col-md-3  pull-right" >
+                                <label for="">Search Item</label>
+                                <input type="text" class="form-control" placeholder="Enter item code" id="search_item" name="search_item" onkeyup="getItemCode(this.value);">
+                                </div>
                                 <div class="col-md-3 pull-right">
                                     <label for="">Status</label>
                                     <select id="bookFilter" class="form-control" name="bookFilter"
@@ -77,8 +84,17 @@
                                         @endforeach
                                     </select>
                                 </div>
-
-                                <div class="col-md-4 mt-2">
+                                <!-- 12-08-2024  start -->
+                                <div class="col-md-3  pull-right" >
+                                    <label for="">Search Classification Number</label>
+                                    <input type="text" class="form-control" placeholder="Enter Classification Number" id="classification_number" name="classification_number" onkeyup="getClassification(this.value);">
+                                </div>
+                                <div class="col-md-3  pull-right" >
+                                    <label for="">Search ISBN/ISSN</label>
+                                    <input type="text" class="form-control" placeholder="Enter ISBN/ISSN" id="SearchIsbnIssn" name="isbn_issn" onkeyup="getIsbnIssn(this.value);">
+                                </div>
+                                <!-- 12-08-2024  end -->
+                                <div class="col-md-4 mt-2" style="display:none">
                                     <a class="btn btn-danger delete-all"><i class="fa fa-trash"></i>
                                         Delete </a>
                                     <a class="btn btn-info print-barcode"><i class="fa fa-barcode"></i>
@@ -94,13 +110,14 @@
                                                         name="" id="checkedAll"></th>
                                                 <th data-toggle="tooltip" title="No">No</th>
                                                 <th data-toggle="tooltip" title="Image">Image</th>
+                                                <th data-toggle="tooltip" title="item_codes">Item Code</th>
                                                 <th data-toggle="tooltip" title="Title">Title</th>
                                                 <th data-toggle="tooltip" title="Subject">Subject</th>
                                                 <th data-toggle="tooltip" title="Sub Title">Sub Title</th>
                                                 <th data-toggle="tooltip" title="Publisher Name">Publisher Name</th>
                                                 <th data-toggle="tooltip" title="Publish Year">Publish Year</th>
                                                 <th data-toggle="tooltip" title="Auther Name">Auther Name</th>
-                                                <th data-toggle="tooltip" title="Action">Action</th>
+                                                <th data-toggle="tooltip" title="Action" class="text-left">Action</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -161,8 +178,30 @@
                                     <div class="col-md-4">
                                         <div class="form-group">
                                             <label for="">No Of Items</label>
-                                            <input type="number" name="no_of_items" id="no_of_items"
-                                                class="form-control" placeholder="Enter No Of Items">
+                                            <input type="number" name="no_of_items" id="no_of_items" class="form-control" placeholder="Enter No Of Items" value="1">
+                                        </div>
+                                    </div>
+                                   <div class="col-md-4"  id="otherItemCOde">
+                                        <div class="form-group">
+                                            <label for="">Item Code</label>
+                                            <input type="text" id="item_code_value" id="radioItem" class="form-control"  readonly>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                    <label class="control-label">Item Code<span style="color: red;"></span></label>
+                                        <div class="radio-list" id="mmisItemCOde">
+                                            <label class="radio-inline p-0">
+                                                <div class="radio radio-success">
+                                                    <input type="radio" name="item_code_value" id="radioItem1" class="purchase">
+                                                    <label for="male">Purchase <br><span id="purchase"></span></label>
+                                                </div>
+                                            </label>
+                                            <label class="radio-inline">
+                                                <div class="radio radio-success">
+                                                    <input type="radio" name="item_code_value"  id="radioItem2" class="donate">
+                                                    <label for="female">Donate <br><span id="donate"></span></label>
+                                                </div>
+                                            </label>
                                         </div>
                                     </div>
                                     <div class="col-md-4">
@@ -211,7 +250,7 @@
                                     <div class="col-md-4">
                                         <div class="form-group">
                                             <label for="">Book Size/ Number of page</label>
-                                            <input type="number" type="any" name="collation" id="collation"
+                                            <input type="number" type="any" name="pages" id="pages"
                                                 class="form-control" placeholder="Enter Book Size/ Number of page">
                                         </div>
                                     </div>
@@ -279,15 +318,13 @@
                                     <div class="col-md-4">
                                         <div class="form-group">
                                             <label for="">Image</label>
-                                            <input type="file" name="image" id="image" class="form-control"
-                                                placeholder="Enter Image">
+                                            <input type="file" name="image" id="image" class="form-control" accept="image/*"  placeholder="Enter Image">
                                         </div>
                                     </div>
                                     <div class="col-md-4">
                                         <div class="form-group">
                                             <label for="">File Attachment</label>
-                                            <input type="file" name="file_att" id="file_att"
-                                                class="form-control" placeholder="Enter File Attachment">
+                                            <input type="file" name="file_att" id="file_att" class="form-control" placeholder="Enter File Attachment">
                                         </div>
                                     </div>
                                 </div>
@@ -319,8 +356,7 @@
                             <div class="col-md-6">
                                 <label for="">Student Enroll No</label>
                                 <input type="hidden" name="bookId" id="bookId" value="">
-                                <input type="text" name="enroll_no" id="enroll_no" placeholder="Enter Enroll No."
-                                    class="form-control">
+                                <input type="text" name="enroll_no" id="enroll_no" placeholder="Enter Enroll No." class="form-control">
                             </div>
                             <div class="col-md-6">
                                 <button type="button" class="btn btn-primary mt-4 fetch-stud">Fetch Details</button>
@@ -330,7 +366,7 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                        <button type="submit" class="btn btn-primary">Issue Book</button>
+                        <button type="submit" class="btn btn-primary" id="issue_book_check">Issue Book</button>
                     </div>
                 </form>
             </div>
@@ -392,6 +428,9 @@
                 }, {
                     data: 'image',
                     name: 'image'
+                },{
+                    data: 'item_codes',
+                    name: 'item_codes'
                 },
                 {
                     data: 'title',
@@ -458,6 +497,7 @@
         $(document).on("submit", "#frmCirculation", function(e) {
             e.preventDefault();
             $('.error').remove()
+          
             var url = "{{ route('books.issue') }}";
             var formData = new FormData($("#frmCirculation")[0]);
             /**Ajax code**/
@@ -516,15 +556,35 @@
                 }
             });
         });
+        $(document).on("click", "#create-book", function(e) {
+            $('input[name="id"]').remove();
+            // Empty all input fields
+            $('input[type="text"]').val('');
+            $('input[type="number"]').val('');   
+            $('#no_span').remove();       
+            $('#no_of_items').prop('readonly',false);
+            $('#item_code_value').val('{{$nextItemCode}}');
+            @if(session()->get('sub_institute_id')!=47)
+            $('#mmisItemCOde').hide();
+            $('#otherItemCOde').show();
+            @else
+            $('#otherItemCOde').hide();
+            $('#mmisItemCOde').show();
+            @endif
+            $('#purchase').text('{{$nextItemCode}}');
+            $('#donate').text('{{$DonateCode}}');
+            $('.purchase').val('{{$nextItemCode}}');
+            $('.donate').val('{{$DonateCode}}');
 
+           $('#title,#sub_title,#material_resource_type,#no_of_items,#author_name,#isbn_issn,#classification,#publisher_name,#publish_year,#publish_place,#pages,#series_title,#call_number,#language,#source,#subject,#price,#price_currency,#notes,#review, #edition, #tags, #no_of_items').prop('required', true);     
+                     
+        })
         $(document).on("click", ".btn-edit", function(e) {
-            $('#navLinkList').removeClass('active')
-            $('#navLinkCreate').addClass('active')
-            $('#right-tab-2').removeClass('active')
-            $('#right-tab-1').addClass('active')
+           
             var id = $(this).data('id')
             var url = "{{ route('books.edit', ':id') }}";
             var url = url.replace(':id', id);
+                        
             $.ajax({
                 type: "get",
                 url: url,
@@ -532,31 +592,56 @@
                 contentType: false,
                 processData: false,
                 success: function(data) {
-                    $('#title').val(data.data.title);
-                    $('#sub_title').val(data.data.sub_title);
-                    $('#material_resource_type').val(data.data.material_resource_type);
-                    $('#edition').val(data.data.edition);
-                    $('#tags').val(data.data.tags);
-                    $('#no_of_items').val(data.data.no_of_items);
-                    $('#author_name').val(data.data.author_name);
-                    $('#isbn_issn').val(data.data.isbn_issn);
-                    $('#classification').val(data.data.classification);
-                    $('#publisher_name').val(data.data.publisher_name);
-                    $('#publish_year').val(data.data.publish_year);
-                    $('#publish_place').val(data.data.publish_place);
-                    $('#collation').val(data.data.collation);
-                    $('#series_title').val(data.data.series_title);
-                    $('#call_number').val(data.data.call_number);
-                    $('#language').val(data.data.language);
-                    $('#source').val(data.data.source);
-                    $('#subject').val(data.data.subject);
-                    $('#price').val(data.data.price);
-                    $('#price_currency').val(data.data.price_currency);
-                    $('#notes').val(data.data.notes);
-                    $('#review').val(data.data.review);
-                    $('#image').val(data.data.image);
-                    $('#file_att').val(data.data.file_att);
                     console.log(data);
+                    if(data.data.length > 0){
+                        var newInput = $('<input>').attr({
+                            type: 'hidden',
+                            name: 'id', // Set a unique name for the new input
+                            class: 'form-control',
+                            value: data.data[0].id
+                        });
+
+                        // Add the new input element after the existing input with id 'title'
+                        $('#title').after(newInput);
+                        $('#no_span').remove();                                       
+                        $('#no_of_items').after(`<span id="no_span" style="color:red;font-size:12px">To Add new Item Code "No Of Items" must be greater then 0 <span>`);
+                        $('#navLinkList').removeClass('active')
+                        $('#navLinkCreate').addClass('active')
+                        $('#right-tab-2').removeClass('active')
+                        $('#right-tab-1').addClass('active')
+                        $('#title').val(data.data[0].title);
+                        $('#sub_title').val(data.data[0].sub_title);
+                        $('#material_resource_type').val(data.data[0].material_resource_type);
+                        $('#edition').val(data.data[0].edition);
+                        $('#tags').val(data.data[0].tags);
+                        $('#no_of_items').val(data.data[0].no_of_items);
+                        $('#no_of_items').prop('readonly',true);
+                        $('#item_code_value').val(data.data[0].item_codes);
+                        @if(session()->get('sub_institute_id')==47) 
+                        $('#mmisItemCOde').hide();
+                        $('#otherItemCOde').show();
+                        @endif
+                        $('#author_name').val(data.data[0].author_name);
+                        $('#isbn_issn').val(data.data[0].isbn_issn);
+                        $('#classification').val(data.data[0].classification);
+                        $('#publisher_name').val(data.data[0].publisher_name);
+                        $('#publish_year').val(data.data[0].publish_year);
+                        $('#publish_place').val(data.data[0].publish_place);
+                        $('#pages').val(data.data[0].pages);
+                        $('#series_title').val(data.data[0].series_title);
+                        $('#call_number').val(data.data[0].call_number);
+                        $('#language').val(data.data[0].language);
+                        $('#source').val(data.data[0].source);
+                        $('#subject').val(data.data[0].subject);
+                        $('#price').val(data.data[0].price);
+                        $('#price_currency').val(data.data[0].price_currency);
+                        $('#notes').val(data.data[0].notes);
+                        $('#review').val(data.data[0].review);
+                        $('#image').val(data.data[0].image);
+                        $('#file_att').val(data.data[0].file_att);
+                    } else{
+                        alert('Something went wrong');
+                    }  
                 },
                 error: function(xhr) {
                     console.log(xhr);
@@ -575,8 +660,9 @@
                         id: id
                     },
                     success: function(data) {
-                        console.log(data.book_id);
+                        // console.log(data.book_id);
                         $('#mdlItemBook').modal('toggle');
+                        $('.modal-backdrop').remove();
                         showItemByBook(data.book_id)
                     },
                     error: function(xhr) {
@@ -596,14 +682,17 @@
             $('.error').remove()
             var url = "{{ route('books.return', ':id') }}";
             url = url.replace(':id', $(this).data('id'));
-            var enroll_no = $('#enroll_no').val()
+            var enroll_no = $('#enroll_no').val();
+            var book_id = $('#bookId').val();
+
             /**Ajax code**/
             $.ajax({
                 type: "get",
                 url: url,
                 dataType: 'json',
                 data: {
-                    enroll_no: enroll_no
+                    enroll_no: enroll_no,
+                    book_id : book_id,
                 },
                 success: function(data) {
                     $('.divUserDetail').html(data.data);
@@ -624,10 +713,12 @@
             $('.error').remove()
             var url = "{{ route('books.show', ':id') }}";
             url = url.replace(':id', $('#enroll_no').val());
+            var book_id = $('#bookId').val();
+          
             /**Ajax code**/
             $.ajax({
                 type: "get",
-                url: url,
+                url: url+'?book_id='+book_id,
                 dataType: 'json',
                 success: function(data) {
                     $('.divUserDetail').html(data.data);
@@ -672,6 +763,9 @@
             e.preventDefault();
             var id = $(this).data('id');
             var name = $(this).data('name');
+            $('.divUserDetail').empty();
+            $('#enroll_no').val('');            
+            
             $('#modalTitle').text(name);
             $('#bookId').val(id);
             $('#mdlCirculation').modal('toggle');
@@ -780,6 +874,10 @@
         $('#tblBooks').DataTable().ajax.url("?year=" + year).load();;
     }
 
+    function getBooks(status) {
+        $('#tblBooks').DataTable().ajax.url("?book_status=" + status).load();;
+    }
+
     function getSubjects(subject) {
         $('#tblBooks').DataTable().ajax.url("?subject=" + subject).load();;
     }
@@ -787,9 +885,21 @@
     function getPublishers(publisher) {
         $('#tblBooks').DataTable().ajax.url("?publisher_name=" + publisher).load();;
     }
+    function getItemCode(item) {
+        $('#tblBooks').DataTable().ajax.url("?search_item=" + item).load();;
+    }
 
+    // 12-08-2024
+    function getClassification(number) {
+        $('#tblBooks').DataTable().ajax.url("?classification_no=" + number).load();;
+    }
+    function getIsbnIssn(number) {
+        $('#tblBooks').DataTable().ajax.url("?isbn_issn=" + number).load();;
+    }
+    // 12-08-2024
     function getAuthors(author) {
         $('#tblBooks').DataTable().ajax.url("?author_name=" + author).load();;
     }
 </script>
 @include('includes.footer')
+@endsection

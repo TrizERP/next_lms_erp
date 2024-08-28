@@ -48,9 +48,26 @@ $route = ['dashboard'];
         </div>
                 <div class="col-6 col-md-6">
                     <div class="help-box">
-                        <a href="http://apps.triz.co.in/crm/" class="nav-link pb-0" target="_blank">
+                        <!-- <a href="http://crm.triz.co.in/index.php?module=Users&action=Login&password=admin&username=kalpesh@triz.co.in" class="nav-link pb-0" target="_blank">
                             <span class="menu-main-icon"><i class="mdi mdi-clipboard-account md-36"></i></span> TTMS
-                        </a>
+                        </a> -->
+                        
+                        @php 
+                            $user_details = DB::table('tbluser')
+                                ->where('sub_institute_id', session()->get('sub_institute_id'))
+                                ->where('portal_user', 1)
+                                ->where('status',1)
+                                ->orderBy('id','desc')
+                                ->first();
+                            $userEmail = $userPassword ='';
+                            if ($user_details) {
+                                $userEmail = $user_details->email;
+                                $userPassword = $user_details->password;
+                            } 
+                        @endphp
+                        <!-- <a href='http://crm.triz.co.in/customerportal/index.php?api=Login&module=Portal&q={"password":"{{ $userPassword }}","username":"{{ $userEmail }}","language":"en_us"}&type=API' class="nav-link pb-0" target="_blank" rel="noopener noreferrer"> -->
+                            <span class="menu-main-icon" onclick="openTTMS()"><i class="mdi mdi-clipboard-account md-36"></i></span> TTMS
+                        <!-- </a> -->
                     </div>
                 </div>
             </div>
@@ -184,9 +201,52 @@ $route = ['dashboard'];
 <script src="{{ asset("/admin_dep/js/jquery-ui.js") }}" defer></script>
 
 <script src="{{ asset("/admin_dep/js/bootstrap.min.js") }}" defer></script>
+<script src="{{ asset("/admin_dep/js/generativeAI.js") }}" defer></script>
 <script src="{{ asset("/admin_dep/js/bootstrap-select.min.js") }}" defer></script>
 
 <script>
+   
+    // AI 
+//     var i = 1;
+// var isFirstCharTyped = false;
+
+// $(document).on('keydown', '.note-editable', function(e) {
+//     if (e.key === 'Enter') {
+//         $('.textInput').remove();
+//         $('.note-editable').append('<input class="textInput form-control" id="textInput_'+i+'" placeholder="Press ‘space’ for AI, ‘/’ for commands'+i+'" >');
+//         $('#textInput_'+i).focus();
+//         i++;
+//         isFirstCharTyped = false; // Reset for a new input
+//     }
+// });
+
+// $(document).on('keydown', '.textInput', function(e) {    
+//     const inputValue = $('.textInput').val();
+//      // Use this.id to get the current input 
+//      if(!isFirstCharTyped){
+//         if (e.key === '/') {
+//             $('.textInput').after(`
+//             <ul class="list-group lists_text" id="lists_text" style="width:50%">
+//             <li class="list-group-item" id="first_one"><a onclick="aiChat(1)">An item</a></li>
+//             <li class="list-group-item">A second item</li>
+//             <li class="list-group-item">A third item</li>
+//             <li class="list-group-item">A fourth item</li>
+//             <li class="list-group-item">And a fifth one</li>
+//             </ul>`);
+//             $('.lists_text li:first-child').focus();
+
+//             $('.textInput').val("");
+//         } else if (e.key === 'Space') {
+//             $('.textInput').val("space entered");
+//         }
+//         else if (e.key === ' ') {
+//             $('.textInput').val("space entered");
+//         }
+
+//         isFirstCharTyped = true;
+//     }
+// });
+
     $(document).ready(function () {
         $.ajaxSetup({
             headers:
@@ -220,7 +280,7 @@ $route = ['dashboard'];
   jQuery('.mydatepicker, #datepicker').datepicker({
     changeMonth: true,
     changeYear: true,
-    yearRange: "-40:+10",
+    yearRange: "-74:+10",
     inline: true,
     autoclose: true,
     format: 'dd-mm-yyyy',
@@ -513,6 +573,22 @@ $route = ['dashboard'];
             },
         });
 
+
     });
+    function openTTMS(){
+       var username = '{{$userEmail}}';
+       var password = '{{$userPassword}}';
+       var url = 'https://crm.triz.co.in/customerportal/index.php?api=Login&module=Portal&q=' +
+        encodeURIComponent(JSON.stringify({
+            "password": "{{$userPassword}}",
+            "username": "{{$userEmail}}",
+            "language": "en_us"
+        })) +
+        '&type=API';
+
+    // Open the URL in a new tab
+    window.open(url, '_blank');
+    }
+
 
 </script>

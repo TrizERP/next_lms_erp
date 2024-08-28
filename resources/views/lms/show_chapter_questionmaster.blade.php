@@ -1,7 +1,8 @@
-@include('includes.lmsheadcss')
+{{--@include('includes.lmsheadcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('lmslayout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row bg-title align-items-center justify-content-between">
@@ -21,7 +22,7 @@
                 </nav>
             </div>
             <div class="col-md-3 mb-4 text-md-right">
-                <a id="multiDelete" class="btn btn-danger"><i class="fa fa-trash"></i> Delete</a>
+                <!-- <a id="multiDelete" class="btn btn-danger"><i class="fa fa-trash"></i> Delete</a> -->
                 <a href="{{ route('question_master.create', ['chapter_id' => $_REQUEST['chapter_id'],'standard_id'=>$_REQUEST['standard_id']]) }}"
                     class="btn btn-info add-new"><i class="fa fa-plus"></i> Add Question</a>
             </div>
@@ -51,7 +52,7 @@
                                             <th>Chapter</th>
                                             <th>Question</th>
                                             <th>Question Type</th>
-                                            <th>Mapping Type</th>                                            
+                                            <th>Mapping Type</th>
                                             <th>Multiple Answer</th>
                                             <th>Status</th>
                                             <th>Action</th>
@@ -98,6 +99,7 @@
                                                         @endif
                                                     </td>
                                                     <td>
+                                                        @if($quesdata->attempt_question==0)
                                                         <div class="d-flex align-items-center justify-content-end">
                                                             <a class="btn btn-outline-success"
                                                                href="{{ route('question_master.edit', $quesdata->id) }}">
@@ -113,6 +115,7 @@
                                                                         class="ti-trash"></i></button>
                                                             </form>
                                                         </div>
+                                                         @endif
                                                     </td>
                                                 </tr>
                                             @endforeach
@@ -224,3 +227,4 @@
     }
 </script>
 @include('includes.footer')
+@endsection

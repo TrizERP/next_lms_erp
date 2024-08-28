@@ -36,15 +36,15 @@
                                 <label class="control-label">From Place</label>
                                 <select class="form-control" required name="place_id">
                                     <option value="">Select From Place</option>
-                                    @if(!empty($menu))
-                                        @foreach($menu as $key => $value)
+                                    @if(!empty($data['menu']))
+                                        @foreach($data['menu'] as $key => $value)
                                             <option
                                                 value="{{$value['id']}}" @if(isset($data->place_id)) {{$data->place_id == $value['id'] ? 'selected' : ''}} @endif> {{$value['title']}}</option>
                                         @endforeach
                                     @endif
                                 </select>
                             </div>
-
+<!--
                             <div class="col-md-4 form-group">
                                 <label>Academic Year</label>
                                 <select name="acedemic_year" id="acedemic_year" class="form-control" required>
@@ -92,13 +92,13 @@
                                     </option>
                                 </select>
                             </div>
-
+-->
                             <div class="col-md-4 form-group">
                                 <label>Inward Date</label>
                                 <div class="input-daterange input-group" id="date-range">
                                     <input type="text" required class="form-control mydatepicker"
                                            placeholder="dd/mm/yyyy"
-                                           value="@if(isset($data->inward_date)){{$data->inward_date}}@endif"
+                                           value="@if(isset($data->inward_date)) {{$data->inward_date}} @else {{ date('Y-m-d') }} @endif"
                                            name="inward_date" autocomplete="off">
                                     <span class="input-group-addon"><i class="icon-calender"></i></span>
                                 </div>
@@ -127,8 +127,8 @@
                                 <label class="control-label">File Name</label>
                                 <select class="form-control" required name="file_location_id">
                                     <option value="">Select File Name</option>
-                                    @if(!empty($menu1))
-                                        @foreach($menu1 as $key => $value)
+                                    @if(!empty($data['menu1']))
+                                        @foreach($data['menu1'] as $key => $value)
                                             <option
                                                 value="{{$value['id']}}" @if(isset($data->file_location_id)) {{$data->file_location_id == $value['id'] ? 'selected' : '' }} @endif>{{$value['title']}}</option>
                                         @endforeach

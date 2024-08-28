@@ -1,7 +1,8 @@
-@include('includes.lmsheadcss')
+{{--@include('includes.lmsheadcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('lmslayout')
+@section('container')
 <div class="content-main flex-fill">
     <div class="container-fluid mb-5">
     	<div class="row">
@@ -9,15 +10,15 @@
 	            <h1 class="h4 mb-3">Social Collabrative</h1>
 	             <nav aria-label="breadcrumb">
 	                <ol class="breadcrumb bg-transparent p-0">
-	                    <li class="breadcrumb-item"><a href="{{route('course_master.index')}}">LMS</a></li>                                 
-	                    <li class="breadcrumb-item">Engagement</li>                                                         
-	                    <li class="breadcrumb-item">Show Social Collabrative</li>                                                         
+	                    <li class="breadcrumb-item"><a href="{{route('course_master.index')}}">LMS</a></li>
+	                    <li class="breadcrumb-item">Engagement</li>
+	                    <li class="breadcrumb-item">Show Social Collabrative</li>
 	                </ol>
 	            </nav>
-	        </div>  
-        </div> 
+	        </div>
+        </div>
 		<div class="course-grid-tab tab-pane fade show active" id="grid" role="tabpanel" aria-labelledby="grid-tab">
-			<ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">				
+			<ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
 				<li class="nav-item">
 					<a class="nav-link active" id="notification-tab" data-toggle="pill" href="#notification" role="tab" aria-controls="pills-home" aria-selected="true">Discussion</a>
 				</li>
@@ -26,25 +27,25 @@
 			    <div class="row">
 					<div class="col-md-12">
 					    <div class="blog-comment">
-							<ul class="comments">														
+							<ul class="comments">
 							@if(count($data['doubt_data']) > 0)
-								@php $k=1; @endphp							
+								@php $k=1; @endphp
 								@foreach($data['doubt_data'] as $key => $val)
-									<div class="accordion-card collapsed px-2 pt-2 border-0" data-toggle="collapse" href="#collapseExample{{$k}}" role="button" aria-expanded="false" aria-controls="collapseExample">	
+									<div class="accordion-card collapsed px-2 pt-2 border-0" data-toggle="collapse" href="#collapseExample{{$k}}" role="button" aria-expanded="false" aria-controls="collapseExample">
 										<li class="clearfix">
 										  <img src="/storage/{{$val['image']}}" class="avatar" alt="">
 										  <div class="post-comments">
 										      <p class="meta">{{$val['doubt_date']}} <a href="#">{{$val['student_name']}}({{$val['standard_division']}})</a> says : <i class="pull-right">
 
 										      	<a href="javascript:add_data({{$val['id']}});"><small>Reply</small></a></i></p>
-										   
+
 										          {!!$val['description']!!}
 										          ({{$val['title']}})
 
-										   
+
 										  </div>
 
-										  	@if(isset($data['doubt_conversation_data'][$val['id']]))										
+										  	@if(isset($data['doubt_conversation_data'][$val['id']]))
 						 					<ul class="comments" id="collapseExample{{$k}}">
 						 						@foreach($data['doubt_conversation_data'][$val['id']] as $key1 => $val1)
 											      <li class="clearfix">
@@ -60,8 +61,8 @@
 											</ul>
 											@endif
 										</li>
-									</div>		
-								
+									</div>
+
 								@endforeach
 							@else
 								<li>
@@ -70,7 +71,7 @@
 									</div>
 								</li>
 							@endif
-							</ul>			
+							</ul>
 						</div>
 					</div>
 				</div>
@@ -95,9 +96,9 @@
             </div>
 
             <!--Body-->
-            <form action="{{ route('lmsDoubtConversation.store') }}" method="post" id="comment_form">                          	           
-	            {{ method_field("POST") }}	            
-	            @csrf 
+            <form action="{{ route('lmsDoubtConversation.store') }}" method="post" id="comment_form">
+	            {{ method_field("POST") }}
+	            @csrf
 	            <div class="modal-body">
 	                <div class="row">
 	                    <div class="white-box">
@@ -114,16 +115,16 @@
                                     <input type="hidden" id="doubt_id" name="doubt_id" />
                                 </div>
 	                        </div>
-	                    </div>                                
+	                    </div>
 	                </div>
 	            </div>
-            
+
 
 	            <!--Footer-->
 	            <div class="modal-footer flex-center">
 	                <input type="submit" id="submit" name="submit" value="Save" class="btn btn-success" >
-	            </div>          
-			</form> 
+	            </div>
+			</form>
         </div>
         <!--/.Content-->
     </div>
@@ -234,9 +235,10 @@ a {
 @include('includes.lmsfooterJs')
 <script type="text/javascript">
 function add_data(id)
-{       
+{
     $('#doubt_id').val(id);
     $('#CommentModal').modal('show');
 }
 </script>
 @include('includes.footer')
+@endsection

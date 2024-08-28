@@ -12,6 +12,12 @@ use function App\Helpers\is_mobile;
 use App\Models\tblmenumasterModel;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use App\Http\Controllers\fees\map_year\map_year_controller;
+use App\Http\Controllers\fees\fees_title\fees_title_controller;
+use App\Http\Controllers\fees\fees_month_header\feesMonthHeadercontroller;
+use App\Http\Controllers\fees\feesReceiptBookMasterController;
+use App\Http\Controllers\fees\fees_breackoff\fees_breackoff_controller;
+use App\Http\Controllers\transportation\add_vehicle\add_vehicle_controller;
 
 class tourController extends Controller
 {
@@ -46,7 +52,7 @@ class tourController extends Controller
 
         $getSchoolData = SchoolModel::where(['id' => $sub_institute_id])->get()->toArray();
 
-        $getUserData = tbluserModel::where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
+        $getUserData = tbluserModel::where(['sub_institute_id' => $sub_institute_id])->where('status',1)->get()->toArray(); // 23-04-24 by uma
 
         if (isset($getSchoolData)) {
             $res['schooldata'] = $getSchoolData[0];
@@ -131,6 +137,7 @@ class tourController extends Controller
         $type = "";
         // return session();exit;
         $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
         $user_id = $request->session()->get('user_id');
 
         $rightsQuery = DB::table('tbluser as u')
@@ -151,6 +158,7 @@ class tourController extends Controller
         ->selectRaw('GROUP_CONCAT(distinct m.id) AS MID')
         ->where('u.sub_institute_id', $sub_institute_id)
         ->where('u.id', $user_id)
+        ->where('u.status',1) // 23-04-24 by uma
         ->get()
         ->toArray();    
 
@@ -197,7 +205,7 @@ class tourController extends Controller
         $master = tblmenumasterModel::whereRaw("find_in_set('$sub_institute_id',sub_institute_id)")->where('status',1) ->where('menu_type','=','MASTER')
             ->orderBy('sort_order')->get()->toArray();
         $i = 0;
-
+        
         foreach ($master as $key => $value) {
                 // print_r($value);
             $mastermenu[$value['menu_title']][$i] = $master[$key];
@@ -223,7 +231,56 @@ class tourController extends Controller
             $i++;
         }
         $database_table = tblmenumasterModel::select('database_table')->whereRaw("find_in_set('$sub_institute_id',sub_institute_id)")->where('status',1)->get();
+        $getSchoolData = SchoolModel::where(['id' => $sub_institute_id])->get()->toArray();
 
+        $getUserData = tbluserModel::where(['sub_institute_id' => $sub_institute_id])->where('status',1)->get()->toArray(); // 23-04-24 by uma
+
+        if (isset($getSchoolData)) {
+            $res['schooldata'] = $getSchoolData[0];
+        }
+        if (isset($getUserData)) {
+            $res['userdata'] = $getUserData[0];
+        }
+
+        // echo "<pre>";print_r($res['map_year']);exit;
+        //get roles 
+        $roles = DB::table('role_responsibility')->get()->toArray();
+
+        $rolesRes = [];
+
+        foreach ($roles as $key => $value) {
+            $rolesRes[$value->module_name][$value->profile_name] = $value;
+        }
+        $user_profile_id = session()->get('user_profile_id');
+
+        $request->merge(['type'=>"API",'sub_institute_id'=>$sub_institute_id ,'syear'=>$syear,'user_profile_id'=>$user_profile_id]);
+
+        $mapYearController = new map_year_controller;
+        $res['map_year'] = json_decode($mapYearController->create($request));
+
+        $feesTitleController = new fees_title_controller;
+        $res['feesTitle'] = json_decode($feesTitleController->create($request));
+
+        $feesMonthHeader = new feesMonthHeadercontroller;
+        $res['feesMonthHeader'] = json_decode($feesMonthHeader->index($request));
+
+        $feesReceiptBook = new feesReceiptBookMasterController;
+        $res['feesReceiptBook'] = json_decode($feesReceiptBook->create($request));
+        set_time_limit(300);
+
+        $feesBk = new fees_breackoff_controller;
+        $res['feesBreakoff'] = json_decode($feesBk->create($request));
+
+        $res['importData']  = DB::table('import_table_fields')->groupBy('table_name')->orderBy('id')->get();
+       //get process and requirements 
+       $requirementData = DB::table('requirement_gathering')->whereRaw('sub_institute_Id in (0,'.$sub_institute_id.')')->get()->toArray();
+
+        $requirements = [];
+        foreach ($requirementData as $key => $value) {
+            $requirements[$value->menu_name][$value->sub_institute_id] = $value;
+        }
+
+        // echo "<pre>";print_r($requirements);exit;
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['head'] = $data;
@@ -231,9 +288,24 @@ class tourController extends Controller
         $res['groupwisemenuMaster'] = $mastermenu;
         $res['groupwisesubmenuMaster'] = $finalSubMenu ?? [];
         $res['groupwiseSubsubmenuMaster'] = $finalSubChildMenu ?? [];
-        $rr = [];
-
+        $res['roles'] = $rolesRes ?? [];       
+        $res['requirements'] = $requirements ?? [];        
         return is_mobile($type, "setup_institute_details", $res, 'view');
     }
 
+    public function transportOnboarding(Request $request){
+        $type = $request->type;
+        $res['sub_institute_id']=$sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+        $user_id = $request->session()->get('user_id');
+        $user_profile_id = session()->get('user_profile_id');
+
+        $request->merge(['type'=>"API",'sub_institute_id'=>$sub_institute_id ,'syear'=>$syear,'user_profile_id'=>$user_profile_id]);
+
+        $vehicleController = new add_vehicle_controller;
+        $res['vehicleData'] = json_decode($vehicleController->create($request));
+        // echo "<pre>";print_r($res['vehicleData']);exit;
+        return is_mobile($type, "onboard_module.transportOnboarding", $res, 'view');
+
+    }
 }

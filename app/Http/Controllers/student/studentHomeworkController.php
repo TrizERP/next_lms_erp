@@ -17,6 +17,8 @@ use function App\Helpers\getStudents;
 use function App\Helpers\is_mobile;
 use function App\Helpers\SearchStudent;
 use function App\Helpers\sendNotification;
+use function App\Helpers\send_FCM_Notification;
+use App\Models\school_setup\SchoolModel;
 
 class studentHomeworkController extends Controller
 {
@@ -159,6 +161,7 @@ class studentHomeworkController extends Controller
 
     public function store(Request $request)
     {
+
         $type = $request->get('type');
         if ($type == "API") {
             $sub_institute_id = $request->input('sub_institute_id');
@@ -168,69 +171,83 @@ class studentHomeworkController extends Controller
             $syear = session()->get('syear');
         }
 
+       
         $students = $request->get('students');
         $student_details = getStudents($students, $sub_institute_id, $syear);
-        $title = $request->get('title');
-        $description = $request->get('description');
-        $submission_date = $request->get('submission_date');
-        $division_id = $request->get('division_id');
-        $standard_id = $request->get('standard_id');
-        $subject_id = $request->get('subject_id');
-        $created_by = ($request->session()->get('user_id') ? $request->session()->get('user_id') : $request->get('teacher_id'));
+        
+        if(empty($student_details)){
+            $res['status_code'] = "0";
+            $res['message'] = "Students Not Found with syear ".$syear;
+            // ." and student_ids".json_encode($students,true) currently not required
+        }else{
+                $title = $request->get('title');
+                $description = $request->get('description');
+                $submission_date = $request->get('submission_date');
+                $division_id = $request->get('division_id');
+                $standard_id = $request->get('standard_id');
+                $subject_id = $request->get('subject_id');
+                $created_by = ($request->session()->get('user_id') ? $request->session()->get('user_id') : $request->get('teacher_id'));
 
-        $file_name = $file_size = $ext = "";
-        if ($request->hasFile('image')) {
-            $file = $request->file('image');
-            $originalname = $file->getClientOriginalName();
-            $file_size = $file->getSize();
-            $name = "homework-".$request->get('user_name').date('YmdHis');
-            $ext = File::extension($originalname);
-            $file_name = $name.'.'.$ext;
-            $path = $file->storeAs('public/student/', $file_name);
+                $file_name = $file_size = $ext = "";
+                if ($request->hasFile('image')) {
+                    $file = $request->file('image');
+                    $originalname = $file->getClientOriginalName();
+                    $file_size = $file->getSize();
+                    $name = "homework-".$request->get('user_name').date('YmdHis');
+                    $ext = File::extension($originalname);
+                    $file_name = $name.'.'.$ext;
+                    $path = $file->storeAs('public/student/', $file_name);
+                }
+
+                foreach ($student_details as $id => $arr) {
+                    
+                    $student_id = $arr['id'];
+                    $mobile = $arr['mobile'];
+                    $standard_id = $arr['standard_id'];
+                    $division_id = $arr['section_id'];
+                    $addhomeworkArray = [];
+                    $addhomeworkArray['student_id'] = $student_id;
+                    $addhomeworkArray['sub_institute_id'] = $sub_institute_id;
+                    $addhomeworkArray['title'] = $title;
+                    $addhomeworkArray['description'] = $description;
+                    $addhomeworkArray['standard_id'] = $standard_id;
+                    $addhomeworkArray['division_id'] = $division_id;
+                    $addhomeworkArray['subject_id'] = $subject_id;
+                    $addhomeworkArray['date'] = date('Y-m-d');
+                    $addhomeworkArray['submission_date'] = $submission_date;
+                    $addhomeworkArray['syear'] = $syear;
+                    $addhomeworkArray['type'] = "Homework";
+                    $addhomeworkArray['image'] = $file_name;
+                    $addhomeworkArray['image_size'] = $file_size;
+                    $addhomeworkArray['image_type'] = $ext;
+                    $addhomeworkArray['created_ip'] = $_SERVER['REMOTE_ADDR'];
+                    $addhomeworkArray['created_by'] = $created_by;
+                    studentHomeworkModel::insert($addhomeworkArray);
+
+                    //START Send Notification Code
+                    // $app_notification_content = [
+                    //     'NOTIFICATION_TYPE'        => 'Homework',
+                    //     'NOTIFICATION_DATE'        => date('Y-m-d'),
+                    //     'STUDENT_ID'               => $student_id,
+                    //     'NOTIFICATION_DESCRIPTION' => $title,
+                    //     'STATUS'                   => 0,
+                    //     'SUB_INSTITUTE_ID'         => $sub_institute_id,
+                    //     'SYEAR'                    => $syear,
+                    //     'SCREEN_NAME'              => 'home_work',
+                    //     'CREATED_BY'               => $created_by,
+                    //     'CREATED_IP'               => $_SERVER['REMOTE_ADDR'],
+                    // ];
+                    // sendNotification($app_notification_content);
+                    $sms_sent = $this->sendHomewokNotification($student_id,$sub_institute_id,$syear,$title,$created_by,$mobile);
+                    // if($sms_sent!=1){
+                    //     $res['sms_not_sent'][] = $student_id;
+                    // }
+                    //END Send Notification Code
+            }
+
+            $res['status_code'] = "1";
+            $res['message'] = "Homework Added successfully";
         }
-
-        foreach ($student_details as $id => $arr) {
-            $student_id = $arr['id'];
-            $standard_id = $arr['standard_id'];
-            $division_id = $arr['section_id'];
-            $addhomeworkArray = [];
-            $addhomeworkArray['student_id'] = $student_id;
-            $addhomeworkArray['sub_institute_id'] = $sub_institute_id;
-            $addhomeworkArray['title'] = $title;
-            $addhomeworkArray['description'] = $description;
-            $addhomeworkArray['standard_id'] = $standard_id;
-            $addhomeworkArray['division_id'] = $division_id;
-            $addhomeworkArray['subject_id'] = $subject_id;
-            $addhomeworkArray['date'] = date('Y-m-d');
-            $addhomeworkArray['submission_date'] = $submission_date;
-            $addhomeworkArray['syear'] = $syear;
-            $addhomeworkArray['type'] = "Homework";
-            $addhomeworkArray['image'] = $file_name;
-            $addhomeworkArray['image_size'] = $file_size;
-            $addhomeworkArray['image_type'] = $ext;
-            $addhomeworkArray['created_ip'] = $_SERVER['REMOTE_ADDR'];
-            $addhomeworkArray['created_by'] = $created_by;
-            studentHomeworkModel::insert($addhomeworkArray);
-
-            //START Send Notification Code
-            $app_notification_content = [
-                'NOTIFICATION_TYPE'        => 'Homework',
-                'NOTIFICATION_DATE'        => date('Y-m-d'),
-                'STUDENT_ID'               => $student_id,
-                'NOTIFICATION_DESCRIPTION' => $title,
-                'STATUS'                   => 0,
-                'SUB_INSTITUTE_ID'         => $sub_institute_id,
-                'SYEAR'                    => $syear,
-                'SCREEN_NAME'              => 'home_work',
-                'CREATED_BY'               => $created_by,
-                'CREATED_IP'               => $_SERVER['REMOTE_ADDR'],
-            ];
-            sendNotification($app_notification_content);
-            //END Send Notification Code
-        }
-
-        $res['status_code'] = "1";
-        $res['message'] = "Homework Added successfully";
 
         return is_mobile($type, "student_homework.index", $res);
     }
@@ -299,8 +316,17 @@ class studentHomeworkController extends Controller
     public function studentHomeworkReport(Request $request)
     {
         $type = $request->input('type');
-        $sub_institute_id = $request->session()->get('sub_institute_id');
-        $syear = $request->session()->get('syear');
+        if($type=='API'){
+            $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');
+            $user_id = $request->user_id;
+            $user_profile = $request->get('user_profile_name');
+        }else{
+            $sub_institute_id = $request->session()->get('sub_institute_id');
+            $syear = $request->session()->get('syear');
+            $user_id = session()->get('user_id');
+            $user_profile = session()->get('user_profile_name');
+        }
         $subject = $request->input('subject');
         $grade = $request->input('grade');
         $standard = $request->input('standard');
@@ -325,7 +351,7 @@ class studentHomeworkController extends Controller
             })->join('subject as ss', function ($join) {
                 $join->whereRaw('ss.id = h.subject_id AND ss.sub_institute_id = h.sub_institute_id');
             })->selectRaw("h.*,s.name as standard_name,d.name as division_name,ss.subject_name,
-                CONCAT_WS(' ',ts.first_name,ts.last_name) as student_name")
+                CONCAT_WS(' ',ts.first_name,ts.last_name) as student_name, ts.id as student_id")
             ->where('h.sub_institute_id', $sub_institute_id)
             ->where('h.syear', $syear);
 
@@ -340,6 +366,23 @@ class studentHomeworkController extends Controller
         if ($division != '') {
             $result = $result->where('h.division_id', $division);
         }
+        else if(isset($user_profile) && $user_profile=="Teacher"){
+            $result = $result->whereIn('h.division_id', function ($sub_query) use ($standard,$syear,$user_id) {
+                if(isset($standard)){
+                $sub_query->select('division_id')
+                    ->from('timetable')
+                    ->where('teacher_id', $user_id)
+                    ->where('standard_id',$standard)
+                    ->where('syear',$syear);
+                }else{
+                    $sub_query->select('division_id')
+                    ->from('timetable')
+                    ->where('teacher_id', $user_id)
+                    ->where('syear',$syear)
+                    ->groupBy('division_id');
+                }
+            });
+        }
 
         if ($grade != '') {
             $result = $result->where('s.grade_id', $grade);
@@ -353,7 +396,7 @@ class studentHomeworkController extends Controller
             $result = $result->where('h.date', '<=', $to_date);
         }
 
-        $result = $result->get()->toArray();
+        $result = $result->orderBy('h.id','DESC')->get()->toArray();
 
         $result = array_map(function ($value) {
             return (array) $value;
@@ -391,31 +434,41 @@ class studentHomeworkController extends Controller
         $sub_institute_id = $request->input("sub_institute_id");
         $syear = $request->input("syear");
         $action = $request->input("action");
-        $marking_period_id = session()->get('term_id');
+        
+        $from_date = $request->from_date;
+        $to_date = $request->to_date;
 
         if ($teacher_id != "" && $sub_institute_id != "" && $syear != "" && $action != "") {
             $data = DB::table('homework as h')
                 ->join('tblstudent as ts', function ($join) {
-                    $join->whereRaw('ts.id = h.student_id AND ts.sub_institute_id = h.sub_institute_id');
-                })->join('standard as s', function ($join) use($marking_period_id) {
-                    $join->whereRaw('h.standard_id = s.id AND h.sub_institute_id = s.sub_institute_id');
-                    // ->when($marking_period_id,function($query) use($marking_period_id){
-                    //     $query->where('s.marking_period_id',$marking_period_id);
-                    // });
+                    $join->on('ts.id', '=', 'h.student_id')->on('ts.sub_institute_id', '=', 'h.sub_institute_id');
+                })->join('standard as s', function ($join){
+                    $join->on('h.standard_id', '=', 's.id')->on('h.sub_institute_id', '=', 's.sub_institute_id');
                 })->join('division as d', function ($join) {
-                    $join->whereRaw('d.id = h.division_id AND h.sub_institute_id= d.sub_institute_id');
+                    $join->on('d.id', '=', 'h.division_id')->on('h.sub_institute_id','=','d.sub_institute_id');
                 })->join('subject as ss', function ($join) {
-                    $join->whereRaw('ss.id = h.subject_id AND ss.sub_institute_id = h.sub_institute_id');
-                })->join('class_teacher as ct', function ($join) {
-                    $join->whereRaw('ct.standard_id = h.standard_id AND ct.division_id = h.division_id');
-                })->selectRaw("h.id,h.title,h.description,h.date,if(h.image = '','',
+                    $join->on('ss.id', '=', 'h.subject_id')->on('ss.sub_institute_id', '=', 'h.sub_institute_id');
+                })
+                /*
+                ->join('class_teacher as ct', function ($join) {
+                    $join->on('ct.standard_id', '=', 'h.standard_id')->on('ct.division_id', '=', 'h.division_id')->on('ct.syear', '=', 'h.syear');
+                })
+                */
+                ->selectRaw("h.id,h.title,h.description,h.date,if(h.image = '','',
                     concat('https://".$_SERVER['SERVER_NAME']."/storage/student/',h.image)) as file_name,s.name AS standard_name,
                     d.name AS division_name,ss.subject_name,CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name) AS student_name,
                     ts.enrollment_no,ts.mobile,h.type")
                 ->where('h.sub_institute_id', $sub_institute_id)
                 ->where('h.syear', $syear)
-                ->where('ct.teacher_id', $teacher_id)
-                ->where('h.type', $action)->get()->toArray();
+                ->where('h.created_by', $teacher_id)
+                ->where('h.type', $action)
+                ->when($from_date != '',function($q) use($from_date){
+                    $q->where('h.date', '>=', $from_date);
+                })
+                ->when($to_date != '',function($q) use($to_date){
+                    $q->where('h.date', '<=', $to_date);
+                })
+                ->orderBy('date','DESC')->get()->toArray();
 
             $res['status'] = 1;
             $res['message'] = "Success";
@@ -463,7 +516,7 @@ class studentHomeworkController extends Controller
                 })->join('subject as ss', function ($join) {
                     $join->whereRaw('ss.id = h.subject_id AND ss.sub_institute_id = h.sub_institute_id');
                 })->leftJoin('tbluser as tu', function ($join) {
-                    $join->whereRaw('tu.id = h.created_by');
+                    $join->whereRaw('tu.id = h.created_by')->where('tu.status',1);   // 23-04-24 by uma
                 })->selectRaw("h.id,h.title,h.description,h.created_by,DATE_FORMAT(h.date,'%d-%m-%Y') AS date, 
                     if(h.image = '','',concat('https://".$_SERVER['SERVER_NAME']."/storage/student/',h.image)) as file_name,
                     s.name AS standard_name,d.name AS division_name,ss.subject_name, 
@@ -477,10 +530,14 @@ class studentHomeworkController extends Controller
                 ->orderBy('h.date', 'DESC')
                 ->get()->toArray();
             //echo("<pre>");print_r($data);die;
-            
-            $res['status'] = 1;
-            $res['message'] = "Success";
-            $res['data'] = $data;
+            if (count($data) > 0) {
+                $res['status'] = 1;
+                $res['message'] = "Success";
+                $res['data'] = $data;
+            } else {
+                $res['status'] = 0;
+                $res['message'] = "No homework found";
+            }
         } else {
             $res['status'] = 0;
             $res['message'] = "Parameter Missing";
@@ -523,7 +580,7 @@ class studentHomeworkController extends Controller
                     ->join('sub_std_map as s', function ($join) {
                         $join->where('s.subject_id = t.subject_id');
                     })->join('tbluser as tu', function ($join) {
-                        $join->where('tu.id = t.teacher_id');
+                        $join->where('tu.id = t.teacher_id')->where('tu.status',1);   // 23-04-24 by uma
                     })->selectRaw("display_name AS subject_name,elective_subject,allow_grades,t.teacher_id,
                         concat_ws(' ',tu.first_name,tu.middle_name,tu.last_name) as teacher_name")
                     ->where('t.syear', $syear)
@@ -564,10 +621,11 @@ class studentHomeworkController extends Controller
         $teacher_id = $request->session()->get('user_id');
         $standard_id = $request->input('standard_id');
 
-        if ($profile_parent_id == '1') {
-            $subject_teacher_subjects_data = DB::table('sub_std_map as s')
-                ->selectRaw("s.subject_id,s.display_name,s.standard_id, '' as academic_section_id,'' as division_id,'' as teacher_id")
-                ->where('s.sub_institute_id', $sub_institute_id)
+        // if ($profile_parent_id == '1') {
+        if ($user_profile_name == 'Admin') {
+             $subject_teacher_subjects_data = DB::table('sub_std_map as s')
+               ->selectRaw("s.subject_id,s.display_name,s.standard_id, '' as academic_section_id,'' as division_id,'' as teacher_id")
+                 ->where('s.sub_institute_id', $sub_institute_id)
                 ->where('s.standard_id', $standard_id)
                 ->groupByRaw('s.subject_id,s.standard_id')
                 ->orderBy('s.display_name')->get()->toArray();
@@ -578,8 +636,14 @@ class studentHomeworkController extends Controller
                 })
                 ->selectRaw("s.subject_id,s.display_name,t.academic_section_id,t.standard_id,t.division_id,t.teacher_id")
                 ->where('s.sub_institute_id', $sub_institute_id)
+                ->where('t.syear', $syear)
                 ->where('s.standard_id', $standard_id)
-                ->where('t.teacher_id', $teacher_id)
+                ->when($request->division_id,function($q) use($request){
+                    $q->where('t.division_id',$request->division_id);
+                })
+                ->when($user_profile_name=="Teacher",function($q) use($teacher_id){
+                    $q->where('t.teacher_id', $teacher_id);
+                })
                 ->groupByRaw('s.subject_id,s.standard_id')
                 ->orderBy('s.display_name')->get()->toArray();
         }
@@ -598,4 +662,70 @@ class studentHomeworkController extends Controller
         return json_decode(json_encode($subject_teacher_subjects_data), true);
     }
 
+    public function multipleDelete(Request $request) 
+    {
+        $type = $request->get('type');
+
+        $selectedStudents = $request->input('selected_students');
+    
+        $selectedStudents = explode(',', $selectedStudents);
+        
+        DB::table('homework')->whereIn('id', $selectedStudents)->delete();
+        
+        $res['status_code'] = "1";
+        $res['message'] = "Student Homework Deleted Successfully";
+    
+        return is_mobile($type, "student_homework_report_index", $res, "redirect");
+    }
+
+    public function sendHomewokNotification($student_id,$sub_institute_id,$syear,$text,$created_by,$mobile){
+
+        $app_notification_content = [
+            'NOTIFICATION_TYPE'        => 'Homework',
+            'NOTIFICATION_DATE'        => date('Y-m-d'),
+            'STUDENT_ID'               => $student_id,
+            'NOTIFICATION_DESCRIPTION' => $text,
+            'STATUS'                   => 0,
+            'SUB_INSTITUTE_ID'         => $sub_institute_id,
+            'SYEAR'                    => $syear,
+            'SCREEN_NAME'              => 'home_work',
+            'CREATED_BY'               => $created_by,
+            'CREATED_IP'               => $_SERVER['REMOTE_ADDR'],
+        ];
+        sendNotification($app_notification_content);
+
+        $gcm_data = DB::table('gcm_users')->where('mobile_no', $mobile)
+            ->where('sub_institute_id', $sub_institute_id)->get()->toArray();
+
+        $gcmRegIds = [];
+        if (count($gcm_data) > 0) {
+            foreach ($gcm_data as $key1 => $val1) {
+                $gcmRegIds[] = $val1->gcm_regid;
+            }
+        }
+
+        $pushMessage = $text;
+
+        $bunch_arr = array_chunk($gcmRegIds, 1000);
+        $schoolData = SchoolModel::where(['id' => $sub_institute_id])->get()->toArray();
+        $schoolName = ($schoolData[0]['SchoolName']) ? $schoolData[0]['SchoolName'] : '-';
+        $schoolLogo = $_SERVER['APP_URL'].'/admin_dep/images/'.$schoolData[0]['Logo'];
+        
+        if (!empty($bunch_arr)) {
+            foreach ($bunch_arr as $val) {
+                if (isset($val, $pushMessage)) {
+                    $type1 = 'Homework';
+                    $message = [
+                        'body'  => $pushMessage, 'TYPE' => $type1, 'USER_ID' => $student_id,
+                        'title' => $schoolName, 'image' => $schoolLogo,
+                    ];
+                    $pushStatus = send_FCM_Notification($val, $message, $sub_institute_id);
+                    // sendNotification($app_notification_content);
+                }
+            }
+            return 1;
+        }else{
+            return 0;
+        }
+    }
 }

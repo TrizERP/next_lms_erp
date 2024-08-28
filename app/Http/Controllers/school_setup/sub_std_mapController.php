@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
 use function App\Helpers\ValidateInsertData;
+use Illuminate\Support\Facades\Storage;
 
 class sub_std_mapController extends Controller
 {
@@ -97,8 +98,10 @@ class sub_std_mapController extends Controller
             $newfilename = 'SubStdMap_'.date('Y-m-d_h-i-s').'.'.$ext;
             $file_folder = '/SubStdMapping';
             //$img->move(public_path().'/lms_content_file/',$newfilename);
-            $img->storeAs('public/SubStdMapping/', $newfilename);
+            // $img->storeAs('public/SubStdMapping/', $newfilename); 20-05-24
+            Storage::disk('digitalocean')->putFileAs('public/SubStdMapping/', $img, $newfilename, 'public');
         }
+
         foreach ($standard_id as $key => $stdval) {
             sub_std_mapModel::updateOrCreate(
                 [
@@ -111,13 +114,14 @@ class sub_std_mapController extends Controller
                     'subject_id'       => $request->get('subject_id'),
                     'display_name'     => $request->get('display_name'),
                     'allow_grades'     => $request->get('allow_grades') != "" ? $request->get('allow_grades') : "",
-                    'elective_subject' => $request->get('elective_subject') != "" ? $request->get('elective_subject') : "",
+                    'elective_subject' => $request->get('elective_subject') != "" ? $request->get('elective_subject') : "No",
                     'allow_content'    => $request->get('allow_content') != "" ? $request->get('allow_content') : "",
                     'subject_category' => $request->get('subject_category'),
                     'display_image'    => $file_folder.'/'.$newfilename,
                     'sub_institute_id' => $sub_institute_id,
                     'sort_order'       => $request->get('sort_order'),
                     'status'           => "1",
+                    "load"             => $request->get('load'),
                 ]
             );
 
@@ -176,7 +180,8 @@ class sub_std_mapController extends Controller
             $newfilename = 'SubStdMap_'.date('Y-m-d_h-i-s').'.'.$ext;
             $file_folder = '/SubStdMapping';
             //$img->move(public_path().'/lms_content_file/',$newfilename);
-            $img->storeAs('public/SubStdMapping/', $newfilename);
+            // $img->storeAs('public/SubStdMapping/', $newfilename); 20-05-24
+            Storage::disk('digitalocean')->putFileAs('public/SubStdMapping/', $img, $newfilename, 'public');
 
             $data = [
                 'standard_id'      => $finalStdId,
@@ -185,14 +190,14 @@ class sub_std_mapController extends Controller
                 'allow_grades'     => $request->get('allow_grades') != "" ? $request->get('allow_grades') : "",
                 'allow_content'    => $request->get('allow_content') != "" ? $request->get('allow_content') : "",
                 'subject_category' => $request->get('subject_category'),
-                'elective_subject' => $request->get('elective_subject') != "" ? $request->get('elective_subject') : "",
+                'elective_subject' => $request->get('elective_subject') != "" ? $request->get('elective_subject') : "No",
                 'allow_content'    => $request->get('allow_content') != "" ? $request->get('allow_content') : "",
                 'display_image'    => $file_folder.'/'.$newfilename,
                 'sub_institute_id' => $sub_institute_id,
                 'add_content'      => $request->get('add_content'),
                 'sort_order'       => $request->get('sort_order'),
                 'status'           => "1",
-
+                'load'             => $request->get('load'),
             ];
         } else {
             $data = [
@@ -202,13 +207,13 @@ class sub_std_mapController extends Controller
                 'allow_grades'     => $request->get('allow_grades') != "" ? $request->get('allow_grades') : "",
                 'allow_content'    => $request->get('allow_content') != "" ? $request->get('allow_content') : "",
                 'subject_category' => $request->get('subject_category'),
-                'elective_subject' => $request->get('elective_subject') != "" ? $request->get('elective_subject') : "",
+                'elective_subject' => $request->get('elective_subject') != "" ? $request->get('elective_subject') : "No",
                 'allow_content'    => $request->get('allow_content') != "" ? $request->get('allow_content') : "",
                 'sub_institute_id' => $sub_institute_id,
                 'sort_order'       => $request->get('sort_order'),
                 'add_content'      => $request->get('add_content'),
                 'status'           => "1",
-
+                'load'             => $request->get('load'),
             ];
         }
 

@@ -88,6 +88,7 @@ class diciplineController extends Controller
         $result = DB::table("tbluser")
             ->selectRaw("concat(first_name,' ',last_name) name")
             ->where("id", "=", $request->session()->get('user_id'))
+            ->where('status',1)  // 23-04-24 by uma
             ->get()->toArray();
             
         $name = $result[0]->name;

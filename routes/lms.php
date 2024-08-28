@@ -42,12 +42,21 @@ use App\Http\Controllers\lms\topicController;
 use App\Http\Controllers\lms\questionWiseReportController;
 use App\Http\Controllers\bazar\bulkUploadSheetController;
 use App\Http\Controllers\bazar\bulkUploadedReportController;
-
+use App\Http\Controllers\lms\pal\palController;
 use App\Http\Controllers\lms\virtualclassroomController;
 use App\Http\Controllers\school_setup\sub_std_mapController;
+use App\Http\Controllers\lms\lmsDashboardController;
 use Illuminate\Support\Facades\Route;
 
-Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute']], function () {
+Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
+    Route::get('o-net-data-category',[\App\Http\Controllers\lms\ONetOnlineDataController::class,'index'])->name('o-net-data-category.index');
+    Route::get('o-net-data-list',[\App\Http\Controllers\lms\ONetOnlineDataController::class,'ONetDataTable'])->name('o-net-data-table.show-list');
+    Route::get('o-net-data-list-details',[\App\Http\Controllers\lms\ONetOnlineDataController::class,'ONetDataTableListDetails'])->name('o-net-data-table.show-list-details');
+    Route::get('o-net-data-category/show',[\App\Http\Controllers\lms\ONetOnlineDataController::class,'showCategoryWiseData'])->name('o-net-data.show-category');
+    Route::get('o-net-data-category/show-occupation-detail',[\App\Http\Controllers\lms\ONetOnlineDataController::class,'showCategoryWiseOccupationData'])->name('o-net-data.show-occupation-detail');
+    Route::get('o-net-data-category/show-occupation-detail-list',[\App\Http\Controllers\lms\ONetOnlineDataController::class,'showCategoryWiseOccupationDataList'])->name('o-net-data.show-occupation-detail-list');
+    Route::get('o-net-data-category/show-occupation-detail-list-summary',[\App\Http\Controllers\lms\ONetOnlineDataController::class,'showCategoryWiseOccupationDataListSummary'])->name('o-net-data.show-occupation-detail-list-summary');
+
     Route::resource('chapter_master', chapterController::class);
     Route::resource('course_master', courseController::class);
     Route::resource('topic_master', topicController::class);
@@ -64,6 +73,8 @@ Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute']
 
     Route::get('ajax_ChapterwiseLOmaster', [lomasterController::class, 'ajax_ChapterwiseLOmaster'])->name('ajax_ChapterwiseLOmaster');
 
+    Route::resource('lmsdashboard', lmsDashboardController::class);
+    
     Route::resource('lo_master', lomasterController::class);
 
     Route::resource('lo_indicator', loindicatorController::class);
@@ -97,6 +108,8 @@ Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute']
     Route::resource('bulk_chapter_upload', bulk_chapter_uploadController::class);
     Route::get('ajax_SubjectwiseQuestion', [questionpaperController::class, 'ajax_SubjectwiseQuestion'])->name('ajax_SubjectwiseQuestion');
 
+    // palController
+    Route::resource('pal', palController::class);
 
     Route::get('ajax_LMS_MappingValue', [contentController::class, 'ajax_LMS_MappingValue'])->name('ajax_LMS_MappingValue');
 
@@ -168,7 +181,8 @@ Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute']
     Route::GET('ajax_daywisedata', 'lms\lessonplan\lms_lessonplanController@ajax_DayWiseData')->name('ajax_daywisedata');
 
     Route::get('ajax_getTeacher', [lms_lessonplanController::class, 'ajax_getTeacher'])->name('ajax_getTeacher');
-
+    Route::get('get_chat_data', [lms_lessonplanController::class, 'getChatOutput'])->name('get_chat_data');    
+    
 Route::get('questionReport', [questionWiseReportController::class, 'index'])->name('question_wise_report');
 Route::post('show_question_wise_report',
     [questionWiseReportController::class, 'show_question_wise_report'])->name('show_question_wise_report');
@@ -208,7 +222,7 @@ Route::controller(lms_apiController::class)->group(function () {
     Route::post('/trizStandardAPI', 'trizStandardAPI');
 });
 
-Route::group(['prefix' => 'bazar', 'middleware' => ['session', 'menu', 'logRoute']], function () {
+Route::group(['prefix' => 'bazar', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
     Route::resource('bulk_upload_sheet', bulkUploadSheetController::class);
     Route::get('bulk_position_data', [bulkUploadSheetController::class, 'bulk_position_data'])->name('bulk_position_data');
     Route::post('store_position_data', [bulkUploadSheetController::class, 'store_position_data'])->name('store_position_data');
@@ -221,3 +235,14 @@ Route::group(['prefix' => 'bazar', 'middleware' => ['session', 'menu', 'logRoute
     Route::post('show_bazar_report', [bulkUploadedReportController::class, 'show_bazar_report'])->name('show_bazar_report');
 });
 
+Route::get('/upcoming', [lmsActivityStreamController::class, 'upcomingActivity'])->name('upcoming');
+Route::get('/today', [lmsActivityStreamController::class, 'todayActivity'])->name('today');
+Route::get('/recent', [lmsActivityStreamController::class, 'recentActivity'])->name('recent');
+Route::get('careerExplore', [lmsCounsellingController::class, 'careerExplore']);
+Route::get('careerExploreResult', [lmsCounsellingController::class, 'careerExploreResult']);
+Route::get('careerCluster', [lmsCounsellingController::class, 'careerCluster']);
+Route::get('allOccupation', [lmsCounsellingController::class, 'allOccupation']);
+Route::get('OccupationDetails', [lmsCounsellingController::class, 'OccupationDetails']);
+Route::get('getInstituteData', [lmsCounsellingController::class, 'getInstituteData']);
+Route::get('getCourseData', [lmsCounsellingController::class, 'getCourseData']);
+Route::get('getEmployerData', [lmsCounsellingController::class, 'getEmployerData']);

@@ -54,27 +54,27 @@
 
                     <div class="col-md-4 form-group">
                         <label>Payroll Type Name </label>
-                        <input type="text" id='payroll_name' required name="payroll_name" class="form-control" value="{{$payrollType['payroll_name']}}">
+                        <input type="text" id='payroll_name' required name="payroll_name" class="form-control" value="{{$payrollType['payroll_name']}}" required>
                         @error('payroll_name')
                         <span style="color: red">{{$message}}</span>
                         @enderror
                     </div>
-                    <?php
-                    $class = 'd-none';
+                    @php
+                    $class = 'Flat';
                     if(isset($payrollType['amount_type']) && $payrollType['amount_type'] == 2) {
-                        $class = '';
+                        $class = 'Percentage';
                     }
-                    ?>
-                    <div class="col-md-4 form-group {{$class}}" id="payroll_per">
-                        <label>Percentage </label>
-                        <input type="text" id='payroll_percentage' name="payroll_percentage" class="form-control" value="{{$payrollType['payroll_percentage']}}">
+                    @endphp
+                    <div class="col-md-4 form-group" id="payroll_per">
+                        <label id="typeName"> {{$class}} </label>
+                        <input type="text" id='payroll_percentage' name="payroll_percentage" class="form-control" value="{{$payrollType['payroll_percentage']}}" autocomplete="off">
                         @error('payroll_percentage')
                         <span style="color: red">{{$message}}</span>
                         @enderror
                     </div>
                     <div class="col-md-4 form-group">
                         <label>Amount Type</label>
-                        <select name="amount_type" id="amount_type" class="form-control">
+                        <select name="amount_type" id="amount_type" class="form-control" require>
                             @if($payrollType['amount_type'] == 1)
                             <option value="1" selected> Flat </option>
                             <option value="2"> Percentage </option>
@@ -90,7 +90,7 @@
 
                     <div class="col-md-4 form-group">
                         <label>Status</label>
-                        <select name="status" id="status" class="form-control">
+                        <select name="status" id="status" class="form-control" require>
                             @if($payrollType['status'] == 1)
                             <option value="0"> Disable </option>
                             <option value="1" selected> Enable </option>
@@ -130,9 +130,9 @@
     select.addEventListener('change', function () {
         var type = document.getElementById('amount_type').value;
         if(type == 2) {
-            $('#payroll_per').removeClass('d-none');
+            $('#typeName').text('Percentage');
         } else {
-            $('#payroll_per').addClass('d-none');
+            $('#typeName').text('Flat');
         }
         //window.location.href = window.location.origin +'/payroll-deduction?type=' + type;
     }, false);

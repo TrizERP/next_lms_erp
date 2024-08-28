@@ -1,6 +1,8 @@
-@include('includes.lmsheadcss')
+{{--@include('includes.lmsheadcss')
 @include('includes.header')
-@include('includes.sideNavigation')
+@include('includes.sideNavigation')--}}
+@extends('lmslayout')
+@section('container')
 <link href="{{ asset('/plugins/bower_components/switchery/dist/switchery.min.css') }}" rel="stylesheet" />
 <!-- <link href="{{ asset("/admin_dep/css/annotorious-dark.css") }}" rel="stylesheet" /> -->
 
@@ -11,16 +13,16 @@
                 <h4 class="page-title">Review Student Assignment</h4>
             </div>
         </div>
-        
-        <div class="card">                           
-            <div class="row"> 
+
+        <div class="card">
+            <div class="row">
                 <div class="col-md-6 mb-3 mb-md-4">
                     <div class="video-box mb-4">
-                        <div class="embed-responsive embed-responsive-16by9"> <!-- style="overflow: hidden;margin-top:10% !important;"  -->                               
+                        <div class="embed-responsive embed-responsive-16by9"> <!-- style="overflow: hidden;margin-top:10% !important;"  -->
                             <iframe autoplay="false" class="embed-responsive-item" src="../../../storage/lms_assignment_submission/{{$data['assignment_data']['submission_image']}}" allowfullscreen></iframe>
                         </div>
-                    </div>                                    
-                </div>                       
+                    </div>
+                </div>
                 <div class="col-md-6">
                     <form action="{{ route('lmsAnnotate_assignment.store') }}" method="post" enctype='multipart/form-data'>
                         {{ method_field("POST") }}
@@ -28,16 +30,16 @@
 
                         <div class="row">
                             <div class="col-md-8">
-                                <label for="description"><b> Paper Name :</b></label> {{$data['questionpaper_data']['paper_name']}}    
+                                <label for="description"><b> Paper Name :</b></label> {{$data['questionpaper_data']['paper_name']}}
                             </div>
                             <div class="col-md-8">
-                                <label for="description"><b>Total Marks :</b></label> {{$data['questionpaper_data']['total_marks']}}    
+                                <label for="description"><b>Total Marks :</b></label> {{$data['questionpaper_data']['total_marks']}}
                             </div>
                             <div class="col-md-8">
                                 <div class="table-responsive">
                                 <table id="example" class="table table-striped table-bordered">
                                 <thead>
-                                    <tr>                                                                                
+                                    <tr>
                                         <th data-toggle="tooltip" title="Question List">Question List</th>
                                         <th data-toggle="tooltip" title="Marks">Marks</th>
                                     </tr>
@@ -48,17 +50,17 @@
                                     @endphp
                                     @if(count($data['questionData']) > 0)
                                         @foreach($data['questionData'] as $k => $v)
-                                            @if($v['question_type_id'] ==  1) 
-                                            <tr> 
+                                            @if($v['question_type_id'] ==  1)
+                                            <tr>
                                                 <td>Question {{$j}}</td>
                                                 <td>
                                                     <div class="switchery-demo m-b-30">
-                                                        <input type="checkbox" class="js-switch mcqmarks" data-color="#13dafe" name="questions[{{$v['id']}}]" value="{{$v['points']}}" onchange="add_total();" />  / {{$v['points']}}                                                  
+                                                        <input type="checkbox" class="js-switch mcqmarks" data-color="#13dafe" name="questions[{{$v['id']}}]" value="{{$v['points']}}" onchange="add_total();" />  / {{$v['points']}}
                                                     </div>
                                                 </td>
                                             </tr>
-                                            @else 
-                                            <tr>                                       
+                                            @else
+                                            <tr>
                                                 <td>Question {{$j}}</td>
                                                 <td><input type="number" class="marks" name="questions[{{$v['id']}}]" min="0" max="{{$v['points']}}" onchange="add_total();" required> / {{$v['points']}}</td>
                                             </tr>
@@ -67,14 +69,14 @@
                                             $j++;
                                             @endphp
                                         @endforeach
-                                        <tr>                                       
+                                        <tr>
                                             <td class="font-weight-bold">Total</td>
                                             <td><input type="number" readonly name="obtain_marks" id="obtain_marks" min="0" max="{{$data['questionpaper_data']['total_marks']}}"> / {{$data['questionpaper_data']['total_marks']}}</td>
                                         </tr>
                                     @endif
-                                    
+
                                 </tbody>
-                                </table>                                
+                                </table>
                                 </div>
                             </div>
                             <div class="col-md-8">
@@ -90,10 +92,10 @@
                         </div>
 
                     </form>
-                </div>  
-            </div>            
+                </div>
+            </div>
         </div>
-        
+
     </div>
 </div>
 
@@ -104,24 +106,24 @@
 <script type="text/javascript">
 
 function add_total()
-{    
+{
     var sum = 0;
     $('.marks').each(function () {
         var amount;
         amount = parseInt($(this).val());
-        if (!isNaN(amount)) {           
-            sum += amount;              
+        if (!isNaN(amount)) {
+            sum += amount;
         }
     });
-    
-    $('.mcqmarks').each(function () {        
+
+    $('.mcqmarks').each(function () {
         amount = parseInt($(this).val());
         if ($(this).prop('checked') == true)
         {
-            if (!isNaN(amount)) 
-            {           
-                sum += amount;              
-            }             
+            if (!isNaN(amount))
+            {
+                sum += amount;
+            }
         }
     });
 
@@ -153,3 +155,4 @@ $(function() {
 
 
 @include('includes.footer')
+@endsection

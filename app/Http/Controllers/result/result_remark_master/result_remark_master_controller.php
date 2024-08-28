@@ -43,13 +43,13 @@ class result_remark_master_controller extends Controller
         $syear = session()->get('syear');
 
         return DB::table('result_remark_masters')
-            ->join('academic_year', [
+            /* ->join('academic_year', [
                 'academic_year.term_id'          => 'result_remark_masters.marking_period_id',
                 'academic_year.sub_institute_id' => 'result_remark_masters.sub_institute_id',
                 'academic_year.syear' => 'result_remark_masters.syear',
-            ])
-//                        ->join('division', 'division.id', '=', 'result_master_confrigration.division_id')
-            ->select('result_remark_masters.*', 'academic_year.title as term_name')
+            ]) */
+            //->join('division', 'division.id', '=', 'result_master_confrigration.division_id')
+            // ->select('result_remark_masters.*', 'academic_year.title as term_name')
             ->where(['result_remark_masters.sub_institute_id' => $sub_institute_id,'result_remark_masters.syear' => $syear])
             ->get()->toArray();
     }
@@ -78,7 +78,8 @@ class result_remark_master_controller extends Controller
         $school = new result_remark_master([
             'syear'             => session()->get('syear'),
             'sub_institute_id'  => session()->get('sub_institute_id'),
-            'marking_period_id' => $request->get('term'),
+            // 'marking_period_id' => $request->get('term') ?? '',
+            'marking_period_id' => NULL,
             'title'             => $request->get('title'),
             'remark_status'     => $request->get('result_status'),
             'sort_order'        => $request->get('sort_order'),

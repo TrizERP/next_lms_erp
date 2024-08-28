@@ -63,7 +63,7 @@
                             </div>
                             <div class="col-md-4 form-group">
                                 <label>Sort Order </label>
-                                <input type="text" id='sort_order' name="sort_order" class="form-control">
+                                <input type="text" id='sort_order' name="sort_order" class="form-control" required>
                             </div>
                             <div class="col-md-4 form-group">
                                 <label>Last Receipt Number </label>
@@ -84,13 +84,13 @@
                             </div>
                             <div class="col-md-4 form-group" hidden="hidden">
                                 <label>Receipt Id </label>
-                                <input type="hidden" id='receipt_id' value="@if(isset($receipt_id)){{ $receipt_id }}@endif" name="receipt_id" class="form-control">
+                                <input type="hidden" id='receipt_id' value="@if(isset($data['receipt_id'])){{ $data['receipt_id'] }}@endif" name="receipt_id" class="form-control">
                             </div>
                             {{ App\Helpers\SearchChain('4','multiple','grade,std') }}
                             <div class="col-md-4 form-group">
                                 <label>Fees Head</label>
                                 <select name="fees_head_id[]" id="fees_head_id" class="form-control" required multiple>
-                                    @foreach($feeHeadList as $key => $value)
+                                    @foreach($data['feeHeadList'] as $key => $value)
                                         <option value="{{$value['id']}}">{{$value['display_name']}}</option>
                                     @endforeach
                                 </select>

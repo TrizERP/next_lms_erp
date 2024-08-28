@@ -1,4 +1,26 @@
-<!--<script src="https://miraibot.ai/embed@latest.js" id="687e1c179bbf486788f11fa77d33f82f"></script>-->
+<script>
+        var botmanWidget = {
+            title: "ScholarClone ChatBot",
+			introMessage: "Welcome to ScholarClone, How can I Help you?",
+			placeholderText: "Enter a message...",
+			mainColor: "#25bdea",
+			headerTextColor: "#333",
+			bubbleBackground: "#25bdea",
+			bubbleAvatarUrl: "",
+			desktopHeight: 375,
+			desktopWidth: 300,
+			mobileHeight: "100%",
+			mobileWidth: "300px",
+			videoHeight: 160,
+			aboutLink: "https://trizinnovation.com",
+			aboutText: "Powered by ScholarClone",
+			timeFormat: "HH:MM",
+			dateTimeFormat: "dd-mm-yyyy HH:MM"
+        };
+    </script>
+   
+    <script src='https://cdn.jsdelivr.net/npm/botman-web-widget@0/build/js/widget.js'></script>
+
 <div id="loading-overlay" style="display:none;">
 <center>
   <img src="/admin_dep/images/loader-man.gif" id="loading-gif" alt="loading-gif" >
@@ -15,14 +37,33 @@
 			$(".tab-pane.active").removeClass("result_hover");
 			}
 		);
+
+		// if multi user
+		var url = "{{route('check_multilogin')}}";
+            $.ajax({
+                url : url,
+                type: 'get',
+                success : function (result){
+                    // when multi login is "No" and ip addres not match
+                    if(result === "logout"){
+                        window.location.href = "/logout"; 
+                    }
+                }, 
+                error: function(xhr, status, error) {
+                    console.log(error);
+                }
+            })
 	});
 </script>
 </body>
 <!-- loading gif  -->
 <script>
         window.addEventListener('beforeunload', function() {
-			$('#loading-overlay').show();
-        });
+            $('#loading-overlay').show();
+            setTimeout(() => {
+                $('#loading-overlay').hide();
+            },3000)
+        });
 </script>
 	<script>
 		function setSession(item,object)

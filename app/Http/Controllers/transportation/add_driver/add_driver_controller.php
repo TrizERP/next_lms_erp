@@ -78,17 +78,23 @@ class add_driver_controller extends Controller
             "first_name"       => $request->get('first_name'),
             "last_name"        => $request->get('last_name'),
             "mobile"           => $request->get('mobile'),
-            "type"             => $request->get('type'),
+            "status"             => $request->get('status'),
+            "type"             => $request->get('driver_type'),
             'icard_icon'       => $file_name,
             'sub_institute_id' => $sub_institute_id,
         ]);
         $add_driver->save();
-
-        $res = [
-            "status_code" => 1,
-            "message"     => "Data Added Successfully.",
-        ];
-
+        if($add_driver){
+            $res = [
+                "status_code" => 1,
+                "message"     => "Data Added Successfully.",
+            ];
+        }else{
+            $res = [
+                "status_code" => 0,
+                "message"     => "Failed to Add.",
+            ];
+        }
         $type = $request->input('type');
 
         return is_mobile($type, "add_driver.index", $res, "redirect");
@@ -137,6 +143,7 @@ class add_driver_controller extends Controller
                 "last_name"  => $request->get('last_name'),
                 "mobile"     => $request->get('mobile'),
                 "type"       => $request->get('type'),
+                "status"       => $request->get('status'),
             ],
         );
         $data1 = $data1[0];
