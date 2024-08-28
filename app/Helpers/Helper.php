@@ -2397,4 +2397,62 @@ if (!function_exists('get_string')) {
            return $daysCount;
         }
     }
+
+    // log management 2024-08-23
+    if (!function_exists('accesslog_json')) {
+
+        function accesslog_json($query,$event,$module_name,$request="")
+        {
+            $sub_institute_id = session()->get('sub_institute_id');
+            $userFullName = session()->get('name');
+            $userProfileName = session()->get('user_profile_name');
+            $description = $query;
+            $userIp = $_SERVER['REMOTE_ADDR'];
+            // files   
+            $basePath = storage_path('app/public/'.$sub_institute_id);
+            $accessLogPath = $basePath.'/access_log';
+            $filePath = $accessLogPath.'/'.date('Y-M').'.json';
+            
+            ensureDirectory($basePath, 0755);
+            ensureDirectory($accessLogPath, 0755);
+
+            $jsonContent = [
+                'datetime' =>\Carbon\Carbon::parse(now())->format('d-m-Y g:i A'),
+                'fullname'=>$userFullName,
+                'userprofile'=>$userProfileName,
+                'module'=>$module_name,
+                'event'=>$event,
+                'description'=>$description,
+                'ip_address'=>$userIp,
+            ]; // Replace with your default content
+
+            if (!File::exists($filePath)) {
+                File::put($filePath, $jsonContent);
+            }   
+            else{   
+                $existingContent = File::get($filePath);
+                $existingData = json_decode($existingContent, true);
+
+                // Ensure existing data is an array
+                if (!is_array($existingData)) {
+                    $existingData = [];
+                }
+
+                // Append the new entry to the existing data
+                $existingData[] = $jsonContent;
+
+                // Encode the updated data and write it back to the file
+                File::put($filePath, json_encode($existingData));
+                // echo "created";exit;
+            }       
+        }
+    }
+
+     function ensureDirectory($path, $permissions = 0755)
+    {
+        if (!File::exists($path)) {
+            File::makeDirectory($path, $permissions, true);
+        }
+    }
+    // end log management
 }

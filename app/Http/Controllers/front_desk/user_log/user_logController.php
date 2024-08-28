@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use function App\Helpers\is_mobile;
+use File;
 
 class user_logController extends Controller
 {
@@ -89,5 +90,37 @@ class user_logController extends Controller
         $type = "WEB";
 
         return is_mobile($type, "front_desk/user_log/add", $responce, "view");
+    }
+    // json file report
+    public function create(Request $request){
+        $type = $request->input('type');
+        $sub_institute_id = session()->get('sub_institute_id');
+        
+        $filePath = storage_path('app/public/'.$sub_institute_id.'/access_log/'.date('Y-M').'.json');
+            
+        if (!File::exists($filePath)) {
+            $res['status_code'] = 0;
+            $res['message'] = "No Log for Current Month";
+            $res['jsonData'] = [];
+        }else{
+             // Get the file contents
+            $fileContents = File::get($filePath);
+
+            // Decode the JSON data
+            $jsonData = json_decode($fileContents, true);
+
+            if (json_last_error() === JSON_ERROR_NONE) {
+                $res['status_code'] = 1;
+                $res['message'] = "Log Data of Current Month";
+                $res['jsonData'] = $jsonData;
+            } else {
+                $res['status_code'] = 0;
+                $res['message'] = "Error decoding JSON data";
+                $res['jsonData'] = [];
+            }
+        }
+        
+        // echo "<pre>";print_r($res);exit;
+        return is_mobile($type, "front_desk/user_log/jsonReport", $res, "view");
     }
 }
