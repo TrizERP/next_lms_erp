@@ -677,6 +677,13 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                 $other_insert_arr[] = $insert_id;
             }
         }
+        // added 2024-08-28 fees id or paid other fees id not found return status 0
+        if(empty($regular_insert_arr) && empty($other_insert_arr)){
+            $res['status_code'] = 0;
+            $res['message'] = "Failed to Pay fees";
+            return $res;
+        }
+        // end 2024-08-28
         //getting array ready for insert into fees receipt
         $fees_receipt_insert = [];
         foreach ($receipt_number as $id => $arr) {
@@ -744,11 +751,18 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
     // function is used call pay_fees function to insert fees details
     public function store(Request $request)
     {
+        $type = $request->input('type');
+
         // call pay_fees to pay fees according to freakoff and month
         $res = $this->pay_fees($request);
+        // added 2024-08-28 fees id or paid other fees id not found return status 0
+        if(isset($res['status_code']) && $res['status_code']==0){
+            return is_mobile($type, "fees/fees_collect/show", $res, "view");
+        }
+        // end 2024-08-28
+
         // echo "<pre>";print_r($res);exit;
         $res['standard_id'] = $request->standard_id;
-        $type = $request->input('type');
         return is_mobile($type, "fees/fees_collect/receipt_view", $res, "view");
     }
 
