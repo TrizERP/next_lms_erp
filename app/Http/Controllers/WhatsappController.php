@@ -41,8 +41,10 @@ class WhatsappController extends Controller
     {
 
         $type = $request->type ?? '';
-
-        $data = WhatsappSentMessage::with('student');
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+        // DB::enableQueryLog();
+        $data = WhatsappSentMessage::with('student')->with('standard')->with('division')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear]);
 
         if ($request->standard) {
             $data->where('standard_id', $request->standard);
@@ -53,9 +55,13 @@ class WhatsappController extends Controller
         }
 
         if ($request->from_date && $request->to_date) {
-            $data->whereBetween('created_at', [$request->from_date, $request->to_date]);
+            $from_date = \Carbon\Carbon::parse($request->from_date)->format('Y-m-d');
+            $to_date = \Carbon\Carbon::parse($request->to_date)->format('Y-m-d');
+            $data->whereBetween('sent_date', [$from_date, $to_date]);
+            // $data->whereRaw('created_at between "'.$from_date.'" and "'.$to_date.'"');
         }
-        $data = $data->get();
+        $data = $data->orderBy('id','DESC')->get();
+        // dd(DB::getQueryLog($data));
         $result['stu_data'] = $data;
         $result['grade_id'] = $request->grade;
         $result['standard_id'] = $request->standard;
@@ -75,7 +81,7 @@ class WhatsappController extends Controller
             $syear = $request->get('syear');
         }
         $this->updateMessageStatus($sub_institute_id,$syear);
-        $data['data'] = WhatsappSentMessage::with('student')->with('standard')->with('division')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear])->get()->toArray();
+        $data['data'] = WhatsappSentMessage::with('student')->with('standard')->with('division')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear])->where('sent_date',date('Y-m-d'))->orderBy('id','DESC')->get()->toArray();
         // echo "<pre>";print_r($data);exit;
         //return view('whatsapp.whatsapp_send_messages.index', ["data" => $data]);
         return is_mobile($type, 'whatsapp.whatsapp_send_messages.index', $data, "view");
@@ -255,6 +261,15 @@ class WhatsappController extends Controller
 
         // Initialize prepareMessageBody array
         $prepareMessageBody = [];
+        // check image
+        preg_match('/<img[^>]+src="([^"]+)"/i', $request->message, $matches);
+        // check image url
+        preg_match('/(^|<\/a>)(.*?)(<a href="|$)/', $request->message, $match);
+
+        // Check if an image source was found
+        if (isset($matches[1]) || isset($match[1])) {
+            sleep(40);
+        }
 
         if (count($hrefArray) == 0) {
             // Ensure textArray is not empty before accessing it
@@ -272,12 +287,12 @@ class WhatsappController extends Controller
             $prepareMessageBody['contentSid'] = "HXe0114bc20670d1b3f92c854106ec4a81";
         }
        
-        // echo "<pre>";print_r($attachment);exit;
+        // echo "<pre>";print_r($prepareMessageBody);exit;
         $i=0;
         if(isset($textArray[0])){
             foreach ($request->sendNotification as $studentId => $on) {
                 $student = tblstudentModel::where([['id',$studentId],['sub_institute_id',session()->get('sub_institute_id')]])->first();
-                if (!empty($token) && !empty($student) && $student['mobile'] != null) {
+                if (!empty($token) && !empty($student) && $student['mobile'] != null && strlen($student['mobile'])==10 && !in_array(substr($student['mobile'],0,1),[0,1,2,3,4,5])) {
                     $i++;
                     $messagingServiceSid = 'MGdec43b1bbd9428a72fa0c7a633905319';
                     $client = new Client($token['user_whatsapp_sid'], $token['user_whatsapp_token']);
@@ -292,7 +307,7 @@ class WhatsappController extends Controller
                     );
                     // Check message status
                     $messageStatus = $twilioResponse->status;
-                    $errorStatus = null;
+                    $errorStatus = $twilioResponse->uri;
                     // Check if there was an error
                     if ($twilioResponse->errorCode) {
                         $errorStatus =  $twilioResponse->errorMessage;
@@ -357,6 +372,7 @@ class WhatsappController extends Controller
             }
         }*/
 
+
         return is_mobile($type, 'whatsapp_send_messages.index', $res, "redirect");
 
     }
@@ -369,11 +385,11 @@ class WhatsappController extends Controller
     }
 
     public function updateMessageStatus($sub_institute_id,$syear){
-        $updateStatus = WhatsappSentMessage::where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear])->get()->toArray();
+        $updateStatus = WhatsappSentMessage::where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear])->whereRaw('message_status not in ("read","undelivered","failed")')->where('sent_date',date('Y-m-d'))->get()->toArray();
         foreach ($updateStatus as $key => $value) {
-            if($value['uri']!=null && $value['message_status']!="read"){
+            if($value['uri']!=null){
                 $messageSid = $value['uri']; // sid
-                $token = WhatappUserDetail::where('sub_institute_id', $sub_institute_id)->first();
+                $token = WhatappUserDetail::where('sub_institute_id', $sub_institute_id)->orderBy('id','DESC')->first();
                 $client = new Client($token['user_whatsapp_sid'], $token['user_whatsapp_token']);
                 $message = $client->messages($messageSid)->fetch();
                 // Check the message status
