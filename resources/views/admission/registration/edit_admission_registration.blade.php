@@ -372,6 +372,33 @@ $editData = array();
                             </div>
                             @endforeach
                             @endif
+                            <!-- 2024-08-27 add religion and cast Hills -->
+                            @if(session()->get('sub_institute_id')!=257)
+                            <div class="col-md-4 form-group text-left">
+                                <label>Student Religion</label>
+                                <select id='religion' name="religion" class="form-control" required>
+                                    <option value="">--Select--</option>  
+                                    @if(isset($data['religion_data']))
+                                        @foreach($data['religion_data'] as $key => $value)
+                                            <option value="{{ $value['id'] }}" @if(isset($editData['religion']) && $editData['religion']== $value['id']) Selected @endif>{{ $value['religion_name'] }}</option>
+                                        @endforeach
+                                    @endif                                                  
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-4 form-group text-left">
+                                <label>Student Caste</label>
+                                <select id='cast' name="cast" class="form-control" required>
+                                    <option value="">--Select--</option>  
+                                    @if(isset($data['caste_data']))
+                                        @foreach($data['caste_data'] as $key => $value)
+                                            <option value="{{ $value['id'] }}" @if(isset($editData['cast']) && $editData['cast']== $value['id']) Selected @endif>{{ $value['caste_name'] }}</option>
+                                        @endforeach
+                                    @endif                                                  
+                                </select>
+                            </div>
+                            @endif
+                            <!-- 2024-08-27 end religion and cast Hills -->
                             <div class="col-md-12 form-group">
                                 <center>
                                     <input type="submit" name="submit" value="Update" class="btn btn-success division_alert" >
