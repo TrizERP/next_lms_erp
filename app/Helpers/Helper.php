@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\File;
 
 if (!defined('BEST_OF')) {
     define('BEST_OF', 2);
@@ -2140,7 +2141,7 @@ if (!function_exists('get_string')) {
         if (!empty($months_arr)) {
             $getAllMonths = FeeMonthId();
             foreach ($getAllMonths as $key => $val) {
-                DB::enableQueryLog();
+                // DB::enableQueryLog();
                 $get_month = DB::table('fees_month_header')->where(['sub_institute_id' => $sub_institute_id, 'month_id' => $key])->first();
                 if(isset($get_month->header)){
                     $get_month_head[$key] = $get_month->header;
