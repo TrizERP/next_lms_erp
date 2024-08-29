@@ -78,7 +78,7 @@
 <!-- Modal for detail pop up-->
 @foreach($data['jsonData'] as $key => $value)
 <div class="modal fade" id="model_{{$key+1}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-  <div class="modal-dialog" role="document">
+  <div class="modal-dialog" role="document" style="max-width:1000px !important">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="exampleModalLabel">{{$value['module'].' - '.$value['datetime']}}</h5>
