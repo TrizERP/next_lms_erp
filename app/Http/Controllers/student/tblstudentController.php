@@ -50,6 +50,7 @@ use App\Http\Controllers\fees\fees_report\feesReportController;
 use App\Http\Controllers\transportation\map_student\map_student_controller;
 use Illuminate\Support\Facades\Session;
 use GuzzleHttp\Client;
+use function App\Helpers\accesslog_json;
 
 class tblstudentController extends Controller
 {
@@ -425,7 +426,13 @@ class tblstudentController extends Controller
             $getAdmissionId = tblstudentModel::select(DB::raw('admission_id'))
                 ->where(['sub_institute_id' => $sub_institute_id, 'id' => $id])->get()->toArray();
             $admission_id = $getAdmissionId[0]['admission_id'];
+            DB::enableQueryLog(); // 2024-08-24 required to convert query into sql for json
             $dataAdmission = admissionEnquiryModel::where(['id' => $admission_id])->update($finalArrayAdmission);
+             // 2024-08-23
+             $queries = DB::getQueryLog(); // 2024-08-24 required to convert query into sql for json
+             $sendQuery = end($queries); // 2024-08-24 required to convert query into sql for json 
+             accesslog_json($sendQuery,'update','Student Edit Profile (Admission Enquiry)',$finalArrayAdmission);
+             //2024-08-23
         }
 
 		return $id;
@@ -488,14 +495,24 @@ class tblstudentController extends Controller
         }
 
         $finalArray['updated_on'] = date('Y-m-d H:i:s');
-
+        DB::enableQueryLog(); // 2024-08-24 required to convert query into sql for json
         $data = tblstudentModel::where(['id' => $student_id])->update($finalArray);
+         // 2024-08-23
+         $queries = DB::getQueryLog(); // 2024-08-24 required to convert query into sql for json
+         $sendQuery = end($queries); // 2024-08-24 required to convert query into sql for json 
+         accesslog_json($sendQuery,'update','Student Edit Profile',$finalArray);
+         //2024-08-23
+
         $getAdmissionId = tblstudentModel::select(DB::raw('admission_id'))
             ->where(['sub_institute_id' => $sub_institute_id, 'id' => $student_id])->get()->toArray();
         $admission_id = $getAdmissionId[0]['admission_id'];
-
+        DB::enableQueryLog(); // 2024-08-24 required to convert query into sql for json
         $dataAdmission = admissionEnquiryModel::where(['id' => $admission_id])->update($finalArrayAdmission);
-
+        // 2024-08-23
+        $queries2 = DB::getQueryLog(); // 2024-08-24 required to convert query into sql for json
+        $sendQuery2 = end($queries2); // 2024-08-24 required to convert query into sql for json 
+        accesslog_json($sendQuery2,'update','Student Edit Profile (Admission Enquiry)',$finalArrayAdmission);
+        //2024-08-23
         return $data;
     }
 
@@ -1060,10 +1077,15 @@ die; */
             "amount"=>$amount,     
             "updated_at"=>now(),  
         ];
-
+        DB::enableQueryLog(); // 2024-08-24 required to convert query into sql for json
         $data = DB::table('transport_map_student')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear,'student_id'=>$id])->update($update_arr);
+         // 2024-08-23
+         $queries = DB::getQueryLog(); // 2024-08-24 required to convert query into sql for json
+         $sendQuery = end($queries); // 2024-08-24 required to convert query into sql for json 
+         accesslog_json($sendQuery,'update','Student Edit Profile (Transport)',$update_arr);
+         //2024-08-23
         $res['status_code'] = 1;
-		$res['message'] = "Student updated successfully.";
+		$res['message'] = "Student Edit Profiled successfully.";
         $res['data'] = $data;
 
 		// return is_mobile($type, "search_student.index", $res);
@@ -1217,10 +1239,15 @@ die; */
 		$studentEnrollment['updated_on'] = date('Y-m-d H:i:s');
 		$studentEnrollment['roll_no'] = $request->roll_no;
 		// dd($studentEnrollment);
+        DB::enableQueryLog(); // 2024-08-24 required to convert query into sql for json
 		tblstudentEnrollmentModel::where(['student_id' => $student_id, 'syear' => $syear])->update($studentEnrollment);
-
+        // 2024-08-23
+        $queries = DB::getQueryLog(); // 2024-08-24 required to convert query into sql for json
+        $sendQuery = end($queries); // 2024-08-24 required to convert query into sql for json 
+        accesslog_json($sendQuery,'update','Student Edit Profile (Enrollment)',$studentEnrollment);
+        //2024-08-23
 		$res['status_code'] = 1;
-		$res['message'] = "Student updated successfully.";
+		$res['message'] = "Student Edit Profiled successfully.";
         $res['data'] = $data;
     }
 		// return is_mobile($type, "search_student.index", $res);
@@ -1241,14 +1268,24 @@ die; */
         $fields = [
             'status' => "0",
         ];
+        DB::enableQueryLog(); // 2024-08-24 required to convert query into sql for json
         tblstudentModel::where(["id" => $id])->update($fields);
-
+        // 2024-08-23
+        $queries = DB::getQueryLog(); // 2024-08-24 required to convert query into sql for json
+        $sendQuery = end($queries); // 2024-08-24 required to convert query into sql for json 
+        accesslog_json($sendQuery,'Delete','Student Edit Profile',$fields);
+        //2024-08-23
         $fields = [
             'end_date' => date('Y-m-d'),
             'updated_on' => date('Y-m-d H:i:s'),
         ];
+        DB::enableQueryLog(); // 2024-08-24 required to convert query into sql for json
         tblstudentEnrollmentModel::where(["student_id" => $id, "syear" => $syear])->update($fields);
-
+        // 2024-08-23
+        $queries2 = DB::getQueryLog(); // 2024-08-24 required to convert query into sql for json
+        $sendQuery2 = end($queries2); // 2024-08-24 required to convert query into sql for json 
+        accesslog_json($sendQuery2,'Delete','Student Edit Profile (Enrollment)',$fields);
+        //2024-08-23
 		$res['status_code'] = "1";
 		$res['message'] = "Student deleted successfully";
 		return is_mobile($type, "search_student.index", $res);

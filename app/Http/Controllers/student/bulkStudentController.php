@@ -22,8 +22,10 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 use function App\Helpers\is_mobile;
+use function App\Helpers\accesslog_json;
 use Illuminate\Support\Facades\Storage;
 use function App\Helpers\get_string;
+use DB;
 
 class bulkStudentController extends Controller
 {
@@ -431,7 +433,15 @@ class bulkStudentController extends Controller
             if (count($studentEnrollment) > 0) {               
                 
                 $studentEnrollment['updated_on'] = date('Y-m-d H:i:s');
-                tblstudentEnrollmentModel::where(['student_id' => $key, 'syear' => $syear])->update($studentEnrollment);
+
+                DB::enableQueryLog(); // 2024-08-24 required to convert query into sql for json
+
+                $studentEnrollUpdate = tblstudentEnrollmentModel::where(['student_id' => $key, 'syear' => $syear])->update($studentEnrollment);
+                // 2024-08-23
+                $queries = DB::getQueryLog(); // 2024-08-24 required to convert query into sql for json
+                $sendQuery = end($queries); // 2024-08-24 required to convert query into sql for json 
+                accesslog_json($sendQuery,'update','Bulk Update Student',$studentEnrollment);
+                //2024-08-23
             }
 
             $this->updateData($value);
@@ -549,7 +559,13 @@ class bulkStudentController extends Controller
         // dd($finalArray);
         if(count($finalArray) > 0){
             $finalArray['updated_on'] = date('Y-m-d H:i:s');
+            DB::enableQueryLog(); // 2024-08-24 required to convert query into sql for json
             $data = tblstudentModel::where(['id' => $student_id])->update($finalArray);
+            // 2024-08-23
+            $queries = DB::getQueryLog(); // 2024-08-24 required to convert query into sql for json
+            $sendQuery = end($queries); // 2024-08-24 required to convert query into sql for json 
+            accesslog_json($sendQuery,'update','Bulk Update Student',$finalArray);
+            //2024-08-23
         }
         return $data;
 
