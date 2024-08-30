@@ -5,6 +5,9 @@ namespace App\Http\Middleware;
 use App\Models\Accesslog;
 use Closure;
 use Illuminate\Http\Request;
+use DB;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Auth\Access\AuthorizationException;
 
 class LogRouteMiddleware
 {
@@ -24,6 +27,29 @@ class LogRouteMiddleware
             $user_id = $request->session()->get('user_id');
             $user_profile_id = $request->session()->get('user_profile_id');
             $uri = explode("/", $_SERVER['REQUEST_URI']);
+
+            // added on 27/08/2024
+            $tableName = null;
+            if ($request->get('_method')=="PUT") {
+                // student update prevent sub_institute_id
+                if(isset($uri[2]) && $uri[2]=="add_student" && isset($uri[3])){
+                   $tableName="tblstudent";
+                }
+                // User update prevent sub_institute_id SELECT * FROM tblstudent a WHERE a.id IN (100239,100234) -- 7412590123
+                if(isset($uri[2]) && $uri[2]=="add_user" && isset($uri[3])){
+                    $tableName="tbluser";
+                }
+                // check requested users in table with sub institute id and id 
+                if(isset($tableName) && isset($uri[2]) && in_array($uri[2],["add_student","add_user"]) && isset($uri[3])){
+                    $uId = $uri[3];
+                    $checkSubInstituteId = DB::table($tableName)->where(['sub_institute_id'=>$sub_institute_id,'id'=>$uId])->first();
+                    if(empty($checkSubInstituteId)){
+                    throw new AuthorizationException('Can not Update this user! Institute Not Matched.');
+                    }
+                }
+                // throw new AuthorizationException('You do not have permission to delete this resource.');
+            } 
+            // end on 27/08/2024
 
             foreach ($_REQUEST as $key => $val) {
                 //Add datepicker fieldsname in array

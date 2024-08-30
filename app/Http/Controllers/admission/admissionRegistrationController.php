@@ -16,6 +16,8 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
+use App\Models\school_setup\casteModel;
+use App\Models\school_setup\religionModel;
 use GenTux\Jwt\GetsJwtToken;
 
 class admissionRegistrationController extends Controller
@@ -189,6 +191,10 @@ class admissionRegistrationController extends Controller
         $res['standard'] = $standard;
         $res['bloodgroup_data'] = $bloodgroupData;
         $res['custom_fields'] = $dataCustomFields;
+        //  added on 2024-08-27
+        $res['religion_data'] = religionModel::select()->get();
+        $res['caste_data'] = casteModel::select()->get();
+        // end 2024-08-27
         if (count($getDiv) > 0) {
             $res['division'] = $getDiv;
         }
@@ -246,7 +252,7 @@ class admissionRegistrationController extends Controller
         $data = $request->except([
             '_method', '_token','token','syear','sub_institute_id','user_id', 'submit', 'type', 'first_name', 'middle_name', 'last_name', 'mobile', 'email',
             'date_of_birth', 'age', 'address', 'previous_school_name', 'previous_standard', 'source_of_enquiry',
-            'admission_standard',
+            'admission_standard'
         ]); //,'remarks','followup_date'
 
         $checkForm = admissionRegistrationModel::where(['enquiry_id' => $id])->where('sub_institute_id',$sub_institute_id)->get()->toArray();
@@ -299,15 +305,15 @@ class admissionRegistrationController extends Controller
         $data = DB::table('admission_enquiry as ae')
             ->join('admission_form as af', function ($join) {
                 $join->whereRaw('ae.id = af.enquiry_id');
-            })->join('admission_registration as ar', function ($join) {
-                $join->whereRaw('ae.id = ar.enquiry_id');
-            })->selectRaw("ae.*,af.*,ae.id as id,ar.*")
+            })->join('admission_registration as ar', function ($join) use($sub_institute_id){
+                $join->whereRaw('ae.id = ar.enquiry_id')->where('ar.sub_institute_id',$sub_institute_id); // 2024-08-27 add sub_institute_id
+            })->selectRaw("ae.*,af.*,ae.id as id,ar.*,ar.religion as con_religion,ar.cast as con_cast")
             ->where('ae.id', $id)->get()->toArray();
 
         $data = array_map(function ($value) {
             return (array) $value;
         }, $data);
-
+        // echo "<pre>";print_r($data);exit;
         if (count($data) == 0) {
             $res['status_code'] = 0;
             $res['message'] = "Please complete admission enquiry process";
@@ -348,7 +354,10 @@ class admissionRegistrationController extends Controller
         $studentArray['bloodgroup'] = $data['blood_group'];
         $studentArray['admission_docket_no'] = $data['admission_docket_no'];
         $studentArray['registration_no'] = $data['registration_no'];
-
+        // 2024-08-27 add
+        $studentArray['religion'] = $data['con_religion'];
+        $studentArray['cast'] = $data['con_cast'];
+        // end 2024-08-27
         if (isset($data['enrollment_no']) && $data['enrollment_no'] != '') {
             $enrollment_no_sql_new = $data['enrollment_no'];
             DB::table('tblstudent')
@@ -379,6 +388,10 @@ class admissionRegistrationController extends Controller
                     'admission_docket_no' => $studentArray['admission_docket_no'],
                     'registration_no'     => $studentArray['registration_no'],
                     'enrollment_no'       => $enrollment_no_sql_new,
+                    // 2024-08-27 add
+                    'religion'            => $studentArray['religion'],
+                    'cast'                => $studentArray['cast'],
+                    // end 2024-08-27 
                 ]);
 
             $student_id = DB::getPdo()->lastInsertId();
@@ -414,6 +427,10 @@ class admissionRegistrationController extends Controller
                     'admission_docket_no' => $studentArray['admission_docket_no'],
                     'registration_no'     => $studentArray['registration_no'],
                     'enrollment_no'       => $enrollment_no_sql_new,
+                    // 2024-08-27 add
+                    'religion'            => $studentArray['religion'],
+                    'cast'                => $studentArray['cast'],
+                    // 2024-08-27 end
                 ]);
 
             $student_id = DB::getPdo()->lastInsertId();

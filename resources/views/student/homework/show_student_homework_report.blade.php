@@ -104,7 +104,7 @@
                                     <td>{{$data['student_name']}}</td>
                                     <td>{{$data['title']}}</td>
                                     <td>{{$data['description']}}</td>
-                                    <td><a target="blank" href="/storage/student/{{$data['image']}}">view</a> </td>
+                                    <td>@if($data['image']!=null && $data['image']!=='')<a target="blank" href="/storage/student/{{$data['image']}}">view</a>@else - @endif</td>
                                     <td>{{$data['standard_name']}} - {{$data['division_name']}} </td>
                                     <td>{{$data['subject_name']}}</td>
                                     <td>{{date('d-m-Y',strtotime($data['date']))}}</td>

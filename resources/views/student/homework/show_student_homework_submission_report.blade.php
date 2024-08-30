@@ -113,7 +113,7 @@
                                     <td>{{$data['HOMEWORK_DATE']}}</td>
                                     <td>{{$data['title']}}</td>
                                     <td>{{$data['description']}}</td>
-                                    <td><a target="blank" href="/storage/student/{{$data['image']}}">view</a> </td>
+                                    <td>@if($data['image']!=null && $data['image']!=='')<a target="blank" href="/storage/student/{{$data['image']}}">view</a>@else - @endif</td>
                                     <td>{{$data['SUBMISSION_DATE']}}</td>
                                     <td>{{$data['submission_remarks']}}</td>
                                     <td>{{$data['submission_taken_by']}}</td>

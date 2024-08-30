@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\File;
 
 if (!defined('BEST_OF')) {
     define('BEST_OF', 2);
@@ -2138,25 +2139,28 @@ if (!function_exists('get_string')) {
         }
         $get_month_head = [];
         if (!empty($months_arr)) {
-            foreach ($months_arr as $key => $val) {
+            $getAllMonths = FeeMonthId();
+            foreach ($getAllMonths as $key => $val) {
+                // DB::enableQueryLog();
                 $get_month = DB::table('fees_month_header')->where(['sub_institute_id' => $sub_institute_id, 'month_id' => $key])->first();
-                $get_month_head[$key] = $get_month->header;
-                $numericValues = $alphabeticValues = [];
-
-                foreach ($get_month_head as $key => $value) {
-                    if (is_numeric($value)) {
-                        $numericValues[$key] = $value;
-                    } else {
-                        $alphabeticValues[$key] = $value;
+                if(isset($get_month->header)){
+                    $get_month_head[$key] = $get_month->header;
+                    // dd();
+                    $numericValues = $alphabeticValues = [];
+    
+                    foreach ($get_month_head as $key => $value) {
+                        if (is_numeric($value)) {
+                            $numericValues[$key] = $value;
+                        } else {
+                            $alphabeticValues[$key] = $value;
+                        }
                     }
+                    $get_month_head = $numericValues + $alphabeticValues;
+
                 }
-
-                asort($numericValues, SORT_NUMERIC);
-                asort($alphabeticValues, SORT_NATURAL);
-
-                $get_month_head = $numericValues + $alphabeticValues;
-
             }
+            // exit;
+
         } else {
             $get_month_head = $months_arr;
         }
@@ -2393,4 +2397,62 @@ if (!function_exists('get_string')) {
            return $daysCount;
         }
     }
+
+    // log management 2024-08-23
+    if (!function_exists('accesslog_json')) {
+
+        function accesslog_json($query,$event,$module_name,$request="")
+        {
+            $sub_institute_id = session()->get('sub_institute_id');
+            $userFullName = session()->get('name');
+            $userProfileName = session()->get('user_profile_name');
+            $description = $query;
+            $userIp = $_SERVER['REMOTE_ADDR'];
+            // files   
+            $basePath = storage_path('app/public/'.$sub_institute_id);
+            $accessLogPath = $basePath.'/access_log';
+            $filePath = $accessLogPath.'/'.date('Y-M').'.json';
+            
+            ensureDirectory($basePath, 0755);
+            ensureDirectory($accessLogPath, 0755);
+
+            $jsonContent = [
+                'datetime' =>\Carbon\Carbon::parse(now())->format('d-m-Y g:i A'),
+                'fullname'=>$userFullName,
+                'userprofile'=>$userProfileName,
+                'module'=>$module_name,
+                'event'=>$event,
+                'description'=>$description,
+                'ip_address'=>$userIp,
+            ]; // Replace with your default content
+
+            if (!File::exists($filePath)) {
+                File::put($filePath, $jsonContent);
+            }   
+            else{   
+                $existingContent = File::get($filePath);
+                $existingData = json_decode($existingContent, true);
+
+                // Ensure existing data is an array
+                if (!is_array($existingData)) {
+                    $existingData = [];
+                }
+
+                // Append the new entry to the existing data
+                $existingData[] = $jsonContent;
+
+                // Encode the updated data and write it back to the file
+                File::put($filePath, json_encode($existingData));
+                // echo "created";exit;
+            }       
+        }
+    }
+
+     function ensureDirectory($path, $permissions = 0755)
+    {
+        if (!File::exists($path)) {
+            File::makeDirectory($path, $permissions, true);
+        }
+    }
+    // end log management
 }

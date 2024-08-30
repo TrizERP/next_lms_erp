@@ -170,8 +170,11 @@
                                                 @php 
                                                     $total_taken = $data['new_data'][$get_hrms_leave_type->leave_type][$get_employee_leave_list->id] ?? 0; 
                                                 @endphp
-
+                                                @if($get_hrms_leave_type->leave_type!="Leave Without Pay")
                                                 <a style="text-decoration:underline !important" onclick="getLeaveList('{{$get_employee_leave_list->id}}','{{$get_employee_leave_list->department_id}}','{{$get_hrms_leave_type->id}}')">{{ $total_taken }}</a> 
+                                                @else
+                                                <a style="text-decoration:underline !important" onclick="getLeaveList('{{$get_employee_leave_list->id}}','{{$get_employee_leave_list->department_id}}','{{$get_hrms_leave_type->id}}','lwp')">{{ $total_taken }}</a> 
+                                                @endif
                                             @else
                                                 0
                                             @endif
@@ -190,7 +193,11 @@
                                                     $total_taken = $data['new_data'][$get_hrms_leave_type->leave_type][$get_employee_leave_list->id] ?? 0; 
                                                 @endphp
 
+                                                @if($get_hrms_leave_type->leave_type!="Leave Without Pay")
                                                 <a style="text-decoration:underline !important" onclick="getLeaveList('{{$get_employee_leave_list->id}}','{{$get_employee_leave_list->department_id}}','{{$get_hrms_leave_type->id}}')">{{ $total_taken }}</a> 
+                                                @else
+                                                <a style="text-decoration:underline !important" onclick="getLeaveList('{{$get_employee_leave_list->id}}','{{$get_employee_leave_list->department_id}}','{{$get_hrms_leave_type->id}}','lwp')">{{ $total_taken }}</a> 
+                                                @endif
                                             @else
                                                 0
                                             @endif
@@ -281,12 +288,13 @@
         });
     });
 
-    function getLeaveList(empId,depId,leaveId){
+    function getLeaveList(empId,depId,leaveId,leaveType=''){
         $('#modalBody').empty();
         var year = {{isset($data['years']) ? $data['years'] : session()->get('syear') }};
+        
         $.ajax({
             url : "{{route('leavelist')}}",
-            data : {emp_id:empId,department_id:depId,leave_type_id:leaveId,year:year},
+            data : {emp_id:empId,department_id:depId,leave_type_id:leaveId,year:year,leaveType:leaveType},
             type : 'GET',
             success : function(response){
                if(Array.isArray(response)){
