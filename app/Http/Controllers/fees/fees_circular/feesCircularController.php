@@ -141,7 +141,7 @@ public function getBk(Request $request, $id)
             "0" => $id,
         ];
 
-        $request->session()->put('stu_arr', $stu_arr);
+        //$request->session()->put('stu_arr', $stu_arr);
 
         $student_id = $id;
 

@@ -339,7 +339,9 @@ class fees_collect_controller extends Controller
         }
         $_REQUEST['fees_data'] = $fees_data;
 
-        $stu_arr = session()->get('stu_arr');
+        //$stu_arr = session()->get('stu_arr');
+        $stu_arr[0] = $_REQUEST['student_id'];
+    //   echo "<pre>";print_r($stu_arr);exit;
         $sub_institute_id=session()->get('sub_institute_id');
         $syear = session()->get('syear');
         $user_id = session()->get('user_id');
@@ -348,7 +350,7 @@ class fees_collect_controller extends Controller
             $sub_institute_id=$request->sub_institute_id;
             $syear = $request->syear;
             $user_id = $request->user_id;
-             $stu_arr[0] = $request->student_id;
+            $stu_arr[0] = $request->student_id;
         }
         // get all month name with month_id
         $month_arr = FeeMonthId($syear,$sub_institute_id);
@@ -1914,7 +1916,8 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             "0" => $id,
         ];
 
-        session(['stu_arr' => $stu_arr]);
+        //session(['stu_arr' => $stu_arr]);
+        //$request->session()->put('stu_arr', $stu_arr);
 
         $student_id = $id;
 
