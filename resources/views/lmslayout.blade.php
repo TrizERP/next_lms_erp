@@ -445,7 +445,7 @@
                             $client_name = $client_data[0]->client_name;
                             $hrms_folder = $client_data[0]->hrms_folder;
                             $hrms_db_hrms = $client_data[0]->db_hrms;
-                            $hrms_rights = $client_data[0]->rights;
+                            $hrms_rights = 0;//$client_data[0]->rights;
                             $library_db = $client_data[0]->db_library;
                             $library_rights = $client_data[0]->library_rights;
                             $library_host = $db_host;
@@ -485,13 +485,7 @@
 
                             $hrms_link = "?NEW_ERP=1&DUSER_ID=$DUSER_ID&USER_GROUP_ID=$USER_GROUP_ID&DUSER_NAME=$DUSER_ID&hrms_db_host=$db_host&hrms_db_user=$db_user&hrms_db_password=$db_password&hrms_db_hrms=$hrms_db_hrms&client_name=$client_name";
 
-                            //$hrms_link = "?NEW_ERP=1&DUSER_ID=" . base64_encode($DUSER_ID) . "&USER_GROUP_ID=" . base64_encode($USER_GROUP_ID) . "&DUSER_NAME=" . base64_encode($DUSER_ID) . "&hrms_db_host=" . base64_encode($db_host) . "&hrms_db_user=" . base64_encode($db_user) . "&hrms_db_password=" . base64_encode($db_password) . "&hrms_db_hrms=" . base64_encode($hrms_db_hrms) . "&client_name=" . base64_encode($client_name);
-
-                            //$library_link = "?NEW_ERP=1&DUSER_ID=".base64_encode($DUSER_ID)."&USER_GROUP_ID=".base64_encode($USER_GROUP_ID)."&DUSER_PWD=".base64_encode($DUSER_PWD)."&db_host=".base64_encode($library_host)."&db_user=".base64_encode($library_user)."&db_password=".base64_encode($library_password)."&db_library=".base64_encode($library_db)."&solution_db=".base64_encode('development_erp')."&school_name=".base64_encode($school_name)."&SUB_INSTITUTE_ID=".base64_encode($sub_institute_id)."&school_logo=".base64_encode($school_logo)."&dyear=".base64_encode($syear);
-
                             $library_link = "?NEW_ERP=1&DUSER_ID=$DUSER_ID&USER_GROUP_ID=$USER_GROUP_ID&DUSER_PWD=$DUSER_PWD&db_host=$library_host&db_user=$library_user&db_password=$library_password&db_library=$library_db&solution_db=development_erp&school_name=$school_name&SUB_INSTITUTE_ID=$sub_institute_id&school_logo=$school_logo&dyear=$syear";
-
-                            //$library_link = "?".App\Helpers\encrypt_url('encrypt',"it&1&$DUSER_ID&$USER_GROUP_ID&$DUSER_PWD&$library_host&$library_user&$library_password&$library_db&development_erp&$school_name&$sub_institute_id&$school_logo&$syear");
 
                             $lms_link =  "lmslogin.php?SUB_INSTITUTE_ID=" . $sub_institute_id . "&U=" . base64_encode($DUSER_ID) . "&P=" . base64_encode($DUSER_PWD) . "";
 

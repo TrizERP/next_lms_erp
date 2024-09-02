@@ -456,6 +456,7 @@ class lmsCounsellingController extends Controller
         // Return JSON response
         return response()->json($results);
     }
+    
     public function careerCluster()
     {
         // Fetch data from the database
