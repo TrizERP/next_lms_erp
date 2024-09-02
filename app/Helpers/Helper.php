@@ -2409,12 +2409,12 @@ if (!function_exists('get_string')) {
             $description = $query;
             $userIp = $_SERVER['REMOTE_ADDR'];
             // files   
-            $basePath = storage_path('app/public/'.$sub_institute_id);
-            $accessLogPath = $basePath.'/access_log';
-            $filePath = $accessLogPath.'/'.date('Y-M').'.json';
+            $basePath = storage_path('app/public/access_log/'.$sub_institute_id);
+            // $accessLogPath = $basePath.'/';
+            $filePath = $basePath.'/'.date('Y-M').'.json';
             
             ensureDirectory($basePath, 0755);
-            ensureDirectory($accessLogPath, 0755);
+            // ensureDirectory($accessLogPath, 0755);
 
             $jsonContent = [
                 'datetime' =>\Carbon\Carbon::parse(now())->format('d-m-Y g:i A'),
