@@ -37,6 +37,8 @@ Route::group(['prefix' => 'frontdesk', 'middleware' => ['session', 'menu', 'logR
 	Route::get('complaint_report', [complaintController::class, 'complaintReportIndex'])->name("complaint_report_index");
 	Route::resource('pettycashreport', PettyCashReportController::class);
 	Route::post('ajax_getpettycashreport', [PettyCashReportController::class, 'getpettycashreport'])->name('ajax_getpettycashreport');
+	// genarate AI syllabus
+	Route::get('generateSyllabus', [syllabusController::class, 'GenrateAISyllabus'])->name("generateSyllabus");
 });
 
 Route::group(['prefix' => 'front_desk', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
@@ -47,5 +49,4 @@ Route::group(['prefix' => 'front_desk', 'middleware' => ['session', 'menu', 'log
 	Route::get('Delete_Timetable', [oldtimetableController::class, 'deleteTimetable'])->name('Delete_Timetable');
     Route::get('add_new_stdandardDiv', [oldtimetableController::class, 'addNewStdandardDiv'])->name('add_new_stdandardDiv');	
 	Route::resource('add_cast', castController::class);
-
 });
