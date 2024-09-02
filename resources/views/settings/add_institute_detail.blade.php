@@ -25,11 +25,11 @@
             @endif
         <center>            
             <ul class="nav nav-tabs tab-title mb-4 inst-nav">
-                <li class="nav-item"><a href="#section-linemove-1" class="nav-link active" aria-selected="true" data-toggle="tab"><span>Institute Details</span></a></li>
-                <li class="nav-item"><a href="#section-linemove-2" class="nav-link" aria-selected="false" data-toggle="tab"><span>Add Departments</span></a></li>
-                <li class="nav-item"><a href="#section-linemove-3" class="nav-link" aria-selected="false" data-toggle="tab"><span>School Handbook</span></a></li>
-                <li class="nav-item"><a href="#section-linemove-4" class="nav-link" aria-selected="false" data-toggle="tab"><span>Organization Chart</span></a></li>
-                <li class="nav-item"><a href="#section-linemove-5" class="nav-link" aria-selected="false" data-toggle="tab"><span>Parent Feedback</span></a></li>
+                <li class="nav-item"><a href="#section-linemove-1" class="nav-link section-linemove-1 active" aria-selected="true" data-toggle="tab"><span>Institute Details</span></a></li>
+                <li class="nav-item"><a href="#section-linemove-2" class="nav-link section-linemove-2" aria-selected="false" data-toggle="tab"><span>Add Departments</span></a></li>
+                <li class="nav-item"><a href="#section-linemove-3" class="nav-link section-linemove-3" aria-selected="false" data-toggle="tab"><span>School Handbook</span></a></li>
+                <li class="nav-item"><a href="#section-linemove-4" class="nav-link section-linemove-4" aria-selected="false" data-toggle="tab"><span>Organization Chart</span></a></li>
+                <li class="nav-item"><a href="#section-linemove-5" class="nav-link section-linemove-5" aria-selected="false" data-toggle="tab"><span>Parent Feedback</span></a></li>
             </ul> 
         </center>
 
@@ -156,7 +156,15 @@
         </div>
     </div>        
 </div>
-
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 @include('includes.footerJs')
+@if($_REQUEST['module']=='add_task')
+<script>
+    $(document).ready(function(){
+        $('#section-linemove-1, #section-dep-0, .section-linemove-1, .section-dep-0').removeClass('active');
+        $('#section-linemove-2, #section-dep-2, .section-linemove-2, .section-dep-2').addClass('active');
+    })
+</script>
+@endif
 @include('includes.footer')
 @endsection
