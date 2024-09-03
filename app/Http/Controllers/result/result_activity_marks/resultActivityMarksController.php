@@ -46,6 +46,7 @@ class resultActivityMarksController extends Controller
      */
     public function create(Request $request)
     {
+        // echo "<pre>";print_r($request->all());exit;
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $res['standard'] = $_REQUEST["standard"];
@@ -89,7 +90,12 @@ class resultActivityMarksController extends Controller
 
         if($request->activity_master != '')
         {
-            $res['activity_master'] = $this->getRActivityMaster($_REQUEST['skillset_id']);
+            $res['activity_master'] = $this->getRActivityMaster($_REQUEST['skillset_id'],$_REQUEST['standard']);
+        }
+        if($request->sub_activity_master != '')
+        {
+            $res['sub_activity_value'] = DB::table('result_sub_activity')->where('sub_institute_id', $sub_institute_id)->where('sub_skill_id',$_REQUEST['activity_master'])->get()->toArray();
+            $res['sub_activity_master'] = $request->sub_activity_master;
         }
         
         $res['result_skillsets'] = $get_result_skillsets;
@@ -97,15 +103,16 @@ class resultActivityMarksController extends Controller
         $res['student_datas'] = $student_datas;
         $res['result_activity_groups'] = $get_result_activity_groups;
         $res['get_activity_marks'] = $get_activity_marks;
-
+        // echo "<pre>";print_r($res['sub_activity_value']);exit;
         return is_mobile($type, "result/result_activity_marks/add_result_activity_marks", $res, "view");
     }
 
-    public function getRActivityMaster($activity_master)
+    public function getRActivityMaster($activity_master,$standard)
     {
         $where = [
             "ram.sub_institute_id" => session()->get('sub_institute_id'),
             "ram.skill_id" => $activity_master,
+            'ram.standard'=>$standard,
         ];
 
         return DB::table('result_activity_master as ram')
@@ -130,7 +137,9 @@ class resultActivityMarksController extends Controller
         $activity_id = $request->get('activity_id');
         $group_id = $request->get('group_id');
         $activity_groups = $request->get('activity_group');
-
+        if(isset($request->sub_activity_master)){
+            $activity_id = $request->get('sub_activity_master');
+        }
         foreach($activity_groups as $key => $activity_group)
         {
             $finalArray = [

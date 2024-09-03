@@ -230,7 +230,11 @@ class resultActivityMasterController extends Controller
         $sub_institute_id = session()->get('sub_institute_id');
         $skill_id = $request->skill_id;
         $standard = $request->standard;
-        $res = DB::table('result_activity_master')->where('sub_institute_id',$sub_institute_id)->where('standard',$standard)->where('skill_id',$skill_id)->get()->toArray();
+        if(isset($standard)){
+            $res = DB::table('result_activity_master')->where('sub_institute_id',$sub_institute_id)->where('standard',$standard)->where('skill_id',$skill_id)->get()->toArray();
+        }else{
+            $res = DB::table('result_sub_activity')->where('sub_institute_id',$sub_institute_id)->where('sub_skill_id',$skill_id)->get()->toArray();
+        }
         return $res;
     }
 }
