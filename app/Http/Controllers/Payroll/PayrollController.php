@@ -1471,7 +1471,7 @@ class PayrollController extends Controller
 
                 // $emp_att = ($AttTotalDays - $AttTotalAb);
                 $emp_att = $this->getTotalDays($request2);
-
+                
                 $newData[$key]['totalDay'] = number_format($emp_att,2);
             }
         }
@@ -1680,13 +1680,15 @@ class PayrollController extends Controller
         ->get()->toArray();
         
         $holiday = 0;
-        $hstartDate = Carbon::parse($from_date);
-        $hendDate = Carbon::parse($to_date);
+        // $hstartDate = Carbon::parse($from_date);
+        // $hendDate = Carbon::parse($to_date);
+        $holidayDates = [];
         foreach ($get_hrms_holidays as $key => $value) {
-            $startDate = Carbon::parse($value->from_date);
-            $endDate = Carbon::parse($value->to_date);
+            $hstartDate = Carbon::parse($value->from_date);
+            $hendDate = Carbon::parse($value->to_date);
             for ($date = $hstartDate; $date->lte($hendDate); $date->addDay()) {
                 $holiday++;
+                $holidayDates[] = $date->format('Y-m-d');
             }
         }
         // get users attandance
@@ -1699,7 +1701,8 @@ class PayrollController extends Controller
                 $countSundays++;
             }else{
                 $searchDate = Carbon::parse($date)->format('Y-m-d');
-                $attData = DB::table('hrms_attendances')->where(['sub_institute_id'=>$sub_institute_id,'user_id'=>$user_id])->where('day',$searchDate)->count();
+                $attData = DB::table('hrms_attendances')
+                ->where(['sub_institute_id'=>$sub_institute_id,'user_id'=>$user_id])->where('day',$searchDate)->count();
                 if($attData>0){
                     $totalAtt += $attData;
                     $attArr[]= $searchDate;
@@ -1713,23 +1716,29 @@ class PayrollController extends Controller
         ->where('hel.user_id',$user_id)
         ->whereRaw('hel.from_date >= "'.$from_date->format('Y-m-d').'" and hel.to_date <="'.$to_date->format('Y-m-d').'"')
         ->get()->toArray();
-        
+      
         $totDayPlaus = $totDayMinus = $noData = 0;
         $leaveDates=[];
         // check leave date in attandance and also aprroved_lwp
         foreach ($userLeaves as $key => $value) {
             $leaveFrom = Carbon::parse($value->from_date);
             $leaveTo = Carbon::parse($value->to_date);
+           
             for ($leavedate = $leaveFrom; $leavedate->lte($leaveTo); $leavedate->addDay()) {
-                if ($date->isSunday()) {
+                
+                if ($leavedate->isSunday()) {
                     $countSundays++;
                 }else{
+                    $checkLeave = $leavedate->format('Y-m-d');
                     // Leaves that are not in attandance.. 
-                    if(!in_array($leavedate->format('Y-m-d'),$attArr) && !in_array($value->status,["approved_lwp"])){
+                    if(!in_array($checkLeave,$attArr) && !in_array($checkLeave,$holidayDates) && !in_array($value->status,["cancelled"])){
                         $totDayPlaus= ($totDayPlaus+$value->day_type);
                     }
                     // if date not found in attdance and leave is approved lwp then minus, count only full day leave because half day will be in attandance
-                    if($value->status == "approved_lwp"){
+                    if($value->status == "approved_lwp" && $value->day_type=="0.5" && !in_array($checkLeave,$holidayDates)){
+                        $totalAtt = ($totalAtt - $value->day_type);
+                    }
+                    else if(!in_array($checkLeave,$attArr) && !in_array($checkLeave,$holidayDates) && $value->status == "approved_lwp"){
                         $totDayMinus = ($totDayMinus+$value->day_type);
                     }
                     // echo $leavedate->format('Y-m-d');
@@ -1737,18 +1746,18 @@ class PayrollController extends Controller
                 }
             }
         }
-
+       
         // date not found in attandance and leave, no punch in and punch out and also no leave entry in database
         $noEnrty = 0;
         foreach ($noAtt as $key => $value) {
-            if(!in_array($value,$leaveDates)){
+            if(!in_array($value,$leaveDates) && !in_array($value,$holidayDates)){
                 $noEnrty++;
             }
         }
-        $totalDays = ($totalAtt + $holiday + $weekday_off + $totDayPlaus);
+        $totalDays = ($totalAtt + $holiday + $weekday_off + $totDayPlaus + $noEnrty);
         $totalDays = ($totalDays - $totDayMinus - $noEnrty);
         $totalDays = ($totalDays>0) ? $totalDays : 0; // totDays should not be in minus
-
+      
         return $totalDays;
     }
 }

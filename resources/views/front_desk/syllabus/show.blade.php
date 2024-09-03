@@ -35,15 +35,28 @@
                <label>To Date</label>
                <input type="text" name="to_date" class="form-control mydatepicker to_date" autocomplete="off">
                </div> -->
-            <div class="col-md-3 form-group">
+            <div class="col-md-2">
+              <div class="form-group">
                <label>Syllabus Type</label>
                <select name="types" id="types" class="form-control" onchange="getMonthArr(this);">
                   <option value="Yearly">Yearly</option>
                   <option value="Monthly">Monthly</option>
                   <option value="Daily">Daily</option>
                </select>
+              </div>
             </div>
-            <div class="col-md-3 form-group">
+            <div class="col-md-2" id="monthLists">
+              <div class="form-group">
+               <label>Select Month</label>
+               @php $monthArr = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul','Aug', 'Sep','Oct', 'Nov', 'Dec']; @endphp
+               <select name="month" id="month" class="form-control">
+                  @foreach($monthArr as $k=>$v)
+                  <option value="{{$v}}">{{$v}}</option>
+                  @endforeach
+               </select>
+              </div>
+            </div>
+            <div class="col-md-2">
                 <div id="no_of_days_div">
                     <label>No. of Days</label>
                     <input type="number" name="no_of_days" class="form-control" id="no_of_days">
@@ -53,27 +66,17 @@
                 <input type="text" name="date" class="form-control mydatepicker selDate" autocomplete="off">
                 </div>
             </div>
-            <div class="col-md-3 form-group" >
+            <div class="col-md-2" >
                 <div id="no_of_periods_div">
                     <label>No. of Periods</label>
                     <input type="number" name="no_of_periods" class="form-control" id="no_of_days">
                 </div>
             </div>
-            <div class="col-md-3 form-group">
+            <div class="col-md-4">
                 <div id="assement_tool_div">
                     <label for="">Assement Tool</label>
                     <textarea name="assement_tool"  class="form-control" id="assement_tool"></textarea>
                 </div>
-            </div>
-            
-            <div class="col-md-3 form-group" id="monthLists">
-               <label>Select Month</label>
-               @php $monthArr = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul','Aug', 'Sep','Oct', 'Nov', 'Dec']; @endphp
-               <select name="month" id="month" class="form-control">
-                  @foreach($monthArr as $k=>$v)
-                  <option value="{{$v}}">{{$v}}</option>
-                  @endforeach
-               </select>
             </div>
         </div>
         <div class="row">
@@ -186,7 +189,7 @@
            buttons: [
                {
                    extend: 'pdfHtml5',
-                   title: 'Fees Monthly Report',
+                   title: 'Syllabus Report',
                    orientation: 'landscape',
                    pageSize: 'LEGAL',
                    pageSize: 'A0',
@@ -194,9 +197,9 @@
                        columns: ':visible'
                    },
                },
-               {extend: 'csv', text: ' CSV', title: 'Fees Monthly Report'},
-               {extend: 'excel', text: ' EXCEL', title: 'Fees Monthly Report'},
-               {extend: 'print', text: ' PRINT', title: 'Fees Monthly Report'},
+               {extend: 'csv', text: ' CSV', title: 'Syllabus Report'},
+               {extend: 'excel', text: ' EXCEL', title: 'Syllabus Report'},
+               {extend: 'print', text: ' PRINT', title: 'Syllabus Report'},
                'pageLength'
            ],
        });
