@@ -137,9 +137,7 @@ class syllabusController extends Controller
                     <head>
                         <meta charset="UTF-8">
                         <meta name="viewport" content="width=erpice-width, initial-scale=1.0">
-                        <style>@font-face {font-family: "Aakar";src: url("' . asset("fonts/Aakar.ttf") . '") format("truetype");}
-                         body {font-family: "Aakar", sans-serif; // Use the defined font-family}</style>
-                    </head>
+                        </head>
                     <body>
                         ' . $request->aiOutput . '
                     </body>
