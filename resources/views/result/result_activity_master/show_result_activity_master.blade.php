@@ -34,8 +34,9 @@
                                     <th>Id</th>
                                     <th>Title</th>
                                     <th>Skill Name</th>
+                                    <th>Sub Activities</th>
                                     <th>Sort Order</th>
-                                    <th>Action</th>
+                                    <th class="text-left">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -48,6 +49,16 @@
                                     <td>{{$j}}</td>
                                     <td>{{$result_activity_master->title}}</td>
                                     <td>{{$result_activity_master->result_main_title}} ({{ $result_activity_master->result_title }})</td>
+                                    <td>@php 
+                                        if(isset($result_activity_master->sub_activity)){
+                                            $explodVal = explode('|||',$result_activity_master->sub_activity);
+                                            foreach($explodVal as $k=>$val){
+                                                echo ($k+1).')&nbsp;'.$val.'<br>';
+                                            }
+                                        }else{
+                                            echo "-";
+                                        }
+                                    @endphp</td>
                                     <td>{{$result_activity_master->sort_order}}</td>
                                     <td>
                                         <div class="d-inline">                                            
@@ -77,12 +88,47 @@
 </div>
 
 @include('includes.footerJs')
-
-<script src="{{ asset("/plugins/bower_components/datatables/datatables.min.js") }}"></script>
 <script>
-$(document).ready(function () {
-    $('#example').DataTable();
-});
+	 $(document).ready(function () {
+        var table = $('#example').DataTable({
+            select: true,
+            lengthMenu: [
+                [100, 500, 1000, -1],
+                ['100', '500', '1000', 'Show All']
+            ],
+            dom: 'Bfrtip',
+            buttons: [
+                {
+                    extend: 'pdfHtml5',
+                    title: 'HPC Activities Report',
+                    orientation: 'landscape',
+                    pageSize: 'LEGAL',
+                    pageSize: 'A0',
+                    exportOptions: {
+                        columns: ':visible'
+                    },
+                },
+                {extend: 'csv', text: ' CSV', title: 'HPC Activities Report'},
+                {extend: 'excel', text: ' EXCEL', title: 'HPC Activities Report'},
+                {extend: 'print', text: ' PRINT', title: 'HPC Activities Report'},
+                'pageLength'
+            ],
+        });
 
+        $('#example thead tr').clone(true).appendTo('#example thead');
+        $('#example thead tr:eq(1) th').each(function (i) {
+            var title = $(this).text();
+            $(this).html('<input type="text" placeholder="Search ' + title + '" />');
+
+            $('input', this).on('keyup change', function () {
+                if (table.column(i).search() !== this.value) {
+                    table
+                        .column(i)
+                        .search( this.value )
+                        .draw();
+                }
+            } );
+        } );
+    } );
 </script>
 @include('includes.footer')
