@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\api\apiController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -14,6 +15,14 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+
+Route::post('whats-send-app',function (Request $request) {
+    \Illuminate\Support\Facades\Log::info(json_encode($request->all()));
+});
+
+Route::post('whats-comming-app',function (Request $request) {
+    \Illuminate\Support\Facades\Log::info(json_encode($request->all()));
+});
 
 Route::controller(apiController::class)->group(function () {
     Route::post('login', 'login');

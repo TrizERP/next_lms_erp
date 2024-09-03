@@ -37,6 +37,18 @@ class CustomModuleController extends Controller
             //return view('HRMS.hrms_job_title.create', compact('hrmsJobTitle'));
         }
         $customModuleTable['table_name'] = '';
+        $customModuleTable['module_name'] = '';
+        $customModuleTable['module_type'] = '';
+        $customModuleTable['display_under'] = '';
+        $customModuleTable['migration'] = '';
+        $customModuleTable['seeder'] = '';
+        $customModuleTable['model'] = '';
+        $customModuleTable['controller'] = '';
+        $customModuleTable['route'] = '';
+        $customModuleTable['view'] = '';
+        $customModuleTable['storage'] = '';
+        $customModuleTable['validation'] = '';
+        $customModuleTable['access_link'] = '';
         $customModuleTable['id'] = 0;
         return is_mobile($type, "custom_modules.tables.create-edit", compact('customModuleTable'), "view", 'compact');
     }
@@ -46,6 +58,9 @@ class CustomModuleController extends Controller
         $subInstituteId = $request->session()->get('sub_institute_id');
         $type = $request->input('type');
         $request->validate([
+            'module_name' => 'required',
+            'module_type' => 'required',
+            'display_under' => 'required',
             'table_name' => 'required|string|unique:custom_module_tables,table_name,' . $request->id,
         ]);
 
@@ -59,6 +74,18 @@ class CustomModuleController extends Controller
             $prefixTableName =  "Z_" . $request->table_name;
         }
 
+        $customModuleTable->module_name = $request->module_name;
+        $customModuleTable->module_type = $request->module_type;
+        $customModuleTable->display_under = $request->display_under;
+        $customModuleTable->migration = $request->migration;
+        $customModuleTable->seeder = $request->seeder;
+        $customModuleTable->model = $request->model;
+        $customModuleTable->controller = $request->controller;
+        $customModuleTable->route = $request->route;
+        $customModuleTable->view = $request->view;
+        $customModuleTable->storage = $request->storage;
+        $customModuleTable->validation = $request->validation;
+        $customModuleTable->access_link = $request->access_link;
         $customModuleTable->table_name = $prefixTableName;
         $customModuleTable->sub_institute_id = $subInstituteId;
         $customModuleTable->save();
@@ -162,7 +189,7 @@ class CustomModuleController extends Controller
             $existingColumnNames = array_column($existingColumns, 'Field');
 
             // Exclude 'created_at' and 'updated_at' columns from being altered
-            $excludedColumns = ['sub_institute_id', 'created_at', 'updated_at'];
+            $excludedColumns = ['id','sub_institute_id', 'created_at', 'updated_at'];
 
             // Prepare the column definitions for adding new columns
             $newColumns = [];

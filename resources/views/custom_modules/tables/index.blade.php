@@ -5,7 +5,7 @@
     <div class="container-fluid">
         <div class="row bg-title">
             <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
-                <h4 class="page-title">Tables</h4>
+                <h4 class="page-title">Custom Modules</h4>
             </div>
         </div>
         <div class="card">
@@ -17,7 +17,7 @@
             @endif
             <div class="row">
                 <div class="col-lg-3 col-sm-3 col-xs-3">
-                    <a href="{{ route('custom_module_table.create') }}" class="btn btn-info add-new"><i class="fa fa-plus"></i> Add Table </a>
+                    <a href="{{ route('custom_module_table.create') }}" class="btn btn-info add-new"><i class="fa fa-plus"></i> Add Module </a>
                 </div>
                 <div class="col-lg-12 col-sm-12 col-xs-12">
                     <div class="table-responsive">

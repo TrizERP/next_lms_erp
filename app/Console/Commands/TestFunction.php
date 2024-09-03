@@ -85,19 +85,7 @@ class TestFunction extends Command
     public function handle()
     {
 
-     /*   $record = \App\Models\DynamicModel::createRecord('users1', [
-            'name2' => 'darshan test',
-            'sub_institute_id' => 1,
-        ]);*/
 
-        /*$record = \App\Models\DynamicModel::updateRecord('users1',1 ,[
-            'name2' => 'darshan test1',
-            'sub_institute_id' => 1,
-        ]);*/
-
-        //$record = \App\Models\DynamicModel::readRecords('users1');
-        $record = \App\Models\DynamicModel::deleteRecord('users1',1);
-        dd($record);
 
         //$message = "Hello this is test message for me<a href=\"https://erp.triz.co.in/Images/logo.png\">https://erp.triz.co.in/Images/logo.png</a> for me ";
         $message = "Triz ";
@@ -126,6 +114,17 @@ class TestFunction extends Command
         $authToken = env('TWILIO_AUTH_TOKEN');
 
         $client = new Client($accountSid, $authToken);
+        $res= $client->messages->create(
+            'whatsapp:+919638141767',
+            //'whatsapp:+917621070302',
+            [
+                "contentSid" => $prepareMessageBody['contentSid'],
+                "messagingServiceSid" => $messagingServiceSid,
+                "body" => $prepareMessageBody['contentVariables'],
+                "from" => "whatsapp:+919909906512",
+                "contentVariables" => $prepareMessageBody['contentVariables']
+            ]
+        );
         $res= $client->messages->create(
             'whatsapp:+919638141767',
             //'whatsapp:+917621070302',
