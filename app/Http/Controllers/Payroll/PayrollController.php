@@ -1534,7 +1534,7 @@ class PayrollController extends Controller
                 $checkAllowance = DB::table('hrms_emp_payroll_deduction')->where('employee_id',$request->emp_id)->where(['sub_institute_id'=>$sub_institute_id,'month'=>$request->month,'year'=>$request->year,'deduction_type'=>$payrollType->id])->first();
                 $payrollAmount=$employeeSalaryDetails[$payrollType->id];
                 if(isset($checkAllowance->deduction_amount)){
-                    $payrollAmount = ($payrollAmount - $checkAllowance->deduction_amount);
+                    $payrollAmount = ($payrollAmount + $checkAllowance->deduction_amount);
                 }
 
                 $preparPayrollType[]['allowance'] = [$payrollAmount,$payrollType->amount_type,$payrollType->id,$payrollType->payroll_name];
@@ -1545,7 +1545,7 @@ class PayrollController extends Controller
                 $checkDeduction = DB::table('hrms_emp_payroll_deduction')->where('employee_id',$request->emp_id)->where(['sub_institute_id'=>$sub_institute_id,'month'=>$request->month,'year'=>$request->year,'deduction_type'=>$payrollType->id])->first();
                 $payrollAmount=$employeeSalaryDetails[$payrollType->id];
                 if(isset($checkDeduction->deduction_amount)){
-                    $payrollAmount = ($payrollAmount - $checkAllowance->deduction_amount);
+                    $payrollAmount = ($payrollAmount + $checkDeduction->deduction_amount);
                 }
 
                 $preparPayrollType[]['deduction'] = [$payrollAmount,$payrollType->amount_type,$payrollType->id,$payrollType->payroll_name];

@@ -2113,32 +2113,33 @@ class AJAXController extends Controller
         // return $request;exit;
         $question = $request->question;
         $standard = $request->standard;
-        $type_name = $request->type_depth;
-        //$type_bloom = $request->type_bloom;
+        //$type_name = $request->type_depth;
+        $type_bloom = $request->type_bloom;
         $type_learning = $request->type_learning;
         $sub_institute_id=session()->get('sub_institute_id');
         $bloom = $depth = $learning = $reason_bloom =$reason_depth= '';
         if($request->has('question') && $question!==''){
-            if($request->type_depth){
+            /*if($request->type_depth){
                 $options = DB::table('lms_mapping_type')->select(DB::raw('group_concat(name) as type_name'))->where('parent_id',$request->type_depth)->first();                
                 $depth = "'".$question."' give answer from given options in one word this question for standard '".$standard."' student from these options $options->type_name ";
                 $reason_depth = "if its one of $options->type_name then why it is give reason";
-            }
-             /*if ($request->type_bloom){
+            }*/
+            if ($request->type_bloom){
                 $options = DB::table('lms_mapping_type')->select(DB::raw('group_concat(name) as type_name'))->where('parent_id',$request->type_bloom)->first();
                 $bloom = "'".$question."' give answer from given options in one word this question for Blooms Taxonomy? from these options $options->type_name";
-                $reason_bloom = "if its one of $options->type_name then why it is give reason from this reasons 'factual','conceptual','procedural','metacoganitive'";                
-            }*/
+                $reason_bloom = "if its one of $options->type_name then why it is give reason";// from this reasons 'factual','conceptual','procedural','metacoganitive'
+            }
             if ($request->type_learning){
                 // $options = DB::table('lms_mapping_type')->select(DB::raw('group_concat(name) as type_name'))->where('parent_id',$request->type_learning)->first();
                 $learning = "'".$question."' according to this question What will be the learning outcome for standard '".$standard."' student ?";
                 // $reason_learning = "if its one of $options->type_name then why it is give reason";                
             }
             $message = array(
-                array("question_depth"=>$depth,
-                "reason_depth"=>$reason_depth,                
-                //"question_bloom"=>$bloom,
-                //"reason_bloom"=>$reason_bloom,                
+                array(
+                //"question_depth"=>$depth,
+                //"reason_depth"=>$reason_depth,                
+                "question_bloom"=>$bloom,
+                "reason_bloom"=>$reason_bloom,                
                 "question_learning"=>$learning),              
             );
         }else if(isset($request->search) && $request->search=="question"){
