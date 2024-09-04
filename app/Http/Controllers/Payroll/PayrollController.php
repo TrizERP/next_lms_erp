@@ -1369,7 +1369,7 @@ class PayrollController extends Controller
         $res['months'] = Helpers::getMonths();
         $res['years'] = Helpers::getYears();
         $res['py_types'] = PayrollType::where('sub_institute_id',$sub_institute_id)->orderBy('sort_order')->where('status',1)->get()->toArray();
-
+        
         return is_mobile($type, "payroll.payroll_report.payrollTypeReport", $res, "view");
     }
 
@@ -1410,6 +1410,7 @@ class PayrollController extends Controller
             $sub_institute_id = $request->sub_institute_id;
             $syear = $request->syear;
         }
+        $res = session()->get('data');
         $res['months'] = Helpers::getMonths();
         $res['years'] = Helpers::getYears();
         $res['selYear'] = date('Y');
@@ -1455,7 +1456,7 @@ class PayrollController extends Controller
                 $currentMonth = date('n');
 
                 $from_date = Carbon::createFromDate($year, $monthNumber, 1);
-                if($currentMonth==$monthNumber){
+                if($currentMonth==$monthNumber && $year == date('Y')){
                     $to_date = now();
                 }else{
                     $to_date = $from_date->copy()->endOfMonth();
@@ -1515,7 +1516,7 @@ class PayrollController extends Controller
         $totalDay = $request->totalDay;
         
         $payrollTypes = PayrollType::where('sub_institute_id',$sub_institute_id)->where('status', 1)->orderBy('sort_order')->get();
-        $employeeSalaryDetails = EmployeeSalaryStructure::where(['employee_id'=> $request->emp_id, 'sub_institute_id'=>$sub_institute_id])->first();
+        $employeeSalaryDetails = EmployeeSalaryStructure::where(['employee_id'=> $request->emp_id, 'sub_institute_id'=>$sub_institute_id,'year'=>$request->year])->first();
 
         if(empty($employeeSalaryDetails)){
             $res['status_code']=0;
@@ -1533,7 +1534,7 @@ class PayrollController extends Controller
                 $checkAllowance = DB::table('hrms_emp_payroll_deduction')->where('employee_id',$request->emp_id)->where(['sub_institute_id'=>$sub_institute_id,'month'=>$request->month,'year'=>$request->year,'deduction_type'=>$payrollType->id])->first();
                 $payrollAmount=$employeeSalaryDetails[$payrollType->id];
                 if(isset($checkAllowance->deduction_amount)){
-                    $payrollAmount = ($payrollAmount - $checkAllowance->deduction_amount);
+                    $payrollAmount = ($payrollAmount + $checkAllowance->deduction_amount);
                 }
 
                 $preparPayrollType[]['allowance'] = [$payrollAmount,$payrollType->amount_type,$payrollType->id,$payrollType->payroll_name];
@@ -1544,25 +1545,29 @@ class PayrollController extends Controller
                 $checkDeduction = DB::table('hrms_emp_payroll_deduction')->where('employee_id',$request->emp_id)->where(['sub_institute_id'=>$sub_institute_id,'month'=>$request->month,'year'=>$request->year,'deduction_type'=>$payrollType->id])->first();
                 $payrollAmount=$employeeSalaryDetails[$payrollType->id];
                 if(isset($checkDeduction->deduction_amount)){
-                    $payrollAmount = ($payrollAmount - $checkAllowance->deduction_amount);
+                    $payrollAmount = ($payrollAmount + $checkDeduction->deduction_amount);
                 }
 
                 $preparPayrollType[]['deduction'] = [$payrollAmount,$payrollType->amount_type,$payrollType->id,$payrollType->payroll_name];
             }
         }
         $employeefinalDisplayData = [];
+        $totalSal =0;
         foreach ($preparPayrollType as $value){
             // for allowance
             $monthNo = date('n', strtotime($request->month)); // Converts months
             $payrollMonthDays = Carbon::create($request->year, $monthNo)->daysInMonth;
-
             if(isset($value['allowance'])) {
                 $allowence =  $value['allowance'][0];
                 if($value['allowance'][1] == 1) $allowence = round( ($allowence / $payrollMonthDays) * $request->totalDay);
                 if($value['allowance'][1] == 2) $allowence = (round(($allowence / $payrollMonthDays) * $request->totalDay));
                 $employeefinalDisplayData[$value['allowance'][2]] = $allowence;
+                if(in_array($value['allowance'][3],["BASIC","GRADE PAY","D.A"])){
+                    $totalSal= ($totalSal+$allowence);
+                }
                 $totalallowance = $totalallowance + $allowence;
             }
+          
             // for deduction
             if(isset($value['deduction'])) {
                 // 13-08-2024 start
@@ -1579,8 +1584,16 @@ class PayrollController extends Controller
 
                 // 13-08-2024 end 
                 $deductionName=  (($value['deduction'][3] == 'PT') ? 1 : 0);
-                if($value['deduction'][1] == 1 && !$deductionName) $deduction = round(($deduction / $payrollMonthDays) * $request->totalDay);
-                if($value['deduction'][1] == 2 && !$deductionName) $deduction = round(($deduction / $payrollMonthDays) * $request->totalDay);
+                if($totalSal < 15000 && $value['deduction'][3]=="PF"){
+                    $deduction = round(($deduction / $payrollMonthDays) * $request->totalDay);  
+                }
+                else if($value['deduction'][1] == 1 && !$deductionName && $value['deduction'][3]!="PF"){
+                    $deduction = round(($deduction / $payrollMonthDays) * $request->totalDay);
+                }
+                else if($value['deduction'][1] == 2 && !$deductionName && $value['deduction'][3]!="PF"){
+                    $deduction = round(($deduction / $payrollMonthDays) * $request->totalDay);  
+                }
+                
                 $employeefinalDisplayData[$value['deduction'][2]] = $deduction;
                 $totaldeduction = $totaldeduction + $deduction;
             }
@@ -1590,10 +1603,10 @@ class PayrollController extends Controller
             $employeefinalDisplayData['total_deduction'] = $totaldeduction;
             $employeefinalDisplayData['total_payment'] = ($totalallowance - $totaldeduction);
         }
-        // echo "<pre>";print_r($employeefinalDisplayData);exit;
+        // echo "<pre>";print_r($totalSal);exit;
 
         $res['salaryData'] = $employeefinalDisplayData;
-        $res['totalDay'] = $request->total_day;
+        $res['totalDay'] = round($request->totalDay,2);
 
         return $res;
     }

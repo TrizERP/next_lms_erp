@@ -93,6 +93,9 @@ class instituteDetailController extends Controller
                  $res['status_code'] = 0;
                  $res['message'] = "Please Select Atleast one Employees";
                }
+               if($type!='API'){
+                return redirect('/settings/institute_detail?module=add_task')->with(['data'=>$res]);
+               }
              }else{
                 $res['status_code'] = 0;
                 $res['message'] = "Failed To Add Data";
