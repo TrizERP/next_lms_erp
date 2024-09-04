@@ -1562,6 +1562,7 @@ class PayrollController extends Controller
                 if($value['allowance'][1] == 1) $allowence = round( ($allowence / $payrollMonthDays) * $request->totalDay);
                 if($value['allowance'][1] == 2) $allowence = (round(($allowence / $payrollMonthDays) * $request->totalDay));
                 $employeefinalDisplayData[$value['allowance'][2]] = $allowence;
+
                 if(in_array($value['allowance'][3],["BASIC","GRADE PAY","D.A"])){
                     $totalSal= ($totalSal+$allowence);
                 }
@@ -1585,7 +1586,12 @@ class PayrollController extends Controller
                 // 13-08-2024 end 
                 $deductionName=  (($value['deduction'][3] == 'PT') ? 1 : 0);
                 if($totalSal < 15000 && $value['deduction'][3]=="PF"){
-                    $deduction = round(($deduction / $payrollMonthDays) * $request->totalDay);  
+                    //$deduction = round(($deduction / $payrollMonthDays) * $request->totalDay);  
+                    $deduction = round(($totalSal / 100) * 12);
+                    // echo $deduction.'<br>';  
+                    if($deduction > 1800){
+                        $deduction=1800;
+                    }
                 }
                 else if($value['deduction'][1] == 1 && !$deductionName && $value['deduction'][3]!="PF"){
                     $deduction = round(($deduction / $payrollMonthDays) * $request->totalDay);
