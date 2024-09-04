@@ -1369,7 +1369,7 @@ class PayrollController extends Controller
         $res['months'] = Helpers::getMonths();
         $res['years'] = Helpers::getYears();
         $res['py_types'] = PayrollType::where('sub_institute_id',$sub_institute_id)->orderBy('sort_order')->where('status',1)->get()->toArray();
-
+        
         return is_mobile($type, "payroll.payroll_report.payrollTypeReport", $res, "view");
     }
 
@@ -1410,6 +1410,7 @@ class PayrollController extends Controller
             $sub_institute_id = $request->sub_institute_id;
             $syear = $request->syear;
         }
+        $res = session()->get('data');
         $res['months'] = Helpers::getMonths();
         $res['years'] = Helpers::getYears();
         $res['selYear'] = date('Y');
@@ -1455,7 +1456,7 @@ class PayrollController extends Controller
                 $currentMonth = date('n');
 
                 $from_date = Carbon::createFromDate($year, $monthNumber, 1);
-                if($currentMonth==$monthNumber){
+                if($currentMonth==$monthNumber && $year == date('Y')){
                     $to_date = now();
                 }else{
                     $to_date = $from_date->copy()->endOfMonth();
@@ -1470,7 +1471,7 @@ class PayrollController extends Controller
 
                 // $emp_att = ($AttTotalDays - $AttTotalAb);
                 $emp_att = $this->getTotalDays($request2);
-
+                
                 $newData[$key]['totalDay'] = number_format($emp_att,2);
             }
         }
@@ -1515,7 +1516,7 @@ class PayrollController extends Controller
         $totalDay = $request->totalDay;
         
         $payrollTypes = PayrollType::where('sub_institute_id',$sub_institute_id)->where('status', 1)->orderBy('sort_order')->get();
-        $employeeSalaryDetails = EmployeeSalaryStructure::where(['employee_id'=> $request->emp_id, 'sub_institute_id'=>$sub_institute_id])->first();
+        $employeeSalaryDetails = EmployeeSalaryStructure::where(['employee_id'=> $request->emp_id, 'sub_institute_id'=>$sub_institute_id,'year'=>$request->year])->first();
 
         if(empty($employeeSalaryDetails)){
             $res['status_code']=0;
@@ -1533,7 +1534,7 @@ class PayrollController extends Controller
                 $checkAllowance = DB::table('hrms_emp_payroll_deduction')->where('employee_id',$request->emp_id)->where(['sub_institute_id'=>$sub_institute_id,'month'=>$request->month,'year'=>$request->year,'deduction_type'=>$payrollType->id])->first();
                 $payrollAmount=$employeeSalaryDetails[$payrollType->id];
                 if(isset($checkAllowance->deduction_amount)){
-                    $payrollAmount = ($payrollAmount - $checkAllowance->deduction_amount);
+                    $payrollAmount = ($payrollAmount + $checkAllowance->deduction_amount);
                 }
 
                 $preparPayrollType[]['allowance'] = [$payrollAmount,$payrollType->amount_type,$payrollType->id,$payrollType->payroll_name];
@@ -1544,25 +1545,29 @@ class PayrollController extends Controller
                 $checkDeduction = DB::table('hrms_emp_payroll_deduction')->where('employee_id',$request->emp_id)->where(['sub_institute_id'=>$sub_institute_id,'month'=>$request->month,'year'=>$request->year,'deduction_type'=>$payrollType->id])->first();
                 $payrollAmount=$employeeSalaryDetails[$payrollType->id];
                 if(isset($checkDeduction->deduction_amount)){
-                    $payrollAmount = ($payrollAmount - $checkAllowance->deduction_amount);
+                    $payrollAmount = ($payrollAmount + $checkDeduction->deduction_amount);
                 }
 
                 $preparPayrollType[]['deduction'] = [$payrollAmount,$payrollType->amount_type,$payrollType->id,$payrollType->payroll_name];
             }
         }
         $employeefinalDisplayData = [];
+        $totalSal =0;
         foreach ($preparPayrollType as $value){
             // for allowance
             $monthNo = date('n', strtotime($request->month)); // Converts months
             $payrollMonthDays = Carbon::create($request->year, $monthNo)->daysInMonth;
-
             if(isset($value['allowance'])) {
                 $allowence =  $value['allowance'][0];
                 if($value['allowance'][1] == 1) $allowence = round( ($allowence / $payrollMonthDays) * $request->totalDay);
                 if($value['allowance'][1] == 2) $allowence = (round(($allowence / $payrollMonthDays) * $request->totalDay));
                 $employeefinalDisplayData[$value['allowance'][2]] = $allowence;
+                if(in_array($value['allowance'][3],["BASIC","GRADE PAY","D.A"])){
+                    $totalSal= ($totalSal+$allowence);
+                }
                 $totalallowance = $totalallowance + $allowence;
             }
+          
             // for deduction
             if(isset($value['deduction'])) {
                 // 13-08-2024 start
@@ -1579,8 +1584,16 @@ class PayrollController extends Controller
 
                 // 13-08-2024 end 
                 $deductionName=  (($value['deduction'][3] == 'PT') ? 1 : 0);
-                if($value['deduction'][1] == 1 && !$deductionName) $deduction = round(($deduction / $payrollMonthDays) * $request->totalDay);
-                if($value['deduction'][1] == 2 && !$deductionName) $deduction = round(($deduction / $payrollMonthDays) * $request->totalDay);
+                if($totalSal < 15000 && $value['deduction'][3]=="PF"){
+                    $deduction = round(($deduction / $payrollMonthDays) * $request->totalDay);  
+                }
+                else if($value['deduction'][1] == 1 && !$deductionName && $value['deduction'][3]!="PF"){
+                    $deduction = round(($deduction / $payrollMonthDays) * $request->totalDay);
+                }
+                else if($value['deduction'][1] == 2 && !$deductionName && $value['deduction'][3]!="PF"){
+                    $deduction = round(($deduction / $payrollMonthDays) * $request->totalDay);  
+                }
+                
                 $employeefinalDisplayData[$value['deduction'][2]] = $deduction;
                 $totaldeduction = $totaldeduction + $deduction;
             }
@@ -1590,10 +1603,10 @@ class PayrollController extends Controller
             $employeefinalDisplayData['total_deduction'] = $totaldeduction;
             $employeefinalDisplayData['total_payment'] = ($totalallowance - $totaldeduction);
         }
-        // echo "<pre>";print_r($employeefinalDisplayData);exit;
+        // echo "<pre>";print_r($totalSal);exit;
 
         $res['salaryData'] = $employeefinalDisplayData;
-        $res['totalDay'] = $request->total_day;
+        $res['totalDay'] = round($request->totalDay,2);
 
         return $res;
     }
@@ -1679,13 +1692,15 @@ class PayrollController extends Controller
         ->get()->toArray();
         
         $holiday = 0;
-        $hstartDate = Carbon::parse($from_date);
-        $hendDate = Carbon::parse($to_date);
+        // $hstartDate = Carbon::parse($from_date);
+        // $hendDate = Carbon::parse($to_date);
+        $holidayDates = [];
         foreach ($get_hrms_holidays as $key => $value) {
-            $startDate = Carbon::parse($value->from_date);
-            $endDate = Carbon::parse($value->to_date);
+            $hstartDate = Carbon::parse($value->from_date);
+            $hendDate = Carbon::parse($value->to_date);
             for ($date = $hstartDate; $date->lte($hendDate); $date->addDay()) {
                 $holiday++;
+                $holidayDates[] = $date->format('Y-m-d');
             }
         }
         // get users attandance
@@ -1698,7 +1713,8 @@ class PayrollController extends Controller
                 $countSundays++;
             }else{
                 $searchDate = Carbon::parse($date)->format('Y-m-d');
-                $attData = DB::table('hrms_attendances')->where(['sub_institute_id'=>$sub_institute_id,'user_id'=>$user_id])->where('day',$searchDate)->count();
+                $attData = DB::table('hrms_attendances')
+                ->where(['sub_institute_id'=>$sub_institute_id,'user_id'=>$user_id])->where('day',$searchDate)->count();
                 if($attData>0){
                     $totalAtt += $attData;
                     $attArr[]= $searchDate;
@@ -1712,23 +1728,29 @@ class PayrollController extends Controller
         ->where('hel.user_id',$user_id)
         ->whereRaw('hel.from_date >= "'.$from_date->format('Y-m-d').'" and hel.to_date <="'.$to_date->format('Y-m-d').'"')
         ->get()->toArray();
-        
+      
         $totDayPlaus = $totDayMinus = $noData = 0;
         $leaveDates=[];
         // check leave date in attandance and also aprroved_lwp
         foreach ($userLeaves as $key => $value) {
             $leaveFrom = Carbon::parse($value->from_date);
             $leaveTo = Carbon::parse($value->to_date);
+           
             for ($leavedate = $leaveFrom; $leavedate->lte($leaveTo); $leavedate->addDay()) {
-                if ($date->isSunday()) {
+                
+                if ($leavedate->isSunday()) {
                     $countSundays++;
                 }else{
+                    $checkLeave = $leavedate->format('Y-m-d');
                     // Leaves that are not in attandance.. 
-                    if(!in_array($leavedate->format('Y-m-d'),$attArr) && !in_array($value->status,["approved_lwp"])){
+                    if(!in_array($checkLeave,$attArr) && !in_array($checkLeave,$holidayDates) && !in_array($value->status,["cancelled"])){
                         $totDayPlaus= ($totDayPlaus+$value->day_type);
                     }
                     // if date not found in attdance and leave is approved lwp then minus, count only full day leave because half day will be in attandance
-                    if($value->status == "approved_lwp"){
+                    if($value->status == "approved_lwp" && $value->day_type=="0.5" && !in_array($checkLeave,$holidayDates)){
+                        $totalAtt = ($totalAtt - $value->day_type);
+                    }
+                    else if(!in_array($checkLeave,$attArr) && !in_array($checkLeave,$holidayDates) && $value->status == "approved_lwp"){
                         $totDayMinus = ($totDayMinus+$value->day_type);
                     }
                     // echo $leavedate->format('Y-m-d');
@@ -1736,18 +1758,18 @@ class PayrollController extends Controller
                 }
             }
         }
-
+       
         // date not found in attandance and leave, no punch in and punch out and also no leave entry in database
         $noEnrty = 0;
         foreach ($noAtt as $key => $value) {
-            if(!in_array($value,$leaveDates)){
+            if(!in_array($value,$leaveDates) && !in_array($value,$holidayDates)){
                 $noEnrty++;
             }
         }
-        $totalDays = ($totalAtt + $holiday + $weekday_off + $totDayPlaus);
+        $totalDays = ($totalAtt + $holiday + $weekday_off + $totDayPlaus + $noEnrty);
         $totalDays = ($totalDays - $totDayMinus - $noEnrty);
         $totalDays = ($totalDays>0) ? $totalDays : 0; // totDays should not be in minus
-
+      
         return $totalDays;
     }
 }
