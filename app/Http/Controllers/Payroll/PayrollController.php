@@ -38,6 +38,7 @@ class PayrollController extends Controller
 
         if ($id) {
             $payrollType = PayrollType::find($id);
+            // echo "<pre>";print_r($payrollType);exit;
             return view('payroll.payroll_type.create', compact('payrollType'));
         }
         $payrollType['payroll_type'] = 1;
@@ -47,6 +48,7 @@ class PayrollController extends Controller
         $payrollType['payroll_percentage'] = '';
         $payrollType['sub_institute_id'] = $sub_institute_id;
         $payrollType['id'] = 0;
+        $payrollType['day_count'] = 1;
         return view('payroll.payroll_type.create', compact('payrollType'));
     }
 
@@ -63,6 +65,7 @@ class PayrollController extends Controller
         $payrollType->payroll_name = $request->payroll_name;
         $payrollType->amount_type = $request->amount_type;
         $payrollType->status = $request->status;
+        $payrollType->day_count = $request->day_count;
         $payrollType->sub_institute_id = $sub_institute_id;
         $payrollType->payroll_percentage = $request->payroll_percentage !='' ? $request->payroll_percentage : 0;
         $payrollType->save();
@@ -1537,18 +1540,19 @@ class PayrollController extends Controller
                     $payrollAmount = ($payrollAmount + $checkAllowance->deduction_amount);
                 }
 
-                $preparPayrollType[]['allowance'] = [$payrollAmount,$payrollType->amount_type,$payrollType->id,$payrollType->payroll_name];
+                $preparPayrollType[]['allowance'] = [$payrollAmount,$payrollType->amount_type,$payrollType->id,$payrollType->payroll_name,$payrollType->day_count];
             }
             // for deduction
              else if (isset($employeeSalaryDetails[$payrollType->id])) {
 
                 $checkDeduction = DB::table('hrms_emp_payroll_deduction')->where('employee_id',$request->emp_id)->where(['sub_institute_id'=>$sub_institute_id,'month'=>$request->month,'year'=>$request->year,'deduction_type'=>$payrollType->id])->first();
+
                 $payrollAmount=$employeeSalaryDetails[$payrollType->id];
                 if(isset($checkDeduction->deduction_amount)){
                     $payrollAmount = ($payrollAmount + $checkDeduction->deduction_amount);
                 }
 
-                $preparPayrollType[]['deduction'] = [$payrollAmount,$payrollType->amount_type,$payrollType->id,$payrollType->payroll_name];
+                $preparPayrollType[]['deduction'] = [$payrollAmount,$payrollType->amount_type,$payrollType->id,$payrollType->payroll_name,$payrollType->day_count];
             }
         }
         $employeefinalDisplayData = [];
@@ -1559,8 +1563,12 @@ class PayrollController extends Controller
             $payrollMonthDays = Carbon::create($request->year, $monthNo)->daysInMonth;
             if(isset($value['allowance'])) {
                 $allowence =  $value['allowance'][0];
-                if($value['allowance'][1] == 1) $allowence = round( ($allowence / $payrollMonthDays) * $request->totalDay);
-                if($value['allowance'][1] == 2) $allowence = (round(($allowence / $payrollMonthDays) * $request->totalDay));
+                if($value['allowance'][1] == 1  && $value['allowance'][4]==0) {
+                    $allowence = round( ($allowence / $payrollMonthDays) * $request->totalDay);
+                }
+                if($value['allowance'][1] == 2  && $value['allowance'][4]==0) {
+                    $allowence = (round(($allowence / $payrollMonthDays) * $request->totalDay));
+                }
                 $employeefinalDisplayData[$value['allowance'][2]] = $allowence;
 
                 if(in_array($value['allowance'][3],["BASIC","GRADE PAY","D.A"])){
@@ -1593,10 +1601,10 @@ class PayrollController extends Controller
                         $deduction=1800;
                     }
                 }
-                else if($value['deduction'][1] == 1 && !$deductionName && $value['deduction'][3]!="PF"){
+                else if($value['deduction'][1] == 1 && !$deductionName && $value['deduction'][3]!="PF" && $value['deduction'][4]==0){
                     $deduction = round(($deduction / $payrollMonthDays) * $request->totalDay);
                 }
-                else if($value['deduction'][1] == 2 && !$deductionName && $value['deduction'][3]!="PF"){
+                else if($value['deduction'][1] == 2 && !$deductionName && $value['deduction'][3]!="PF" && $value['deduction'][4]==0){
                     $deduction = round(($deduction / $payrollMonthDays) * $request->totalDay);  
                 }
                 
