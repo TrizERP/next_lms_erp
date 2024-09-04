@@ -2273,6 +2273,7 @@ class AJAXController extends Controller
         $where = array(
             "ram.sub_institute_id" => session()->get('sub_institute_id'),
             "ram.skill_id" => $request->skillset_id,
+            'ram.standard' => $request->standard,
         );
         
         $std_sub_map = DB::table('result_activity_master as ram')

@@ -109,7 +109,9 @@ Route::group(['prefix' => 'result', 'middleware' => ['session', 'menu', 'logRout
     
     Route::get('result_personalize_marks', [resultAPIController::class,'resultPersonalize'])->name('result_personalize_marks');
 
-    Route::get('current_result', [resultAPIController::class,'currentResult'])->name('current_result');    
+    Route::get('current_result', [resultAPIController::class,'currentResult'])->name('current_result');   
+    Route::get('getActivityLists', [resultActivityMasterController::class,'getActivityLists'])->name('getActivityLists'); 
+    Route::get('result_sub_activity_destroy', [resultActivityMasterController::class,'result_sub_activity_destroy'])->name('result_sub_activity_destroy');    
     
 //    Route::post('cbse_1t5_result', 'result\cbse_result\cbse_1t5_result_controller');
 });

@@ -1552,18 +1552,22 @@ class PayrollController extends Controller
             }
         }
         $employeefinalDisplayData = [];
+        $totalSal =0;
         foreach ($preparPayrollType as $value){
             // for allowance
             $monthNo = date('n', strtotime($request->month)); // Converts months
             $payrollMonthDays = Carbon::create($request->year, $monthNo)->daysInMonth;
-
             if(isset($value['allowance'])) {
                 $allowence =  $value['allowance'][0];
                 if($value['allowance'][1] == 1) $allowence = round( ($allowence / $payrollMonthDays) * $request->totalDay);
                 if($value['allowance'][1] == 2) $allowence = (round(($allowence / $payrollMonthDays) * $request->totalDay));
                 $employeefinalDisplayData[$value['allowance'][2]] = $allowence;
+                if(in_array($value['allowance'][3],["BASIC","GRADE PAY","D.A"])){
+                    $totalSal= ($totalSal+$allowence);
+                }
                 $totalallowance = $totalallowance + $allowence;
             }
+          
             // for deduction
             if(isset($value['deduction'])) {
                 // 13-08-2024 start
@@ -1580,8 +1584,16 @@ class PayrollController extends Controller
 
                 // 13-08-2024 end 
                 $deductionName=  (($value['deduction'][3] == 'PT') ? 1 : 0);
-                if($value['deduction'][1] == 1 && !$deductionName) $deduction = round(($deduction / $payrollMonthDays) * $request->totalDay);
-                if($value['deduction'][1] == 2 && !$deductionName) $deduction = round(($deduction / $payrollMonthDays) * $request->totalDay);
+                if($totalSal < 15000 && $value['deduction'][3]=="PF"){
+                    $deduction = round(($deduction / $payrollMonthDays) * $request->totalDay);  
+                }
+                else if($value['deduction'][1] == 1 && !$deductionName && $value['deduction'][3]!="PF"){
+                    $deduction = round(($deduction / $payrollMonthDays) * $request->totalDay);
+                }
+                else if($value['deduction'][1] == 2 && !$deductionName && $value['deduction'][3]!="PF"){
+                    $deduction = round(($deduction / $payrollMonthDays) * $request->totalDay);  
+                }
+                
                 $employeefinalDisplayData[$value['deduction'][2]] = $deduction;
                 $totaldeduction = $totaldeduction + $deduction;
             }
@@ -1591,7 +1603,7 @@ class PayrollController extends Controller
             $employeefinalDisplayData['total_deduction'] = $totaldeduction;
             $employeefinalDisplayData['total_payment'] = ($totalallowance - $totaldeduction);
         }
-        // echo "<pre>";print_r($employeefinalDisplayData);exit;
+        // echo "<pre>";print_r($totalSal);exit;
 
         $res['salaryData'] = $employeefinalDisplayData;
         $res['totalDay'] = round($request->totalDay,2);

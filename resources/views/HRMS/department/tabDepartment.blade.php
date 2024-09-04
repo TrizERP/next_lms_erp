@@ -30,9 +30,9 @@ $taskType = ['Daily Task','Weekly Task','Monthly Task','Yearly Task'];
 <div class="card">
    <center>
       <ul class="nav nav-tabs tab-title subtabs mb-4">
-         <li class="nav-item"><a href="#section-dep-0" class="nav-link active" aria-selected="true" data-toggle="tab"><span>Add Department</span></a></li>
-         <li class="nav-item"><a href="#section-dep-1" class="nav-link" aria-selected="false" data-toggle="tab"><span>Manage Employee</span></a></li>
-         <li class="nav-item"><a href="#section-dep-2" class="nav-link" aria-selected="false" data-toggle="tab"><span>Manage Tasks</span></a></li>
+         <li class="nav-item"><a href="#section-dep-0" class="nav-link section-dep-0 active" aria-selected="true" data-toggle="tab"><span>Add Department</span></a></li>
+         <li class="nav-item"><a href="#section-dep-1" class="nav-link section-dep-1" aria-selected="false" data-toggle="tab"><span>Manage Employee</span></a></li>
+         <li class="nav-item"><a href="#section-dep-2" class="nav-link section-dep-2" aria-selected="false" data-toggle="tab"><span>Manage Tasks</span></a></li>
       </ul>
    </center>
    <div class="tab-content">
