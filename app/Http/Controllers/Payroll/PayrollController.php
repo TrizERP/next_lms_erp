@@ -1728,7 +1728,7 @@ class PayrollController extends Controller
             }else{
                 $searchDate = Carbon::parse($date)->format('Y-m-d');
                 $attData = DB::table('hrms_attendances')
-                ->where(['sub_institute_id'=>$sub_institute_id,'user_id'=>$user_id])->where('day',$searchDate)->count();
+                ->where(['sub_institute_id'=>$sub_institute_id,'user_id'=>$user_id])->where('day',$searchDate)->groupBy('day')->count();
                 if($attData>0){
                     $totalAtt += $attData;
                     $attArr[]= $searchDate;
