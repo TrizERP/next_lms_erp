@@ -88,7 +88,7 @@
                             <td>{{$value['employee_no']}}</td>
                             <td>{{$value['full_name'] ?? '-' .'('.$value['user_profile'] ?? '-' .')'}}</td>
                             <td>
-                                <input type="text" id="totalDay_{{$value['id']}}" name="payrollVal[{{$value['id']}}][total_day]" onkeyup="getData(this,{{$value['id']}})" class="form-control" value="{{ isset($value['monthlyData']->total_day) ? round($value['monthlyData']->total_day,2) : $value['totalDay'] }}" >
+                                <input type="text" id="totalDay_{{$value['id']}}" name="payrollVal[{{$value['id']}}][total_day]" onkeyup="getData(this,{{$value['id']}})" class="form-control" value="{{ isset($value['monthlyData']->total_day) ? $value['monthlyData']->total_day : $value['totalDay'] }}" >
                             </td>
                             @foreach($data['header'] as $hkey => $col)
                                 @if(!empty($value['monthlyData']))
