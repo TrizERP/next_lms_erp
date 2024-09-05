@@ -1143,8 +1143,8 @@ class PayrollController extends Controller
             $employeeData['join_date'] = date('Y-m-d', strtotime($get_user_detail->joined_date));
             $employeeData['profile_name'] = $get_user_detail->profile_name;
             $employeeData['account_no'] = $get_user_detail->account_no;
-            $employeeData['total_day'] = $employeeSalaryData->total_day;
-            $employeeData['pf_no'] = 123;
+            $employeeData['total_day'] = number_format($employeeSalaryData->total_day, 1); // For 1 decimal places
+            $employeeData['pf_no'] = $get_user_detail->pf_no;
             $employeeData['leave_without_pay'] = 1;
             $employeeData['month'] = $employeeSalaryData->month;
             $employeeData['year'] = $employeeSalaryData->year;
@@ -1685,7 +1685,7 @@ class PayrollController extends Controller
         $from_date =$request->from_date;
         $to_date =$request->to_date;
         $user_id=$request->emp_id;
-     
+
         // getUserData 
         $userData = DB::table('tbluser')->where('id',$user_id)->first();
         // get weekDays
@@ -1752,7 +1752,9 @@ class PayrollController extends Controller
         // get users leave
         $userLeaves = DB::table('hrms_emp_leaves as hel')
         // ->where('hel.user_id',$user_id)
-        ->whereRaw('((hel.from_date >= "'.$from_date->format('Y-m-d').'" and hel.to_date <="'.$to_date->format('Y-m-d').'") OR hel.to_date like "'.$to_date->format('Y-m').'%") and hel.user_id = "'.$user_id.'"') 
+        ->whereRaw('((hel.from_date >= "'.$from_date->format('Y-m-d').'" and hel.to_date <="'.$to_date->format('Y-m-d').'") 
+                    OR hel.from_date like "'.$to_date->format('Y-m').'%" OR hel.to_date like "'.$to_date->format('Y-m').'%")
+                    and hel.user_id = "'.$user_id.'"') 
         //->whereRaw('(hel.from_date >= "'.$from_date->format('Y-m-d').'")
         ->get()->toArray();
         // echo "<pre>";print_r($userLeaves);
