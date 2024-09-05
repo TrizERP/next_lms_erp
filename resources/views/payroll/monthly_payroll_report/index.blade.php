@@ -152,7 +152,7 @@
     </div>
 
     @include('includes.footerJs')
-    <script>
+<script>
         $(document).ready(function () {
             var table = $('#example').DataTable({
                 select: true,
@@ -164,7 +164,7 @@
                 buttons: [
                     {
                         extend: 'pdfHtml5',
-                        title: 'Student Report',
+                        title: 'Monthly Payroll Report',
                         orientation: 'landscape',
                         pageSize: 'LEGAL',
                         pageSize: 'A0',
@@ -172,9 +172,9 @@
                             columns: ':visible'
                         },
                     },
-                    {extend: 'csv', text: ' CSV', title: 'Student Report'},
-                    {extend: 'excel', text: ' EXCEL', title: 'Student Report'},
-                    {extend: 'print', text: ' PRINT', title: 'Student Report'},
+                    {extend: 'csv', text: ' CSV', title: 'Monthly Payroll Report'},
+                    {extend: 'excel', text: ' EXCEL', title: 'Monthly Payroll Report'},
+                    {extend: 'print', text: ' PRINT', title: 'Monthly Payroll Report'},
                     'pageLength'
                 ],
             });
@@ -195,7 +195,5 @@
                 });
             });
         });
-
-       
-    </script>
+</script>
 @include('includes.footer')
