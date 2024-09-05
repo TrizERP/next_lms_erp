@@ -795,6 +795,9 @@ class PayrollController extends Controller
         $type = $request->type;
         $sub_institute_id = session()->get('sub_institute_id');
         $payrollTypes = [];
+        $res['selMonth'] = date('M');
+        $res['selYear'] = date('Y');
+
         // process to get all emp create
         if($request->has('submit')){
             // return $request->all();
@@ -832,6 +835,7 @@ class PayrollController extends Controller
         $res['payrollTypes'] =  $payrollTypeArr;
         $res['months'] = Helpers::getMonths();
         $res['years'] = Helpers::getYears();
+        
         // echo "<pre>";print_r($res['deductionArr']);exit;
         // return view('payroll.payroll_deduction.index', $result);
         return is_mobile($type, "payroll.payroll_deduction.index", $res, "view");
@@ -1244,8 +1248,6 @@ class PayrollController extends Controller
 
     }
 
-
-
     public function payrollReport(Request $request)
     {
         $type= $request->type;
@@ -1474,8 +1476,7 @@ class PayrollController extends Controller
 
                 // $emp_att = ($AttTotalDays - $AttTotalAb);
                 $emp_att = $this->getTotalDays($request2);
-                
-                $newData[$key]['totalDay'] = number_format($emp_att,2);
+                $newData[$key]['totalDay'] = round($emp_att,2);
             }
         }
                 // echo "<pre>";print_r($newData);
@@ -1546,7 +1547,7 @@ class PayrollController extends Controller
              else if (isset($employeeSalaryDetails[$payrollType->id])) {
 
                 $checkDeduction = DB::table('hrms_emp_payroll_deduction')->where('employee_id',$request->emp_id)->where(['sub_institute_id'=>$sub_institute_id,'month'=>$request->month,'year'=>$request->year,'deduction_type'=>$payrollType->id])->first();
-
+                // echo "<pre>";print_r($checkDeduction);exit;
                 $payrollAmount=$employeeSalaryDetails[$payrollType->id];
                 if(isset($checkDeduction->deduction_amount)){
                     $payrollAmount = ($payrollAmount + $checkDeduction->deduction_amount);
@@ -1690,14 +1691,17 @@ class PayrollController extends Controller
         // get weekDays
         $startDate = Carbon::parse($from_date);
         $endDate = Carbon::parse($to_date);
+        $weekDays = [];
         $countSundays = $totalDays = $attAb = 0;
         for ($date = $startDate; $date->lte($endDate); $date->addDay()) {
             if ($date->isSunday()) {
                 $countSundays++;
+                $weekDays[] = $date->format('Y-m-d');
             }
         }
         $weekday_off = $countSundays;
-
+        // echo "<br>weekDays<br>";
+        // echo "<pre>";print_r($weekDays);
         // get Holidays 
         $get_hrms_holidays = DB::table('hrms_holidays')
         ->where('sub_institute_id', $sub_institute_id)
@@ -1717,6 +1721,8 @@ class PayrollController extends Controller
                 $holidayDates[] = $date->format('Y-m-d');
             }
         }
+        // echo "<br>Holidays<br>";
+        // echo "<pre>";print_r($holidayDates);
         // get users attandance
         $totalAtt = 0;
         $noAtt=$attArr=  [];
@@ -1728,20 +1734,28 @@ class PayrollController extends Controller
             }else{
                 $searchDate = Carbon::parse($date)->format('Y-m-d');
                 $attData = DB::table('hrms_attendances')
-                ->where(['sub_institute_id'=>$sub_institute_id,'user_id'=>$user_id])->where('day',$searchDate)->count();
+                ->where(['sub_institute_id'=>$sub_institute_id,'user_id'=>$user_id])->where('day',$searchDate)->groupBy('day')->count();
                 if($attData>0){
-                    $totalAtt += $attData;
-                    $attArr[]= $searchDate;
+                    if(!in_array($searchDate,$holidayDates)){
+                        $totalAtt += $attData;
+                        $attArr[]= $searchDate;
+                    }
                 }else{
                     $noAtt[] = $searchDate;
                 }
             }
         }   
+        // echo "<br>Attendance<br>";
+        // echo "<pre>";print_r($attArr);
+        // echo "<br>No Att<br>";
+        // echo "<pre>";print_r($noAtt);
         // get users leave
         $userLeaves = DB::table('hrms_emp_leaves as hel')
-        ->where('hel.user_id',$user_id)
-        ->whereRaw('hel.from_date >= "'.$from_date->format('Y-m-d').'" and hel.to_date <="'.$to_date->format('Y-m-d').'"')
+        // ->where('hel.user_id',$user_id)
+        ->whereRaw('((hel.from_date >= "'.$from_date->format('Y-m-d').'" and hel.to_date <="'.$to_date->format('Y-m-d').'") OR hel.to_date like "'.$to_date->format('Y-m').'%") and hel.user_id = "'.$user_id.'"') 
+        //->whereRaw('(hel.from_date >= "'.$from_date->format('Y-m-d').'")
         ->get()->toArray();
+        // echo "<pre>";print_r($userLeaves);
       
         $totDayPlaus = $totDayMinus = $noData = 0;
         $leaveDates=[];
@@ -1749,40 +1763,57 @@ class PayrollController extends Controller
         foreach ($userLeaves as $key => $value) {
             $leaveFrom = Carbon::parse($value->from_date);
             $leaveTo = Carbon::parse($value->to_date);
-           
+            // echo $lastDateOfMonth;
             for ($leavedate = $leaveFrom; $leavedate->lte($leaveTo); $leavedate->addDay()) {
-                
-                if ($leavedate->isSunday()) {
-                    $countSundays++;
-                }else{
-                    $checkLeave = $leavedate->format('Y-m-d');
-                    // Leaves that are not in attandance.. 
-                    if(!in_array($checkLeave,$attArr) && !in_array($checkLeave,$holidayDates) && !in_array($value->status,["cancelled"])){
-                        $totDayPlaus= ($totDayPlaus+$value->day_type);
+                $checkLeave = $leavedate->format('Y-m-d');
+                $checkMonth = $leavedate->format('m');
+                $leaveMonth = $leaveTo->format('m');
+                    if($checkMonth == $leaveMonth){
+                        // Leaves that are not in attandance.. 
+                        if(!in_array($checkLeave,$attArr) && !in_array($checkLeave,$holidayDates) && !in_array($value->status,["cancelled"])){
+                            $totDayPlaus= ($totDayPlaus+$value->day_type);
+                        }
+                        // if date not found in attdance and leave is approved lwp then minus, count only full day leave because half day will be in attandance
+                        if($value->status == "approved_lwp" && $value->day_type=="0.5" && !in_array($checkLeave,$holidayDates)){
+                            $totalAtt = ($totalAtt - $value->day_type);
+                        }
+                        else if(!in_array($checkLeave,$attArr) && !in_array($checkLeave,$holidayDates) && $value->status == "approved_lwp"){
+                            $totDayMinus = ($totDayMinus+$value->day_type);
+                        }
+                        // echo $leavedate->format('Y-m-d');
+                        if(in_array($checkLeave,$holidayDates)){
+                            $holiday--;
+                        }
+                        if(in_array($checkLeave,$weekDays)){
+                            $weekday_off--;
+                        }
+                        
+                        $leaveDates[] =$checkLeave;
                     }
-                    // if date not found in attdance and leave is approved lwp then minus, count only full day leave because half day will be in attandance
-                    if($value->status == "approved_lwp" && $value->day_type=="0.5" && !in_array($checkLeave,$holidayDates)){
-                        $totalAtt = ($totalAtt - $value->day_type);
-                    }
-                    else if(!in_array($checkLeave,$attArr) && !in_array($checkLeave,$holidayDates) && $value->status == "approved_lwp"){
-                        $totDayMinus = ($totDayMinus+$value->day_type);
-                    }
-                    // echo $leavedate->format('Y-m-d');
-                    $leaveDates[] =$leavedate->format('Y-m-d');
                 }
-            }
         }
-       
-        // date not found in attandance and leave, no punch in and punch out and also no leave entry in database
+        // echo "<br>Leaves<br>";
+        // echo "<p/re>";print_r($leaveDates);
+       // date not found in attandance and leave, no punch in and punch out and also no leave entry in database
         $noEnrty = 0;
         foreach ($noAtt as $key => $value) {
             if(!in_array($value,$leaveDates) && !in_array($value,$holidayDates)){
                 $noEnrty++;
             }
         }
-        $totalDays = ($totalAtt + $holiday + $weekday_off + $totDayPlaus + $noEnrty);
-        $totalDays = ($totalDays - $totDayMinus - $noEnrty);
-        $totalDays = ($totalDays>0) ? $totalDays : 0; // totDays should not be in minus
+        // $arr = [
+        //     "att " =>$totalAtt,
+        //     "holidays" => $holiday,
+        //     "week" => $weekday_off,
+        //     "Leaves"=>$totDayPlaus,
+        //     "no Att"=>$noEnrty,
+        //     "leave lwp"=> $totDayMinus
+        // ];
+        // echo "<pre>";print_r($arr);
+
+        $totalDays = ($totalAtt + $holiday + $weekday_off + $totDayPlaus + $noEnrty); // 31
+        $totalDays = ($totalDays - $totDayMinus - $noEnrty); // 16
+        $totalDays = ($totalDays>0 && $totalAtt>0) ? $totalDays : 0; // totDays should not be in minus
       
         return $totalDays;
     }
