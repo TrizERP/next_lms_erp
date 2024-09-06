@@ -38,6 +38,12 @@
                                 </select>
                             </div>
                             <div class="col-md-4 form-group">
+                                <label>Skill Name</label>
+                                <select id="skill_id" name="skill_id" class="form-control" required>
+                               
+                                </select>
+                            </div>
+                            <div class="col-md-4 form-group">
                                 <label for="levelLayers">Levels</label>
                                 <select name="levels" id="levels" class="form-control" onchange="getLevelThree();">
                                     @foreach($data['levelLayers'] as $key=>$value)
@@ -52,7 +58,7 @@
                                 <label>Title </label>
                                 <input type="text" id='title' name="title" class="form-control" required>
                             </div>
-                            <div class="col-md-4 form-group">
+                            {{-- <div class="col-md-4 form-group">
                                 <label>Skill Name</label>
                                 <select id="skill_id" name="skill_id" class="form-control" required>
                                 @php
@@ -74,7 +80,7 @@
                                     @endif
                                 @endforeach
                                 </select>
-                            </div>
+                            </div> --}}
                             <div class="col-md-4 form-group" id="levelType4">
                                 <label>Sub Skill Name</label>
                                 <select id="sub_skill_id" name="sub_skill_id" class="form-control">
@@ -105,6 +111,36 @@
     $(document).ready(function(){
         $('#levelType4').hide();
     })
+    $('#skill_id').on('change',function(){
+        var levels = $('#levels').val();
+        if(levels==4){
+            getLevelThree();
+        }
+    });
+
+    $('#standard').on('change',function(){
+        var standard = $('#standard').val();
+        $('#skill_id').empty();
+        $.ajax({
+            url : "{{route('getActivityLists')}}",
+            data : {standard:standard,level:2}, // add skill id
+            type: "GET",
+            success : function(result){
+                console.log(result);
+                if (Array.isArray(result) && result.length > 0) {
+                    // Clear the select options before appending new ones
+                    $('#skill_id').empty();
+                    result.forEach(element => {
+                        $('#skill_id').append(`<option value="${element.id}">${element.main_title} (${element.title})</option>`);
+                    });
+                } else {
+                    alert(`No Skill Sets Found`);
+                    $('#skill_id').empty();
+                }
+            }
+        })
+    });
+
     function getLevelThree(){
         var levels = $('#levels').val();
         var standard = $('#standard').val();
@@ -117,7 +153,7 @@
             $('#levelType4').show();
             $.ajax({
                 url : "{{route('getActivityLists')}}",
-                data : {standard:standard,levels:3,skill_id:skill_id}, // add skill id
+                data : {standard:standard,levels:3,skill_id:skill_id,level:4}, // add skill id
                 type: "GET",
                 success : function(result){
                     console.log(result);
@@ -130,6 +166,7 @@
                     } else {
                         alert(`Add level 3 value first`);
                         $('#levels').val(3);
+                        $('#levelType4').hide();
                     }
                 }
             })

@@ -31,7 +31,8 @@
                         <table id="example" class="table table-striped">
                             <thead>
                                 <tr>
-                                    <th>Id</th>
+                                    <th>Sr No.</th>
+                                    <th>Standard</th>
                                     <th>Title</th>
                                     <th>Skill Name</th>
                                     <th>Sub Activities</th>
@@ -47,6 +48,7 @@
                                 @foreach($data['result_activity_masters'] as $key => $result_activity_master)
                                 <tr>    
                                     <td>{{$j}}</td>
+                                    <td>{{$result_activity_master->standard}}</td>
                                     <td>{{$result_activity_master->title}}</td>
                                     <td>{{$result_activity_master->result_main_title}} ({{ $result_activity_master->result_title }})</td>
                                     <td>@php 

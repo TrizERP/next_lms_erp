@@ -95,7 +95,10 @@
                                         @endif>
                                     </label>
                                     <input type="hidden" name="student_id" value="{{ $student_data['id'] }}">
+                                  
+                                    <input type="hidden" name="sub_activity_master" value="{{ $data['sub_activity_master'] }}">
                                     <input type="hidden" name="activity_id" value="{{ $data['activity_value'] }}">
+                                   
                                 </td>
                             @endforeach
                         </tr>
@@ -115,9 +118,31 @@
 
 @include('includes.footerJs')
 <script>
-   $('#standard').on('change', function () {
+ $('#standard').on('change',function(){
+        var standard = $('#standard').val();
+        $('#skillset_id').empty();
         $('#activity_master').empty();
-     })
+        $.ajax({
+            url : "{{route('getActivityLists')}}",
+            data : {standard:standard,level:2}, // add skill id
+            type: "GET",
+            success : function(result){
+                // console.log(result);
+                $('#skillset_id').empty();
+                if (Array.isArray(result) && result.length > 0) {
+                    // Clear the select options before appending new ones
+                    $('#skillset_id').append(`<option value="">Select Skill Set</option>`);
+                    result.forEach(element => {
+                        $('#skillset_id').append(`<option value="${element.id}">${element.main_title} (${element.title})</option>`);
+                    });
+                } else {
+                    alert(`No Skill Sets Found`);
+                    $('#skillset_id').empty();
+                }
+            }
+        })
+    });
+    
     $('#skillset_id').on('change', function () {
         var skillset_id = $("#skillset_id").val();
         var standard = $("#standard").val();
