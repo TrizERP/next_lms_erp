@@ -2790,7 +2790,6 @@ while ($current_date <= $post_end_date) {
                                             } else {
                                                 $to_marks[$arr][] = $title->points;
                                                 $to_weight[$arr] = $weightage;
-
                                                 $ob_mark = $marks->points;
                                                 // store marks in array to get best of 2 
                                                 $obtained_marks[$arr][] = $ob_mark;
@@ -2801,9 +2800,7 @@ while ($current_date <= $post_end_date) {
                                     }
                                 }
                             }
-        
                             $ob_main_mark = $ab_ex_na = $total_marks = 0;
-
                             // for best of 2 exam wise 
                             if (!empty($title_exam)) {
                                 foreach ($title_exam as $exam_id => $marksArray) {                                
