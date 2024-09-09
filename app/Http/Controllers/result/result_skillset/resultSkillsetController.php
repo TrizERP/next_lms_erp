@@ -27,8 +27,10 @@ class resultSkillsetController extends Controller
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
 
-        $result_skillsets = DB::table('result_skillset')
-            ->where('sub_institute_id', $sub_institute_id)
+        $result_skillsets = DB::table('result_skillset as rs')
+            ->leftjoin('standard as s','s.id','=','rs.standard')
+            ->selectRaw('rs.*,s.name as standard_name')
+            ->where('rs.sub_institute_id', $sub_institute_id)
             ->get()->toArray();
 
         $res['status_code'] = 1;
@@ -52,6 +54,9 @@ class resultSkillsetController extends Controller
             ->where('sub_institute_id', $sub_institute_id)
             ->get()->toArray();
 
+        $standardLists = DB::table('standard')->where('sub_institute_id', $sub_institute_id)->orderBy('sort_order')->get()->toArray();
+
+        $res['standardLists'] = $standardLists;
         $res['get_result_activity_groups'] = $get_result_activity_groups;
 
         return is_mobile($type, "result/result_skillset/add_skillset", $res, "view");
@@ -74,10 +79,12 @@ class resultSkillsetController extends Controller
         $title = $request->get('title');
         $group = $request->get('group');
         $sort_order = $request->get('sort_order');
+        $standard = $request->get('standard');
 
         $finalArray = [
             'main_title' => $main_title,
             'title' => $title,
+            'standard' => $standard,
             'group' => $group,
             'sort_order' => $sort_order,
             'sub_institute_id' => $sub_institute_id,
@@ -123,6 +130,9 @@ class resultSkillsetController extends Controller
             ->where('sub_institute_id', $sub_institute_id)
             ->get()->toArray();
 
+        $standardLists = DB::table('standard')->where('sub_institute_id', $sub_institute_id)->orderBy('sort_order')->get()->toArray();
+        
+        $res['standardLists'] = $standardLists;
         $res['get_result_activity_groups'] = $get_result_activity_groups;
         $res['result_skillset'] = $result_skillset;
         $type = $request->input('type');
@@ -148,7 +158,8 @@ class resultSkillsetController extends Controller
         $finalArray = $request->except('_method', '_token', 'submit');
 
         DB::table('result_skillset')->where(['id' => $id])->update($finalArray);
-
+        // update standard in activity master when skillset update
+        DB::table('result_activity_master')->where(['skill_id' => $id])->update(['standard'=>$request->standard]);
         $res['status_code'] = 1;
         $res['message'] = "Skillset updated successfully.";
 

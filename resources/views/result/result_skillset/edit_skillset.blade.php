@@ -26,7 +26,16 @@
                     <form action="{{ route('result_skillset.update',$data['result_skillset']->id) }}" enctype="multipart/form-data" method="post">
                     {{ method_field("PUT") }}
                     @csrf
-                        <div class="row">                            
+                        <div class="row">  
+                        <div class="col-md-4 form-group">
+                            <label for="standard_list">Standard</label>
+                            <select name="standard" id="standard" class="form-control" required>
+                                <option value="">Select Standard</option>
+                                @foreach($data['standardLists'] as $key=>$value)
+                                <option value="{{$value->id}}" @if(isset($data['result_skillset']->standard) && $data['result_skillset']->standard==$value->id) Selected @endif>{{$value->name}}</option>
+                                @endforeach
+                            </select>
+                        </div>                             
                             <div class="col-md-4 form-group">
                                 <label>Main Title </label>
                                 <input type="text" id='main_title' value="@if(isset($data['result_skillset']->main_title)){{ $data['result_skillset']->main_title }}@endif" name="main_title" class="form-control" required>
