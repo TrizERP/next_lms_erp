@@ -88,7 +88,7 @@
                             <td>{{$value['employee_no']}}</td>
                             <td>{{$value['full_name'] ?? '-' .'('.$value['user_profile'] ?? '-' .')'}}</td>
                             <td>
-                                <input type="text" id="totalDay_{{$value['id']}}" name="payrollVal[{{$value['id']}}][total_day]" onkeyup="getData(this,{{$value['id']}})" class="form-control" value="{{ isset($value['monthlyData']->total_day) ? $value['monthlyData']->total_day : $value['totalDay'] }}" >
+                                <input type="text" id="totalDay_{{$value['id']}}" name="payrollVal[{{$value['id']}}][total_day]" onkeyup="getData(this,{{$value['id']}})" class="form-control" value="{{ isset($value['monthlyData']->total_day) ? round($value['monthlyData']->total_day,2) : $value['totalDay'] }}" >
                             </td>
                             @foreach($data['header'] as $hkey => $col)
                                 @if(!empty($value['monthlyData']))
@@ -97,37 +97,33 @@
                                     @endphp 
                                    
                                 @if($hkey=="total_deduction")
-                                    <td id="{{$value['id'].'_'.$hkey}}">{{$value['monthlyData']->total_deduction ?? 0}}
-                                        <input type="hidden" name="payrollVal[{{$value['id']}}][{{$hkey}}]" id="input_{{$value['id'].'_'.$hkey}}" @if(isset($value['monthlyData']->total_deduction)) value="{{$value['monthlyData']->total_deduction}}" @endif>
-                                    </td>
-                                    
+                                    <td id="{{$value['id'].'_'.$hkey}}">{{$value['monthlyData']->total_deduction ?? 0}}</td>
+                                    <input type="hidden" name="payrollVal[{{$value['id']}}][{{$hkey}}]" id="input_{{$value['id'].'_'.$hkey}}" @if(isset($value['monthlyData']->total_deduction)) value="{{$value['monthlyData']->total_deduction}}" @endif>
                                 @elseif($hkey=="total_payment")
-                                    <td id="{{$value['id'].'_'.$hkey}}">{{$value['monthlyData']->total_payment ?? 0}}
-                                        <input type="hidden" name="payrollVal[{{$value['id']}}][{{$hkey}}]" id="input_{{$value['id'].'_'.$hkey}}" @if(isset($value['monthlyData']->total_payment)) value="{{$value['monthlyData']->total_payment}}" @endif>
-                                    </td>
-                                    
+                                    <td id="{{$value['id'].'_'.$hkey}}">{{$value['monthlyData']->total_payment ?? 0}}</td>
+                                    <input type="hidden" name="payrollVal[{{$value['id']}}][{{$hkey}}]" id="input_{{$value['id'].'_'.$hkey}}" @if(isset($value['monthlyData']->total_payment)) value="{{$value['monthlyData']->total_payment}}" @endif>
                                 @elseif($hkey=="received_by")
-                                    <td id="{{$value['id'].'_'.$hkey}}">{{$value['monthlyData']->received_by ?? '' }}
-                                        <input type="hidden" name="payrollVal[{{$value['id']}}][{{$hkey}}]" id="input_{{$value['id'].'_'.$hkey}}" @if(isset($value['monthlyData']->received_by)) value="{{$value['monthlyData']->received_by}}" @endif>
-                                    </td>
-                                    
+                                    <td id="{{$value['id'].'_'.$hkey}}">{{$value['monthlyData']->received_by ?? '' }}</td>
+                                    <input type="hidden" name="payrollVal[{{$value['id']}}][{{$hkey}}]" id="input_{{$value['id'].'_'.$hkey}}" @if(isset($value['monthlyData']->received_by)) value="{{$value['monthlyData']->received_by}}" @endif>
                                 @else
-                                <td id="{{$value['id'].'_'.$hkey}}">{{$salaryStructure->$hkey ?? 0}}
-                                    <input type="hidden" name="payrollVal[{{$value['id']}}][payrollHead][{{$hkey}}]" id="input_{{$value['id'].'_'.$hkey}}" @if(isset($salaryStructure->$hkey)) value="{{$salaryStructure->$hkey}}" @endif>
-                                </td>
-                                
+                                <td id="{{$value['id'].'_'.$hkey}}">{{$salaryStructure->$hkey ?? 0}}</td>
+                                <input type="hidden" name="payrollVal[{{$value['id']}}][payrollHead][{{$hkey}}]" id="input_{{$value['id'].'_'.$hkey}}" @if(isset($salaryStructure->$hkey)) value="{{$salaryStructure->$hkey}}" @endif>
                                 @endif
+                            @endif
 
-                            @else 
+                        @if(empty($value['monthlyData']))
                                 @php 
                                 $name = "payrollVal[".$value['id']."][payrollHead][".$hkey."]";
                                  if(in_array($hkey,["total_deduction","total_payment","received_by"])){
                                     $name="payrollVal[".$value['id']."][".$hkey."]";
                                  }
                                 @endphp
-                                <td id="{{$value['id'].'_'.$hkey}}">0
-                                    <input type="hidden" name="{{$name}}" id="input_{{$value['id'].'_'.$hkey}}">
-                                </td>
+                                <td id="{{$value['id'].'_'.$hkey}}">0</td>
+                                @if(!in_array($hkey,['total_deduction','total_payment','received_by']))
+                                <input type="hidden" name="payrollVal[{{$value['id']}}][payrollHead][{{$hkey}}]" id="input_{{$value['id'].'_'.$hkey}}">
+                                @else
+                                <input type="hidden" name="payrollVal[{{$value['id']}}][{{$hkey}}]" id="input_{{$value['id'].'_'.$hkey}}">
+                                @endif
                             @endif
                             @endforeach
 

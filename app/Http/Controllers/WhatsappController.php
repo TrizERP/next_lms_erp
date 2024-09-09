@@ -284,7 +284,8 @@ class WhatsappController extends Controller
                 "1" => isset($hrefArray[0]) ? $hrefArray[0] : null,
                 "2" => isset($textArray[0]) ? $textArray[0] : null,
             ]);
-            $prepareMessageBody['contentSid'] = "HXe0114bc20670d1b3f92c854106ec4a81";
+            // $prepareMessageBody['contentSid'] = "HXe0114bc20670d1b3f92c854106ec4a81";
+            $prepareMessageBody['contentSid'] = "HXc03a5ef4627d8843b071363756007a1b";
         }
        
         // echo "<pre>";print_r($prepareMessageBody);exit;

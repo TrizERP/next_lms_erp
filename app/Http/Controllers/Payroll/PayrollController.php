@@ -1452,7 +1452,7 @@ class PayrollController extends Controller
             // get monthly salary Data and add into newData array
             $newData[$key]['monthlyData'] = DB::table('employee_monthly_salary_data')->where(['sub_institute_id'=>$sub_institute_id,'year'=>$year])->where('employee_id',$value['id'])->where('month',$month)->first();
             if(isset($newData[$key]['monthlyData']->total_day)){
-                $newData[$key]['totalDay'] = number_format($newData[$key]['monthlyData']->total_day,2);
+                $newData[$key]['totalDay'] = round($newData[$key]['monthlyData']->total_day,2);
             }else{
                 $year = $year ?? Carbon::now()->year;
                 $month = $month ?? Carbon::now()->format('M');
@@ -1631,6 +1631,7 @@ class PayrollController extends Controller
         $sub_institute_id = session()->get('sub_institute_id');
         $payrollVal = $request->payrollVal;
         $jsonVal=[];
+        // echo "<pre>";print_r($request->all());exit;
         // make json
         foreach ($payrollVal as $emp_id => $value) {
            $jsonVal[$emp_id] = json_encode($value['payrollHead']); 
