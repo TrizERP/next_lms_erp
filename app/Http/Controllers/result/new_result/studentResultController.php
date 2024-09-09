@@ -2759,6 +2759,7 @@ while ($current_date <= $post_end_date) {
                     foreach ($term_name as $keys => $terms) {
                         $obtained_marks = $to_marks = $to_weight = $title_exam = []; 
                             // get marks by exam id wise
+                        $max_marks = 0; // Initialize variable to track maximum marks
                         foreach ($exam_name as $key => $title) {
                             if ($title->subject_id == $val->subject_id && $terms->term_id == $title->term_id) {
                                 $foundMarks = false;
@@ -2773,6 +2774,7 @@ while ($current_date <= $post_end_date) {
                                     $title_exam[$arr][] = $title->ExamTitle;
                                     $weightage = $title->weightage;
                                 }
+
                                 // all exam marks 
                                 foreach ($exam_marks as $index => $marks) {
                                     if ($title->id == $marks->exam_id) {
@@ -2787,20 +2789,37 @@ while ($current_date <= $post_end_date) {
                                                 $to_weight[$arr] = $weightage;
                                             }
                                         } else {
-                                            $to_marks[$arr][] = $title->points;
+                                            //echo $marks->points .">". $max_marks."<br>";
                                             $to_weight[$arr] = $weightage;
+                                            if($title->standard_id == 3299){
+                                                // Check if max_marks is null or the current marks are higher
+                                                if ($marks->points > $max_marks) {
+                                                    $max_marks = $marks->points; // Update max marks
+                                                }
+                                                // Assign the highest points after the loop
+                                                $to_marks[$arr] = [$title->points]; // Update to store the maximum points
+                                                $obtained_marks[$arr] = [$max_marks]; // Store only the max marks
+                                                $foundMarks = true;
+                                            }else{
+                                                $to_marks[$arr][] = $title->points;
 
-                                            $ob_mark = $marks->points;
-                                            // store marks in array to get best of 2 
-                                            $obtained_marks[$arr][] = $ob_mark;
-                                            $foundMarks = true;
+                                                $ob_mark = $marks->points;
+                                                // store marks in array to get best of 2 
+                                                $obtained_marks[$arr][] = $ob_mark;
+                                                $foundMarks = true;
+
+                                            }
                                         }
                                         break;
                                     }
                                 }
                             }
                         }
-    
+    //echo "<pre>";
+    //print_r($to_marks);
+    //print_r($to_weight);
+    //print_r($obtained_marks);
+    //exit;
                         $ob_main_mark = $ab_ex_na = $total_marks = 0;
                         // for best of 2 exam wise 
                         if (!empty($title_exam)) {
