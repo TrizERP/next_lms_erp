@@ -144,15 +144,19 @@ class resultActivityMasterController extends Controller
             ->where('id', $id)
             ->first();
 
-        $get_result_skillsets = DB::table('result_skillset')
-            ->where('sub_institute_id', $sub_institute_id)
-            ->get()->toArray();
-
         $get_result_sub_activity_masters = DB::table('result_sub_activity')
             ->where('sub_institute_id', $sub_institute_id)
             ->where('sub_skill_id', $id)
+            ->first();
+            
+        $get_result_skillsets = DB::table('result_skillset')
+            ->where('sub_institute_id', $sub_institute_id)
+            ->where('standard',$get_result_activity_masters->standard ?? 0)
             ->get()->toArray();
 
+        $standardLists = DB::table('standard')->where('sub_institute_id', $sub_institute_id)->orderBy('sort_order')->get()->toArray();
+
+        $res['standardLists'] = $standardLists;
         $res['result_activity_masters'] = $get_result_activity_masters;
         $res['result_skillsets'] = $get_result_skillsets;
         $res['result_sub_activity_masters'] = $get_result_sub_activity_masters;
@@ -184,6 +188,7 @@ class resultActivityMasterController extends Controller
                $updateArr = [
                 'title'=>$request->subData['title'][$key],
                 'sort_order'=>$request->subData['sort_order'][$key],
+                'skill_id'=>$request->skill_id,
                 'updated_at'=>now()
                ];
                 DB::table('result_sub_activity')->where(['id' => $value])->update($updateArr);
@@ -230,10 +235,15 @@ class resultActivityMasterController extends Controller
         $sub_institute_id = session()->get('sub_institute_id');
         $skill_id = $request->skill_id;
         $standard = $request->standard;
-        if(isset($standard)){
+        $level=$request->level;
+        if(isset($standard) && isset($skill_id)){
             $res = DB::table('result_activity_master')->where('sub_institute_id',$sub_institute_id)->where('standard',$standard)->where('skill_id',$skill_id)->get()->toArray();
-        }else{
+        }else if(isset($level) && $level==4){
             $res = DB::table('result_sub_activity')->where('sub_institute_id',$sub_institute_id)->where('sub_skill_id',$skill_id)->get()->toArray();
+        }else if(isset($level) && $level==2){
+            $res = DB::table('result_skillset')->where('sub_institute_id',$sub_institute_id)->where('standard',$standard)->get()->toArray();
+        }else{
+            $res = 'No Data';
         }
         return $res;
     }

@@ -27,6 +27,15 @@
                      @csrf
                      <div class="row">
                         <div class="col-md-4 form-group">
+                                <label for="standard_list">Standard</label>
+                                <select name="standard" id="standard" class="form-control" required readonly>
+                                    <option value="">Select Standard</option>
+                                    @foreach($data['standardLists'] as $key=>$value)
+                                    <option value="{{$value->id}}" @if(isset($data['result_activity_masters']->standard) && $data['result_activity_masters']->standard==$value->id) Selected @endif>{{$value->name}}</option>
+                                    @endforeach
+                                </select>
+                           </div>
+                        <div class="col-md-4 form-group">
                            <label>Title </label>
                            <input type="text" id='title' value="@if(isset($data['result_activity_masters']->title)){{ $data['result_activity_masters']->title }}@endif" name="title" class="form-control" required>
                         </div>

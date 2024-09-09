@@ -27,6 +27,14 @@ return new class extends Migration
         Schema::table('result_activity_master', function (Blueprint $table) {
             $table->integer('standard')->nullable()->after('sort_order'); // change dtat type from varchar to integer
         });
+        Schema::table('result_skillset', function (Blueprint $table) {
+            $table->integer('standard')->nullable()->after('title'); 
+        });
+
+        Schema::table('result_activity_marks', function (Blueprint $table) {
+            $table->integer('sub_activity_id')->nullable()->after('activity_id'); 
+            $table->integer('syear')->nullable()->after('sub_institute_id'); 
+        });
     }
 
     /**
@@ -40,6 +48,15 @@ return new class extends Migration
         // add level type and standard in skill set table 
         Schema::table('result_activity_master', function (Blueprint $table) {
             $table->dropColumn('standard');
+        });
+        Schema::table('result_skillset', function (Blueprint $table) {
+            //
+            $table->dropColumn('standard');
+        });
+        
+        Schema::table('result_activity_marks', function (Blueprint $table) {
+            $table->dropColumn('sub_activity_id');
+            $table->dropColumn('syear');
         });
     }
 };

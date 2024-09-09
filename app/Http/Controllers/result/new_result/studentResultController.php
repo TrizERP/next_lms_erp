@@ -4620,7 +4620,7 @@ private function buildDisciplineTable($decipline_data)
         	group_concat(title order by sort_order SEPARATOR "|") as all_title,
         	GROUP_CONCAT(id ORDER BY sort_order ASC) as all_id,
         	group_concat(`group`) as all_group')
-            ->where(['sub_institute_id' => $sub_institute_id])
+            ->where(['sub_institute_id' => $sub_institute_id,'standard'=>$standard_id])
             ->groupBy('main_title')
             ->orderByRaw('main_sort_order')
             ->get()->toArray();
@@ -4682,7 +4682,7 @@ private function buildDisciplineTable($decipline_data)
 	    		}
 
                 $table .= '<tr><th style="text-align:left;font-size:medium !important;background:white !important;"><b>' . $value . '</b></th>';
-                $get_result_activity_marks = $sub_sub_id = [];  
+                $get_result_activity_marks = $get_sub_activity = $sub_sub_id = [];  
 
                 foreach($sub_sub_title as $key1 => $value1)
                 {
@@ -4694,9 +4694,10 @@ private function buildDisciplineTable($decipline_data)
                     	GROUP_CONCAT(id ORDER BY sort_order ASC) as ids')
                     ->where(['sub_institute_id' => $sub_institute_id])
                     ->where('skill_id', $skill_ids[$key])
+                    ->where('standard',$standard_id)
                     ->orderBy('sort_order')
                     ->get()->toArray();
-
+                    
                     foreach($get_result_activity_masters as $get_result_activity_master)
                     {
                         $activity_master_id = explode(',', $get_result_activity_master->ids);
@@ -4710,55 +4711,151 @@ private function buildDisciplineTable($decipline_data)
                             ->where('group_id', $value1->id)
                             ->where('student_id', $student_id)
                             ->get()->toArray();
+
+                            if(!isset($get_sub_activity[$activity_id])){
+                                $get_sub_activity[$activity_id]= DB::table('result_sub_activity')->where('sub_skill_id',$activity_id)->get()->toArray();
+                            }
                         }
                     }
                 }
+                // echo "<pre>";print_r($get_sub_activity);
                 $table .= '</tr>';
-                if(isset($get_result_activity_masters) && !empty($get_result_activity_masters))
-                {
+                if(isset($get_result_activity_masters) && !empty($get_result_activity_masters)){
                     foreach($get_result_activity_masters as $get_result_activity_master)
                     {
                         $activity_master_title = explode('|', $get_result_activity_master->activity_master_title);
                         $activity_master_id = explode(',', $get_result_activity_master->ids);
-                        
-                        foreach($activity_master_title as $key2 => $activity_master_titles)
-                        {
-                            $table .= '<tr><td style="text-align:left;font-size:medium !important;width:60%;background:white !important;">' . $activity_master_titles .'</td>';
-                            $checked = 0;
-                            if(isset($get_result_activity_marks[$activity_master_title[$key2]]) && !empty($get_result_activity_marks[$activity_master_title[$key2]]))
-                            {
-                                foreach($get_result_activity_marks[$activity_master_title[$key2]] as $get_result_activity_mark)
+
+                        foreach ($activity_master_id as $ak => $activity_id) {
+                            if(isset($get_sub_activity[$activity_id]) && !empty($get_sub_activity[$activity_id])){
+                                $table.='<tr><td style="text-align:left;font-size:medium !important;width:60%;background:white !important;"><b>'.$activity_master_title[$ak].'</b></td>';
+                                foreach($sub_sub_title as $key1 => $value1)
                                 {
-                                    if(isset($get_result_activity_mark[0]) && $get_result_activity_mark[0]->activity_id==$activity_master_id[$key2]){
-                                        $checked++;
-                                    }                                  
+                                        $table .= '<td style="text-align:center;font-size:medium !important;background:white !important;color:black;width:10%;">N/A</td>';
                                 }
-                            }
-                            if($checked==0){
-                                foreach($get_result_activity_marks[$activity_master_title[$key2]] as $get_result_activity_mark)
-                                {
-                                    $table .= '<td style="text-align:center;font-size:medium !important;background:white !important;color:black;width:10%;">NA</td>';
-                                }
-                            }else{
-                                foreach($get_result_activity_marks[$activity_master_title[$key2]] as $get_result_activity_mark)
-                                {
-                                    $table .= '<td style="text-align:center;font-size:medium !important;background:white !important;color:black;width:10%;">';
-                                    if(isset($get_result_activity_mark[0]) && $get_result_activity_mark[0]->activity_id==$activity_master_id[$key2])
+                               
+                                $table.=' </tr>';
+                                foreach ($get_sub_activity[$activity_id] as $kr => $val) {
+                                        // echo "<pre>";print_r($v->title);
+                                      
+                                    $table.='<tr><td style="background:white !important;color:black;width:10%;">'.$val->title.'</td>';
+                                    $count = [];
+                                    foreach($sub_sub_title as $ke => $va)
                                     {
-                                        $table .= '&#10004';
+                                        $marks = DB::table('result_activity_marks')
+                                        ->where(['sub_institute_id' => $sub_institute_id])
+                                        ->where('activity_id', $activity_id)
+                                        ->where('sub_activity_id', $val->id)
+                                        ->where('group_id', $va->id)
+                                        ->where('student_id', $student_id)
+                                        ->first();
+
+                                        if(!empty($marks)){
+                                            if(isset($marks->group_id) && $marks->group_id==$va->id){
+                                               
+                                                $count[$activity_id][$ke]=1;
+                                            }
+                                        }
                                     }
-                                    $table .= '</td>';
-                                  
+                                    if(!isset($count[$activity_id])){
+                                        foreach($sub_sub_title as $kk => $vv)
+                                        {
+                                            $table .= '<td style="text-align:center;font-size:medium !important;background:white !important;color:black;width:10%;">N/A</td>';
+                                        }
+                                    }else{
+                                        foreach($sub_sub_title as $kk => $vv)
+                                        {
+                                            if(isset($count[$activity_id][$kk])){
+                                                $table .= '<td style="text-align:center;font-size:medium !important;background:white !important;color:black;width:10%;">&#10004</td>';
+                                            }else{
+                                                $table .= '<td style="text-align:center;font-size:medium !important;background:white !important;color:black;width:10%;"></td>';
+                                            }
+                                        }
+                                    }
+                                    $table.='</tr>';
+                                    
                                 }
+                                // $table.='</tr>';
+                            }else{
+                                $table .= '<tr><td style="text-align:left;font-size:medium !important;width:60%;background:white !important;">' . $activity_master_title[$ak] .'</td>';
+                                $checked = 0;
+                                if(isset($get_result_activity_marks[$activity_master_title[$ak]]) && !empty($get_result_activity_marks[$activity_master_title[$ak]]))
+                                {
+                                    foreach($get_result_activity_marks[$activity_master_title[$ak]] as $get_result_activity_mark)
+                                    {
+                                        if(isset($get_result_activity_mark[0]) && $get_result_activity_mark[0]->activity_id==$activity_master_id[$ak]){
+                                            $checked++;
+                                        }                                  
+                                    }
+                                }
+                                if($checked==0){
+                                    foreach($get_result_activity_marks[$activity_master_title[$ak]] as $get_result_activity_mark)
+                                    {
+                                        $table .= '<td style="text-align:center;font-size:medium !important;background:white !important;color:black;width:10%;">NA</td>';
+                                    }
+                                }else{
+                                    foreach($get_result_activity_marks[$activity_master_title[$ak]] as $get_result_activity_mark)
+                                    {
+                                        $table .= '<td style="text-align:center;font-size:medium !important;background:white !important;color:black;width:10%;">';
+                                        if(isset($get_result_activity_mark[0]) && $get_result_activity_mark[0]->activity_id==$activity_master_id[$ak])
+                                        {
+                                            $table .= '&#10004';
+                                        }
+                                        $table .= '</td>';
+                                    
+                                    }
+                                }
+                                $table .= '</tr>';
                             }
-                            $table .= '</tr>';
+
                         }
                     }
                 }
+                // if(isset($get_result_activity_masters) && !empty($get_result_activity_masters))
+                // {
+                //     foreach($get_result_activity_masters as $get_result_activity_master)
+                //     {
+                //         $activity_master_title = explode('|', $get_result_activity_master->activity_master_title);
+                //         $activity_master_id = explode(',', $get_result_activity_master->ids);
+                        
+                //         foreach($activity_master_title as $key2 => $activity_master_titles)
+                //         {
+                //             $table .= '<tr><td style="text-align:left;font-size:medium !important;width:60%;background:white !important;">' . $activity_master_titles .'</td>';
+                //             $checked = 0;
+                //             if(isset($get_result_activity_marks[$activity_master_title[$key2]]) && !empty($get_result_activity_marks[$activity_master_title[$key2]]))
+                //             {
+                //                 foreach($get_result_activity_marks[$activity_master_title[$key2]] as $get_result_activity_mark)
+                //                 {
+                //                     if(isset($get_result_activity_mark[0]) && $get_result_activity_mark[0]->activity_id==$activity_master_id[$key2]){
+                //                         $checked++;
+                //                     }                                  
+                //                 }
+                //             }
+                //             if($checked==0){
+                //                 foreach($get_result_activity_marks[$activity_master_title[$key2]] as $get_result_activity_mark)
+                //                 {
+                //                     $table .= '<td style="text-align:center;font-size:medium !important;background:white !important;color:black;width:10%;">NA</td>';
+                //                 }
+                //             }else{
+                //                 foreach($get_result_activity_marks[$activity_master_title[$key2]] as $get_result_activity_mark)
+                //                 {
+                //                     $table .= '<td style="text-align:center;font-size:medium !important;background:white !important;color:black;width:10%;">';
+                //                     if(isset($get_result_activity_mark[0]) && $get_result_activity_mark[0]->activity_id==$activity_master_id[$key2])
+                //                     {
+                //                         $table .= '&#10004';
+                //                     }
+                //                     $table .= '</td>';
+                                  
+                //                 }
+                //             }
+                //             $table .= '</tr>';
+                //         }
+                //     }
+                // }
             }
             $table .= '</tbody></table>';
         }
-        
+        // exit;
         $res['table'] = $table;
         return $res;
     }

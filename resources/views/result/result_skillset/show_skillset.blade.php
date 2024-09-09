@@ -31,11 +31,12 @@
                         <table id="example" class="table table-striped">
                             <thead>
                                 <tr>
-                                    <th>Id</th>
+                                    <th>Sr No.</th>
+                                    <th>Standard</th>
                                     <th>Main Title</th>
                                     <th>Title</th>
                                     <th>Group</th>
-                                    <th>Action</th>
+                                    <th class="text-align:left">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -46,6 +47,7 @@
                                 @foreach($data['result_skillsets'] as $key => $result_skillset)
                                 <tr>    
                                     <td>{{$j}}</td>
+                                    <th>{{$result_skillset->standard_name}}</th>
                                     <td>{{$result_skillset->main_title}}</td>
                                     <td>{{$result_skillset->title}}</td>
                                     <td>{{$result_skillset->group}}</td>
