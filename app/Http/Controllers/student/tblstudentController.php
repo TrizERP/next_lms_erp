@@ -963,12 +963,12 @@ die; */
         $request = new Request(['id' => $id]);
         $trans_details = $trans_controller->create($request);       
         
-        //echo "<pre>";print_r($OldData['final_fee']['Total']);exit;
+        // echo "<pre>";print_r($FeesData);exit;
         
         $res['paid_unpaid_fees'] = $OldData['total_fees'] ?? [];
         $res['check_fees'] = $OldData['final_fee']['Total'] ?? [];
         $res['stu_data'] = $OldData['stu_data'] ?? [];
-        $res['fees_data'] = $FeesData;
+        $res['feesData'] = $FeesData;
         
         $res['admission_year'] = $admission_year;        
         $res['student_quota'] = $studentQuota;

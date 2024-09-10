@@ -2761,18 +2761,35 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                         ->whereRaw("1=1 " . $extra_fo);
                 });
         })
-            ->selectRaw('student_id, enrollment_no, roll_no, uniqueid, place_of_birth, student_name, grade,standard_name, division_name,created_date, user_name, GROUP_CONCAT(term_id) AS term_ids, receiptdate, receipt_no,  payment_mode, cheque_bank_name, bank_branch, cheque_no, cheque_date, batch,  quota,   SUM(IFNULL(actual_amountpaid, 0)) AS actual_amountpaid')
+            ->selectRaw('student_id, enrollment_no, roll_no, IFNULL(uniqueid,"-") as uniqueid, place_of_birth, student_name, grade,standard_name, division_name,created_date, user_name, GROUP_CONCAT(term_id) AS term_ids, receiptdate, receipt_no,  payment_mode, cheque_bank_name, bank_branch, cheque_no, cheque_date, batch,  quota,   SUM(IFNULL(actual_amountpaid, 0)) AS actual_amountpaid')
             ->groupBy('receipt_no');
 
         $data = $data->get()->toArray();
         $feesData = json_decode(json_encode($data), true);
 
+        // cancell data start 
+        $cancelData = DB::table('fees_cancel as fc')
+        ->Join('tblstudent as s', 's.id', '=', 'fc.student_id')
+        ->join('tblstudent_enrollment as se', function ($join) use($syear){
+            $join->on('se.student_id', '=', 's.id')->where('se.syear',$syear);
+        })
+        ->Join('standard as std', 'std.id', '=', 'se.standard_id')
+        ->Join('division as d', 'd.id', '=', 'se.section_id')
+        ->join('fees_collect as fee','fee.receipt_no','=','fc.reciept_id')
+        ->leftJoin('tbluser as u','u.id','=','fc.cancelled_by')
+        ->selectRaw('fc.*,CONCAT_WS(" ",COALESCE(s.first_name),COALESCE(s.middle_name),COALESCE(s.last_name)) as student_name,s.enrollment_no,IFNULL(s.uniqueid,"-") as uniqueid,std.name as std,d.name as divi,fee.payment_mode,GROUP_CONCAT(fc.term_id) AS month_ids,fee.cheque_bank_name, fee.bank_branch, fee.cheque_no,CONCAT_WS(" ",COALESCE(u.first_name),COALESCE(u.middle_name),COALESCE(u.last_name)) as cancelled_by,SUM(IFNULL(fc.amountpaid, 0)) AS actual_amountpaid')
+        ->where(['fc.sub_institute_id'=>$sub_institute_id,'fc.syear'=>$syear])
+        ->where('fc.student_id',$stud_id)
+        ->groupBy('reciept_id')
+        ->get()->toArray();
+        // cancel data end
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['fees_data'] = $feesData;
+        $res['cancelData'] = $cancelData;
         $res['enrollment_no'] = $enrollment_no;
 
-        return $feesData;
+        return $res;
     }
 
     // send sms to parent after fees successfully paid

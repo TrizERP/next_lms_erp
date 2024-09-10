@@ -275,7 +275,7 @@ datalist {
                                         <div class="col-md-4 form-group">
                                             <label>{{App\Helpers\get_string('studentquota','request')}}<i class="mdi mdi-lead-pencil"></i></label>
                                             @php 
-                                            if(session()->get('sub_institute_id') != 257 && count($data['fees_data']) != 0) {
+                                            if(session()->get('sub_institute_id') != 257 && count($data['feesData']) != 0) {
                                                 $disable = "style=pointer-events:none";
                                                 $readonly = "readonly";
                                             }
@@ -1453,8 +1453,8 @@ datalist {
                                                     $j=1;
                                                     $amount = 0;
                                                     @endphp
-                                                    @if(isset($data['fees_data']))
-                                                    @foreach($data['fees_data'] as $key => $value)
+                                                    @if(isset($data['feesData']['fees_data']))
+                                                    @foreach($data['feesData']['fees_data'] as $key => $value)
                                                         @php
                                                         $month_names = [];
 
