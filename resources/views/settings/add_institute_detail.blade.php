@@ -158,7 +158,7 @@
 </div>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 @include('includes.footerJs')
-@if($_REQUEST['module']=='add_task')
+@if(isset($_REQUEST['module']) && $_REQUEST['module']=='add_task')
 <script>
     $(document).ready(function(){
         $('#section-linemove-1, #section-dep-0, .section-linemove-1, .section-dep-0').removeClass('active');
