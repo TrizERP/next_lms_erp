@@ -111,19 +111,20 @@
                     </thead>
                     <tbody>
                         @if(isset($data['allData']) && !empty($data['allData']))
+                        @php $i=1; @endphp
                             @foreach($data['allData'] as $date=>$empArr)
-                                @php $i=1; @endphp
                                 @foreach($empArr as $empId=>$value)
                                 @php
                                     $att_status=$day_name='';
                                     $get_format_punchin_time=$get_format_punchout_time='-';
                                     $holidays=$cl_leave=$on_duty_leave=[];
-                                    
+                                    $hrms_date = \Carbon\Carbon::createFromFormat('Y-m-d', $date);
+                                    $day_name =lcfirst($hrms_date->format('l'));
+                                    if(!empty($value)){
+                                        $hrmsAttendance = $value;
+                                    }
                                     if (isset($value['punchin_time']) && !empty($value)) 
                                     {
-                                        $hrmsAttendance = $value;
-                                        $hrms_date = \Carbon\Carbon::createFromFormat('Y-m-d', $date);
-                                        $day_name =lcfirst($hrms_date->format('l'));
                                         $dateDayTime = \Carbon\Carbon::parse($hrmsAttendance[$day_name.'_in_date'])->format('H:i A'); 
 
                                         $get_format_punchin_time =($hrmsAttendance['punchin_time']!='') ? \Carbon\Carbon::parse($hrmsAttendance['punchin_time'])->format('H:i A') : '-';
@@ -173,17 +174,16 @@
                                             }
                                         }
                                     }
-                                    else if(isset($hrmsAttendance['holiday'][0]) && !empty($hrmsAttendance['holiday'][0]))
+                                     if(isset($hrmsAttendance['holiday'][0]) && !empty($hrmsAttendance['holiday'][0]))
                                     {
                                         $holidayData = $hrmsAttendance['holiday'][0];
-                                    
-                                        $from_date_new = $holidayData->from_date;
-                                        $to_date_new = $holidayData->to_date;
+                                        $hfrom_date_new = \Carbon\Carbon::parse($holidayData['from_date']);
+                                        $hto_date_new = \Carbon\Carbon::parse($holidayData['to_date']);
 
-                                        while (strtotime($from_date_new) <= strtotime($to_date_new)) 
+                                        while (strtotime($hfrom_date_new) <= strtotime($hto_date_new)) 
                                         {
-                                            $holidays[] = $from_date_new;
-                                            $from_date_new = date("Y-m-d", strtotime("+1 day", strtotime($from_date_new)));
+                                            $holidays[] = $hfrom_date_new->format('Y-m-d');
+                                            $hfrom_date_new = date("Y-m-d", strtotime("+1 day", strtotime($hfrom_date_new)));
                                         }
                                     }
                                     
@@ -191,16 +191,15 @@
                                     {
                                         $att_status = 'background-color:#4591e0;';
                                     }
-                                    if(in_array($date, $cl_leave)) 
+                                    else if(in_array($date, $cl_leave)) 
                                     {
                                         $att_status = 'background-color:#FFB2B2;';
                                     }
-                                    if(in_array($date, $on_duty_leave)) 
+                                    else if(in_array($date, $on_duty_leave)) 
                                     {
                                         $att_status = 'background-color:#9191c7;';
                                     }
-
-                                    if($day_name ==  "sunday")
+                                    else if(in_array($day_name,["sunday","Sunday","sun","Sun"]))
                                     {
                                         $att_status = 'background-color:#99D699;';
                                     }

@@ -1129,9 +1129,12 @@ class HrmsController extends Controller
         }
         
         foreach ($get_hrms_holidays as $value) {
-            $empHolidays[$value->department][$value->from_date][] = (array) $value;
+            $depExplode = explode(',',$value->department);
+            foreach ($depExplode as $key => $values) {
+                $empHolidays[$values][$value->from_date][] = (array) $value;
+            }
         }
-       
+    //    echo "<pre>";print_r($empHolidays);exit;
         $getUsers = DB::table('tbluser as u')->leftJoin('hrms_departments as hd',function($join) use($sub_institute_id) {
                 $join->on('hd.id','=','u.department_id')->where('hd.status',1)->where('hd.sub_institute_id',$sub_institute_id);
             })
@@ -1162,7 +1165,7 @@ class HrmsController extends Controller
                     {
                         $report_data[$from_date_new][$value->id]['leave'] = $empLeaves[$value->id][$from_date_new];
                     }
-                    if (isset($empHolidays[$value->department_id]) && array_key_exists($from_date_new, $empHolidays[$value->id])) 
+                    if (isset($empHolidays[$value->department_id]) && array_key_exists($from_date_new, $empHolidays[$value->department_id])) 
                     {
                         $report_data[$from_date_new][$value->id]['holiday'] = $empHolidays[$value->department_id][$from_date_new];
                     }
