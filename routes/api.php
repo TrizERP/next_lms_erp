@@ -24,6 +24,10 @@ Route::post('whats-comming-app',function (Request $request) {
     \Illuminate\Support\Facades\Log::info(json_encode($request->all()));
 });
 
+Route::post('update-message',[\App\Http\Controllers\WhatsappController::class,'updateDeliveryStatus']);
+Route::post('incoming-message',[\App\Http\Controllers\WhatsappController::class,'incomingMessage']);
+
+
 Route::controller(apiController::class)->group(function () {
     Route::post('login', 'login');
     Route::post('check_otp', 'check_otp');

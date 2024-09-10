@@ -3,7 +3,12 @@
 @include('includes.sideNavigation')--}}
 @extends('layout')
 @section('container')
-
+<style>
+    .imageTD img{
+        width:100px !important;
+        height: 100px !important;
+    }
+</style>
     <div id="page-wrapper">
         <div class="container-fluid">
             <div class="row bg-title">
@@ -44,11 +49,11 @@
                                     </div>
                                     <div class="col-md-4 form-group">
                                         <label>From Date</label>
-                                        <input type="text" id='date1'  name="from_date" class="form-control mydatepicker">
+                                        <input type="text" id='date1'  name="from_date" @if(isset($data['from_date'])) value="{{$data['from_date']}}" @endif class="form-control mydatepicker">
                                     </div>
                                     <div class="col-md-4 form-group">
                                         <label>To Date</label>
-                                        <input type="text" id='date2' name="to_date" class="form-control mydatepicker">
+                                        <input type="text" id='date2' name="to_date" @if(isset($data['to_date'])) value="{{$data['to_date']}}" @endif class="form-control mydatepicker">
                                     </div>
                                     <div class="col-md-12 form-group">
                                         <center>
@@ -72,13 +77,15 @@
                                         <table id="example" class="table table-box table-bordered">
                                             <thead>
                                             <tr>
-                                                <th>Id</th>
+                                                <th>Sr No</th>
                                                 <th>Gr No</th>
                                                 <th>Student Name</th>
                                                 <th>Mobile Number</th>
                                                 <th>Created By</th>
                                                 <th>Date</th>
+                                                <th>Status</th>
                                                 <th>Message</th>
+                                                <th>Incoming Message</th>
                                             </tr>
                                             </thead>
                                             <tbody>
@@ -87,13 +94,15 @@
                                             @endphp
                                             @foreach($data['stu_data'] as $key => $data)
                                                 <tr>
-                                                    <td>{{$j}}</td>
-                                                    <td>{{$data['student']['enrollment_no']}}</td>
-                                                    <td>{{$data['student']['first_name']}}- {{$data['student']['last_name']}}</td>
-                                                    <td>{{$data['student']->mobile}}</td>
+                                                    <td>{{$key+1}}</td>
+                                                    <td>{{ (isset($data['student'][0]['enrollment_no'])) ? $data['student'][0]['enrollment_no'] : '-'}}</td>
+                                                    <td>{{ (isset($data['student'][0])) ? $data['student'][0]['first_name'].' '.$data['student'][0]['last_name'] : '-'}}</td>
+                                                    <td>{{ (isset($data['student'][0]['mobile'])) ? $data['student'][0]['mobile'] : '-'}}</td>
                                                     <td>{{$data->created_by_name ?? '-'}}</td>
                                                     <td>{{$data->created_at ?? '-'}}</td>
-                                                    <td>{{$data->message ?? '-'}}</td>
+                                                    <td>{{$data->message_status ?? '-'}}</td>
+                                                    <td class="imageTD">{!!$data->message ?? '-'!!}</td>
+                                                    <td><a href="/whatsapp-show-reply/{{$data['whatsapp_number']}}" >show reply ({{count($data['messages'])}})</a></td>
                                                 </tr>
                                                 @php
                                                     $j++;
@@ -111,88 +120,6 @@
 
         @include('includes.footerJs')
 
-        @if (!isset($data['stu_data']))
-            @if(isset(Session::get('erpTour')['fees_collect']) && Session::get('erpTour')['fees_collect'] == 0)
-                <link rel="stylesheet" href="../../../tooltip/enjoyhint/jquery.enjoyhint.css">
-
-                <script src="../../../tooltip/bower_components/todomvc-common/base.js"></script>
-                <!-- <script src="../../../tooltip/bower_components/jquery/jquery.js"></script> -->
-                <script src="../../../tooltip/bower_components/underscore/underscore.js"></script>
-                <script src="../../../tooltip/bower_components/backbone/backbone.js"></script>
-                <script src="../../../tooltip/bower_components/backbone.localStorage/backbone.localStorage.js"></script>
-                <script src="../../../tooltip/js/models/todo.js"></script>
-                <script src="../../../tooltip/js/collections/todos.js"></script>
-                <script src="../../../tooltip/js/views/todo-view.js"></script>
-                <script src="../../../tooltip/js/views/app-view.js"></script>
-                <script src="../../../tooltip/js/routers/router.js"></script>
-                <script src="../../../tooltip/js/app.js"></script>
-                <script src="../../../tooltip/enjoyhint/enjoyhint.js"></script>
-                <script src="../../../tooltip/enjoyhint/jquery.enjoyhint.js"></script>
-                <script src="../../../tooltip/enjoyhint/kinetic.min.js"></script>
-                <script>
-                    localStorage.clear();
-                    var enjoyhint_script_data = [
-                        {
-                            onBeforeStart: function(){
-                                $('#grade').change(function(e){
-
-                                    enjoyhint_instance.trigger('new_todo');
-
-                                });
-                            },
-                            selector:'#grade',
-                            event:'new_todo',
-                            event_type:'custom',
-                            description:'Select Grade Here.'
-                        },
-                        {
-                            onBeforeStart: function(){
-                                $('#standard').change(function(e){
-
-                                    enjoyhint_instance.trigger('new_todo');
-
-                                });
-                            },
-                            selector:'#standard',
-                            event:'new_todo',
-                            event_type:'custom',
-                            description:'Select Standard Here.'
-                        },
-                        {
-                            selector:'#division',
-                            event:'change',
-                            description:'Select Division Here.',
-                            timeout:100
-                        },
-                        {
-                            selector:'.btn-success',
-                            event:'click',
-                            description:'Please press to search students.',
-                            timeout:100
-                        }
-                    ];
-                    var enjoyhint_instance = null;
-                    $(document).ready(function(){
-                        enjoyhint_instance = new EnjoyHint({});
-                        enjoyhint_instance.setScript(enjoyhint_script_data);
-                        enjoyhint_instance.runScript();
-                    });
-                </script>
-
-                <script type="text/javascript">
-                    var url = "http://dev.triz.co.in/tourUpdate?module=fees_collect";
-                    var xhttp = new XMLHttpRequest();
-                    xhttp.onreadystatechange = function() {
-                        if (this.readyState == 4 && this.status == 200) {
-                            console.log("success");
-                        }
-                    };
-                    xhttp.open("GET", url, true);
-                    xhttp.send();
-                </script>
-            @endif
-        @endif
-
         <script>
             $(document).ready(function () {
                 var table = $('#example').DataTable({
@@ -205,7 +132,7 @@
                     buttons: [
                         {
                             extend: 'pdfHtml5',
-                            title: 'Fees Monthly Report',
+                            title: 'Whatsapp Report',
                             orientation: 'landscape',
                             pageSize: 'LEGAL',
                             pageSize: 'A0',
@@ -213,9 +140,9 @@
                                 columns: ':visible'
                             },
                         },
-                        {extend: 'csv', text: ' CSV', title: 'Fees Monthly Report'},
-                        {extend: 'excel', text: ' EXCEL', title: 'Fees Monthly Report'},
-                        {extend: 'print', text: ' PRINT', title: 'Fees Monthly Report'},
+                        {extend: 'csv', text: ' CSV', title: 'Whatsapp Report'},
+                        {extend: 'excel', text: ' EXCEL', title: 'Whatsapp Report'},
+                        {extend: 'print', text: ' PRINT', title: 'Whatsapp Report'},
                         'pageLength'
                     ],
                 });
@@ -237,11 +164,6 @@
             } );
         </script>
 
-        @if(app('request')->input('implementation') == 1)
-            <script type="text/javascript">
-                document.body.className = document.body.className.replace("fix-header", "fix-header show-sidebar hide-sidebar");
-                document.getElementById('main-header').style.display = 'none';
-            </script>
-    @endif
+
     @include('includes.footer')
 @endsection

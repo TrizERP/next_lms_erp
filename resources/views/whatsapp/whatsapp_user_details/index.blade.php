@@ -29,7 +29,7 @@
                                 <tr>
                                     <th>Id</th>
                                     <th>User Whatsapp No</th>
-                                    <th>User Whatsapp Sid</th>
+                                    <th>User Whatsapp SID</th>
                                     <th>User Whatsapp Token</th>
                                     <th>Created By</th>
                                     <th>Action</th>

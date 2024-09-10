@@ -2,6 +2,9 @@
 
 namespace App\Console\Commands;
 
+use App\Models\WhatsappSentMessage;
+use AWS\CRT\Log;
+use Carbon\Carbon;
 use Dompdf\Exception;
 use Illuminate\Console\Command;
 use Twilio\Rest\Client;
@@ -85,9 +88,6 @@ class TestFunction extends Command
     public function handle()
     {
 
-
-
-        //$message = "Hello this is test message for me<a href=\"https://erp.triz.co.in/Images/logo.png\">https://erp.triz.co.in/Images/logo.png</a> for me ";
         $message = "Triz ";
         list($textArray, $hrefArray) = $this->mediaFound($message);
 
@@ -104,6 +104,52 @@ class TestFunction extends Command
             ]);
             $prepareMessageBody['contentSid'] = "HXe0114bc20670d1b3f92c854106ec4a81";
         }
+
+
+        $messagingServiceSid = 'MGdec43b1bbd9428a72fa0c7a633905319';
+        $accountSid = env('TWILIO_SID');
+        $authToken = env('TWILIO_AUTH_TOKEN');
+        $client = new Client($accountSid, $authToken);
+        $twilioResponse = $client->messages->create(
+            //'whatsapp:+919638141767',
+            'whatsapp:+917621070302',
+            [
+                "contentSid" => "HX3a292a1ee72924adb532e807a2ed9b36",
+                "messagingServiceSid" => $messagingServiceSid,
+                "from" => "whatsapp:+919909906512",
+                "contentVariables" => $prepareMessageBody['contentVariables'],
+            ]
+        );
+        // Check message status
+        $messageStatus = $twilioResponse->status;
+        $errorStatus = $twilioResponse->uri;
+        // Check if there was an error
+        if ($twilioResponse->errorCode) {
+            $errorStatus =  $twilioResponse->errorMessage;
+        }
+        $messagesid = $twilioResponse->sid;
+
+        $saveMesasge = new WhatsappSentMessage();
+        $saveMesasge->sub_institute_id = 1;
+        $saveMesasge->syear = 1;
+        $saveMesasge->standard_id = 1;
+        $saveMesasge->division_id = 1;
+        $saveMesasge->student_id = 1;
+        $saveMesasge->message = $message;
+        $saveMesasge->attachment = null;
+        $saveMesasge->sent_date = Carbon::today();
+        $saveMesasge->whatsapp_number = "+917621070302";
+        $saveMesasge->message_status = $messageStatus;
+        $saveMesasge->message_error =$errorStatus;
+        $saveMesasge->uri = $messagesid; // intstead of uri store message sid
+        $saveMesasge->created_by = 1;
+        $saveMesasge->created_by_name = 1;
+        $saveMesasge->save();
+
+        dd('done');
+
+
+        //$message = "Hello this is test message for me<a href=\"https://erp.triz.co.in/Images/logo.png\">https://erp.triz.co.in/Images/logo.png</a> for me ";
 
 
 

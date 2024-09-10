@@ -16,6 +16,16 @@
                     <strong>{{ $sessionData['message'] }}</strong>
                 </div>
             @endif
+
+        @php
+        $grade_id = $standard_id = $division_id = '';
+
+            if(isset($data['grade_id'])){
+                $grade_id = $data['grade_id'];
+                $standard_id = $data['standard_id'];
+                $division_id = $data['division_id'];
+            }
+        @endphp
             <div class="row">
                 <div class="col-lg-12 col-sm-12 col-xs-12">
                     <form action="{{ route('send_whatsapp_message.create') }}" enctype="multipart/form-data" method="post">
