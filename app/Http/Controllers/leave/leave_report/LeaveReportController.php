@@ -86,6 +86,9 @@ class LeaveReportController extends Controller
         $from_date_formatted = Carbon::createFromFormat('Y-m-d', $from_date)->format('Y-m-d');
         $to_date_formatted = Carbon::createFromFormat('Y-m-d', $to_date)->format('Y-m-d');
 
+        $from_month_formatted = Carbon::createFromFormat('Y-m-d', $from_date)->format('Y-m');
+        $to_month_formatted = Carbon::createFromFormat('Y-m-d', $to_date)->format('Y-m');
+
         $departments = HrmsDepartment::where('status', true)->pluck('department', 'id');
 
         $employees = tbluserModel::where('sub_institute_id', $sub_institute_id)->whereRaw('department_id in ('.$department_id.')')->get()->toArray();
@@ -98,17 +101,15 @@ class LeaveReportController extends Controller
                  ->where('hlt.sub_institute_id', '=', $sub_institute_id);
         })
         ->where('hel.sub_institute_id', $sub_institute_id)
-        ->where('hel.from_date', '>=', $from_date_formatted)
-        ->where('hel.to_date', '<=', $to_date_formatted)
+        // ->where('hel.from_date', '>=', $from_date_formatted)
+        // ->where('hel.to_date', '<=', $to_date_formatted)
+        ->whereBetween('hel.from_date',[$from_date_formatted,$to_date])
+        ->OrwhereBetween('hel.to_date',[$from_date_formatted,$to_date])
         ->when($employee_id!=0,function($q) use($employee_id){
             $q->whereRaw('hel.user_id IN ('.$employee_id.')');
         })
         // ->whereIn('hel.status', $get_leave_status)
-        ->when($type == "API", function ($query) use ($get_leave_status) {
-            return $query->whereIn('hel.status', $get_leave_status);
-        }, function ($query) use ($get_leave_status) {
-            return $query->whereIn('hel.status', $get_leave_status);
-        })
+        ->whereIn('hel.status', $get_leave_status)
         ->get()->toArray();
 
         $res['leave_types'] = ["Approved_lwp"=>"Approved LWP","Cancelled"=>"Cancelled","Rejected"=>"Rejected","Pending"=>"Pending Approval","Approved"=>"Approved"];

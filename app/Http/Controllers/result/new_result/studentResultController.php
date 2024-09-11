@@ -322,6 +322,22 @@ class studentResultController extends Controller
             $co_result = $this->get_co_scholastic_mmis($standard_id, $value['id'], $format, "primary");
             $html_content = str_replace(htmlspecialchars("<<co_scholastic_marks_mmis>>"), $co_result['co_scholastic'], $html_content);
         }
+        // 2024-09-11
+        if (strpos($html_content, htmlspecialchars('<<discipline_marks_mmis>>')) !== false) {
+            $co_result = $this->get_co_scholastic_mmis($standard_id, $value['id'], $format, "primary");
+            $html_content = str_replace(htmlspecialchars("<<discipline_marks_mmis>>"), $co_result['discipline'], $html_content);
+        }
+        // for 9th std format
+        if (strpos($html_content, htmlspecialchars('<<co_scholastic_marks_mmis9>>')) !== false) {
+            $co_result = $this->get_co_scholastic_mmis($standard_id, $value['id'], 151, "primary");
+            $html_content = str_replace(htmlspecialchars("<<co_scholastic_marks_mmis9>>"), $co_result['co_scholastic'], $html_content);
+        }
+        if (strpos($html_content, htmlspecialchars('<<discipline_marks_mmis9>>')) !== false) {
+            $co_result = $this->get_co_scholastic_mmis($standard_id, $value['id'], 151, "primary");
+            $html_content = str_replace(htmlspecialchars("<<discipline_marks_mmis9>>"), $co_result['discipline'], $html_content);
+        }
+        // 2024-09-11 end
+
         if (strpos($html_content, htmlspecialchars('<<optional_marks_mmiss>>')) !== false) {
             $co_result = $this->get_co_scholastic_mmis($standard_id, $value['id'], $format, "primary");
             $html_content = str_replace(htmlspecialchars("<<optional_marks_mmiss>>"), $co_result['optional'], $html_content);
@@ -446,6 +462,14 @@ class studentResultController extends Controller
             $html_content = str_replace(htmlspecialchars("<<activity_tag_marks>>"), $main_result['table'], $html_content);
         }
 
+        // 2024-09-11 MMIS std 9th co scholatic added
+        $mmisPartB9 = $this->mmisPartB9($standard_id, $value['id'], $format);
+        $html_content = str_replace(htmlspecialchars("<<part_b_scholastic>>"), $mmisPartB9, $html_content);
+
+        $skillPart9 = $this->skillPart9($standard_id, $value['id'], $format);
+        $html_content = str_replace(htmlspecialchars("<<skill_subject>>"), $skillPart9, $html_content);
+
+        // 2024-09-11 end 
         return $html_content;
         //  return $main_result;         
     }
@@ -652,6 +676,217 @@ class studentResultController extends Controller
         return $res;
 
     }
+    public function mmisPartB9($standard_id,$student_id,$format){
+        $syear = session()->get('syear');
+        $sub_institute_id = session()->get('sub_institute_id');
+        if ($format == "yearly") {
+            $extra_os = $extra_term = $extra_exam = "1=1";
+        } else {
+            $extra_os = "rce.term_id = " . $format;
+            $extra_term = "term_id = " . $format;
+            $extra_exam = 'comark.term_id=' . $format;
+        }
+        // get term_name 
+        $term_name = DB::table('academic_year')->whereRaw($extra_term)->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->get()->toArray();
+       
+        $title = "1_5";
+        if($standard_id >= 103){
+            $title = "6_10";
+        }
+        $grade_scale = DB::table('grade_master')->where('grade_name',$title)->first();
+        $query=DB::table('grade_master_data')->where('sub_institute_id',$sub_institute_id)->where('syear',$syear)->where('grade_id',$grade_scale->id ?? 0);
+        
+        $get_grade = DB::table('grade_master_data')->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear,'grade_id'=>$grade_scale->id ?? 0])->get();
+
+        // echo "<pre>";print_r($co_scholastic);exit;
+        $check_optional_subject_with_student = DB::table('student_optional_subject as sos')
+        ->select('ssm.display_name', 'sos.subject_id', 'sos.student_id', 'ssm.standard_id', 'rce.id as create_id', 'rce.title', 'rce.term_id', 'rce.standard_id', 'rem.weightage', 'rem.ExamTitle', 'rce.subject_id', 'rce.points as r_point', 'rce.con_point', 'rem.Id as ExamId', 'rce.exam_id', DB::raw('IFNULL(rm.points, 0) as points'))
+        ->join('sub_std_map as ssm', 'sos.subject_id', '=', 'ssm.subject_id')
+        ->leftJoin('result_create_exam as rce', function ($join) {
+            $join->on('rce.subject_id', '=', 'sos.subject_id')
+                ->on('rce.standard_id', '=', 'ssm.standard_id');
+        })
+        ->leftJoin('result_exam_master as rem', 'rem.Id', '=', 'rce.exam_id')
+        ->leftJoin('result_marks as rm', function ($join) use($student_id) {
+            $join->on('rm.exam_id', '=', 'rce.id')
+                ->on('rm.student_id', '=', 'sos.student_id');
+        })
+        ->where('sos.student_id', '=',  $student_id)
+        ->where('sos.sub_institute_id', '=', $sub_institute_id)
+        ->where('ssm.standard_id', '=', $standard_id)
+        ->where('sos.syear', '=', $syear)
+        ->where('ssm.elective_subject', '=', 'YES')
+        ->where('ssm.allow_grades', '!=', 'YES')
+        ->where('ssm.display_name', '!=', 'BANKING & INSURANCE')
+        ->groupBy('rem.Id', 'sos.subject_id', 'ssm.display_name')
+        ->orderBy('ssm.sort_order', 'ASC')
+        ->get();
+
+        $scho_table="";
+
+        // echo "<pre>";print_r($check_optional_subject_with_student);exit;
+        $scho_table = '<table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" cellpadding="0" border="1">
+        <thead>
+        <tr>
+        <th width="50%" style="text-center: left;"><b>Part 1-B-Scholastic Areas::</b></th>';
+
+        $grade_arr_mmis = $this->getGradeScale($standard_id, '');
+
+        $col = 1;
+        $totalMark = 0;
+        $total_term_marks = $total_sub_marks = $term_ids = [];
+        foreach ($term_name as $keys => $terms) {
+            $weightage = isset($check_optional_subject_with_student[$keys]->r_point) ? '('.$check_optional_subject_with_student[$keys]->r_point.')' : '';
+            $scho_table .= '<th style="text-align:center"><b>' . $terms->title . ' '.$weightage.'</b></th>';
+            $term_ids[] = $terms->term_id;
+            $totalMark+=isset($check_optional_subject_with_student[$keys]->r_point) ? $check_optional_subject_with_student[$keys]->r_point  : 0;
+        }
+        $scho_table .= '<th style="text-align:center"><b>Marks Obtained ('.$totalMark.')</b></th>
+        <th style="text-align:center"><b>Grade</b></th>
+        </tr>';
+
+        $scho_table .= '</tr></thead><tbody>';
+        if (!empty($check_optional_subject_with_student)) {
+            $subtotal = 0;
+            foreach ($check_optional_subject_with_student as $record) {
+                $subjectName = $record->display_name;
+                $termId = $record->term_id;
+                $points = $record->points;
+                $weigthage = $record->weightage;
+                $r_point = $record->r_point;
+                if (!isset($subjectRows[$subjectName])) {
+                    $subjectRows[$subjectName] = [];
+                }
+                if (in_array($termId, $term_ids)) {
+                    $subjectRows[$subjectName][$termId] = [$points, $weigthage,$r_point];
+                }
+            }
+            if(isset($subjectRows)){
+            $grade_arr_mmis = $this->getGradeScale($standard_id, '');
+            foreach ($subjectRows as $subjectName => $termPoints) {
+                $scho_table .= '<tr>';
+                $scho_table .= '<td>' . $subjectName . '</td>';
+                foreach ($term_ids as $term) {
+                    $obt_points = isset($termPoints[$term][0]) ? $termPoints[$term][0] : 0;
+                    $subtotal+=$obt_points;
+                    $scho_table .= '<td class="data_center">' . $obt_points . '</td>';
+                }
+                $obt_grade = $this->getGrade($grade_arr_mmis, $totalMark,$subtotal);   
+                $scho_table .= '<td style="text-align:center">'.$subtotal.'</td>
+                <td style="text-align:center">'.$obt_grade.'</td>
+                </tr>';
+            }
+        }
+        }
+        $scho_table .= '</tbody></table>';
+        return $scho_table;
+    }
+
+    public function skillPart9($standard_id,$student_id,$format){
+        $syear = session()->get('syear');
+        $sub_institute_id = session()->get('sub_institute_id');
+        if ($format == "yearly") {
+            $extra_os = $extra_term = $extra_exam = "1=1";
+        } else {
+            $extra_os = "rce.term_id = " . $format;
+            $extra_term = "term_id = " . $format;
+            $extra_exam = 'comark.term_id=' . $format;
+        }
+        // get term_name 
+        $term_name = DB::table('academic_year')->whereRaw($extra_term)->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->get()->toArray();
+       
+        $title = "1_5";
+        if($standard_id >= 103){
+            $title = "6_10";
+        }
+        $grade_scale = DB::table('grade_master')->where('grade_name',$title)->first();
+        $query=DB::table('grade_master_data')->where('sub_institute_id',$sub_institute_id)->where('syear',$syear)->where('grade_id',$grade_scale->id ?? 0);
+        
+        $get_grade = DB::table('grade_master_data')->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear,'grade_id'=>$grade_scale->id ?? 0])->get();
+
+        // echo "<pre>";print_r($co_scholastic);exit;
+        $check_optional_subject_with_student = DB::table('student_optional_subject as sos')
+        ->select('ssm.display_name', 'sos.subject_id', 'sos.student_id', 'ssm.standard_id', 'rce.id as create_id', 'rce.title', 'rce.term_id', 'rce.standard_id', 'rem.weightage', 'rem.ExamTitle', 'rce.subject_id', 'rce.points as r_point', 'rce.con_point', 'rem.Id as ExamId', 'rce.exam_id', DB::raw('IFNULL(rm.points, 0) as points'))
+        ->join('sub_std_map as ssm', 'sos.subject_id', '=', 'ssm.subject_id')
+        ->leftJoin('result_create_exam as rce', function ($join) {
+            $join->on('rce.subject_id', '=', 'sos.subject_id')
+                ->on('rce.standard_id', '=', 'ssm.standard_id');
+        })
+        ->leftJoin('result_exam_master as rem', 'rem.Id', '=', 'rce.exam_id')
+        ->leftJoin('result_marks as rm', function ($join) use($student_id) {
+            $join->on('rm.exam_id', '=', 'rce.id')
+                ->on('rm.student_id', '=', 'sos.student_id');
+        })
+        ->where('sos.student_id', '=',  $student_id)
+        ->where('sos.sub_institute_id', '=', $sub_institute_id)
+        ->where('ssm.standard_id', '=', $standard_id)
+        ->where('sos.syear', '=', $syear)
+        ->where('ssm.elective_subject', '=', 'YES')
+        ->where('ssm.allow_grades', '!=', 'YES')
+        ->where('ssm.display_name', 'BANKING & INSURANCE')
+        ->groupBy('rem.Id', 'sos.subject_id', 'ssm.display_name')
+        ->orderBy('ssm.sort_order', 'ASC')
+        ->get();
+
+        $skillTable="";
+
+        // echo "<pre>";print_r($check_optional_subject_with_student);exit;
+        $skillTable = '<table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" cellpadding="0" border="1">
+        <thead>
+       <tr>  <th width="50%" style="text-center: left;"><b>Skill Subject</b></th>';
+
+        $grade_arr_mmis = $this->getGradeScale($standard_id, '');
+
+        $col = 1;
+        $totalMark = 0;
+        $total_term_marks = $total_sub_marks = $term_ids = [];
+        foreach ($term_name as $keys => $terms) {
+            $weightage = isset($check_optional_subject_with_student[$keys]->r_point) ? '('.$check_optional_subject_with_student[$keys]->r_point.')' : '';
+            $skillTable .= '<th style="text-align:center"><b>' . $terms->title . ' '.$weightage.'</b></th>';
+            $term_ids[] = $terms->term_id;
+            $totalMark+=isset($check_optional_subject_with_student[$keys]->r_point) ? $check_optional_subject_with_student[$keys]->r_point  : 0;
+        }
+        $skillTable .= '<th style="text-align:center"><b>Marks Obtained ('.$totalMark.')</b></th>
+        <th style="text-align:center"><b>Grade</b></th>
+        </tr>';
+
+        $skillTable .= '</tr></thead><tbody>';
+        if (!empty($check_optional_subject_with_student)) {
+            $subtotal = 0;
+            foreach ($check_optional_subject_with_student as $record) {
+                $subjectName = $record->display_name;
+                $termId = $record->term_id;
+                $points = $record->points;
+                $weigthage = $record->weightage;
+                $r_point = $record->r_point;
+                if (!isset($subjectRows[$subjectName])) {
+                    $subjectRows[$subjectName] = [];
+                }
+                if (in_array($termId, $term_ids)) {
+                    $subjectRows[$subjectName][$termId] = [$points, $weigthage,$r_point];
+                }
+            }
+            if(isset($subjectRows)){
+            $grade_arr_mmis = $this->getGradeScale($standard_id, '');
+            foreach ($subjectRows as $subjectName => $termPoints) {
+                $skillTable .= '<tr>';
+                $skillTable .= '<td>' . $subjectName . '</td>';
+                foreach ($term_ids as $term) {
+                    $obt_points = isset($termPoints[$term][0]) ? $termPoints[$term][0] : 0;
+                    $subtotal+=$obt_points;
+                    $skillTable .= '<td class="data_center">' . $obt_points . '</td>';
+                }
+                $obt_grade = $this->getGrade($grade_arr_mmis, $totalMark,$subtotal);   
+                $skillTable .= '<td style="text-align:center">'.$subtotal.'</td>
+                <td style="text-align:center">'.$obt_grade.'</td>
+                </tr>';
+            }
+        }
+        }
+        $skillTable .= '</tbody></table>';
+        return $skillTable;
+    }
+
     public function get_scholastic($standard_id, $student_id, $format, $digit)
     {
 
@@ -4389,17 +4624,21 @@ private function buildDisciplineTable($decipline_data)
                 $dis_data[] = $item;
             }
         }
-        $co_scholastic = '<div style="display:block !important;margin:0px 0px 0px 20px"><div style="width:100%">
+        $co_scholastic = '<div style="display:block !important"><div style="width:100%">
             <table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" cellpadding="0" border="1">
                 <thead>
                     <tr>
                         <th  class="data_center"><b>Co-Scholastic Areas: [on a 3-point (A-C) Grading
                         Scale]
                         </b></th>';
-                    foreach ($term_name as $keys => $terms) {
-                        $co_scholastic .= '<th class="data_center '.$terms->term_id.'"><b>' . $terms->title . '</b></th>';
-                        $term_ids[] = $terms->term_id;
-                    }
+                        if(count($term_name) > 1){
+                            foreach ($term_name as $keys => $terms) {
+                                $co_scholastic .= '<th class="data_center '.$terms->term_id.'"><b>' . $terms->title . '</b></th>';
+                                $term_ids[] = $terms->term_id;
+                            }
+                        }else{
+                            $co_scholastic .= '<th class="data_center"><b>Grade</b></th>';
+                        }
                     '</tr>  
                 </thead>
                 <tbody>';
@@ -4425,19 +4664,23 @@ private function buildDisciplineTable($decipline_data)
         }
 
         $co_scholastic .= '</tbody></table></div>';
-
+        $disciplineTable='';
         // for disipline 
         if($standard_id<=106 && isset($dis_data)){
-        $co_scholastic .= '<div style="width:100%;margin:20px 0px 0px 0px">
+        $disciplineTable .= '<div style="width:100%">
             <table class="aca-year" style="width:100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" cellpadding="0" border="1">
                 <thead>
                     <tr>
                         <th  class="data_center"><b>Discipline : [on a 3-point (A-C) Grading Scale]
                         </b></th>';
-                    foreach ($term_name as $keys => $terms) {
-                        $co_scholastic .= '<th class="data_center '.$terms->term_id.'"><b>' . $terms->title . '</b></th>';
-                        $term_ids[] = $terms->term_id;
-                    }
+                        if(count($term_name) > 1){
+                            foreach ($term_name as $keys => $terms) {
+                                $disciplineTable .= '<th class="data_center '.$terms->term_id.'"><b>' . $terms->title . '</b></th>';
+                                $term_ids[] = $terms->term_id;
+                            }
+                        }else{
+                            $disciplineTable .= '<th class="data_center"><b>Grade</b></th>';
+                        }
                     '</tr>  
                 </thead>
                 <tbody>';
@@ -4450,19 +4693,19 @@ private function buildDisciplineTable($decipline_data)
             }
 
             foreach ($groupedData as $childTitle => $termGrades) {
-                $co_scholastic .= '<tr>';
-                $co_scholastic .= '<td class="'.$value->co_scholastic_id.'">Discipline: Term-1 [on a 3-point (A-C) Grading Scale]</td>';
+                $disciplineTable .= '<tr>';
+                $disciplineTable .= '<td class="'.$value->co_scholastic_id.'">Discipline: Term-1 [on a 3-point (A-C) Grading Scale]</td>';
 
                 foreach ($term_name as $keys => $terms) {
                     $grade = $termGrades[$terms->term_id] ?? '-';
-                    $co_scholastic .= '<td class="data_center co_term-' . $terms->term_id . ' mterm-' . $terms->term_id . ' ">' . $grade . '</td>';
+                    $disciplineTable .= '<td class="data_center co_term-' . $terms->term_id . ' mterm-' . $terms->term_id . ' ">' . $grade . '</td>';
                 }
 
-                $co_scholastic .= '</tr>';
+                $disciplineTable .= '</tr>';
             }
         }
 
-        $co_scholastic .= '</tbody></table></div>';
+        $disciplineTable .= '</tbody></table></div>';
         }
          $co_scholastic .= '</div>';
 
@@ -4553,6 +4796,7 @@ private function buildDisciplineTable($decipline_data)
     }
 
         $res['co_scholastic'] = $co_scholastic ?? '';
+        $res['discipline'] = $disciplineTable ?? '';
         $res['optional'] = $scho_table ?? '';
         return $res;
     }

@@ -825,7 +825,9 @@ datalist {
                                                     <th>{{App\Helpers\get_string('studentname','request')}}</th>
                                                     <th>{{App\Helpers\get_string('standard','request')}}</th>
                                                     <th>{{App\Helpers\get_string('division','request')}}</th>
-                                                    <th class="text-left">Mobile</th>
+                                                    <th>Mobile</th>
+                                                    <th>{{ App\Helpers\get_string('studentmobile','request')}}</th>
+                                                    <th class="text-left">Mother Mobile</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -841,6 +843,8 @@ datalist {
                                                     <td>{{$pvalue['std_name']}}</td>
                                                     <td>{{$pvalue['div_name']}}</td>
                                                     <td>{{$pvalue['mobile']}}</td>
+                                                    <td>{{$pvalue['student_mobile']}}</td>
+                                                    <td>{{$pvalue['mother_mobile']}}</td>
                                                 </tr>
                                             @php
                                             $j++;

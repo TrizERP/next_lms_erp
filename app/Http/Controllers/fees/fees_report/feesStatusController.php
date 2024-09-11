@@ -97,9 +97,17 @@ class feesStatusController extends Controller
         foreach ($feesPaidRaw as $fid => $fvalue) {
             foreach ($fees_head as $head => $headDisplay) {
                 if (isset($feesPaid[$fvalue->student_id][$fvalue->term_id][$headDisplay])) {
-                    $feesPaid[$fvalue->student_id][$fvalue->term_id][$headDisplay] += $fvalue->$headDisplay;
+                    if(isset($fvalue->$headDisplay)){
+                        $feesPaid[$fvalue->student_id][$fvalue->term_id][$headDisplay] += $fvalue->$headDisplay;
+                    }else{
+                        $feesPaid[$fvalue->student_id][$fvalue->term_id][$headDisplay] += 0;
+                    }
                 } else {
-                    $feesPaid[$fvalue->student_id][$fvalue->term_id][$headDisplay] = $fvalue->$headDisplay;
+                    if(isset($fvalue->$headDisplay)){
+                        $feesPaid[$fvalue->student_id][$fvalue->term_id][$headDisplay] = $fvalue->$headDisplay;
+                    }else{
+                        $feesPaid[$fvalue->student_id][$fvalue->term_id][$headDisplay] = 0;
+                    }
                 }
             }
         }
@@ -152,9 +160,10 @@ class feesStatusController extends Controller
      */
     public function ajaxRemainFeesSMSsend(Request $request)
     {
+        // return $request;exit;
         if ($request->ajax()) {
             $studentsData = $request->studentsData;
-
+            // echo "<pre>";print_r($studentsData);exit;
             $sub_institute_id = session()->get('sub_institute_id');
             $message_sent = [];
             foreach ($studentsData as $student) {
@@ -195,12 +204,9 @@ class feesStatusController extends Controller
         //$sub_institute_id = session()->get('sub_institute_id');
         $data = manage_sms_api::where(['sub_institute_id' => $sub_institute_id])
             ->get()->first();
-        // ->toArray();
+     
         $isError = 0;
-        // if($data){
-
-        //     echo '<pre>'; print_r($data); exit;
-        // }
+        
         if ($data) {
             $data = $data->toArray();
             $isError = 0;
