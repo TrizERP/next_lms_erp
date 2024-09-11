@@ -3121,8 +3121,8 @@ while ($current_date <= $post_end_date) {
         $extra_term = $extra_exam = "1=1";
         $att_term = "atd.term_id = 2";
         if ($format != "yearly") {
-            $extra_term = "term_id = 1";
-            $extra_exam = "rce.term_id = 1";
+            $extra_term = "term_id = 2";
+            $extra_exam = "rce.term_id = 2";
             $att_term = "atd.term_id = 1";
         }
 
@@ -3167,7 +3167,8 @@ while ($current_date <= $post_end_date) {
                         $printed_titles = []; // Array to keep track of printed titles
                         foreach ($exam_name as $key => $value) {
                             if (!in_array($value->title, $printed_titles) && $value->ExamTitle == 'Periodic Test') {
-                                $table .= '<th class="data_center"><b>' . $value->title . '<br>(' . $value->points . ')</b></th>';
+                                //$table .= '<th class="data_center"><b>' . $value->title . '<br>(' . $value->points . ')</b></th>';
+                                $table .= '<th class="data_center"><b>' . $value->title . '<br>(' . $value->con_point . ')</b></th>';
                                 $printed_titles[] = $value->title; // Add the title to printed_titles array
                                 $i++;
                             }
@@ -3205,7 +3206,8 @@ while ($current_date <= $post_end_date) {
                         if($title->ExamTitle=='Periodic Test'){
                             $arr = $title->id;
                             $title_exam[$arr][] = $title->title;
-                            $weightage = $title->points;
+                            //$weightage = $title->points;
+                            $weightage = $title->con_point;
                         }else{
                             $arr = $title->exam_id;
                             $title_exam[$arr][] = $title->ExamTitle;
