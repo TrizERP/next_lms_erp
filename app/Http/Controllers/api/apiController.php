@@ -237,10 +237,11 @@ class apiController extends Controller
                     "tblstudent.mobile"         => $_REQUEST['mobile'],
                     "tblstudent.mother_mobile"  => $_REQUEST['mobile'],
                     "tblstudent.student_mobile" => $_REQUEST['mobile'],
+                    "tblstudent.otp" => $_REQUEST['otp']
                 ])
                 ->where('tblstudent.sub_institute_id', '!=', 254)
                 ->where('tblstudent.sub_institute_id', '!=', 195)
-                ->where(["tblstudent.otp" => $_REQUEST['otp']])
+                //->where(["tblstudent.otp" => $_REQUEST['otp']])
                 ->where('tblstudent_enrollment.end_date', NULL)
                 ->orderBy('tblstudent_enrollment.syear','DESC')              
                 ->get()
@@ -301,7 +302,7 @@ class apiController extends Controller
                     }
                 }        
             }
-            // echo "<pre>";print_r($studentData);exit;
+            // echo "<pre>";print_r($data);exit;
             // end by saroj uma 08/03/024
             
             $send_data = [];
@@ -441,8 +442,9 @@ public function studentData($is_exist,$request,$student_id){
             "tblstudent.mobile" => $_REQUEST['mobile'],
             "tblstudent.mother_mobile" => $_REQUEST['mobile'],
             "tblstudent.student_mobile" => $_REQUEST['mobile'],
+            "tblstudent.otp" => $_REQUEST['otp']
         ])
-        ->where(["tblstudent.otp" => $_REQUEST['otp']])
+        //->where(["tblstudent.otp" => $_REQUEST['otp']])
         ->where('tblstudent_enrollment.end_date', NULL)
         ->whereIn('tblstudent.id',$student_id);
 

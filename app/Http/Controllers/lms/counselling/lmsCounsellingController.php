@@ -931,6 +931,8 @@ class lmsCounsellingController extends Controller
                 'oic.enrollment',
                 'oic.placement'
             )
+            ->inRandomOrder()
+            ->limit(20)
             ->get();
 
         // Group courses by institute
@@ -995,6 +997,8 @@ class lmsCounsellingController extends Controller
         $courses = DB::table('onet_institute_courses as oic')
         ->selectRaw('GROUP_CONCAT(DISTINCT oic.institute_id) as institute_id, oic.aicte_id, oic.college_name, oic.description, oic.programme, oic.university, oic.course_level, oic.course_name, oic.course_type, oic.course_fees, oic.intake, oic.enrollment, oic.placement')
         ->groupBy('oic.course_name')
+        ->inRandomOrder()
+        ->limit(20)
         ->get();
 
     // Initialize an empty array to store the final result
@@ -1070,11 +1074,11 @@ class lmsCounsellingController extends Controller
         $response = $sectors->groupBy('title')->map(function ($items) {
             return [
                 'title' => $items->first()->title,
-                'image' => $items->first()->image,
                 'data' => $items->map(function ($item) {
                     return [
                         'name' => $item->name,
                         'description' => $item->description,
+                        'image' => $item->image,
                         'education' => $item->education,
                         'city' => $item->city,
                         'state' => $item->state,
