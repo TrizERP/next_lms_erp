@@ -717,12 +717,24 @@ class tblstudentController extends Controller
                 $join->whereRaw("d.id = se.section_id AND d.sub_institute_id = se.sub_institute_id");
             })
             ->selectRaw("s.id,s.enrollment_no,concat_ws(' ',s.first_name,s.middle_name,s.last_name) as student_name,
-                st.name as std_name,d.name as div_name,s.mobile")
+                st.name as std_name,d.name as div_name,s.mobile,s.student_mobile,s.mother_mobile")
             ->where(function ($q) use ($student_data) {
                 if (!empty($student_data)) {
-                    $q->where('s.mobile', $student_data->mobile)
-                        ->orWhere('s.mother_mobile', $student_data->mobile)
-                        ->orWhere('s.student_mobile', $student_data->mobile);
+                    // $q->where('s.mobile', $student_data->mobile)
+                    //     ->orWhere('s.mother_mobile', $student_data->mobile)
+                    //     ->orWhere('s.student_mobile', $student_data->mobile)
+                    //2024-09-10 added match mobile
+                    if(isset($student_data->mobile) && $student_data->mobile!='' && $student_data->mobile!=null){
+                        $q->whereRaw('s.mobile="'.$student_data->mobile.'" OR s.student_mobile="'.$student_data->mobile.'" OR s.mother_mobile="'.$student_data->mobile.'"');
+                    }
+                    //2024-09-10 added match student mobile
+                    if(isset($student_data->student_mobile) && $student_data->student_mobile!='' && $student_data->student_mobile!=null){
+                        $q->whereRaw('s.mobile="'.$student_data->student_mobile.'" OR s.student_mobile="'.$student_data->student_mobile.'" OR s.mother_mobile="'.$student_data->student_mobile.'"');
+                    }
+                    //2024-09-10 added match monther mobile
+                    if(isset($student_data->mother_mobile) && $student_data->mother_mobile!='' && $student_data->mother_mobile!=null){
+                        $q->whereRaw('s.mobile="'.$student_data->mother_mobile.'" OR s.student_mobile="'.$student_data->mother_mobile.'" OR s.mother_mobile="'.$student_data->mother_mobile.'"');
+                    }
                 }
             })->where('s.sub_institute_id', $sub_institute_id)
             ->where('s.id', '!=', $id)
