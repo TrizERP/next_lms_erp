@@ -64,6 +64,7 @@
                                             @foreach ($data['data'] as $key => $quesdata)
                                             @php
                                                 $map_type = explode(',', $quesdata->type_name);
+                                                $map_value= explode(',', $quesdata->value_name);
                                                 $j =1;
                                             @endphp
                                                 <tr>
@@ -78,11 +79,16 @@
                                                     <td>{!! $quesdata->question_title !!}</td>
                                                     <td>{{ ucwords($quesdata->question_type) }}</td>
                                                     <td>
-                                                    @foreach($map_type as $map)
-                                                    @if(!empty($map))
-                                                    {{ $j++.")".$map }}<br>
-                                                    @endif
-                                                    @endforeach
+                                                    <ul>
+                                                        @foreach($map_value as $index => $value)
+                                                            @if(!empty($value))
+                                                                {{$j++.")".$value."-"}}
+                                                                @if(isset($map_type[$index]))
+                                                                    {{$map_type[$index]}}<li> </li>
+                                                                @endif
+                                                            @endif
+                                                        @endforeach
+                                                    </ul>
                                                     </td>
                                                     <td>
                                                         @if ($quesdata->multiple_answer == 1)

@@ -124,7 +124,7 @@ class questionmasterController extends Controller
         $res['message'] = "SUCCESS";
         $res['data'] = $data['questionmaster_data'];
         $res['breadcrum_data'] = $data['breadcrum_data'];
-        // echo "<pre>";print_r($data['questionmaster_data']);exit;
+        //echo "<pre>";print_r($data['questionmaster_data']);exit;
         return is_mobile($type, 'lms/show_chapter_questionmaster', $res, "view");
     }
 
@@ -149,6 +149,7 @@ class questionmasterController extends Controller
             'standard.name as standard_name',
             'academic_section.title as grade_name', 'subject_name', 'chapter_name', 'question_type'
             ,DB::raw('group_concat(t1.name) as type_name'),
+            DB::raw('group_concat(t.name) as value_name'), // Mapping values
             DB::raw('IFNULL(loea.question_id,"0") as attempt_question')
             // , 't.id as type_id'
             // , 't1.name as value_name', 't1.id as value_id'
@@ -158,9 +159,9 @@ class questionmasterController extends Controller
             ->join('subject', 'subject.id', '=', 'lms_question_master.subject_id')
             ->join('chapter_master as cm', 'cm.id', '=', 'lms_question_master.chapter_id')
             ->join('question_type_master as tm', 'tm.id', '=', 'lms_question_master.question_type_id')
-            ->LeftJoin('lms_question_mapping as ltm', 'ltm.questionmaster_id', '=', 'lms_question_master.id')            
-            ->LeftJoin('lms_mapping_type as t', 't.id', 'ltm.mapping_type_id')
-            ->LeftJoin('lms_mapping_type as t1', function($query) {
+            ->LeftJoin('lms_question_mapping as ltm', 'ltm.questionmaster_id', '=', 'lms_question_master.id')                       
+            ->leftJoin('lms_mapping_type as t', 't.id', 'ltm.mapping_type_id')
+            ->leftJoin('lms_mapping_type as t1', function($query) {
                 $query->on('t1.id', 'ltm.mapping_value_id');
             })
             ->leftJoin('lms_online_exam_answer as loea','loea.question_id','=','lms_question_master.id')
@@ -198,8 +199,10 @@ class questionmasterController extends Controller
             $where = "and (topic_id = '".$request->get('topic_id')."' or topic_id = 0)";
         }
 
-        $lms_mapping_type = DB::select("SELECT * FROM lms_mapping_type WHERE status=1 AND parent_id=0 AND
-                                (globally=1 OR chapter_id = '".$request->get('chapter_id')."') $where");
+        $lms_mapping_type = DB::select("SELECT t.*, t1.name as value_name FROM lms_mapping_type as t
+        LEFT JOIN lms_mapping_type as t1 ON t1.id = ltm.mapping_value_id
+        WHERE t.status=1 AND t.parent_id=0 AND
+        (t.globally=1 OR t.chapter_id = '".$request->get('chapter_id')."') $where");
         $lms_mapping_type = json_decode(json_encode($lms_mapping_type), true);
         $data['lms_mapping_type'] = $lms_mapping_type;
 
