@@ -494,6 +494,7 @@ Route::any('python_timetable',[AJAXController::class, 'pythonTimetable'])->name(
 
 // to transfer files to digital ocean
 Route::post('transferDocs', [oldDocumentTransfer::class, 'storeImagesToDigitalOcean']);
+Route::get('convertDoc',[oldDocumentTransfer::class, 'ConvertBinaryData']);
 Route::get('transport_Onboarding', [tourController::class, 'transportOnboarding'])->name('transportOnboarding');
 Route::match(['get', 'post'], '/botman', 'App\Http\Controllers\BotManController@handle');
 // 03-06-24
