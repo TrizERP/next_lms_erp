@@ -85,7 +85,7 @@ class oldDocumentTransfer extends Controller
 
         // // Fetch the file content from the given URL
         // $fileContents = file_get_contents($url);
-        $filePath = public_path('old_to_new/doc_transfer/converted_json.json');
+        $filePath = $_SERVER['DOCUMENT_ROOT'].'converted_json.json';
           // Check if the file exists
           if (!file_exists($filePath)) {
             return response()->json(['error' => 'File not found'], 404);
