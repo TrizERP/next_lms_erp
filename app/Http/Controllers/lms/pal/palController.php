@@ -82,11 +82,29 @@ class palController extends Controller
         $command = "python3 /home/pal/pal.py $sub_institute_id $syear $standard_id $subject_id $chapter_id $enrollment_no";
         $getLists = shell_exec($command);
         $questionList=json_decode($getLists,true);
-        // echo "<pre>";print_r($questionList);exit;
+        // echo "<pre>";print_r($getLists);exit;
 
         // $questionList = lmsQuestionMasterModel::where(['sub_institute_id'=>$sub_institute_id,'standard_id'=>$standard_id,'subject_id'=>$subject_id,'chapter_id'=>$chapter_id])->take(10)->orderBy('id','DESC')->get()->toArray();
         $answer=[];
         $existQusetion = [];
+        if(empty($questionList)){
+            // $res['status_code'] = 0;
+            // $res['message'] = 'Questions Not Found';
+            // return is_mobile($type, 'pal.index', $res, "redirect");exit;       
+            $randomQuestions = DB::table('lms_question_master')
+                ->where('sub_institute_id', $sub_institute_id)
+                ->where('standard_id',$request->standard_id)
+                ->where('subject_id',$request->subject_id)
+                ->where('chapter_id',$request->chapter_id)
+                ->inRandomOrder()
+                ->take(10)
+                ->get()->toArray();
+                foreach($randomQuestions as $k => $v){
+                    $questionList[$k]['question_id'] = $v->id;
+                    $questionList[$k]['question_text'] = $v->question_title;
+                }
+        }
+        // echo "<pre>";print_r($questionList);exit;
 
         if(!empty($questionList)){
         foreach ($questionList as $key => $val) {
@@ -104,13 +122,13 @@ class palController extends Controller
             }
         }
         // echo "<pre>";print_r($answer);exit;
-    }
-    if(empty($questionList)){
+    }else{
         $res['status_code'] = 0;
         $res['message'] = 'Questions Not Found';
-        return is_mobile($type, 'pal.index', $res, "redirect");exit;          
+        return is_mobile($type, 'pal.index', $res, "redirect");exit;      
     }
-        // echo "<pre>";print_r($answer);exit;
+    
+        // echo "<pre>";print_r($questionList);exit;
         
         $res['question_arr'] = $questionList;
         $res['answer_arr'] = $answer;        
