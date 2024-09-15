@@ -180,23 +180,29 @@
                      <div class="collapse CurrentTable  {{$loop->first ? 'show' : '' }}" id="collapseExample2_{{$sub_id}}" data-val="collapseExample2_{{$sub_id}}">
                         <div class="card card-body p-4" style="height:316px;overflow-y:scroll;padding:10px !important">
                            <h4>{{$value['subjectdata']}}</h4>
-                           @if(isset($value['chapterdata']))
+                           @if(isset($value['chapterdata'][$sub_id]))
                            <table class="table table-borderless table-responsive" style="overflow-y:visible">
                               <thead>
                               <tr>
                                  <th style="width:70%">chapter</th>
-                                 <th style="width:10%">Part 1</th>
-                                 <th style="width:10%">Part 2</th>
-                                 <th style="width:10%">Part 3</th>
+                                 <th style="width:10%">Total</th>
+                                 <th style="width:10%">Obtain</th>
+                                 <th style="width:10%">Percentage</th>
                               </tr>
                               </thead>
                               <tbody>
-                              @foreach($value['chapterdata'] as $ch=>$chVal)
-                              <tr class="trsub"  onclick="activeTr('tr{{$ch}}',{{$ch}})" id="tr{{$ch}}" data-val="{{$ch}}">
-                                 <td style="width:70%" >{{$chVal['title']}}</td>
-                                 <td style="width:10%" >80%</td>
-                                 <td style="width:10%" >20%</td>
-                                 <td style="width:10%"  >0%</td>
+                              @foreach($value['chapterdata'][$sub_id] as $ch=>$chVal)
+                              @php 
+                              $chtotal = (isset($chVal['totalmarks'])) ? $chVal['totalmarks'] : 0;
+                              $chobt = (isset($chVal['totalobtain'])) ? $chVal['totalobtain'] : 0;
+                              $chPer = ($chtotal!=0) ? ($chobt * 100) / $chtotal : 0;
+                              $i = [1=>'#FDEE21',2=>'#FDEE21',3=>'#FDEE21',4=>'#8A8A8A',5=>'#8A8A8A'];
+                              @endphp
+                              <tr class="trsub"  onclick="activeTr('tr{{$ch}}',{{$ch}},{{$sub_id}})" id="tr{{$ch}}" data-val="{{$ch}}">
+                                 <td style="width:70%">{{isset($chVal['title']) ? $chVal['title'] : '-'}}</td>
+                                 <td style="width:10%">{{$chtotal}}</td>
+                                 <td style="width:10%">{{$chobt}}</td>
+                                 <td style="width:10%" >{{$chPer}}</td>
                               </tr>
                               @endforeach
                               </tbody>
@@ -214,11 +220,11 @@
                   @if(!empty($data['selectedCurrentData']['currentdata']['subjectdata']) && isset($data['selectedCurrentData']['currentdata']['subjectdata']))
                   @foreach($data['selectedCurrentData']['currentdata']['subjectdata'] as $sub_id=>$value)   
                   <!-- get chapter data  -->
-                  @if(isset($value['chapterdata']))
-                  @foreach($value['chapterdata'] as $ch=>$chVal)
-                  <div class="chapdata" id="collapseExample3_{{$ch}}" style="padding-top:0px !important;margin:0px 33px;">
+                  @if(isset($value['chapterdata'][$sub_id]))
+                  @foreach($value['chapterdata'][$sub_id] as $ch=>$chVal)
+                  <div class="chapdata chapdata_{{$sub_id}}_{{$ch}}" id="collapseExample3_{{$sub_id}}_{{$ch}}" style="padding-top:0px !important;margin:0px 33px;">
                      <div class="chapter_title">
-                        <h4>{{$chVal['title']}}</h4>
+                        <h4>{{isset($chVal['title']) ? $chVal['title'] : '-'}}</h4>
                      </div>
                      <div class="knowledgeDiv">
                         <div class="knowledge">
@@ -304,13 +310,13 @@
             <div class="cardHead">
                <h4>Recommendation</h4>
             </div>
-            <div class="cardData" style="padding:10px 10px;">
+            <div class="cardData" style="padding:10px 10px;overflow-y: scroll;">
             @if(!empty($data['selectedCurrentData']['currentdata']['subjectdata']) && isset($data['selectedCurrentData']['currentdata']['subjectdata']))
                   @foreach($data['selectedCurrentData']['currentdata']['subjectdata'] as $sub_id=>$value)   
                   <!-- get recommendation data data  -->
-                     @if(isset($value['chapterdata']))
-                     @foreach($value['chapterdata'] as $ch=>$chVal)
-                        <div class="recommendation" id="recommendation_{{$ch}}">
+                     @if(isset($value['chapterdata'][$sub_id]))
+                     @foreach($value['chapterdata'][$sub_id] as $ch=>$chVal)
+                        <div class="recommendation" id="recommendation_{{$sub_id}}_{{$ch}}">
                            @if(isset($chVal['recommendation']))
                               @foreach($chVal['recommendation'] as $rkey => $rval)
                               <div class="recommendationDiv">
@@ -346,12 +352,14 @@
                   @if(!empty($data['selectedCurrentData']['currentdata']['subjectdata']) && isset($data['selectedCurrentData']['currentdata']['subjectdata']))
                      @foreach($data['selectedCurrentData']['currentdata']['subjectdata'] as $sub_id=>$value)   
                      <!-- get recommendation data data  -->
-                        @if(isset($value['chapterdata']))
-                        @foreach($value['chapterdata'] as $ch=>$chVal)  
+                        @if(isset($value['chapterdata'][$sub_id]))
+                        @foreach($value['chapterdata'][$sub_id] as $ch=>$chVal)  
                            @if(!empty($chVal['chapterprogress']))
                               @foreach($chVal['chapterprogress'] as $chp=>$chpVal)  
                                     <!-- get student percentage wise -->
-                                    @php $noPer= $per10=$per20 = $per40 = $per60 = $per80 = [] @endphp
+                                    @php 
+                                       $noPer = $per10=$per20 = $per40 = $per60 = $per80 = [];
+                                    @endphp
                                        @if(isset($chpVal['students']))
                                           @foreach($chpVal['students'] as $studKey=>$studVal)  
                                           @php 
@@ -369,16 +377,19 @@
                                                 $per20[]=$studVal['photo'];
                                              }else if($chPer > 10){
                                                 $per10[]=$studVal['photo'];
-                                             }else{
-                                                $noPer[]=$studVal['photo'];
                                              }
                                           @endphp
                                           @endforeach 
                                        @endif
-                                    <div class="curveData" id="curveData_{{$ch}}">
+                                    <div class="curveData" id="curveData_{{$sub_id}}_{{$ch}}">
                                        <div class="d-flex">
                                        <!-- img div -->
                                           <div class="d1" style="width:80%">
+                                             @php
+                                             if(empty($per80) && empty($per60) && empty($per40) && empty($per20) && empty($per10)){
+                                                $noPer[]="https://erp.triz.co.in/storage/student/".$data['studentData']->image;
+                                             }
+                                             @endphp
 
                                              <div class="node1" style="position: absolute; left: 0%;top: 50%;">
                                                 <div class="studImg">
@@ -485,13 +496,13 @@
                   @if(!empty($data['selectedCurrentData']['currentdata']['subjectdata']) && isset($data['selectedCurrentData']['currentdata']['subjectdata']))
                      @foreach($data['selectedCurrentData']['currentdata']['subjectdata'] as $sub_id=>$value)   
                      <!-- get recommendation data data  -->
-                        @if(isset($value['chapterdata']))
-                        @foreach($value['chapterdata'] as $ch=>$chVal)
-                        <div class="rankData" id="rankData_{{$ch}}" style="border-left:1px solid #ddd">
+                        @if(isset($value['chapterdata'][$sub_id]))
+                        @foreach($value['chapterdata'][$sub_id] as $ch=>$chVal)
+                        <div class="rankData" id="rankData_{{$sub_id}}_{{$ch}}" style="border-left:1px solid #ddd">
                         <div class="jursey">
                            <div class="rankContainer">
                               <img class="rankImg" src="{{asset('/admin_dep/images/chapterRank.png')}}" alt="chapterRank">
-                              <h4 class="rankText">{{($chVal['chapterrank']) ? $chVal['chapterrank'] : 0 }}</h4>
+                              <h4 class="rankText">{{ isset($chVal['chapterrank']) ? $chVal['chapterrank'] : 0 }}</h4>
                            </div>
                         </div>
 
@@ -532,16 +543,16 @@
             var ch = $firstRow.attr('data-val');
 
             $('.chapdata').hide();
-            $('#collapseExample3_'+ch).show();
+            $('#collapseExample3_'+divId+'_'+ch).show();
 
             $('.recommendation').hide();
-            $('#recommendation_'+ch).show();
+            $('#recommendation_'+divId+'_'+ch).show();
 
             $('.curveData').hide();
-            $('#curveData_'+ch).show();
+            $('#curveData_'+divId+'_'+ch).show();
 
             $('.rankData').hide();
-            $('#rankData_'+ch).show();
+            $('#rankData_'+divId+'_'+ch).show();
          }else{
             $('.chapdata').hide();
             $('.recommendation').hide();
@@ -603,17 +614,17 @@ function currentCircle(sub){
       $firstRow.toggleClass('activeChapter');
       var ch = $firstRow.attr('data-val');
 
-      $('.chapdata').hide();
-      $('#collapseExample3_'+ch).show();
+      $('.chapdata'+sub+'_'+ch).hide();
+      $('#collapseExample3_'+sub+'_'+ch).show();
 
       $('.recommendation').hide();
-            $('#recommendation_'+ch).show();
+            $('#recommendation_'+sub+'_'+ch).show();
 
             $('.curveData').hide();
-            $('#curveData_'+ch).show();
+            $('#curveData_'+sub+'_'+ch).show();
 
             $('.rankData').hide();
-            $('#rankData_'+ch).show();
+            $('#rankData_'+sub+'_'+ch).show();
 
    } else {
       console.log("No first row found in table.");
@@ -621,17 +632,17 @@ function currentCircle(sub){
   
 }
 
-   function activeTr(trsub,ch_id){
+   function activeTr(trsub,ch_id,sub_id){
         $('.trsub').removeClass('activeChapter');
        $('#'+trsub).toggleClass('activeChapter');
        $('.chapdata').hide();
        $('.recommendation').hide();
        $('.rankData').hide();
        $('.curveData').hide();
-       $('#collapseExample3_'+ch_id).show();
-       $('#recommendation_'+ch_id).show();
-       $('#rankData_'+ch_id).show();
-       $('#curveData_'+ch_id).show();
+       $('#collapseExample3_'+sub_id+'_'+ch_id).show();
+       $('#recommendation_'+sub_id+'_'+ch_id).show();
+       $('#rankData_'+sub_id+'_'+ch_id).show();
+       $('#curveData_'+sub_id+'_'+ch_id).show();
        
    }
 </script>

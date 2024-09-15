@@ -931,6 +931,8 @@ class lmsCounsellingController extends Controller
                 'oic.enrollment',
                 'oic.placement'
             )
+            ->inRandomOrder()
+            ->limit(20)
             ->get();
 
         // Group courses by institute
@@ -995,6 +997,8 @@ class lmsCounsellingController extends Controller
         $courses = DB::table('onet_institute_courses as oic')
         ->selectRaw('GROUP_CONCAT(DISTINCT oic.institute_id) as institute_id, oic.aicte_id, oic.college_name, oic.description, oic.programme, oic.university, oic.course_level, oic.course_name, oic.course_type, oic.course_fees, oic.intake, oic.enrollment, oic.placement')
         ->groupBy('oic.course_name')
+        ->inRandomOrder()
+        ->limit(20)
         ->get();
 
     // Initialize an empty array to store the final result
@@ -1070,11 +1074,11 @@ class lmsCounsellingController extends Controller
         $response = $sectors->groupBy('title')->map(function ($items) {
             return [
                 'title' => $items->first()->title,
-                'image' => $items->first()->image,
                 'data' => $items->map(function ($item) {
                     return [
                         'name' => $item->name,
                         'description' => $item->description,
+                        'image' => $item->image,
                         'education' => $item->education,
                         'city' => $item->city,
                         'state' => $item->state,
@@ -1298,6 +1302,83 @@ class lmsCounsellingController extends Controller
                 $errorMessage = $response->body();
                 return response()->json(['error' => $errorMessage], $statusCode); // Return the error message with status code
             }
+        } catch (RequestException $exception) {
+            $errorMessage = $exception->getMessage();
+            return response()->json(['error' => $errorMessage], 500); // Return the exception message with a 500 status code
+        }
+    }
+    public function matchProfile(Request $request)
+    {
+        try {
+            $response = [
+            "interest_profile" => [
+                [
+                    "Realistic" => 25,
+                    "Investigative" => 40,
+                    "Artistic" => 20,
+                    "Social" => 35,
+                    "Enterprising" => 24,
+                    "Conventional" => 35,
+                    "job_zone" => "1",
+                ]
+            ],
+            "exist_student_profile" => [
+                [
+                    "student_id" => 97382,
+                    "name" => "Evaan Rajesh Rafaliya",
+                    "data" => [
+                        [
+                            "standard" => 8,
+                            "interests" => [
+                                ["type" => "Interests", "element_id" => "1.B.1.a", "name" => "Realistic"],
+                                ["type" => "Interests", "element_id" => "1.B.1.b", "name" => "Investigative"],
+                                ["type" => "Interests", "element_id" => "1.B.1.c", "name" => "Artistic"],
+                            ],
+                            "basic_skills" => [
+                                ["type" => "Skills", "element_id" => "2.A.1.a", "name" => "Reading Comprehension"],
+                                ["type" => "Skills", "element_id" => "2.A.1.b", "name" => "Active Listening"],
+                                ["type" => "Skills", "element_id" => "2.A.1.c", "name" => "Writing"],
+                            ],
+                            "knowledge" => [
+                                ["type" => "Knowledge", "element_id" => "2.C.1.a", "name" => "Administration and Management"],
+                                ["type" => "Knowledge", "element_id" => "2.C.1.b", "name" => "Administrative"],
+                                ["type" => "Knowledge", "element_id" => "2.C.1.c", "name" => "Economics and Accounting"],
+                            ],
+                            "abilities" => [
+                                ["type" => "Abilities", "element_id" => "1.A.1.a.1", "name" => "Oral Comprehension"],
+                                ["type" => "Abilities", "element_id" => "1.A.1.a.3", "name" => "Oral Expression"],
+                                ["type" => "Abilities", "element_id" => "1.A.1.a.2", "name" => "Written Comprehension"],
+                            ]
+                        ],
+                        [
+                            "standard" => 7,
+                            "interests" => [
+                                ["type" => "Interests", "element_id" => "1.B.1.a", "name" => "Realistic"],
+                                ["type" => "Interests", "element_id" => "1.B.1.b", "name" => "Investigative"],
+                                ["type" => "Interests", "element_id" => "1.B.1.c", "name" => "Artistic"],
+                            ],
+                            "basic_skills" => [
+                                ["type" => "Skills", "element_id" => "2.A.1.a", "name" => "Reading Comprehension"],
+                                ["type" => "Skills", "element_id" => "2.A.1.b", "name" => "Active Listening"],
+                                ["type" => "Skills", "element_id" => "2.A.1.c", "name" => "Writing"],
+                            ],
+                            "knowledge" => [
+                                ["type" => "Knowledge", "element_id" => "2.C.1.a", "name" => "Administration and Management"],
+                                ["type" => "Knowledge", "element_id" => "2.C.1.b", "name" => "Administrative"],
+                                ["type" => "Knowledge", "element_id" => "2.C.1.c", "name" => "Economics and Accounting"],
+                            ],
+                            "abilities" => [
+                                ["type" => "Abilities", "element_id" => "1.A.1.a.1", "name" => "Oral Comprehension"],
+                                ["type" => "Abilities", "element_id" => "1.A.1.a.3", "name" => "Oral Expression"],
+                                ["type" => "Abilities", "element_id" => "1.A.1.a.2", "name" => "Written Comprehension"],
+                            ]
+                        ],
+                        // Add the same structure for other standards as per the example provided
+                    ]
+                ]
+            ]
+        ];
+        return response()->json($response);
         } catch (RequestException $exception) {
             $errorMessage = $exception->getMessage();
             return response()->json(['error' => $errorMessage], 500); // Return the exception message with a 500 status code
