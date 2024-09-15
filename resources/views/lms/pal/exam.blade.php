@@ -89,7 +89,7 @@ html {
                                                 <i class="mdi mdi-alert-circle-outline"></i>
                                             </a> -->
                                             <div class="quiz-title">{!!$quesarr['question_text']!!}</div>
-                                          
+                                          <input type="hidden" name="interestValue[{{$quesarr['question_id']}}]" id="interest_{{$quesarr['question_id']}}">
                                             <div class="quiz-option">
                                                  @if(isset($data['answer_arr'][$quesarr['question_id']]))                     
                                                     @foreach($data['answer_arr'][$quesarr['question_id']] as $ansid => $ansarr)
@@ -160,8 +160,29 @@ html {
 @include('includes.lmsfooterJs')
 <script type="text/javascript">
 $(document).ready(function(){
-    $('[data-toggle="tooltip"]').tooltip();   
+    $('[data-toggle="tooltip"]').tooltip(); 
+    @foreach($data['question_arr'] as $quesid => $quesarr)
+        onloadData({{$quesarr['question_id']}});
+    @endforeach
 });
+function onloadData(questionId){
+    console.log('Function onloadData called with questionId:', questionId); // Debug log
+    $.ajax({
+        url : "{{route('question_mapped_value')}}",
+        data : {question_id:questionId},
+        type: 'GET',
+        success : function(response){
+            if (response.MappedData) {
+                $.each(response.MappedData, function(index, mappedItem) {
+                    $.each(mappedItem.mappedValue, function(subIndex, mappedSubItem) {
+                        $('#interest_'+questionId).val(mappedSubItem.name);
+                    });
+                });
+            }
+        }
+    });  
+}
+
 </script>
 
 <script src="//cdn.mathjax.org/mathjax/latest/MathJax.js"> 

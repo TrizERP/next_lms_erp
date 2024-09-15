@@ -160,7 +160,7 @@ class palController extends Controller
         $total_marks = $request->total_marks;
         $question_ids = implode(',',$request->question_ids);        
         $total_question = $request->total_question;
-        // echo "<pre>";print_r($request->all());
+        // echo "<pre>";print_r($request->all());exit;
         $res['message']='failed to submit';
         // first add question paper
         $getChaptername = DB::table('chapter_master')->where('id',$request->chapter_id)->where('sub_institute_id',$sub_institute_id)->first();
@@ -196,7 +196,7 @@ class palController extends Controller
         
         $controller = new onlineExamController;
         $result = $controller->get_calculate_marks($request);
-
+        // echo "<pre>";print_r($result);exit;
         //START Insert into lms_online_exam table
         $online_exam = [
             'student_id'        => $user_id,
@@ -216,13 +216,20 @@ class palController extends Controller
         $answer_single = $request->get('answer_single');
         $answer_multiple = $request->get('answer_multiple');
         $answer_narrative = $request->get('answer_narrative');
-
+        $rightInterest=[];
+        // echo "<pre>";print_r($answer_single);exit;
         if (is_array($answer_single)) {
             foreach ($answer_single as $single_question_id => $single_answer_ids) {
                 $ans_status = "wrong";
                 $single_ans_arr = explode("##", $single_answer_ids);
+                $interset = $request->interestValue[$single_question_id];
+                if(!isset($rightInterest[$interset])){
+                    $rightInterest[$interset]=0;
+                }
                 if ($single_ans_arr[1] == 1) {
                     $ans_status = "right";
+                    // interset mapped type
+                    $rightInterest[$interset] += 1;
                 }
                 $single = [
                     'question_paper_id' => $questionPaperId,
@@ -244,8 +251,15 @@ class palController extends Controller
                     foreach ($multiple_answer_ids as $key => $val) {
                         $ans_status = "wrong";
                         $multiple_ans_arr = explode("##", $val);
+                        $interset = $request->interestValue[$multiple_question_id];
+                     
+                        if(!isset($rightInterest[$interset])){
+                            $rightInterest[$interset]=0;
+                        }
                         if ($multiple_ans_arr[1] == 1) {
                             $ans_status = "right";
+                            // interset mapped type
+                            $rightInterest[$interset] += 1;
                         }
                         $multiple = [
                             'question_paper_id' => $questionPaperId,
@@ -265,6 +279,10 @@ class palController extends Controller
         if (is_array($answer_narrative)) {
             foreach ($answer_narrative as $narrative_question_id => $narrative_answer_ids) {
                 $ans_status = "right";
+                if(!isset($rightInterest[$interset])){
+                    $rightInterest[$interset]=0;
+                }
+                $rightInterest[$interset] += 1;
                 $narrative = [
                     'question_paper_id' => $questionPaperId,
                     'online_exam_id'    => $online_exam_id,
@@ -281,8 +299,7 @@ class palController extends Controller
     // }else{
 
     // }
-    
-    return redirect()->route('pal.show',[$questionPaperId,"online_exam_id"=> $online_exam_id]);
+    return redirect()->route('pal.show',[$questionPaperId,"online_exam_id"=> $online_exam_id,"rightInterest"=>$rightInterest]);
     
     }
 
@@ -369,10 +386,11 @@ class palController extends Controller
             $data['online_answer_data'][$val->question_id]['GIVEN_ANSWER'] = $val->given_answer;
         }
         //dd($online_answer_data);
-
+       
         $type = $request->input('type');
         $data['status_code'] = 1;
         $data['message'] = "SUCCESS";
+        $data['rightInterest'] = $request->rightInterest;
         // echo "<pre>";print_r($data);exit;
         return is_mobile($type, 'lms/online_exam_result', $data, "view");
     }
