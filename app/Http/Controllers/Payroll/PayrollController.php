@@ -1420,7 +1420,7 @@ class PayrollController extends Controller
         $res['years'] = Helpers::getYears();
         $res['selYear'] = date('Y');
         $res['selMonth'] = date('M');
-
+        // echo "<pre>";print_r(session()->all());exit;
         return is_mobile($type,'payroll.monthly_payroll_report.newIndex',$res,'view');
     }
 
@@ -1428,6 +1428,8 @@ class PayrollController extends Controller
         $type=$request->type;
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
+        $userProfile = session()->get('user_profile_name');
+        $profileUserId = session()->get('user_id');
 
         $res['employee_id'] = $employee_id= ($request->emp_id!=0) ? implode(',',$request->emp_id) : '';
         $res['department_id'] = $department_id= ($request->department_id!=0) ? implode(',',$request->department_id) : '';
@@ -1438,10 +1440,12 @@ class PayrollController extends Controller
         if($type=="API"){
             $sub_institute_id = $request->sub_institute_id;
             $syear = $request->syear;
+            $userProfile = $request->user_profile_name;
+            $profileUserId = $request->user_id;
         }
-
+       
         // get emp by search 
-        $employeeDetails = employeeDetails($sub_institute_id,$employee_id,'',$department_id);
+        $employeeDetails = employeeDetails($sub_institute_id,$employee_id,'',$department_id,$userProfile,$profileUserId);
 
         // empData with val 
         $newData = [];
