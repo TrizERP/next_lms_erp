@@ -354,6 +354,7 @@ Route::post('ajax_sendmail', [AJAXController::class, 'ajax_sendmail'])->name('aj
 
 Route::post('collectsct', [AJAXController::class, 'collectsct'])->name('collectsct');
 
+Route::get('studentLists', [AJAXController::class, 'studentLists'])->name('studentLists');
 
 Route::get('ckeditor/create', [CkeditorFileUploadController::class, 'create'])->name('ckeditor.create');
 Route::post('ckeditor', [CkeditorFileUploadController::class, 'store'])->name('uploadimage');

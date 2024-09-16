@@ -53,6 +53,7 @@ class lmsDashboardController extends Controller
             $res['previousData'] = $resultAPIController->resultPersonalize($request2);
         
             $request3 = new Request(['type' => "API",'sub_institute_id'=>$sub_institute_id,'enrollment_no'=>$currentData[0]->enrollment_no,'student_id'=>$currentData[0]->id,'standard'=>$currentData[0]->standard_id,'syear'=>$syear]);
+            
             $res['selectedCurrentData'] = $resultAPIController->currentResult($request3);
         // echo "<pre>";print_r($res['selectedCurrentData']);exit;
         }
@@ -62,5 +63,26 @@ class lmsDashboardController extends Controller
         $res['sub_institute_id'] = $sub_institute_id;
         // echo "<pre>";print_r($res);exit;
         return is_mobile($type, "lms/lmsDashboard", $res, "view");
+    }
+
+    public function teacherIndex(Request $request){
+        $type = $request->input('type');
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+
+        if($request->students_id){
+            $request2 = new Request(['type' => "API",'sub_institute_id'=>$sub_institute_id,'syear'=>$syear,'students_id'=>$request->students_id,'user_id'=>$request->students_id]);
+            $res['lmsData'] = $this->index($request2);
+            // echo "<pre>";print_r($res);exit;
+            $res['studentDetails'] = 1;
+            $res['grade'] =  $request->grade;
+            $res['standard'] = $request->standard;
+            $res['division'] = $request->division;
+            $res['students_id'] = $request->students_id;
+            
+        }else{
+            $res = session()->get('data');
+        }
+        return is_mobile($type, "lms/lmsDashboardTeacher", $res, "view");
     }
 }

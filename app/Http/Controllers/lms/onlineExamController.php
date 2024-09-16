@@ -49,7 +49,7 @@ class onlineExamController extends Controller
         //Get all questions subject wise        
         $question_ids = explode(",", $data['questionpaper_data']['question_ids']);
         $data['question_arr'] = lmsQuestionMasterModel::whereIn("id", $question_ids)->get()->toArray();
-
+        $answer = [];
         foreach ($data['question_arr'] as $key => $val) {
             $answer_arr = answermasterModel::where([
                 "question_id"      => $val['id'],
