@@ -29,7 +29,12 @@
                 <li class="nav-item"><a href="#section-linemove-2" class="nav-link section-linemove-2" aria-selected="false" data-toggle="tab"><span>Add Departments</span></a></li>
                 <li class="nav-item"><a href="#section-linemove-3" class="nav-link section-linemove-3" aria-selected="false" data-toggle="tab"><span>School Handbook</span></a></li>
                 <li class="nav-item"><a href="#section-linemove-4" class="nav-link section-linemove-4" aria-selected="false" data-toggle="tab"><span>Organization Chart</span></a></li>
-                <li class="nav-item"><a href="#section-linemove-5" class="nav-link section-linemove-5" aria-selected="false" data-toggle="tab"><span>Parent Feedback</span></a></li>
+                <li class="nav-item">
+                <a href="https://skill-portal.vercel.app/softskills" target="_blank" class="nav-link">
+                    <span>My Skills & Certification</span>
+                </a>
+            </li>
+
             </ul> 
         </center>
 
