@@ -102,6 +102,8 @@ Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute',
 
 
     Route::resource('question_master', questionmasterController::class);
+    Route::get('question_mapped_value', [questionmasterController::class, 'getMappedValue'])->name('question_mapped_value');
+
     Route::post('ajaxdestroyanswer_master', [questionmasterController::class, 'ajaxdestroyanswer_master'])->name('ajaxdestroyanswer_master');
     Route::get('question_chapter_master', [questionmasterController::class, 'indexChapter'])->name('question_chapter_master');
 
