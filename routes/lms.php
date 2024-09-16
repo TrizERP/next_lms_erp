@@ -256,3 +256,4 @@ Route::get('intrestJobzone', [lmsCounsellingController::class, 'intrestJobzone']
 Route::get('intrestCareers', [lmsCounsellingController::class, 'intrestCareers']);
 Route::get('intrestEnterScore', [lmsCounsellingController::class, 'intrestEnterScore']);
 Route::get('intrestArea', [lmsCounsellingController::class, 'intrestArea']);
+Route::get('matchProfile', [lmsCounsellingController::class, 'matchProfile']);
