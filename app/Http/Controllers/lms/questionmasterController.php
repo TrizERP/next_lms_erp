@@ -665,4 +665,22 @@ class questionmasterController extends Controller
             return response()->json($res, 200);
         }
     }
+
+    public function getMappedValue(Request $request){
+       $mappedType = DB::table('lms_question_mapping as ltm') 
+                ->selectRaw('ltm.*,t.name as name,GROUP_CONCAT(mapping_value_id) as mappedVal')         
+                ->join('lms_mapping_type as t', 't.id', 'ltm.mapping_type_id')
+                ->where('ltm.questionmaster_id',$request->question_id)
+                ->groupBy('mapping_type_id')
+                ->get()->toArray();
+            
+        $mappedValues = [];
+        foreach ($mappedType as $key => $value) {
+            $mappedValues[$key] = $value;
+            $mappedValues[$key]->mappedValue = DB::table('lms_mapping_type')->whereRaw('id in ('.$value->mappedVal.')')->get()->toArray();
+        }
+        $res['questionTitle'] =DB::table('lms_question_master')->where('id',$request->question_id)->value('question_title');
+        $res['MappedData'] =  $mappedValues;
+        return $res;
+    }
 }

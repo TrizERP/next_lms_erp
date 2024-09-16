@@ -102,6 +102,8 @@ Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute',
 
 
     Route::resource('question_master', questionmasterController::class);
+    Route::get('question_mapped_value', [questionmasterController::class, 'getMappedValue'])->name('question_mapped_value');
+
     Route::post('ajaxdestroyanswer_master', [questionmasterController::class, 'ajaxdestroyanswer_master'])->name('ajaxdestroyanswer_master');
     Route::get('question_chapter_master', [questionmasterController::class, 'indexChapter'])->name('question_chapter_master');
 
@@ -254,5 +256,5 @@ Route::get('intrestQuestions', [lmsCounsellingController::class, 'intrestQuestio
 Route::get('intrestResults', [lmsCounsellingController::class, 'intrestResults']);
 Route::get('intrestJobzone', [lmsCounsellingController::class, 'intrestJobzone']);
 Route::get('intrestCareers', [lmsCounsellingController::class, 'intrestCareers']);
-Route::get('intrestEnterScore', [lmsCounsellingController::class, 'intrestEnterScore']);
+Route::get('intrestEnterScore', [lmsCounsellingController::class, 'intrestEnterScore'])->name('intrestEnterScore');
 Route::get('intrestArea', [lmsCounsellingController::class, 'intrestArea']);
