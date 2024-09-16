@@ -230,7 +230,7 @@ class resultAPIController extends Controller
                 $q->where('qp.subject_id', $request->subject_id);
             })
             ->where('qp.syear',$syear)
-            // ->where('le.student_id',$request->student_id)
+            ->where('le.student_id',$request->student_id) // for student wise chapter data
             ->groupBy('ch.chapter_name')
             ->get()->toArray();
             // dd($chapterData);exit;
@@ -386,7 +386,7 @@ class resultAPIController extends Controller
                         "title"=>$row->chapter_name,
                         "totalmarks"=>$row->total_marks,
                         "totalobtain"=>$row->obtain_marks,
-                        "chapterrank"=>round($chper),
+                        "chapterrank"=>round($chper,2),
                         "recommendation"=>$occupation,
                         "chapteroutcome"=> $transformedData,
                         "chapterprogress"=> $progressData,

@@ -18,6 +18,7 @@ use function App\Helpers\htmlToPDFPortrait;
 use function App\Helpers\htmlToPDFPortraitLetter;
 use function App\Helpers\OtherBreackOff;
 use function App\Helpers\OtherBreackOffHead;
+use function App\Helpers\SearchStudent;
 // use function App\Helpers\OtherBreackOffHeadlast;
 use function App\Helpers\OtherBreackOfMonth;
 use App\Models\school_setup\standardModel;
@@ -2369,5 +2370,14 @@ class AJAXController extends Controller
 
         return $employees;
     }
-
+    public function studentLists(Request $request){
+        $grade = $request->grade;
+        $standard = $request->standard;
+        $div ="";
+        if(isset($request->division)){
+            $div = $request->division;
+        }
+        $dataList = SearchStudent($grade, $standard, $div);
+        return $dataList;
+    }
 }
