@@ -343,8 +343,8 @@ datalist {
                                         <div class="col-md-4 form-group">
                                             <label>Optional Subject 4</label>
                                             <select id='optional_subject' name="optional_subject4[]" multiple class="form-control">
-                                                @if(isset($data['optional_subject_data']))
-                                                    @foreach($data['optional_subject_data'] as $key => $value)
+                                                @if(isset($data['hilldOptional4']))
+                                                    @foreach($data['hilldOptional4'] as $key => $value)
                                                         <option @if( in_array($value['subject_id'],$data['student_optional_subject_data4']) ) selected @endif value="{{ $value['subject_id'] }}">{{ $value['subject_name'] }}</option>
                                                     @endforeach
                                                 @endif                                                   
@@ -353,8 +353,8 @@ datalist {
                                         <div class="col-md-4 form-group">
                                             <label>Optional Subject 5</label>
                                             <select id='optional_subject' name="optional_subject5[]" multiple class="form-control">
-                                                @if(isset($data['optional_subject_data']))
-                                                    @foreach($data['optional_subject_data'] as $key => $value)
+                                                @if(isset($data['hilldOptional5']))
+                                                    @foreach($data['hilldOptional5'] as $key => $value)
                                                         <option @if( in_array($value['subject_id'],$data['student_optional_subject_data5']) ) selected @endif value="{{ $value['subject_id'] }}">{{ $value['subject_name'] }}</option>
                                                     @endforeach
                                                 @endif                                                   
@@ -363,8 +363,8 @@ datalist {
                                         <div class="col-md-4 form-group">
                                             <label>Optional Subject 6</label>
                                             <select id='optional_subject' name="optional_subject6[]" multiple class="form-control">
-                                                @if(isset($data['optional_subject_data']))
-                                                    @foreach($data['optional_subject_data'] as $key => $value)
+                                                @if(isset($data['hilldOptional6']))
+                                                    @foreach($data['hilldOptional6'] as $key => $value)
                                                         <option @if( in_array($value['subject_id'],$data['student_optional_subject_data6']) ) selected @endif value="{{ $value['subject_id'] }}">{{ $value['subject_name'] }}</option>
                                                     @endforeach
                                                 @endif                                                   
