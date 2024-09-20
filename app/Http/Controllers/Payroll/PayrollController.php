@@ -15,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use function App\Helpers\is_mobile;
 use function App\Helpers\employeeDetails;
+use function App\Helpers\countDays;
 use GenTux\Jwt\GetsJwtToken;
 use DB;
 use PDF;
@@ -1270,21 +1271,149 @@ class PayrollController extends Controller
         $res['years']= Helpers::getYears();
 
         $employeeDetails = [];
+        $res['month'] = date('M');
+        $res['year'] = date('Y');
 
+        $newData=[];
+        
         if ($request->year && $request->month) {
-            $res['employeeDetails'] = EmployeeMonthlySalaryData::join('tbluser as u',function($join) use($request){
+            $empData = EmployeeMonthlySalaryData::join('tbluser as u',function($join) use($request){
                 $join->on('u.id','=','employee_monthly_salary_data.employee_id')
                 ->when($request->department_id!=0,function($q) use($request){
                     $q->whereIn('u.department_id',$request->department_id);
                 });
-            })->where([['employee_monthly_salary_data.month',$request->month],['employee_monthly_salary_data.year',$request->year],['employee_monthly_salary_data.sub_institute_id',$sub_institute_id]])
-           ->get();
+            })
+            ->selectRaw('employee_monthly_salary_data.*,u.id,CONCAT_WS(" ",COALESCE(u.first_name, "-"),COALESCE(u.last_name, "-")) as full_name,u.employee_no,u.department_id as department_ids')
+            ->where([['employee_monthly_salary_data.month',$request->month],['employee_monthly_salary_data.year',$request->year],['employee_monthly_salary_data.sub_institute_id',$sub_institute_id]])
+            ->get()->toArray();
 
+            $startOfMonth = Carbon::createFromFormat('M Y', $request->month . ' ' . $request->year)->startOfMonth()->format('Y-m-d');
+            $endOfMonth = Carbon::createFromFormat('M Y', $request->month . ' ' . $request->year)->endOfMonth()->format('Y-m-d'); 
+
+            $employeeIds = array_map(function($employee) {
+                return $employee['employee_id'];
+            }, $empData);
+
+            $department_ids = array_map(function($employee) {
+                return $employee['department_ids'];
+            }, $empData);
+
+            $lwpArr = $leaveDays = $absentArr = $checkVal = $holidayArr= []; 
+            // get absent,lwp,leave
+            if(!empty($employeeIds)){
+                // get employees lwp
+                $lwpQuery = DB::table('hrms_emp_leaves')->whereRaw('((from_date between "'.$startOfMonth.'" and "'.$endOfMonth.'") OR (to_date between "'.$startOfMonth.'" and "'.$endOfMonth.'")) and user_id in ('.implode(',',$employeeIds).') and sub_institute_id = '.$sub_institute_id.' AND STATUS = "approved_lwp" and status !="cancelled"')->get()->toArray();
+                
+                foreach($lwpQuery as $lkey => $lvalue){
+                    if(!isset($lwpArr[$lvalue->user_id])){
+                        $lwpArr[$lvalue->user_id]=0;
+                    }
+                    $lFromDate =$lvalue->from_date;
+                    $lToDate =$lvalue->to_date;
+                    $ldayType =$lvalue->day_type;
+
+                    $lwpArr[$lvalue->user_id] += countDays($lFromDate,$lToDate,$ldayType);
+                    // lwp dates to find absent days 
+                    $loopDate1 = Carbon::parse($lFromDate);
+                    $loopDateEnd1 = Carbon::parse($lToDate);
+                    while ($loopDate1->lte($loopDateEnd1)) {
+                        $formattedDate = $loopDate1->format('Y-m-d');
+                        if (!isset($checkVal[$lvalue->user_id][$formattedDate])) {
+                            $checkVal[$lvalue->user_id][$formattedDate] = 0;
+                        }
+                        $checkVal[$lvalue->user_id][$formattedDate] = 1;
+                        $loopDate1->addDay();
+                    }
+                }
+
+                // get leave Days
+                $leaveQuery = DB::table('hrms_emp_leaves')->whereRaw('((from_date between "'.$startOfMonth.'" and "'.$endOfMonth.'") OR (to_date between "'.$startOfMonth.'" and "'.$endOfMonth.'")) and user_id in ('.implode(',',$employeeIds).') and sub_institute_id = '.$sub_institute_id.' AND STATUS!="approved_lwp" and status !="cancelled" ')->get()->toArray();
+
+                foreach($leaveQuery as $ldkey => $ldvalue){
+                    if(!isset($leaveDays[$ldvalue->user_id])){
+                        $leaveDays[$ldvalue->user_id]=0;
+                    }
+                  
+                    $lFromDate =$ldvalue->from_date;
+                    $lToDate =$ldvalue->to_date;
+                    $ldayType =$ldvalue->day_type;
+
+                    $leaveDays[$ldvalue->user_id] += countDays($lFromDate,$lToDate,$ldayType);
+
+                    // leave dates to find absent days 
+                    $loopDate2 = Carbon::parse($lFromDate);
+                    $loopDateEnd2 = Carbon::parse($lToDate);
+                    while ($loopDate2->lte($loopDateEnd2)) {
+                        $formattedDate = $loopDate2->format('Y-m-d');
+                        if (!isset($checkVal[$ldvalue->user_id][$formattedDate])) {
+                            $checkVal[$ldvalue->user_id][$formattedDate] = 0;
+                        }
+                        $checkVal[$ldvalue->user_id][$formattedDate] = 1;
+                        $loopDate2->addDay();
+                    }
+                }
+                 // get attandance Days
+                 $attendanceDate = DB::table('hrms_attendances')->whereRaw('(day between "'.$startOfMonth.'" and "'.$endOfMonth.'") and user_id in ('.implode(',',$employeeIds).') and sub_institute_id = '.$sub_institute_id)->get()->toArray();
+
+                 foreach($attendanceDate as $adkey => $advalue){
+                     if(!isset($checkVal[$advalue->user_id][$advalue->day])){
+                         $checkVal[$advalue->user_id][$advalue->day]=0;
+                     }
+ 
+                     $checkVal[$advalue->user_id][$advalue->day] = 1;
+                 }
+
+                 // get absent Days
+                 $holidayData = DB::table('hrms_holidays')->whereRaw('((from_date between "'.$startOfMonth.'" and "'.$endOfMonth.'") OR (to_date between "'.$startOfMonth.'" and "'.$endOfMonth.'")) and sub_institute_id = '.$sub_institute_id.' and department in ('.implode(',',$department_ids).')')->get()->toArray();
+
+                 foreach($holidayData as $hdkey => $hdvalue){
+                      // leave dates to find absent days 
+                    $loopDate3 = Carbon::parse($hdvalue->from_date);
+                    $loopDateEnd3 = Carbon::parse($hdvalue->to_date);
+                    while ($loopDate3->lte($loopDateEnd3)) {
+                        $formattedDate = $loopDate3->format('Y-m-d');
+                        if (!isset($holidayArr[$formattedDate])) {
+                            $holidayArr[$formattedDate] = 0;
+                        }
+                        $holidayArr[$formattedDate] = 1;
+                        $loopDate3->addDay();
+                    }
+                 }
+            }
+            // echo "<pre>";print_r($holidayArr);exit;
+            // make new Array for data for each employee
+            foreach ($empData as $key => $value) {
+               $newData[$key] = $value;
+               $newData[$key]['lwp_days']= isset($lwpArr[$value['employee_id']]) ? $lwpArr[$value['employee_id']] : 0;
+               $newData[$key]['leave_days'] = isset($leaveDays[$value['employee_id']]) ? $leaveDays[$value['employee_id']] : 0;
+               $newData[$key]['absent_days'] = 0;
+                // leave dates to find absent days 
+                $monthFromDate = Carbon::parse($startOfMonth);
+                $monthEndDate = Carbon::parse($endOfMonth);
+
+                while ($monthFromDate->lte($monthEndDate)) {
+                    $formattedDate = $monthFromDate->format('Y-m-d');
+                    $existsDate = [];
+                    if(!isset($checkVal[$value['employee_id']][$formattedDate]) && !isset($holidayArr[$formattedDate])){
+                        $newData[$key]['absent_days'] += 1;
+                    }
+
+                    $monthFromDate->addDay();
+                }
+            }
+
+            if(empty($empData)){
+                $res['status_code']=0;
+                $res['message']="Monthly Payroll Not Found !!";
+            }
+
+            $res['employeeDetails'] = $newData;
             $res['month'] = $request->month;
             $res['year'] = $request->year;
             $res['department_id'] = $request->department_id;
-
         }
+        // echo "<pre>";print_r($res['employeeDetails']);
+        // exit;
         // return view('payroll.payroll_report.index', ['employees' => $employeeDetails, 'list' => $list,'months'=> $months,'years'=> $years]);
         return is_mobile($type, "payroll.payroll_report.index", $res, "view");
     }
