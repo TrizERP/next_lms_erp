@@ -668,6 +668,8 @@ class tblstudentController extends Controller
             'sub_institute_id' => $sub_institute_id, 'syear' => $syear,
         ])->get();
 
+        $hilldOptional4 = $hilldOptional5 = $hilldOptional6 =[];
+
 		if ($std_id != "") {
             $optional_subject_data = sub_std_mapModel::select('sub_std_map.*', 'subject.subject_name',
                 'subject.subject_code')
@@ -684,6 +686,17 @@ class tblstudentController extends Controller
     
                     $student_optional_subject_data = explode(",", $student_optional_subject_data[0]->subject_ids);
                 }else{
+                    foreach ($optional_subject_data as $key => $value) {
+                        if($value['optional_type'] !=null && $value['optional_type']==4){
+                            $hilldOptional4[]=$value;
+                        }
+                        if($value['optional_type'] !=null && $value['optional_type']==5){
+                            $hilldOptional5[]=$value;
+                        }
+                        if($value['optional_type'] !=null && $value['optional_type']==6){
+                            $hilldOptional6[]=$value;
+                        }
+                    }
                     $student_optional_subject_data4 = student_optional_subjectModel::selectRaw('GROUP_CONCAT(subject_id) AS subject_ids')
                     ->where(['sub_institute_id' => $sub_institute_id, 'student_id' => $id, 'syear' => $syear,"level"=>"4"])->get();
 
@@ -698,7 +711,7 @@ class tblstudentController extends Controller
                     $student_optional_subject_data6 = explode(",", $student_optional_subject_data6[0]->subject_ids);
                 }
         }
-
+        // echo "<pre>";print_r($hilldOptional4);exit;
         $pastEducation = tblstudentPastEducationModel::where([
             'sub_institute_id' => $sub_institute_id, 'student_id' => $id,
         ])->get()->toArray();
@@ -998,6 +1011,9 @@ die; */
 		if(session()->get('sub_institute_id')!=254){
 		    $res['student_optional_subject_data'] = $student_optional_subject_data;
         }else{
+            $res['hilldOptional4'] = $hilldOptional4;
+            $res['hilldOptional5'] = $hilldOptional5;
+            $res['hilldOptional6'] = $hilldOptional6;
             $res['student_optional_subject_data4'] = $student_optional_subject_data4;
 		    $res['student_optional_subject_data5'] = $student_optional_subject_data5;
 		    $res['student_optional_subject_data6'] = $student_optional_subject_data6;

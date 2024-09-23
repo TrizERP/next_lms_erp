@@ -80,12 +80,13 @@ class sub_std_mapController extends Controller
             ->get()->toArray();
         $data['std_data'] = $std_data;
         $data['sub_data'] = $sub_data;
-
+        $data['optional_type'] = [4,5,6];
         return is_mobile($type, 'school_setup/add_sub_std', $data, "view");
     }
 
     public function store(Request $request)
     {
+        // echo "<pre>";print_r($request->all());exit;
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $standard_id = $request->get('standard_id');
 
@@ -101,6 +102,7 @@ class sub_std_mapController extends Controller
             // $img->storeAs('public/SubStdMapping/', $newfilename); 20-05-24
             Storage::disk('digitalocean')->putFileAs('public/SubStdMapping/', $img, $newfilename, 'public');
         }
+        // echo "<pre>";print_r($request->optional_type);exit;
 
         foreach ($standard_id as $key => $stdval) {
             sub_std_mapModel::updateOrCreate(
@@ -122,6 +124,7 @@ class sub_std_mapController extends Controller
                     'sort_order'       => $request->get('sort_order'),
                     'status'           => "1",
                     "load"             => $request->get('load'),
+                    'optional_type'    => ($request->optional_type!='') ? $request->optional_type : null,
                 ]
             );
 
@@ -159,6 +162,7 @@ class sub_std_mapController extends Controller
         $data['std_data'] = $std_data;
         $data['sub_data'] = $sub_data;
         $data['mapped_data'] = $mapped_data;
+        $data['optional_type'] = [4,5,6];
 
         return is_mobile($type, "school_setup/add_sub_std", $data, "view");
     }
@@ -198,6 +202,7 @@ class sub_std_mapController extends Controller
                 'sort_order'       => $request->get('sort_order'),
                 'status'           => "1",
                 'load'             => $request->get('load'),
+                'optional_type'    => ($request->get('optional_type') !=null && $request->get('elective_subject') != "") ? $request->get('optional_type') : null,
             ];
         } else {
             $data = [
@@ -214,6 +219,7 @@ class sub_std_mapController extends Controller
                 'add_content'      => $request->get('add_content'),
                 'status'           => "1",
                 'load'             => $request->get('load'),
+                'optional_type'    => ($request->get('optional_type') !=null && $request->get('elective_subject') != "") ? $request->get('optional_type') : null,
             ];
         }
 

@@ -19,6 +19,9 @@
             @endif
             <div class="row">
                 <div class="col-md-12">
+                    <button class="btn btn-primary" onclick="openGrid()">Print</button>
+                </div>
+                <div class="col-md-12">
                     <div class="white-box">
                         <div id="calendar"></div>
                     </div>
@@ -82,6 +85,40 @@
             <!-- Modal End -->
         </div>
     </div>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document" style="max-width:1250px">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLabel">Print Calender</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+            <!-- table starts  -->
+            <div class="table-responsive">
+                <table id="example"  class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>SR No.</th>
+                            <th>Standard</th>
+                            <th>Title</th>
+                            <th>Description</th>
+                            <th>Date</th>
+                            <th class="text-left">Type</th>
+                        </tr>
+                    </thead>
+                    <tbody id="eventsTableContainer">
+                    </tbody>
+                </table>
+            </div>
+            <!-- table ends  -->
+      </div>
+    </div>
+  </div>
 </div>
 
 @include('includes.footerJs')
@@ -324,47 +361,7 @@
                 var today = new Date($.now());
                 var defaultEvents = @php echo $data['calendarData'];
                 @endphp;
-                //        var defaultEvents = [
-                //            {
-                //                title: 'Released Ample Admin!',
-                //                start: new Date($.now() + 506800000),
-                //                className: 'bg-info'
-                //            },
-                //            {
-                //                title: 'This is today check date',
-                //                start: today,
-                //                end: today,
-                //                className: 'bg-danger'
-                //            }, {
-                //                title: 'This is your birthday',
-                //                start: new Date($.now() + 848000000),
-                //                className: 'bg-info'
-                //            }, {
-                //                title: 'your meeting with john',
-                //                start: new Date($.now() - 1099000000),
-                //                end: new Date($.now() - 919000000),
-                //                className: 'bg-warning'
-                //            }, {
-                //                title: 'your meeting with john',
-                //                start: new Date($.now() - 1199000000),
-                //                end: new Date($.now() - 1199000000),
-                //                className: 'bg-purple'
-                //            }, {
-                //                title: 'your meeting with john',
-                //                start: new Date($.now() - 399000000),
-                //                end: new Date($.now() - 219000000),
-                //                className: 'bg-info'
-                //            },
-                //            {
-                //                title: 'Hanns birthday',
-                //                start: new Date($.now() + 868000000),
-                //                className: 'bg-danger'
-                //            }, {
-                //                title: 'Like it?',
-                //                start: new Date($.now() + 348000000),
-                //                className: 'bg-success'
-                //            }];
-
+                
                 var $this = this;
                 $this.$calendarObj = $this.$calendar.fullCalendar({
                     slotDuration: '00:15:00',
@@ -417,6 +414,112 @@
         "use strict";
         $.CalendarApp.init()
     }(window.jQuery);
+</script>
+<script>
+
+function openGrid() {
+    $('#eventsTableContainer').empty();
+
+    // Get JSON data
+    var standards = @json($data['standardData']->toArray());
+    var calenderJsonData = JSON.parse(@json($data['calendarData']));
+    var currentDate = $('#calendar').fullCalendar('getDate');
+    var currentView = $('#calendar').fullCalendar('getView');
+    var filteredEvents = [];
+
+    // Filter data based on the current view
+    if (currentView.name === 'month') {
+        var activeMonthStart = currentDate.clone().startOf('month').format('YYYY-MM-DD');
+        var activeMonthEnd = currentDate.clone().endOf('month').format('YYYY-MM-DD');
+        filteredEvents = calenderJsonData.filter(event => {
+            return event.start >= activeMonthStart && event.start <= activeMonthEnd;
+        });
+    } else if (currentView.name === 'agendaWeek' || currentView.name === 'basicWeek') {
+        var startOfWeek = currentDate.clone().startOf('week').format('YYYY-MM-DD');
+        var endOfWeek = currentDate.clone().endOf('week').format('YYYY-MM-DD');
+        filteredEvents = calenderJsonData.filter(event => {
+            return event.start >= startOfWeek && event.start <= endOfWeek;
+        });
+    } else if (currentView.name === 'agendaDay' || currentView.name === 'basicDay') {
+        var activeDay = currentDate.format('YYYY-MM-DD');
+        filteredEvents = calenderJsonData.filter(event => {
+            return event.start === activeDay;
+        });
+    }
+
+    // Sort filtered events by start date
+    filteredEvents.sort((a, b) => {
+        return new Date(a.start) - new Date(b.start);
+    });
+
+    var tableData = filteredEvents.map((event, index) => {
+        var eventStandards = JSON.parse(event.standard); 
+        var standardNames = eventStandards.map(standardKey => standards[standardKey]);
+        var eventDate = new Date(event.start);
+        var formattedDate = eventDate.toLocaleDateString('en-GB'); 
+        formattedDate = formattedDate.replace(/\//g, '-');
+
+        return [
+            (index + 1),
+            '<ul>' + standardNames.map(name => '<li>' + name + '</li>').join('') + '</ul>',
+            event.title,
+            event.description,
+            formattedDate,
+            event.event_type
+        ];
+    });
+
+    // Clear and add new data to DataTable
+    var table = $('#example').DataTable();
+    table.clear().rows.add(tableData).draw();
+    
+    $('#exampleModal').modal('show');
+}
+
+$(document).ready(function () {
+    // Initialize DataTable once on page load
+    $('#example').DataTable({
+        select: true,
+        lengthMenu: [
+            [100, 500, 1000, -1],
+            ['100', '500', '1000', 'Show All']
+        ],
+        dom: 'Bfrtip',
+        buttons: [
+            {
+                extend: 'pdfHtml5',
+                title: 'Calendar Print Report',
+                orientation: 'landscape',
+                pageSize: 'LEGAL',
+                exportOptions: {
+                    columns: ':visible'
+                },
+            },
+            {extend: 'csv', text: ' CSV', title: 'Calendar Print Report'},
+            {extend: 'excel', text: ' EXCEL', title: 'Calendar Print Report'},
+            {extend: 'print', text: ' PRINT', title: 'Calendar Print Report'},
+            'pageLength'
+        ],
+    });
+
+    // Set up the search functionality for each column
+    $('#example thead tr').clone(true).appendTo('#example thead');
+    $('#example thead tr:eq(1) th').each(function (i) {
+        var title = $(this).text();
+        $(this).html('<input type="text" placeholder="Search ' + title + '" />');
+
+        $('input', this).on('keyup change', function () {
+            var table = $('#example').DataTable();
+            if (table.column(i).search() !== this.value) {
+                table
+                    .column(i)
+                    .search(this.value)
+                    .draw();
+            }
+        });
+    });
+});
+
 </script>
 @include('includes.footer')
 @endsection

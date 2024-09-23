@@ -1,6 +1,5 @@
 @extends('layout')
 @section('container')
-
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row bg-title">
@@ -33,8 +32,8 @@
                 </div>
             </div>
         </div>
-      	
-        {{-- @if(isset($data['studentDetails']) && $data['studentDetails']==1)
+        
+        {{-- @if(isset($data['studentData']) && $data['studentData']==1)
         <div class="lmsDashboard" id="lmsDashboard">
             @include('lms.lmsDashboardCommon')
         </div>
@@ -141,7 +140,7 @@ function getLMSDashboard(grade,standard,division,student_id){
     });
 
 
-    $('.standardProgressCircle.active').each(function() {
+    $('.ProgressCircle.active').each(function() {
         var divId = $(this).attr('data-val');
         // console.log('sub id'+divId);
         $('.CurrentTable[data-val="collapseExample2_'+divId+'"]').toggleClass('active');
