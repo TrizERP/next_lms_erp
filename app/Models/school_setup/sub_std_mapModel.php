@@ -14,6 +14,8 @@ class sub_std_mapModel extends Model
         'allow_grades',
         'elective_subject',
         'display_name',
+        'load',
+        'optional_type',
         'add_content',
         'allow_content',
         'subject_category',

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\IncomingMessage;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\student\tblstudentModel;
@@ -11,7 +12,7 @@ use App\Models\school_setup\standardModel;
 class WhatsappSentMessage extends Model
 {
     use HasFactory;
-    // get student details by student id 
+    // get student details by student id
     function student()
     {
         return $this->hasMany(tblstudentModel::class,'id','student_id');
@@ -25,5 +26,10 @@ class WhatsappSentMessage extends Model
     function division()
     {
         return $this->hasMany(divisionModel::class,'id','division_id');
+    }
+
+    public function messages()
+    {
+        return $this->hasMany(IncomingMessage::class, 'whatsapp_number','whatsapp_number')->where([['is_seen',0],['type','incoming']]);
     }
 }

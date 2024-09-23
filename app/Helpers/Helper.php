@@ -2182,7 +2182,7 @@ if (!function_exists('get_string')) {
 
     if (!function_exists('employeeDetails')) {
 
-        function employeeDetails($sub_institute_id='',$employee_id='',$status='',$department_id='')
+        function employeeDetails($sub_institute_id='',$employee_id='',$status='',$department_id='',$userProfileName='',$profileUserId='')
         {
             // return $status;exit;
             $empData= tbluserModel::join('tbluserprofilemaster as upm', 'upm.id', '=', 'tbluser.user_profile_id')
@@ -2192,12 +2192,20 @@ if (!function_exists('get_string')) {
             if($status!==0){
                 $empData->where('tbluser.status', 1);
             }
-           
+
+            $profileArr = ["Admin","Super Admin","School Admin","Assistant Admin"];
+            $SubCordinates = [];    
+            if($userProfileName!='' && !in_array($userProfileName,$profileArr) && $profileUserId!=''){
+                $SubCordinates = getSubCordinates($sub_institute_id,$profileUserId);
+            }
             $empData = $empData->when($employee_id!='',function($query) use($employee_id){
                 $query->whereRaw('tbluser.id IN ('.$employee_id.')');
             })
             ->when($department_id!='',function($query) use($department_id){
                 $query->whereRaw('tbluser.department_id IN ('.$department_id.')');
+            })
+            ->when(!empty($SubCordinates),function($q) use($SubCordinates){
+                $q->whereIn('tbluser.id', $SubCordinates);
             })
             ->orderBy('tbluser.first_name')
             // ->take(20)  

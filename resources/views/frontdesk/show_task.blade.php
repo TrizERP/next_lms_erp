@@ -66,6 +66,12 @@
                         <a class="btn btn-info add-new ml-2" data-toggle="modal" data-target="#exampleModal">Check List</a>
                     </div>
 
+                    <div class="col-lg-9 col-sm-3 col-xs-3 text-right">
+                        <a class="btn btn-outline-secondary" href="{{route('lmsActivityStream.index')}}" target="_blank" class="nav-link">
+                            <span>Activity Stream</span>
+                        </a>
+                    </div>
+                 
                     <br><br><br>
                     <div class="col-lg-12 col-sm-12 col-xs-12">
                     <div class="table-responsive">

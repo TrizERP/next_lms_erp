@@ -84,13 +84,12 @@
                                                 <th>Created By</th>
                                                 <th>Date</th>
                                                 <th>Status</th>
-                                                <th class="text-left">Message</th>
+                                                <th>Message</th>
+                                                <th>Incoming Message</th>
                                             </tr>
                                             </thead>
                                             <tbody>
-                                            @php
-                                                $j=1;
-                                            @endphp
+                                            
                                             @foreach($data['stu_data'] as $key => $data)
                                                 <tr>
                                                     <td>{{$key+1}}</td>
@@ -101,10 +100,9 @@
                                                     <td>{{$data->created_at ?? '-'}}</td>
                                                     <td>{{$data->message_status ?? '-'}}</td>
                                                     <td class="imageTD">{!!$data->message ?? '-'!!}</td>
+                                                    <td><a href="/whatsapp-show-reply/{{$data['whatsapp_number']}}" >show reply ({{count($data['messages'])}})</a></td>
                                                 </tr>
-                                                @php
-                                                    $j++;
-                                                @endphp
+                                               
                                             @endforeach
                                             </tbody>
 
@@ -162,6 +160,6 @@
             } );
         </script>
 
-       
+
     @include('includes.footer')
 @endsection

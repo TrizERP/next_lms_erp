@@ -33,6 +33,14 @@
                 if(isset($data['selected_emp'])){
                     $emp_id = $data['selected_emp'];
                 }
+
+                $profileArr = ["Admin","Super Admin","School Admin","Assistant Admin"];
+
+                $readonly= $hide='';
+                if(!in_array(session()->get('user_profile_name'),$profileArr)){
+                    $readonly="readonly";
+                    $hide='display:none';
+                }
                 @endphp
                 {!! App\Helpers\HrmsDepartments("","multiple",$dep_id,"multiple",$emp_id,"") !!}
                 <div class="col-md-3 form-group">
@@ -88,7 +96,7 @@
                             <td>{{$value['employee_no']}}</td>
                             <td>{{$value['full_name'] ?? '-' .'('.$value['user_profile'] ?? '-' .')'}}</td>
                             <td>
-                                <input type="text" id="totalDay_{{$value['id']}}" name="payrollVal[{{$value['id']}}][total_day]" onkeyup="getData(this,{{$value['id']}})" class="form-control" value="{{ isset($value['monthlyData']->total_day) ? round($value['monthlyData']->total_day,2) : $value['totalDay'] }}" >
+                                <input type="text" id="totalDay_{{$value['id']}}" name="payrollVal[{{$value['id']}}][total_day]" onkeyup="getData(this,{{$value['id']}})" class="form-control" value="{{ isset($value['monthlyData']->total_day) ? round($value['monthlyData']->total_day,2) : $value['totalDay'] }}" {{$readonly}}>
                             </td>
                             @foreach($data['header'] as $hkey => $col)
                                 @if(!empty($value['monthlyData']))
@@ -140,7 +148,7 @@
                     </tbody>
                 </table>
             </div>
-            <div class="row">
+            <div class="row" @if($hide!='') style="display:none" @endif>
                 <div class="col-m-12 form-group">
                     <input type="submit" class="btn btn-success" value="Save" name="Save">
                 </div>
