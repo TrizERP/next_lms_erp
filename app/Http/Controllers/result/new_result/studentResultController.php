@@ -93,7 +93,9 @@ class studentResultController extends Controller
         $result_trust = DB::table('result_book_master as rbm')
             ->join('result_trust_master as rtm', 'rtm.id', '=', 'rbm.trust_id')
             ->where('rbm.sub_institute_id', $sub_institute_id)
-            ->where('rbm.standard', $request->standard_id)
+            ->when($request->standard_id,function($q) use($request){
+                $q->where('rbm.standard', $request->standard_id);
+            })
             ->where('rtm.syear', $syear)
             ->select('rbm.*', 'rtm.*') // You can specify the columns you want to select
             ->first();
@@ -135,7 +137,7 @@ class studentResultController extends Controller
 
     public function create_html_content($syear, $sub_institute_id, $html_content, $value, $template, $result_trust, $format)
     {
-        // echo "<pre>";print_r($value);exit;
+        // echo "<pre>";print_r($result_trust);exit;
         $height_large = array(47);
         $height_medium = array(195,72);
         $width = array(61);
@@ -3159,7 +3161,7 @@ while ($current_date <= $post_end_date) {
             foreach ($term_name as $keys => $terms) {
                 $total_mark = 0;
                 foreach ($exam_title as $key => $title) {
-                    $weigthage = '(' . $title->weightage . ')';
+                    $weigthage = '(' . $title->con_point . ')';
 
                     $exam_head = $title->ExamTitle;
                     if($exam_head == 'Periodic Test'){
@@ -3211,7 +3213,7 @@ while ($current_date <= $post_end_date) {
                         }else{
                             $arr = $title->exam_id;
                             $title_exam[$arr][] = $title->ExamTitle;
-                            $weightage = $title->weightage;
+                            $weightage = $title->con_point;
                         }
                         // all exam marks 
                         foreach ($exam_marks as $index => $marks) {
