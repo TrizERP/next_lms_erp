@@ -364,7 +364,7 @@ class tblstudentController extends Controller
                 && $key != 'division' && $key != 'student_quota' && $key != 'optional_subject' && $key != 'previous_school_gr_no'
                 && $key != 'house' && $key != 'father_occupation' && $key != 'father_qualification' && $key != 'mother_occupation'
                 && $key != 'mother_qualification' && $key != 'guardian_name' && $key != 'guardian_relation' && $key != 'house_no'
-                && $key != 'building_name_appratment_name_society_name' && $key != 'district_name' && $key != 'roll_no') { //&& $key != 'place_of_birth' && $key != 'previous_school_name'
+                && $key != 'building_name_appratment_name_society_name' && $key != 'district_name' && $key != 'roll_no' && $key != 'editable') { //&& $key != 'place_of_birth' && $key != 'previous_school_name'
                 if (is_array($value)) {
                     $value = implode(",", $value);
                 }
@@ -456,7 +456,7 @@ class tblstudentController extends Controller
                 && $key != 'id' && $key != 'optional_subject' && $key != 'optional_subject4' && $key != 'optional_subject5' && $key != 'optional_subject6' && $key != 'previous_school_gr_no' && $key != 'house'
                 && $key != 'father_occupation' && $key != 'father_qualification' && $key != 'mother_occupation'
                 && $key != 'mother_qualification' && $key != 'guardian_name' && $key != 'guardian_relation'
-                && $key != 'house_no' && $key != 'building_name_appratment_name_society_name' && $key != 'district_name' && $key != 'roll_no') { //&& $key != 'place_of_birth' && $key != 'previous_school_name'
+                && $key != 'house_no' && $key != 'building_name_appratment_name_society_name' && $key != 'district_name' && $key != 'roll_no'  && $key != 'editable') { //&& $key != 'place_of_birth' && $key != 'previous_school_name'
                 if (is_array($value)) {
                     $value = implode(",", $value);
                 }
@@ -1242,10 +1242,12 @@ die; */
             }
         }
 		//END Save Optional Subject
+        if($request->input('editable') == 1){
+            $studentEnrollment['standard_id'] = $request->input('standard');
+            $studentEnrollment['section_id'] = $request->input('division');
+            $studentEnrollment['grade_id'] = $request->input('grade');
+        }
 
-		$studentEnrollment['standard_id'] = $request->input('standard');
-		$studentEnrollment['section_id'] = $request->input('division');
-		$studentEnrollment['grade_id'] = $request->input('grade');
 		$studentEnrollment['syear'] = $syear;
 		$studentEnrollment['student_id'] = $student_id;
 		$studentEnrollment['student_quota'] = $request->input('student_quota');

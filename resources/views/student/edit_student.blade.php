@@ -262,6 +262,7 @@ datalist {
                                         {{ App\Helpers\SearchChain('4','single','grade,std,div',$student_data->grade_id,$student_data->standard_id,$student_data->section_id) }}
                                         <div class="col-md-4 form-group">
                                             <span></span>
+                                            <input type="hidden" name="editable" value='@if($data["edit_disable"] == "disabled") 0 @else 1 @endif'>
                                         </div>
                                         <div class="col-md-4 form-group">
                                             <span></span>
@@ -275,7 +276,7 @@ datalist {
                                         <div class="col-md-4 form-group">
                                             <label>{{App\Helpers\get_string('studentquota','request')}}<i class="mdi mdi-lead-pencil"></i></label>
                                             @php 
-                                            if(session()->get('sub_institute_id') != 257 && count($data['feesData']) != 0) {
+                                            if(session()->get('sub_institute_id') != 257 && (isset($data['feesData']['fees_data']) && count($data['feesData']['fees_data']) != 0)) {
                                                 $disable = "style=pointer-events:none";
                                                 $readonly = "readonly";
                                             }
