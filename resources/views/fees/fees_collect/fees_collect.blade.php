@@ -871,13 +871,16 @@ function checkForm() {
 									k= k+1;
 								});
 								console.log(checkedTitle);
+								var validValues = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
 
-								// uniform and recovery fees 
-								if (checkedTitle.length > 0 && !checkedTitle.includes('tution_fee') && !checkedTitle.includes('3')) {
+								// when only other fees remain for payment make fees fine 0   
+								if (checkedTitle.length > 0 && !checkedTitle.includes('tution_fee') && validValues.some(value => checkedTitle.includes(value)))
+								{
+									// console.log('if');
 									fineZero(0);
 								}
-								// advance fees 
-								else if(checkedMonths.length > 0 && checkedTitle.length > 0 && checkedTitle.includes('3')){
+								// for advance months fees rather than current month
+								else if(checkedMonths.length > 0 && checkedTitle.length > 0){
 									lastMonth = checkedMonths[checkedMonths.length - 1];
 									var currentMonth = "{{date('n')}}{{date('Y')}}";
 									
