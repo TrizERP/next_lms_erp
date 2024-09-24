@@ -532,27 +532,31 @@
 									checkedTitle[k] = $(this).attr('id');
 									k= k+1;
 								});
-								// console.log(checkedTitle);
-
+							
 								// uniform and recovery fees 
-								if (checkedTitle.length > 0 && !checkedTitle.includes('Sports Fees') && !checkedTitle.includes('3')) {
+								if (checkedTitle.length > 0 && !checkedTitle.includes('Sports Fees') && !checkedTitle.includes('4')) {
 									fineZero(0);
 								}
-								// advance fees 
-								else if(checkedMonths.length > 0 && !checkedMonths.includes(currentMonth)){
-									lastMonth = checkedMonths[checkedMonths.length - 1];
-									
-									let greaterMonths = checkedMonths.filter(month => month > currentMonth);
-									if (greaterMonths.length > 0) {
-									    fineZero(0);
-                                        // console.log('no current month');
-									}
-                                    else{
+								// for advance months fees rather than current month
+								else if (checkedMonths.length > 0 && checkedTitle.length > 0) {
+                                    let firstMonth = checkedMonths[0];
+                                    var currentMonth = parseInt("{{date('n')}}{{date('Y')}}"); 
+
+                                    let greaterMonths = checkedMonths
+                                        .map(month => parseInt(month)) 
+                                        .filter(month => month > currentMonth); 
+                                    
+                                    // console.log(firstMonth);
+
+                                    if (!greaterMonths.includes(currentMonth) && greaterMonths.length > 0 && firstMonth >= currentMonth) {
+                                        fineZero(0);
+                                    } else {
                                         var charge = $('#hidden_cheque_return_charges2').val();
                                         var fine = parseFloat(charge);
                                         fineZero(fine);
-								    }
-								}
+                                    }
+                                }
+
 								else{
 									var charge = $('#hidden_cheque_return_charges2').val();
 									var fine = parseFloat(charge);

@@ -891,18 +891,19 @@ class AJAXController extends Controller
                         <th style="width: 10%;padding-left: 15px;">Amount</th>
                     </tr>';
         foreach ($full_bk as $id => $val) {
-            $response .= "
-                 <tr>
+            if($val!=0){
+                $response .= "
+                    <tr>
 
-                    <td style='width: 20%' class='allField1' id='".$id."'>$id</td>
-                    <td style='width: 20%'>$val</td>
-            ";
-            if ($id == 'Total') {
-                $response .= "<input type='hidden' id='totalVal' name='total' value='" . $total . "' class='form-control'>";
+                        <td style='width: 20%' class='allField1' id='".$id."'>$id</td>
+                        <td style='width: 20%'>$val</td>
+                ";
+                if ($id == 'Total') {
+                    $response .= "<input type='hidden' id='totalVal' name='total' value='" . $total . "' class='form-control'>";
+                }
+
+                $response .= "</tr>";
             }
-
-            $response .= "</tr>";
-
         }
 
         return $response;
