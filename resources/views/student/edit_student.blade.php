@@ -262,6 +262,7 @@ datalist {
                                         {{ App\Helpers\SearchChain('4','single','grade,std,div',$student_data->grade_id,$student_data->standard_id,$student_data->section_id) }}
                                         <div class="col-md-4 form-group">
                                             <span></span>
+                                            <input type="hidden" name="editable" value='@if($data["edit_disable"] == "disabled") 0 @else 1 @endif'>
                                         </div>
                                         <div class="col-md-4 form-group">
                                             <span></span>
