@@ -13,6 +13,18 @@ class lmsDashboardController extends Controller
 {
     //
     public function index(Request $request){
+        // redirect to student dashboard
+        if(session()->get('user_profile_name')=="Student"){
+            $dashboard = $this->studentIndex($request);
+        }
+        // redirect to teacher dashboard
+        else{
+            $dashboard = $this->teacherIndex($request);
+        }
+        return $dashboard;
+    }
+
+    public function studentIndex(Request $request){
         $res = session()->get('data');
         $type = $request->input('type');
         $sub_institute_id = session()->get('sub_institute_id') ;
@@ -72,7 +84,7 @@ class lmsDashboardController extends Controller
 
         if($request->students_id){
             $request2 = new Request(['type' => "API",'sub_institute_id'=>$sub_institute_id,'syear'=>$syear,'students_id'=>$request->students_id,'user_id'=>$request->students_id]);
-            $res['lmsData'] = $this->index($request2);
+            $res['lmsData'] = $this->studentIndex($request2);
             // echo "<pre>";print_r($res);exit;
             $res['studentDetails'] = 1;
             $res['grade'] =  $request->grade;
