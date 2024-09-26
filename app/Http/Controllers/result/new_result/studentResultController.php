@@ -402,10 +402,17 @@ class studentResultController extends Controller
            
         // student_details            
         }
+        if (strpos($html_content, htmlspecialchars('<<scholastic_marks_t1_mmis>>')) !== false) {
+            $main_result = $this->get_scholastic_t1_mmis($standard_id, $value['id'], $format, "no_zero");
+            $html_content = str_replace(htmlspecialchars("<<scholastic_marks_t1_mmis>>"), $main_result['table'], $html_content);
+            $html_content = str_replace(htmlspecialchars("<<teacher_remark>>"), $main_result['remark'], $html_content);
+        }
+
         if (strpos($html_content, htmlspecialchars('<<scholastic_marks_mmis>>')) !== false) {
             $main_result = $this->get_scholastic_mmis($standard_id, $value['id'], $format, "no_zero");
             $html_content = str_replace(htmlspecialchars("<<scholastic_marks_mmis>>"), $main_result['table'], $html_content);
         }
+
         if ((strpos($html_content, htmlspecialchars('<<scholastic_grade_marks>>')) !== false) || (strpos($html_content, htmlspecialchars('<<co_scholastic_grade_marks>>')) !== false)) {
             $co_result = $this->get_co_scholastic($standard_id, $value['id'], $format, "double_zero");
             $html_content = str_replace(htmlspecialchars("<<scholastic_grade_marks>>"), $co_result['grade_range'], $html_content);
@@ -678,6 +685,230 @@ class studentResultController extends Controller
         return $res;
 
     }
+
+    // 25-09-2024 start 
+    public function get_scholastic_t1_mmis($standard_id, $student_id, $format, $digit)
+    {
+        $syear = session()->get('syear');
+        $sub_institute_id = session()->get('sub_institute_id');
+        $extra_term =$extra_exam = "1=1";
+        if ($format != "yearly"){
+            $extra_term = "term_id = " . $format;
+            $extra_exam = "rce.term_id = " . $format;
+        }
+        // get term_name 
+        $term_name = DB::table('academic_year')->whereRaw($extra_term)->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->get()->toArray();
+
+        // get subject
+       $get_subject = $this->get_subject($sub_institute_id,$syear,$student_id,$standard_id);
+       $exam_name = $this->get_exam_name($sub_institute_id,$syear,$standard_id,$extra_exam);
+       // get exam title 
+       $exam_title = $this->get_exam_title($sub_institute_id,$syear,$standard_id,$extra_exam);
+       //get exam marks
+       $exam_marks = $this->get_exam_marks($sub_institute_id,$student_id,'best_of_2');
+    //    standar grade array 
+       $grade_arr_mmis = $this->getGradeScale($standard_id, '');
+        // scholastic table started 
+       $table = '<style>.data_center{text-align:center !important;}</style><table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0"  border="1">
+        <thead>
+            <tr>
+                <th style="background:black;color:white"><b>Scholastic Areas:</b></th>';
+        $col = 1;
+        $total_term_marks =  $total_sub_marks = [];
+        $total_weightage = $overall_total  = $all_colspan = 0;
+        $colspan = 2;
+        // get both term name and total marks per subject 
+        foreach ($term_name as $keys => $terms) {
+            $term_exam_titles = array_filter($exam_title, function ($title) use ($terms, $total_weightage) {
+                $total_weightage += $title->weightage;
+                return $title->term_id == $terms->term_id;
+            });
+            $colspan = 2;
+            $table .= '<th colspan="' . (count($term_exam_titles) + $colspan) . '" style="text-align:center;background:black;color:white"><b>' . $terms->title . '</b></th>';
+            // Initialize the total marks for each term to zero
+            $total_term_marks[$terms->term_id] = 0;
+            $total_sub_marks[$terms->term_id] = 0;
+            $all_colspan += count($term_exam_titles);
+        }
+        $table .= '</tr><tr><th><b>Subject</b></th>';
+        $weigthage = '';
+        $subjectTot = [];
+        // get exam names heading like PA,SA,NB
+        foreach ($term_name as $keys => $terms) {
+            $total_mark = 0;
+            foreach ($exam_title as $key => $title) {
+                $weigthage = '(' . $title->weightage . ')';
+                $exam_head = $title->ExamTitle;
+
+                if ($terms->term_id == $title->term_id) {
+                    $table .= '<th class="data_center"><b>' . $exam_head . '<br>' . $weigthage . '</b></th>';
+                    // weightage term wise 
+                    $total_mark += $title->weightage;
+                    if(!isset($subjectTot[$title->subject_id])){
+                        $subjectTot[$title->subject_id] = 0;
+                    }
+                    $subjectTot[$title->subject_id] += $title->weightage;
+                }
+            }
+            $mark_tot = '(' . $total_mark . ')';
+        // Store the total marks for each term
+            $table .= '<th class="data_center"><b>Marks Obtained <br>' . $mark_tot . ' </b></th>';
+            $overall_total += $total_mark;
+        }
+        //total marks of both term headings     
+        $table .= '<th  class="data_center"><b>Grade</b></th>
+        </tr>
+        </thead>
+        <tbody>';
+        $tot_ob_mark =$tot_sub_mark =$get_all_ob_mark=$get_all_tot_mark = 0;
+        // get all subject name 
+        foreach ($get_subject as $val) {
+            $both_term_ob_mark = 0;
+            $table .= '<tr><td>' . $val->subject_name . '</td>';
+            // get term wise eam and marks 
+            foreach ($term_name as $keys => $terms) {
+                $obtained_marks = $to_marks = $to_weight = [];
+                $title_exam = []; 
+                 // get marks by exam id wise
+                  $obtained_marks = $to_marks = $to_weight = $title_exam = []; 
+                                // get marks by exam id wise
+                            foreach ($exam_name as $key => $title) {
+                                if ($title->subject_id == $val->subject_id && $terms->term_id == $title->term_id) {
+                                    $foundMarks = false;
+                                    $ob_mark = 0;
+                                    // By Rajesh - Display periodic test exam and other diaply type 06-08-2024
+                                    $arr = $title->exam_id;
+                                    $title_exam[$arr][] = $title->ExamTitle;
+                                    $weightage = $title->weightage;
+                                    
+                                    // all exam marks 
+                                    foreach ($exam_marks as $index => $marks) {
+                                        if ($title->id == $marks->exam_id) {
+
+                                            // for AB,NA,EX
+                                            if ($marks->is_absent != "") {
+                                                $ab_ex_na = $marks->is_absent;
+                                                $obtained_marks[$arr][] = $ab_ex_na;
+
+                                                if($ab_ex_na=="AB"){
+                                                    $to_marks[$arr][] = $title->points;
+                                                    $to_weight[$arr] = $weightage;
+                                                }
+                                            } else {
+                                                $to_marks[$arr][] = $title->points;
+                                                $ob_mark = $marks->points;
+
+                                                if($title->ExamTitle!='PA1'){
+                                                    $to_weight[$arr] = $weightage;
+                                                }else{
+                                                    $to_weight[$arr][] = $title->con_point;
+                                                }
+                                                // store marks in array to get best of 2 
+                                                $obtained_marks[$arr][] = $ob_mark;
+                                            }
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            // echo "<pre>";print_r($title_exam);
+                            $ob_main_mark = $ab_ex_na = $total_marks = 0;
+                            // for best of 2 exam wise 
+                            if (!empty($title_exam)) {
+                                foreach ($title_exam as $exam_id => $marksArray) {                                
+                                    $convert_mark = 0;
+                                    $obtained_mark_arr = $obtained_marks[$exam_id] ?? [];
+                                    // convert marks if best of 2
+                                    if(in_array('PA1',$marksArray)){
+                                        $pamarks=0;
+                                        foreach ($obtained_mark_arr as $mk => $mv) {
+                                            // echo $mv;
+                                            $w_m = $to_weight[$exam_id][$mk] ?? 0; // Check if the key exists
+                                            $t_m = $to_marks[$exam_id][$mk];
+                                            if(!in_array($mv,["N.A.","EX","AB"])){
+                                                $pamarks +=($t_m != 0) ? (($mv / $t_m) * $w_m) : 0;
+                                            }
+                                        }
+                                        $convert_mark = $pamarks;
+                                    }else{
+                                        $w_m = $to_weight[$exam_id] ?? 0; // Check if the key exists
+                                        $t_m = array_sum(array_intersect_key($to_marks[$exam_id] ?? [], $marksArray));
+                                        $obtained_mark_sum = array_sum($obtained_mark_arr);
+                                        $convert_mark = ($obtained_mark_sum != 0) ? (($obtained_mark_sum / $t_m) * $w_m) : 0;
+                                    }
+                                     // get mark for total mark 
+                                     $ob_main_mark += $convert_mark;
+
+                                    if(count($obtained_mark_arr) > 1) {
+                                        $total_marks += $w_m;
+                                        $table .= '<td class="data_center"  ' . $exam_id . '-'.$val->subject_id.'-'.$standard_id.'>' . number_format($convert_mark, 2) . '</td>';
+                                    }else {
+                                        if (!empty($obtained_mark_arr) && !in_array($obtained_mark_arr[0],["N.A.","EX"])) {
+                                            $total_marks += $w_m;
+                                        }
+
+                                        if(!empty($obtained_mark_arr) && !in_array($obtained_mark_arr[0],["N.A.","EX","AB"])){
+                                            $tdVal = number_format($convert_mark, 2);
+                                        }else{
+                                            $tdVal = $obtained_mark_arr[0] ?? "0.00"; // print AB,NA,EX
+                                        }
+                                        $table .= '<td class="data_center else" ' . $exam_id . '-'.$val->subject_id.'-'.$standard_id.'>' . $tdVal . '</td>';
+                                    }
+                                }
+                            } else {
+                                // If marks not found
+                                foreach ($title_exam as $exam_id => $marksArray) {
+                                    $table .= '<td class="data_center no_mark ' . $exam_id . '">0.00</td>';
+                                }
+                            }            
+             
+                $obtained_mark_formatted = number_format($ob_main_mark, 2);
+                
+                $table .= '<td class="data_center all_mark">' . $obtained_mark_formatted . '</td>';
+                $both_term_ob_mark += $obtained_mark_formatted;
+                // Update the total marks for the current term
+                $total_term_marks[$terms->term_id] += $ob_main_mark;
+                $total_sub_marks[$terms->term_id] += $total_mark;
+            }
+            // get percentage 
+            // echo "<pre>";print_r($total_mark);exit;
+            $subTot = isset($subjectTot[$title->subject_id]) ? $subjectTot[$title->subject_id] : 0;
+            $table .= '<td class="data_center grade_of_both">' . $this->getGrade($grade_arr_mmis, $total_mark, $both_term_ob_mark) . '</td>';
+            $get_all_ob_mark += $both_term_ob_mark;
+            $get_all_tot_mark += $overall_total;
+            
+            $table .= '</tr>';
+        } 
+        // print_r($grade_arr_mmis);
+        // exit;
+        $table .= '<tr>';
+        $table_per = $rep_val = '';
+        $table_all = '';
+        $ov_ob_mark = $ov_sub_mark = 0;
+        $ov_ob_mark2 = $ov_sub_mark2 = 0;
+        $result = "Pass";
+        $per = $this->getPer($get_all_ob_mark, $get_all_tot_mark);
+        // get percentage and grade 
+        $table .= '<tr>
+        <td colspan=' . ($all_colspan)+1 . '><b>Percentage</b></td>
+        <td class="data_center"><b>' . $per . '%</b></td>
+        <td class="data_center"><b>' . $this->getGrade($grade_arr_mmis, $get_all_tot_mark,$get_all_ob_mark) . '</b></td>
+        </tr>';
+        $curr_std = DB::table('standard')->where('id', $standard_id)->first();
+        $next_std = DB::table('standard')->where('id', $curr_std->next_standard_id)->first();
+        if ($per > 33) {
+            $result = 'Passed & Promoted to ' . $next_std->name;
+        } else {
+            $result = "fail";
+        }
+    // Calculate the total marks for each term
+        $res['result'] = $result;
+        $table .= '</tr></tbody></table>';
+        $res['table'] = $table;
+        $res['remark'] = \App\Helpers\getGradeComment($grade_arr_mmis, 100, $per) ?? '-';
+        return $res;
+    }
+    // 25-09-2024 end 
     public function mmisPartB9($standard_id,$student_id,$format){
         $syear = session()->get('syear');
         $sub_institute_id = session()->get('sub_institute_id');
