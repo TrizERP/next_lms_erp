@@ -1236,6 +1236,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
         $get_cumulative_result = DB::table('fees_title')
         ->selectRaw('id,display_name,cumulative_name,append_name')
         ->where('sub_institute_id', $sub_institute_id)
+        ->where('syear', $syear) // added syear to check cumulative 
         ->whereNotNull('cumulative_name')
         ->orderBy('sort_order')->get()->toArray();
 
@@ -1243,11 +1244,17 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
         return (array)$value;
         }, $get_cumulative_result);
 
+        // check if show_month is 1 in fees_config master than print month names instead of cumulative_name
+        if (!empty($config_master)) {
+            $get_cumulative_result = [];
+        }
+
         $cumulative_arr = $append_arr = array();
         foreach ($get_cumulative_result as $key => $value) {
             $cumulative_arr[$value['display_name']] = $value['cumulative_name'];
             $append_arr[$value['display_name']] = $value['append_name'];
         }
+        // echo "<pre>";print_r($append_arr);exit;
         // 31/03/2021 - END FOR making cumulative fees recepit array
        
         //fees title or fees head with  month and without month like tution fees (apr)
