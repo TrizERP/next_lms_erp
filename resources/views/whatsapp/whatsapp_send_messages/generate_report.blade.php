@@ -102,7 +102,7 @@
                                                     <td>{{$data->created_at ?? '-'}}</td>
                                                     <td>{{$data->message_status ?? '-'}}</td>
                                                     <td class="imageTD">{!!$data->message ?? '-'!!}</td>
-                                                    <td><a href="/whatsapp-show-reply/{{$data['whatsapp_number']}}" >show reply ({{count($data['messages'])}})</a></td>
+                                                    <td><a target="_blank" href="/whatsapp-show-reply/{{$data['whatsapp_number']}}" >show reply ({{count($data['messages'])}})</a></td>
                                                 </tr>
                                                 @php
                                                     $j++;
