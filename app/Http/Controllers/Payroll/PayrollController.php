@@ -1128,9 +1128,9 @@ class PayrollController extends Controller
 
         $get_school_name = DB::table('school_setup')->select('ReceiptHeader')->where(['id' => $sub_institute_id])->first();
 
-        $get_user_detail = DB::table('tbluserprofilemaster as tum')
+        $get_user_detail = DB::table('tbluser as ts')
             ->selectRaw('ts.*,tum.name as profile_name')
-            ->join('tbluser as ts',function($join){
+            ->join('tbluserprofilemaster as tum',function($join){
                 $join->on('ts.user_profile_id','=','tum.id')->where('ts.status',1);  // 23-04-24 by uma
             })
             ->where(['tum.sub_institute_id' => $sub_institute_id, 'ts.id' => $id])
@@ -1139,14 +1139,33 @@ class PayrollController extends Controller
         $payrollTypes = PayrollType::where('sub_institute_id',$sub_institute_id)->where('status', 1)->orderBy('sort_order')->get();
         if ($employeeSalaryData) {
             $employeeData = [];
-            $employeeData['name'] = $employeeSalaryData->getUser['first_name'] . ' '. $employeeSalaryData->getUser['last_name'];
-            $employeeData['emp_code'] = $employeeSalaryData->employee_id;
+            $employeeData['name'] = $get_user_detail->first_name . ' '. $get_user_detail->last_name;
+            $employeeData['emp_code'] = $get_user_detail->employee_no;
             $employeeData['join_date'] = date('Y-m-d', strtotime($get_user_detail->joined_date));
             $employeeData['profile_name'] = $get_user_detail->profile_name;
             $employeeData['account_no'] = $get_user_detail->account_no;
             $employeeData['total_day'] = number_format($employeeSalaryData->total_day, 1); // For 1 decimal places
             $employeeData['pf_no'] = $get_user_detail->pf_no;
-            $employeeData['leave_without_pay'] = 1;
+            $employeeData['bank_ac_no'] = $get_user_detail->account_no;
+            // get lwp 
+            $startOfMonth = Carbon::createFromFormat('M Y', $request->month . ' ' . $request->year)->startOfMonth()->format('Y-m-d');
+            $endOfMonth = Carbon::createFromFormat('M Y', $request->month . ' ' . $request->year)->endOfMonth()->format('Y-m-d'); 
+            
+            $lwpQuery = DB::table('hrms_emp_leaves as a')->whereRaw("a.sub_institute_id=$sub_institute_id AND (a.from_date BETWEEN '$startOfMonth' AND '$endOfMonth' OR a.to_date BETWEEN '$startOfMonth' AND '$endOfMonth') AND a.`status`='approved_lwp' AND a.user_id=$id")->get()->toArray();
+
+            $lwpCounts=0;
+            foreach($lwpQuery as $lkey => $lvalue){
+                $loopDate = Carbon::parse($lvalue->from_date);
+                $loopDateEnd = Carbon::parse($lvalue->to_date);
+                while ($loopDate->lte($loopDateEnd)) {
+                    if ($loopDate->month == Carbon::parse($lvalue->from_date)->month) {
+                        // Run the logic if the months match
+                        $lwpCounts += countDays($lvalue->from_date, $lvalue->to_date, $lvalue->day_type);
+                    }
+                    $loopDate->addDay();
+                }
+            }
+            $employeeData['leave_without_pay'] = $lwpCounts;
             $employeeData['month'] = $employeeSalaryData->month;
             $employeeData['year'] = $employeeSalaryData->year;
             $employeeData['total_payment'] = $employeeSalaryData->total_payment + $employeeSalaryData->total_deduction;
@@ -1160,15 +1179,17 @@ class PayrollController extends Controller
             $salaryData = [];
 //            return $employeeSalaryDetails;
             foreach ($payrollTypes as $payrollType) {
+                $empSal = isset($employeeSalaryStructureDetails[$payrollType->id]) ? $employeeSalaryStructureDetails[$payrollType->id] : 0;
+                $empDetailSal =isset($employeeSalaryDetails[$payrollType->id]) ? $employeeSalaryDetails[$payrollType->id] : 0;
                 if($payrollType->payroll_type == 1) {
                     $allowancekey = $allowancekey + 1;
-                    $salaryData[$allowancekey] = [$payrollType->payroll_name,$employeeSalaryStructureDetails[$payrollType->id],$employeeSalaryDetails[$payrollType->id],'allowance'];
-                    $actualpayment = $actualpayment + $employeeSalaryStructureDetails[$payrollType->id];
+                    $salaryData[$allowancekey] = [$payrollType->payroll_name,$empSal,$empDetailSal,'allowance'];
+                    $actualpayment = $actualpayment + $empSal;
                     $allowancekey =$allowancekey + 1 ;
                 } else {
                     //return $payrollType->amount_type;
                     $deductionkey = $deductionkey + 1;
-                    $salaryData[$deductionkey] = isset($employeeSalaryDetails[$payrollType->id]) ? [$payrollType->payroll_name,$employeeSalaryStructureDetails[$payrollType->id],$employeeSalaryDetails[$payrollType->id],'deduction'] : [];
+                    $salaryData[$deductionkey] = isset($empDetailSal) ? [$payrollType->payroll_name,$empSal,$empDetailSal,'deduction'] : [];
                     $deductionkey = $deductionkey + 1;
                 }
             }
