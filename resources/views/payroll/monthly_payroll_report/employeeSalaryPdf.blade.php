@@ -19,13 +19,13 @@
     </tr>
     <tr>
         <td>Bank A/C No</td>
-        <td>{{ isset($employeeData['bank_no']) ? $employeeData['bank_no'] : '-'}}</td>
+        <td>{{ isset($employeeData['bank_ac_no']) ? $employeeData['bank_ac_no'] : '-'}}</td>
         <td>Days Present</td>
         <td>{{$employeeData['total_day']}}</td>
     </tr>
     <tr>
         <td>P. F. A/C</td>
-        <td>{{$employeeData['pf_no']}}</td>
+        <td>{{ isset($employeeData['pf_no']) ? $employeeData['pf_no'] : '-'}}</td>
         <td>Leave without pay</td>
         <td>{{$employeeData['leave_without_pay']}}</td>
     </tr>
@@ -100,16 +100,18 @@
 </table>
 <table style="border-collapse: collapse;" border="1" width="100%">
     <tr>
-        <td colspan="4" align="center"><b>Leave Record</b></td>
-        <td align="center" rowspan=5>
-            <b>From Muljibhai Mehta International School</b>
+    {{-- <td colspan="4" align="center"><b>Leave Record</b></td> --}}
+        <td align="center" {{-- rowspan=4 --}}>
+            <b>From {{ $employeeData['school_name']->ReceiptHeader }}</b>
+            <br>
+            <br>
             <br>
             <img src="http://apps.triz.co.in/mmiserp/Products/cms/assets/fees_logo/mmis.jpg" height="100" width="100">
             <br>
             <b>Authorised Signatory</b>
         </td>
     </tr>
-    <tr>
+    {{-- <tr>
         <td align="center"><b>Leave</b></td>
         <td align="center"><b>Granted</b></td>
         <td align="center"><b>Availed</b></td>
@@ -132,8 +134,8 @@
         <td align="center">60.00</td>
         <td align="center">0.00</td>
         <td align="center">60</td>
-    </tr>
-</table>
+    </tr>--}}   
+</table> 
 <h4>
     <center><font color="red">This is a computer generated payslip and does not require signature.</font>
         <center>
