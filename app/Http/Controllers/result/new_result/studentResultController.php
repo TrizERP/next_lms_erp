@@ -706,6 +706,7 @@ class studentResultController extends Controller
        $exam_title = $this->get_exam_title($sub_institute_id,$syear,$standard_id,$extra_exam);
        //get exam marks
        $exam_marks = $this->get_exam_marks($sub_institute_id,$student_id,'best_of_2');
+    //    echo "<pre>";print_r($exam_marks);exit;
     //    standar grade array 
        $grade_arr_mmis = $this->getGradeScale($standard_id, '');
         // scholastic table started 
@@ -784,15 +785,16 @@ class studentResultController extends Controller
                                     // all exam marks 
                                     foreach ($exam_marks as $index => $marks) {
                                         if ($title->id == $marks->exam_id) {
-
                                             // for AB,NA,EX
-                                            if ($marks->is_absent != "") {
+                                            if ($marks->is_absent!='' && in_array($marks->is_absent,["N.A.","EX","AB"])) {
                                                 $ab_ex_na = $marks->is_absent;
                                                 $obtained_marks[$arr][] = $ab_ex_na;
 
-                                                if($ab_ex_na=="AB"){
-                                                    $to_marks[$arr][] = $title->points;
+                                                $to_marks[$arr][] = $title->points;
+                                                if($ab_ex_na=="AB" && $title->ExamTitle!='PA1'){
                                                     $to_weight[$arr] = $weightage;
+                                                }else{
+                                                    $to_weight[$arr][] = $title->con_point;    
                                                 }
                                             } else {
                                                 $to_marks[$arr][] = $title->points;
@@ -804,14 +806,16 @@ class studentResultController extends Controller
                                                     $to_weight[$arr][] = $title->con_point;
                                                 }
                                                 // store marks in array to get best of 2 
-                                                $obtained_marks[$arr][] = $ob_mark;
+                                                if(!in_array($marks->is_absent,["N.A.","EX","AB"])){
+                                                    $obtained_marks[$arr][] = $ob_mark;
+                                                }
                                             }
                                             break;
                                         }
                                     }
                                 }
                             }
-                            // echo "<pre>";print_r($title_exam);
+                            // echo "<pre>";print_r($to_weight);
                             $ob_main_mark = $ab_ex_na = $total_marks = 0;
                             // for best of 2 exam wise 
                             if (!empty($title_exam)) {
@@ -819,14 +823,17 @@ class studentResultController extends Controller
                                     $convert_mark = 0;
                                     $obtained_mark_arr = $obtained_marks[$exam_id] ?? [];
                                     // convert marks if best of 2
+                                    $pAB=1;
                                     if(in_array('PA1',$marksArray)){
                                         $pamarks=0;
                                         foreach ($obtained_mark_arr as $mk => $mv) {
                                             // echo $mv;
                                             $w_m = $to_weight[$exam_id][$mk] ?? 0; // Check if the key exists
                                             $t_m = $to_marks[$exam_id][$mk];
-                                            if(!in_array($mv,["N.A.","EX","AB"])){
+                                            if(is_numeric($mv)){
                                                 $pamarks +=($t_m != 0) ? (($mv / $t_m) * $w_m) : 0;
+                                            }else{
+                                               $pAB = $pAB+1;
                                             }
                                         }
                                         $convert_mark = $pamarks;
@@ -835,24 +842,39 @@ class studentResultController extends Controller
                                         $t_m = array_sum(array_intersect_key($to_marks[$exam_id] ?? [], $marksArray));
                                         $obtained_mark_sum = array_sum($obtained_mark_arr);
                                         $convert_mark = ($obtained_mark_sum != 0) ? (($obtained_mark_sum / $t_m) * $w_m) : 0;
+                                        // for AB 
+                                        foreach ($obtained_mark_arr as $mk => $mv) {
+                                            $w_m = $to_weight[$exam_id] ?? 0;
+                                            $t_m = $to_marks[$exam_id];
+                                            if(in_array($mv,["N.A.","EX","AB"])){
+                                               $pAB = $pAB+1;
+                                            }
+                                        }
                                     }
+                                    // echo $pAB.'<br>';
                                      // get mark for total mark 
                                      $ob_main_mark += $convert_mark;
 
                                     if(count($obtained_mark_arr) > 1) {
                                         $total_marks += $w_m;
-                                        $table .= '<td class="data_center"  ' . $exam_id . '-'.$val->subject_id.'-'.$standard_id.'>' . number_format($convert_mark, 2) . '</td>';
+                                        if($pAB>=3){
+                                            $tdVal = 'AB';
+                                        }
+                                        else{
+                                            $tdVal = number_format($convert_mark, 2);
+                                        }
+                                        $table .= '<td class="data_center"  ' . $exam_id . '-'.$val->subject_id.'-'.$pAB.'>' . $tdVal . '</td>';
                                     }else {
                                         if (!empty($obtained_mark_arr) && !in_array($obtained_mark_arr[0],["N.A.","EX"])) {
                                             $total_marks += $w_m;
                                         }
-
+                                        
                                         if(!empty($obtained_mark_arr) && !in_array($obtained_mark_arr[0],["N.A.","EX","AB"])){
                                             $tdVal = number_format($convert_mark, 2);
                                         }else{
                                             $tdVal = $obtained_mark_arr[0] ?? "0.00"; // print AB,NA,EX
                                         }
-                                        $table .= '<td class="data_center else" ' . $exam_id . '-'.$val->subject_id.'-'.$standard_id.'>' . $tdVal . '</td>';
+                                        $table .= '<td class="data_center else" ' . $exam_id . '-'.$val->subject_id.'-'.$pAB.' >' . $tdVal . '</td>';
                                     }
                                 }
                             } else {
@@ -861,7 +883,6 @@ class studentResultController extends Controller
                                     $table .= '<td class="data_center no_mark ' . $exam_id . '">0.00</td>';
                                 }
                             }            
-             
                 $obtained_mark_formatted = number_format($ob_main_mark, 2);
                 
                 $table .= '<td class="data_center all_mark">' . $obtained_mark_formatted . '</td>';
@@ -949,7 +970,7 @@ class studentResultController extends Controller
         ->where('ssm.standard_id', '=', $standard_id)
         ->where('sos.syear', '=', $syear)
         ->where('ssm.elective_subject', '=', 'YES')
-        ->where('ssm.allow_grades', '!=', 'YES')
+        ->where('ssm.allow_grades', '=', 'YES')
         ->where('ssm.display_name', '!=', 'BANKING & INSURANCE')
         ->groupBy('rem.Id', 'sos.subject_id', 'ssm.display_name')
         ->orderBy('ssm.sort_order', 'ASC')
@@ -1055,7 +1076,7 @@ class studentResultController extends Controller
         ->where('ssm.standard_id', '=', $standard_id)
         ->where('sos.syear', '=', $syear)
         ->where('ssm.elective_subject', '=', 'YES')
-        ->where('ssm.allow_grades', '!=', 'YES')
+        ->where('ssm.allow_grades', '=', 'YES')
         ->where('ssm.display_name', 'BANKING & INSURANCE')
         ->groupBy('rem.Id', 'sos.subject_id', 'ssm.display_name')
         ->orderBy('ssm.sort_order', 'ASC')
@@ -4963,7 +4984,7 @@ private function buildDisciplineTable($decipline_data)
     ->where('ssm.standard_id', '=', $standard_id)
     ->where('sos.syear', '=', $syear)
     ->where('ssm.elective_subject', '=', 'YES')
-    ->where('ssm.allow_grades', '!=', 'YES')
+    ->where('ssm.allow_grades', '=', 'YES')
     ->groupBy('rem.Id', 'sos.subject_id', 'ssm.display_name')
     ->orderBy('ssm.sort_order', 'ASC')
     ->get();
@@ -5083,9 +5104,8 @@ private function buildDisciplineTable($decipline_data)
             $bestOf2Sub = [47,254];
                 if(in_array($sub_institute_id,$bestOf2Sub)){
                     $get_subject = DB::table("sub_std_map as ssm")->join('subject as sub', 'ssm.subject_id', '=', 'sub.id')->selectRaw('ssm.id as map_id,sub.id as subject_id,ssm.display_name as subject_name,ssm.elective_subject,ssm.allow_grades')->where(['ssm.sub_institute_id' => $sub_institute_id, 'ssm.standard_id' => $standard_id, 'allow_grades' => "Yes"])->orderBy('ssm.sort_order')->get()->toArray();
-            // Filter the elective subjects based on the condition
-                
-                        $get_subject = array_filter($get_subject, function ($value) use ($student_id, $syear) {
+                    // Filter the elective subjects based on the condition
+                        $get_subject = array_filter($get_subject, function ($value) use ($student_id, $syear,$sub_institute_id) {
                             if ($value->elective_subject == 'Yes' && $value->allow_grades == 'Yes') {
                                 $check_optional_subject_with_student = DB::table('student_optional_subject as sos')
                                     ->join('result_marks as rm', 'sos.student_id', '=', 'rm.student_id')
@@ -5097,8 +5117,11 @@ private function buildDisciplineTable($decipline_data)
                                     ->where('sos.subject_id', $value->subject_id)
                                     ->where('sos.syear', $syear)
                                     ->count();
-
-                                return $check_optional_subject_with_student > 0;
+                                if($sub_institute_id==47){
+                                        return $check_optional_subject_with_student < 0;
+                                }else{
+                                        return $check_optional_subject_with_student > 0;
+                                }
                             }
 
                             return true;

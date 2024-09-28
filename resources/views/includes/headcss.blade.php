@@ -1,4 +1,6 @@
-<head>
+<!DOCTYPE html>
+<html lang="en">
+    <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -86,10 +88,10 @@
     </style>
 
     <!-- Global site tag (gtag.js) - Google Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-153077517-1"></script>
+    <!-- <script async src="https://www.googletagmanager.com/gtag/js?id=UA-153077517-1"></script> -->
     <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
     
-    <script>
+    <!-- <script>
         window.dataLayer = window.dataLayer || [];
 
         function gtag() {
@@ -98,6 +100,6 @@
 
         gtag('js', new Date());
         gtag('config', 'UA-153077517-1');
-    </script>
+    </script> -->
   
 </head>
