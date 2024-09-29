@@ -46,6 +46,19 @@
                                     </div>
                                 </div>
 
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        <label for="topicType">File</label>
+                                        <input name="file" id="file" type="file"
+                                                  contenteditable="true">
+
+                                        </input>
+                                        @error('file')
+                                        <span style="color: red">{{$message}}</span>
+                                        @enderror
+                                    </div>
+                                </div>
+
                             </div>
                             <div class="table-responsive">
                                 <table id="example" class="table table-box table-bordered">

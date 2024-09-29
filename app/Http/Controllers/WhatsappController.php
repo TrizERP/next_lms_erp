@@ -250,7 +250,6 @@ class WhatsappController extends Controller
 
     public function whatsappSendMessageStore(Request $request)
     {
-        // return $request->all();exit;
         //return $request->all();
         $type = $request->type ?? '';
         $request->validate([
@@ -290,6 +289,21 @@ class WhatsappController extends Controller
                 "2" => isset($textArray[0]) ? $textArray[0] : null,
             ]);
             $prepareMessageBody['contentSid'] = "HXe0114bc20670d1b3f92c854106ec4a81";
+        }
+
+        $prepareMessageFileBody = [];
+        if ($request->file('file')) {
+            $file = $request->file('file');
+            $filename = $file->getClientOriginalName();
+            $path = Storage::disk('digitalocean')->putFileAs('public/whatsapp', $file, $filename, 'public');
+            // Ensure hrefArray and textArray have elements before accessing them
+            if ($path) {
+                $attachment = env('DO_PATH').$path;
+                $prepareMessageFileBody['contentVariables'] = json_encode([
+                    "1" => $attachment,
+                ]);
+                $prepareMessageFileBody['contentSid'] = "HXb8e33eff5c13a6882183ec4f3ea8a4ba";
+            }
         }
 
         // echo "<pre>";print_r($prepareMessageBody);exit;
@@ -335,6 +349,44 @@ class WhatsappController extends Controller
                     $saveMesasge->created_by = session()->get('user_profile_id');
                     $saveMesasge->created_by_name = session()->get('name');
                     $saveMesasge->save();
+
+                    if (count($prepareMessageFileBody)){
+                        $twilioResponse = $client->messages->create(
+                            'whatsapp:+91' . $student['mobile'],
+                            [
+                                "contentSid" => $prepareMessageFileBody['contentSid'],
+                                "messagingServiceSid" => $messagingServiceSid,
+                                "from" => "whatsapp:+91" . $token['user_whatsapp_no'],
+                                "contentVariables" => $prepareMessageFileBody['contentVariables'],
+                            ]
+                        );
+                        // Check message status
+                        $messageStatus = $twilioResponse->status;
+                        $errorStatus = $twilioResponse->uri;
+                        // Check if there was an error
+                        if ($twilioResponse->errorCode) {
+                            $errorStatus = $twilioResponse->errorMessage;
+                        }
+                        $messagesid = $twilioResponse->sid;
+
+                        $saveMesasge = new WhatsappSentMessage();
+                        $saveMesasge->sub_institute_id = session()->get('sub_institute_id');
+                        $saveMesasge->syear = session()->get('syear');
+                        $saveMesasge->standard_id = $request->standard;
+                        $saveMesasge->division_id = $request->division;
+                        $saveMesasge->student_id = $student['id'];
+                        $saveMesasge->message = $request->message;
+                        $saveMesasge->whatsapp_number = "+91" . $student['mobile'];
+                        $saveMesasge->attachment = $attachment;
+                        $saveMesasge->sent_date = Carbon::today();
+                        $saveMesasge->message_status = $messageStatus;
+                        $saveMesasge->message_error = $errorStatus;
+                        $saveMesasge->uri = $messagesid; // intstead of uri store message sid
+                        $saveMesasge->created_by = session()->get('user_profile_id');
+                        $saveMesasge->created_by_name = session()->get('name');
+                        $saveMesasge->save();
+
+                    }
                 }
             }
 

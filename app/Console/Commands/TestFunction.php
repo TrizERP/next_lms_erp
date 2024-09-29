@@ -88,6 +88,31 @@ class TestFunction extends Command
     public function handle()
     {
 
+        $attachment = "public/whatsapp/download.jpeg";
+        $prepareMessagFileeBody['contentVariables'] = json_encode([
+            "1" => $attachment,
+        ]);
+        $prepareMessagFileeBody['contentSid'] = "HXe1dfea2d6ce4025bc5b48035c1b2ce07";
+
+        $messagingServiceSid = 'MGdec43b1bbd9428a72fa0c7a633905319';
+        $accountSid = env('TWILIO_SID');
+        $authToken = env('TWILIO_AUTH_TOKEN');
+        $client = new Client($accountSid, $authToken);
+        $twilioResponse = $client->messages->create(
+        //'whatsapp:+919638141767',
+            'whatsapp:+917621070302',
+            [
+                "contentSid" => $prepareMessagFileeBody['contentSid'],
+                "messagingServiceSid" => $messagingServiceSid,
+                "from" => "whatsapp:+919909906512",
+                "contentVariables" => $prepareMessagFileeBody['contentVariables'],
+            ]
+        );
+        dd($twilioResponse);
+
+        dd('done');
+
+
         $message = "Triz ";
         list($textArray, $hrefArray) = $this->mediaFound($message);
 
