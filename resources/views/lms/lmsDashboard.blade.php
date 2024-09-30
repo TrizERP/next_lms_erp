@@ -15,7 +15,7 @@
    @php 
    $colours = [0=>"FE8C00",1=>"396AFC",2=>"BF5AE0",3=>"6C08FF",4=>"2B5876",5=>"B3AC4D",6=>"8CC63E",7=>"B0B0B0",8=>"CCBF08",9=>"396AFC",10=>"BF5AE0",11=>"FF8008",12=>"396AFC",13=>"BF5AE0",14=>"FF8008",15=>"ADE5FC",16=>"B3AC4D",17=>"8CC63E",18=>"B0B0B0",19=>"CCBF08",20=>"396AFC",21=>"BF5AE0",22=>"FF8008",23=>"FE8C00"];
 
-   $colours2 = [0=>"396AFC",1=>"BF5AE0",2=>"FF8008",3=>"ADE5FC",4=>"B3AC4D",5=>"8CC63E",6=>"B0B0B0",7=>"CCBF08",8=>"396AFC",9=>"BF5AE0",10=>"FF8008",11=>"FE8C00",12=>"396AFC",13=>"BF5AE0",14=>"FF8008",15=>"ADE5FC",16=>"B3AC4D",17=>"8CC63E",18=>"B0B0B0",19=>"CCBF08",20=>"396AFC",21=>"BF5AE0",22=>"FF8008",23=>"FE8C00"];
+   $colours2 = [0=>"396AFC",1=>"BF5AE0",2=>"FF8008",3=>"9971d5",4=>"4686b1",5=>"8CC63E",6=>"B0B0B0",7=>"CCBF08",8=>"396AFC",9=>"BF5AE0",10=>"FF8008",11=>"FE8C00",12=>"396AFC",13=>"BF5AE0",14=>"FF8008",15=>"ADE5FC",16=>"B3AC4D",17=>"8CC63E",18=>"B0B0B0",19=>"CCBF08",20=>"396AFC",21=>"BF5AE0",22=>"FF8008",23=>"FE8C00"];
    @endphp
    <!-- main div  -->
    <div class="lmsmain">
@@ -75,25 +75,28 @@
             <div class="cardHead">
                <h4>Last Standard <span id="lastStd"></span></h4>
             </div>
-            <div class="SelectPreSub">
-               @if(!empty($data['previousData']['previousdata']['overallresult']) && isset($data['previousData']['previousdata']['overallresult']))
-               @foreach($data['previousData']['previousdata']['overallresult'] as $key=>$value)
-               <div class="row PreSubcollapse collapse  {{ $loop->last ? 'show' : '' }}"  id="collapseExample_{{$key}}" data-val="collapseExample_{{$key}}">
-                     @foreach($value as $key2=>$value2)
-                     <a class="btn" style="background:#{{$colours[$key2]}};color:#fff;margin:4px" data-bs-toggle="collapse" href="#collapseExample_{{$key}}_{{$value2['subjectname']}}" role="button" aria-expanded="false" aria-controls="collapseExample_{{$key}}_{{$value2['subjectname']}}" onclick="PreSubCollepse('{{$key}}_{{$value2['subjectname']}}')">
-                     {{$value2['subjectname']}}
-                     </a>
-                     @endforeach
-               </div>
-               @endforeach
-               @endif
+            <div class="SelectPreSub"> 
+    @if(!empty($data['previousData']['previousdata']['overallresult']) && isset($data['previousData']['previousdata']['overallresult']))
+        @foreach($data['previousData']['previousdata']['overallresult'] as $key=>$value)
+            <div class="row PreSubcollapse collapse  {{ $loop->last ? 'show' : '' }}" id="collapseExample_{{$key}}" data-val="collapseExample_{{$key}}">
+                @foreach($value as $key2=>$value2)
+                    <a class="btn {{ $loop->first ? 'activeSub' : '' }}" style="background:#{{$colours[$key2]}};color:#fff;margin:4px"  data-bs-toggle="collapse" href="#collapseExample_{{$key}}_{{$value2['subjectname']}}" role="button" aria-expanded="false" aria-controls="collapseExample_{{$key}}_{{$value2['subjectname']}}" onclick="PreSubCollepse('{{$key}}_{{$value2['subjectname']}}', this)">
+                    {{$value2['subjectname']}}
+                    </a>
+                @endforeach
             </div>
+        @endforeach
+    @endif
+</div>
+
             <div class="cardData" id="#cardData2" style="padding-top:0px !important;height:346px">
                @if(!empty($data['previousData']['previousdata']['standarddata']))
                @foreach($data['previousData']['previousdata']['standarddata'] as $key=>$value)
                   @if(isset($value['subjectdata']))
                   @foreach($value['subjectdata'] as $key2=>$value2)
                   <div class="collapse collapseExample_{{$value['standardname']}}_{{$value2['title']}} subject_col" id="collapseExample_{{$value['standardname']}}_{{$value2['title']}}">
+                     <h4 style="margin-bottom:0px">{{$value2['title']}}</h4>
+                     <hr style="margin-top:0.5px">
                      <div class="card card-body p-4">
                         @if(!empty($value2['examdata']))
                         @foreach($value2['examdata'] as $examdataKey => $examdataVal)
@@ -147,24 +150,25 @@
                      @endphp
                      <style>
                         .wave{{$key}} {
-                        background: #{{$colours2[$key]}}; 
+                           background: #{{$colours2[$key]}}; 
                         }
-                        .circle{{$key}}{
-                        border : #{{$colours2[$key]}}; 
+                        .circleLast{{$key}}{
+                           box-shadow : 0 0 0 5px #{{$colours2[$key]}}; 
+                           border : 0px;
                         }
                         .wave{{$key}}{
                            height : {{$wavePer}}% !important;
                         }
                         .wave{{$key}}:before,
                         .wave{{$key}}:after{
-                        height : {{$wavePer}}% !important;
+                           height : {{$wavePer}}% !important;
                         }
                      </style>
                      <div class="progress-circle col-md-2">
-                        <a class="ProgressCircle {{$loop->first ? 'active' : ''}}" data-bs-toggle="collapse" data-val="{{$value['subject_id']}}" href="#collapseExample2_{{$value['subject_id']}}" aria-expanded="false" aria-controls="collapseExample2_{{$value['subject_id']}}" onclick="currentCircle('{{$value['subject_id']}}')">
+                        <a class="ProgressCircle {{$loop->first ? 'activeCircle' : ''}}" data-bs-toggle="collapse" data-val="{{$value['subject_id']}}" href="#collapseExample2_{{$value['subject_id']}}" aria-expanded="false" aria-controls="collapseExample2_{{$value['subject_id']}}" onclick="currentCircle('{{$value['subject_id']}}')">
                         <div class="subjectName">
                            <h4 style="opacity: 1000;z-index: 1000;color:black">{{$value['title']}}</h4>
-                           <div class="circle circle{{$key}} d-block">
+                           <div class="circle circleLast{{$key}} d-block">
                               <div class="wave wave{{$key}}"></div>
                            </div>
                         </div>
@@ -198,7 +202,7 @@
                               $chPer = ($chtotal!=0) ? ($chobt * 100) / $chtotal : 0;
                               $i = [1=>'#FDEE21',2=>'#FDEE21',3=>'#FDEE21',4=>'#8A8A8A',5=>'#8A8A8A'];
                               @endphp
-                              <tr class="trsub"  onclick="activeTr('tr{{$ch}}',{{$ch}},{{$sub_id}})" id="tr{{$ch}}" data-val="{{$ch}}">
+                              <tr class="trsub"  onclick="activeTr('tr{{$ch}}',{{$ch}},{{$sub_id}})" id="tr{{$ch}}_{{$sub_id}}" data-val="{{$ch}}">
                                  <td style="width:70%">{{isset($chVal['title']) ? $chVal['title'] : '-'}}</td>
                                  <td style="width:10%">{{$chtotal}}</td>
                                  <td style="width:10%">{{$chobt}}</td>
@@ -224,7 +228,7 @@
                   @foreach($value['chapterdata'][$sub_id] as $ch=>$chVal)
                   <div class="chapdata chapdata_{{$sub_id}}_{{$ch}}" id="collapseExample3_{{$sub_id}}_{{$ch}}" style="padding-top:0px !important;margin:0px 33px;">
                      <div class="chapter_title">
-                        <h4>{{isset($chVal['title']) ? $chVal['title'] : '-'}}</h4>
+                        <h4 style="margin-bottom:0px">{{isset($chVal['title']) ? $chVal['title'] : '-'}}</h4>
                      </div>
                      <div class="knowledgeDiv">
                         <div class="knowledge">
@@ -308,7 +312,7 @@
        <div class="lmscard" style="width:35%">
          <div class="card border-radius-2">
             <div class="cardHead">
-               <h4>Recommendation</h4>
+               <h4>Occupations</h4>
             </div>
             <div class="cardData" style="padding:10px 10px;overflow-y: scroll;">
             @if(!empty($data['selectedCurrentData']['currentdata']['subjectdata']) && isset($data['selectedCurrentData']['currentdata']['subjectdata']))
@@ -524,127 +528,121 @@
 </div>
 @include('includes.footerJs')
 <script> 
-    $('.row.PreSubcollapse.collapse.show').each(function() {
-        var divId = $(this).attr('id');
+    $(document).ready(function() {
+        // Cache commonly used elements
+        var $chapData = $('.chapdata');
+        var $recommendation = $('.recommendation');
+        var $curveData = $('.curveData');
+        var $rankData = $('.rankData');
 
-        var firstHref = $(this).find('a:first').attr('aria-controls');
-         $('.'+firstHref).toggleClass('show');
+        // Handle showing collapse sections on page load
+        $('.row.PreSubcollapse.collapse.show').each(function() {
+            var firstHref = $(this).find('a:first').attr('aria-controls');
+            if (firstHref) {
+                $('.' + firstHref).toggleClass('show');
+            }
+        });
+
+        // Activate the first row and toggle respective classes for active circles and tables
+        $('.ProgressCircle.activeCircle').each(function() {
+            var divId = $(this).data('val');
+            var $currentTable = $('.CurrentTable[data-val="collapseExample2_' + divId + '"]');
+            
+            $currentTable.toggleClass('active');
+            
+            var $firstRow = $currentTable.find('tbody tr:first');
+            if ($firstRow.length) {
+                $firstRow.addClass('activeChapter');
+                var ch = $firstRow.data('val');
+                
+                // Show or hide sections based on row data
+                toggleSections(divId, ch);
+            } else {
+                hideSections();
+            }
+        });
+
+        // Event delegation for dynamic content
+        $('.circle').on('click', function() {
+            hideSections();
+        });
     });
 
+    function toggleSections(divId, ch) {
+        $('.chapdata').hide();
+        $('#collapseExample3_' + divId + '_' + ch).show();
 
-    $('.ProgressCircle.active').each(function() {
-        var divId = $(this).attr('data-val');
-        console.log('sub id'+divId);
-        $('.CurrentTable[data-val="collapseExample2_'+divId+'"]').toggleClass('active');
-   
-         var $firstRow = $('.CurrentTable[data-val="collapseExample2_'+divId+'"] tbody').find('tr:first');
-         if ($firstRow.length > 0) {
-            $firstRow.toggleClass('activeChapter');
-            var ch = $firstRow.attr('data-val');
+        $('.recommendation').hide();
+        $('#recommendation_' + divId + '_' + ch).show();
 
-            $('.chapdata').hide();
-            $('#collapseExample3_'+divId+'_'+ch).show();
+        $('.curveData').hide();
+        $('#curveData_' + divId + '_' + ch).show();
 
-            $('.recommendation').hide();
-            $('#recommendation_'+divId+'_'+ch).show();
+        $('.rankData').hide();
+        $('#rankData_' + divId + '_' + ch).show();
+    }
 
-            $('.curveData').hide();
-            $('#curveData_'+divId+'_'+ch).show();
+    function hideSections() {
+        $('.chapdata').hide();
+        $('.recommendation').hide();
+        $('.curveData').hide();
+        $('.rankData').hide();
+    }
 
-            $('.rankData').hide();
-            $('#rankData_'+divId+'_'+ch).show();
-         }else{
-            $('.chapdata').hide();
-            $('.recommendation').hide();
-            $('.rankData').hide();
-            $('.curveData').hide();
-         }
-
-    });
-
-
-   $('.circle').on('click',function(){
-      $('.chapdata').hide();
-      $('.recommendation').hide();
-      $('.rankData').hide();
-      $('.curveData').hide();
-   })
-
-</script>
-<script>
-  function PreviousCircle(std){
-   $('.circle1').removeClass('active');
-   $('.PreSubcollapse').removeClass('show');
-   $('.bar-graph').removeClass('show');
-   $('.subject_col').removeClass('show');
-   $('#lastStd').empty();
-   $('#lastStd').text(std);
-   $('.circle1[data-val="'+std+'"]').toggleClass('active');
-
-   $('.PreSubcollapse[data-val="collapseExample_'+std+'"]').toggleClass('show');
-   var firstHref2 = $('.PreSubcollapse[data-val="collapseExample_'+std+'"]').find('a:first').attr('aria-controls');
-   if (firstHref2) {
-      $('.'+firstHref2).toggleClass('show');
-   } else {
-      console.log("No href found.");
-   }
-
-  }
-
-  function PreSubCollepse(subId) {
-   currentId = "collapseExample_'"+subId+"'";
-    $('.subject_col').each(function() {
-        var $collapse = $(this);
-        var id = $collapse.attr('id');
-
-        if (id === subId) {
-            $collapse.collapse('show');
-        } else {
-            $collapse.collapse('hide');
+    function PreviousCircle(std) {
+        $('.circle1').removeClass('active');
+        $('.PreSubcollapse, .bar-graph, .subject_col').removeClass('show');
+        $('#lastStd').text(std);
+        
+        var $currentCircle = $('.circle1[data-val="' + std + '"]');
+        $currentCircle.addClass('active');
+        
+        var $preSubcollapse = $('.PreSubcollapse[data-val="collapseExample_' + std + '"]');
+        $preSubcollapse.toggleClass('show');
+        
+        var firstHref2 = $preSubcollapse.find('a:first').attr('aria-controls');
+        if (firstHref2) {
+            $('.' + firstHref2).toggleClass('show');
         }
-    });
-}
+    }
 
-function currentCircle(sub){
-   $('.CurrentTable').removeClass('show');
-   $('.CurrentTable[data-val="collapseExample2_'+sub+'"]').toggleClass('active');
-   
-   var $firstRow = $('.CurrentTable[data-val="collapseExample2_'+sub+'"] tbody').find('tr:first');
-   if ($firstRow.length > 0) {
-      $firstRow.toggleClass('activeChapter');
-      var ch = $firstRow.attr('data-val');
+    function PreSubCollepse(subId, btn) {
+        $('.SelectPreSub a').removeClass('activeSub active-border');
+        $(btn).addClass('activeSub active-border');
+        
+        $('.subject_col').each(function() {
+            var id = $(this).attr('id');
+            $(this).collapse(id === subId ? 'show' : 'hide');
+        });
+    }
 
-      $('.chapdata'+sub+'_'+ch).hide();
-      $('#collapseExample3_'+sub+'_'+ch).show();
+    function currentCircle(sub) {
+      $('.CurrentTable').removeClass('show');
+      $('.CurrentTable').removeClass('active');
 
-      $('.recommendation').hide();
-            $('#recommendation_'+sub+'_'+ch).show();
+        var $currentTable = $('.CurrentTable[data-val="collapseExample2_' + sub + '"]');
+        
+        $currentTable.toggleClass('active');
+        $('.ProgressCircle').removeClass('activeCircle');
+        $('.ProgressCircle[data-val="' + sub + '"]').toggleClass('activeCircle');
+        
+        var $firstRow = $currentTable.find('tbody tr:first');
+        if ($firstRow.length) {
+            $firstRow.addClass('activeChapter');
+            var ch = $firstRow.data('val');
+            toggleSections(sub, ch);
+        } else {
+            hideSections();
+        }
+    }
 
-            $('.curveData').hide();
-            $('#curveData_'+sub+'_'+ch).show();
-
-            $('.rankData').hide();
-            $('#rankData_'+sub+'_'+ch).show();
-
-   } else {
-      console.log("No first row found in table.");
-   }
-  
-}
-
-   function activeTr(trsub,ch_id,sub_id){
+    function activeTr(trsub, ch_id, sub_id) {
         $('.trsub').removeClass('activeChapter');
-       $('#'+trsub).toggleClass('activeChapter');
-       $('.chapdata').hide();
-       $('.recommendation').hide();
-       $('.rankData').hide();
-       $('.curveData').hide();
-       $('#collapseExample3_'+sub_id+'_'+ch_id).show();
-       $('#recommendation_'+sub_id+'_'+ch_id).show();
-       $('#rankData_'+sub_id+'_'+ch_id).show();
-       $('#curveData_'+sub_id+'_'+ch_id).show();
-       
-   }
+        $('#tr' + ch_id + '_' + sub_id).toggleClass('activeChapter');
+        
+        toggleSections(sub_id, ch_id);
+    }
 </script>
+
 @include('includes.footer')
 @endsection

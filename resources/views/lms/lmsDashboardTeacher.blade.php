@@ -132,127 +132,122 @@ function getLMSDashboard(grade,standard,division,student_id){
         })
     }
 }
-    $('.row.PreSubcollapse.collapse.show').each(function() {
-        var divId = $(this).attr('id');
-
-        var firstHref = $(this).find('a:first').attr('aria-controls');
-         $('.'+firstHref).toggleClass('show');
-    });
-
-
-    $('.ProgressCircle.active').each(function() {
-        var divId = $(this).attr('data-val');
-        // console.log('sub id'+divId);
-        $('.CurrentTable[data-val="collapseExample2_'+divId+'"]').toggleClass('active');
-   
-         var $firstRow = $('.CurrentTable[data-val="collapseExample2_'+divId+'"] tbody').find('tr:first');
-         if ($firstRow.length > 0) {
-            $firstRow.toggleClass('activeChapter');
-            var ch = $firstRow.attr('data-val');
-
-            $('.chapdata').hide();
-            $('#collapseExample3_'+divId+'_'+ch).show();
-
-            $('.recommendation').hide();
-            $('#recommendation_'+divId+'_'+ch).show();
-
-            $('.curveData').hide();
-            $('#curveData_'+divId+'_'+ch).show();
-
-            $('.rankData').hide();
-            $('#rankData_'+divId+'_'+ch).show();
-         }else{
-            $('.chapdata').hide();
-            $('.recommendation').hide();
-            $('.rankData').hide();
-            $('.curveData').hide();
-         }
-
-    });
-
-
-   $('.circle').on('click',function(){
-      $('.chapdata').hide();
-      $('.recommendation').hide();
-      $('.rankData').hide();
-      $('.curveData').hide();
-   })
-
 </script>
 <script>
-  function PreviousCircle(std){
-   $('.circle1').removeClass('active');
-   $('.PreSubcollapse').removeClass('show');
-   $('.bar-graph').removeClass('show');
-   $('.subject_col').removeClass('show');
-   $('#lastStd').empty();
-   $('#lastStd').text(std);
-   $('.circle1[data-val="'+std+'"]').toggleClass('active');
+$(document).ready(function() {
+        // Cache commonly used elements
+        var $chapData = $('.chapdata');
+        var $recommendation = $('.recommendation');
+        var $curveData = $('.curveData');
+        var $rankData = $('.rankData');
 
-   $('.PreSubcollapse[data-val="collapseExample_'+std+'"]').toggleClass('show');
-   var firstHref2 = $('.PreSubcollapse[data-val="collapseExample_'+std+'"]').find('a:first').attr('aria-controls');
-   if (firstHref2) {
-      $('.'+firstHref2).toggleClass('show');
-   } else {
-      console.log("No href found.");
-   }
+        // Handle showing collapse sections on page load
+        $('.row.PreSubcollapse.collapse.show').each(function() {
+            var firstHref = $(this).find('a:first').attr('aria-controls');
+            if (firstHref) {
+                $('.' + firstHref).toggleClass('show');
+            }
+        });
 
-  }
+        // Activate the first row and toggle respective classes for active circles and tables
+        $('.ProgressCircle.activeCircle').each(function() {
+            var divId = $(this).data('val');
+            var $currentTable = $('.CurrentTable[data-val="collapseExample2_' + divId + '"]');
+            
+            $currentTable.toggleClass('active');
+            
+            var $firstRow = $currentTable.find('tbody tr:first');
+            if ($firstRow.length) {
+                $firstRow.addClass('activeChapter');
+                var ch = $firstRow.data('val');
+                
+                // Show or hide sections based on row data
+                toggleSections(divId, ch);
+            } else {
+                hideSections();
+            }
+        });
 
-  function PreSubCollepse(subId) {
-   currentId = "collapseExample_'"+subId+"'";
-    $('.subject_col').each(function() {
-        var $collapse = $(this);
-        var id = $collapse.attr('id');
-
-        if (id === subId) {
-            $collapse.collapse('show');
-        } else {
-            $collapse.collapse('hide');
-        }
+        // Event delegation for dynamic content
+        $('.circle').on('click', function() {
+            hideSections();
+        });
     });
-}
 
-function currentCircle(sub){
-   $('.CurrentTable').removeClass('show');
-   $('.CurrentTable[data-val="collapseExample2_'+sub+'"]').toggleClass('active');
-   
-   var $firstRow = $('.CurrentTable[data-val="collapseExample2_'+sub+'"] tbody').find('tr:first');
-   if ($firstRow.length > 0) {
-      $firstRow.toggleClass('activeChapter');
-      var ch = $firstRow.attr('data-val');
+    function toggleSections(divId, ch) {
+        $('.chapdata').hide();
+        $('#collapseExample3_' + divId + '_' + ch).show();
 
-      $('.chapdata'+sub+'_'+ch).hide();
-      $('#collapseExample3_'+sub+'_'+ch).show();
+        $('.recommendation').hide();
+        $('#recommendation_' + divId + '_' + ch).show();
 
-      $('.recommendation').hide();
-            $('#recommendation_'+sub+'_'+ch).show();
+        $('.curveData').hide();
+        $('#curveData_' + divId + '_' + ch).show();
 
-            $('.curveData').hide();
-            $('#curveData_'+sub+'_'+ch).show();
+        $('.rankData').hide();
+        $('#rankData_' + divId + '_' + ch).show();
+    }
 
-            $('.rankData').hide();
-            $('#rankData_'+sub+'_'+ch).show();
+    function hideSections() {
+        $('.chapdata').hide();
+        $('.recommendation').hide();
+        $('.curveData').hide();
+        $('.rankData').hide();
+    }
 
-   } else {
-      console.log("No first row found in table.");
-   }
-  
-}
+    function PreviousCircle(std) {
+        $('.circle1').removeClass('active');
+        $('.PreSubcollapse, .bar-graph, .subject_col').removeClass('show');
+        $('#lastStd').text(std);
+        
+        var $currentCircle = $('.circle1[data-val="' + std + '"]');
+        $currentCircle.addClass('active');
+        
+        var $preSubcollapse = $('.PreSubcollapse[data-val="collapseExample_' + std + '"]');
+        $preSubcollapse.toggleClass('show');
+        
+        var firstHref2 = $preSubcollapse.find('a:first').attr('aria-controls');
+        if (firstHref2) {
+            $('.' + firstHref2).toggleClass('show');
+        }
+    }
 
-   function activeTr(trsub,ch_id,sub_id){
+    function PreSubCollepse(subId, btn) {
+        $('.SelectPreSub a').removeClass('activeSub active-border');
+        $(btn).addClass('activeSub active-border');
+        
+        $('.subject_col').each(function() {
+            var id = $(this).attr('id');
+            $(this).collapse(id === subId ? 'show' : 'hide');
+        });
+    }
+
+    function currentCircle(sub) {
+      $('.CurrentTable').removeClass('show');
+      $('.CurrentTable').removeClass('active');
+
+        var $currentTable = $('.CurrentTable[data-val="collapseExample2_' + sub + '"]');
+        
+        $currentTable.toggleClass('active');
+        $('.ProgressCircle').removeClass('activeCircle');
+        $('.ProgressCircle[data-val="' + sub + '"]').toggleClass('activeCircle');
+        
+        var $firstRow = $currentTable.find('tbody tr:first');
+        if ($firstRow.length) {
+            $firstRow.addClass('activeChapter');
+            var ch = $firstRow.data('val');
+            toggleSections(sub, ch);
+        } else {
+            hideSections();
+        }
+    }
+
+    function activeTr(trsub, ch_id, sub_id) {
         $('.trsub').removeClass('activeChapter');
-       $('#'+trsub).toggleClass('activeChapter');
-       $('.chapdata').hide();
-       $('.recommendation').hide();
-       $('.rankData').hide();
-       $('.curveData').hide();
-       $('#collapseExample3_'+sub_id+'_'+ch_id).show();
-       $('#recommendation_'+sub_id+'_'+ch_id).show();
-       $('#rankData_'+sub_id+'_'+ch_id).show();
-       $('#curveData_'+sub_id+'_'+ch_id).show();
-       
-   }
+        $('#tr' + ch_id + '_' + sub_id).toggleClass('activeChapter');
+        
+        toggleSections(sub_id, ch_id);
+    }
 </script>
 @include('includes.footer')
 @endsection
