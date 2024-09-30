@@ -126,14 +126,15 @@ class dashboardController extends Controller
                     ->groupBy('payment_mode')
                     ->take(10)->get()->toArray();
 
+// RAJESH leftjoin to join
                 $admissionBlock = DB::table("standard as s")
-                    ->leftJoin("admission_enquiry as e", function ($join) {
+                    ->join("admission_enquiry as e", function ($join) {
                         $join->on('s.id', "=", "e.admission_standard")->on('e.sub_institute_id', '=', 's.sub_institute_id');
                     })
-                    ->leftJoin("admission_form as f", function ($join) {
+                    ->join("admission_form as f", function ($join) {
                         $join->on('f.admission_standard', "=", "s.id")->on('f.sub_institute_id', '=', 's.sub_institute_id')->on('e.enquiry_no', '=', 'f.enquiry_no');
                     })
-                    ->leftJoin("admission_registration as r", function ($join) {
+                    ->join("admission_registration as r", function ($join) {
                         $join->on('r.enquiry_no', "=", "f.enquiry_no")->on('r.sub_institute_id', '=', 's.sub_institute_id');
                     })
                     ->selectRaw("COUNT(e.id) as total_enquiry, COUNT(f.id) as total_form, COUNT(r.id) as total_registration, s.name as standard_name")
@@ -189,6 +190,7 @@ class dashboardController extends Controller
                 $NotificationBlock = DB::table("app_notification")
                     ->selectRaw("COUNT(*) as total_notification, notification_type")
                     ->where("sub_institute_id", "=", $sub_institute_id)
+                    ->where("NOTIFICATION_DATE", "=", date('Y-m-d'))
                     ->groupBy('notification_type')->get()->toArray();
 
                 if (count($NotificationBlock) > 0) {
@@ -479,7 +481,7 @@ class dashboardController extends Controller
                     ->join('standard as st', function ($join) {
                         $join->on("st.id", "=", "se.standard_id");
                     })
-                    ->leftJoin('division as d', function ($join) {
+                    ->join('division as d', function ($join) { // Rajesh leftjoin to join
                         $join->on("d.id", "=", "se.section_id");
                     })->join('fees_collect as fc', function ($join) use ($syear, $sub_institute_id) {
                         $join->on("fc.student_id", "=", "s.id")->whereRaw("fc.syear = " . $syear . " AND fc.sub_institute_id = " . $sub_institute_id);
@@ -1206,15 +1208,15 @@ class dashboardController extends Controller
                 $absents[] = (int)$value->absent;
                 $presants[] = (int)$value->present;
             }
-
+//RAJESH leftJoin to join
             $admissionBlock = DB::table("standard as s")
-                ->leftJoin("admission_enquiry as e", function ($join) {
+                ->join("admission_enquiry as e", function ($join) {
                     $join->on("s.id", "=", "e.admission_standard");
                 })
-                ->leftJoin("admission_form as f", function ($join) {
+                ->join("admission_form as f", function ($join) {
                     $join->on("f.admission_standard", "=", "s.id")->on("f.sub_institute_id", "=", "s.sub_institute_id")->on("e.enquiry_no", "=", "f.enquiry_no");
                 })
-                ->leftJoin("admission_registration as r", function ($join) {
+                ->join("admission_registration as r", function ($join) {
                     $join->on("r.enquiry_no", "=", "f.enquiry_no");
                 })
                 ->selectRaw("COUNT(e.id) AS total_enquiry, COUNT(f.id) AS total_form ,COUNT(r.id) as total_registration,
@@ -1265,6 +1267,7 @@ class dashboardController extends Controller
 
             $NotificationBlock = DB::table('app_notification')->selectRaw('count(*) as total_notification,notification_type')
                 ->where('sub_institute_id', $sub_institute_id)
+                ->where('NOTIFICATION_DATE', date('Y-m-d'))
                 ->where(function ($q) use ($user_id) {
                     $q->where('student_id', $user_id)->orWhereNull('student_id');
                 })
@@ -1885,7 +1888,7 @@ class dashboardController extends Controller
                     $join->on("g.id", "=", "se.grade_id");
                 })->join('standard as st', function ($join) {
                     $join->on("st.id", "=", "se.standard_id");
-                })->leftJoin('division as d', function ($join) {
+                })->join('division as d', function ($join) { // Rajesh leftjoin to join
                     $join->on("d.id", "=", "se.section_id");
                 })->join('fees_collect as fc', function ($join) use ($syear, $sub_institute_id) {
                     $join->on("fc.student_id", "=", "s.id")

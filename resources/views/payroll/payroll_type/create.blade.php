@@ -51,7 +51,6 @@
                         <span style="color: red">{{$message}}</span>
                         @enderror
                     </div>
-
                     <div class="col-md-4 form-group">
                         <label>Payroll Type Name </label>
                         <input type="text" id='payroll_name' required name="payroll_name" class="form-control" value="{{$payrollType['payroll_name']}}" required>
@@ -103,6 +102,18 @@
                         <span style="color: red">{{$message}}</span>
                         @enderror
                     </div>
+                    <div class="col-md-4 form-group">
+                        <label>Day Wise Count: </label>
+                        @if($payrollType['day_count'] == 0)
+                            <input type="radio" name="day_count" value="0" checked> Yes
+                            <input type="radio" name="day_count" value="1"> No
+                        @elseif($payrollType['day_count'] == 1)
+                            <input type="radio" name="day_count" value="0" > Yes
+                            <input type="radio" name="day_count" value="1" checked> No
+                        @endif
+                        
+                    </div>
+
                     <input type="hidden" name="id" value="{{$payrollType['id']}}">
                     <div class="col-md-12 form-group">
                         <center>

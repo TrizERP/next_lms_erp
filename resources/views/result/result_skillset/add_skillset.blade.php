@@ -26,7 +26,16 @@
                     <form action="{{ route('result_skillset.store') }}" enctype="multipart/form-data" method="post">
                     {{ method_field("POST") }}                        
                     @csrf
-                        <div class="row">                
+                        <div class="row"> 
+                        <div class="col-md-4 form-group">
+                            <label for="standard_list">Standard</label>
+                            <select name="standard" id="standard" class="form-control" required>
+                                <option value="">Select Standard</option>
+                                @foreach($data['standardLists'] as $key=>$value)
+                                <option value="{{$value->id}}">{{$value->name}}</option>
+                                @endforeach
+                            </select>
+                        </div>               
                             <div class="col-md-4 form-group">
                                 <label>Main Title </label>
                                 <input type="text" id='main_title' name="main_title" class="form-control" required>

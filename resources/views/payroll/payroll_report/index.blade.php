@@ -10,28 +10,24 @@
         </div>
         <div class="card">
             <div class="card-body">
-                @if ($sessionData = Session::get('data'))
-                    @if($sessionData['status_code'] == 1)
-                        <div class="alert alert-success alert-block">
-                            @else
-                                <div class="alert alert-danger alert-block">
-                                    @endif
-                                    <button type="button" class="close" data-dismiss="alert">×</button>
-                                    <strong>{{ $sessionData['message'] }}</strong>
-                                </div>
-                            @endif
-                            <form action="{{route('payroll.show_payroll_report')}}"
-                                  enctype="multipart/form-data"
-                                  method="post" class="row">
+            @if(!empty($data['message']))
+                @if(!empty($data['status_code']) && $data['status_code'] == 1)
+                <div class="alert alert-success alert-block">
+                @else
+                <div class="alert alert-danger alert-block">
+                @endif
+                    <button type="button" class="close" data-dismiss="alert">×</button>
+                    <strong>{{ $data['message'] }}</strong>
+                </div>
+                @endif
+                            <form action="{{route('payroll.show_payroll_report')}}" enctype="multipart/form-data" method="post" class="row">
                                 @csrf
                                 @php 
-                                $currentMonth = date('M');
-                                $currentYear = date('Y');
-                                $dep_id = '';
-                                if(isset($data['department_id']))
-                                {
-                                    $dep_id = $data['department_id'];
-                                }
+                                    $dep_id = '';
+                                    if(isset($data['department_id']))
+                                    {
+                                        $dep_id = $data['department_id'];
+                                    }
                                 @endphp 
                                 {!! App\Helpers\HrmsDepartments("","multiple",$dep_id,"none","","") !!}
                                 <div class="col-md-3 form-group">
@@ -39,11 +35,8 @@
                                     <select id='year' name="month" class="form-control">
                                         <option value="0">Select Month</option>
                                         @foreach($data['months'] as $month)
-                                            @if((isset($data['month']) && $data['month'] == $month) || $month==$currentMonth)
-                                                <option selected>{{$month}}</option>
-                                            @else
-                                                <option>{{$month}}</option>
-                                            @endif
+                                            <option @if((isset($data['month']) && $data['month'] == $month)) selected
+                                            @endif > {{$month}}</option>
                                         @endforeach
                                     </select>
                                 </div>
@@ -52,11 +45,7 @@
                                     <select id='year' name="year" class="form-control">
                                         <option value="0">Select Year</option>
                                         @foreach($data['years'] as $year)
-                                            @if((isset($data['year']) && $data['year'] == $year) || ($year == $currentYear))
-                                                <option selected>{{$year}}</option>
-                                            @else
-                                                <option>{{$year}}</option>
-                                            @endif
+                                        <option @if((isset($data['year']) && $data['year'] == $year)) selected @endif>{{$year}}</option>
                                         @endforeach
                                     </select>
                                 </div>
@@ -76,10 +65,15 @@
                             <tr>
                                 <th>Emp No</th>
                                 <th>Employee Name</th>
-                                <th>Total Day</th>
+                                <th>Total Days</th>
+                                <!-- added on 20-09-2024 -->
+                                <th>Absent Days</th>
+                                <th>Leave Days</th>
+                                <th>LWP Days</th>
+                                <!-- end on 20-09-2024 -->
                                 <th>Total</th>
                                 <th>Total Deduction</th>
-                                <th>Total Payment</th>
+                                <th class="text-left">Total Payment</th>
                             </tr>
                             </thead>
                             <form action="{{route('payroll.store_monthly_payroll_report')}}" method="post">
@@ -87,12 +81,17 @@
                                 <tbody>
                                 @foreach($data['employeeDetails'] as $employeeDetail)
                                 <tr>
-                                    <td>{{$employeeDetail->employee_no}}</td>
-                                    <td>{{$employeeDetail->first_name .' '. $employeeDetail->last_name}}</td>
-                                    <td>{{ round($employeeDetail->total_day,2) }}</td>
-                                    <td>{{$employeeDetail->total_payment + $employeeDetail->total_deduction}}</td>
-                                    <td>{{$employeeDetail->total_deduction}}</td>
-                                    <td>{{$employeeDetail->total_payment}}</td>
+                                    <td>{{ $employeeDetail['employee_no'] }}</td>
+                                    <td>{{ $employeeDetail['full_name'] }}</td>
+                                    <td>{{ round($employeeDetail['total_day'],2) }}</td>
+                                    <!-- added on 20-09-2024 -->
+                                    <td>{{ $employeeDetail['absent_days'] }}</td>
+                                    <td>{{ $employeeDetail['leave_days'] }}</td>
+                                    <td>{{ $employeeDetail['lwp_days'] }}</td>
+                                    <!-- end on 20-09-2024 -->
+                                    <td>{{ $employeeDetail['total_payment'] + $employeeDetail['total_deduction'] }}</td>
+                                    <td>{{ $employeeDetail['total_deduction'] }}</td>
+                                    <td>{{ $employeeDetail['total_payment'] }}</td>
                                 </tr>
                                 @endforeach
                                 </tbody>
@@ -117,7 +116,7 @@
                 buttons: [
                     {
                         extend: 'pdfHtml5',
-                        title: 'Student Report',
+                        title: 'Payroll report',
                         orientation: 'landscape',
                         pageSize: 'LEGAL',
                         pageSize: 'A0',
@@ -125,9 +124,9 @@
                             columns: ':visible'
                         },
                     },
-                    {extend: 'csv', text: ' CSV', title: 'Student Report'},
-                    {extend: 'excel', text: ' EXCEL', title: 'Student Report'},
-                    {extend: 'print', text: ' PRINT', title: 'Student Report'},
+                    {extend: 'csv', text: ' CSV', title: 'Payroll report'},
+                    {extend: 'excel', text: ' EXCEL', title: 'Payroll report'},
+                    {extend: 'print', text: ' PRINT', title: 'Payroll report'},
                     'pageLength'
                 ],
             });

@@ -109,7 +109,7 @@ class feesRefundController extends Controller
             ->join('tblstudent_enrollment as se', function ($join) use ($syear) {
                 $join->whereRaw("se.student_id = s.id AND se.sub_institute_id = s.sub_institute_id AND se.syear = '".$syear."'");
             })->join('fees_collect as fc', function ($join) use ($syear) {
-                $join->whereRaw("fc.student_id = s.id AND fc.sub_institute_id = s.sub_institute_id AND fc.syear = '".$syear."'");
+                $join->whereRaw("fc.student_id = s.id AND fc.sub_institute_id = s.sub_institute_id AND fc.syear = '".$syear."' and fc.is_deleted='N'"); // added 2024-09-14 to get not cancelled fees
             })->selectRaw('fc.*,s.enrollment_no')
             ->where('s.id', $id)
             ->where('s.sub_institute_id', $sub_institute_id)->get()->toArray();
@@ -438,7 +438,8 @@ class feesRefundController extends Controller
             ->where('s.id', $student_id)
             ->where('se.syear', $syear)
             ->where('s.sub_institute_id', $sub_institute_id)
-            ->whereNull('se.end_date')->get()->toArray();
+            // ->whereNull('se.end_date')
+            ->get()->toArray();
 
         $receipt_book_arr = [];
         foreach ($result as $temp_id => $receipt_detail) {

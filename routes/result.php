@@ -54,6 +54,7 @@ use App\Http\Controllers\result\approve_mobile_result\approve_mobile_result_cont
 use App\Http\Controllers\result\result_skillset\resultSkillsetController;
 use App\Http\Controllers\result\result_activity_master\resultActivityMasterController;
 use App\Http\Controllers\result\result_activity_marks\resultActivityMarksController;
+use App\Http\Controllers\result\result_activity_marks\resultActivityMarksV1Controller;
 use App\Http\Controllers\lms\pal\resultPersonalizeMarksController;
 use App\Http\Controllers\result\new_result\allResultController;
 
@@ -86,6 +87,7 @@ Route::group(['prefix' => 'result', 'middleware' => ['session', 'menu', 'logRout
     Route::resource('result_skillset', resultSkillsetController::class);
     Route::resource('result_activity_master', resultActivityMasterController::class);
     Route::resource('result_activity_marks', resultActivityMarksController::class);
+    Route::resource('result_activity_marks_V1', resultActivityMarksV1Controller::class);
     Route::resource('all_results', allResultController::class);    
 
     Route::post('cbse_1t5_result/show_result', ['as' => 'cbse_1t5_result.show_result', 'uses' => 'result\cbse_result\cbse_1t5_result_controller@show_result']);
@@ -109,7 +111,9 @@ Route::group(['prefix' => 'result', 'middleware' => ['session', 'menu', 'logRout
     
     Route::get('result_personalize_marks', [resultAPIController::class,'resultPersonalize'])->name('result_personalize_marks');
 
-    Route::get('current_result', [resultAPIController::class,'currentResult'])->name('current_result');    
+    Route::get('current_result', [resultAPIController::class,'currentResult'])->name('current_result');   
+    Route::get('getActivityLists', [resultActivityMasterController::class,'getActivityLists'])->name('getActivityLists'); 
+    Route::get('result_sub_activity_destroy', [resultActivityMasterController::class,'result_sub_activity_destroy'])->name('result_sub_activity_destroy');    
     
 //    Route::post('cbse_1t5_result', 'result\cbse_result\cbse_1t5_result_controller');
 });

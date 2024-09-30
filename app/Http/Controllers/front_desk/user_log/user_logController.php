@@ -96,7 +96,7 @@ class user_logController extends Controller
         $type = $request->input('type');
         $sub_institute_id = session()->get('sub_institute_id');
         
-        $filePath = storage_path('app/public/'.$sub_institute_id.'/access_log/'.date('Y-M').'.json');
+        $filePath = storage_path('app/public/access_log/'.$sub_institute_id.'/'.date('Y-M').'.json');
             
         if (!File::exists($filePath)) {
             $res['status_code'] = 0;

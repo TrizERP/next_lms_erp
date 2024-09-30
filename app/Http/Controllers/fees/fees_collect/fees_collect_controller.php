@@ -339,7 +339,9 @@ class fees_collect_controller extends Controller
         }
         $_REQUEST['fees_data'] = $fees_data;
 
-        $stu_arr = session()->get('stu_arr');
+        //$stu_arr = session()->get('stu_arr');
+        $stu_arr[0] = $_REQUEST['student_id'];
+    //   echo "<pre>";print_r($stu_arr);exit;
         $sub_institute_id=session()->get('sub_institute_id');
         $syear = session()->get('syear');
         $user_id = session()->get('user_id');
@@ -348,7 +350,7 @@ class fees_collect_controller extends Controller
             $sub_institute_id=$request->sub_institute_id;
             $syear = $request->syear;
             $user_id = $request->user_id;
-             $stu_arr[0] = $request->student_id;
+            $stu_arr[0] = $request->student_id;
         }
         // get all month name with month_id
         $month_arr = FeeMonthId($syear,$sub_institute_id);
@@ -1234,6 +1236,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
         $get_cumulative_result = DB::table('fees_title')
         ->selectRaw('id,display_name,cumulative_name,append_name')
         ->where('sub_institute_id', $sub_institute_id)
+        ->where('syear', $syear) // added syear to check cumulative 
         ->whereNotNull('cumulative_name')
         ->orderBy('sort_order')->get()->toArray();
 
@@ -1241,11 +1244,17 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
         return (array)$value;
         }, $get_cumulative_result);
 
+        // check if show_month is 1 in fees_config master than print month names instead of cumulative_name
+        if (!empty($config_master)) {
+            $get_cumulative_result = [];
+        }
+
         $cumulative_arr = $append_arr = array();
         foreach ($get_cumulative_result as $key => $value) {
             $cumulative_arr[$value['display_name']] = $value['cumulative_name'];
             $append_arr[$value['display_name']] = $value['append_name'];
         }
+        // echo "<pre>";print_r($append_arr);exit;
         // 31/03/2021 - END FOR making cumulative fees recepit array
        
         //fees title or fees head with  month and without month like tution fees (apr)
@@ -1914,7 +1923,8 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             "0" => $id,
         ];
 
-        session(['stu_arr' => $stu_arr]);
+        //session(['stu_arr' => $stu_arr]);
+        //$request->session()->put('stu_arr', $stu_arr);
 
         $student_id = $id;
 
@@ -2758,18 +2768,35 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                         ->whereRaw("1=1 " . $extra_fo);
                 });
         })
-            ->selectRaw('student_id, enrollment_no, roll_no, uniqueid, place_of_birth, student_name, grade,standard_name, division_name,created_date, user_name, GROUP_CONCAT(term_id) AS term_ids, receiptdate, receipt_no,  payment_mode, cheque_bank_name, bank_branch, cheque_no, cheque_date, batch,  quota,   SUM(IFNULL(actual_amountpaid, 0)) AS actual_amountpaid')
+            ->selectRaw('student_id, enrollment_no, roll_no, IFNULL(uniqueid,"-") as uniqueid, place_of_birth, student_name, grade,standard_name, division_name,created_date, user_name, GROUP_CONCAT(term_id) AS term_ids, receiptdate, receipt_no,  payment_mode, cheque_bank_name, bank_branch, cheque_no, cheque_date, batch,  quota,   SUM(IFNULL(actual_amountpaid, 0)) AS actual_amountpaid')
             ->groupBy('receipt_no');
 
         $data = $data->get()->toArray();
         $feesData = json_decode(json_encode($data), true);
 
+        // cancell data start 
+        $cancelData = DB::table('fees_cancel as fc')
+        ->Join('tblstudent as s', 's.id', '=', 'fc.student_id')
+        ->join('tblstudent_enrollment as se', function ($join) use($syear){
+            $join->on('se.student_id', '=', 's.id')->where('se.syear',$syear);
+        })
+        ->Join('standard as std', 'std.id', '=', 'se.standard_id')
+        ->Join('division as d', 'd.id', '=', 'se.section_id')
+        ->join('fees_collect as fee','fee.receipt_no','=','fc.reciept_id')
+        ->leftJoin('tbluser as u','u.id','=','fc.cancelled_by')
+        ->selectRaw('fc.*,CONCAT_WS(" ",COALESCE(s.first_name),COALESCE(s.middle_name),COALESCE(s.last_name)) as student_name,s.enrollment_no,IFNULL(s.uniqueid,"-") as uniqueid,std.name as std,d.name as divi,fee.payment_mode,GROUP_CONCAT(fc.term_id) AS month_ids,fee.cheque_bank_name, fee.bank_branch, fee.cheque_no,CONCAT_WS(" ",COALESCE(u.first_name),COALESCE(u.middle_name),COALESCE(u.last_name)) as cancelled_by,SUM(IFNULL(fc.amountpaid, 0)) AS actual_amountpaid')
+        ->where(['fc.sub_institute_id'=>$sub_institute_id,'fc.syear'=>$syear])
+        ->where('fc.student_id',$stud_id)
+        ->groupBy('reciept_id')
+        ->get()->toArray();
+        // cancel data end
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['fees_data'] = $feesData;
+        $res['cancelData'] = $cancelData;
         $res['enrollment_no'] = $enrollment_no;
 
-        return $feesData;
+        return $res;
     }
 
     // send sms to parent after fees successfully paid

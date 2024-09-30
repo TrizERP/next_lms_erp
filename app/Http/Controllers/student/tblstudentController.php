@@ -364,7 +364,7 @@ class tblstudentController extends Controller
                 && $key != 'division' && $key != 'student_quota' && $key != 'optional_subject' && $key != 'previous_school_gr_no'
                 && $key != 'house' && $key != 'father_occupation' && $key != 'father_qualification' && $key != 'mother_occupation'
                 && $key != 'mother_qualification' && $key != 'guardian_name' && $key != 'guardian_relation' && $key != 'house_no'
-                && $key != 'building_name_appratment_name_society_name' && $key != 'district_name' && $key != 'roll_no') { //&& $key != 'place_of_birth' && $key != 'previous_school_name'
+                && $key != 'building_name_appratment_name_society_name' && $key != 'district_name' && $key != 'roll_no' && $key != 'editable') { //&& $key != 'place_of_birth' && $key != 'previous_school_name'
                 if (is_array($value)) {
                     $value = implode(",", $value);
                 }
@@ -456,7 +456,7 @@ class tblstudentController extends Controller
                 && $key != 'id' && $key != 'optional_subject' && $key != 'optional_subject4' && $key != 'optional_subject5' && $key != 'optional_subject6' && $key != 'previous_school_gr_no' && $key != 'house'
                 && $key != 'father_occupation' && $key != 'father_qualification' && $key != 'mother_occupation'
                 && $key != 'mother_qualification' && $key != 'guardian_name' && $key != 'guardian_relation'
-                && $key != 'house_no' && $key != 'building_name_appratment_name_society_name' && $key != 'district_name' && $key != 'roll_no') { //&& $key != 'place_of_birth' && $key != 'previous_school_name'
+                && $key != 'house_no' && $key != 'building_name_appratment_name_society_name' && $key != 'district_name' && $key != 'roll_no'  && $key != 'editable') { //&& $key != 'place_of_birth' && $key != 'previous_school_name'
                 if (is_array($value)) {
                     $value = implode(",", $value);
                 }
@@ -668,6 +668,8 @@ class tblstudentController extends Controller
             'sub_institute_id' => $sub_institute_id, 'syear' => $syear,
         ])->get();
 
+        $hilldOptional4 = $hilldOptional5 = $hilldOptional6 =[];
+
 		if ($std_id != "") {
             $optional_subject_data = sub_std_mapModel::select('sub_std_map.*', 'subject.subject_name',
                 'subject.subject_code')
@@ -684,6 +686,17 @@ class tblstudentController extends Controller
     
                     $student_optional_subject_data = explode(",", $student_optional_subject_data[0]->subject_ids);
                 }else{
+                    foreach ($optional_subject_data as $key => $value) {
+                        if($value['optional_type'] !=null && $value['optional_type']==4){
+                            $hilldOptional4[]=$value;
+                        }
+                        if($value['optional_type'] !=null && $value['optional_type']==5){
+                            $hilldOptional5[]=$value;
+                        }
+                        if($value['optional_type'] !=null && $value['optional_type']==6){
+                            $hilldOptional6[]=$value;
+                        }
+                    }
                     $student_optional_subject_data4 = student_optional_subjectModel::selectRaw('GROUP_CONCAT(subject_id) AS subject_ids')
                     ->where(['sub_institute_id' => $sub_institute_id, 'student_id' => $id, 'syear' => $syear,"level"=>"4"])->get();
 
@@ -698,7 +711,7 @@ class tblstudentController extends Controller
                     $student_optional_subject_data6 = explode(",", $student_optional_subject_data6[0]->subject_ids);
                 }
         }
-
+        // echo "<pre>";print_r($hilldOptional4);exit;
         $pastEducation = tblstudentPastEducationModel::where([
             'sub_institute_id' => $sub_institute_id, 'student_id' => $id,
         ])->get()->toArray();
@@ -717,12 +730,24 @@ class tblstudentController extends Controller
                 $join->whereRaw("d.id = se.section_id AND d.sub_institute_id = se.sub_institute_id");
             })
             ->selectRaw("s.id,s.enrollment_no,concat_ws(' ',s.first_name,s.middle_name,s.last_name) as student_name,
-                st.name as std_name,d.name as div_name,s.mobile")
+                st.name as std_name,d.name as div_name,s.mobile,s.student_mobile,s.mother_mobile")
             ->where(function ($q) use ($student_data) {
                 if (!empty($student_data)) {
-                    $q->where('s.mobile', $student_data->mobile)
-                        ->orWhere('s.mother_mobile', $student_data->mobile)
-                        ->orWhere('s.student_mobile', $student_data->mobile);
+                    // $q->where('s.mobile', $student_data->mobile)
+                    //     ->orWhere('s.mother_mobile', $student_data->mobile)
+                    //     ->orWhere('s.student_mobile', $student_data->mobile)
+                    //2024-09-10 added match mobile
+                    if(isset($student_data->mobile) && $student_data->mobile!='' && $student_data->mobile!=null){
+                        $q->whereRaw('s.mobile="'.$student_data->mobile.'" OR s.student_mobile="'.$student_data->mobile.'" OR s.mother_mobile="'.$student_data->mobile.'"');
+                    }
+                    //2024-09-10 added match student mobile
+                    if(isset($student_data->student_mobile) && $student_data->student_mobile!='' && $student_data->student_mobile!=null){
+                        $q->whereRaw('s.mobile="'.$student_data->student_mobile.'" OR s.student_mobile="'.$student_data->student_mobile.'" OR s.mother_mobile="'.$student_data->student_mobile.'"');
+                    }
+                    //2024-09-10 added match monther mobile
+                    if(isset($student_data->mother_mobile) && $student_data->mother_mobile!='' && $student_data->mother_mobile!=null){
+                        $q->whereRaw('s.mobile="'.$student_data->mother_mobile.'" OR s.student_mobile="'.$student_data->mother_mobile.'" OR s.mother_mobile="'.$student_data->mother_mobile.'"');
+                    }
                 }
             })->where('s.sub_institute_id', $sub_institute_id)
             ->where('s.id', '!=', $id)
@@ -963,12 +988,12 @@ die; */
         $request = new Request(['id' => $id]);
         $trans_details = $trans_controller->create($request);       
         
-        //echo "<pre>";print_r($OldData['final_fee']['Total']);exit;
+        // echo "<pre>";print_r($FeesData);exit;
         
         $res['paid_unpaid_fees'] = $OldData['total_fees'] ?? [];
         $res['check_fees'] = $OldData['final_fee']['Total'] ?? [];
         $res['stu_data'] = $OldData['stu_data'] ?? [];
-        $res['fees_data'] = $FeesData;
+        $res['feesData'] = $FeesData;
         
         $res['admission_year'] = $admission_year;        
         $res['student_quota'] = $studentQuota;
@@ -986,6 +1011,9 @@ die; */
 		if(session()->get('sub_institute_id')!=254){
 		    $res['student_optional_subject_data'] = $student_optional_subject_data;
         }else{
+            $res['hilldOptional4'] = $hilldOptional4;
+            $res['hilldOptional5'] = $hilldOptional5;
+            $res['hilldOptional6'] = $hilldOptional6;
             $res['student_optional_subject_data4'] = $student_optional_subject_data4;
 		    $res['student_optional_subject_data5'] = $student_optional_subject_data5;
 		    $res['student_optional_subject_data6'] = $student_optional_subject_data6;
@@ -1214,10 +1242,13 @@ die; */
             }
         }
 		//END Save Optional Subject
+        if($request->input('editable') == 1){
+            $studentEnrollment['standard_id'] = $request->input('standard');
+            $studentEnrollment['grade_id'] = $request->input('grade');
+        }
+        
+        $studentEnrollment['section_id'] = $request->input('division');
 
-		$studentEnrollment['standard_id'] = $request->input('standard');
-		$studentEnrollment['section_id'] = $request->input('division');
-		$studentEnrollment['grade_id'] = $request->input('grade');
 		$studentEnrollment['syear'] = $syear;
 		$studentEnrollment['student_id'] = $student_id;
 		$studentEnrollment['student_quota'] = $request->input('student_quota');

@@ -1129,9 +1129,12 @@ class HrmsController extends Controller
         }
         
         foreach ($get_hrms_holidays as $value) {
-            $empHolidays[$value->department][$value->from_date][] = (array) $value;
+            $depExplode = explode(',',$value->department);
+            foreach ($depExplode as $key => $values) {
+                $empHolidays[$values][$value->from_date][] = (array) $value;
+            }
         }
-       
+    //    echo "<pre>";print_r($empHolidays);exit;
         $getUsers = DB::table('tbluser as u')->leftJoin('hrms_departments as hd',function($join) use($sub_institute_id) {
                 $join->on('hd.id','=','u.department_id')->where('hd.status',1)->where('hd.sub_institute_id',$sub_institute_id);
             })
@@ -1162,7 +1165,7 @@ class HrmsController extends Controller
                     {
                         $report_data[$from_date_new][$value->id]['leave'] = $empLeaves[$value->id][$from_date_new];
                     }
-                    if (isset($empHolidays[$value->department_id]) && array_key_exists($from_date_new, $empHolidays[$value->id])) 
+                    if (isset($empHolidays[$value->department_id]) && array_key_exists($from_date_new, $empHolidays[$value->department_id])) 
                     {
                         $report_data[$from_date_new][$value->id]['holiday'] = $empHolidays[$value->department_id][$from_date_new];
                     }
@@ -1194,5 +1197,138 @@ class HrmsController extends Controller
                 ->where('ha.sub_institute_id',$sub_institute_id)->whereIn('ha.id',$attId)->get()->toArray();
        
        return $attData;
+    }
+
+      // for employees day wise Attendance A/P/L/H 02-09-2024
+      public function DaywiseAttendanceReportIndex(Request $request){
+        $type= $request->type;
+        $res['from_date'] = Carbon::now()->startOfMonth()->toDateString();
+        $res['to_date'] = Carbon::now()->toDateString();
+        // echo "<pre>";print_r($res);exit;
+        return is_mobile($type, "HRMS.hrms_attendance_report.daywiseAttendanceReport", $res,'view');
+    }
+
+    public function DaywiseAttendanceportCreate(Request $request){
+        $type= $request->type;
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+        if($type=='API'){
+            $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');
+        }
+        $department_id = ($request->department_id!=0) ? implode(',',$request->department_id) : '';
+        $employee_id = ($request->emp_id!=0) ? implode(',',$request->emp_id) : '';
+
+        $res['from_date'] = $from_date = $request->from_date;
+        $res['to_date'] = $to_date = $request->to_date;
+        $res['department_id'] = $request->department_id;
+        $res['employee_id'] = $request->emp_id;
+        // get users to get details
+        $getUsers =employeeDetails($sub_institute_id,$employee_id,'',$department_id);
+
+        $get_hrms_holidays = DB::table('hrms_holidays')
+            ->where('sub_institute_id', $sub_institute_id)
+            ->whereBetween('from_date',[$from_date,$to_date])
+            ->oRwhereBetween('to_date',[$from_date,$to_date])
+            ->get()->toArray();
+        $holidays = [];
+        foreach ($get_hrms_holidays as $key => $value) {
+            $hfrom_date = $value->from_date;
+            $ht_date = $value->to_date;
+            while (strtotime($hfrom_date) <= strtotime($ht_date)) {
+                $holidays[] = $hfrom_date;
+                $hfrom_date = date("Y-m-d", strtotime("+1 day", strtotime($hfrom_date)));
+            }
+        }
+            // echo "<pre>";print_r($employee_id);exit;
+        $getLeave = DB::table('hrms_emp_leaves')->where('sub_institute_id',$sub_institute_id)
+        ->whereBetween('from_date',[$from_date,$to_date])
+        ->oRwhereBetween('to_date',[$from_date,$to_date])
+        ->when($employee_id!='',function($q) use($employee_id){
+            $q->whereRaw('user_id IN ('.$employee_id.')');
+        })
+        ->get()->toArray();
+        $leaveUsers = [];
+       
+        foreach($getLeave as $key=>$value){
+            $leaveDates = $value->from_date;
+            while (strtotime($leaveDates) <= strtotime($value->to_date)) {
+                $leaveUsers[$value->user_id][$leaveDates] = $value;
+                $leaveDates = date("Y-m-d", strtotime("+1 day", strtotime($leaveDates)));
+            }
+        }
+        // echo "<pre>";print_r($leaveUsers);exit; 
+        $selDates= $selDays = [];
+        foreach ($getUsers as $key => $value) {
+            $attData = [];
+            $from_date_new=$from_date;
+            while (strtotime($from_date_new) <= strtotime($to_date)) {
+                $date = Carbon::createFromFormat('Y-m-d', $from_date_new);
+                $dayName =strtolower($date->format('l')); 
+
+                $inDay = $dayName.'_in_date';
+                $outDay =$dayName.'_out_date';
+                $userPunchIn = Carbon::parse($value[$inDay])->format('H:i:S');
+                $userPunchOut = Carbon::parse($value[$outDay])->format('H:i:s');
+                $att=DB::table('hrms_attendances')->where(['sub_institute_id'=>$sub_institute_id,'user_id'=>$value['id']])->where('day',$from_date_new)->first();
+                // echo "<pre>";print_r($value['id']);
+                $thisDate = Carbon::parse($from_date_new);
+                if($att){
+                    $attPunchIn = Carbon::parse($att->punchin_time)->format('H:i:s');
+                    $attPunchOut = Carbon::parse($att->punchout_time)->format('H:i:s');
+                   
+                    $attData[$value['id']][$from_date_new] = "P";
+                    // late Come or half day  leave
+                    if($userPunchIn < $attPunchIn && $attPunchIn!=null && $attPunchIn!=''){
+                        if (isset($leaveUsers[$value['id']][$from_date_new]) ){
+                            if($leaveUsers[$value['id']][$from_date_new]->day_type=="0.5"){
+                                $attData[$value['id']][$from_date_new] = "HD";
+                            }else{
+                                $attData[$value['id']][$from_date_new] = "LT";
+                            }
+                        }else{
+                            $attData[$value['id']][$from_date_new] = "LT";
+                        }
+                    }
+                    // early going 
+                    if($userPunchOut > $attPunchOut && $attPunchOut!=null && $attPunchOut!=''){
+                        $attData[$value['id']][$from_date_new] = "ED";
+                    }
+                }
+                else if (isset($leaveUsers[$value['id']][$from_date_new]) ){
+                    if($leaveUsers[$value['id']][$from_date_new]->day_type=="0.5"){
+                        $attData[$value['id']][$from_date_new] = "HD";
+                    }else{
+                        $attData[$value['id']][$from_date_new] = "A";
+                    }
+                }
+                else if(in_array($from_date_new,$holidays)  && !in_array($from_date_new,$attData)){
+                    $attData[$value['id']][$from_date_new] = "-";
+                }
+                else if ($thisDate->isSunday() && !in_array($from_date_new,$attData)) {
+                    $attData[$value['id']][$from_date_new] = "Sun";
+                }
+                else{
+                    $attData[$value['id']][$from_date_new] = "N/A";
+                }
+                // fill array in user Data
+                if(!in_array($from_date_new,$selDates)){
+                    $selDates[$from_date_new]=carbon::parse($from_date_new)->format('d-m-Y');
+                }
+                if(!in_array($from_date_new,$selDays)){
+                    $selDays[$from_date_new]=carbon::parse($from_date_new)->format('l');
+                }
+                $from_date_new = date("Y-m-d", strtotime("+1 day", strtotime($from_date_new)));
+            }
+
+            $getUsers[$key]['attData'] = $attData;
+
+        }
+        $res['selDates'] = $selDates;
+        $res['selDays'] = $selDays;
+        $res['attDetails'] = $getUsers;
+        // echo "<pre>";print_r($res['attDetails']);
+        // exit;
+        return is_mobile($type, "HRMS.hrms_attendance_report.daywiseAttendanceReport", $res,'view');
     }
 }

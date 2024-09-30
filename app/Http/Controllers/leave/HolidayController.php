@@ -28,6 +28,7 @@ class HolidayController extends Controller
                 ->when(request()->year, function ($q) {
                     $q->whereYear('from_date', request()->year);
                 })
+                ->where('sub_institute_id',$sub_institute_id)
                 ->get();
             return DataTables::of($data)
                 ->addColumn('checkbox', function ($row) {
@@ -35,7 +36,7 @@ class HolidayController extends Controller
                 })
                 ->addIndexColumn()
                 ->addColumn('action', function ($row) {
-                    $actionBtn = '<a href="javascript:void(0)" class="delete btn btn-danger btn-delete btn-sm"data-id="' . $row->id . '">Delete</a>';
+                    $actionBtn = '<a class="delete btn btn-danger btn-delete btn-sm" data-id="' . $row->id . '">Delete</a>';
                     return $actionBtn;
                 })
                 ->rawColumns(['checkbox', 'action'])
@@ -91,7 +92,7 @@ class HolidayController extends Controller
         ]);
 
         try {
-            HrmsHoliday::updateOrCreate(['from_date' => $request->from_date],
+            HrmsHoliday::updateOrCreate(['from_date' => $request->from_date,'sub_institute_id'=>session()->get('sub_institute_id')],
                 [
                     'holiday_name' => $request->holiday_name,
                     'to_date' => $request->to_date,

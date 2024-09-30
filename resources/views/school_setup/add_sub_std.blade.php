@@ -81,10 +81,19 @@
                         </div>
                         <div class="col-md-2 form-group">
                             <div class="checkbox checkbox-info checkbox-circle">                                                                                                     
-                                <input @if(isset($data['mapped_data']['elective_subject']) && $data['mapped_data']['elective_subject'] == "Yes"){{'checked'}}@endif type="checkbox" id="elective_subject" name="elective_subject" value="Yes">
+                                <input type="checkbox" id="elective_subject" name="elective_subject" value="Yes"  @if(isset($data['mapped_data']['elective_subject']) && $data['mapped_data']['elective_subject'] == "Yes"){{'checked'}}@endif @if(session()->get('sub_institute_id')==254) onclick="openOptionType();" @endif>
                                 <label for="elective_subject">Optional Subject</label> 
                             </div>
-                        </div>                          
+                        </div>  
+                        <div class="col-md-2 form-group optionalType" id="optionalType">
+                            <label for="optional type">Select Optional Type</label>
+                            <select name="optional_type" id="optional_type" class="form-control">
+                                <option value="">Select Optional Type</option>
+                                @foreach($data['optional_type'] as $k => $v)
+                                <option value="{{$v}}" @if(isset($data['mapped_data']['elective_subject']) && $data['mapped_data']['optional_type'] == $v) selected @endif>{{$v}}</option>
+                                @endforeach
+                            </select>
+                        </div>                        
                         <div class="col-md-2 form-group">
                             <div class="checkbox checkbox-info checkbox-circle">
                                 <input @if(isset($data['mapped_data']['allow_content']) && $data['mapped_data']['allow_content'] == "Yes"){{'checked'}}@endif type="checkbox" id="allow_content" name="allow_content" value="Yes">
@@ -116,9 +125,9 @@
                             <input type="number" id='load' name="load" value="@if(isset($data['mapped_data']['load'])){{$data['mapped_data']['load']}}@endif" class="form-control">
                         </div>
 
-                        <div class="col-md-6 form-group">
+                        <div class="col-md-3 form-group">
                             <label>Display Image</label>
-                            <input type="file" name="display_image" id="display_image">
+                            <input type="file" name="display_image" id="display_image" class="form-control">
                             @if(isset($data['mapped_data']['display_image']))
                              <img src="../../../storage{{$data['mapped_data']['display_image']}}" height="50px" width="50px">
                             @endif
@@ -165,7 +174,26 @@
         $('option', "#subject_id").not(':eq(0), :selected').remove(); 
         $("#subject_id").find('option[value=""]').remove();
         $("#subject_id").attr("readonly",true); 
-    }    
+    }   
+    $(document).ready(function(){
+        $('#optionalType').hide();
+        $('#optional_type').prop('required',false);
+        @if(isset($data['mapped_data']['elective_subject']) && $data['mapped_data']['elective_subject'] == "Yes" && session()->get('sub_institute_id')==254)
+            $('#optionalType').show();
+            $('#optional_type').prop('required',true);
+        @endif
+    })
+    function openOptionType(){
+       $('#optionalType').hide();
+
+       if ($('#elective_subject').is(':checked')) {
+            $('#optionalType').show();
+            $('#optional_type').prop('required',true);
+        } else {
+            $('#optionalType').hide();
+            $('#optional_type').prop('required',false);
+        }
+    }
 
 </script>
 @include('includes.footer')

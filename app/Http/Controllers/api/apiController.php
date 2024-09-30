@@ -301,7 +301,7 @@ class apiController extends Controller
                     }
                 }        
             }
-            // echo "<pre>";print_r($studentData);exit;
+            // echo "<pre>";print_r($data);exit;
             // end by saroj uma 08/03/024
             
             $send_data = [];
@@ -443,6 +443,7 @@ public function studentData($is_exist,$request,$student_id){
             "tblstudent.student_mobile" => $_REQUEST['mobile'],
         ])
         ->where(["tblstudent.otp" => $_REQUEST['otp']])
+        ->where('tblstudent_enrollment.end_date', NULL)
         ->whereIn('tblstudent.id',$student_id);
 
     // if($is_exist==1) {

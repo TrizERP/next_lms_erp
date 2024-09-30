@@ -57,6 +57,8 @@ Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute',
     Route::get('o-net-data-category/show-occupation-detail-list',[\App\Http\Controllers\lms\ONetOnlineDataController::class,'showCategoryWiseOccupationDataList'])->name('o-net-data.show-occupation-detail-list');
     Route::get('o-net-data-category/show-occupation-detail-list-summary',[\App\Http\Controllers\lms\ONetOnlineDataController::class,'showCategoryWiseOccupationDataListSummary'])->name('o-net-data.show-occupation-detail-list-summary');
 
+    Route::get('career_counselling',[\App\Http\Controllers\lms\ONetOnlineDataController::class,'career_counselling'])->name('career_counselling');
+
     Route::resource('chapter_master', chapterController::class);
     Route::resource('course_master', courseController::class);
     Route::resource('topic_master', topicController::class);
@@ -74,6 +76,7 @@ Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute',
     Route::get('ajax_ChapterwiseLOmaster', [lomasterController::class, 'ajax_ChapterwiseLOmaster'])->name('ajax_ChapterwiseLOmaster');
 
     Route::resource('lmsdashboard', lmsDashboardController::class);
+    Route::get('lmsdashboard_teacher', [lmsDashboardController::class,'teacherIndex'])->name('teacherIndex');
     
     Route::resource('lo_master', lomasterController::class);
 
@@ -100,6 +103,8 @@ Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute',
 
 
     Route::resource('question_master', questionmasterController::class);
+    Route::get('question_mapped_value', [questionmasterController::class, 'getMappedValue'])->name('question_mapped_value');
+
     Route::post('ajaxdestroyanswer_master', [questionmasterController::class, 'ajaxdestroyanswer_master'])->name('ajaxdestroyanswer_master');
     Route::get('question_chapter_master', [questionmasterController::class, 'indexChapter'])->name('question_chapter_master');
 
@@ -254,3 +259,4 @@ Route::get('intrestJobzone', [lmsCounsellingController::class, 'intrestJobzone']
 Route::get('intrestCareers', [lmsCounsellingController::class, 'intrestCareers']);
 Route::get('intrestEnterScore', [lmsCounsellingController::class, 'intrestEnterScore']);
 Route::get('intrestArea', [lmsCounsellingController::class, 'intrestArea']);
+Route::get('matchProfile', [lmsCounsellingController::class, 'matchProfile']);

@@ -132,18 +132,20 @@ class LeaveSummaryReportController extends Controller
             {
                // leave without pay
                if($leave_status[$key2] =="approved_lwp"){
-                    $sum_exists["Leave Without Pay"][] = $day_type[$key2];
                     $counday = countDays($leave_from_date[$key2],$leave_to_date[$key2],$day_type[$key2],'');
+                    $sum_exists["Leave Without Pay"][] = $counday;
+
                     $new_data["Leave Without Pay"][$value->id]= $counday;
 
                     $new_data["Leave Without Pay"][$value->id]= array_sum($sum_exists['Leave Without Pay']);
                 }
                 else if(in_array($leave_status[$key2],['approved','pending'])){
                     $sum = $day_type[$key2];
-                    $sum_exists[$value2][] = $day_type[$key2];
+                    // echo "from_date=".$leave_from_date[$key2].' to_date='.$leave_to_date[$key2].'<br>';
                     $counday = countDays($leave_from_date[$key2],$leave_to_date[$key2],$day_type[$key2],'');
+                    $sum_exists[$value2][] = $counday;
                     $new_data[$value2][$value->id]= $counday;
-                        
+                    // echo $counday.'<br>';
                     if(in_array($value2, $value_exits))
                     {
                         $new_data[$value2][$value->id]= array_sum($sum_exists[$value2]);

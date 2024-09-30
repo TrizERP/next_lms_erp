@@ -496,6 +496,7 @@
 						<div class="row">
 							<div class="card">
 								<div class="table-responsive">
+								<h6><b>Paid History</b></h6>
 									<table id="example" class="table table-striped">
 										<thead>
 											<tr>
@@ -510,13 +511,38 @@
 												<th>Bank Details</th>
 												<th>Receipt Date</th>
 												<th>Collected By</th>
-												<th>Amount</th>
+												<th class="text-left">Amount</th>
 											</tr>
 										</thead>
 										<tbody id="table_data">
 										</tbody>
 									</table>
-									
+								</div>
+								<br>
+								<br>
+								<div class="table-responsive"  id="cancelTableDiv">
+									<h6><b>Cancelled History</b></h6>
+									<table id="cancelTable" class="table table-striped">
+										<thead>
+											<tr>
+												<th>Sr No.</th>
+												<th>GR No.</th>
+												<th>{{App\Helpers\get_string('StudentName')}}</th>
+												<th>Std-Div</th>
+												<th>Uniqueid</th>
+												<th>Month</th>
+												<th>Receipt No</th>
+												<th>Payment Mode</th>
+												<th>Bank Details</th>
+												<th>Received Date</th>
+												<th>Cancelled Date</th>
+												<th>Cancelled By</th>
+												<th class="text-left">Amount</th>
+											</tr>
+										</thead>
+										<tbody id="cancel_data">
+										</tbody>
+									</table>
 								</div>
 							</div>
 						</div>
@@ -539,7 +565,7 @@
 
 			$(document).ready(function() {
 				monthCheck();
-
+				$('#cancelTableDiv').hide();
 					var sub = 0;
 					var full_bk = @json($data['final_fee']);
 					// console.log(full_bk);
@@ -845,13 +871,16 @@ function checkForm() {
 									k= k+1;
 								});
 								console.log(checkedTitle);
+								var validValues = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
 
-								// uniform and recovery fees 
-								if (checkedTitle.length > 0 && !checkedTitle.includes('tution_fee') && !checkedTitle.includes('3')) {
+								// when only other fees remain for payment make fees fine 0   
+								if (checkedTitle.length > 0 && !checkedTitle.includes('tution_fee') && validValues.some(value => checkedTitle.includes(value)))
+								{
+									// console.log('if');
 									fineZero(0);
 								}
-								// advance fees 
-								else if(checkedMonths.length > 0 && checkedTitle.length > 0 && checkedTitle.includes('3')){
+								// for advance months fees rather than current month
+								else if(checkedMonths.length > 0 && checkedTitle.length > 0){
 									lastMonth = checkedMonths[checkedMonths.length - 1];
 									var currentMonth = "{{date('n')}}{{date('Y')}}";
 									
@@ -927,6 +956,9 @@ function checkForm() {
 		<script>
 			function add_data(grno, student_id) {
 				$("#table_data").empty();
+				$('#cancelTableDiv').hide();
+				$('#cancel_data').empty();
+
 				$(document).ready(function() {
 					$.ajax({
 						url: '/fees/feesDetails/getDetails/' + grno + "/" + student_id,
@@ -935,7 +967,7 @@ function checkForm() {
 						success: function(data) {
 							const months = ["Jan", "Feb", "Mar", "Apr", "May", "June", "July", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-							$.each(data, function(index, value) {
+							$.each(data.fees_data, function(index, value) {
 								index++;
 								const term_ids = value['term_ids'].split(','); // Split the term_ids string into an array
 								let monthyear = [];
@@ -956,7 +988,7 @@ function checkForm() {
 								}
 								// console.log(value['student_name']);
 								$('#table_data').append("<tr><td>" + index + "</td><td>" + value['enrollment_no'] + "</td><td>" + value[
-										'student_name'] + "</td><td>" + value['division_name'] + "</td><td>" + valueuni + "</td><td>" +
+										'student_name'] + "</td><td>" + value['standard_name'] + " -"  + value['division_name'] + "</td><td>" + value['uniqueid'] + "</td><td>" +
 										monthyear + "</td><td>" + value['receipt_no'] + "</td><td>" + value['payment_mode'] + "</td><td>" +
 									value['cheque_no'] + ' ' + value['cheque_bank_name'] + ' ' + value['bank_branch'] + "</td><td>" + value['receiptdate'] + "</td><td>" + value['user_name'] +
 									"</td><td id='total_amt'>" + value['actual_amountpaid'] + "</td></tr>");
@@ -971,8 +1003,54 @@ function checkForm() {
 								}
 								// console.log(total);
 							});
-
 							$('#table_data').append("<tr><td colspan=11>Total</td><td>" + total + "</td></tr>");
+
+							// cancell data start
+							var cancelData = data.cancelData;
+
+							// Check if cancelData is an array and contains items
+							if (Array.isArray(cancelData) && cancelData.length > 0) {
+								$('#cancelTableDiv').show();
+								// $('#cancel_data').empty();
+								cancelData.forEach(function(item, index) {
+									// Ensure month_ids exists and is a string
+									if (item.month_ids && typeof item.month_ids === 'string') {
+										var term_ids = item.month_ids.split(','); // Split the term_ids string into an array
+										var monthyear = [];
+
+										term_ids.forEach(function(term_id) {
+											var year = term_id.slice(-4);
+											var month = term_id.substring(0, term_id.length - 4);
+											month--;
+											monthyear.push(months[month] + "/" + year); // months[month] is assumed to be an array of month names
+										});
+
+										monthyear = monthyear.join(', ');
+									} else {
+										// Handle case where month_ids is not available or invalid
+										var monthyear = "N/A"; // Set default value
+									}
+
+									// Construct the table row
+									var row = '<tr><td>' + (index+1) + '</td><td>' + item.enrollment_no + '</td><td>' + item.student_name + '</td><td>' + item.std + ' - ' + item.divi + '</td><td>' + item.uniqueid + '</td><td>' + monthyear + '</td><td>' + item.reciept_id + '</td><td>' + item.payment_mode + '</td><td>' + (item.cheque_no || '') + ' ' + (item.cheque_bank_name || '') + ' ' + (item.bank_branch || '') + '</td><td>' + item.received_date + '</td><td>' + item.cancel_date + '</td><td>' + item.cancelled_by + '</td><td id="total_cancel_amt">' + item.actual_amountpaid + '</td></tr>';
+
+									$('#cancel_data').append(row);
+								});
+							} else {
+								console.log("cancelData is either not an array or is empty.");
+							}
+
+							var cancalledTotal = 0;
+
+							$('#cancel_data tr').each(function(index) {
+								var found = $(this).find('#total_cancel_amt')
+								if (found) {
+									cancalledTotal += parseInt(found.text());
+								}
+								// console.log(total);
+							});
+							$('#cancel_data').append("<tr><td colspan=12>Total</td><td>" + cancalledTotal + "</td></tr>");
+							// cancel data end 
 							$('#ChapterModal').modal('show');
 
 						}

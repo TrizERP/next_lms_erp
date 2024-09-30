@@ -74,7 +74,7 @@ html {
                                     <div class="quiz-box-count">
                                         <div class="count">{{$i++}}</div>
                                         <div class="quiz-con">
-                                            <div class="text-secondary mb-2">Marked out of <b>1</b></div>
+                                            <div class="text-secondary mb-2">Marked out of <b>1</b>  <span style="padding:0px 10px" onclick="mapValueModel({{$quesarr['question_id']}});"><i class="fa fa-ellipsis-v" aria-hidden="true"></i></span></div>
                                             <!-- <div class="text-secondary mb-2">1</div> -->
                                             @if(isset($quesarr['hint_text']))
                                             <div class="text-secondary"><i data-toggle="tooltip" title="{{$quesarr['hint_text']}}" class="mdi mdi-alert-circle"></i></div><!--mdi-flag-outline-->
@@ -89,7 +89,7 @@ html {
                                                 <i class="mdi mdi-alert-circle-outline"></i>
                                             </a> -->
                                             <div class="quiz-title">{!!$quesarr['question_text']!!}</div>
-                                          
+                                          <input type="hidden" name="interestValue[{{$quesarr['question_id']}}]" id="interest_{{$quesarr['question_id']}}">
                                             <div class="quiz-option">
                                                  @if(isset($data['answer_arr'][$quesarr['question_id']]))                     
                                                     @foreach($data['answer_arr'][$quesarr['question_id']] as $ansid => $ansarr)
@@ -127,12 +127,62 @@ html {
 
 </div>
 
-
+<!-- Modal -->
+<div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document" style="max-width:1000px !important">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLabel">Question Mapped Values</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+            <h4>Question - <span id="questionValue"></span></h4>
+            <table class="table" style="filter:none !important">
+                <thead>
+                    <tr>
+                        <th>Sr No.</th>
+                        <th>Mapped Types</th>
+                        <th class="text-left">Mapped Values</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                </tbody>
+            </table>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
 @include('includes.lmsfooterJs')
 <script type="text/javascript">
 $(document).ready(function(){
-    $('[data-toggle="tooltip"]').tooltip();   
+    $('[data-toggle="tooltip"]').tooltip(); 
+    @foreach($data['question_arr'] as $quesid => $quesarr)
+        onloadData({{$quesarr['question_id']}});
+    @endforeach
 });
+function onloadData(questionId){
+    console.log('Function onloadData called with questionId:', questionId); // Debug log
+    $.ajax({
+        url : "{{route('question_mapped_value')}}",
+        data : {question_id:questionId},
+        type: 'GET',
+        success : function(response){
+            if (response.MappedData) {
+                $.each(response.MappedData, function(index, mappedItem) {
+                    $.each(mappedItem.mappedValue, function(subIndex, mappedSubItem) {
+                        $('#interest_'+questionId).val(mappedSubItem.name);
+                    });
+                });
+            }
+        }
+    });  
+}
+
 </script>
 
 <script src="//cdn.mathjax.org/mathjax/latest/MathJax.js"> 
@@ -193,7 +243,47 @@ var x = setInterval(function() {
     window.close();
   }
 }, 1000);
+function mapValueModel(questionId){
+        $('#tableBody').empty(); 
+        $('#questionValue').empty();
 
+        $.ajax({
+            url : "{{route('question_mapped_value')}}",
+            data : {question_id:questionId},
+            type: 'GET',
+            success : function(response){
+                console.log(response);
+               // Check if question title exists
+                if (response.questionTitle) {
+                    // Append the question title to the modal
+                    $('#questionValue').html(response.questionTitle);
+                } else {
+                    $('#questionValue').text('No question title found');
+                }
+                if (response.MappedData) {
+                    $('#tableBody').empty(); 
+                    $.each(response.MappedData, function(index, mappedItem) {
+                        // Start building the table row with the mappedItem name
+                        let row = `<tr>
+                            <td>${index + 1}</td>
+                            <td>${mappedItem.name}</td>
+                            <td><ul>`;
+                                // Loop through mappedValue within each mappedItem
+                                $.each(mappedItem.mappedValue, function(subIndex, mappedSubItem) {
+                                    row += `<li>${subIndex+1}) ${mappedSubItem.name}</li>`;
+                                });
+                        row += `</ul></td>
+                        </tr>`;
+
+                        // Append the complete row to the table body
+                        $('#tableBody').append(row);
+                    });
+                }
+
+                $('#exampleModal').modal('show');
+            }
+        })
+    }
 
 </script>
 

@@ -20,8 +20,6 @@
             </div>
             @endif
             @php 
-                $currentMonth = date('M');
-                $currentYear = date('Y');
                 $deductionTypeArr = [1=>'Allowance',2=>'Deduction'];
             @endphp
             <form action="{{route('payroll_deduction.index')}}" enctype="multipart/form-data">
@@ -47,7 +45,7 @@
                      <label>Select Month</label>
                      <select id='month' name="month" class="form-control">
                         @foreach($data['months'] as $month)
-                            <option @if(isset($data['selMonth']) && $data['selMonth'] == $month) selected @elseif($month==$currentMonth) Selected @endif>{{$month}}</option>
+                            <option @if(isset($data['selMonth']) && $data['selMonth'] == $month) selected @endif>{{$month}}</option>
                         @endforeach
                      </select>
                   </div>
@@ -55,12 +53,12 @@
                      <label>Select Year</label>
                      <select id='year' name="year" class="form-control">
                         @foreach($data['years'] as $year)
-                            <option @if(isset($data['selYear']) && $data['selYear'] == $year) selected @elseif($year==$currentYear) Selected @endif>{{$year}}</option>
+                            <option @if(isset($data['selYear']) && $data['selYear'] == $year) selected @endif>{{$year}}</option>
                         @endforeach
                      </select>
                   </div>
                   <div class="col-md-3 col-sm-offset-4 text-center form-group">
-                     <input type="submit" name="submit" value="Submit" class="btn btn-success">
+                     <input type="submit" name="submit" value="Search" class="btn btn-success">
                   </div>
                </div>
             </form>

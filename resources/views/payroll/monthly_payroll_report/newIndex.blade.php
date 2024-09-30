@@ -33,6 +33,14 @@
                 if(isset($data['selected_emp'])){
                     $emp_id = $data['selected_emp'];
                 }
+
+                $profileArr = ["Admin","Super Admin","School Admin","Assistant Admin"];
+
+                $readonly= $hide='';
+                if(!in_array(session()->get('user_profile_name'),$profileArr)){
+                    $readonly="readonly";
+                    $hide='display:none';
+                }
                 @endphp
                 {!! App\Helpers\HrmsDepartments("","multiple",$dep_id,"multiple",$emp_id,"") !!}
                 <div class="col-md-3 form-group">
@@ -87,7 +95,9 @@
                             <td>{{$key+1}}</td>
                             <td>{{$value['employee_no']}}</td>
                             <td>{{$value['full_name'] ?? '-' .'('.$value['user_profile'] ?? '-' .')'}}</td>
-                            <td><input type="text" id="totalDay_{{$value['id']}}" name="payrollVal[{{$value['id']}}][total_day]" onkeyup="getData(this,{{$value['id']}})" class="form-control" value="{{ isset($value['monthlyData']->total_day) ? $value['monthlyData']->total_day : $value['totalDay'] }}" ></td>
+                            <td>
+                                <input type="text" id="totalDay_{{$value['id']}}" name="payrollVal[{{$value['id']}}][total_day]" onkeyup="getData(this,{{$value['id']}})" class="form-control" value="{{ isset($value['monthlyData']->total_day) ? round($value['monthlyData']->total_day,2) : $value['totalDay'] }}" {{$readonly}}>
+                            </td>
                             @foreach($data['header'] as $hkey => $col)
                                 @if(!empty($value['monthlyData']))
                                     @php 
@@ -107,8 +117,9 @@
                                 <td id="{{$value['id'].'_'.$hkey}}">{{$salaryStructure->$hkey ?? 0}}</td>
                                 <input type="hidden" name="payrollVal[{{$value['id']}}][payrollHead][{{$hkey}}]" id="input_{{$value['id'].'_'.$hkey}}" @if(isset($salaryStructure->$hkey)) value="{{$salaryStructure->$hkey}}" @endif>
                                 @endif
+                            @endif
 
-                            @else 
+                        @if(empty($value['monthlyData']))
                                 @php 
                                 $name = "payrollVal[".$value['id']."][payrollHead][".$hkey."]";
                                  if(in_array($hkey,["total_deduction","total_payment","received_by"])){
@@ -116,7 +127,11 @@
                                  }
                                 @endphp
                                 <td id="{{$value['id'].'_'.$hkey}}">0</td>
-                                <input type="hidden" name="{{$name}}" id="input_{{$value['id'].'_'.$hkey}}">
+                                @if(!in_array($hkey,['total_deduction','total_payment','received_by']))
+                                <input type="hidden" name="payrollVal[{{$value['id']}}][payrollHead][{{$hkey}}]" id="input_{{$value['id'].'_'.$hkey}}">
+                                @else
+                                <input type="hidden" name="payrollVal[{{$value['id']}}][{{$hkey}}]" id="input_{{$value['id'].'_'.$hkey}}">
+                                @endif
                             @endif
                             @endforeach
 
@@ -133,7 +148,7 @@
                     </tbody>
                 </table>
             </div>
-            <div class="row">
+            <div class="row" @if($hide!='') style="display:none" @endif>
                 <div class="col-m-12 form-group">
                     <input type="submit" class="btn btn-success" value="Save" name="Save">
                 </div>
@@ -147,74 +162,146 @@
 
 @include('includes.footerJs')
 <script>
-   $(document).ready(function () {
-       var table = $('#example').DataTable({
-           select: true,
-           lengthMenu: [
-               [100, 500, 1000, -1],
-               ['100', '500', '1000', 'Show All']
-           ],
-           dom: 'Bfrtip',
-           buttons: [
-               {
-                   extend: 'pdfHtml5',
-                   title: 'Student Report',
-                   orientation: 'landscape',
-                   pageSize: 'LEGAL',
-                   pageSize: 'A0',
-                   exportOptions: {
-                       columns: ':visible'
-                   },
-               },
-               {extend: 'csv', text: ' CSV', title: 'Student Report'},
-               {extend: 'excel', text: ' EXCEL', title: 'Student Report'},
-               {extend: 'print', text: ' PRINT', title: 'Student Report'},
-               'pageLength'
-           ],
-       });
-       //table.buttons().container().appendTo('#example_wrapper .col-md-6:eq(0)');
-   
-       $('#example thead tr').clone(true).appendTo('#example thead');
-       $('#example thead tr:eq(1) th').each(function (i) {
-           var title = $(this).text();
-           $(this).html('<input type="text" placeholder="Search ' + title + '" />');
-   
-           $('input', this).on('keyup change', function () {
-               if (table.column(i).search() !== this.value) {
-                   table
-                       .column(i)
-                       .search(this.value)
-                       .draw();
-               }
-           });
-       });
-   });
-
     function getData(inputElement, emp_id) {
         // var inputValue = inputElement.value;
         var inputValue=$('#totalDay_'+emp_id).val();
         var month = $('#month').val();
         var year = $('#year').val();
+        if(inputValue > 31){
+            alert('Total Day should be less then 31');
+            $('#totalDay_'+emp_id).val(1);
+        }else{
+            $.ajax({
+                url: "{{ route('getMonthlyData') }}",
+                data: { totalDay: inputValue, emp_id: emp_id, month: month, year: year },
+                type: 'GET',
+                success: function(response) {
+                    if (response.salaryData && Object.keys(response.salaryData).length > 0) {
+                        Object.entries(response.salaryData).forEach(([index, element]) => {
+                            $('#' + emp_id + '_' + index).text(element);
+                            $('#input_' + emp_id + '_' + index).val(element);
+                        });
+                        console.log(response.salaryData);
+                    } else {
+                        console.log('salaryData is empty');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error(xhr.responseText);
+                }
+            });
+        }
+    }
 
-        $.ajax({
-            url: "{{ route('getMonthlyData') }}",
-            data: { totalDay: inputValue, emp_id: emp_id, month: month, year: year },
-            type: 'GET',
-            success: function(response) {
-                if (response.salaryData && Object.keys(response.salaryData).length > 0) {
-                    Object.entries(response.salaryData).forEach(([index, element]) => {
-                        $('#' + emp_id + '_' + index).text(element);
-                        $('#input_' + emp_id + '_' + index).val(element);
-                    });
-                    console.log(response.salaryData);
-                } else {
-                    console.log('salaryData is empty');
+    $(document).ready(function () {
+    var table = $('#example').DataTable({
+        select: true,
+        lengthMenu: [
+            [100, 500, 1000, -1],
+            ['100', '500', '1000', 'Show All']
+        ],
+        dom: 'Bfrtip',
+        buttons: [
+            {
+                extend: 'pdfHtml5',
+                title: 'Monthly Payroll Report',
+                orientation: 'landscape',
+                pageSize: 'LEGAL',
+                exportOptions: {
+                    columns: ':visible',
+                    format: {
+                        body: function (data, row, column, node) {
+                            // Find the <input> element within the <td>
+                            var inputElement = $(node).find('input');
+                            var inputValue = inputElement.length > 0 ? inputElement.val() : $(node).text();
+                            return inputValue ? inputValue : data;
+                        }
+                    }
                 }
             },
-            error: function(xhr, status, error) {
-                console.error(xhr.responseText);
+            {
+                extend: 'csv',
+                text: ' CSV',
+                title: 'Monthly Payroll Report',
+                exportOptions: {
+                    columns: ':visible',
+                    format: {
+                        body: function (data, row, column, node) {
+                            // Find the <input> element within the <td>
+                            var inputElement = $(node).find('input');
+                            var inputValue = inputElement.length > 0 ? inputElement.val() : $(node).text();
+                            return inputValue ? inputValue : data;
+                        }
+                    }
+                }
+            },
+            {
+                extend: 'excel',
+                text: ' EXCEL',
+                title: 'Monthly Payroll Report',
+                exportOptions: {
+                    columns: ':visible',
+                    format: {
+                        body: function (data, row, column, node) {
+                            // Find the <input> element within the <td>
+                            var inputElement = $(node).find('input');
+                            var inputValue = inputElement.length > 0 ? inputElement.val() : $(node).text();
+                            return inputValue ? inputValue : data;
+                        }
+                    }
+
+                },
+                customize: function (xlsx) {
+                    var sheet = xlsx.xl.worksheets['sheet1.xml'];
+                    // $('row c', sheet).attr('s', '2'); // for text lign
+                    var col = $('cols col', sheet);
+                    col.each(function () {
+                        $(this).attr('bestFit', 1); 
+                        $(this).attr('width', 15);
+                    });
+                }
+            },
+            {
+                extend: 'print',
+                text: ' PRINT',
+                title: 'Monthly Payroll Report',
+                customize: function (win) {
+                    $(win.document.body).append(`<div style="text-align: right;margin-top:20px">Printed on: {{date('d-m-Y H:i:s')}}</div>`);
+                    $('#all_values').addClass('flex-on-print');
+                },
+                exportOptions: {
+                    columns: ':visible',
+                    format: {
+                        body: function (data, row, column, node) {
+                            // Find the <input> element within the <td>
+                            var inputElement = $(node).find('input');
+                            var inputValue = inputElement.length > 0 ? inputElement.val() : $(node).text();
+                            return inputValue ? inputValue : data;
+                        }
+                    }
+
+                }
+            },
+            'pageLength'
+        ],
+    });
+
+    // Add search functionality
+    $('#example thead tr').clone(true).appendTo('#example thead');
+    $('#example thead tr:eq(1) th').each(function (i) {
+        var title = $(this).text();
+        $(this).html('<input type="text" placeholder="Search ' + title + '" />');
+
+        $('input', this).on('keyup change', function () {
+            if (table.column(i).search() !== this.value) {
+                table
+                    .column(i)
+                    .search(this.value)
+                    .draw();
             }
         });
-    }
+    });
+});
+
 </script>
 @include('includes.footer')

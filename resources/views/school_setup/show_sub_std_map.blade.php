@@ -88,8 +88,29 @@
 $(document).ready(function () {   
 
     var table = $('#list').DataTable({
-        "pageLength": 100
-    });
+        select: true,
+            lengthMenu: [
+                [100, 500, 1000, -1],
+                ['100', '500', '1000', 'Show All']
+            ],
+            dom: 'Bfrtip',
+            buttons: [
+                {
+                    extend: 'pdfHtml5',
+                    title: 'Subject Standard Mapping',
+                    orientation: 'landscape',
+                    pageSize: 'LEGAL',
+                    pageSize: 'A0',
+                    exportOptions: {
+                        columns: ':visible'
+                    },
+                },
+                {extend: 'csv', text: ' CSV', title: 'Subject Standard Mapping'},
+                {extend: 'excel', text: ' EXCEL', title: 'Subject Standard Mapping'},
+                {extend: 'print', text: ' PRINT', title: 'Subject Standard Mapping'},
+                'pageLength'
+            ],
+        });
 
     $('#list thead tr').clone(true).appendTo('#list thead');
         $('#list thead tr:eq(1) th').each(function(i) {

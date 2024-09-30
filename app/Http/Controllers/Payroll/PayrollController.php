@@ -15,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use function App\Helpers\is_mobile;
 use function App\Helpers\employeeDetails;
+use function App\Helpers\countDays;
 use GenTux\Jwt\GetsJwtToken;
 use DB;
 use PDF;
@@ -38,6 +39,7 @@ class PayrollController extends Controller
 
         if ($id) {
             $payrollType = PayrollType::find($id);
+            // echo "<pre>";print_r($payrollType);exit;
             return view('payroll.payroll_type.create', compact('payrollType'));
         }
         $payrollType['payroll_type'] = 1;
@@ -47,6 +49,7 @@ class PayrollController extends Controller
         $payrollType['payroll_percentage'] = '';
         $payrollType['sub_institute_id'] = $sub_institute_id;
         $payrollType['id'] = 0;
+        $payrollType['day_count'] = 1;
         return view('payroll.payroll_type.create', compact('payrollType'));
     }
 
@@ -63,6 +66,7 @@ class PayrollController extends Controller
         $payrollType->payroll_name = $request->payroll_name;
         $payrollType->amount_type = $request->amount_type;
         $payrollType->status = $request->status;
+        $payrollType->day_count = $request->day_count;
         $payrollType->sub_institute_id = $sub_institute_id;
         $payrollType->payroll_percentage = $request->payroll_percentage !='' ? $request->payroll_percentage : 0;
         $payrollType->save();
@@ -792,6 +796,9 @@ class PayrollController extends Controller
         $type = $request->type;
         $sub_institute_id = session()->get('sub_institute_id');
         $payrollTypes = [];
+        $res['selMonth'] = date('M');
+        $res['selYear'] = date('Y');
+
         // process to get all emp create
         if($request->has('submit')){
             // return $request->all();
@@ -829,6 +836,7 @@ class PayrollController extends Controller
         $res['payrollTypes'] =  $payrollTypeArr;
         $res['months'] = Helpers::getMonths();
         $res['years'] = Helpers::getYears();
+        
         // echo "<pre>";print_r($res['deductionArr']);exit;
         // return view('payroll.payroll_deduction.index', $result);
         return is_mobile($type, "payroll.payroll_deduction.index", $res, "view");
@@ -1120,9 +1128,9 @@ class PayrollController extends Controller
 
         $get_school_name = DB::table('school_setup')->select('ReceiptHeader')->where(['id' => $sub_institute_id])->first();
 
-        $get_user_detail = DB::table('tbluserprofilemaster as tum')
+        $get_user_detail = DB::table('tbluser as ts')
             ->selectRaw('ts.*,tum.name as profile_name')
-            ->join('tbluser as ts',function($join){
+            ->join('tbluserprofilemaster as tum',function($join){
                 $join->on('ts.user_profile_id','=','tum.id')->where('ts.status',1);  // 23-04-24 by uma
             })
             ->where(['tum.sub_institute_id' => $sub_institute_id, 'ts.id' => $id])
@@ -1131,14 +1139,33 @@ class PayrollController extends Controller
         $payrollTypes = PayrollType::where('sub_institute_id',$sub_institute_id)->where('status', 1)->orderBy('sort_order')->get();
         if ($employeeSalaryData) {
             $employeeData = [];
-            $employeeData['name'] = $employeeSalaryData->getUser['first_name'] . ' '. $employeeSalaryData->getUser['last_name'];
-            $employeeData['emp_code'] = $employeeSalaryData->employee_id;
+            $employeeData['name'] = $get_user_detail->first_name . ' '. $get_user_detail->last_name;
+            $employeeData['emp_code'] = $get_user_detail->employee_no;
             $employeeData['join_date'] = date('Y-m-d', strtotime($get_user_detail->joined_date));
             $employeeData['profile_name'] = $get_user_detail->profile_name;
             $employeeData['account_no'] = $get_user_detail->account_no;
-            $employeeData['total_day'] = $employeeSalaryData->total_day;
-            $employeeData['pf_no'] = 123;
-            $employeeData['leave_without_pay'] = 1;
+            $employeeData['total_day'] = number_format($employeeSalaryData->total_day, 1); // For 1 decimal places
+            $employeeData['pf_no'] = $get_user_detail->pf_no;
+            $employeeData['bank_ac_no'] = $get_user_detail->account_no;
+            // get lwp 
+            $startOfMonth = Carbon::createFromFormat('M Y', $request->month . ' ' . $request->year)->startOfMonth()->format('Y-m-d');
+            $endOfMonth = Carbon::createFromFormat('M Y', $request->month . ' ' . $request->year)->endOfMonth()->format('Y-m-d'); 
+            
+            $lwpQuery = DB::table('hrms_emp_leaves as a')->whereRaw("a.sub_institute_id=$sub_institute_id AND (a.from_date BETWEEN '$startOfMonth' AND '$endOfMonth' OR a.to_date BETWEEN '$startOfMonth' AND '$endOfMonth') AND a.`status`='approved_lwp' AND a.user_id=$id")->get()->toArray();
+
+            $lwpCounts=0;
+            foreach($lwpQuery as $lkey => $lvalue){
+                $loopDate = Carbon::parse($lvalue->from_date);
+                $loopDateEnd = Carbon::parse($lvalue->to_date);
+                while ($loopDate->lte($loopDateEnd)) {
+                    if ($loopDate->month == Carbon::parse($lvalue->from_date)->month) {
+                        // Run the logic if the months match
+                        $lwpCounts += countDays($lvalue->from_date, $lvalue->to_date, $lvalue->day_type);
+                    }
+                    $loopDate->addDay();
+                }
+            }
+            $employeeData['leave_without_pay'] = $lwpCounts;
             $employeeData['month'] = $employeeSalaryData->month;
             $employeeData['year'] = $employeeSalaryData->year;
             $employeeData['total_payment'] = $employeeSalaryData->total_payment + $employeeSalaryData->total_deduction;
@@ -1152,15 +1179,17 @@ class PayrollController extends Controller
             $salaryData = [];
 //            return $employeeSalaryDetails;
             foreach ($payrollTypes as $payrollType) {
+                $empSal = isset($employeeSalaryStructureDetails[$payrollType->id]) ? $employeeSalaryStructureDetails[$payrollType->id] : 0;
+                $empDetailSal =isset($employeeSalaryDetails[$payrollType->id]) ? $employeeSalaryDetails[$payrollType->id] : 0;
                 if($payrollType->payroll_type == 1) {
                     $allowancekey = $allowancekey + 1;
-                    $salaryData[$allowancekey] = [$payrollType->payroll_name,$employeeSalaryStructureDetails[$payrollType->id],$employeeSalaryDetails[$payrollType->id],'allowance'];
-                    $actualpayment = $actualpayment + $employeeSalaryStructureDetails[$payrollType->id];
+                    $salaryData[$allowancekey] = [$payrollType->payroll_name,$empSal,$empDetailSal,'allowance'];
+                    $actualpayment = $actualpayment + $empSal;
                     $allowancekey =$allowancekey + 1 ;
                 } else {
                     //return $payrollType->amount_type;
                     $deductionkey = $deductionkey + 1;
-                    $salaryData[$deductionkey] = isset($employeeSalaryDetails[$payrollType->id]) ? [$payrollType->payroll_name,$employeeSalaryStructureDetails[$payrollType->id],$employeeSalaryDetails[$payrollType->id],'deduction'] : [];
+                    $salaryData[$deductionkey] = isset($empDetailSal) ? [$payrollType->payroll_name,$empSal,$empDetailSal,'deduction'] : [];
                     $deductionkey = $deductionkey + 1;
                 }
             }
@@ -1241,8 +1270,6 @@ class PayrollController extends Controller
 
     }
 
-
-
     public function payrollReport(Request $request)
     {
         $type= $request->type;
@@ -1265,21 +1292,149 @@ class PayrollController extends Controller
         $res['years']= Helpers::getYears();
 
         $employeeDetails = [];
+        $res['month'] = date('M');
+        $res['year'] = date('Y');
 
+        $newData=[];
+        
         if ($request->year && $request->month) {
-            $res['employeeDetails'] = EmployeeMonthlySalaryData::join('tbluser as u',function($join) use($request){
+            $empData = EmployeeMonthlySalaryData::join('tbluser as u',function($join) use($request){
                 $join->on('u.id','=','employee_monthly_salary_data.employee_id')
                 ->when($request->department_id!=0,function($q) use($request){
                     $q->whereIn('u.department_id',$request->department_id);
                 });
-            })->where([['employee_monthly_salary_data.month',$request->month],['employee_monthly_salary_data.year',$request->year],['employee_monthly_salary_data.sub_institute_id',$sub_institute_id]])
-           ->get();
+            })
+            ->selectRaw('employee_monthly_salary_data.*,u.id,CONCAT_WS(" ",COALESCE(u.first_name, "-"),COALESCE(u.last_name, "-")) as full_name,u.employee_no,u.department_id as department_ids')
+            ->where([['employee_monthly_salary_data.month',$request->month],['employee_monthly_salary_data.year',$request->year],['employee_monthly_salary_data.sub_institute_id',$sub_institute_id]])
+            ->get()->toArray();
 
+            $startOfMonth = Carbon::createFromFormat('M Y', $request->month . ' ' . $request->year)->startOfMonth()->format('Y-m-d');
+            $endOfMonth = Carbon::createFromFormat('M Y', $request->month . ' ' . $request->year)->endOfMonth()->format('Y-m-d'); 
+
+            $employeeIds = array_map(function($employee) {
+                return $employee['employee_id'];
+            }, $empData);
+
+            $department_ids = array_map(function($employee) {
+                return $employee['department_ids'];
+            }, $empData);
+
+            $lwpArr = $leaveDays = $absentArr = $checkVal = $holidayArr= []; 
+            // get absent,lwp,leave
+            if(!empty($employeeIds)){
+                // get employees lwp
+                $lwpQuery = DB::table('hrms_emp_leaves')->whereRaw('((from_date between "'.$startOfMonth.'" and "'.$endOfMonth.'") OR (to_date between "'.$startOfMonth.'" and "'.$endOfMonth.'")) and user_id in ('.implode(',',$employeeIds).') and sub_institute_id = '.$sub_institute_id.' AND STATUS = "approved_lwp" and status !="cancelled"')->get()->toArray();
+                
+                foreach($lwpQuery as $lkey => $lvalue){
+                    if(!isset($lwpArr[$lvalue->user_id])){
+                        $lwpArr[$lvalue->user_id]=0;
+                    }
+                    $lFromDate =$lvalue->from_date;
+                    $lToDate =$lvalue->to_date;
+                    $ldayType =$lvalue->day_type;
+
+                    $lwpArr[$lvalue->user_id] += countDays($lFromDate,$lToDate,$ldayType);
+                    // lwp dates to find absent days 
+                    $loopDate1 = Carbon::parse($lFromDate);
+                    $loopDateEnd1 = Carbon::parse($lToDate);
+                    while ($loopDate1->lte($loopDateEnd1)) {
+                        $formattedDate = $loopDate1->format('Y-m-d');
+                        if (!isset($checkVal[$lvalue->user_id][$formattedDate])) {
+                            $checkVal[$lvalue->user_id][$formattedDate] = 0;
+                        }
+                        $checkVal[$lvalue->user_id][$formattedDate] = 1;
+                        $loopDate1->addDay();
+                    }
+                }
+
+                // get leave Days
+                $leaveQuery = DB::table('hrms_emp_leaves')->whereRaw('((from_date between "'.$startOfMonth.'" and "'.$endOfMonth.'") OR (to_date between "'.$startOfMonth.'" and "'.$endOfMonth.'")) and user_id in ('.implode(',',$employeeIds).') and sub_institute_id = '.$sub_institute_id.' AND STATUS!="approved_lwp" and status !="cancelled" ')->get()->toArray();
+
+                foreach($leaveQuery as $ldkey => $ldvalue){
+                    if(!isset($leaveDays[$ldvalue->user_id])){
+                        $leaveDays[$ldvalue->user_id]=0;
+                    }
+                  
+                    $lFromDate =$ldvalue->from_date;
+                    $lToDate =$ldvalue->to_date;
+                    $ldayType =$ldvalue->day_type;
+
+                    $leaveDays[$ldvalue->user_id] += countDays($lFromDate,$lToDate,$ldayType);
+
+                    // leave dates to find absent days 
+                    $loopDate2 = Carbon::parse($lFromDate);
+                    $loopDateEnd2 = Carbon::parse($lToDate);
+                    while ($loopDate2->lte($loopDateEnd2)) {
+                        $formattedDate = $loopDate2->format('Y-m-d');
+                        if (!isset($checkVal[$ldvalue->user_id][$formattedDate])) {
+                            $checkVal[$ldvalue->user_id][$formattedDate] = 0;
+                        }
+                        $checkVal[$ldvalue->user_id][$formattedDate] = 1;
+                        $loopDate2->addDay();
+                    }
+                }
+                 // get attandance Days
+                 $attendanceDate = DB::table('hrms_attendances')->whereRaw('(day between "'.$startOfMonth.'" and "'.$endOfMonth.'") and user_id in ('.implode(',',$employeeIds).') and sub_institute_id = '.$sub_institute_id)->get()->toArray();
+
+                 foreach($attendanceDate as $adkey => $advalue){
+                     if(!isset($checkVal[$advalue->user_id][$advalue->day])){
+                         $checkVal[$advalue->user_id][$advalue->day]=0;
+                     }
+ 
+                     $checkVal[$advalue->user_id][$advalue->day] = 1;
+                 }
+
+                 // get absent Days
+                 $holidayData = DB::table('hrms_holidays')->whereRaw('((from_date between "'.$startOfMonth.'" and "'.$endOfMonth.'") OR (to_date between "'.$startOfMonth.'" and "'.$endOfMonth.'")) and sub_institute_id = '.$sub_institute_id.' and department in ('.implode(',',$department_ids).')')->get()->toArray();
+
+                 foreach($holidayData as $hdkey => $hdvalue){
+                      // leave dates to find absent days 
+                    $loopDate3 = Carbon::parse($hdvalue->from_date);
+                    $loopDateEnd3 = Carbon::parse($hdvalue->to_date);
+                    while ($loopDate3->lte($loopDateEnd3)) {
+                        $formattedDate = $loopDate3->format('Y-m-d');
+                        if (!isset($holidayArr[$formattedDate])) {
+                            $holidayArr[$formattedDate] = 0;
+                        }
+                        $holidayArr[$formattedDate] = 1;
+                        $loopDate3->addDay();
+                    }
+                 }
+            }
+            // echo "<pre>";print_r($holidayArr);exit;
+            // make new Array for data for each employee
+            foreach ($empData as $key => $value) {
+               $newData[$key] = $value;
+               $newData[$key]['lwp_days']= isset($lwpArr[$value['employee_id']]) ? $lwpArr[$value['employee_id']] : 0;
+               $newData[$key]['leave_days'] = isset($leaveDays[$value['employee_id']]) ? $leaveDays[$value['employee_id']] : 0;
+               $newData[$key]['absent_days'] = 0;
+                // leave dates to find absent days 
+                $monthFromDate = Carbon::parse($startOfMonth);
+                $monthEndDate = Carbon::parse($endOfMonth);
+
+                while ($monthFromDate->lte($monthEndDate)) {
+                    $formattedDate = $monthFromDate->format('Y-m-d');
+                    $existsDate = [];
+                    if(!isset($checkVal[$value['employee_id']][$formattedDate]) && !isset($holidayArr[$formattedDate])){
+                        $newData[$key]['absent_days'] += 1;
+                    }
+
+                    $monthFromDate->addDay();
+                }
+            }
+
+            if(empty($empData)){
+                $res['status_code']=0;
+                $res['message']="Monthly Payroll Not Found !!";
+            }
+
+            $res['employeeDetails'] = $newData;
             $res['month'] = $request->month;
             $res['year'] = $request->year;
             $res['department_id'] = $request->department_id;
-
         }
+        // echo "<pre>";print_r($res['employeeDetails']);
+        // exit;
         // return view('payroll.payroll_report.index', ['employees' => $employeeDetails, 'list' => $list,'months'=> $months,'years'=> $years]);
         return is_mobile($type, "payroll.payroll_report.index", $res, "view");
     }
@@ -1369,7 +1524,7 @@ class PayrollController extends Controller
         $res['months'] = Helpers::getMonths();
         $res['years'] = Helpers::getYears();
         $res['py_types'] = PayrollType::where('sub_institute_id',$sub_institute_id)->orderBy('sort_order')->where('status',1)->get()->toArray();
-
+        
         return is_mobile($type, "payroll.payroll_report.payrollTypeReport", $res, "view");
     }
 
@@ -1410,11 +1565,12 @@ class PayrollController extends Controller
             $sub_institute_id = $request->sub_institute_id;
             $syear = $request->syear;
         }
+        $res = session()->get('data');
         $res['months'] = Helpers::getMonths();
         $res['years'] = Helpers::getYears();
         $res['selYear'] = date('Y');
         $res['selMonth'] = date('M');
-
+        // echo "<pre>";print_r(session()->all());exit;
         return is_mobile($type,'payroll.monthly_payroll_report.newIndex',$res,'view');
     }
 
@@ -1422,6 +1578,8 @@ class PayrollController extends Controller
         $type=$request->type;
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
+        $userProfile = session()->get('user_profile_name');
+        $profileUserId = session()->get('user_id');
 
         $res['employee_id'] = $employee_id= ($request->emp_id!=0) ? implode(',',$request->emp_id) : '';
         $res['department_id'] = $department_id= ($request->department_id!=0) ? implode(',',$request->department_id) : '';
@@ -1432,10 +1590,12 @@ class PayrollController extends Controller
         if($type=="API"){
             $sub_institute_id = $request->sub_institute_id;
             $syear = $request->syear;
+            $userProfile = $request->user_profile_name;
+            $profileUserId = $request->user_id;
         }
-
+       
         // get emp by search 
-        $employeeDetails = employeeDetails($sub_institute_id,$employee_id,'',$department_id);
+        $employeeDetails = employeeDetails($sub_institute_id,$employee_id,'',$department_id,$userProfile,$profileUserId);
 
         // empData with val 
         $newData = [];
@@ -1446,7 +1606,7 @@ class PayrollController extends Controller
             // get monthly salary Data and add into newData array
             $newData[$key]['monthlyData'] = DB::table('employee_monthly_salary_data')->where(['sub_institute_id'=>$sub_institute_id,'year'=>$year])->where('employee_id',$value['id'])->where('month',$month)->first();
             if(isset($newData[$key]['monthlyData']->total_day)){
-                $newData[$key]['totalDay'] = number_format($newData[$key]['monthlyData']->total_day,2);
+                $newData[$key]['totalDay'] = round($newData[$key]['monthlyData']->total_day,2);
             }else{
                 $year = $year ?? Carbon::now()->year;
                 $month = $month ?? Carbon::now()->format('M');
@@ -1455,7 +1615,7 @@ class PayrollController extends Controller
                 $currentMonth = date('n');
 
                 $from_date = Carbon::createFromDate($year, $monthNumber, 1);
-                if($currentMonth==$monthNumber){
+                if($currentMonth==$monthNumber && $year == date('Y')){
                     $to_date = now();
                 }else{
                     $to_date = $from_date->copy()->endOfMonth();
@@ -1470,8 +1630,7 @@ class PayrollController extends Controller
 
                 // $emp_att = ($AttTotalDays - $AttTotalAb);
                 $emp_att = $this->getTotalDays($request2);
-
-                $newData[$key]['totalDay'] = number_format($emp_att,2);
+                $newData[$key]['totalDay'] = round($emp_att,2);
             }
         }
                 // echo "<pre>";print_r($newData);
@@ -1515,7 +1674,7 @@ class PayrollController extends Controller
         $totalDay = $request->totalDay;
         
         $payrollTypes = PayrollType::where('sub_institute_id',$sub_institute_id)->where('status', 1)->orderBy('sort_order')->get();
-        $employeeSalaryDetails = EmployeeSalaryStructure::where(['employee_id'=> $request->emp_id, 'sub_institute_id'=>$sub_institute_id])->first();
+        $employeeSalaryDetails = EmployeeSalaryStructure::where(['employee_id'=> $request->emp_id, 'sub_institute_id'=>$sub_institute_id,'year'=>$request->year])->first();
 
         if(empty($employeeSalaryDetails)){
             $res['status_code']=0;
@@ -1533,36 +1692,46 @@ class PayrollController extends Controller
                 $checkAllowance = DB::table('hrms_emp_payroll_deduction')->where('employee_id',$request->emp_id)->where(['sub_institute_id'=>$sub_institute_id,'month'=>$request->month,'year'=>$request->year,'deduction_type'=>$payrollType->id])->first();
                 $payrollAmount=$employeeSalaryDetails[$payrollType->id];
                 if(isset($checkAllowance->deduction_amount)){
-                    $payrollAmount = ($payrollAmount - $checkAllowance->deduction_amount);
+                    $payrollAmount = ($payrollAmount + $checkAllowance->deduction_amount);
                 }
 
-                $preparPayrollType[]['allowance'] = [$payrollAmount,$payrollType->amount_type,$payrollType->id,$payrollType->payroll_name];
+                $preparPayrollType[]['allowance'] = [$payrollAmount,$payrollType->amount_type,$payrollType->id,$payrollType->payroll_name,$payrollType->day_count];
             }
             // for deduction
              else if (isset($employeeSalaryDetails[$payrollType->id])) {
 
                 $checkDeduction = DB::table('hrms_emp_payroll_deduction')->where('employee_id',$request->emp_id)->where(['sub_institute_id'=>$sub_institute_id,'month'=>$request->month,'year'=>$request->year,'deduction_type'=>$payrollType->id])->first();
+                // echo "<pre>";print_r($checkDeduction);exit;
                 $payrollAmount=$employeeSalaryDetails[$payrollType->id];
                 if(isset($checkDeduction->deduction_amount)){
-                    $payrollAmount = ($payrollAmount - $checkAllowance->deduction_amount);
+                    $payrollAmount = ($payrollAmount + $checkDeduction->deduction_amount);
                 }
 
-                $preparPayrollType[]['deduction'] = [$payrollAmount,$payrollType->amount_type,$payrollType->id,$payrollType->payroll_name];
+                $preparPayrollType[]['deduction'] = [$payrollAmount,$payrollType->amount_type,$payrollType->id,$payrollType->payroll_name,$payrollType->day_count];
             }
         }
         $employeefinalDisplayData = [];
+        $totalSal =0;
         foreach ($preparPayrollType as $value){
             // for allowance
             $monthNo = date('n', strtotime($request->month)); // Converts months
             $payrollMonthDays = Carbon::create($request->year, $monthNo)->daysInMonth;
-
             if(isset($value['allowance'])) {
                 $allowence =  $value['allowance'][0];
-                if($value['allowance'][1] == 1) $allowence = round( ($allowence / $payrollMonthDays) * $request->totalDay);
-                if($value['allowance'][1] == 2) $allowence = (round(($allowence / $payrollMonthDays) * $request->totalDay));
+                if($value['allowance'][1] == 1  && $value['allowance'][4]==0) {
+                    $allowence = round( ($allowence / $payrollMonthDays) * $request->totalDay);
+                }
+                if($value['allowance'][1] == 2  && $value['allowance'][4]==0) {
+                    $allowence = (round(($allowence / $payrollMonthDays) * $request->totalDay));
+                }
                 $employeefinalDisplayData[$value['allowance'][2]] = $allowence;
+
+                if(in_array($value['allowance'][3],["BASIC","GRADE PAY","D.A"])){
+                    $totalSal= ($totalSal+$allowence);
+                }
                 $totalallowance = $totalallowance + $allowence;
             }
+          
             // for deduction
             if(isset($value['deduction'])) {
                 // 13-08-2024 start
@@ -1579,8 +1748,21 @@ class PayrollController extends Controller
 
                 // 13-08-2024 end 
                 $deductionName=  (($value['deduction'][3] == 'PT') ? 1 : 0);
-                if($value['deduction'][1] == 1 && !$deductionName) $deduction = round(($deduction / $payrollMonthDays) * $request->totalDay);
-                if($value['deduction'][1] == 2 && !$deductionName) $deduction = round(($deduction / $payrollMonthDays) * $request->totalDay);
+                if($totalSal < 15000 && $value['deduction'][3]=="PF"){
+                    //$deduction = round(($deduction / $payrollMonthDays) * $request->totalDay);  
+                    $deduction = round(($totalSal / 100) * 12);
+                    // echo $deduction.'<br>';  
+                    if($deduction > 1800){
+                        $deduction=1800;
+                    }
+                }
+                else if($value['deduction'][1] == 1 && !$deductionName && $value['deduction'][3]!="PF" && $value['deduction'][4]==0){
+                    $deduction = round(($deduction / $payrollMonthDays) * $request->totalDay);
+                }
+                else if($value['deduction'][1] == 2 && !$deductionName && $value['deduction'][3]!="PF" && $value['deduction'][4]==0){
+                    $deduction = round(($deduction / $payrollMonthDays) * $request->totalDay);  
+                }
+                
                 $employeefinalDisplayData[$value['deduction'][2]] = $deduction;
                 $totaldeduction = $totaldeduction + $deduction;
             }
@@ -1590,10 +1772,10 @@ class PayrollController extends Controller
             $employeefinalDisplayData['total_deduction'] = $totaldeduction;
             $employeefinalDisplayData['total_payment'] = ($totalallowance - $totaldeduction);
         }
-        // echo "<pre>";print_r($employeefinalDisplayData);exit;
+        // echo "<pre>";print_r($totalSal);exit;
 
         $res['salaryData'] = $employeefinalDisplayData;
-        $res['totalDay'] = $request->total_day;
+        $res['totalDay'] = round($request->totalDay,2);
 
         return $res;
     }
@@ -1603,6 +1785,7 @@ class PayrollController extends Controller
         $sub_institute_id = session()->get('sub_institute_id');
         $payrollVal = $request->payrollVal;
         $jsonVal=[];
+        // echo "<pre>";print_r($request->all());exit;
         // make json
         foreach ($payrollVal as $emp_id => $value) {
            $jsonVal[$emp_id] = json_encode($value['payrollHead']); 
@@ -1657,20 +1840,23 @@ class PayrollController extends Controller
         $from_date =$request->from_date;
         $to_date =$request->to_date;
         $user_id=$request->emp_id;
-     
+
         // getUserData 
         $userData = DB::table('tbluser')->where('id',$user_id)->first();
         // get weekDays
         $startDate = Carbon::parse($from_date);
         $endDate = Carbon::parse($to_date);
+        $weekDays = [];
         $countSundays = $totalDays = $attAb = 0;
         for ($date = $startDate; $date->lte($endDate); $date->addDay()) {
             if ($date->isSunday()) {
                 $countSundays++;
+                $weekDays[] = $date->format('Y-m-d');
             }
         }
         $weekday_off = $countSundays;
-
+        // echo "<br>weekDays<br>";
+        // echo "<pre>";print_r($weekDays);
         // get Holidays 
         $get_hrms_holidays = DB::table('hrms_holidays')
         ->where('sub_institute_id', $sub_institute_id)
@@ -1679,15 +1865,19 @@ class PayrollController extends Controller
         ->get()->toArray();
         
         $holiday = 0;
-        $hstartDate = Carbon::parse($from_date);
-        $hendDate = Carbon::parse($to_date);
+        // $hstartDate = Carbon::parse($from_date);
+        // $hendDate = Carbon::parse($to_date);
+        $holidayDates = [];
         foreach ($get_hrms_holidays as $key => $value) {
-            $startDate = Carbon::parse($value->from_date);
-            $endDate = Carbon::parse($value->to_date);
+            $hstartDate = Carbon::parse($value->from_date);
+            $hendDate = Carbon::parse($value->to_date);
             for ($date = $hstartDate; $date->lte($hendDate); $date->addDay()) {
                 $holiday++;
+                $holidayDates[] = $date->format('Y-m-d');
             }
         }
+        // echo "<br>Holidays<br>";
+        // echo "<pre>";print_r($holidayDates);
         // get users attandance
         $totalAtt = 0;
         $noAtt=$attArr=  [];
@@ -1698,56 +1888,90 @@ class PayrollController extends Controller
                 $countSundays++;
             }else{
                 $searchDate = Carbon::parse($date)->format('Y-m-d');
-                $attData = DB::table('hrms_attendances')->where(['sub_institute_id'=>$sub_institute_id,'user_id'=>$user_id])->where('day',$searchDate)->count();
+                $attData = DB::table('hrms_attendances')
+                ->where(['sub_institute_id'=>$sub_institute_id,'user_id'=>$user_id])->where('day',$searchDate)->groupBy('day')->count();
                 if($attData>0){
-                    $totalAtt += $attData;
-                    $attArr[]= $searchDate;
+                    if(!in_array($searchDate,$holidayDates)){
+                        $totalAtt += $attData;
+                        $attArr[]= $searchDate;
+                    }
                 }else{
                     $noAtt[] = $searchDate;
                 }
             }
         }   
+        // echo "<br>Attendance<br>";
+        // echo "<pre>";print_r($attArr);
+        // echo "<br>No Att<br>";
+        // echo "<pre>";print_r($noAtt);
         // get users leave
         $userLeaves = DB::table('hrms_emp_leaves as hel')
-        ->where('hel.user_id',$user_id)
-        ->whereRaw('hel.from_date >= "'.$from_date->format('Y-m-d').'" and hel.to_date <="'.$to_date->format('Y-m-d').'"')
+        // ->where('hel.user_id',$user_id)
+        ->whereRaw('((hel.from_date >= "'.$from_date->format('Y-m-d').'" and hel.to_date <="'.$to_date->format('Y-m-d').'") 
+                    OR hel.from_date like "'.$to_date->format('Y-m').'%" OR hel.to_date like "'.$to_date->format('Y-m').'%")
+                    and hel.user_id = "'.$user_id.'"') 
+        //->whereRaw('(hel.from_date >= "'.$from_date->format('Y-m-d').'")
         ->get()->toArray();
-        
+        // echo "<pre>";print_r($userLeaves);
+      
         $totDayPlaus = $totDayMinus = $noData = 0;
         $leaveDates=[];
         // check leave date in attandance and also aprroved_lwp
         foreach ($userLeaves as $key => $value) {
             $leaveFrom = Carbon::parse($value->from_date);
             $leaveTo = Carbon::parse($value->to_date);
+            // echo $lastDateOfMonth;
             for ($leavedate = $leaveFrom; $leavedate->lte($leaveTo); $leavedate->addDay()) {
-                if ($date->isSunday()) {
-                    $countSundays++;
-                }else{
-                    // Leaves that are not in attandance.. 
-                    if(!in_array($leavedate->format('Y-m-d'),$attArr) && !in_array($value->status,["approved_lwp"])){
-                        $totDayPlaus= ($totDayPlaus+$value->day_type);
+                $checkLeave = $leavedate->format('Y-m-d');
+                $checkMonth = $leavedate->format('m');
+                $leaveMonth = $leaveTo->format('m');
+                    if($checkMonth == $leaveMonth){
+                        // Leaves that are not in attandance.. 
+                        if(!in_array($checkLeave,$attArr) && !in_array($checkLeave,$holidayDates) && !in_array($value->status,["cancelled"])){
+                            $totDayPlaus= ($totDayPlaus+$value->day_type);
+                        }
+                        // if date not found in attdance and leave is approved lwp then minus, count only full day leave because half day will be in attandance
+                        if($value->status == "approved_lwp" && $value->day_type=="0.5" && !in_array($checkLeave,$holidayDates)){
+                            $totalAtt = ($totalAtt - $value->day_type);
+                        }
+                        else if(!in_array($checkLeave,$attArr) && !in_array($checkLeave,$holidayDates) && $value->status == "approved_lwp"){
+                            $totDayMinus = ($totDayMinus+$value->day_type);
+                        }
+                        // echo $leavedate->format('Y-m-d');
+                        if(in_array($checkLeave,$holidayDates)){
+                            $holiday--;
+                        }
+                        if(in_array($checkLeave,$weekDays)){
+                            $weekday_off--;
+                        }
+                        
+                        $leaveDates[] =$checkLeave;
                     }
-                    // if date not found in attdance and leave is approved lwp then minus, count only full day leave because half day will be in attandance
-                    if($value->status == "approved_lwp"){
-                        $totDayMinus = ($totDayMinus+$value->day_type);
-                    }
-                    // echo $leavedate->format('Y-m-d');
-                    $leaveDates[] =$leavedate->format('Y-m-d');
                 }
-            }
         }
-
-        // date not found in attandance and leave, no punch in and punch out and also no leave entry in database
+        // echo "<br>Leaves<br>";
+        // echo "<p/re>";print_r($leaveDates);
+       // date not found in attandance and leave, no punch in and punch out and also no leave entry in database
         $noEnrty = 0;
         foreach ($noAtt as $key => $value) {
-            if(!in_array($value,$leaveDates)){
+            if(!in_array($value,$leaveDates) && !in_array($value,$holidayDates)){
                 $noEnrty++;
             }
         }
-        $totalDays = ($totalAtt + $holiday + $weekday_off + $totDayPlaus);
-        $totalDays = ($totalDays - $totDayMinus - $noEnrty);
-        $totalDays = ($totalDays>0) ? $totalDays : 0; // totDays should not be in minus
+        // $arr = [
+        //     "att " =>$totalAtt,
+        //     "holidays" => $holiday,
+        //     "week" => $weekday_off,
+        //     "Leaves"=>$totDayPlaus,
+        //     "no Att"=>$noEnrty,
+        //     "leave lwp"=> $totDayMinus
+        // ];
+        // echo "<pre>";print_r($arr);
 
+        $totalDays = ($totalAtt + $holiday + $weekday_off + $totDayPlaus + $noEnrty); // 31
+        $totalDays = ($totalDays - $totDayMinus - $noEnrty); // 16
+        $totalDays = ($totalDays>0 && $totalAtt>0) ? $totalDays : 0; // totDays should not be in minus
+      
         return $totalDays;
     }
 }

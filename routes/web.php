@@ -169,9 +169,12 @@ Route::group([ 'middleware' => ['session', 'menu', 'logRoute','check_permissions
 
     Route::get('/whatsapp-send-messages/create/{id}', [WhatsappController::class, 'whatsappSendMessageCreate']);
     Route::post('/whatsapp-send-messages/store', [WhatsappController::class, 'whatsappSendMessageStore'])->name('send_whatsapp_message.store');
+    Route::post('/whatsapp-send-reply-messages/store', [WhatsappController::class, 'whatsappSendReplyMessageStore'])->name('send_whatsapp_reply_message.store');
+
     Route::delete('/whatsapp-send-messages/destroy/{id}', [WhatsappController::class, 'whatsappSendMessageDestroy'])->name('whatsapp_send_message.destroy');
     Route::get('/whatsapp-sent-generate-report', [WhatsappController::class, 'whatsappSentGenerateReport'])->name('whatsapp_send_messages.generate_report');
     Route::post('/whatsapp-sent-generate-show-report', [WhatsappController::class, 'whatsappSentGenerateReportDetails'])->name('whatsapp_sent_generate_report_details');
+Route::get('/whatsapp-show-reply/{wid}', [WhatsappController::class, 'whatsappShowReply'])->name('whatsapp_show_reply');
 
     Route::resource('sqaa_master', sqaa_controller::class);
     Route::resource('sqaa_score_report', sqaaScoreReportController::class);
@@ -354,6 +357,7 @@ Route::post('ajax_sendmail', [AJAXController::class, 'ajax_sendmail'])->name('aj
 
 Route::post('collectsct', [AJAXController::class, 'collectsct'])->name('collectsct');
 
+Route::get('studentLists', [AJAXController::class, 'studentLists'])->name('studentLists');
 
 Route::get('ckeditor/create', [CkeditorFileUploadController::class, 'create'])->name('ckeditor.create');
 Route::post('ckeditor', [CkeditorFileUploadController::class, 'store'])->name('uploadimage');
@@ -494,6 +498,7 @@ Route::any('python_timetable',[AJAXController::class, 'pythonTimetable'])->name(
 
 // to transfer files to digital ocean
 Route::post('transferDocs', [oldDocumentTransfer::class, 'storeImagesToDigitalOcean']);
+Route::get('convertDoc',[oldDocumentTransfer::class, 'ConvertBinaryData']);
 Route::get('transport_Onboarding', [tourController::class, 'transportOnboarding'])->name('transportOnboarding');
 Route::match(['get', 'post'], '/botman', 'App\Http\Controllers\BotManController@handle');
 // 03-06-24

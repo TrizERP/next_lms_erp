@@ -86,6 +86,9 @@ class LeaveReportController extends Controller
         $from_date_formatted = Carbon::createFromFormat('Y-m-d', $from_date)->format('Y-m-d');
         $to_date_formatted = Carbon::createFromFormat('Y-m-d', $to_date)->format('Y-m-d');
 
+        $from_month_formatted = Carbon::createFromFormat('Y-m-d', $from_date)->format('Y-m');
+        $to_month_formatted = Carbon::createFromFormat('Y-m-d', $to_date)->format('Y-m');
+
         $departments = HrmsDepartment::where('status', true)->pluck('department', 'id');
 
         $employees = tbluserModel::where('sub_institute_id', $sub_institute_id)->whereRaw('department_id in ('.$department_id.')')->get()->toArray();
@@ -97,20 +100,31 @@ class LeaveReportController extends Controller
             $join->on('hlt.id', '=', 'hel.leave_type_id')
                  ->where('hlt.sub_institute_id', '=', $sub_institute_id);
         })
-        ->where('hel.sub_institute_id', $sub_institute_id)
-        ->where('hel.from_date', '>=', $from_date_formatted)
-        ->where('hel.to_date', '<=', $to_date_formatted)
-        ->when($employee_id!=0,function($q) use($employee_id){
-            $q->whereRaw('hel.user_id IN ('.$employee_id.')');
-        })
+        ->where('hel.sub_institute_id', $sub_institute_id);
+        if($employee_id!=0){
+            $get_employee_leave_lists->whereRaw('hel.user_id IN ('.$employee_id.')')->whereBetween('hel.from_date',[$from_date_formatted,$to_date])->OrwhereRaw('(hel.to_date between "'.$from_date_formatted.'" and "'.$to_date.'" AND hel.user_id IN ('.$employee_id.') )');
+        }else if($department_id!=0){
+            $get_employee_leave_lists->whereRaw('u.department_id IN ('.$department_id.')')->whereBetween('hel.from_date',[$from_date_formatted,$to_date])
+                ->OrwhereRaw('(hel.to_date between "'.$from_date_formatted.'" and "'.$to_date.'" AND u.department_id IN ('.$department_id.') )');
+        }else{
+            $get_employee_leave_lists->whereBetween('hel.from_date',[$from_date_formatted,$to_date])->OrwhereRaw('(hel.to_date between "'.$from_date_formatted.'" and "'.$to_date.'" AND hel.sub_institute_id = '.$sub_institute_id.')');
+        }
+       
+        // ->when($employee_id!=0,function($q) use($employee_id,$from_date_formatted,$to_date){
+        //     $q->whereRaw('hel.user_id IN ('.$employee_id.')')->whereBetween('hel.from_date',[$from_date_formatted,$to_date])
+        //     ->OrwhereRaw('(hel.to_date between "'.$from_date_formatted.'" and "'.$to_date.'" AND hel.user_id IN ('.$employee_id.') )');
+        // },
+        // function($q) use($employee_id,$from_date_formatted,$to_date){
+        //     $q->whereBetween('hel.from_date',[$from_date_formatted,$to_date])
+        //     ->OrwhereBetween('hel.to_date',[$from_date_formatted,$to_date]);
+        // })
+        $get_employee_leave_lists = $get_employee_leave_lists->when($department_id!=0,function($q) use($department_id){
+            $q->whereRaw('u.department_id IN ('.$department_id.')');
+        }) //
         // ->whereIn('hel.status', $get_leave_status)
-        ->when($type == "API", function ($query) use ($get_leave_status) {
-            return $query->whereIn('hel.status', $get_leave_status);
-        }, function ($query) use ($get_leave_status) {
-            return $query->whereIn('hel.status', $get_leave_status);
-        })
+        ->whereIn('hel.status', $get_leave_status)
         ->get()->toArray();
-
+        
         $res['leave_types'] = ["Approved_lwp"=>"Approved LWP","Cancelled"=>"Cancelled","Rejected"=>"Rejected","Pending"=>"Pending Approval","Approved"=>"Approved"];
         
         $res['employees'] = $employees;
