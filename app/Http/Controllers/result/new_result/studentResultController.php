@@ -5282,6 +5282,7 @@ private function buildDisciplineTable($decipline_data)
                             ->where('activity_id', $activity_id)
                             ->where('group_id', $value1->id)
                             ->where('student_id', $student_id)
+                            ->where('syear',$syear)
                             ->get()->toArray();
 
                             if(!isset($get_sub_activity[$activity_id])){
@@ -5320,6 +5321,7 @@ private function buildDisciplineTable($decipline_data)
                                         ->where('sub_activity_id', $val->id)
                                         ->where('group_id', $va->id)
                                         ->where('student_id', $student_id)
+                                        ->where('syear',$syear)
                                         ->first();
 
                                         if(!empty($marks)){
