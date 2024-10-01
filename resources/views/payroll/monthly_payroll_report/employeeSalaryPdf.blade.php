@@ -1,8 +1,8 @@
 <table style="border-collapse: collapse;" border="1" width="100%">
     <tr>
         <td colspan=4 align="center">
-            <h2>Muljibhai Mehta International School</h2>
-            <h4>Pay Slip For The Month Of : April 2023</h4>
+            <h2>{{ $employeeData['school_name']->ReceiptHeader }}</h2>
+            <h4>Pay Slip For The Month Of : {{ $employeeData['month'] }} {{ $employeeData['year'] }}</h4>
         </td>
     </tr>
     <tr>
@@ -13,9 +13,9 @@
     </tr>
     <tr>
         <td>Designation</td>
-        <td>Accounts Assistant</td>
+        <td>{{ $employeeData['designation'] }}</td>
         <td>Date Of Joining</td>
-        <td>2021-03-08</td>
+        <td>{{ $employeeData['join_date'] }}</td>
     </tr>
     <tr>
         <td>Bank A/C No</td>
@@ -104,9 +104,9 @@
         <td align="center" {{-- rowspan=4 --}}>
             <b>From {{ $employeeData['school_name']->ReceiptHeader }}</b>
             <br>
+            
             <br>
             <br>
-            <img src="http://apps.triz.co.in/mmiserp/Products/cms/assets/fees_logo/mmis.jpg" height="100" width="100">
             <br>
             <b>Authorised Signatory</b>
         </td>
