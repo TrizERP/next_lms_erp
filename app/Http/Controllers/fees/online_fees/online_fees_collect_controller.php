@@ -384,7 +384,7 @@ class online_fees_collect_controller extends Controller
                     });
             })
             ->whereNotNull('fp.hdfc_order_id')
-            ->whereBetween('fp.created_at', [now()->subDays(3), now()->subMinutes(30)])
+            // ->whereBetween('fp.created_at', [now()->subDays(3), now()->subMinutes(30)])
             ->whereIn('fp.id', [35323,35388])
             ->groupBy('fp.id')
             ->get();
@@ -396,12 +396,18 @@ class online_fees_collect_controller extends Controller
                 $access_code = $data->access_code;
                 $working_code = $data->working_code;
                 $order_no = $data->hdfc_order_id;
-
-                $send_arr = [
-                    'order_no' => $order_no,
-                ];//'reference_no' => $order_no,
-
-                $request_payload = http_build_query($send_arr);
+                $amt = $data->amount;
+                // $send_arr = [[
+                //      'order_no' => $order_no,
+                //  ]];//
+               $order_list = [
+                       'order_no' => $order_no,
+               ];
+                
+                // Convert the order list into a JSON format
+                $request_payload = json_encode($order_list);
+                
+                // $request_payload = http_build_query($send_arr);
                 $enc_request = $this->hdfc_encrypt($request_payload, $working_code);
 
                 // Initialize cURL session
@@ -434,46 +440,52 @@ class online_fees_collect_controller extends Controller
 
                 // Close the cURL session
                 curl_close($ch);
-echo "<pre>".$order_no."<br/>";
-print_r($response);
-exit();
+// echo "-<pre>".$order_no."<br/>";
+// print_r($response);
+// exit();
                 // Process the response
                 if ($response !== false) {
                     parse_str($response, $response_data);
 
                     if (isset($response_data['status']) && $response_data['status'] == '0') {
-                        $dec_response = $this->hdfc_decrypt($response_data['enc_response'], $working_code);
+                        // $enc_type = $response_data['enc_response'];
+                        $enc_type = str_replace(array("\r", "\n", ' '), '', $response_data['enc_response']);
+                        $dec_response = $this->hdfc_decrypt($enc_type, $working_code);
+                        echo "-<pre>";
+                        print_r($dec_response);exit;
+                        if(isset($dec_response['order_status'])){
+                            $status = $dec_response['order_status'] ?? '';
+                            $paydate = strtotime($dec_response['order_status_date_time']);
+                            $trandate = date("Y-m-d", $paydate);
 
-                        $status = $dec_response['order_status'];
-                        $paydate = strtotime($dec_response['order_status_date_time']);
-                        $trandate = date("Y-m-d", $paydate);
+                            $update_arr = [
+                                "axis_encrypt_request" => "cron",
+                                "axis_payment_status" => $status,
+                                "axis_bank_res" => $trandate,
+                                "hdfc_bank_res" => json_encode($dec_response),
+                                "updated_at" => now()
+                            ];
 
-                        $update_arr = [
-                            "axis_encrypt_request" => "cron",
-                            "axis_payment_status" => $status,
-                            "axis_bank_res" => $trandate,
-                            "hdfc_bank_res" => json_encode($dec_response),
-                            "updated_at" => now()
-                        ];
+                            DB::table("fees_payment")
+                                ->where('id', $id)
+                                ->update($update_arr);
 
-                        DB::table("fees_payment")
-                            ->where('id', $id)
-                            ->update($update_arr);
+                            $request->merge([
+                                '_key' => csrf_token(),
+                                'student_id' => $data->student_id,
+                                'inserted_id' => $id,
+                                'hdfc_payment_id' => $order_no,
+                                'syear' => $data->syear,
+                                'sub_institute_id' => $data->sub_institute_id
+                            ]);
 
-                        $request->merge([
-                            '_key' => csrf_token(),
-                            'student_id' => $data->student_id,
-                            'inserted_id' => $id,
-                            'hdfc_payment_id' => $order_no,
-                            'syear' => $data->syear,
-                            'sub_institute_id' => $data->sub_institute_id
-                        ]);
+                            if ($status == 'Successful') {
+                                $check = DB::table('fees_collect')->whereRaw('cheque_no='.$order_no.' AND student_id='.$data->student_id.' AND syear='.$data->syear.' AND sub_institute_id='.$data->sub_institute_id)->get()->toArray();
 
-                        if ($status == 'Successful') {
-                            $check = DB::table('fees_collect')->whereRaw('cheque_no='.$order_no.' AND student_id='.$data->student_id.' AND syear='.$data->syear.' AND sub_institute_id='.$data->sub_institute_id)->get()->toArray();
-
-                            if (count($check) == 0) {
-                                $this->pay_fees($request, $data->student_id, $data->syear, $data->sub_institute_id, $data->amount, $order_no);
+                                if (count($check) == 0) {
+                                    echo "done";
+                                    $this->pay_fees($request, $data->student_id, $data->syear, $data->sub_institute_id, $data->amount, $order_no);
+                                }
                             }
                         }
                     } else {
@@ -484,6 +496,7 @@ exit();
                 }
             }
         }
+        // exit;
     }
 
     public function icici(Request $request)

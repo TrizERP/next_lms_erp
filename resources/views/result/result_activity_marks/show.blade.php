@@ -131,7 +131,7 @@
                                                     &nbsp;
                                                 @else 
                                                     <select name="marksArr[{{$stuvalue['id']}}][activity_id][{{$value2->id}}]" id="groupedData" class="form-control">
-                                                        <option value="">Select Any One</option>
+                                                        <option value="">--Select--</option>
                                                         @foreach($data['marksType'] as $mkey => $mvalue)
                                                             @php 
                                                             $selected = ""; 
@@ -155,7 +155,7 @@
                                                 @foreach($data['studentsList'] as $stukey=>$stuvalue)
                                                 <td>
                                                     <select name="marksArr[{{$stuvalue['id']}}][sub_activity_id][{{$value2->id}}][{{$value3->id}}]" id="groupedData" class="form-control">
-                                                        <option value="">Select Any One</option>
+                                                        <option value="">--Select--</option>
                                                         @foreach($data['marksType'] as $mkey => $mvalue)
                                                         @php 
                                                             $selected1 = ""; 
