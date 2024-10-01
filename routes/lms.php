@@ -47,6 +47,7 @@ use App\Http\Controllers\lms\virtualclassroomController;
 use App\Http\Controllers\school_setup\sub_std_mapController;
 use App\Http\Controllers\lms\lmsDashboardController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\lms\ParaphraseController;
 
 Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
     Route::get('o-net-data-category',[\App\Http\Controllers\lms\ONetOnlineDataController::class,'index'])->name('o-net-data-category.index');
@@ -260,3 +261,7 @@ Route::get('intrestCareers', [lmsCounsellingController::class, 'intrestCareers']
 Route::get('intrestEnterScore', [lmsCounsellingController::class, 'intrestEnterScore']);
 Route::get('intrestArea', [lmsCounsellingController::class, 'intrestArea']);
 Route::get('matchProfile', [lmsCounsellingController::class, 'matchProfile']);
+Route::post('/ai/processData',[contentController::class,'processAIData'])->name('ai.processData');
+Route::post('/ai/generateLessonPlan', [contentController::class, 'generateLessonPlan'])->name('ai.generateLessonPlan');
+Route::post('/paraphraseNew', [ParaphraseController::class, 'paraphrase']);
+Route::post('/set-book-session',[contentController::class,'setBookSession'])->name('set-book-session');
