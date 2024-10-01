@@ -1141,6 +1141,7 @@ class PayrollController extends Controller
             $employeeData = [];
             $employeeData['name'] = $get_user_detail->first_name . ' '. $get_user_detail->last_name;
             $employeeData['emp_code'] = $get_user_detail->employee_no;
+            $employeeData['designation'] = $get_user_detail->occupation;
             $employeeData['join_date'] = date('Y-m-d', strtotime($get_user_detail->joined_date));
             $employeeData['profile_name'] = $get_user_detail->profile_name;
             $employeeData['account_no'] = $get_user_detail->account_no;
