@@ -329,8 +329,20 @@ br {
                             <!-- end qulifications -->
 
                             <div class="col-md-4 form-group">
+                            @if(isset($masterSetups['Occupations']) && !empty($masterSetups['Occupations']))
+                                    @php 
+                                        $options  = explode('||',$masterSetups['Occupations']['fieldvalue']);
+                                    @endphp
+                                    <label>{{$masterSetups['Occupations']['fieldname']}}</label>
+                                    <select id="occupation" name="occupation" class="form-control">
+                                    <option value="">Select any one</option>
+                                    @foreach($options as $key => $value)
+                                        <option value="{{$value}}"  {{ isset($data['occupation']) && $data['occupation'] == $value ? 'selected' : '' }}>{{$value}}</option>
+                                    @endforeach
+                                    </select>
+                            @else
                                 <label>Occupation</label>
-                                <input type="text" id='occupation'  list="occupations" name="occupation" class="form-control" value="{{$data['occupation']}}" {{ $data['terminated_date'] ? date('Y-m-d',strtotime($data['terminated_date'])) : '' }}>
+                                <input type="text" id='occupation'  list="occupations" name="occupation" class="form-control" value="{{$data['occupation']}}" {{ $data['occupation'] ? $data['occupation'] : '' }}>
                                 <datalist id="occupations" height="100" style="height:100px">
                                 @if(!empty($occupationList))
                                     @foreach($occupationList as $key => $value)
@@ -338,6 +350,7 @@ br {
                                     @endforeach
                                 @endif 
                                 </datalist>
+                            @endif
                             </div>
                             <!-- end qualification and occupation -->
                             <!--  added on 01-08-2024 mmis -->

@@ -197,8 +197,8 @@
     var table = $('#example').DataTable({
         select: true,
         lengthMenu: [
-            [100, 500, 1000, -1],
-            ['100', '500', '1000', 'Show All']
+            [-1,100, 500, 1000],
+            ['Show All','100', '500', '1000']
         ],
         dom: 'Bfrtip',
         buttons: [

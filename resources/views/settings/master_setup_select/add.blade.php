@@ -14,7 +14,7 @@
             <div class="row">
                 <div class="col-md-4 form-group">
                     <label for="field">Select Type</label>
-                    <select name="seltype" id="type" class="form-control" required>
+                    <select name="seltype" id="Seltype" class="form-control" required>
                         <option value="">--Select--</option>
                         @foreach($data['seltypes'] as $value)
                             <option value="{{$value}}">{{$value}}</option>
@@ -23,7 +23,7 @@
                 </div>
                 <div class="col-md-4 form-group">
                     <label for="field">Field Name</label>
-                    <input type="text" name="fieldname" class="form-control" placeholder="Enter Field Name" autocomplete="off" required>
+                    <input type="text" name="fieldname" id="fieldname" class="form-control" placeholder="Enter Field Name" autocomplete="off" required>
                 </div>
                 <div class="col-md-4 form-group">
                     <label for="field">Add Options <a class="btn btn-success" style="padding:4px 4px !important;margin-left:20px" onclick="addOption()"><span class="mdi mdi-plus" style="color:#fff"></span></a></label>
@@ -43,6 +43,12 @@
 
 @include('includes.footerJs')
 <script>
+    $(document).ready(function(){
+        $('#Seltype').on('change',function(){
+            var title = $(this).val();
+            $('#fieldname').val(title);
+        })
+    })
      function addOption() {
         var lastInput = $('.selOption').last();
         var newInput = lastInput.clone();

@@ -13,7 +13,7 @@
     </tr>
     <tr>
         <td>Designation</td>
-        <td>Accounts Assistant</td>
+        <td>{{ $employeeData['designation'] }}</td>
         <td>Date Of Joining</td>
         <td>2021-03-08</td>
     </tr>
