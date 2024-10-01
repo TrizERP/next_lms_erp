@@ -13,90 +13,85 @@ use App\Http\Controllers\lms\counselling\lmsCounsellingController;
 class resultAPIController extends Controller
 {
     //
-
-    public function resultPersonalize(Request $request){
-        $type = $request->type;
+    public function resultPersonalize(Request $request)
+    {
         $sub_institute_id = $request->sub_institute_id;
-        $syear = $request->syear;
-        $res['status_code']=0;
-        $res['message']="No data Found"; 
-        // previous data start
-        $allData = DB::table('result_personalize_marks')->selectRaw('student_name,enrollment_no,standard,subject,sum(total) as total,sum(obtain) as obtain,syear')->where('sub_institute_id',$sub_institute_id)
-        ->when($request->enrollment_no, function ($q) use($request) {
-            $q->where('enrollment_no',$request->enrollment_no);
-        })->when($request->standard, function ($q) use($request) {
-            $q->where('standard',$request->standard);
-        })->groupBy(['subject','standard'])->get()->toArray();  
-        $previous_marks=[];
-
+        $res['status_code'] = 0;
+        $res['message'] = "No data Found"; 
+    
+        // Fetch overall data
+        $allData = DB::table('result_personalize_marks')
+            ->selectRaw('student_name, enrollment_no, standard, subject, sum(total) as total, sum(obtain) as obtain, syear')
+            ->where('sub_institute_id', $sub_institute_id)
+            ->when($request->enrollment_no, fn($q) => $q->where('enrollment_no', $request->enrollment_no))
+            ->when($request->standard, fn($q) => $q->where('standard', $request->standard))
+            ->groupBy(['subject', 'standard'])
+            ->get()
+            ->toArray();
+    
+        // Initialize arrays
         $previous_marks['previousdata']['overallresult'] = [];
         $standardData = [];
-        
-        foreach ($allData as $key => $value) {
+    
+        foreach ($allData as $value) {
+            // Group overall results by standard
             $previous_marks['previousdata']['overallresult'][$value->standard][] = [
                 "subjectname" => $value->subject,
                 "totalmarks" => $value->total,
                 "totalobtain" => $value->obtain,
             ];
-        
-            $getSingledata = DB::table('result_personalize_marks')
-                ->selectRaw('group_concat(exam) as title, sum(total) as total, sum(obtain) as obtain, standard, subject')
+    
+            // Fetch detailed exam data
+            $examData = DB::table('result_personalize_marks')
+                ->selectRaw('group_concat(exam) as title, sum(total) as total, sum(obtain) as obtain')
                 ->where([
                     'standard' => $value->standard,
                     'subject' => $value->subject,
                     'sub_institute_id' => $sub_institute_id,
+                    'enrollment_no' => $value->enrollment_no
                 ])
-                ->where('enrollment_no',$value->enrollment_no)
                 ->groupBy('standard', 'exam')
                 ->get()
                 ->toArray();
-        
-            foreach ($getSingledata as $index => $data) {
-                if (!isset($standardData[$value->standard])) {
-                    $standardData[$value->standard] = [
-                        'standardname' => $value->standard,
-                        'totalmarks' => 0,
-                        'totalobtain' => 0,
-                        'subjectdata' => [],
-                    ];
-                }
-        
-                $standardData[$value->standard]['totalmarks'] += $data->total;
-                $standardData[$value->standard]['totalobtain'] += $data->obtain;
-        
-                // Check if the subject already exists in the subjectdata array
+    
+            // Update standard data
+            if (!isset($standardData[$value->standard])) {
+                $standardData[$value->standard] = [
+                    'standardname' => $value->standard,
+                    'totalmarks' => 0,
+                    'totalobtain' => 0,
+                    'subjectdata' => []
+                ];
+            }
+    
+            $standardData[$value->standard]['totalmarks'] += $value->total;
+            $standardData[$value->standard]['totalobtain'] += $value->obtain;
+    
+            // Process subject data
+            foreach ($examData as $exam) {
                 $subjectIndex = array_search($value->subject, array_column($standardData[$value->standard]['subjectdata'], 'title'));
-        
+    
+                $examEntry = [
+                    "title" => $exam->title,
+                    "marks" => $exam->total,
+                    "obtain" => $exam->obtain
+                ];
+    
                 if ($subjectIndex !== false) {
-                    // If the subject exists, add the exam data to the subject's array
-                    $standardData[$value->standard]['subjectdata'][$subjectIndex]['examdata'][] = [
-                        "title" => $data->title,
-                        "marks" => $data->total,
-                        "obtain" => $data->obtain,
-                    ];
+                    $standardData[$value->standard]['subjectdata'][$subjectIndex]['examdata'][] = $examEntry;
                 } else {
-                    // If the subject doesn't exist, create a new entry in the subjectdata array
                     $standardData[$value->standard]['subjectdata'][] = [
                         "title" => $value->subject,
-                        "examdata" => [
-                            [
-                                "title" => $data->title,
-                                "marks" => $data->total,
-                                "obtain" => $data->obtain,
-                            ],
-                        ],
+                        "examdata" => [$examEntry]
                     ];
                 }
             }
         }
-        
+    
         $previous_marks['previousdata']['standarddata'] = array_values($standardData);
         
-        // previous data end
-        
         return $previous_marks;
-    }
-
+    }    
 
     public function currentResult(Request $request){
         $type = $request->type;
@@ -377,7 +372,7 @@ class resultAPIController extends Controller
                            $occupation[] = array(
                             "type"=>"video",
                             "title"=>$cv['title'],
-                            "link"=>"https://youtu.be/wDchsz8nmbo?si=O8Md_owjD1ipg383",
+                            "link"=>"https://main--lms-portal-site.netlify.app/content-model?data=".$cv['code'],
                            );
                         }
                     }
