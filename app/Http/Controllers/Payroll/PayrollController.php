@@ -1623,7 +1623,7 @@ class PayrollController extends Controller
                 }
                 // $emp_att = DB::table('hrms_attendances')->whereBetween('day',[$from_date,$to_date])->where('user_id',$value['id'])->count();
               
-                $request2 = new Request(['type'=>"API",'sub_institute_id'=>$sub_institute_id ,'syear'=>$syear,'from_date'=>$from_date,'to_date'=>$to_date,'department_id'=>[$value['department_id']],'emp_id'=>$value['id']]);
+                $request2 = new Request(['type'=>"API",'sub_institute_id'=>$sub_institute_id ,'syear'=>$syear,'from_date'=>$from_date,'to_date'=>$to_date,'department_id'=>$value['department_id'],'emp_id'=>$value['id']]);
                 // $hrmsController = new HrmsController;
                 // $attResponse = json_decode($hrmsController->departmentAttendanceReportCreate($request2),true);
                 // $AttTotalDays = isset($attResponse['empData'][0]['totalDays']) ? $attResponse['empData'][0]['totalDays'] : 0;
