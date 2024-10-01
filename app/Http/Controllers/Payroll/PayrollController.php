@@ -1141,6 +1141,7 @@ class PayrollController extends Controller
             $employeeData = [];
             $employeeData['name'] = $get_user_detail->first_name . ' '. $get_user_detail->last_name;
             $employeeData['emp_code'] = $get_user_detail->employee_no;
+            $employeeData['designation'] = $get_user_detail->occupation;
             $employeeData['join_date'] = date('Y-m-d', strtotime($get_user_detail->joined_date));
             $employeeData['profile_name'] = $get_user_detail->profile_name;
             $employeeData['account_no'] = $get_user_detail->account_no;
@@ -1840,7 +1841,7 @@ class PayrollController extends Controller
         $from_date =$request->from_date;
         $to_date =$request->to_date;
         $user_id=$request->emp_id;
-
+        $department_id=$request->department_id;
         // getUserData 
         $userData = DB::table('tbluser')->where('id',$user_id)->first();
         // get weekDays
@@ -1860,8 +1861,9 @@ class PayrollController extends Controller
         // get Holidays 
         $get_hrms_holidays = DB::table('hrms_holidays')
         ->where('sub_institute_id', $sub_institute_id)
-        ->where('from_date','>=',$from_date)
-        ->where('to_date','<=',$to_date)
+        ->whereBetween('from_date',[$from_date,$to_date])
+        ->whereBetween('to_date',[$from_date,$to_date])
+        ->whereRaw('FIND_IN_SET("'.$department_id.'", department)')
         ->get()->toArray();
         
         $holiday = 0;
@@ -1923,12 +1925,14 @@ class PayrollController extends Controller
             // echo $lastDateOfMonth;
             for ($leavedate = $leaveFrom; $leavedate->lte($leaveTo); $leavedate->addDay()) {
                 $checkLeave = $leavedate->format('Y-m-d');
-                $checkMonth = $leavedate->format('m');
-                $leaveMonth = $leaveTo->format('m');
+                $checkMonth = $leavedate->format('Y-m');
+                $leaveMonth = $leaveTo->format('Y-m');
                     if($checkMonth == $leaveMonth){
                         // Leaves that are not in attandance.. 
                         if(!in_array($checkLeave,$attArr) && !in_array($checkLeave,$holidayDates) && !in_array($value->status,["cancelled"])){
-                            $totDayPlaus= ($totDayPlaus+$value->day_type);
+                            $totDayPlaus = ($totDayPlaus+$value->day_type);
+                        // echo $checkLeave.'<br>';
+
                         }
                         // if date not found in attdance and leave is approved lwp then minus, count only full day leave because half day will be in attandance
                         if($value->status == "approved_lwp" && $value->day_type=="0.5" && !in_array($checkLeave,$holidayDates)){
@@ -1938,7 +1942,7 @@ class PayrollController extends Controller
                             $totDayMinus = ($totDayMinus+$value->day_type);
                         }
                         // echo $leavedate->format('Y-m-d');
-                        if(in_array($checkLeave,$holidayDates)){
+                        if(in_array($checkLeave,$holidayDates) && $totDayMinus!=0){
                             $holiday--;
                         }
                         if(in_array($checkLeave,$weekDays)){
@@ -1956,6 +1960,7 @@ class PayrollController extends Controller
         foreach ($noAtt as $key => $value) {
             if(!in_array($value,$leaveDates) && !in_array($value,$holidayDates)){
                 $noEnrty++;
+                // echo "<pre>";print_r($value);
             }
         }
         // $arr = [
@@ -1966,11 +1971,12 @@ class PayrollController extends Controller
         //     "no Att"=>$noEnrty,
         //     "leave lwp"=> $totDayMinus
         // ];
-        // echo "<pre>";print_r($arr);
-
+        // echo "<pre>";print_r($arr);exit;
+        $daysCount = $from_date->diffInDays($to_date);
+       
         $totalDays = ($totalAtt + $holiday + $weekday_off + $totDayPlaus + $noEnrty); // 31
         $totalDays = ($totalDays - $totDayMinus - $noEnrty); // 16
-        $totalDays = ($totalDays>0 && $totalAtt>0) ? $totalDays : 0; // totDays should not be in minus
+        $totalDays = ($totalDays>0) ? $totalDays : 0; // totDays should not be in minus
       
         return $totalDays;
     }
