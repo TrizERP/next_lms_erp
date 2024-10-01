@@ -190,7 +190,7 @@
 
                                         while (strtotime($hfrom_date_new) <= strtotime($hto_date_new)) 
                                         {
-                                            $holidays[] = $hfrom_date_new->format('Y-m-d');
+                                            $holidays[] = \Carbon\Carbon::parse($hfrom_date_new)->format('Y-m-d');
                                             $hfrom_date_new = date("Y-m-d", strtotime("+1 day", strtotime($hfrom_date_new)));
                                         }
                                     }
