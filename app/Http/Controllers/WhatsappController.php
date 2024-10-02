@@ -495,7 +495,7 @@ class WhatsappController extends Controller
 
     public function updateMessageStatus($sub_institute_id, $syear)
     {
-        $updateStatus = WhatsappSentMessage::where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->whereRaw('message_status in ("accepted","delivered","sent")')->where('sent_date', date('Y-m-d'))->get()->toArray();
+        $updateStatus = WhatsappSentMessage::where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->whereRaw('message_status in ("accepted","delivered","sent","queued")')->where('sent_date', date('Y-m-d'))->get()->toArray();
         foreach ($updateStatus as $key => $value) {
             if ($value['uri'] != null) {
                 $messageSid = $value['uri']; // sid
