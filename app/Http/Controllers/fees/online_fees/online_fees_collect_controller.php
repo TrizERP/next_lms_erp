@@ -379,13 +379,13 @@ class online_fees_collect_controller extends Controller
             ->where(function ($query) {
                 $query->where('fp.hdfc_payment_status', '!=', 'PS')
                     ->where(function ($query) {
-                        $query->whereNotIn('fp.axis_payment_status', ['Successful'])
+                        $query->whereNotIn('fp.axis_payment_status', ['Shipped','Cancelled','Aborted','Invalid','Unsuccessful'])
                             ->orWhereNull('fp.axis_payment_status');
                     });
             })
             ->whereNotNull('fp.hdfc_order_id')
-            // ->whereBetween('fp.created_at', [now()->subDays(3), now()->subMinutes(30)])
-            ->whereIn('fp.id', [35323,35388])
+            ->whereBetween('fp.created_at', [now()->subDays(3), now()->subMinutes(30)])
+            // ->whereIn('fp.id', [38326])
             ->groupBy('fp.id')
             ->get();
 
@@ -396,6 +396,8 @@ class online_fees_collect_controller extends Controller
                 $access_code = $data->access_code;
                 $working_code = $data->working_code;
                 $order_no = $data->hdfc_order_id;
+                $fine = $data->fine;
+                $discount = $data->discount;
                 $amt = $data->amount;
                 // $send_arr = [[
                 //      'order_no' => $order_no,
@@ -451,17 +453,22 @@ class online_fees_collect_controller extends Controller
                         // $enc_type = $response_data['enc_response'];
                         $enc_type = str_replace(array("\r", "\n", ' '), '', $response_data['enc_response']);
                         $dec_response = $this->hdfc_decrypt($enc_type, $working_code);
-                        echo "-<pre>";
-                        print_r($dec_response);exit;
+                        $dec_response = json_decode($dec_response, true);
+                        //echo "<pre>";
+                        //print_r($dec_response);
+                        //echo $dec_response['order_status'];
+                        //exit;
                         if(isset($dec_response['order_status'])){
                             $status = $dec_response['order_status'] ?? '';
                             $paydate = strtotime($dec_response['order_status_date_time']);
                             $trandate = date("Y-m-d", $paydate);
+                            $PaymentMode = $dec_response['order_option_type'] ?? '-';
 
                             $update_arr = [
                                 "axis_encrypt_request" => "cron",
                                 "axis_payment_status" => $status,
                                 "axis_bank_res" => $trandate,
+                                "axis_plain_request" => $PaymentMode,
                                 "hdfc_bank_res" => json_encode($dec_response),
                                 "updated_at" => now()
                             ];
@@ -479,12 +486,12 @@ class online_fees_collect_controller extends Controller
                                 'sub_institute_id' => $data->sub_institute_id
                             ]);
 
-                            if ($status == 'Successful') {
+                            if ($status == 'Shipped') {
                                 $check = DB::table('fees_collect')->whereRaw('cheque_no='.$order_no.' AND student_id='.$data->student_id.' AND syear='.$data->syear.' AND sub_institute_id='.$data->sub_institute_id)->get()->toArray();
 
                                 if (count($check) == 0) {
-                                    echo "done";
-                                    $this->pay_fees($request, $data->student_id, $data->syear, $data->sub_institute_id, $data->amount, $order_no);
+                                    //echo "Done-".$data->student_id."<br/>";
+                                    $this->pay_fees($request, $data->student_id, $data->syear, $data->sub_institute_id, $data->amount, $order_no,$fine,$PaymentMode,$discount);
                                 }
                             }
                         }
