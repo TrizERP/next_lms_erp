@@ -2782,12 +2782,15 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
         })
         ->Join('standard as std', 'std.id', '=', 'se.standard_id')
         ->Join('division as d', 'd.id', '=', 'se.section_id')
-        ->join('fees_collect as fee','fee.receipt_no','=','fc.reciept_id')
+        ->join('fees_collect as fee',function($q) use($sub_institute_id,$syear,$stud_id){
+            $q->on('fee.receipt_no','=','fc.reciept_id')->where(['fee.sub_institute_id'=>$sub_institute_id,'fee.syear'=>$syear])
+            ->where('fee.student_id',$stud_id);
+        })
         ->leftJoin('tbluser as u','u.id','=','fc.cancelled_by')
-        ->selectRaw('fc.*,CONCAT_WS(" ",COALESCE(s.first_name),COALESCE(s.middle_name),COALESCE(s.last_name)) as student_name,s.enrollment_no,IFNULL(s.uniqueid,"-") as uniqueid,std.name as std,d.name as divi,fee.payment_mode,GROUP_CONCAT(fc.term_id) AS month_ids,fee.cheque_bank_name, fee.bank_branch, fee.cheque_no,CONCAT_WS(" ",COALESCE(u.first_name),COALESCE(u.middle_name),COALESCE(u.last_name)) as cancelled_by,SUM(IFNULL(fc.amountpaid, 0)) AS actual_amountpaid')
+        ->selectRaw('fc.*,CONCAT_WS(" ",COALESCE(s.first_name),COALESCE(s.middle_name),COALESCE(s.last_name)) as student_name,s.enrollment_no,IFNULL(s.uniqueid,"-") as uniqueid,std.name as std,d.name as divi,fee.payment_mode,GROUP_CONCAT(fee.term_id) AS month_ids,fee.cheque_bank_name, fee.bank_branch, fee.cheque_no,CONCAT_WS(" ",COALESCE(u.first_name),COALESCE(u.middle_name),COALESCE(u.last_name)) as cancelled_by,SUM(IFNULL(fee.amount, 0)) AS actual_amountpaid')
         ->where(['fc.sub_institute_id'=>$sub_institute_id,'fc.syear'=>$syear])
         ->where('fc.student_id',$stud_id)
-        ->groupBy('reciept_id')
+        ->groupByRaw('reciept_id')
         ->get()->toArray();
         // cancel data end
         $res['status_code'] = 1;
