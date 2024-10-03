@@ -419,6 +419,8 @@ LIMIT 1");
             $html_content);
         $html_content = str_replace(htmlspecialchars("<<student_year_value>>"), $display_year, $html_content);
         $html_content = str_replace(htmlspecialchars("<<aadhar_number>>"), $value['adharnumber'], $html_content);
+        $html_content = str_replace(htmlspecialchars("<<student_gender>>"), strtoupper($value['gender']), $html_content);
+        $html_content = str_replace(htmlspecialchars("<<admission_no>>"), $value['admission_no'], $html_content);
         $html_content = str_replace(htmlspecialchars("<<student_unique_id>>"), $value['unique_id'], $html_content);
         $html_content = str_replace(htmlspecialchars("<<student_mobile_value>>"), $value['mobile'],$html_content);
         $html_content = str_replace(htmlspecialchars("<<student_dob_value>>"), date('d-m-Y', strtotime($value['dob'])),$html_content);
