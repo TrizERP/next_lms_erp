@@ -82,6 +82,7 @@
                                             <option value="Transfer Certificate">Transfer Certificate</option>
                                             <option value="Fees Statement">Fees Statement</option>
                                             <option value="No Dues Certificate">No Dues Certificate</option>
+                                            <option value="CBSE Form">CBSE Data Verification Form</option>
                                         </select>
                                     </div>
                                     <div class="col-md-4 form-group">
