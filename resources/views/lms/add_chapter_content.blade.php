@@ -3,6 +3,7 @@
 @include('includes.sideNavigation')--}}
 @extends('lmslayout')
 @section('container')
+use DB;
 <link href="../../plugins/bower_components/bootstrap-tagsinput/dist/bootstrap-tagsinput.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/gh/gitbrent/bootstrap4-toggle@3.6.1/css/bootstrap4-toggle.min.css" rel="stylesheet">
 <!--style>
@@ -59,7 +60,6 @@
     </div>
 
     <div class="container-fluid mb-5">
-        <div class="card border-0">
             <div class="card-body">
                 <form action="{{route('content_master.store')}}" method="post" enctype='multipart/form-data'>
                     @csrf
@@ -143,7 +143,7 @@
                             <div class="row align-items-center">
                                 <div class="col-md-4 my-2">
                                     <div class="form-group mb-0">
-                                        <label for="topicType">Mapping Type</label>
+                                        <label for="topicType">Mapping Type 1</label>
                                         <select class="load_map_value cust-select form-control mb-0"
                                                 name="mapping_type[]" data-new="1">
                                             <option value="">Select Mapping Type</option>
@@ -221,6 +221,7 @@
                                 <input type="file" id='filename' name="filename" class="form-control"
                                        onChange='getFileNameWithExt(event)'>
                             </div>
+                            <div id="upload_div1"></div>
                         </div>
 
                         <div class="col-md-8">
@@ -279,6 +280,57 @@
                                 </select>
                             </div>
                         </div>
+                               @php
+                               $sub_institute_id = Session::get('sub_institute_id');
+                                $syear = Session::get('syear');
+                               $chapter_id = $_REQUEST['chapter_id']; // Assuming chapter_id is passed in the request
+ 
+                                // Log chapter ID for debugging purposes
+                                Log::info('Chapter ID : ' . $chapter_id);
+
+                                 // Query to fetch booklist data from the database
+                                 $booklist_data = DB::select("
+                                     SELECT * FROM book_list
+                                     WHERE standard_id = :standard_id
+                                     AND subject_id = :subject_id
+                                     AND chapter_id = :chapter_id
+                                     AND topic_id = 0
+                                     AND sub_institute_id = :sub_institute_id
+                                     AND syear = :syear
+                                     ", [
+                                        'standard_id' => $data['breadcrum_data']->standard_id ?? 0,
+                                        'subject_id' => $data['breadcrum_data']->subject_id ?? 0,
+                                        'chapter_id' => $chapter_id,
+                                        'sub_institute_id' => $sub_institute_id,
+                                        'syear' => $syear
+                                   ]);
+                                   $booklist_data = json_decode(json_encode($booklist_data), true);
+
+                                   Log::info('Booklist Data : ' ,$booklist_data);
+
+                                @endphp
+                    @if(!empty($booklist_data))
+                    <div class="booklist-container" style="background-color: white; padding: 10px; border-radius: 5px;">
+                        <ul>
+                            @foreach($booklist_data as $k => $book_data)
+                                @php
+                                    $file_name = '';
+                                    if($book_data['file_name'] != '')
+                                    {
+                                        $file_name = '/storage/book_list/'.$book_data['file_name'];
+                                    }else{
+                                        $file_name = $book_data['link'];
+                                    }
+                            
+                                @endphp
+                                <li>
+                                    <a target="_blank" href="{{$file_name}}" class="text-dark-1">{{$book_data['title']}}</a>
+                                </li>
+                                <input type="hidden" class="book-file-names" value="{{$book_data['link']}}">
+                            @endforeach
+                        </ul>
+                    </div>
+                    @endif
                     </div>
                     <div class="row">
                         <div class="col-md-4">
@@ -549,6 +601,105 @@
         }
     }
 
+</script>
+<script type="text/javascript">
+    $(document).ready(function () {
+        // Trigger AI processing when content type or category changes
+        $('#content_category').change(function() {
+            processAIData();
+        });
+        $('#contentType').change(function() {
+            processAIData();
+        });
+    });
+
+    function processAIData() {
+        var standardId = "{{ $data['breadcrum_data']->standard_id ?? '' }}";
+        var subjectName = "{{ $data['breadcrum_data']->subject_name ?? '' }}";
+        var chapterName = "{{ $data['breadcrum_data']->chapter_name ?? '' }}";
+        var topicName = "{{ $data['breadcrum_data']->topic_name ?? '' }}";
+        var contentType = $('#contentType').val();
+        var contentCategory = $('#content_category').val();
+        let fileNames=[];
+        $('.book-file-names').each(function(){
+            fileNames.push($(this).val());
+        });
+
+        console.log('Content Type:', contentType);
+        console.log('Content Category:', contentCategory);
+        if (contentType && contentCategory) {
+            console.log('Both content type and category are selected.');
+
+            if (contentType === 'pdf' || contentType === 'jpg') {
+                console.log('Processing AI data...');
+                $.ajax({
+                    url: "{{ route('ai.processData') }}",
+                    type: 'POST',
+                    data: {
+                        standard_id: standardId,
+                        subject_name: subjectName,
+                        chapter_name: chapterName,
+                        topic_name: topicName,
+                        content_type: contentType,
+                        content_category: contentCategory,
+                        _token: '{{ csrf_token() }}'
+                    },
+                    success: function(response) {
+                        $('#title').val(response.title);
+                        $('#description').val(response.description);
+                    },
+                    error: function(xhr) {
+                        console.error(xhr);
+                        alert('An error occurred while processing your request.');
+                    }
+                });
+
+                console.log('Generating Data...');
+                $.ajax({
+                    url: "{{ route('ai.generateLessonPlan') }}",
+                    type: 'POST',
+                    data: {
+                        standard_id: standardId,
+                        subject_name: subjectName,
+                        chapter_name: chapterName,
+                        topic_name: topicName,
+                        content_category: contentCategory,
+                        content_type: contentType,
+                        booklist_data: fileNames,
+                        _token: '{{ csrf_token() }}'
+                    },
+                    success: function(response) {
+                        if (response.file_url) {
+                             $('#upload_div1').empty();
+                            var downloadLink = $('<a>', {
+                                href: response.file_url,
+                                text: 'Download ' + contentType.toUpperCase(),
+                                target: '_blank',
+                                download: ''
+                            });
+                            $('#upload_div1').append(downloadLink);
+                            console.log(contentType.toUpperCase() + ' URL:', response.file_url);
+                            downloadLink.css({
+                                display: 'block',
+                                margin: '10px 0',
+                                color: 'blue',
+                                textDecoration: 'underline'
+                            });
+                        } else {
+                            console.error(contentType.toUpperCase() + ' URL not found in response.');
+                            alert('An error occurred while generating the ' + contentType.toUpperCase() + '.');
+                        }
+                    },
+                    error: function(xhr) {
+                        console.error(xhr);
+                        alert('An error occurred while generating the ' + contentType.toUpperCase() + '.');
+                    }
+                });
+            }
+        } else {
+            console.log('Content type or category is not selected.');
+        }
+    }
 </script>
 @include('includes.footer')
 @endsection

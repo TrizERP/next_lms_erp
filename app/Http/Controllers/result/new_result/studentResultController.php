@@ -883,7 +883,7 @@ class studentResultController extends Controller
                                     $table .= '<td class="data_center no_mark ' . $exam_id . '">0.00</td>';
                                 }
                             }            
-                $obtained_mark_formatted = number_format($ob_main_mark, 2);
+                $obtained_mark_formatted = round($ob_main_mark);
                 
                 $table .= '<td class="data_center all_mark">' . $obtained_mark_formatted . '</td>';
                 $both_term_ob_mark += $obtained_mark_formatted;
@@ -912,7 +912,7 @@ class studentResultController extends Controller
         // get percentage and grade 
         $table .= '<tr>
         <td colspan=' . ($all_colspan)+1 . '><b>Percentage</b></td>
-        <td class="data_center"><b>' . $per . '%</b></td>
+        <td class="data_center"><b>' . round($per,1) . '%</b></td>
         <td class="data_center"><b>' . $this->getGrade($grade_arr_mmis, $get_all_tot_mark,$get_all_ob_mark) . '</b></td>
         </tr>';
         $curr_std = DB::table('standard')->where('id', $standard_id)->first();
@@ -2440,9 +2440,9 @@ $overall_total = $overall_total / 2;
         $sql_mark_grade = "select * from result_co_scholastic where sub_institute_id = " . $sub_institute_id . " and " . $extra_term . " ";
         $ret_mark_grade = DB::select(DB::raw($sql_mark_grade));
         $extra_where="1=1";
-        if($sub_institute_id==47){
-            $extra_where.=" AND id IN (5,6,7)";
-        }
+        // if($sub_institute_id==47){
+        //     $extra_where.=" AND id IN (5,6,7)";
+        // }
         $co_grade_range = DB::table('result_co_scholatic_range')->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->whereRaw($extra_where)->get()->toArray();
         if (count($ret_mark_grade) > 0) {
             $type = $ret_mark_grade[0]->mark_type;
@@ -4882,8 +4882,7 @@ private function buildDisciplineTable($decipline_data)
             <table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" cellpadding="0" border="1">
                 <thead>
                     <tr>
-                        <th  class="data_center"><b>Co-Scholastic Areas: [on a 3-point (A-C) Grading
-                        Scale]
+                        <th  class="data_center"><b>Co-Scholastic Areas: [on a 3-point (A-C) Grading Scale]
                         </b></th>';
                         if(count($term_name) > 1){
                             foreach ($term_name as $keys => $terms) {
