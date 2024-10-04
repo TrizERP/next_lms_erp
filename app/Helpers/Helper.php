@@ -1552,6 +1552,11 @@ if (!function_exists('send_FCM_Notification')) {
                     'Authorization: key=' . "AAAAIbBYYCQ:APA91bElNhyJBqYr7hVMqFyH5kT3hO7EtiOQIoEN656ZzabihtIQ64PA72mpCuKv59XuMoq1-EDq-oiel1J9zvazDm4Mb2eKdA6k23_IC9cVAfuE5lQDx1jn4wkhst5Heyw0vVVlvN3J",
                     'Content-Type: application/json',
                 );
+            } elseif ($sub_institute_id == 48) {
+                $headers = array(
+                    'Authorization: key=' . "AAAA15TRoXk:APA91bG_AqLh3HXeMMs4Z4otSzZNxEyJEyNeb_PmS1LIg0VORzZizP25raNpu8lSu-NOMIh-7I7EMXS_NWHOBjFe7WgAIOb4RCrxOQPq8OUz4vr1kO1KYMtSsqlf0jKIjoh-EzbdfXSC",
+                    'Content-Type: application/json',
+                );
             } else {
                 $headers = array(
                     'Authorization: key=' . "AAAApM0aBq0:APA91bEMbTNrawzSIm6Ra-IedYR4PmLZjznNGqmjep6-Opk7mSBha3UssNij8k7AhU4q1m2Y0fIh8bhFHgn3yfsGhS6GWFnKbiBQnICF9lYISJfX9t6cdYskBUyOeJVYW38aRKgg7VkK",
