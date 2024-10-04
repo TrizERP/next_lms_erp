@@ -77,7 +77,6 @@ Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute',
     Route::get('ajax_ChapterwiseLOmaster', [lomasterController::class, 'ajax_ChapterwiseLOmaster'])->name('ajax_ChapterwiseLOmaster');
 
     Route::resource('lmsdashboard', lmsDashboardController::class);
-    Route::get('lmsdashboard_teacher', [lmsDashboardController::class,'teacherIndex'])->name('teacherIndex');
     
     Route::resource('lo_master', lomasterController::class);
 
@@ -104,8 +103,6 @@ Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute',
 
 
     Route::resource('question_master', questionmasterController::class);
-    Route::get('question_mapped_value', [questionmasterController::class, 'getMappedValue'])->name('question_mapped_value');
-
     Route::post('ajaxdestroyanswer_master', [questionmasterController::class, 'ajaxdestroyanswer_master'])->name('ajaxdestroyanswer_master');
     Route::get('question_chapter_master', [questionmasterController::class, 'indexChapter'])->name('question_chapter_master');
 
@@ -260,8 +257,8 @@ Route::get('intrestJobzone', [lmsCounsellingController::class, 'intrestJobzone']
 Route::get('intrestCareers', [lmsCounsellingController::class, 'intrestCareers']);
 Route::get('intrestEnterScore', [lmsCounsellingController::class, 'intrestEnterScore']);
 Route::get('intrestArea', [lmsCounsellingController::class, 'intrestArea']);
-Route::get('matchProfile', [lmsCounsellingController::class, 'matchProfile']);
 Route::post('/ai/processData',[contentController::class,'processAIData'])->name('ai.processData');
 Route::post('/ai/generateLessonPlan', [contentController::class, 'generateLessonPlan'])->name('ai.generateLessonPlan');
+Route::post('/ai/generateSportsData', [contentController::class, 'generateSportsData'])->name('ai.generateSportsData');
 Route::post('/paraphraseNew', [ParaphraseController::class, 'paraphrase']);
 Route::post('/set-book-session',[contentController::class,'setBookSession'])->name('set-book-session');
