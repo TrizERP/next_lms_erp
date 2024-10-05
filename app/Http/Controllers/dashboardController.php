@@ -470,7 +470,7 @@ class dashboardController extends Controller
                 $std_data = rtrim($std_data, ",");
                 $unpaid_data .= "]";
                 $std_data .= "]";
-
+/*
                 $fees_chart2_fees_data = DB::table('tblstudent as s')
                     ->join('tblstudent_enrollment as se', function ($join) {
                         $join->on("se.student_id", "=", "s.id");
@@ -489,7 +489,8 @@ class dashboardController extends Controller
                     ->selectRaw("SUM(fc.amount) + SUM(fc.fees_discount) as amount,st.name")
                     ->where("s.sub_institute_id", '=', $sub_institute_id)
                     ->groupBy('st.id')->orderBy("st.id")->get()->toArray();
-
+*/
+                $fees_chart2_fees_data = [];
                 $paid_data = "[";
                 foreach ($fees_chart2_fees_data as $id => $arr) {
                     $paid_data .= $arr->amount . ",";
@@ -1879,7 +1880,7 @@ class dashboardController extends Controller
             $std_data = rtrim($std_data, ",");
             $unpaid_data .= "]";
             $std_data .= "]";
-
+/*
             $fees_chart2_fees_data =
                 DB::table('tblstudent as s')
                 ->join('tblstudent_enrollment as se', function ($join) use ($syear) {
@@ -1898,7 +1899,8 @@ class dashboardController extends Controller
                 ->where('s.sub_institute_id', $sub_institute_id)
                 ->groupBy('st.id')->orderBy('st.id')
                 ->get()->toArray();
-
+                */
+$fees_chart2_fees_data = [];
             $paid_data = "[";
             foreach ($fees_chart2_fees_data as $id => $arr) {
                 $paid_data .= $arr->amount . ",";

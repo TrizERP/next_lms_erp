@@ -1739,17 +1739,17 @@ class PayrollController extends Controller
                     // check eligible
                     $getEligible = DB::table('tbluser')->where('id',$request->emp_id)->first(); 
 
+                    $deduction =  $value['deduction'][0];
                     if($getEligible->pf_deduction=="N" && $value['deduction'][3]=="PF"){
-                        $value['deduction'][0]=0;
+                        $deduction =0;
                     }
                     if($getEligible->pt_deduction=="N" && $value['deduction'][3]=="PT"){
-                        $value['deduction'][0]=0;
+                        $deduction =0;
                     }
-                $deduction =  $value['deduction'][0];
 
                 // 13-08-2024 end 
                 $deductionName=  (($value['deduction'][3] == 'PT') ? 1 : 0);
-                if($totalSal < 15000 && $value['deduction'][3]=="PF"){
+                if($totalSal < 15000 && $value['deduction'][3]=="PF" && $deduction>0){
                     //$deduction = round(($deduction / $payrollMonthDays) * $request->totalDay);  
                     $deduction = round(($totalSal / 100) * 12);
                     // echo $deduction.'<br>';  
@@ -1912,6 +1912,7 @@ class PayrollController extends Controller
         ->whereRaw('((hel.from_date >= "'.$from_date->format('Y-m-d').'" and hel.to_date <="'.$to_date->format('Y-m-d').'") 
                     OR hel.from_date like "'.$to_date->format('Y-m').'%" OR hel.to_date like "'.$to_date->format('Y-m').'%")
                     and hel.user_id = "'.$user_id.'"') 
+                    ->where('hel.status','!=','cancelled')
         //->whereRaw('(hel.from_date >= "'.$from_date->format('Y-m-d').'")
         ->get()->toArray();
         // echo "<pre>";print_r($userLeaves);
@@ -1929,7 +1930,7 @@ class PayrollController extends Controller
                 $leaveMonth = $leaveTo->format('Y-m');
                     if($checkMonth == $leaveMonth){
                         // Leaves that are not in attandance.. 
-                        if(!in_array($checkLeave,$attArr) && !in_array($checkLeave,$holidayDates) && !in_array($value->status,["cancelled"])){
+                        if(!in_array($checkLeave,$attArr) && !in_array($checkLeave,$holidayDates)){
                             $totDayPlaus = ($totDayPlaus+$value->day_type);
                         // echo $checkLeave.'<br>';
 
