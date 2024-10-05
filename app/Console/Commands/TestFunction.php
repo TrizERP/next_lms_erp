@@ -88,7 +88,7 @@ class TestFunction extends Command
     public function handle()
     {
 
-        $attachment = "public/whatsapp/download.jpeg";
+       /* $attachment = "public/whatsapp/download.jpeg";
         $prepareMessagFileeBody['contentVariables'] = json_encode([
             "1" => $attachment,
         ]);
@@ -110,7 +110,7 @@ class TestFunction extends Command
         );
         dd($twilioResponse);
 
-        dd('done');
+        dd('done');*/
 
 
         $message = "Triz ";
