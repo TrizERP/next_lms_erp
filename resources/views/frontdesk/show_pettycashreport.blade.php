@@ -1,11 +1,9 @@
-@include('includes.headcss')
-@include('includes.header')
-@include('includes.sideNavigation')
-<style>
-    .title {
-        font-weight: 200;
-    }
-</style>
+{{--@include('../includes.headcss')
+@include('../includes.header')
+@include('../includes.sideNavigation')--}}
+
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row bg-title">
@@ -44,7 +42,7 @@
                             </div>
                             <div class="col-sm-3 form-group">
                                 <label>Title</label>
-                                <select required id="title_id" name="title_id" class="selectpicker form-control">
+                                <select id="title_id" name="title_id" class="selectpicker form-control">
                                     <option value="">Select Title</option>
                                     @foreach($data['Title_Arr'] as $key => $val)
                                         <option @if(isset($data['title_id']) && $data['title_id'] == $val->id) selected
@@ -75,7 +73,7 @@
                                 <th>User</th>
                                 <th>Title</th>
                                 <th>Amount</th>
-                                <th>Description</th>
+                                <th class="text-left">Description</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -170,3 +168,4 @@
 </script>
 
 @include('includes.footer')
+@endsection
