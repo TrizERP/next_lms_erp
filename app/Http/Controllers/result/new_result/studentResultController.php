@@ -4866,15 +4866,6 @@ private function buildDisciplineTable($decipline_data)
         // dicipline 
          if (isset($ret_data_disipline)) {
             foreach ($ret_data_disipline as $item) {
-                $obtainGradeDis = $item->obtain_grade;
-            // Check if the obtain_grade contains digits
-                if (preg_match('/\d/', $obtainGradeDis) && is_numeric($obtainGradeDis)) {
-                    $item->obtain_grade = $obtainGradeDis;
-                    $item->obtain_grade = $this->getGrade($get_grade, $item->max_mark, $obtainGradeDis, "co_scholastic");
-
-                } else {
-                    $item->obtain_grade = $obtainGrade;
-                }
                 $dis_data[] = $item;
             }
         }
@@ -4969,9 +4960,10 @@ private function buildDisciplineTable($decipline_data)
      $check_optional_subject_with_student = DB::table('student_optional_subject as sos')
     ->select('ssm.display_name', 'sos.subject_id', 'sos.student_id', 'ssm.standard_id', 'rce.id as create_id', 'rce.title', 'rce.term_id', 'rce.standard_id', 'rem.weightage', 'rem.ExamTitle', 'rce.subject_id', 'rce.points as r_point', 'rce.con_point', 'rem.Id as ExamId', 'rce.exam_id', DB::raw('IFNULL(rm.points, 0) as points'))
     ->join('sub_std_map as ssm', 'sos.subject_id', '=', 'ssm.subject_id')
-    ->leftJoin('result_create_exam as rce', function ($join) {
+    ->leftJoin('result_create_exam as rce', function ($join) use($syear){
         $join->on('rce.subject_id', '=', 'sos.subject_id')
-            ->on('rce.standard_id', '=', 'ssm.standard_id');
+            ->on('rce.standard_id', '=', 'ssm.standard_id')
+            ->where('rce.syear', '=', $syear);
     })
     ->leftJoin('result_exam_master as rem', 'rem.Id', '=', 'rce.exam_id')
     ->leftJoin('result_marks as rm', function ($join) use($student_id) {
@@ -5027,6 +5019,8 @@ private function buildDisciplineTable($decipline_data)
             }
                     // echo "<pre>";print_r($get_grade);
             if(isset($subjectRows)){
+                    // echo "<pre>";print_r($subjectRows);exit;
+
             foreach ($subjectRows as $subjectName => $termPoints) {
                     // echo "<pre>";print_r($termPoints);
 
