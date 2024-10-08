@@ -127,7 +127,7 @@ class admissionEnquiryController extends Controller
 
         $FORM_NO = $this->get_enquiry_no($sub_institute_id, $syear);
 
-        $standard = standardModel::where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
+        $standard = standardModel::where(['sub_institute_id' => $sub_institute_id])->orderBy('sort_order')->get()->toArray();
         // return $standard;exit;
         $res['status_code'] = 1;
         $res['message'] = "Success";
@@ -302,7 +302,7 @@ class admissionEnquiryController extends Controller
 
         $standard = standardModel::where([
             'id' => $data['admission_standard'], 'sub_institute_id' => $sub_institute_id,
-        ])->get()->toArray();
+        ])->orderBy('sort_order')->get()->toArray();
         $standard_name = $standard[0]['name'];
 
         if ($sub_institute_id == 198) // For Admission Registration Receipt (Maheshvari)
@@ -605,7 +605,7 @@ class admissionEnquiryController extends Controller
             $i++;
         }
 
-        $standard = standardModel::where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
+        $standard = standardModel::where(['sub_institute_id' => $sub_institute_id])->orderBy('sort_order')->get()->toArray();
 
         $res['status_code'] = "1";
         $res['message'] = "Successfully";
