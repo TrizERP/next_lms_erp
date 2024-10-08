@@ -96,9 +96,14 @@ class studentInfirmaryController extends Controller
         $student_id = trim($STUDENT[1] ?? '');
 
         if (empty($student_id)) {
-            throw ValidationException::withMessages([
-                'student_id' => 'Please select proper student with id',
-            ]);
+            // throw ValidationException::withMessages([
+            //     'student_id' => 'Please select proper student with id',
+            // ]);
+
+            $res['status_code'] = 0;
+            $res['message'] = "Failed to Add Student Data. Please select proper student with id";
+    
+            return is_mobile($type, "student_infirmary.index", $res);
         }
 
         $finalArray['student_id'] = $student_id;
