@@ -74,11 +74,17 @@
                                         @endif
                                         <th data-toggle="tooltip" title="Remarks">Remarks</th>
                                         <th data-toggle="tooltip" title="Enquiry Status">Enquiry</th>
+                                        <!-- 2024-10-08 hills admission  -->
+                                        @foreach($data['dataCustomFields'] as $k => $v)
+                                        <th data-toggle="tooltip" title="Enquiry Status">{{$v['field_label']}}</th>
+                                        @endforeach
+                                        <!-- 2024-10-08 hills admission  -->
                                     </tr>
                                 </thead>
                                 <tbody>
                                 @php
                                     $j=1;
+                                    $dataCustomFields = $data['dataCustomFields'];
                                 @endphp
                                 @foreach($data['data'] as $key => $data)
                                     @php
@@ -150,6 +156,30 @@
                                         @endif
                                         <td>{{$data['remarks']}}</td>
                                         <td>{{$data['display_enquiry_status']}}</td>
+                                        <!-- 2024-10-08 hills admission  -->
+                                        @foreach($dataCustomFields as $k => $v)
+                                        @if($v['field_name'] == 'siblings' && !empty($data['siblings']))
+                                            @php 
+                                                $siblingsData = [];
+                                                // Explode the siblings_id from the data array
+                                                $siblings_id = explode(',', $data['siblings']);
+                                                if (!empty($siblings_id)) {
+                                                    foreach ($siblings_id as $sk => $sv) {
+                                                        $studentData = App\Helpers\SearchStudent("", "", "", "", "", "", "", "", "", "", $sv);
+                                                        $siblingsData[] = $studentData[0] ?? '';
+                                                    }
+                                                }
+                                            @endphp
+                                            <td>
+                                                @foreach($siblingsData as $skey=>$svalue)
+                                                {{$skey+1}}. {{$svalue['first_name'].' '.$svalue['middle_name'].' '.$svalue['last_name']}}<br>
+                                                @endforeach
+                                            </td>
+                                        @else 
+                                            <td>{{ $data[$v['field_name']] }}</td>
+                                        @endif 
+                                        <!-- 2024-10-08 hills admission  -->
+                                    @endforeach
                                     </tr>
                                     @php
                                         $j++;
