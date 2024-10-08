@@ -1939,7 +1939,8 @@ class PayrollController extends Controller
                         if($value->status == "approved_lwp" && $value->day_type=="0.5" && !in_array($checkLeave,$holidayDates)){
                             $totalAtt = ($totalAtt - $value->day_type);
                         }
-                        else if(!in_array($checkLeave,$attArr) && !in_array($checkLeave,$holidayDates) && $value->status == "approved_lwp"){
+                        // !in_array($checkLeave,$attArr) &&  removed on 07-10-2024 for jojo if have lwp then do not count att
+                        else if(!in_array($checkLeave,$holidayDates) && $value->status == "approved_lwp"){
                             $totDayMinus = ($totDayMinus+$value->day_type);
                         }
                         // echo $leavedate->format('Y-m-d');
