@@ -2374,11 +2374,24 @@ class AJAXController extends Controller
     public function studentLists(Request $request){
         $grade = $request->grade;
         $standard = $request->standard;
+
         $div ="";
+        $sub_institute_id = "";
+        $syear = "";
+        $roll_no = $request->roll_no;
+        $stu_name = $request->stu_name;
+        $uniqueid = $request->uniqueid;
+        $mobile = $request->mobile;
+        $grno = $request->grno;
+        $stud_id = $request->stud_id;
+        $batch = $request->batch;
+        $status = $request->status;
+
         if(isset($request->division)){
             $div = $request->division;
         }
-        $dataList = SearchStudent($grade, $standard, $div);
+        $dataList = SearchStudent($grade, $standard, $div,$sub_institute_id, $syear,$roll_no,$stu_name,$uniqueid,$mobile,$grno,$stud_id, $batch,$status);
+
         return $dataList;
     }
 }

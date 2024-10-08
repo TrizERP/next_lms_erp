@@ -89,9 +89,9 @@ class otherNewfeesReportController extends Controller
                 // });
             })->join('division as d', function ($join) {
                 $join->whereRaw('se.section_id = d.id');
-            })->selectRaw("CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name,s.enrollment_no,
+            })->selectRaw("CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name,s.enrollment_no,se.roll_no,
                 s.mobile,c.student_id,st.name as standard_name,d.name as division_name,h.display_name as fees_head,
-                h.amount AS total_amt, c.deduction_amount,c.deduction_remarks,c.deduction_date,c.payment_mode,c.receipt_id,c.id,c.student_id")
+                h.amount AS total_amt, c.deduction_amount,c.deduction_remarks,c.deduction_date,c.payment_mode,c.bank_name,c.cheque_dd_no,c.receipt_id,c.id,c.student_id")
             ->where('c.sub_institute_id', $sub_institute_id)
             ->where('c.syear', $syear)
             ->where('c.is_deleted', '=', 'N')
@@ -128,7 +128,11 @@ class otherNewfeesReportController extends Controller
         $syear = session()->get('syear');
         $sub_institute_id = session()->get('sub_institute_id');
 
-        $get_imprest_head = DB::select('SELECT fees_title,display_name FROM fees_title WHERE sub_institute_id = "' . $sub_institute_id . '" AND syear = "' . $syear . '" AND display_name LIKE "%Imprest%" AND other_fee_id != 0  ');    //"%Imprest Head%"
+        $get_imprest_head = DB::select('SELECT fees_title,display_name FROM fees_title WHERE sub_institute_id = "' . $sub_institute_id . '" AND syear = "' . $syear . '" AND display_name LIKE "%Imprest%" AND other_fee_id != 0  ');
+        if(empty($get_imprest_head)){
+            $res="";
+            return $res;
+        }
         $other_fees_title_id = $get_imprest_head[0]->fees_title;
         $other_fees_title = $get_imprest_head[0]->display_name;
 
