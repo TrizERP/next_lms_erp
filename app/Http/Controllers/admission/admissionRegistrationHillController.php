@@ -131,7 +131,7 @@ class admissionRegistrationHillController extends Controller
               $emailRequest = Request::create('/', 'POST', [
                 'type' => 'API',
                 'teacher_id' => $created_by,
-                'sub_institute_id' => session()->get('sub_institute_id'),
+                'sub_institute_id' =>$sub_institute_id,
                 'token' => $_REQUEST['_token'],
                 'all_email' => $data['email'],
                 'syear' => $syear,
@@ -141,7 +141,7 @@ class admissionRegistrationHillController extends Controller
             
             //   echo "<pre>";print_r($emailRequest);
               $sendEmailController = new send_email_parents_controller;
-            //   $sendEmail = $sendEmailController->sendEmail($emailRequest);
+              $sendEmail = $sendEmailController->sendEmail($emailRequest);
             }
         }
         // exit;
