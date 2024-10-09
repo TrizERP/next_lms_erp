@@ -27,6 +27,7 @@ class questionmasterController extends Controller
     public function index(Request $request)
     {
         $data = $this->getData($request);
+
         $type = $request->input('type');
         $res['status_code'] = 1;
         $res['message'] = "SUCCESS";
@@ -55,14 +56,15 @@ class questionmasterController extends Controller
 
         $data['questionmaster_data'] = lmsQuestionMasterModel::select('lms_question_master.*',
             'standard.name as standard_name',
-            'academic_section.title as grade_name', 'subject_name', 'chapter_name', 'question_type',DB::raw('group_concat(t1.name) as type_name'))
+            'academic_section.title as grade_name',DB::raw('GROUP_CONCAT(DISTINCT t.name) as mapping_type')
+            , 'subject_name', 'chapter_name', 'question_type',DB::raw('group_concat(t1.name) as type_name'))
             ->join('standard', 'standard.id', '=', 'lms_question_master.standard_id')
             ->join('academic_section', 'academic_section.id', '=', 'lms_question_master.grade_id')
             ->join('subject', 'subject.id', '=', 'lms_question_master.subject_id')
             ->join('chapter_master as cm', 'cm.id', '=', 'lms_question_master.chapter_id')
             //->join('topic_master as tj', 'tj.id', '=', 'chapter_master.topic_id')
             ->join('question_type_master as tm', 'tm.id', '=', 'lms_question_master.question_type_id')
-            ->LeftJoin('lms_question_mapping as ltm', 'ltm.questionmaster_id', '=', 'lms_question_master.id')            
+            ->LeftJoin('lms_question_mapping as ltm', 'ltm.questionmaster_id', '=', 'lms_question_master.id')
             ->LeftJoin('lms_mapping_type as t', 't.id', 'ltm.mapping_type_id')
             ->LeftJoin('lms_mapping_type as t1', function($query) {
                 $query->on('t1.id', 'ltm.mapping_value_id');
@@ -158,7 +160,7 @@ class questionmasterController extends Controller
             ->join('subject', 'subject.id', '=', 'lms_question_master.subject_id')
             ->join('chapter_master as cm', 'cm.id', '=', 'lms_question_master.chapter_id')
             ->join('question_type_master as tm', 'tm.id', '=', 'lms_question_master.question_type_id')
-            ->LeftJoin('lms_question_mapping as ltm', 'ltm.questionmaster_id', '=', 'lms_question_master.id')            
+            ->LeftJoin('lms_question_mapping as ltm', 'ltm.questionmaster_id', '=', 'lms_question_master.id')
             ->LeftJoin('lms_mapping_type as t', 't.id', 'ltm.mapping_type_id')
             ->LeftJoin('lms_mapping_type as t1', function($query) {
                 $query->on('t1.id', 'ltm.mapping_value_id');
@@ -271,18 +273,18 @@ class questionmasterController extends Controller
         $mapping_type = $request->get('mapping_type');
         $mapping_value = $request->get('mapping_value');
         $reasons = $request->get('reasons');
-        
+
         foreach ($mapping_type as $key => $val) {
             if ($val != "" && $mapping_value[$key] != "") {
                 $contentmappingtype = array(
                     'questionmaster_id' => $question_id,
                     'mapping_type_id'   => $val,
                     'mapping_value_id'  => $mapping_value[$key],
-                    'mapping_value_id'  => $mapping_value[$key], 
-                    'reasons' => $reasons[$key],                   
+                    'mapping_value_id'  => $mapping_value[$key],
+                    'reasons' => $reasons[$key],
                 );
         // echo "<pre>";print_r($contentmappingtype);
-                
+
                 lmsQuestionMappingModel::insert($contentmappingtype);
             }
         }
@@ -566,7 +568,7 @@ class questionmasterController extends Controller
 
         $mapping_type = $request->get('mapping_type');
         $mapping_value = $request->get('mapping_value');
-        $reasons = $request->get('reasons');        
+        $reasons = $request->get('reasons');
 
         foreach ($mapping_type as $key => $val) {
             if ($val != "" && $mapping_value[$key] != "") {
@@ -574,7 +576,7 @@ class questionmasterController extends Controller
                     'questionmaster_id' => $id,
                     'mapping_type_id'   => $val,
                     'mapping_value_id'  => $mapping_value[$key],
-                    'reasons'  => $reasons[$key],                    
+                    'reasons'  => $reasons[$key],
                 ];
                 lmsQuestionMappingModel::insert($questionmappingtype);
             }
@@ -609,7 +611,7 @@ class questionmasterController extends Controller
         $questiondata = lmsQuestionMasterModel::where(["id" => $id])->get()->toArray();
         $chapter_id = $questiondata[0]['chapter_id'];
         $topic_id = $questiondata[0]['topic_id'];
-        $standard_id = $questiondata[0]['standard_id'];        
+        $standard_id = $questiondata[0]['standard_id'];
 
         lmsQuestionMasterModel::where(["id" => $id])->delete();
         answermasterModel::where(["question_id" => $id])->delete();

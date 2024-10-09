@@ -47,7 +47,7 @@ use App\Http\Controllers\lms\virtualclassroomController;
 use App\Http\Controllers\school_setup\sub_std_mapController;
 use Illuminate\Support\Facades\Route;
 
-Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute']], function () {
+Route::group(['prefix' => 'lms1', 'middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::resource('chapter_master', chapterController::class);
     Route::resource('course_master', courseController::class);
     Route::resource('topic_master', topicController::class);

@@ -2,6 +2,7 @@
 @include('includes.header')
 @include('includes.sideNavigation')
 
+
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row bg-title align-items-center justify-content-between">
@@ -39,6 +40,22 @@
                             <strong>{{ $sessionData['message'] }}</strong>
                         </div>
                     @endif
+                    @if(count($data['data']) > 0)
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 20px; border: 1px solid #ddd; border-radius: 8px; background-color: #f5f7fa; max-width: 600px; margin: 20px auto; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); font-family: Arial, sans-serif;">
+                                <div style="flex: 3; padding: 10px;">
+                                    <span style="font-weight: bold; color: #555;">Academic Section:</span>
+                                    <span style="color: #333;">{{ $data['data'][0]->grade_name }}</span>
+                                </div>
+                                <div style="flex: 1; padding: 10px;">
+                                    <span style="font-weight: bold; color: #555;">Standard:</span>
+                                    <span style="color: #333;">{{ $data['data'][0]->standard_name }}</span>
+                                </div>
+                                <div style="flex: 2; padding: 10px;">
+                                    <span style="font-weight: bold; color: #555;">Subject:</span>
+                                    <span style="color: #333;">{{ $data['data'][0]->subject_name }}</span>
+                                </div>
+                            </div>
+                        @endif
                     <div class="col-lg-12 col-sm-12 col-xs-12" style="overflow:auto;">
                         <div class="card">
                             <div class="card-body">
@@ -46,9 +63,9 @@
                                     <thead>
                                     <tr>
                                         <th>Sr. No.</th>
-                                        <th>Academic Section</th>
+                                       {{-- <th>Academic Section</th>
                                         <th>Standard</th>
-                                        <th>Subject</th>
+                                        <th>Subject</th>--}}
                                         <th>Chapter</th>
                                         <th>Question</th>
                                         <th>Question Type</th>
@@ -62,25 +79,28 @@
                                     @if(count($data['data']) > 0)
                                         @php $i = 1;@endphp
                                         @foreach($data['data'] as $key => $quesdata)
-                                        @php
+                                            @php
                                                 $map_type = explode(',', $quesdata->type_name);
+                                                $map_value = explode(',', $quesdata->mapping_type);
                                                 $j =1;
                                             @endphp
                                             <tr>
                                                 <td>@php echo $i++;@endphp</td>
-                                                <td>{{$quesdata->grade_name}}</td>
+                                               {{-- <td>{{$quesdata->grade_name}}</td>
                                                 <td>{{$quesdata->standard_name}}</td>
-                                                <td>{{$quesdata->subject_name}}</td>
+                                                <td>{{$quesdata->subject_name}}</td>--}}
                                                 <td>{{$quesdata->chapter_name}}</td>
                                                 <td>{!!$quesdata->question_title!!}</td>
                                                 <td>{{ucwords($quesdata->question_type)}}</td>
                                                 <td>
-                                                    @foreach($map_type as $map)
-                                                    @if(!empty($map))
-                                                    {{ $j++.")".$map }}<br>
-                                                    @endif
+                                                    @foreach($map_type as $key => $map)
+                                                        @if(!empty($map))
+                                                            <span
+                                                                style="display: block">{{ $j++ . ") " . $map_value[$key] . " : " . $map }}</span>
+                                                            <br>
+                                                        @endif
                                                     @endforeach
-                                                    </td>
+                                                </td>
                                                 <td>
                                                     @if($quesdata->multiple_answer == 1)
                                                         Yes
@@ -115,17 +135,21 @@
                                             </tr>
                                         @endforeach
                                     @else
-                                        <tr><td colspan="10"><center>No records</center></td></tr>
+                                        <tr>
+                                            <td colspan="10">
+                                                <center>No records</center>
+                                            </td>
+                                        </tr>
                                     @endif
-                                </tbody>
-                            </table>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
-                </div>
 
+                </div>
             </div>
         </div>
-</div>
     </div>
 </div>
 
@@ -143,13 +167,14 @@
         $("#standard").change(function () {
             var std_id = $("#standard").val();
             var path = "{{ route('ajax_StandardwiseSubject') }}";
-        $('#subject').find('option').remove().end().append('<option value="">Select Subject</option>').val('');
-        $.ajax({url: path,data:'std_id='+std_id, success: function(result){
-            for(var i=0;i < result.length;i++){
-                $("#subject").append($("<option></option>").val(result[i]['subject_id']).html(result[i]['display_name']));
-            }
-            }
-        });
+            $('#subject').find('option').remove().end().append('<option value="">Select Subject</option>').val('');
+            $.ajax({
+                url: path, data: 'std_id=' + std_id, success: function (result) {
+                    for (var i = 0; i < result.length; i++) {
+                        $("#subject").append($("<option></option>").val(result[i]['subject_id']).html(result[i]['display_name']));
+                    }
+                }
+            });
         })
     });
 
