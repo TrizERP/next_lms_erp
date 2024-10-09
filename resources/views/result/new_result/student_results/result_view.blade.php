@@ -4,10 +4,10 @@
 
 <div id="page-wrapper">
 	<div class="container-fluid">
-		@php 
+		@php
 		$other_sub = [61];
         $sub_institute_id = session()->get('sub_institute_id');
-        
+
 		@endphp
 		@if(session()->get('user_profile_name') == 'Admin' || session()->get('user_profile_name') == 'School Admin')
             <div class="row">
@@ -34,18 +34,18 @@
                     </style>
 						{!! $data['html'] !!}
 					<!-- </div> -->
-					</div>						
+					</div>
 				</div>
 			</div>
 		</div>
-		
+
 	</div>
 </div>
 
 <form name="savehtml" id="savehtml" action="{{ route('save_result_html_new') }}" method="POST">
 {{method_field('POST')}}
 @csrf
-@php 
+@php
 
 $student_id_arr = implode(",",array_values($data['students_ids']));
 @endphp
@@ -57,7 +57,7 @@ $student_id_arr = implode(",",array_values($data['students_ids']));
 <input type="hidden" id="student_arr" name="student_arr" value="{{$student_id_arr}}">
 </form>
 
-@include('includes.footerJs') 
+@include('includes.footerJs')
 <script type="text/javascript">
 
    function printMob(divName) {
@@ -69,7 +69,7 @@ $student_id_arr = implode(",",array_values($data['students_ids']));
        		var stu_id = studentId;
             var ele_id = html;
             // result_html = document.getElementById(stu_id).innerHTML;
-            var result_html = document.getElementById(stu_id).outerHTML;       
+            var result_html = document.getElementById(stu_id).outerHTML;
             result_html = result_html.replaceAll("'","\"");
             $("#savehtml").append("<input type='hidden' name='html_"+stu_id+"' id='"+stu_id+"' value='"+result_html+"'>");
         }
@@ -80,7 +80,8 @@ $student_id_arr = implode(",",array_values($data['students_ids']));
         $.ajax({
                type: "POST",
                url: url,
-               data: form.serialize(), // serializes the form's elements.
+            contentType: 'html',
+            data: form.serialize(), // serializes the form's elements.
                success: function(data)
                {
 				   console.log('saved');
@@ -93,7 +94,7 @@ $student_id_arr = implode(",",array_values($data['students_ids']));
 <script type="text/javascript">
     // function printDiv(divName) {
     //     var studentData = @json($data['all_stud_html']);
-        
+
     //     var divToPrint = document.getElementById(divName);
     //     var popupWin = window.open('', '_blank', 'width=300,height=300');
     //     popupWin.document.open();
@@ -106,7 +107,7 @@ $student_id_arr = implode(",",array_values($data['students_ids']));
     //         popupWin.document.write(html + '<div style="page-break-after: always !important;"></div>');
     //     });
     //     popupWin.document.write('</body></html>');
-        
+
     //     popupWin.document.close();
     // }
     function printDiv(divName) {
