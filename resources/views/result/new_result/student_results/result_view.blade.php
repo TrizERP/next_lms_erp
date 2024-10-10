@@ -80,6 +80,7 @@ $student_id_arr = implode(",",array_values($data['students_ids']));
         $.ajax({
                type: "POST",
                url: url,
+               contentType: 'html',
                data: form.serialize(), // serializes the form's elements.
                success: function(data)
                {
