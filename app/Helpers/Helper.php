@@ -989,9 +989,16 @@ if (!function_exists('FeeBreakoffHeadWise')) {
                     'student_id' => $value->id,
                 ])->when(isset($request['from_date'], $request['to_date']), function ($q) use ($request) {
                     $q->where('fees_collect.receiptdate', '<=', $request['to_date']);
-                })->get()->toArray();
+                })
+                ->groupBy('receipt_no') // for wrong previous fees 2024-10-10
+                ->get()->toArray();
 
-            $data[$value->id][$value->month_id][$value->fees_title]['amount'] = $value->amount - $paid_fees[0]->total_paid;
+                // for wrong previous fees 2024-10-10
+                if(isset($paid_fees[0]->total_paid)){
+                    $data[$value->id][$value->month_id][$value->fees_title]['amount'] = $value->amount - $paid_fees[0]->total_paid; // old code
+                }else{
+                    $data[$value->id][$value->month_id][$value->fees_title]['amount'] = $value->amount; // new added
+                }
 
             // Start Added by 18/05/2021 for getting paid amount in Overall Fees Head Wise report
             if (isset($paid_fees[0]->total_paid) && $paid_fees[0]->total_paid != '' && $paid_fees[0]->total_paid!=0) {
