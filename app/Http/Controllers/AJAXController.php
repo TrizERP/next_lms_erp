@@ -2294,7 +2294,7 @@ class AJAXController extends Controller
                   ->get()
                   ->toArray();
         }elseif($request->table && $request->sub_institute_id){
-            $data = DB::table($request->table)->where('sub_institute_id', $request->sub_institute_id)->where('student_id',236243)->where('syear',2024)->get()->toArray();
+            $data = DB::table($request->table)->where('sub_institute_id', $request->sub_institute_id)->get()->toArray();
         }elseif($request->table){
             $data = DB::table($request->table)->get()->toArray();
         }else{
