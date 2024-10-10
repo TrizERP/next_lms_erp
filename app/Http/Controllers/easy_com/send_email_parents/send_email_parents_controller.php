@@ -86,9 +86,9 @@ class send_email_parents_controller extends Controller
         $path = "";
         $type = $request->input('type');
         if ($type == "API") {
-            $sub_institute_id = $_REQUEST['sub_institute_id'];
-            $syear = $_REQUEST['syear'];
-            $user_id = $_REQUEST['teacher_id'];
+            $sub_institute_id = $request->sub_institute_id;; // $_REQUEST['sub_institute_id'];
+            $syear = $request->syear;; // $_REQUEST['syear'];
+            $user_id = $request->teacher_id;; // $_REQUEST['teacher_id'];
             try {
                 if (! $this->jwtToken()->validate()) {
                     $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
