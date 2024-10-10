@@ -5386,7 +5386,8 @@ private function buildDisciplineTable($decipline_data)
                                         foreach($sub_sub_title as $kk => $vv)
                                         {
                                             if(isset($count[$activity_id][$kk])){
-                                                $table .= '<td style="text-align:center;font-size:medium !important;background:white !important;color:black;width:10%;">&#10004</td>';
+                                                $table .= '<td style="text-align:center;font-size:medium !important;background:white !important;color:black;width:10%;"><img src="https://erp.triz.co.in/images/check-hpc.png" alt="checkImg" style="width:10px;height:10px !important">
+</td>';
                                             }else{
                                                 $table .= '<td style="text-align:center;font-size:medium !important;background:white !important;color:black;width:10%;"></td>';
                                             }
@@ -5419,7 +5420,7 @@ private function buildDisciplineTable($decipline_data)
                                         $table .= '<td style="text-align:center;font-size:medium !important;background:white !important;color:black;width:10%;">';
                                         if(isset($get_result_activity_mark[0]) && $get_result_activity_mark[0]->activity_id==$activity_master_id[$ak])
                                         {
-                                            $table .= '&#10004';
+                                            $table .= '<img src="https://erp.triz.co.in/Images/check-hpc.png" alt="checkImg" style="width:16px !important;height:16px !important">';
                                         }
                                         $table .= '</td>';
                                     
