@@ -257,6 +257,6 @@ Route::get('intrestQuestions', [lmsCounsellingController::class, 'intrestQuestio
 Route::get('intrestResults', [lmsCounsellingController::class, 'intrestResults']);
 Route::get('intrestJobzone', [lmsCounsellingController::class, 'intrestJobzone']);
 Route::get('intrestCareers', [lmsCounsellingController::class, 'intrestCareers']);
-Route::get('intrestEnterScore', [lmsCounsellingController::class, 'intrestEnterScore']);
+Route::get('intrestEnterScore', [lmsCounsellingController::class, 'intrestEnterScore'])->name('intrestEnterScores');
 Route::get('intrestArea', [lmsCounsellingController::class, 'intrestArea']);
 Route::get('matchProfile', [lmsCounsellingController::class, 'matchProfile']);

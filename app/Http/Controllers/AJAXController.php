@@ -2390,7 +2390,28 @@ class AJAXController extends Controller
         if(isset($request->division)){
             $div = $request->division;
         }
-        $dataList = SearchStudent($grade, $standard, $div,$sub_institute_id, $syear,$roll_no,$stu_name,$uniqueid,$mobile,$grno,$stud_id, $batch,$status);
+        if(isset($request->module) && $request->module=='admission_enquiry'){
+        	$sub_institute_id=session()->get('sub_institute_id');
+
+        	$dataList = DB::table('tblstudent as ts')
+        	->Join('tblstudent_enrollment as se',function($q) use($sub_institute_id){
+        		$q->on('se.student_id','=','ts.id')
+        		->where('se.sub_institute_id',$sub_institute_id);
+        	})
+        	->selectRaw('ts.*')
+        	->where('ts.sub_institute_id',$sub_institute_id)
+        	->where(function ($query) use ($stu_name) {
+                $query->where('ts.first_name', 'like', '%' . $stu_name . '%')
+                    ->orWhere('ts.middle_name', 'like', '%' . $stu_name . '%')
+                    ->orWhere('ts.last_name', 'like', '%' . $stu_name . '%');
+            })
+            ->whereNull('se.end_date')
+            ->groupBy('ts.id')
+            ->get()->toArray();
+
+        }else{
+        	$dataList = SearchStudent($grade, $standard, $div,$sub_institute_id, $syear,$roll_no,$stu_name,$uniqueid,$mobile,$grno,$stud_id, $batch,$status);
+    	}
 
         return $dataList;
     }
