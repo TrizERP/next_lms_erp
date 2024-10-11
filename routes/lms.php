@@ -59,6 +59,8 @@ Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute',
     Route::get('o-net-data-category/show-occupation-detail-list-summary',[\App\Http\Controllers\lms\ONetOnlineDataController::class,'showCategoryWiseOccupationDataListSummary'])->name('o-net-data.show-occupation-detail-list-summary');
 
     Route::get('career_counselling',[\App\Http\Controllers\lms\ONetOnlineDataController::class,'career_counselling'])->name('career_counselling');
+    Route::get('career_counselling_education',[\App\Http\Controllers\lms\ONetOnlineDataController::class,'career_counselling_edu'])->name('career_counselling_education');
+    Route::get('career_counselling_knowing-yourself',[\App\Http\Controllers\lms\ONetOnlineDataController::class,'career_counselling_ky'])->name('career_counselling_knowing-yourself');
 
     Route::resource('chapter_master', chapterController::class);
     Route::resource('course_master', courseController::class);
