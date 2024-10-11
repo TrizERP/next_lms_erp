@@ -293,12 +293,13 @@ if(isset($data['editData']))
     let selectedStudentIds = $('#siblings_id').val() ? $('#siblings_id').val().split(',') : [];
     $('#siblings').on('input', function () {
         let searchText = $(this).val();
+        let admission_enquiry = 'admission_enquiry';
 
         // AJAX request to fetch student list
         $.ajax({
             url: "{{ route('studentLists') }}",
             type: 'GET',
-            data: { stu_name: searchText },
+            data: { stu_name: searchText,module:admission_enquiry },
             success: function(response) {
                 let studentList = $('#studentList');
                 studentList.empty(); 

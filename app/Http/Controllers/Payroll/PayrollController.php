@@ -1965,15 +1965,15 @@ class PayrollController extends Controller
                 // echo "<pre>";print_r($value);
             }
         }
-        // $arr = [
-        //     "att " =>$totalAtt,
-        //     "holidays" => $holiday,
-        //     "week" => $weekday_off,
-        //     "Leaves"=>$totDayPlaus,
-        //     "no Att"=>$noEnrty,
-        //     "leave lwp"=> $totDayMinus
-        // ];
-        // echo "<pre>";print_r($arr);exit;
+        $arr = [
+            "att " =>$totalAtt,
+            "holidays" => $holiday,
+            "week" => $weekday_off,
+            "Leaves"=>$totDayPlaus,
+            "no Att"=>$noEnrty,
+            "leave lwp"=> $totDayMinus
+        ];
+        echo "<pre>";print_r($arr);exit;
         $daysCount = $from_date->diffInDays($to_date);
        
         $totalDays = ($totalAtt + $holiday + $weekday_off + $totDayPlaus + $noEnrty); // 31
