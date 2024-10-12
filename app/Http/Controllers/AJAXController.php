@@ -674,7 +674,7 @@ class AJAXController extends Controller
             $other_bk_off2 = OtherBreackOff($stu_arr, $search_ids2,'','','',$last_syear); //for previous year
             $head_wise_fees2 = FeeBreakoffHeadWise($stu_arr,'','','',$last_syear);//for previous year
         }
-    //  echo "<pre>";print_r($head_wise_fees2);exit;
+     
         $till_now_breckoff = $till_now_breckoff2 = array();
         foreach ($search_ids as $id => $val) {
             foreach ($head_wise_fees as $temp_id => $arr) {
@@ -707,33 +707,35 @@ class AJAXController extends Controller
                     if (!isset($reg_bk_month_wise[$arr['title']])) {
                         $reg_bk_month_wise[$arr['title']] = 0;
                     }
-                    $reg_bk_month_wise[$arr['title']] += ($arr['amount']);
+                    // 03-06-24 by uma for institute_id =248 // commented on 2024-07-30
+                    // if(isset($arr['disc_amount']) && $arr['disc_amount']>0 && $arr['amount']>=$arr['disc_amount']){
+                    //     $reg_bk_month_wise[$arr['title']] += ($arr['amount']-$arr['disc_amount']); 
+                    // }else{
+                        $reg_bk_month_wise[$arr['title']] += ($arr['amount']);
+                    // }
                     $final_bk_name[$arr['title']] = $head_name;
                 }
             }
         }
       
-        // return $till_now_breckoff2;exit;
-        $discount_arr2 = [];
+        // return $final_bk_name;exit;
         foreach ($till_now_breckoff2 as $month_id => $fees_detail) {
             foreach ($fees_detail as $head_name => $arr) {
                 if (!isset($reg_bk_month_wise2[$arr['title']])) {
                     $reg_bk_month_wise2[$arr['title']] = 0;
                 }
-                $reg_bk_month_wise2[$arr['title']] += ($arr['amount']);
-                // if previous fees has discount then minus it from previous remain fees 2024-10-10
-                if(isset($arr['disc_amount']) && $arr['disc_amount']!=0){
-                    if (!isset($discount_arr2[$arr['title']])) {
-                        $discount_arr2[$arr['title']] = 0;
-                    }
-                    $discount_arr2[$arr['title']] += ($arr['disc_amount']);
-                }
+                // commented on 2024-07-30
+                // if(isset($arr['disc_amount']) && $arr['disc_amount']>0 && $arr['amount']>=$arr['disc_amount']){
+                //     $reg_bk_month_wise2[$arr['title']] += ($arr['amount']-$arr['disc_amount']); 
+                // }else{
+                    $reg_bk_month_wise2[$arr['title']] += ($arr['amount']);
+                // }
                 // $reg_bk_month_wise2[$arr['title']] += $arr['amount'];
                 $final_bk_name[$arr['title']] = $head_name;
             }
         }
         
-        // echo "<pre>";print_r($head_wise_fees2);exit;
+        // echo "<pre>";print_r($other_bk_off);exit;
 
         $full_bk = array_merge($reg_bk_month_wise, $other_bk_off);
 
@@ -754,11 +756,7 @@ class AJAXController extends Controller
          
         
         $previous = array_sum($full_bk2);
-        // if previous fees has discount then minus it from previous remain fees 2024-10-10
-        if(!empty($discount_arr2)){
-            $pdiscount=array_sum($discount_arr2);
-            $previous = $previous - $pdiscount; 
-        }
+
         if ($previous > 0) {
         // if ($previous > 0) {            
             $full_bk['Previous Fees'] = $previous;

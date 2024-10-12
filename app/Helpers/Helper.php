@@ -987,10 +987,11 @@ if (!function_exists('FeeBreakoffHeadWise')) {
                     'sub_institute_id' => $sub_institute_id,
                     'is_deleted' => 'N',
                     'student_id' => $value->id,
+                    'syear'=>$syear,
                 ])->when(isset($request['from_date'], $request['to_date']), function ($q) use ($request) {
                     $q->where('fees_collect.receiptdate', '<=', $request['to_date']);
                 })
-                ->groupBy('receipt_no') // for wrong previous fees 2024-10-10
+                ->groupBy('student_id', 'term_id','syear') // for wrong previous fees 2024-10-10
                 ->get()->toArray();
 
                 // for wrong previous fees 2024-10-10

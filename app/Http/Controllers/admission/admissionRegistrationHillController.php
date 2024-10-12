@@ -43,7 +43,7 @@ class admissionRegistrationHillController extends Controller
             })->leftJoin('standard as s', function ($join) use ($sub_institute_id) {
                 $join->whereRaw("s.id = ae.admission_standard AND s.sub_institute_id = '".$sub_institute_id."'");
             })
-            ->selectRaw('ae.*,ar.*,COUNT(ts.id) AS total_student_count,ae.remarks AS enquiry_remark,s.name AS std_name,CONCAT_WS(" ",COALESCE(ae.first_name,"-"),COALESCE(ae.middle_name,"-"),COALESCE(ae.last_name,"-")) as full_name,ae.id as id')
+            ->selectRaw('ae.*,ar.*,ae.enquiry_no AS enquiry_no,COUNT(ts.id) AS total_student_count,ae.remarks AS enquiry_remark,s.name AS std_name,CONCAT_WS(" ",COALESCE(ae.first_name,"-"),COALESCE(ae.middle_name,"-"),COALESCE(ae.last_name,"-")) as full_name,ae.id as id')
             ->where('ae.sub_institute_id', $sub_institute_id)
             ->where('ae.syear', $syear)->groupBy('ae.id')->get()->toArray();
         $data = array_map(function ($value) {
@@ -88,7 +88,8 @@ class admissionRegistrationHillController extends Controller
             $sub_institute_id = $request->get('sub_institute_id');
             $syear = $request->get('syear');
         }
-
+        $pindate = isset($data["pint_date"]) ? Carbon::createFromFormat('d-m-Y',$data["pint_date"])->format('Y-m-d') : null;
+        $condate = isset($data["conf_date"]) ? Carbon::createFromFormat('d-m-Y',$data["conf_date"])->format('Y-m-d') : null;
         $i=0;
         if(!empty($students)){
             foreach($students as $enquiry_id=>$data){
@@ -99,11 +100,11 @@ class admissionRegistrationHillController extends Controller
                 "h_n_remarks"=> $data["hn_remarks"],
                 "activity"=> $data["activity"],
                 "p_int"=> $data["pint"],
-                "p_int_date"=> Carbon::createFromFormat('d-m-Y',$data["pint_date"])->format('Y-m-d'),
-                "p_int_time"=> $data["pint_time"],
+                "p_int_date"=>$pindate,
+                // "p_int_time"=> $data["pint_time"],
                 "confi"=> $data["conf"],
-                "confi_date"=> Carbon::createFromFormat('d-m-Y',$data["conf_date"])->format('Y-m-d'),
-                "confi_time"=> $data["conf_time"],
+                "confi_date"=> $condate,
+                // "confi_time"=> $data["conf_time"],
                 "paid"=> $data["paid"],
                 "transport_fees"=> $data["transport"],
                 "sub_institute_id"=>$sub_institute_id,
@@ -122,6 +123,27 @@ class admissionRegistrationHillController extends Controller
                 $update = DB::table('admission_registration_v1')->where('id',$checkExists->id)->update($dataArr);
                 $i=1;
               }
+
+              // check in admission form 
+            //   $checkFormExists = DB::table('admission_form')->where(["enquiry_id"=>$enquiry_id,"enquiry_no"=>$data['enquiry_no'],'sub_institute_id'=>$sub_institute_id])->first();
+
+            //   $formArr =[
+            //     "enquiry_id"=> $enquiry_id,
+            //     "enquiry_no"=> $data["enquiry_no"],
+            //     "status"=>'OPEN',
+            //     "followup_date"=>now(),
+            //     'admission_standard'=>$data['admission_standard'],
+            //     'created_by'=>session()->get('user_id'),
+            //     "created_on"=>now(),
+            //   ];
+            //   if(empty($checkFormExists)){
+            //     $formArr['created_on'] = now();
+            //     $forminsert = DB::table('admission_form')->insert($formArr);
+            //     $i=1;
+            //   }else{
+            //     $formupdate = DB::table('admission_form')->where('id',$checkFormExists->id)->update($formArr);
+            //     $i=1;
+            //   }
               $text = 'Your Admission has been confirmed';
               // send sms 
               $sendSmsController = new send_sms_parents_controller;
