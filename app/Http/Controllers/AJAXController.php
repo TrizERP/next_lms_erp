@@ -471,6 +471,24 @@ class AJAXController extends Controller
 
         return response()->json($std_sub_map);
     }
+    /**
+     * Get All Subjects List.
+     *
+     * @return Response
+     */
+    public function getAllSubjectList(Request $request)
+    {
+        $sub_institute_id = session()->get('sub_institute_id');
+        $std_val = $request->standard_id;
+
+        $subjects = DB::table('sub_std_map')
+        ->join('subject', 'subject.id', '=', 'sub_std_map.subject_id')
+        ->where("sub_std_map.standard_id", $std_val)
+        ->where("sub_std_map.sub_institute_id", $sub_institute_id)
+        ->pluck('sub_std_map.display_name', 'subject.id');
+
+        return response()->json($subjects);
+    }
 
     public function getChapterList(Request $request)
     {
