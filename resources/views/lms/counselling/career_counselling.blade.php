@@ -55,15 +55,9 @@
 -->
 <div class="container-fluid">
             <div class="col-lg-12 col-sm-12 col-xs-12">
-<<<<<<< HEAD
-                <div class="col-md-12 form-group">
-                    <iframe src="https://careercounseling.vercel.app" width="110%" height="600px" style="border:none;"></iframe>
-                </div>
-=======
             <div class="col-md-12 form-group iframe-container">
             <iframe src="https://careercounseling.vercel.app" class="responsive-iframe" style="border:none;"></iframe>
             </div>
->>>>>>> ba4f35a0f9fca7314478647e2539b68c5769a429
             </div>
 </div>
 @include('includes.footerJs')
