@@ -1725,6 +1725,12 @@ class PayrollController extends Controller
                 if($value['allowance'][1] == 2  && $value['allowance'][4]==0) {
                     $allowence = (round(($allowence / $payrollMonthDays) * $request->totalDay));
                 }
+                // 2024-10-11 if total is 0 all values will be 0
+                if($totalDay==0){
+                    $allowence = 0;
+                }
+                // 2024-10-11
+
                 $employeefinalDisplayData[$value['allowance'][2]] = $allowence;
 
                 if(in_array($value['allowance'][3],["BASIC","GRADE PAY","D.A"])){
@@ -1763,8 +1769,13 @@ class PayrollController extends Controller
                 else if($value['deduction'][1] == 2 && !$deductionName && $value['deduction'][3]!="PF" && $value['deduction'][4]==0){
                     $deduction = round(($deduction / $payrollMonthDays) * $request->totalDay);  
                 }
-                
+                // 2024-10-11 if total is 0 all values will be 0
+                if($totalDay==0){
+                    $deduction = 0;
+                }
+                // 2024-10-11
                 $employeefinalDisplayData[$value['deduction'][2]] = $deduction;
+            
                 $totaldeduction = $totaldeduction + $deduction;
             }
         
@@ -1965,21 +1976,24 @@ class PayrollController extends Controller
                 // echo "<pre>";print_r($value);
             }
         }
-        $arr = [
-            "att " =>$totalAtt,
-            "holidays" => $holiday,
-            "week" => $weekday_off,
-            "Leaves"=>$totDayPlaus,
-            "no Att"=>$noEnrty,
-            "leave lwp"=> $totDayMinus
-        ];
-        echo "<pre>";print_r($arr);exit;
+        // $arr = [
+        //     "att " =>$totalAtt,
+        //     "holidays" => $holiday,
+        //     "week" => $weekday_off,
+        //     "Leaves"=>$totDayPlaus,
+        //     "no Att"=>$noEnrty,
+        //     "leave lwp"=> $totDayMinus
+        // ];
+        // echo "<pre>";print_r($arr);exit;
         $daysCount = $from_date->diffInDays($to_date);
        
         $totalDays = ($totalAtt + $holiday + $weekday_off + $totDayPlaus + $noEnrty); // 31
         $totalDays = ($totalDays - $totDayMinus - $noEnrty); // 16
         $totalDays = ($totalDays>0) ? $totalDays : 0; // totDays should not be in minus
-      
+        // if no attendance,no leave applied and no lwp 2024-10-11
+        if($totalAtt==0 && $totDayPlaus == 0 && $totDayMinus==0){
+            $totalDays=0;
+        }
         return $totalDays;
     }
 }
