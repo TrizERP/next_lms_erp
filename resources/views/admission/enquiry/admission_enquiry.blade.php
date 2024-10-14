@@ -1,8 +1,4 @@
-{{--@include('includes.headcss')
-@include('includes.header')
-@include('includes.sideNavigation')--}}
-@extends('layout')
-@section('container')
+@include('includes.headcss')
 <style type="text/css">
 .followup_data {
     width: 80%;
@@ -18,6 +14,10 @@
         margin-right: 5px;
         border-radius: 3px;
     }
+    
+.content-main{
+    padding:50px !important;
+}
 </style>
 <div id="page-wrapper">
     <div class="container-fluid">
@@ -27,26 +27,29 @@
             </div>
         </div>
         <div class="card">
-            @if ($message = Session::get('success'))
+            @if (session()->has('data'))
+            @if(isset(session('data')['status_code']) && session('data')['status_code']==1)
             <div class="alert alert-success alert-block">
+            @else 
+            <div class="alert alert-danger alert-block">
+            @endif
                 <button type="button" class="close" data-dismiss="alert">×</button>
-                <strong>{{ $message }}</strong>
+                <strong>{{ isset(session('data')['message']) ? session('data')['message'] : 'something wrong' }}</strong>
             </div>
             @endif
             <div class="row">
                 <div class="col-lg-12 col-sm-12 col-xs-12">
-                    <form action="{{ route('admission_enquiry.store') }}" enctype="multipart/form-data" method="post">
+                    <form action="{{ route('admission_enquiry.storeNew') }}" enctype="multipart/form-data" method="post">
                     {{ method_field("POST") }}
                     @csrf
                     <div class="row">
                         @php
-                        if (Session::get('sub_institute_id') != '198') // maheshvari ladavi
-                        {
-                            $readonly = ' readonly="readonly" ';
-                        }else{
-                            $readonly = '';
-                        }
+                            $readonly = 'readonly';
                         @endphp
+                        <input type="hidden" value="{{$_REQUEST['type']}}" name="type">
+                        <input type="hidden" value="{{$_REQUEST['sub_institute_id']}}" name="sub_institute_id">
+                        <input type="hidden" value="{{$_REQUEST['syear']}}" name="syear">
+
                         <div class="col-md-3 form-group">
                             <label>Enquiry Number </label>
                             <input type="text" id='enquiry_id'  id='enquiry_id' @if(isset($data['enquiry_no'])) value="{{$data['enquiry_no']}}" @endif name="enquiry_no" class="form-control" {{ $readonly}}>
@@ -55,12 +58,12 @@
                             <label>Student Name </label>
                             <input type="text" id='first_name' required name="first_name" class="form-control">
                         </div>
-                        @if (Session::get('sub_institute_id') != '198')
+                      
                         <div class="col-md-3 form-group">
                             <label>Middle Name(Father Name)</label>
                             <input type="text"  id='middle_name' required name="middle_name" class="form-control">
                         </div>
-                        @endif
+                       
                         <div class="col-md-3 form-group">
                             <label>Surname </label>
                             <input type="text" id='last_name' required name="last_name" class="form-control">
@@ -76,18 +79,18 @@
                         </div>
                         <div class="col-md-3 form-group">
                             <label>Date of Birth </label>
-                            <input type="text" onchange="calculate_age(this.value);" id='date_of_birth' required name="date_of_birth" class="form-control mydatepicker" autocomplete="off">
+                            <input type="date" onchange="calculate_age(this.value);" id='date_of_birth' required name="date_of_birth" class="form-control" autocomplete="off">
                         </div>
                         <div class="col-md-3 form-group">
                             <label>Age </label>
                             <input type="text" id='age' name="age" class="form-control">
                         </div>
-                        @if (Session::get('sub_institute_id') != '198')
+                       
                         <div class="col-md-3 form-group">
                             <label>Address </label>
                             <textarea id='address' name="address" class="form-control"></textarea>
                         </div>
-                        @endif
+                   
                         <div class="col-md-3 form-group">
                             <label>Previous School Name </label>
                             <input type="text" id='previous_school_name' name="previous_school_name" class="form-control">
@@ -104,7 +107,7 @@
                         
                         <div class="col-md-3 form-group">
                             <label>Followup Date </label>
-                            <input type="text" required id='followup_date' name="followup_date" class="form-control mydatepicker" autocomplete="off">
+                            <input type="date" required id='followup_date' name="followup_date" class="form-control" autocomplete="off">
                             <span id="followup_date_span"></span>
                         </div>
                         <div class="col-md-3 form-group">
@@ -155,7 +158,7 @@
                             @if($value['field_type'] == 'file')
                             <input type="{{ $value['field_type'] }}" accept="image/*" id="input-file-now" @if($value['required'] == 1) required @endif name="{{ $value['field_name'] }}" class="dropify">
                             @elseif($value['field_type'] == 'date')
-                            <input type="date" class="form-control mydatepicker" placeholder="dd/mm/yyyy" autocomplete="off" id="{{ $value['field_name'] }}" @if($value['required'] == 1) required @endif name="{{ $value['field_name'] }}" class="form-control">
+                            <input type="date" class="form-control" placeholder="dd/mm/yyyy" autocomplete="off" id="{{ $value['field_name'] }}" @if($value['required'] == 1) required @endif name="{{ $value['field_name'] }}" class="form-control">
                             @elseif($value['field_type'] == 'time')
                                 <input type="time" autocomplete="off" id="{{ $value['field_name'] }}" @if($value['required'] == 1) required @endif name="{{ $value['field_name'] }}"  class="form-control">
                             @elseif($value['field_type'] == 'checkbox')
@@ -277,11 +280,12 @@
     $('#siblings').on('input', function () {
         let searchText = $(this).val();
         let admission_enquiry = 'admission_enquiry';
+        let sub_institute_id = "{{$_REQUEST['sub_institute_id']}}";
         // AJAX request to fetch student list
         $.ajax({
             url: "{{ route('studentLists') }}",
             type: 'GET',
-            data: { stu_name: searchText,module:admission_enquiry },
+            data: { stu_name: searchText,module:admission_enquiry,sub_institute_id:sub_institute_id},
             success: function(response) {
                 let studentList = $('#studentList');
                 studentList.empty(); 
@@ -423,4 +427,3 @@
 
 </script>
 @include('includes.footer')
-@endsection
