@@ -53,7 +53,17 @@
                         </div>
 
                         {{ App\Helpers\SearchChain('4','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
-                        
+
+                        <div class="col-md-4 form-group">
+							<label>Result Type</label>
+							<select class="form-control" name="result_type" required="required">
+								<option value="">Select Result Type</option>
+								@foreach($data['result_types'] as $key=>$value)
+									<option value="{{$value}}" @if(isset($data['result_type']) && $data['result_type']==$value) selected @endif>{{$value}}</option>
+								@endforeach
+							</select>
+                        </div>
+
 						<div class="col-md-12 form-group">
 							<center>
 								<input type="submit" name="submit" value="Search" class="btn btn-success">
@@ -74,7 +84,8 @@
 							<input type="hidden" value="{{$data['format']}}" name="format">	
                             <input type="hidden" value="{{$data['grade_id']}}" name="grade_id">							
                             <input type="hidden" value="{{$data['standard_id']}}" name="standard_id">							
-                            <input type="hidden" value="{{$data['division_id']}}" name="division_id">							
+                            <input type="hidden" value="{{$data['division_id']}}" name="division_id">		
+                            <input type="hidden" value="{{$data['result_type']}}" name="result_type">							
 													
 								<table id="example" class="table table-striped">
 									<thead>
