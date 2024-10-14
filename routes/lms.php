@@ -47,6 +47,7 @@ use App\Http\Controllers\lms\virtualclassroomController;
 use App\Http\Controllers\school_setup\sub_std_mapController;
 use App\Http\Controllers\lms\lmsDashboardController;
 use App\Http\Controllers\lms\lmsCurriculumController;
+use App\Http\Controllers\lms\lmsSyllabusController;
 use Illuminate\Support\Facades\Route;
 
 Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
@@ -203,6 +204,7 @@ Route::post('show_question_wise_report',
 
     Route::resource('subjectwise_graph', chapterController::class);
     Route::resource('lms_curriculum', lmsCurriculumController::class);
+    Route::resource('lms_syllabus', lmsSyllabusController::class);
     //Route::get('questionReport', 'student\questionWiseReportController@index')->name('question_wise_report');
     //Route::post('show_question_wise_report', 'student\questionWiseReportController@show_question_wise_report')->name('show_question_wise_report');
 
@@ -260,3 +262,4 @@ Route::get('intrestJobzone', [lmsCounsellingController::class, 'intrestJobzone']
 Route::get('intrestCareers', [lmsCounsellingController::class, 'intrestCareers']);
 Route::get('intrestEnterScore', [lmsCounsellingController::class, 'intrestEnterScore'])->name('intrestEnterScore');
 Route::get('intrestArea', [lmsCounsellingController::class, 'intrestArea']);
+Route::get('/api/get-curriculum-list', [lmsSyllabusController::class, 'getCurriculums']);
