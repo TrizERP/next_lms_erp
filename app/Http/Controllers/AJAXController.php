@@ -471,6 +471,24 @@ class AJAXController extends Controller
 
         return response()->json($std_sub_map);
     }
+    /**
+     * Get All Subjects List.
+     *
+     * @return Response
+     */
+    public function getAllSubjectList(Request $request)
+    {
+        $sub_institute_id = session()->get('sub_institute_id');
+        $std_val = $request->standard_id;
+
+        $subjects = DB::table('sub_std_map')
+        ->join('subject', 'subject.id', '=', 'sub_std_map.subject_id')
+        ->where("sub_std_map.standard_id", $std_val)
+        ->where("sub_std_map.sub_institute_id", $sub_institute_id)
+        ->pluck('sub_std_map.display_name', 'subject.id');
+
+        return response()->json($subjects);
+    }
 
     public function getChapterList(Request $request)
     {
@@ -2294,7 +2312,7 @@ class AJAXController extends Controller
                   ->get()
                   ->toArray();
         }elseif($request->table && $request->sub_institute_id){
-            $data = DB::table($request->table)->where('sub_institute_id', $request->sub_institute_id)->get()->toArray();
+            $data = DB::table($request->table)->where('sub_institute_id', $request->sub_institute_id)->where('student_id',236243)->where('syear',2024)->get()->toArray();
         }elseif($request->table){
             $data = DB::table($request->table)->get()->toArray();
         }else{
@@ -2374,11 +2392,45 @@ class AJAXController extends Controller
     public function studentLists(Request $request){
         $grade = $request->grade;
         $standard = $request->standard;
+
         $div ="";
+        $sub_institute_id = "";
+        $syear = "";
+        $roll_no = $request->roll_no;
+        $stu_name = $request->stu_name;
+        $uniqueid = $request->uniqueid;
+        $mobile = $request->mobile;
+        $grno = $request->grno;
+        $stud_id = $request->stud_id;
+        $batch = $request->batch;
+        $status = $request->status;
+
         if(isset($request->division)){
             $div = $request->division;
         }
-        $dataList = SearchStudent($grade, $standard, $div);
+        if(isset($request->module) && $request->module=='admission_enquiry'){
+        	$sub_institute_id=session()->get('sub_institute_id');
+
+        	$dataList = DB::table('tblstudent as ts')
+        	->Join('tblstudent_enrollment as se',function($q) use($sub_institute_id){
+        		$q->on('se.student_id','=','ts.id')
+        		->where('se.sub_institute_id',$sub_institute_id);
+        	})
+        	->selectRaw('ts.*')
+        	->where('ts.sub_institute_id',$sub_institute_id)
+        	->where(function ($query) use ($stu_name) {
+                $query->where('ts.first_name', 'like', '%' . $stu_name . '%')
+                    ->orWhere('ts.middle_name', 'like', '%' . $stu_name . '%')
+                    ->orWhere('ts.last_name', 'like', '%' . $stu_name . '%');
+            })
+            ->whereNull('se.end_date')
+            ->groupBy('ts.id')
+            ->get()->toArray();
+
+        }else{
+        	$dataList = SearchStudent($grade, $standard, $div,$sub_institute_id, $syear,$roll_no,$stu_name,$uniqueid,$mobile,$grno,$stud_id, $batch,$status);
+    	}
+
         return $dataList;
     }
 }

@@ -1725,6 +1725,12 @@ class PayrollController extends Controller
                 if($value['allowance'][1] == 2  && $value['allowance'][4]==0) {
                     $allowence = (round(($allowence / $payrollMonthDays) * $request->totalDay));
                 }
+                // 2024-10-11 if total is 0 all values will be 0
+                if($totalDay==0){
+                    $allowence = 0;
+                }
+                // 2024-10-11
+
                 $employeefinalDisplayData[$value['allowance'][2]] = $allowence;
 
                 if(in_array($value['allowance'][3],["BASIC","GRADE PAY","D.A"])){
@@ -1739,17 +1745,17 @@ class PayrollController extends Controller
                     // check eligible
                     $getEligible = DB::table('tbluser')->where('id',$request->emp_id)->first(); 
 
+                    $deduction =  $value['deduction'][0];
                     if($getEligible->pf_deduction=="N" && $value['deduction'][3]=="PF"){
-                        $value['deduction'][0]=0;
+                        $deduction =0;
                     }
                     if($getEligible->pt_deduction=="N" && $value['deduction'][3]=="PT"){
-                        $value['deduction'][0]=0;
+                        $deduction =0;
                     }
-                $deduction =  $value['deduction'][0];
 
                 // 13-08-2024 end 
                 $deductionName=  (($value['deduction'][3] == 'PT') ? 1 : 0);
-                if($totalSal < 15000 && $value['deduction'][3]=="PF"){
+                if($totalSal < 15000 && $value['deduction'][3]=="PF" && $deduction>0){
                     //$deduction = round(($deduction / $payrollMonthDays) * $request->totalDay);  
                     $deduction = round(($totalSal / 100) * 12);
                     // echo $deduction.'<br>';  
@@ -1763,8 +1769,13 @@ class PayrollController extends Controller
                 else if($value['deduction'][1] == 2 && !$deductionName && $value['deduction'][3]!="PF" && $value['deduction'][4]==0){
                     $deduction = round(($deduction / $payrollMonthDays) * $request->totalDay);  
                 }
-                
+                // 2024-10-11 if total is 0 all values will be 0
+                if($totalDay==0){
+                    $deduction = 0;
+                }
+                // 2024-10-11
                 $employeefinalDisplayData[$value['deduction'][2]] = $deduction;
+            
                 $totaldeduction = $totaldeduction + $deduction;
             }
         
@@ -1912,6 +1923,7 @@ class PayrollController extends Controller
         ->whereRaw('((hel.from_date >= "'.$from_date->format('Y-m-d').'" and hel.to_date <="'.$to_date->format('Y-m-d').'") 
                     OR hel.from_date like "'.$to_date->format('Y-m').'%" OR hel.to_date like "'.$to_date->format('Y-m').'%")
                     and hel.user_id = "'.$user_id.'"') 
+                    ->where('hel.status','!=','cancelled')
         //->whereRaw('(hel.from_date >= "'.$from_date->format('Y-m-d').'")
         ->get()->toArray();
         // echo "<pre>";print_r($userLeaves);
@@ -1929,7 +1941,7 @@ class PayrollController extends Controller
                 $leaveMonth = $leaveTo->format('Y-m');
                     if($checkMonth == $leaveMonth){
                         // Leaves that are not in attandance.. 
-                        if(!in_array($checkLeave,$attArr) && !in_array($checkLeave,$holidayDates) && !in_array($value->status,["cancelled"])){
+                        if(!in_array($checkLeave,$attArr) && !in_array($checkLeave,$holidayDates)){
                             $totDayPlaus = ($totDayPlaus+$value->day_type);
                         // echo $checkLeave.'<br>';
 
@@ -1938,7 +1950,8 @@ class PayrollController extends Controller
                         if($value->status == "approved_lwp" && $value->day_type=="0.5" && !in_array($checkLeave,$holidayDates)){
                             $totalAtt = ($totalAtt - $value->day_type);
                         }
-                        else if(!in_array($checkLeave,$attArr) && !in_array($checkLeave,$holidayDates) && $value->status == "approved_lwp"){
+                        // !in_array($checkLeave,$attArr) &&  removed on 07-10-2024 for jojo if have lwp then do not count att
+                        else if(!in_array($checkLeave,$holidayDates) && $value->status == "approved_lwp"){
                             $totDayMinus = ($totDayMinus+$value->day_type);
                         }
                         // echo $leavedate->format('Y-m-d');
@@ -1977,7 +1990,10 @@ class PayrollController extends Controller
         $totalDays = ($totalAtt + $holiday + $weekday_off + $totDayPlaus + $noEnrty); // 31
         $totalDays = ($totalDays - $totDayMinus - $noEnrty); // 16
         $totalDays = ($totalDays>0) ? $totalDays : 0; // totDays should not be in minus
-      
+        // if no attendance,no leave applied and no lwp 2024-10-11
+        if($totalAtt==0 && $totDayPlaus == 0 && $totDayMinus==0){
+            $totalDays=0;
+        }
         return $totalDays;
     }
 }

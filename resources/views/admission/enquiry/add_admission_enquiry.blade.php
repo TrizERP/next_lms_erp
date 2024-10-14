@@ -11,6 +11,13 @@
     color: green;
     font-weight: bold;
 }
+.selected-student {
+        display: inline-block;
+        background-color: #f1f1f1;
+        padding: 5px;
+        margin-right: 5px;
+        border-radius: 3px;
+    }
 </style>
 <div id="page-wrapper">
     <div class="container-fluid">
@@ -92,53 +99,9 @@
                                 @foreach($data['standard'] as $key=>$previous)
                                 <option value="{{$previous['id']}}"> {{$previous['name']}}</option>
                                 @endforeach
-                                <!-- <option value="NA"> NA </option>
-                                <option value="NURSERY"> Nursery </option>
-                                <option value="JRKG"> Jrkg </option>
-                                <option value="SRKG"> Srkg </option>
-                                <option value="1"> 1 </option>
-                                <option value="2"> 2 </option>
-                                <option value="3"> 3 </option>
-                                <option value="4"> 4 </option>
-                                <option value="5"> 5 </option>
-                                <option value="6"> 6 </option>
-                                <option value="7"> 7 </option>
-                                <option value="8"> 8 </option>
-                                <option value="9"> 9 </option>
-                                <option value="10"> 10 </option>
-                                <option value="11COM"> 11 COM </option>
-                                <option value="11ART"> 11 ART </option>
-                                <option value="11SCI"> 11 SCI </option>
-                                <option value="12COM"> 12 COM </option>
-                                <option value="12ART"> 12 ART </option>
-                                <option value="12SCI"> 12 SCI </option> -->
                             </select>
                         </div>
-                        <!-- <div class="col-md-3 form-group">
-                            <label>Admission Standard </label>
-                            <select id='admission_standard' name="admission_standard" class="form-control">
-                            <option value=""> Select Standard </option>
-                                <option value="NURSERY"> Nursery </option>
-                                <option value="JRKG"> Jrkg </option>
-                                <option value="SRKG"> Srkg </option>
-                                <option value="1"> 1 </option>
-                                <option value="2"> 2 </option>
-                                <option value="3"> 3 </option>
-                                <option value="4"> 4 </option>
-                                <option value="5"> 5 </option>
-                                <option value="6"> 6 </option>
-                                <option value="7"> 7 </option>
-                                <option value="8"> 8 </option>
-                                <option value="9"> 9 </option>
-                                <option value="10"> 10 </option>
-                                <option value="11COM"> 11 COM </option>
-                                <option value="11ART"> 11 ART </option>
-                                <option value="11SCI"> 11 SCI </option>
-                                <option value="12COM"> 12 COM </option>
-                                <option value="12ART"> 12 ART </option>
-                                <option value="12SCI"> 12 SCI </option>
-                            </select>
-                        </div> -->
+                        
                         <div class="col-md-3 form-group">
                             <label>Followup Date </label>
                             <input type="text" required id='followup_date' name="followup_date" class="form-control mydatepicker" autocomplete="off">
@@ -192,9 +155,9 @@
                             @if($value['field_type'] == 'file')
                             <input type="{{ $value['field_type'] }}" accept="image/*" id="input-file-now" @if($value['required'] == 1) required @endif name="{{ $value['field_name'] }}" class="dropify">
                             @elseif($value['field_type'] == 'date')
-                            <div class="input-daterange input-group" >
-                            <input type="text" class="form-control mydatepicker" placeholder="dd/mm/yyyy" autocomplete="off" id="{{ $value['field_name'] }}" @if($value['required'] == 1) required @endif name="{{ $value['field_name'] }}" class="form-control"><span class="input-group-addon"><i class="icon-calender"></i></span>
-                            </div>
+                            <input type="date" class="form-control mydatepicker" placeholder="dd/mm/yyyy" autocomplete="off" id="{{ $value['field_name'] }}" @if($value['required'] == 1) required @endif name="{{ $value['field_name'] }}" class="form-control">
+                            @elseif($value['field_type'] == 'time')
+                                <input type="time" autocomplete="off" id="{{ $value['field_name'] }}" @if($value['required'] == 1) required @endif name="{{ $value['field_name'] }}"  class="form-control">
                             @elseif($value['field_type'] == 'checkbox')
                             <div class="checkbox-list">
                                 @if(isset($data['data_fields'][$value['id']]))
@@ -218,10 +181,17 @@
                                     @endif
                                     </select>
                             @elseif($value['field_type'] == 'textarea')
-                            <textarea id="{{ $value['field_name'] }}" class="form-control" @if($value['required'] == 1) required @endif name="{{ $value['field_name'] }}" placeholder="{{ $value['field_message'] }}">
-                            </textarea>
+                                <textarea id="{{ $value['field_name'] }}" class="form-control" @if($value['required'] == 1) required @endif name="{{ $value['field_name'] }}" placeholder="{{ $value['field_message'] }}">
+                                </textarea>                                
                             @else
-                            <input type="{{ $value['field_type'] }}" id="{{ $value['field_name'] }}" placeholder="{{ $value['field_message'] }}" @if($value['required'] == 1) required @endif name="{{ $value['field_name'] }}" class="form-control">
+                                @if($value['field_name']=='siblings')
+                                    <input type="{{ $value['field_type'] }}"  list="studentList" id="{{ $value['field_name'] }}" placeholder="{{ $value['field_message'] }}" @if($value['required'] == 1) required @endif placeholder="Enter Siblings name" class="form-control">
+                                    <div id="SelectedStudents" class=""></div>
+                                    <input type="hidden" name="{{ $value['field_name'] }}" id="siblings_id">
+                                <datalist id="studentList"></datalist>
+                                @else 
+                                    <input type="{{ $value['field_type'] }}" id="{{ $value['field_name'] }}" placeholder="{{ $value['field_message'] }}" @if($value['required'] == 1) required @endif name="{{ $value['field_name'] }}" class="form-control">
+                                @endif
                             @endif
                         </div>
                         @endforeach
@@ -300,6 +270,76 @@
                 }
             });
         });
+    // 08-10-2024 start siblings selection 
+    let selectedStudents = [];
+    let selectedStudentIds = [];
+
+    $('#siblings').on('input', function () {
+        let searchText = $(this).val();
+        let admission_enquiry = 'admission_enquiry';
+        // AJAX request to fetch student list
+        $.ajax({
+            url: "{{ route('studentLists') }}",
+            type: 'GET',
+            data: { stu_name: searchText,module:admission_enquiry },
+            success: function(response) {
+                let studentList = $('#studentList');
+                studentList.empty(); 
+                console.log(response);
+                // Populate the datalist with new options
+                response.forEach(student => {
+                    studentList.append('<option value="' + student.first_name+' '+ student.middle_name+' '+ student.last_name + '('+student.enrollment_no+')" data-id="' + student.id + '">' + student.first_name+' '+ student.middle_name+' '+ student.last_name + '('+student.enrollment_no+')</option>');
+                });
+            }
+        });
+    });
+
+    // Event listener for selecting a student
+    $('#siblings').on('change', function () {
+        let selectedStudentName = $(this).val();
+        let selectedOption = $('#studentList option[value="' + selectedStudentName + '"]');
+
+        if (selectedOption.length) {
+            let studentId = selectedOption.data('id');
+
+            // Check if student is already selected
+            if (!selectedStudentIds.includes(studentId)) {
+                selectedStudents.push(selectedStudentName);
+                selectedStudentIds.push(studentId);
+
+                // Update the SelectedStudents div
+                // $('#SelectedStudents').append('<span class="selected-student">' + selectedStudentName + '</span>');
+                $('#SelectedStudents').append(`
+                <span class="selected-student" data-id="${studentId}">
+                    ${selectedStudentName} <span class="remove-student" style="cursor:pointer;color:red;">&times;</span>
+                </span>
+            `);
+
+                // Update the siblings_id input
+                $('#siblings_id').val(selectedStudentIds.join(','));
+
+                // Clear the input field
+                $('#siblings').val('');
+            }
+        }
+    });
+    // Event listener for removing a selected student
+    $('#SelectedStudents').on('click', '.remove-student', function () {
+        let studentElement = $(this).closest('.selected-student');
+        let studentId = studentElement.data('id');
+
+        // Remove the student from selectedStudents and selectedStudentIds
+        selectedStudentIds = selectedStudentIds.filter(id => id !== studentId);
+        selectedStudents = selectedStudents.filter(name => name !== studentElement.text().trim());
+
+        // Remove the student element from the DOM
+        studentElement.remove();
+
+        // Update the siblings_id input
+        $('#siblings_id').val(selectedStudentIds.join(','));
+    });
+    // 08-10-2024 end siblings selection 
+        
     });
     //10-01-2022 END display holiday,vacation & event in Followup date
 

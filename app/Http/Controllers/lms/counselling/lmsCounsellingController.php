@@ -8,6 +8,7 @@ use App\Models\lms\counselling\counsellingOnlineExamModel;
 use App\Models\lms\counselling\OnetContentModelReference;
 use App\Models\lms\counselling\OnetCareerCluster;
 use App\Models\lms\counselling\OnetEmployer;
+use App\Models\lms\counselling\OnetInstitutes;
 use App\Models\lms\counselling\OnetOccupationData;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -323,9 +324,50 @@ class lmsCounsellingController extends Controller
                 'element_type' => 'job_zones',
             ];
         }
-
         // Append the job zones structure to the result array
         $result[] = $jobZonesJson;
+
+        // Initialize the base structure of the JSON response
+        $allOccupationJson = [
+            'level' => 1,
+            'element_id' => '',
+            'element_name' => 'All Occupation',
+            'element_type' => 'occupation',
+            'children' => [[
+                    'level' => 2,
+                    'element_id' => 'all',
+                    'element_name' => 'All Occupation',
+                    'element_type' => 'occupation'
+            ]]
+        ];
+        $result[] = $allOccupationJson;
+
+        // Fetch data from the database
+        $industries = DB::table('o_net_data_sub_categories as a')
+            ->select('a.id as element_id', 'a.sub_category_name as element_name')
+            ->where('a.o_net_data_category_id', 12)
+            ->get();
+
+        // Initialize the base structure of the JSON response
+        $industriesJson = [
+            'level' => 1,
+            'element_id' => '',
+            'element_name' => 'Industries',
+            'element_type' => 'industries',
+            'children' => []
+        ];
+
+        // Loop through the database result and format it
+        foreach ($industries as $industry) {
+            $industriesJson['children'][] = [
+                'level' => 2,
+                'element_id' => $industry->element_id,
+                'element_name' => $industry->element_name,
+                'element_type' => 'industries'
+            ];
+        }
+        // Append the Industries structure to the result array
+        $result[] = $industriesJson;
 
         // Return the final JSON response
         return response()->json($result);
@@ -341,6 +383,8 @@ class lmsCounsellingController extends Controller
         $work_styles = $request->input('work_styles');
         $work_values = $request->input('work_values');
         $job_zones = $request->input('job_zones');
+        $industries = $request->input('industries');
+        $occupation = $request->input('occupation');
 
         // Build the initial query
         $query = DB::table('onet_occupation_data as od')
@@ -448,6 +492,15 @@ class lmsCounsellingController extends Controller
                         }
                     });
             });
+        }
+
+        if ($industries) {
+            // Explode the industries string into an array
+            $industriesArray = explode(',', $industries);
+
+            // Join the 'o_net_data_tables' table on 'od.onetsoc_code' and 'dt.code'
+            $query->join('o_net_data_tables as dt', 'dt.code', '=', 'od.onetsoc_code')
+                  ->whereIn('dt.o_net_sub_category_id', $industriesArray);
         }
 
         // Group by onetsoc_code and get the results
@@ -898,7 +951,7 @@ class lmsCounsellingController extends Controller
             "children" => $children
         ];
     }
-    public function getInstituteData()
+    public function getInstituteData1()
     {
         // Fetch the data using an inner join
         $institutes = DB::table('onet_institute_data as oid')
@@ -991,6 +1044,13 @@ class lmsCounsellingController extends Controller
         // Return the result as a JSON response
         return response()->json(array_values($result));
     }
+    public function getInstituteData()
+    {
+        //$institutes = OnetInstitutes::all();
+        $institutes = OnetInstitutes::inRandomOrder()->limit(200)->get();
+        return response()->json($institutes);
+    }
+
     public function getCourseData()
     {
         // First query to group institutes by course

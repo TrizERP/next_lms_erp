@@ -131,7 +131,7 @@ class studentResultController extends Controller
         $data['syear'] = $syear;
         $data['all_stud_html'] = $all_stud_html;
         $data['students_ids'] = $request->students;
-
+        // echo "<pre>";print_r($data);exit;
         return is_mobile($type, "result/new_result/student_results/result_view", $data, "view");
     }
 
@@ -956,10 +956,11 @@ class studentResultController extends Controller
         $check_optional_subject_with_student = DB::table('student_optional_subject as sos')
         ->select('ssm.display_name', 'sos.subject_id', 'sos.student_id', 'ssm.standard_id', 'rce.id as create_id', 'rce.title', 'rce.term_id', 'rce.standard_id', 'rem.weightage', 'rem.ExamTitle', 'rce.subject_id', 'rce.points as r_point', 'rce.con_point', 'rem.Id as ExamId', 'rce.exam_id', DB::raw('IFNULL(rm.points, 0) as points'))
         ->join('sub_std_map as ssm', 'sos.subject_id', '=', 'ssm.subject_id')
-        ->leftJoin('result_create_exam as rce', function ($join) {
-            $join->on('rce.subject_id', '=', 'sos.subject_id')
-                ->on('rce.standard_id', '=', 'ssm.standard_id');
-        })
+        ->leftJoin('result_create_exam as rce', function ($join) use($syear){
+	        $join->on('rce.subject_id', '=', 'sos.subject_id')
+	            ->on('rce.standard_id', '=', 'ssm.standard_id')
+	            ->where('rce.syear', '=', $syear);
+    	})
         ->leftJoin('result_exam_master as rem', 'rem.Id', '=', 'rce.exam_id')
         ->leftJoin('result_marks as rm', function ($join) use($student_id) {
             $join->on('rm.exam_id', '=', 'rce.id')
@@ -1062,10 +1063,11 @@ class studentResultController extends Controller
         $check_optional_subject_with_student = DB::table('student_optional_subject as sos')
         ->select('ssm.display_name', 'sos.subject_id', 'sos.student_id', 'ssm.standard_id', 'rce.id as create_id', 'rce.title', 'rce.term_id', 'rce.standard_id', 'rem.weightage', 'rem.ExamTitle', 'rce.subject_id', 'rce.points as r_point', 'rce.con_point', 'rem.Id as ExamId', 'rce.exam_id', DB::raw('IFNULL(rm.points, 0) as points'))
         ->join('sub_std_map as ssm', 'sos.subject_id', '=', 'ssm.subject_id')
-        ->leftJoin('result_create_exam as rce', function ($join) {
-            $join->on('rce.subject_id', '=', 'sos.subject_id')
-                ->on('rce.standard_id', '=', 'ssm.standard_id');
-        })
+        ->leftJoin('result_create_exam as rce', function ($join) use($syear){
+	        $join->on('rce.subject_id', '=', 'sos.subject_id')
+	            ->on('rce.standard_id', '=', 'ssm.standard_id')
+	            ->where('rce.syear', '=', $syear);
+    	})
         ->leftJoin('result_exam_master as rem', 'rem.Id', '=', 'rce.exam_id')
         ->leftJoin('result_marks as rm', function ($join) use($student_id) {
             $join->on('rm.exam_id', '=', 'rce.id')
@@ -2801,6 +2803,7 @@ while ($current_date <= $post_end_date) {
                 ->join('tblstudent as s', 'ap.student_id', '=', 's.id')
                 ->join('tblstudent_enrollment as se', function ($join) {
                     $join->on('s.id', '=', 'se.student_id')
+                    ->on('se.syear', '=', 'ap.syear')
                         ->whereNull('se.end_date');
                 })
                 ->select('s.id', 's.first_name', DB::raw('COUNT(DISTINCT ap.attendance_date) AS present_day'))
@@ -3015,7 +3018,7 @@ while ($current_date <= $post_end_date) {
                                 }
                             }
                         }
-    
+                        // echo "<pre>";print_r($title_exam);exit;
                         $ob_main_mark = $ab_ex_na = $total_marks = 0;
                         // for best of 2 exam wise 
                         if (!empty($title_exam)) {
@@ -3029,7 +3032,7 @@ while ($current_date <= $post_end_date) {
                                 // $best_two = array_slice($obtained_mark_arr, 0, 2);
                                 // $obtained_mark_sum = array_sum($best_two);
                                 $obtained_mark_sum = array_sum($obtained_mark_arr);
-                                
+
                                 // get mark for total mark 
                                 $ob_main_mark += ($t_m !== 0) ? (($obtained_mark_sum / $t_m) * $w_m) : 0;
                                 // convert marks if best of 2
@@ -3042,12 +3045,16 @@ while ($current_date <= $post_end_date) {
                                     $total_marks += $w_m;
                                     $table .= '<td class="data_center" ' . $underline . ' ' . $exam_id . '-'.$val->subject_id.'-'.$standard_id.'>' . number_format($convert_mark, 2) . '</td>';
                                 }else{
-                                    if($obtained_mark_arr[0]!='N.A.' || $obtained_mark_arr[0]!='EX'){
+                                    if(isset($obtained_mark_arr[0]) && ($obtained_mark_arr[0]!='N.A.' || $obtained_mark_arr[0]!='EX')){
                                         $total_marks += $w_m;
+                                    }
+                                    $tdVal = number_format($convert_mark, 2);
+                                    if(isset($obtained_mark_arr[0]) && $obtained_mark_arr[0]=="AB"){
+                                        $tdVal = "AB";
                                     }
                                     /* (Hills) Hide by rajesh std-1 display without convert marks */
                                     //$table .= '<td class="data_center" '. $exam_id . '-'.$val->subject_id.'-'.$standard_id.'>' . number_format((float)$obtained_mark_arr[0], 2) .'</td>';
-                                    $table .= '<td class="data_center" ' . $underline . ' ' . $exam_id . '-'.$val->subject_id.'-'.$standard_id.'>' . number_format($convert_mark, 2) . '</td>';
+                                    $table .= '<td class="data_center else" ' . $underline . ' ' . $exam_id . '-'.$val->subject_id.'-'.$standard_id.'>' . $tdVal . '</td>';
                                 }
                                 
                         // echo $exam_id;echo "<pre>";print_r($obtained_mark_sum);
@@ -3216,7 +3223,7 @@ while ($current_date <= $post_end_date) {
                             $exam_head = $title->ExamTitle;
                             if($exam_head == 'Periodic Test'){
                                 $i = 0;
-                                $pts = ($title->standard_id == 3299) ? 3 : 2;
+                                $pts = ($title->standard_id == 3299 || $title->standard_id == 3965) ? 3 : 2;
                                 $printed_titles = []; // Array to keep track of printed titles
                                 foreach ($exam_name as $key => $value) {
                                     if ($i < $pts && !in_array($value->title, $printed_titles) && $value->ExamTitle == 'Periodic Test') {
@@ -3301,7 +3308,7 @@ while ($current_date <= $post_end_date) {
                                     // get mark for total mark 
                                     $ob_main_mark += ($t_m !== 0) ? (($obtained_mark_sum / $t_m) * $w_m) : 0;
                                     // convert marks if best of 2
-                                    if($standard_id==3299){
+                                    if($standard_id==3299 || $standard_id==3965){
                                         if(count($obtained_mark_arr) > 1){
                                             $convert_mark = max($obtained_mark_arr); // get greatest max
                                         }else{
@@ -3313,7 +3320,8 @@ while ($current_date <= $post_end_date) {
                                     
                                     $pt_per = ($convert_mark !== '0.00' && $w_m != 0) ? round(($convert_mark / $w_m) * 100, 0) : 0;
                             
-                                    $underline = ($pt_per < 33 && $academic_type == "upper" && $standard_id!=3299) ? 'style="text-decoration: underline red 2px;"' : '';
+                                    // $underline = ($pt_per < 33 && $academic_type == "upper" && $standard_id!=3299 && $standard_id!=3965) ? 'style="text-decoration: underline red 2px;"' : '';
+                                    $underline = ($pt_per < 33 && $academic_type == "upper") ? 'style="text-decoration: underline red 2px;"' : '';
                                     if(count($obtained_mark_arr) > 1) {
                                         $total_marks += $w_m;
                                         $table .= '<td class="data_center" ' . $underline . ' ' . $exam_id . '-'.$val->subject_id.'-'.$standard_id.'>' . number_format($convert_mark, 2) . '</td>';
@@ -4866,15 +4874,6 @@ private function buildDisciplineTable($decipline_data)
         // dicipline 
          if (isset($ret_data_disipline)) {
             foreach ($ret_data_disipline as $item) {
-                $obtainGradeDis = $item->obtain_grade;
-            // Check if the obtain_grade contains digits
-                if (preg_match('/\d/', $obtainGradeDis) && is_numeric($obtainGradeDis)) {
-                    $item->obtain_grade = $obtainGradeDis;
-                    $item->obtain_grade = $this->getGrade($get_grade, $item->max_mark, $obtainGradeDis, "co_scholastic");
-
-                } else {
-                    $item->obtain_grade = $obtainGrade;
-                }
                 $dis_data[] = $item;
             }
         }
@@ -4967,11 +4966,12 @@ private function buildDisciplineTable($decipline_data)
 
         // echo "<pre>";print_r($co_scholastic);exit;
      $check_optional_subject_with_student = DB::table('student_optional_subject as sos')
-    ->select('ssm.display_name', 'sos.subject_id', 'sos.student_id', 'ssm.standard_id', 'rce.id as create_id', 'rce.title', 'rce.term_id', 'rce.standard_id', 'rem.weightage', 'rem.ExamTitle', 'rce.subject_id', 'rce.points as r_point', 'rce.con_point', 'rem.Id as ExamId', 'rce.exam_id', DB::raw('IFNULL(rm.points, 0) as points'))
+    ->select('ssm.display_name', 'sos.subject_id', 'sos.student_id', 'ssm.standard_id', 'rce.id as create_id', 'rce.title', 'rce.term_id', 'rce.standard_id', 'rem.weightage','rem.ExamTitle', 'rce.subject_id', 'rce.points as r_point', 'rce.con_point','rm.is_absent', 'rem.Id as ExamId', 'rce.exam_id', DB::raw('IFNULL(rm.points, 0) as points'))
     ->join('sub_std_map as ssm', 'sos.subject_id', '=', 'ssm.subject_id')
-    ->leftJoin('result_create_exam as rce', function ($join) {
+    ->leftJoin('result_create_exam as rce', function ($join) use($syear){
         $join->on('rce.subject_id', '=', 'sos.subject_id')
-            ->on('rce.standard_id', '=', 'ssm.standard_id');
+            ->on('rce.standard_id', '=', 'ssm.standard_id')
+            ->where('rce.syear', '=', $syear);
     })
     ->leftJoin('result_exam_master as rem', 'rem.Id', '=', 'rce.exam_id')
     ->leftJoin('result_marks as rm', function ($join) use($student_id) {
@@ -4980,10 +4980,11 @@ private function buildDisciplineTable($decipline_data)
     })
     ->where('sos.student_id', '=',  $student_id)
     ->where('sos.sub_institute_id', '=', $sub_institute_id)
-    ->where('ssm.standard_id', '=', $standard_id)
+    // ->where('ssm.standard_id', '=', $standard_id)
     ->where('sos.syear', '=', $syear)
     ->where('ssm.elective_subject', '=', 'YES')
     ->where('ssm.allow_grades', '=', 'YES')
+    ->whereRaw('(ssm.optional_type != 1 OR ssm.optional_type IS NULL) AND ssm.sub_institute_id='.$sub_institute_id.' and ssm.standard_id='.$standard_id)
     ->groupBy('rem.Id', 'sos.subject_id', 'ssm.display_name')
     ->orderBy('ssm.sort_order', 'ASC')
     ->get();
@@ -5018,15 +5019,23 @@ private function buildDisciplineTable($decipline_data)
                 $points = $record->points;
                 $weigthage = $record->weightage;
                 $r_point = $record->r_point;
+                $is_absent = $record->is_absent;
+
                 if (!isset($subjectRows[$subjectName])) {
                     $subjectRows[$subjectName] = [];
                 }
                 if (in_array($termId, $term_ids)) {
-                    $subjectRows[$subjectName][$termId] = [$points, $weigthage,$r_point];
+                    if($is_absent!=''){
+                        $subjectRows[$subjectName][$termId] = [$is_absent, $weigthage,$r_point];
+                    }else{
+                        $subjectRows[$subjectName][$termId] = [$points, $weigthage,$r_point];
+                    }
                 }
             }
                     // echo "<pre>";print_r($get_grade);
             if(isset($subjectRows)){
+                    // echo "<pre>";print_r($subjectRows);exit;
+
             foreach ($subjectRows as $subjectName => $termPoints) {
                     // echo "<pre>";print_r($termPoints);
 
@@ -5034,12 +5043,16 @@ private function buildDisciplineTable($decipline_data)
                 $scho_table .= '<td>' . $subjectName . '</td>';
                 foreach ($term_ids as $term) {
                     $obt_points = isset($termPoints[$term][0]) ? $termPoints[$term][0] : 0;
-                    $tot_mark = isset($termPoints[$term][2]) ? $termPoints[$term][2] : 0;
-                    // echo "<pre>";print_r($obt_grade);
+                    if(in_array($obt_points,["N.A.","EX","AB"])){
+                        $obt_grade = $obt_points;
+                    }else{
+                        $tot_mark = isset($termPoints[$term][2]) ? $termPoints[$term][2] : 0;
+                        // echo "<pre>";print_r($obt_grade);
 
-                    $max_weightage = isset($termPoints[$term][1]) ? $termPoints[$term][1] : 0; 
-                    $obt_grade = $this->getGrade($grade_arr_mmis, $tot_mark,$obt_points);
-                    $scho_table .= '<td class="data_center stu-'.$max_weightage.' tot-m-'.$tot_mark.' sub-'.$obt_points.'">' . $obt_grade . '</td>';
+                        $max_weightage = isset($termPoints[$term][1]) ? $termPoints[$term][1] : 0; 
+                        $obt_grade = $this->getGrade($grade_arr_mmis, $tot_mark,$obt_points);
+                    }
+                    $scho_table .= '<td class="data_center">' . $obt_grade . '</td>';
                 }
                 $scho_table .= '</tr>';
             }
@@ -5085,47 +5098,76 @@ private function buildDisciplineTable($decipline_data)
     // subject common for all 
     public function get_subject($sub_institute_id,$syear,$student_id,$standard_id){
        
-       $get_subject = DB::table("sub_std_map as ssm")->join('subject as sub', 'ssm.subject_id', '=', 'sub.id')->selectRaw('ssm.id as map_id,sub.id as subject_id,ssm.display_name as subject_name,ssm.elective_subject,ssm.allow_grades')->where(['ssm.sub_institute_id' => $sub_institute_id, 'ssm.standard_id' => $standard_id, 'allow_grades' => "Yes"])->orderBy('ssm.sort_order')->get()->toArray();
-        // Filter the elective subjects based on the condition
-             $get_subject = array_filter($get_subject, function ($value) use ($student_id, $syear) {
-                 if ($value->elective_subject == 'Yes') {
-                     $check_optional_subject_with_student = DB::table('student_optional_subject')
-                         ->where('student_id', $student_id)
-                         ->where('subject_id', $value->subject_id)
-                         ->where('syear', $syear)
-                         ->count();
- 
-                     return $check_optional_subject_with_student > 0;
-                 }
-                 return true;
-             });
-            //  FOR MMIS 
-            $bestOf2Sub = [47,254];
-                if(in_array($sub_institute_id,$bestOf2Sub)){
-                    $get_subject = DB::table("sub_std_map as ssm")->join('subject as sub', 'ssm.subject_id', '=', 'sub.id')->selectRaw('ssm.id as map_id,sub.id as subject_id,ssm.display_name as subject_name,ssm.elective_subject,ssm.allow_grades')->where(['ssm.sub_institute_id' => $sub_institute_id, 'ssm.standard_id' => $standard_id, 'allow_grades' => "Yes"])->orderBy('ssm.sort_order')->get()->toArray();
-                    // Filter the elective subjects based on the condition
-                        $get_subject = array_filter($get_subject, function ($value) use ($student_id, $syear,$sub_institute_id) {
-                            if ($value->elective_subject == 'Yes' && $value->allow_grades == 'Yes') {
-                                $check_optional_subject_with_student = DB::table('student_optional_subject as sos')
-                                    ->join('result_marks as rm', 'sos.student_id', '=', 'rm.student_id')
-                                    ->join('result_create_exam as rc', function ($join) {
-                                        $join->on('rc.subject_id', '=', 'sos.subject_id')
-                                            ->on('rc.id', '=', 'rm.exam_id');
-                                    })
-                                    ->where('sos.student_id', $student_id)
-                                    ->where('sos.subject_id', $value->subject_id)
-                                    ->where('sos.syear', $syear)
-                                    ->count();
-                                if($sub_institute_id==47){
-                                        return $check_optional_subject_with_student < 0;
-                                }else{
-                                        return $check_optional_subject_with_student > 0;
-                                }
-                            }
+       $get_subject = DB::table("sub_std_map as ssm")->join('subject as sub', 'ssm.subject_id', '=', 'sub.id')
+       ->selectRaw('ssm.id as map_id,sub.id as subject_id,ssm.display_name as subject_name,ssm.elective_subject,ssm.allow_grades,ssm.optional_type')
+       ->where(['ssm.sub_institute_id' => $sub_institute_id, 'ssm.standard_id' => $standard_id, 'allow_grades' => "Yes"])->orderBy('ssm.sort_order')->get()->toArray();
+        
+        $getHillsOptional = [254];
+        $getMMISOptional = [47];
+        // only for hills
+            if(in_array($sub_institute_id,$getHillsOptional)){
+                $get_subject = array_filter($get_subject, function ($value) use ($student_id, $syear,$sub_institute_id) {
+                    if ($value->elective_subject == 'Yes' && $value->allow_grades == 'Yes') {
+                        $check_optional_subject_with_student = DB::table('student_optional_subject as sos')
+                            ->join('result_marks as rm', 'sos.student_id', '=', 'rm.student_id')
+                            ->join('result_create_exam as rc', function ($join) {
+                                $join->on('rc.subject_id', '=', 'sos.subject_id')
+                                    ->on('rc.id', '=', 'rm.exam_id');
+                            })
+                            ->where('sos.student_id', $student_id)
+                            ->where('sos.subject_id', $value->subject_id)
+                            ->where('sos.syear', $syear)
+                            ->count();
+                            return $check_optional_subject_with_student > 0;
+                    }
 
-                            return true;
-                        });
-                }
+                    return true;
+                });
+            }
+            // only for MMIS
+            else if(in_array($sub_institute_id,$getMMISOptional)){
+                //Filter subjects based on elective and optional conditions
+                $get_subject = array_filter($get_subject, function ($subject) use ($student_id, $syear, $sub_institute_id) {
+                    $isElectiveSubject = $subject->elective_subject === 'Yes' && $subject->allow_grades === 'Yes' && $subject->optional_type != 1;
+                    $check_optional_subject_with_student = DB::table('student_optional_subject as sos')
+                        ->join('result_marks as rm', 'sos.student_id', '=', 'rm.student_id')
+                        ->join('result_create_exam as rc', function ($join) {
+                            $join->on('rc.subject_id', '=', 'sos.subject_id')
+                                ->on('rc.id', '=', 'rm.exam_id');
+                        })
+                        ->where('sos.student_id', $student_id)
+                        ->where('sos.subject_id', $subject->subject_id)
+                        ->where('sos.syear', $syear)
+                        ->count();
+
+                    // Conditional checks based on sub_institute_id and subject type
+                    if ($isElectiveSubject) {
+                        return $sub_institute_id == 47 ? $check_optional_subject_with_student < 0 : $check_optional_subject_with_student > 0;
+                    } elseif ($subject->optional_type == 1) {
+                        return $check_optional_subject_with_student > 0;
+                    }
+
+                    return true;
+                });
+
+                $get_subject = array_values($get_subject);
+            }
+            // for other Institutes
+            else{
+                // Filter the elective subjects based on the condition
+                $get_subject = array_filter($get_subject, function ($value) use ($student_id, $syear) {
+                    if ($value->elective_subject == 'Yes') {
+                        $check_optional_subject_with_student = DB::table('student_optional_subject')
+                            ->where('student_id', $student_id)
+                            ->where('subject_id', $value->subject_id)
+                            ->where('syear', $syear)
+                            ->count();
+    
+                        return $check_optional_subject_with_student > 0;
+                    }
+                    return true;
+                });
+            }
         return  $get_subject;
     }
     // store results in table result_html for mobile 
@@ -5140,7 +5182,7 @@ private function buildDisciplineTable($decipline_data)
         $syear = session()->get('syear');
         $sub_institute_id = session()->get('sub_institute_id');
         $user_id = session()->get('user_id');
-
+        // echo "<pre>";print_r($student_array);exit;
         foreach ($student_array as $key => $val) {
             $result_data['student_id'] = $val;
             $result_data['term_id'] = $term_id;
@@ -5151,14 +5193,19 @@ private function buildDisciplineTable($decipline_data)
             $result_data['sub_institute_id'] = $sub_institute_id;
             $result_data['created_by'] = $user_id;
             $result_data['html'] = $request->get('html_' . $val);
-
+            // if($val==236243){
+            //     echo "<pre>";print_r($result_data);
+            // }
+            // exit;
             $data = DB::select("SELECT * FROM result_html WHERE student_id = '" . $val . "' AND term_id = '" . $request->get('term_id') . "'
                     AND grade_id = '" . $request->get('grade_id') . "'  AND standard_id = '" . $request->get('standard_id') . "'
                      AND division_id = '" . $request->get('division_id') . "'  AND syear = '" . $request->get('syear') . "'
                      AND sub_institute_id = '" . session()->get('sub_institute_id') . "'
                     ");
             if (count($data) > 0) {
+                // $html = '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">'.htmlentities($request->get('html_' . $val));
                 $html = $request->get('html_' . $val);
+                
                 $finalArray['html'] = $html;
                 $finalArray['updated_by'] = $user_id;
                 $finalArray['updated_on'] = NOW();
@@ -5339,7 +5386,8 @@ private function buildDisciplineTable($decipline_data)
                                         foreach($sub_sub_title as $kk => $vv)
                                         {
                                             if(isset($count[$activity_id][$kk])){
-                                                $table .= '<td style="text-align:center;font-size:medium !important;background:white !important;color:black;width:10%;">&#10004</td>';
+                                                $table .= '<td style="text-align:center;font-size:medium !important;background:white !important;color:black;width:10%;"><img src="https://erp.triz.co.in/images/check-hpc.png" alt="checkImg" style="width:10px;height:10px !important">
+</td>';
                                             }else{
                                                 $table .= '<td style="text-align:center;font-size:medium !important;background:white !important;color:black;width:10%;"></td>';
                                             }
@@ -5372,7 +5420,7 @@ private function buildDisciplineTable($decipline_data)
                                         $table .= '<td style="text-align:center;font-size:medium !important;background:white !important;color:black;width:10%;">';
                                         if(isset($get_result_activity_mark[0]) && $get_result_activity_mark[0]->activity_id==$activity_master_id[$ak])
                                         {
-                                            $table .= '&#10004';
+                                            $table .= '<img src="https://erp.triz.co.in/Images/check-hpc.png" alt="checkImg" style="width:16px !important;height:16px !important">';
                                         }
                                         $table .= '</td>';
                                     
@@ -5415,7 +5463,7 @@ private function buildDisciplineTable($decipline_data)
                 //                     $table .= '<td style="text-align:center;font-size:medium !important;background:white !important;color:black;width:10%;">';
                 //                     if(isset($get_result_activity_mark[0]) && $get_result_activity_mark[0]->activity_id==$activity_master_id[$key2])
                 //                     {
-                //                         $table .= '&#10004';
+                //                         $table .= '&#10004   ';
                 //                     }
                 //                     $table .= '</td>';
                                   
@@ -5481,13 +5529,16 @@ private function buildDisciplineTable($decipline_data)
                 }
                 $post_start_date = date('Y-m-d', strtotime($post_start_date . ' +1 day'));
             }
+//echo $attTotDays." - ".count($calArr);
+//exit();            
             $attTotDays = $attTotDays - count($calArr);
 
-            // db::enableQueryLog();
+            //db::enableQueryLog();
             $attarray = DB::table('attendance_student as ap')
             ->join('tblstudent as s', 'ap.student_id', '=', 's.id')
             ->join('tblstudent_enrollment as se', function ($join) {
             $join->on('s.id', '=', 'se.student_id')
+            ->on('se.syear', '=', 'ap.syear')
             ->whereNull('se.end_date');
             })
             ->select('s.id', 's.first_name', DB::raw('COUNT(DISTINCT ap.attendance_date) AS present_day'))
@@ -5499,8 +5550,11 @@ private function buildDisciplineTable($decipline_data)
             ->whereBetween('ap.attendance_date', [$post_start_date_final, $post_end_date_final])
             ->groupBy('s.id')
             ->get();
-            // dd(db::getQueryLog($attarray));
+            //dd(db::getQueryLog($attarray));
             $attarray = $attarray->pluck('present_day', 'id')->all();
+//echo "<pre>";
+//print_r($attarray);
+//            exit();
             if (isset($attarray[$student_id])) {
                 $attendance = $attarray[$student_id] . '/' . $attTotDays;
             } else {

@@ -27,6 +27,7 @@ class OpenAIService
 
         try {
             $response = $this->client->post('https://api.openai.com/v1/chat/completions', [
+                'verify' => false,
                 'headers' => [
                     'Authorization' => 'Bearer ' . $this->apiKey,
                     'Content-Type' => 'application/json',
@@ -96,6 +97,7 @@ class OpenAIService
         }
         try {
             $response = $this->client->post('https://api.openai.com/v1/chat/completions', [
+                'verify' => false,
                 'headers' => [
                     'Authorization' => 'Bearer ' . $this->apiKey,
                     'Content-Type' => 'application/json',
@@ -176,6 +178,72 @@ class OpenAIService
         }
 
     }*/
+    }
+    public function generateSportsData($topicName, $chapterName, $subjectName, $contentCategory,$contentType)
+    {   
+
+        if($contentCategory == 'Worksheet' && $topicName != '1. VIDEOS'){
+            $prompt = "Create a detailed worksheet for the topic '{$topicName}' in the chapter '{$chapterName}' of the subject '{$subjectName}'.\n" .
+                      "The response should be detailed enough and no. of questions should be minimum 50,focusing on all genres of questions like long,short,fill in the blanks and mcqs with answers.  Please include examples, explanations, and any relevant information.\n".
+                      "Strictly avoid any personal replies or apologies. Only provide the main content.";
+            Log::info('Prompt: ' . $prompt);    
+        } else if($topicName == '1. VIDEOS' && $contentCategory != 'Worksheet'){
+            $prompt = "Create a detailed '{$contentCategory}' for the chapter '{$chapterName}' of the subject '{$subjectName}'.\n" .
+                       "The response should be detailed enough to generate a PDF of at least 5 pages,focusing striclty on the basis of ncert curriculum of '{$chapterName}' and detailed structuredwise '{$contentCategory}'and the minimum words should be 1000 and Please include examples, explanations, and any relevant information.\n".
+                       "Strictly avoid any personal replies or apologies. Only provide the main content.";
+            Log::info('Prompt: ' . $prompt);  
+        } else if($contentCategory == 'Worksheet' && $topicName == '1. VIDEOS'){
+            $prompt = "Create a detailed worksheet for the chapter '{$chapterName}' of the subject '{$subjectName}'.\n" .
+                      "The response should be detailed enough and no. of questions should be minimum 50,focusing on all genres of questions like long,short,fill in the blanks and mcqs with answers .  Please include examples, explanations, and any relevant information.\n".
+                      "Strictly avoid any personal replies or apologies. Only provide the main content.";    
+            Log::info('Prompt: ' . $prompt); 
+        } else{
+            $prompt = "Create a detailed '{$contentCategory}' for the topic '{$topicName}' in the chapter '{$chapterName}' of the subject '{$subjectName}'.\n" .
+                      "The response should be detailed enough to generate a PDF of at least 5 pages,focusing striclty on the basis of ncert curriculum of '{$chapterName}' and detailed structuredwise '{$contentCategory}' and the minimum words should be 1000 and Please include examples, explanations, and any relevant information.\n".
+                      "Strictly avoid any personal replies or apologies. Only provide the main content.\n";
+            Log::info('Prompt: ' . $prompt);    
+        }
+        try {
+            $response = $this->client->post('https://api.openai.com/v1/chat/completions', [
+                'verify' => false,
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $this->apiKey,
+                    'Content-Type' => 'application/json',
+                ],
+                'json' => [
+                    'model' => 'gpt-3.5-turbo',
+                    'messages' => [
+                        ['role' => 'user', 'content' => $prompt],
+                    ],
+                    'max_tokens' => 4096,
+                    'temperature' => 1.8,
+                    'top_p' => 0.5,
+                ],
+            ]);
+            
+            $data = json_decode($response->getBody(), true);
+            $generatedText = $data['choices'][0]['message']['content'];
+            $formattedText = nl2br($generatedText);
+
+            if ($contentType === 'pdf') {
+                $filePath = $this->createPDF($formattedText);
+            } elseif ($contentType === 'jpg') {
+                $filePath = $this->createJPG($formattedText);
+            } else {
+                throw new \Exception('Unsupported content category');
+            }
+
+            $fileName = basename($filePath);
+            $fileUrl = url('storage/pdfs/' . $fileName);
+            return $fileUrl;
+
+        } catch (RequestException $e) {
+            Log::error('OpenAI API Error: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to generate lesson plan.'], 500);
+        } catch (\Exception $e) {
+            Log::error('Error generating Data: ' . $e->getMessage());
+            return response()->json(['error' => 'Internal Server Error'], 500);
+        }
     }
     protected function createPDF($content)
     {

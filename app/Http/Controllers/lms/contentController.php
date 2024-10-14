@@ -821,7 +821,38 @@ class contentController extends Controller
         'description' => $generatedData['description'],
     ]);
     }
-    public function generateLessonPlan(Request $request)
+    public function generateSportsData(Request $request)
+{   
+    try {
+    $request->validate([
+        'standard_id' => 'required',
+        'subject_name' => 'required',
+        'chapter_name' => 'required',
+        'topic_name' => 'required',
+        'content_category' => 'required',
+        'content_type' => 'required',
+    ]);
+
+    $openAIService = new OpenAIService();
+    $filePath = $openAIService->generateSportsData(
+        $request->topic_name,
+        $request->chapter_name,
+        $request->subject_name,
+        $request->content_category,
+        $request->content_type,
+    );
+
+    if ($filePath) {
+        return response()->json(['file_url' => $filePath]);
+    } else {
+        return response()->json(['error' => 'Failed to generate.'], 500);
+    }
+}catch (\Exception $e) {
+        Log::error('Error generating Data: ' . $e->getMessage());
+        return response()->json(['error' => 'Internal Server Error'], 500);
+    }
+}
+public function generateLessonPlan(Request $request)
 {   
     try {
     $request->validate([

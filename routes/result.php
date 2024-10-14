@@ -125,6 +125,7 @@ Route::POST('/uploadResultAPI', [upload_result_controller::class, 'uploadResultA
 Route::get('api/get-standard-list', [AJAXController::class, 'getStandardList']);
 Route::get('api/get-division-list', [AJAXController::class, 'getDivisionList']);
 Route::get('api/get-subject-list', [AJAXController::class, 'getSubjectList']);
+Route::get('api/get-all-subject-list', [AJAXController::class, 'getAllSubjectList']);
 /** get exam list */
 Route::get('api/get-exam-name-list', [AJAXController::class, 'getExamsList']);
 Route::get('api/get-exam-master-list', [AJAXController::class, 'getExamsMasterList']);

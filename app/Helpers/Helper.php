@@ -987,11 +987,19 @@ if (!function_exists('FeeBreakoffHeadWise')) {
                     'sub_institute_id' => $sub_institute_id,
                     'is_deleted' => 'N',
                     'student_id' => $value->id,
+                    'syear'=>$syear,
                 ])->when(isset($request['from_date'], $request['to_date']), function ($q) use ($request) {
                     $q->where('fees_collect.receiptdate', '<=', $request['to_date']);
-                })->get()->toArray();
+                })
+                ->groupBy('student_id', 'term_id','syear') // for wrong previous fees 2024-10-10
+                ->get()->toArray();
 
-            $data[$value->id][$value->month_id][$value->fees_title]['amount'] = $value->amount - $paid_fees[0]->total_paid;
+                // for wrong previous fees 2024-10-10
+                if(isset($paid_fees[0]->total_paid)){
+                    $data[$value->id][$value->month_id][$value->fees_title]['amount'] = $value->amount - $paid_fees[0]->total_paid; // old code
+                }else{
+                    $data[$value->id][$value->month_id][$value->fees_title]['amount'] = $value->amount; // new added
+                }
 
             // Start Added by 18/05/2021 for getting paid amount in Overall Fees Head Wise report
             if (isset($paid_fees[0]->total_paid) && $paid_fees[0]->total_paid != '' && $paid_fees[0]->total_paid!=0) {
@@ -1426,6 +1434,11 @@ if (!function_exists('getStudents')) {
             })->leftJoin('fees_collect as fc', function ($join) {
                 $join->on('fc.student_id', '=', 's.id')->on('fc.sub_institute_id','=','s.sub_institute_id')->on('se.syear','=','fc.syear')->where('fc.is_deleted', 'N')->groupBy('fc.term_id');
             })
+/*            
+            ->leftJoin('admission_registration as ar', function ($join) {
+                $join->on('ar.enrollment_no', '=', 's.enrollment_no');
+            })
+*/            
             ->selectRaw("tc.*,s.*,se.syear,se.student_id,se.grade_id,se.standard_id,se.section_id,se.student_quota,se.roll_no,
                 se.start_date,se.end_date,se.enrollment_code,se.drop_code,se.drop_remarks,se.drop_remarks,se.term_id,
                 se.remarks,se.admission_fees,se.house_id,se.lc_number,st.name standard_name,st.short_name as short_standard_name,st.school_stream,s.city,se.standard_id,se.section_id,se.roll_no,
@@ -1434,7 +1447,7 @@ if (!function_exists('getStudents')) {
                 r.religion_name,c.caste_name,s.subcast,s.affiliation_no,s.school_code,s.admission_date,td.first_name AS driver_name,
                 td.mobile AS driver_mobile,td.icard_icon,s.mother_mobile,CONCAT_WS(' ',s.first_name,CONCAT(SUBSTRING(s.father_name,1,1),'.'),
                 s.last_name) as short_student_name,tv.vehicle_type,tkr.id as distance_from_school_id,tkr.distance_from_school,
-                tkr.from_distance,IF(tv.vehicle_type = 'Van',tkr.van_new,tkr.rick_new) AS distance_rate,s.first_name as student_first_name,s.middle_name as student_middle_name,s.last_name as student_last_name,rsam.teacher_remark,COUNT(ats.id) as total_att_days,sum(CASE WHEN ats.attendance_code = 'P' THEN 1 ELSE 0 END) as present_att_days, group_concat(DISTINCT  fc.term_id) as month_name, bg.bloodgroup as blood_group_name,bt.title as batch_name")
+                tkr.from_distance,IF(tv.vehicle_type = 'Van',tkr.van_new,tkr.rick_new) AS distance_rate,s.first_name as student_first_name,s.middle_name as student_middle_name,s.last_name as student_last_name,rsam.teacher_remark,COUNT(ats.id) as total_att_days,sum(CASE WHEN ats.attendance_code = 'P' THEN 1 ELSE 0 END) as present_att_days, group_concat(DISTINCT  fc.term_id) as month_name, bg.bloodgroup as blood_group_name,bt.title as batch_name,'-' as enquiry_no")
                 ->where('s.sub_institute_id', $sub_institute_id)
                 ->where('se.syear', $syear)
                 // ->groupBy('fc.id')
@@ -1527,14 +1540,15 @@ if (!function_exists('getStudents')) {
             $student_data[$value->id]['distance_rate'] = $value->distance_rate;
             $student_data[$value->id]['mother_mobile'] = $value->mother_mobile;
             $student_data[$value->id]['short_student_name'] = $value->short_student_name;
+            $student_data[$value->id]['admission_no'] = $value->enquiry_no;
         }
 
         return $student_data;
     }
 }
 
-if (!function_exists('send_FCM_Notification')) {
-    function send_FCM_Notification($to, $message, $sub_institute_id)
+if (!function_exists('send_FCM_Notification2')) {
+    function send_FCM_Notification2($to, $message, $sub_institute_id)
     {
         $url = 'https://fcm.googleapis.com/fcm/send';
         foreach ($to as $val) {
@@ -1546,6 +1560,11 @@ if (!function_exists('send_FCM_Notification')) {
             if ($sub_institute_id == 254) {
                 $headers = array(
                     'Authorization: key=' . "AAAAIbBYYCQ:APA91bElNhyJBqYr7hVMqFyH5kT3hO7EtiOQIoEN656ZzabihtIQ64PA72mpCuKv59XuMoq1-EDq-oiel1J9zvazDm4Mb2eKdA6k23_IC9cVAfuE5lQDx1jn4wkhst5Heyw0vVVlvN3J",
+                    'Content-Type: application/json',
+                );
+            } elseif ($sub_institute_id == 48) {
+                $headers = array(
+                    'Authorization: key=' . "AAAA15TRoXk:APA91bG_AqLh3HXeMMs4Z4otSzZNxEyJEyNeb_PmS1LIg0VORzZizP25raNpu8lSu-NOMIh-7I7EMXS_NWHOBjFe7WgAIOb4RCrxOQPq8OUz4vr1kO1KYMtSsqlf0jKIjoh-EzbdfXSC",
                     'Content-Type: application/json',
                 );
             } else {
@@ -1570,6 +1589,130 @@ if (!function_exists('send_FCM_Notification')) {
         }
     }
 }
+// 'firebase/scholar-clone-8c827fad6756.json'
+function send_FCM_Notification($to, $message, $sub_institute_id)
+{
+    if($sub_institute_id==254){
+        $serviceAccount = json_decode(file_get_contents(public_path('firebase/hills-high-ab947-7471f8ddfe23.json')), true);
+    }else if($sub_institute_id==48){
+        $serviceAccount = json_decode(file_get_contents(public_path('firebase/chanderbala-modi-academy-f4a3c8b00930.json')), true);
+    }else{
+        $serviceAccount = json_decode(file_get_contents(public_path('firebase/scholar-clone-8c827fad6756.json')), true);
+    }
+    
+    $accessToken = getAccessToken($serviceAccount);
+
+    $url = 'https://fcm.googleapis.com/v1/projects/' . $serviceAccount['project_id'] . '/messages:send';
+
+    foreach ($to as $val) {
+        $fields = [
+            'message' => [
+                'token' => $val,
+                'notification' => [
+                    'title' => $message['title'],
+                    'body' => $message['body'],
+                ],
+            ]
+        ];
+
+        $headers = [
+            'Authorization: Bearer ' . $accessToken,
+            'Content-Type: application/json',
+        ];
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($fields));
+
+        $result = curl_exec($ch);
+
+        if ($result === false) {
+            $error = curl_error($ch);
+            curl_close($ch);
+            return [
+                'status' => 'error',
+                'message' => 'Curl Error: ' . $error,
+            ];
+        }
+
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        // if ($httpCode == 200) {
+        //     return [
+        //         'status' => 'success',
+        //         'response' => json_decode($result, true),
+        //     ];
+        // } else {
+        //     return [
+        //         'status' => 'error',
+        //         'http_code' => $httpCode,
+        //         'response' => $result,
+        //     ];
+        // }
+    }
+}
+
+function getAccessToken($serviceAccount)
+{
+    $now = time();
+    $jwtHeader = base64url_encode(json_encode(['alg' => 'RS256', 'typ' => 'JWT']));
+    $jwtClaimSet = base64url_encode(json_encode([
+        'iss' => $serviceAccount['client_email'],
+        'scope' => 'https://www.googleapis.com/auth/firebase.messaging',
+        'aud' => 'https://oauth2.googleapis.com/token',
+        'iat' => $now,
+        'exp' => $now + 3600, // 1 hour
+    ]));
+
+    $jwtUnsigned = $jwtHeader . '.' . $jwtClaimSet;
+
+    // Sign the JWT with the private key
+    openssl_sign($jwtUnsigned, $signature, $serviceAccount['private_key'], 'sha256WithRSAEncryption');
+    $jwtSigned = $jwtUnsigned . '.' . base64url_encode($signature);
+
+    // Exchange JWT for Access Token
+    $postFields = [
+        'grant_type' => 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+        'assertion' => $jwtSigned,
+    ];
+
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, 'https://oauth2.googleapis.com/token');
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($postFields));
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+
+    $result = curl_exec($ch);
+
+    if ($result === false) {
+        $error = curl_error($ch);
+        curl_close($ch);
+        throw new Exception('Error getting access token: ' . $error);
+    }
+
+    $response = json_decode($result, true);
+    curl_close($ch);
+
+    if (isset($response['access_token'])) {
+        return $response['access_token'];
+    }
+
+    throw new Exception('Unable to retrieve access token: ' . json_encode($response));
+}
+
+function base64url_encode($data)
+{
+    return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
+}
+// 2024-10-04
 
 if (!function_exists('sendNotification')) {
     function sendNotification($notification_arr)

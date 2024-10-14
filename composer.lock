@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "6fac556c629b51ff09e528aa0d9290ca",
+    "content-hash": "3dad4250ea8f37d2450fcfd62fc827a5",
     "packages": [
         {
             "name": "aws/aws-crt-php",
@@ -62,16 +62,16 @@
         },
         {
             "name": "aws/aws-sdk-php",
-            "version": "3.322.7",
+            "version": "3.322.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/aws/aws-sdk-php.git",
-                "reference": "ea3563a7f10fa562796f712fa306c1dca41a45d7"
+                "reference": "3eeb8d400acc902965f7de5bc85635853f27c109"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/aws/aws-sdk-php/zipball/ea3563a7f10fa562796f712fa306c1dca41a45d7",
-                "reference": "ea3563a7f10fa562796f712fa306c1dca41a45d7",
+                "url": "https://api.github.com/repos/aws/aws-sdk-php/zipball/3eeb8d400acc902965f7de5bc85635853f27c109",
+                "reference": "3eeb8d400acc902965f7de5bc85635853f27c109",
                 "shasum": ""
             },
             "require": {
@@ -154,9 +154,9 @@
             "support": {
                 "forum": "https://forums.aws.amazon.com/forum.jspa?forumID=80",
                 "issues": "https://github.com/aws/aws-sdk-php/issues",
-                "source": "https://github.com/aws/aws-sdk-php/tree/3.322.7"
+                "source": "https://github.com/aws/aws-sdk-php/tree/3.322.0"
             },
-            "time": "2024-09-27T18:34:08+00:00"
+            "time": "2024-09-18T18:09:42+00:00"
         },
         {
             "name": "barryvdh/laravel-dompdf",
@@ -302,16 +302,16 @@
         },
         {
             "name": "botman/botman",
-            "version": "v2.8.6",
+            "version": "v2.8.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/botman/botman.git",
-                "reference": "5ab943a4ee22d18b2a31cf84089963a257ce2fd5"
+                "reference": "cd7e9784980f32499e9b812f77f0b026e94c9c80"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/botman/botman/zipball/5ab943a4ee22d18b2a31cf84089963a257ce2fd5",
-                "reference": "5ab943a4ee22d18b2a31cf84089963a257ce2fd5",
+                "url": "https://api.github.com/repos/botman/botman/zipball/cd7e9784980f32499e9b812f77f0b026e94c9c80",
+                "reference": "cd7e9784980f32499e9b812f77f0b026e94c9c80",
                 "shasum": ""
             },
             "require": {
@@ -376,9 +376,67 @@
             ],
             "support": {
                 "issues": "https://github.com/botman/botman/issues",
-                "source": "https://github.com/botman/botman/tree/v2.8.6"
+                "source": "https://github.com/botman/botman/tree/v2.8.4"
             },
-            "time": "2024-09-24T18:33:48+00:00"
+            "time": "2024-09-18T13:15:07+00:00"
+        },
+        {
+            "name": "botman/driver-slack",
+            "version": "1.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/botman/driver-slack.git",
+                "reference": "bfc55dc68328f0a883abcbdbe2530ecc2bd4dc48"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/botman/driver-slack/zipball/bfc55dc68328f0a883abcbdbe2530ecc2bd4dc48",
+                "reference": "bfc55dc68328f0a883abcbdbe2530ecc2bd4dc48",
+                "shasum": ""
+            },
+            "require": {
+                "botman/botman": "~2.0",
+                "php": ">=7.0"
+            },
+            "require-dev": {
+                "ext-curl": "*",
+                "illuminate/console": "~5.0",
+                "illuminate/support": "~5.0",
+                "mockery/mockery": "dev-master",
+                "mpociot/slack-client": "^0.3.1",
+                "phpunit/phpunit": "~5.0"
+            },
+            "suggest": {
+                "mpociot/slack-client": "Use the Slack RTM API with BotMan"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "BotMan\\Drivers\\Slack\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Marcel Pociot",
+                    "email": "m.pociot@gmail.com"
+                }
+            ],
+            "description": "Slack driver for BotMan",
+            "homepage": "http://github.com/botman/driver-slack",
+            "keywords": [
+                "Botman",
+                "bot",
+                "slack"
+            ],
+            "support": {
+                "issues": "https://github.com/botman/driver-slack/issues",
+                "source": "https://github.com/botman/driver-slack/tree/master"
+            },
+            "time": "2017-08-28T13:45:58+00:00"
         },
         {
             "name": "botman/driver-web",
@@ -571,16 +629,16 @@
         },
         {
             "name": "composer/semver",
-            "version": "3.4.3",
+            "version": "3.4.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/composer/semver.git",
-                "reference": "4313d26ada5e0c4edfbd1dc481a92ff7bff91f12"
+                "reference": "c51258e759afdb17f1fd1fe83bc12baaef6309d6"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/composer/semver/zipball/4313d26ada5e0c4edfbd1dc481a92ff7bff91f12",
-                "reference": "4313d26ada5e0c4edfbd1dc481a92ff7bff91f12",
+                "url": "https://api.github.com/repos/composer/semver/zipball/c51258e759afdb17f1fd1fe83bc12baaef6309d6",
+                "reference": "c51258e759afdb17f1fd1fe83bc12baaef6309d6",
                 "shasum": ""
             },
             "require": {
@@ -632,7 +690,7 @@
             "support": {
                 "irc": "ircs://irc.libera.chat:6697/composer",
                 "issues": "https://github.com/composer/semver/issues",
-                "source": "https://github.com/composer/semver/tree/3.4.3"
+                "source": "https://github.com/composer/semver/tree/3.4.2"
             },
             "funding": [
                 {
@@ -648,7 +706,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2024-09-19T14:15:21+00:00"
+            "time": "2024-07-12T11:35:52+00:00"
         },
         {
             "name": "dflydev/dot-access-data",
@@ -1463,7 +1521,7 @@
                     "email": "igor@wiedler.ch"
                 }
             ],
-            "description": "Événement is a very simple event dispatching library for PHP",
+            "description": "�v�nement is a very simple event dispatching library for PHP",
             "keywords": [
                 "event-dispatcher",
                 "event-emitter"
@@ -2274,7 +2332,7 @@
                     "homepage": "https://github.com/Nyholm"
                 },
                 {
-                    "name": "Márk Sági-Kazár",
+                    "name": "M�rk S�gi-Kaz�r",
                     "email": "mark.sagikazar@gmail.com",
                     "homepage": "https://github.com/sagikazarmark"
                 },
@@ -2469,7 +2527,7 @@
                     "homepage": "https://github.com/Nyholm"
                 },
                 {
-                    "name": "Márk Sági-Kazár",
+                    "name": "M�rk S�gi-Kaz�r",
                     "email": "mark.sagikazar@gmail.com",
                     "homepage": "https://github.com/sagikazarmark"
                 },
@@ -2479,7 +2537,7 @@
                     "homepage": "https://github.com/Tobion"
                 },
                 {
-                    "name": "Márk Sági-Kazár",
+                    "name": "M�rk S�gi-Kaz�r",
                     "email": "mark.sagikazar@gmail.com",
                     "homepage": "https://sagikazarmark.hu"
                 }
@@ -3124,16 +3182,16 @@
         },
         {
             "name": "laravel/serializable-closure",
-            "version": "v1.3.5",
+            "version": "v1.3.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laravel/serializable-closure.git",
-                "reference": "1dc4a3dbfa2b7628a3114e43e32120cce7cdda9c"
+                "reference": "61b87392d986dc49ad5ef64e75b1ff5fee24ef81"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laravel/serializable-closure/zipball/1dc4a3dbfa2b7628a3114e43e32120cce7cdda9c",
-                "reference": "1dc4a3dbfa2b7628a3114e43e32120cce7cdda9c",
+                "url": "https://api.github.com/repos/laravel/serializable-closure/zipball/61b87392d986dc49ad5ef64e75b1ff5fee24ef81",
+                "reference": "61b87392d986dc49ad5ef64e75b1ff5fee24ef81",
                 "shasum": ""
             },
             "require": {
@@ -3181,7 +3239,7 @@
                 "issues": "https://github.com/laravel/serializable-closure/issues",
                 "source": "https://github.com/laravel/serializable-closure"
             },
-            "time": "2024-09-23T13:33:08+00:00"
+            "time": "2024-08-02T07:48:17+00:00"
         },
         {
             "name": "laravel/tinker",
@@ -3882,7 +3940,7 @@
                     "email": "pabs@pablotron.org"
                 },
                 {
-                    "name": "Jonatan Männchen",
+                    "name": "Jonatan M�nnchen",
                     "email": "jonatan@maennchen.ch"
                 },
                 {
@@ -3890,7 +3948,7 @@
                     "email": "donatj@gmail.com"
                 },
                 {
-                    "name": "András Kolesár",
+                    "name": "Andr�s Koles�r",
                     "email": "kolesar@kolesar.hu"
                 }
             ],
@@ -4142,7 +4200,7 @@
             ],
             "authors": [
                 {
-                    "name": "Muharrem ERİN",
+                    "name": "Muharrem ERIN",
                     "email": "me@mewebstudio.com",
                     "homepage": "https://github.com/mewebstudio",
                     "role": "Developer"
@@ -4379,6 +4437,69 @@
             "time": "2024-09-04T18:46:31+00:00"
         },
         {
+            "name": "myclabs/php-enum",
+            "version": "1.8.4",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/myclabs/php-enum.git",
+                "reference": "a867478eae49c9f59ece437ae7f9506bfaa27483"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/myclabs/php-enum/zipball/a867478eae49c9f59ece437ae7f9506bfaa27483",
+                "reference": "a867478eae49c9f59ece437ae7f9506bfaa27483",
+                "shasum": ""
+            },
+            "require": {
+                "ext-json": "*",
+                "php": "^7.3 || ^8.0"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^9.5",
+                "squizlabs/php_codesniffer": "1.*",
+                "vimeo/psalm": "^4.6.2"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "MyCLabs\\Enum\\": "src/"
+                },
+                "classmap": [
+                    "stubs/Stringable.php"
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "PHP Enum contributors",
+                    "homepage": "https://github.com/myclabs/php-enum/graphs/contributors"
+                }
+            ],
+            "description": "PHP Enum implementation",
+            "homepage": "http://github.com/myclabs/php-enum",
+            "keywords": [
+                "enum"
+            ],
+            "support": {
+                "issues": "https://github.com/myclabs/php-enum/issues",
+                "source": "https://github.com/myclabs/php-enum/tree/1.8.4"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/mnapoli",
+                    "type": "github"
+                },
+                {
+                    "url": "https://tidelift.com/funding/github/packagist/myclabs/php-enum",
+                    "type": "tidelift"
+                }
+            ],
+            "time": "2022-08-04T09:53:51+00:00"
+        },
+        {
             "name": "nesbot/carbon",
             "version": "2.72.5",
             "source": {
@@ -4535,7 +4656,7 @@
                     "homepage": "https://nette.org/contributors"
                 }
             ],
-            "description": "📐 Nette Schema: validating data structures against a given Schema.",
+            "description": "?? Nette Schema: validating data structures against a given Schema.",
             "homepage": "https://nette.org",
             "keywords": [
                 "config",
@@ -4609,7 +4730,7 @@
                     "homepage": "https://nette.org/contributors"
                 }
             ],
-            "description": "🛠  Nette Utils: lightweight utilities for string & array manipulation, image handling, safe JSON encoding/decoding, validation, slug or strong password generating etc.",
+            "description": "??  Nette Utils: lightweight utilities for string & array manipulation, image handling, safe JSON encoding/decoding, validation, slug or strong password generating etc.",
             "homepage": "https://nette.org",
             "keywords": [
                 "array",
@@ -4635,16 +4756,16 @@
         },
         {
             "name": "nikic/php-parser",
-            "version": "v5.3.0",
+            "version": "v5.2.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/nikic/PHP-Parser.git",
-                "reference": "3abf7425cd284141dc5d8d14a9ee444de3345d1a"
+                "reference": "23c79fbbfb725fb92af9bcf41065c8e9a0d49ddb"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nikic/PHP-Parser/zipball/3abf7425cd284141dc5d8d14a9ee444de3345d1a",
-                "reference": "3abf7425cd284141dc5d8d14a9ee444de3345d1a",
+                "url": "https://api.github.com/repos/nikic/PHP-Parser/zipball/23c79fbbfb725fb92af9bcf41065c8e9a0d49ddb",
+                "reference": "23c79fbbfb725fb92af9bcf41065c8e9a0d49ddb",
                 "shasum": ""
             },
             "require": {
@@ -4687,9 +4808,9 @@
             ],
             "support": {
                 "issues": "https://github.com/nikic/PHP-Parser/issues",
-                "source": "https://github.com/nikic/PHP-Parser/tree/v5.3.0"
+                "source": "https://github.com/nikic/PHP-Parser/tree/v5.2.0"
             },
-            "time": "2024-09-29T13:56:26+00:00"
+            "time": "2024-09-15T16:40:33+00:00"
         },
         {
             "name": "nunomaduro/termwind",
@@ -4866,6 +4987,47 @@
             "time": "2023-09-03T08:22:57+00:00"
         },
         {
+            "name": "pclzip/pclzip",
+            "version": "2.8.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/ivanlanin/pclzip.git",
+                "reference": "19dd1de9d3f5fc4d7d70175b4c344dee329f45fd"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/ivanlanin/pclzip/zipball/19dd1de9d3f5fc4d7d70175b4c344dee329f45fd",
+                "reference": "19dd1de9d3f5fc4d7d70175b4c344dee329f45fd",
+                "shasum": ""
+            },
+            "type": "library",
+            "autoload": {
+                "classmap": [
+                    "pclzip.lib.php"
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "LGPL-2.1"
+            ],
+            "authors": [
+                {
+                    "name": "Vincent Blavet"
+                }
+            ],
+            "description": "A PHP library that offers compression and extraction functions for Zip formatted archives",
+            "homepage": "http://www.phpconcept.net/pclzip",
+            "keywords": [
+                "php",
+                "zip"
+            ],
+            "support": {
+                "issues": "https://github.com/ivanlanin/pclzip/issues",
+                "source": "https://github.com/ivanlanin/pclzip/tree/master"
+            },
+            "time": "2014-06-05T11:42:24+00:00"
+        },
+        {
             "name": "phenx/php-font-lib",
             "version": "0.5.6",
             "source": {
@@ -4897,7 +5059,7 @@
             ],
             "authors": [
                 {
-                    "name": "Fabien Ménager",
+                    "name": "Fabien M�nager",
                     "email": "fabien.menager@gmail.com"
                 }
             ],
@@ -4943,7 +5105,7 @@
             ],
             "authors": [
                 {
-                    "name": "Fabien Ménager",
+                    "name": "Fabien M�nager",
                     "email": "fabien.menager@gmail.com"
                 }
             ],
@@ -5037,17 +5199,142 @@
             "time": "2023-11-25T22:23:28+00:00"
         },
         {
-            "name": "phpoffice/phpspreadsheet",
-            "version": "1.29.2",
+            "name": "phpoffice/common",
+            "version": "1.0.3",
             "source": {
                 "type": "git",
-                "url": "https://github.com/PHPOffice/PhpSpreadsheet.git",
-                "reference": "3a5a818d7d3e4b5bd2e56fb9de44dbded6eae07f"
+                "url": "https://github.com/PHPOffice/Common.git",
+                "reference": "05bb7bd74236a44ff27b306432070696f9232178"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/PHPOffice/PhpSpreadsheet/zipball/3a5a818d7d3e4b5bd2e56fb9de44dbded6eae07f",
-                "reference": "3a5a818d7d3e4b5bd2e56fb9de44dbded6eae07f",
+                "url": "https://api.github.com/repos/PHPOffice/Common/zipball/05bb7bd74236a44ff27b306432070696f9232178",
+                "reference": "05bb7bd74236a44ff27b306432070696f9232178",
+                "shasum": ""
+            },
+            "require": {
+                "pclzip/pclzip": "^2.8",
+                "php": ">=7.1"
+            },
+            "require-dev": {
+                "phpmd/phpmd": "2.*",
+                "phpstan/phpstan": "^0.12.88 || ^1.0.0",
+                "phpunit/phpunit": ">=7"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "PhpOffice\\Common\\": "src/Common/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "LGPL-3.0-only"
+            ],
+            "authors": [
+                {
+                    "name": "Mark Baker"
+                },
+                {
+                    "name": "Franck Lefevre",
+                    "homepage": "http://rootslabs.net"
+                }
+            ],
+            "description": "PHPOffice Common",
+            "homepage": "http://phpoffice.github.io",
+            "keywords": [
+                "common",
+                "component",
+                "office",
+                "php"
+            ],
+            "support": {
+                "issues": "https://github.com/PHPOffice/Common/issues",
+                "source": "https://github.com/PHPOffice/Common/tree/1.0.3"
+            },
+            "time": "2024-09-03T17:14:56+00:00"
+        },
+        {
+            "name": "phpoffice/phppresentation",
+            "version": "1.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/PHPOffice/PHPPresentation.git",
+                "reference": "7a70b57df7ed3f05316aff2b83c307c61144b951"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/PHPOffice/PHPPresentation/zipball/7a70b57df7ed3f05316aff2b83c307c61144b951",
+                "reference": "7a70b57df7ed3f05316aff2b83c307c61144b951",
+                "shasum": ""
+            },
+            "require": {
+                "ext-xml": "*",
+                "ext-zip": "*",
+                "php": "^7.1|^8.0",
+                "phpoffice/common": "^1",
+                "phpoffice/phpspreadsheet": "^1.9.0"
+            },
+            "require-dev": {
+                "phpmd/phpmd": "2.*",
+                "phpstan/phpstan": "^0.12.88 || ^1.0.0",
+                "phpunit/phpunit": ">=7.0"
+            },
+            "suggest": {
+                "ext-gd": "Required to add images"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "PhpOffice\\PhpPresentation\\": "src/PhpPresentation/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "LGPL-3.0-only"
+            ],
+            "authors": [
+                {
+                    "name": "Mark Baker"
+                },
+                {
+                    "name": "Franck Lefevre",
+                    "homepage": "http://rootslabs.net"
+                },
+                {
+                    "name": "Ivan Lanin",
+                    "homepage": "http://ivan.lanin.org"
+                }
+            ],
+            "description": "PHPPresentation - Read, Create and Write Presentations documents in PHP",
+            "homepage": "http://phpoffice.github.io",
+            "keywords": [
+                "LibreOffice",
+                "PowerPoint",
+                "odp",
+                "php",
+                "ppt",
+                "pptx",
+                "presentations"
+            ],
+            "support": {
+                "issues": "https://github.com/PHPOffice/PHPPresentation/issues",
+                "source": "https://github.com/PHPOffice/PHPPresentation/tree/1.1.0"
+            },
+            "time": "2024-09-01T07:45:31+00:00"
+        },
+        {
+            "name": "phpoffice/phpspreadsheet",
+            "version": "1.29.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/PHPOffice/PhpSpreadsheet.git",
+                "reference": "59ee38f7480904cd6487e5cbdea4d80ff2758719"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/PHPOffice/PhpSpreadsheet/zipball/59ee38f7480904cd6487e5cbdea4d80ff2758719",
+                "reference": "59ee38f7480904cd6487e5cbdea4d80ff2758719",
                 "shasum": ""
             },
             "require": {
@@ -5137,9 +5424,9 @@
             ],
             "support": {
                 "issues": "https://github.com/PHPOffice/PhpSpreadsheet/issues",
-                "source": "https://github.com/PHPOffice/PhpSpreadsheet/tree/1.29.2"
+                "source": "https://github.com/PHPOffice/PhpSpreadsheet/tree/1.29.1"
             },
-            "time": "2024-09-29T07:04:47+00:00"
+            "time": "2024-09-03T00:55:32+00:00"
         },
         {
             "name": "phpoption/phpoption",
@@ -6166,7 +6453,7 @@
             ],
             "authors": [
                 {
-                    "name": "Christian Lück",
+                    "name": "Christian L�ck",
                     "email": "christian@clue.engineering",
                     "homepage": "https://clue.engineering/"
                 },
@@ -6242,7 +6529,7 @@
             ],
             "authors": [
                 {
-                    "name": "Christian Lück",
+                    "name": "Christian L�ck",
                     "email": "christian@clue.engineering",
                     "homepage": "https://clue.engineering/"
                 },
@@ -6316,7 +6603,7 @@
             ],
             "authors": [
                 {
-                    "name": "Christian Lück",
+                    "name": "Christian L�ck",
                     "email": "christian@clue.engineering",
                     "homepage": "https://clue.engineering/"
                 },
@@ -6394,7 +6681,7 @@
                     "homepage": "https://sorgalla.com/"
                 },
                 {
-                    "name": "Christian Lück",
+                    "name": "Christian L�ck",
                     "email": "christian@clue.engineering",
                     "homepage": "https://clue.engineering/"
                 },
@@ -6466,7 +6753,7 @@
             ],
             "authors": [
                 {
-                    "name": "Christian Lück",
+                    "name": "Christian L�ck",
                     "email": "christian@clue.engineering",
                     "homepage": "https://clue.engineering/"
                 },
@@ -6541,7 +6828,7 @@
             ],
             "authors": [
                 {
-                    "name": "Christian Lück",
+                    "name": "Christian L�ck",
                     "email": "christian@clue.engineering",
                     "homepage": "https://clue.engineering/"
                 },
@@ -6799,6 +7086,175 @@
             "time": "2024-07-01T07:33:21+00:00"
         },
         {
+            "name": "setasign/fpdf",
+            "version": "1.8.6",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Setasign/FPDF.git",
+                "reference": "0838e0ee4925716fcbbc50ad9e1799b5edfae0a0"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Setasign/FPDF/zipball/0838e0ee4925716fcbbc50ad9e1799b5edfae0a0",
+                "reference": "0838e0ee4925716fcbbc50ad9e1799b5edfae0a0",
+                "shasum": ""
+            },
+            "require": {
+                "ext-gd": "*",
+                "ext-zlib": "*"
+            },
+            "type": "library",
+            "autoload": {
+                "classmap": [
+                    "fpdf.php"
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Olivier Plathey",
+                    "email": "oliver@fpdf.org",
+                    "homepage": "http://fpdf.org/"
+                }
+            ],
+            "description": "FPDF is a PHP class which allows to generate PDF files with pure PHP. F from FPDF stands for Free: you may use it for any kind of usage and modify it to suit your needs.",
+            "homepage": "http://www.fpdf.org",
+            "keywords": [
+                "fpdf",
+                "pdf"
+            ],
+            "support": {
+                "source": "https://github.com/Setasign/FPDF/tree/1.8.6"
+            },
+            "time": "2023-06-26T14:44:25+00:00"
+        },
+        {
+            "name": "setasign/fpdi",
+            "version": "v2.6.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Setasign/FPDI.git",
+                "reference": "09a816004fcee9ed3405bd164147e3fdbb79a56f"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Setasign/FPDI/zipball/09a816004fcee9ed3405bd164147e3fdbb79a56f",
+                "reference": "09a816004fcee9ed3405bd164147e3fdbb79a56f",
+                "shasum": ""
+            },
+            "require": {
+                "ext-zlib": "*",
+                "php": "^5.6 || ^7.0 || ^8.0"
+            },
+            "conflict": {
+                "setasign/tfpdf": "<1.31"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "~5.7",
+                "setasign/fpdf": "~1.8.6",
+                "setasign/tfpdf": "~1.33",
+                "squizlabs/php_codesniffer": "^3.5",
+                "tecnickcom/tcpdf": "~6.2"
+            },
+            "suggest": {
+                "setasign/fpdf": "FPDI will extend this class but as it is also possible to use TCPDF or tFPDF as an alternative. There's no fixed dependency configured."
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "setasign\\Fpdi\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Jan Slabon",
+                    "email": "jan.slabon@setasign.com",
+                    "homepage": "https://www.setasign.com"
+                },
+                {
+                    "name": "Maximilian Kresse",
+                    "email": "maximilian.kresse@setasign.com",
+                    "homepage": "https://www.setasign.com"
+                }
+            ],
+            "description": "FPDI is a collection of PHP classes facilitating developers to read pages from existing PDF documents and use them as templates in FPDF. Because it is also possible to use FPDI with TCPDF, there are no fixed dependencies defined. Please see suggestions for packages which evaluates the dependencies automatically.",
+            "homepage": "https://www.setasign.com/fpdi",
+            "keywords": [
+                "fpdf",
+                "fpdi",
+                "pdf"
+            ],
+            "support": {
+                "issues": "https://github.com/Setasign/FPDI/issues",
+                "source": "https://github.com/Setasign/FPDI/tree/v2.6.1"
+            },
+            "funding": [
+                {
+                    "url": "https://tidelift.com/funding/github/packagist/setasign/fpdi",
+                    "type": "tidelift"
+                }
+            ],
+            "time": "2024-09-02T10:17:15+00:00"
+        },
+        {
+            "name": "smalot/pdfparser",
+            "version": "v2.11.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/smalot/pdfparser.git",
+                "reference": "ac8e6678b0940e4b2ccd5caadd3fb18e68093be6"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/smalot/pdfparser/zipball/ac8e6678b0940e4b2ccd5caadd3fb18e68093be6",
+                "reference": "ac8e6678b0940e4b2ccd5caadd3fb18e68093be6",
+                "shasum": ""
+            },
+            "require": {
+                "ext-iconv": "*",
+                "ext-zlib": "*",
+                "php": ">=7.1",
+                "symfony/polyfill-mbstring": "^1.18"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-0": {
+                    "Smalot\\PdfParser\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "LGPL-3.0"
+            ],
+            "authors": [
+                {
+                    "name": "Sebastien MALOT",
+                    "email": "sebastien@malot.fr"
+                }
+            ],
+            "description": "Pdf parser library. Can read and extract information from pdf file.",
+            "homepage": "https://www.pdfparser.org",
+            "keywords": [
+                "extract",
+                "parse",
+                "parser",
+                "pdf",
+                "text"
+            ],
+            "support": {
+                "issues": "https://github.com/smalot/pdfparser/issues",
+                "source": "https://github.com/smalot/pdfparser/tree/v2.11.0"
+            },
+            "time": "2024-08-16T06:48:03+00:00"
+        },
+        {
             "name": "spatie/async",
             "version": "1.6.1",
             "source": {
@@ -7045,7 +7501,7 @@
                     "email": "fabien@symfony.com"
                 },
                 {
-                    "name": "Jean-François Simon",
+                    "name": "Jean-Fran�ois Simon",
                     "email": "jeanfrancois.simon@sensiolabs.com"
                 },
                 {
@@ -8274,17 +8730,17 @@
             "time": "2024-09-09T11:45:10+00:00"
         },
         {
-            "name": "symfony/polyfill-php83",
+            "name": "symfony/polyfill-php81",
             "version": "v1.31.0",
             "source": {
                 "type": "git",
-                "url": "https://github.com/symfony/polyfill-php83.git",
-                "reference": "2fb86d65e2d424369ad2905e83b236a8805ba491"
+                "url": "https://github.com/symfony/polyfill-php81.git",
+                "reference": "4a4cfc2d253c21a5ad0e53071df248ed48c6ce5c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/polyfill-php83/zipball/2fb86d65e2d424369ad2905e83b236a8805ba491",
-                "reference": "2fb86d65e2d424369ad2905e83b236a8805ba491",
+                "url": "https://api.github.com/repos/symfony/polyfill-php81/zipball/4a4cfc2d253c21a5ad0e53071df248ed48c6ce5c",
+                "reference": "4a4cfc2d253c21a5ad0e53071df248ed48c6ce5c",
                 "shasum": ""
             },
             "require": {
@@ -8331,7 +8787,7 @@
                 "shim"
             ],
             "support": {
-                "source": "https://github.com/symfony/polyfill-php83/tree/v1.31.0"
+                "source": "https://github.com/symfony/polyfill-php81/tree/v1.31.0"
             },
             "funding": [
                 {
@@ -8393,7 +8849,7 @@
             ],
             "authors": [
                 {
-                    "name": "Grégoire Pineau",
+                    "name": "Gr�goire Pineau",
                     "email": "lyrixx@lyrixx.info"
                 },
                 {
@@ -8951,7 +9407,7 @@
             ],
             "authors": [
                 {
-                    "name": "Grégoire Pineau",
+                    "name": "Gr�goire Pineau",
                     "email": "lyrixx@lyrixx.info"
                 },
                 {
@@ -9129,16 +9585,16 @@
         },
         {
             "name": "twilio/sdk",
-            "version": "8.3.2",
+            "version": "8.3.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/twilio/twilio-php.git",
-                "reference": "e7a11c1ef855e08cfb29db27a8f557ce030b9128"
+                "reference": "bfbb3bd7f274ccd3948f5c98f108c64a2db470d7"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/twilio/twilio-php/zipball/e7a11c1ef855e08cfb29db27a8f557ce030b9128",
-                "reference": "e7a11c1ef855e08cfb29db27a8f557ce030b9128",
+                "url": "https://api.github.com/repos/twilio/twilio-php/zipball/bfbb3bd7f274ccd3948f5c98f108c64a2db470d7",
+                "reference": "bfbb3bd7f274ccd3948f5c98f108c64a2db470d7",
                 "shasum": ""
             },
             "require": {
@@ -9176,9 +9632,9 @@
             ],
             "support": {
                 "issues": "https://github.com/twilio/twilio-php/issues",
-                "source": "https://github.com/twilio/twilio-php/tree/8.3.2"
+                "source": "https://github.com/twilio/twilio-php/tree/8.3.1"
             },
-            "time": "2024-09-25T11:54:10+00:00"
+            "time": "2024-09-18T13:24:34+00:00"
         },
         {
             "name": "vlucas/phpdotenv",
@@ -9603,7 +10059,7 @@
             ],
             "authors": [
                 {
-                    "name": "François Zaninotto"
+                    "name": "Fran�ois Zaninotto"
                 }
             ],
             "description": "Faker is a PHP library that generates fake data for you.",
@@ -9742,16 +10198,16 @@
         },
         {
             "name": "laravel/sail",
-            "version": "v1.33.0",
+            "version": "v1.32.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laravel/sail.git",
-                "reference": "d54af9d5745e3680d8a6463ffd9f314aa53eb2d1"
+                "reference": "4a7e41d280861ca7e35710cea011a07669b4003b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laravel/sail/zipball/d54af9d5745e3680d8a6463ffd9f314aa53eb2d1",
-                "reference": "d54af9d5745e3680d8a6463ffd9f314aa53eb2d1",
+                "url": "https://api.github.com/repos/laravel/sail/zipball/4a7e41d280861ca7e35710cea011a07669b4003b",
+                "reference": "4a7e41d280861ca7e35710cea011a07669b4003b",
                 "shasum": ""
             },
             "require": {
@@ -9801,7 +10257,7 @@
                 "issues": "https://github.com/laravel/sail/issues",
                 "source": "https://github.com/laravel/sail"
             },
-            "time": "2024-09-22T19:04:21+00:00"
+            "time": "2024-09-11T20:14:29+00:00"
         },
         {
             "name": "mockery/mockery",
@@ -9845,7 +10301,7 @@
             ],
             "authors": [
                 {
-                    "name": "Pádraic Brady",
+                    "name": "P�draic Brady",
                     "email": "padraic.brady@gmail.com",
                     "homepage": "https://github.com/padraic",
                     "role": "Author"
@@ -10473,16 +10929,16 @@
         },
         {
             "name": "phpunit/phpunit",
-            "version": "9.6.21",
+            "version": "9.6.20",
             "source": {
                 "type": "git",
                 "url": "https://github.com/sebastianbergmann/phpunit.git",
-                "reference": "de6abf3b6f8dd955fac3caad3af7a9504e8c2ffa"
+                "reference": "49d7820565836236411f5dc002d16dd689cde42f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/de6abf3b6f8dd955fac3caad3af7a9504e8c2ffa",
-                "reference": "de6abf3b6f8dd955fac3caad3af7a9504e8c2ffa",
+                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/49d7820565836236411f5dc002d16dd689cde42f",
+                "reference": "49d7820565836236411f5dc002d16dd689cde42f",
                 "shasum": ""
             },
             "require": {
@@ -10497,7 +10953,7 @@
                 "phar-io/manifest": "^2.0.4",
                 "phar-io/version": "^3.2.1",
                 "php": ">=7.3",
-                "phpunit/php-code-coverage": "^9.2.32",
+                "phpunit/php-code-coverage": "^9.2.31",
                 "phpunit/php-file-iterator": "^3.0.6",
                 "phpunit/php-invoker": "^3.1.1",
                 "phpunit/php-text-template": "^2.0.4",
@@ -10556,7 +11012,7 @@
             "support": {
                 "issues": "https://github.com/sebastianbergmann/phpunit/issues",
                 "security": "https://github.com/sebastianbergmann/phpunit/security/policy",
-                "source": "https://github.com/sebastianbergmann/phpunit/tree/9.6.21"
+                "source": "https://github.com/sebastianbergmann/phpunit/tree/9.6.20"
             },
             "funding": [
                 {
@@ -10572,7 +11028,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2024-09-19T10:50:18+00:00"
+            "time": "2024-07-10T11:45:39+00:00"
         },
         {
             "name": "sebastian/cli-parser",
