@@ -83,6 +83,22 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        .iframe-container {
+        position: relative;
+        width: 110%;
+        padding-bottom: 86.25%; /* 16:9 aspect ratio */
+        height: 0;
+        overflow: hidden;
+    }
+
+    .responsive-iframe {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 110%;
+        height: 100%;
+        border: none;
+    }
     </style>
 
     <!-- Global site tag (gtag.js) - Google Analytics -->
