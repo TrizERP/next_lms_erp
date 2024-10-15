@@ -87,10 +87,11 @@
         }
         .iframe-container {
         position: relative;
-        width: 110%;
+        width: 96%;
         padding-bottom: 86.25%; /* 16:9 aspect ratio */
         height: 0;
         overflow: hidden;
+        margin-left: 5%;
     }
 
     .responsive-iframe {
