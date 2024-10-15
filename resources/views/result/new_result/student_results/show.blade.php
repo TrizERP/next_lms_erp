@@ -51,18 +51,17 @@
                                 <option value="yearly" @if(isset($data['format']) && $data['format']=="yearly") selected @endif>Yearly</option>                              
 							</select>
                         </div>
-
-                        {{ App\Helpers\SearchChain('4','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
-
                         <div class="col-md-4 form-group">
 							<label>Result Type</label>
 							<select class="form-control" name="result_type" required="required">
-								<option value="">Select Result Type</option>
+								<!--<option value="">-Select Type-</option>-->
 								@foreach($data['result_types'] as $key=>$value)
 									<option value="{{$value}}" @if(isset($data['result_type']) && $data['result_type']==$value) selected @endif>{{$value}}</option>
 								@endforeach
 							</select>
                         </div>
+
+                        {{ App\Helpers\SearchChain('4','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
 
 						<div class="col-md-12 form-group">
 							<center>

@@ -137,7 +137,7 @@ class studentResultController extends Controller
         $data['result_type'] = $result_type;
         $data['all_stud_html'] = $all_stud_html;
         $data['students_ids'] = $request->students;
-
+        // echo "<pre>";print_r($data);exit;
         return is_mobile($type, "result/new_result/student_results/result_view", $data, "view");
     }
 
@@ -5188,8 +5188,10 @@ private function buildDisciplineTable($decipline_data)
         $syear = session()->get('syear');
         $sub_institute_id = session()->get('sub_institute_id');
         $user_id = session()->get('user_id');
+
         $result_type = $request->get('result_type');
         // echo "<pre>";print_r($request->all());exit;
+
         foreach ($student_array as $key => $val) {
             $result_data['student_id'] = $val;
             $result_data['term_id'] = $term_id;
@@ -5395,8 +5397,8 @@ private function buildDisciplineTable($decipline_data)
                                         foreach($sub_sub_title as $kk => $vv)
                                         {
                                             if(isset($count[$activity_id][$kk])){
-                                                $table .= '<td style="text-align:center;font-size:medium !important;background:white !important;color:black;width:10%;"><img src="https://erp.triz.co.in/Images/check-hpc.png" alt="checkImg" style="width:16px;height:16px !important">
-</td>';
+
+                                                $table .= '<td style="text-align:center;font-size:medium !important;background:white !important;color:black;width:10%;"><img src="https://erp.triz.co.in/Images/check-hpc.png" alt="checkImg" style="width:16px;height:16px !important"></td>';
                                             }else{
                                                 $table .= '<td style="text-align:center;font-size:medium !important;background:white !important;color:black;width:10%;"></td>';
                                             }
@@ -5429,7 +5431,7 @@ private function buildDisciplineTable($decipline_data)
                                         $table .= '<td style="text-align:center;font-size:medium !important;background:white !important;color:black;width:10%;">';
                                         if(isset($get_result_activity_mark[0]) && $get_result_activity_mark[0]->activity_id==$activity_master_id[$ak])
                                         {
-                                            $table .= '&#10004';
+                                            $table .= '<img src="https://erp.triz.co.in/Images/check-hpc.png" alt="checkImg" style="width:16px !important;height:16px !important">';
                                         }
                                         $table .= '</td>';
                                     

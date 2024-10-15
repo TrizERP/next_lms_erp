@@ -9,7 +9,7 @@
     <div class="container-fluid">
         <div class="row bg-title">
             <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
-                <h4 class="page-title">Admission Confirmation</h4> </div>
+                <h4 class="page-title">Update Admission</h4> </div>
         </div>
         <div class="card">
             @if ($sessionData = Session::get('data'))
@@ -32,11 +32,11 @@
                             <thead>
                                 <tr>
                                     <th><input type="checkbox" name="all" id="ckbCheckAll" class="ckbox" onclick="checkAll('ckbox1')">  </th>
-                                    <th>Form No</th>
+                                    <th>Enq.No</th>
                                     <th>Name</th>
                                     <th>DOB</th>
                                     <th>MOB</th>
-                                    <th>MOB</th>
+                                    <!--<th>MOB</th>-->
                                     <th>Email</th>
                                     <th>Class No</th>
                                     <th>SIB</th>
@@ -44,11 +44,11 @@
                                     <th>H.N.Remakrs</th>
                                     <th>Activity</th>
                                     <th>P.INT.</th>
-                                    <th>P.INT. Date</th>
-                                    <th>P.INT. Time</th>
+                                    <!-- <th>P.INT. Date</th> -->
+                                    <!-- <th>P.INT. Time</th> -->
                                     <th>CONF.</th>
                                     <th>CONF. Date</th>
-                                    <th>CONF. Time</th>
+                                    <!-- <th>CONF. Time</th> -->
                                     <th>PAID</th>
                                     <th class="text-center">Transport Fees</th>
                                 </tr>
@@ -67,7 +67,7 @@
                                         {{$value['mobile']}}
                                         <input type="hidden" name="students[{{$value['id']}}][mobile]" class="mobile form-control" disabled="true" value="{{$value['mobile']}}" autocomplete="off">
                                     </td>
-                                    <td>{{$value['mobile2']}}</td>
+                                    <!--<td>{{$value['mobile2']}}</td>-->
                                     <td>{{$value['email']}}
                                     <input type="hidden" name="students[{{$value['id']}}][email]" class="email form-control" disabled="true" value="{{$value['email']}}" autocomplete="off">
                                     </td>
@@ -100,6 +100,8 @@
                                     <td>
                                         <input type="hidden" name="students[{{$value['id']}}][enquiry_no]" class="enquiry_no form-control" disabled="true" value="{{$value['enquiry_no']}}" autocomplete="off">
 
+                                        <input type="hidden" name="students[{{$value['id']}}][admission_standard]" class="admission_standard form-control" disabled="true" value="{{$value['admission_standard']}}" autocomplete="off">
+
                                         <input type="text" name="students[{{$value['id']}}][hn_remarks]" class="hn_remarks form-control" disabled="true" placeholder="Enter the Remarks" autocomplete="off"  @if(isset($value['h_n_remarks'])) value="{{$value['h_n_remarks']}}" @endif>
                                     </td>
                                     <td>
@@ -113,12 +115,12 @@
                                             @endforeach
                                         </select>
                                     </td>
-                                    <td>
+                                    {{-- <td>
                                         <input type="text" name="students[{{$value['id']}}][pint_date]" class="pint_date form-control mydatepicker" disabled="true" autocomplete="off" @if(isset($value['p_int_date'])) value="{{$value['p_int_date']}}" @endif>
                                     </td>
                                     <td>
                                         <input type="time" name="students[{{$value['id']}}][pint_time]" class="pint_time form-control" disabled="true" autocomplete="off" @if(isset($value['p_int_time'])) value="{{$value['p_int_time']}}" @endif>
-                                    </td>
+                                    </td> --}}
                                     <td class="tdwidth">  <select name="students[{{$value['id']}}][conf]" class="conf form-control" disabled="true">
                                             <option value="">select</option>
                                             @foreach($data['confArr'] as $key => $cvalue)
@@ -129,9 +131,9 @@
                                     <td>
                                         <input type="text" name="students[{{$value['id']}}][conf_date]" class="conf_date form-control mydatepicker" disabled="true" autocomplete="off" @if(isset($value['confi_date'])) value="{{$value['confi_date']}}" @endif>
                                     </td>
-                                    <td>
+                                    {{-- <td>
                                         <input type="time" name="students[{{$value['id']}}][conf_time]" class="conf_time form-control" disabled="true" autocomplete="off" @if(isset($value['confi_time'])) value="{{$value['confi_time']}}" @endif>
-                                    </td>
+                                    </td>  --}}
                                     <td class="tdwidth">  
                                         <select name="students[{{$value['id']}}][paid]" class="paid form-control" disabled="true">
                                             <option value="">select</option>
@@ -251,7 +253,7 @@ $(function () {
 
     $(".ckbox1").on("click", function () {
         var row = $(this).closest('tr');
-        var fields = ['hn', 'hn_remarks', 'activity', 'pint', 'conf', 'paid', 'transport','enquiry_no','pint_date','pint_time','conf_date','conf_time','mobile','email'];
+        var fields = ['hn', 'hn_remarks', 'activity', 'pint', 'conf', 'paid', 'transport','enquiry_no','pint_date','pint_time','conf_date','conf_time','mobile','email','admission_standard'];
 
         // Iterate over each field and toggle the disabled property
         fields.forEach(function(field) {
