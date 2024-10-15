@@ -114,9 +114,11 @@ br{
 						</div>
 					@endforeach
 					@endif
+				<!--
 					<div class="row mb-4">
 						<div class="embed-onet-ip"></div>
 					</div>
+				-->
 				</div>
 			</div>
 		</div>
@@ -124,7 +126,9 @@ br{
 </div>
 
 @include('includes.lmsfooterJs')
+<!--
 <script src="https://services.onetcenter.org/embed/ip.js?client=trizinnovation"></script>
+-->
 
 <script type="text/javascript">
 $(document).ready(function(){
