@@ -31,6 +31,7 @@ class studentResultController extends Controller
             $data['status_code']=$data_arr['status_code'];
             $data['message']=$data_arr['message'];
         }
+        $data['result_types'] = ['Regular','HPC'];
         // echo "<pre>";print_r($data['data']);exit;
         return is_mobile($type, "result/new_result/student_results/show", $data, "view");
     }
@@ -43,6 +44,7 @@ class studentResultController extends Controller
         $standard = $request->input('standard');
         $division = $request->input('division');
         $format = $request->input('format');
+        $result_type = $request->input('result_type');
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
         // get students
@@ -62,6 +64,8 @@ class studentResultController extends Controller
         $res['grade_id'] = $grade;
         $res['standard_id'] = $standard;
         $res['division_id'] = $division;
+        $res['result_type'] = $result_type;
+        $res['result_types'] = ['Regular','HPC'];
         if (empty($studentData)) {
             $res['status_code'] = 0;
             $res['message'] = "No student found please check your search panel";
@@ -79,6 +83,7 @@ class studentResultController extends Controller
         $template = $request->input('template_id') ?? 0;
         $student_ids = $request->input('students');
         $format = $request->input('format');
+        $result_type = $request->input('result_type');
 
         // get selectd students 
         $data = getStudents($student_ids);
@@ -129,6 +134,7 @@ class studentResultController extends Controller
         $data['division_id'] = $request->division_id;
         $data['term_id'] = $format;
         $data['syear'] = $syear;
+        $data['result_type'] = $result_type;
         $data['all_stud_html'] = $all_stud_html;
         $data['students_ids'] = $request->students;
         // echo "<pre>";print_r($data);exit;
@@ -5182,7 +5188,10 @@ private function buildDisciplineTable($decipline_data)
         $syear = session()->get('syear');
         $sub_institute_id = session()->get('sub_institute_id');
         $user_id = session()->get('user_id');
-        // echo "<pre>";print_r($student_array);exit;
+
+        $result_type = $request->get('result_type');
+        // echo "<pre>";print_r($request->all());exit;
+
         foreach ($student_array as $key => $val) {
             $result_data['student_id'] = $val;
             $result_data['term_id'] = $term_id;
@@ -5192,6 +5201,7 @@ private function buildDisciplineTable($decipline_data)
             $result_data['syear'] = $syear;
             $result_data['sub_institute_id'] = $sub_institute_id;
             $result_data['created_by'] = $user_id;
+            $result_data['result_type'] = $result_type;
             $result_data['html'] = $request->get('html_' . $val);
             // if($val==236243){
             //     echo "<pre>";print_r($result_data);
@@ -5200,16 +5210,17 @@ private function buildDisciplineTable($decipline_data)
             $data = DB::select("SELECT * FROM result_html WHERE student_id = '" . $val . "' AND term_id = '" . $request->get('term_id') . "'
                     AND grade_id = '" . $request->get('grade_id') . "'  AND standard_id = '" . $request->get('standard_id') . "'
                      AND division_id = '" . $request->get('division_id') . "'  AND syear = '" . $request->get('syear') . "'
-                     AND sub_institute_id = '" . session()->get('sub_institute_id') . "'
+                     AND sub_institute_id = '" . session()->get('sub_institute_id') . "' AND result_type = '".$result_type."'
                     ");
             if (count($data) > 0) {
                 // $html = '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">'.htmlentities($request->get('html_' . $val));
                 $html = $request->get('html_' . $val);
                 
                 $finalArray['html'] = $html;
+                $finalArray['result_type'] = $result_type;
                 $finalArray['updated_by'] = $user_id;
                 $finalArray['updated_on'] = NOW();
-                $data = DB::table('result_html')->where(['student_id' => $val, 'term_id' => $term_id, 'grade_id' => $grade_id, 'standard_id' => $standard_id, 'division_id' => $division_id, 'syear' => $syear])->update($finalArray);
+                $data = DB::table('result_html')->where(['student_id' => $val, 'term_id' => $term_id, 'grade_id' => $grade_id, 'standard_id' => $standard_id, 'division_id' => $division_id, 'syear' => $syear,'result_type'=>$result_type])->update($finalArray);
                 echo "Updated for std-".$standard_id.' term_id-'.$term_id.' student_id-'.$val;
             } else {
                 DB::table("result_html")->insert($result_data);
@@ -5386,8 +5397,8 @@ private function buildDisciplineTable($decipline_data)
                                         foreach($sub_sub_title as $kk => $vv)
                                         {
                                             if(isset($count[$activity_id][$kk])){
-                                                $table .= '<td style="text-align:center;font-size:medium !important;background:white !important;color:black;width:10%;"><img src="https://erp.triz.co.in/images/check-hpc.png" alt="checkImg" style="width:10px;height:10px !important">
-</td>';
+
+                                                $table .= '<td style="text-align:center;font-size:medium !important;background:white !important;color:black;width:10%;"><img src="https://erp.triz.co.in/Images/check-hpc.png" alt="checkImg" style="width:16px;height:16px !important"></td>';
                                             }else{
                                                 $table .= '<td style="text-align:center;font-size:medium !important;background:white !important;color:black;width:10%;"></td>';
                                             }
@@ -5463,7 +5474,7 @@ private function buildDisciplineTable($decipline_data)
                 //                     $table .= '<td style="text-align:center;font-size:medium !important;background:white !important;color:black;width:10%;">';
                 //                     if(isset($get_result_activity_mark[0]) && $get_result_activity_mark[0]->activity_id==$activity_master_id[$key2])
                 //                     {
-                //                         $table .= '&#10004   ';
+                //                         $table .= '<img src="https://erp.triz.co.in/Images/check-hpc.png" alt="checkImg" style="width:10px;height:10px !important">   ';
                 //                     }
                 //                     $table .= '</td>';
                                   
