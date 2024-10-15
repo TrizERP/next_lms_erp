@@ -1244,9 +1244,10 @@ die; */
 		//END Save Optional Subject
         if($request->input('editable') == 1){
             $studentEnrollment['standard_id'] = $request->input('standard');
-            $studentEnrollment['section_id'] = $request->input('division');
             $studentEnrollment['grade_id'] = $request->input('grade');
         }
+        
+        $studentEnrollment['section_id'] = $request->input('division');
 
 		$studentEnrollment['syear'] = $syear;
 		$studentEnrollment['student_id'] = $student_id;

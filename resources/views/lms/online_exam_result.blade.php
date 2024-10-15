@@ -276,7 +276,7 @@ $(document).ready(function(){
     } = rightInterest;
 
     $.ajax({
-        url: '{{route("intrestEnterScore")}}',
+        url: '{{route("intrestEnterScores")}}',
         data : {Realistic:Realistic,Investigative:Investigative,Artistic:Artistic,Social:Social,Enterprising:Enterprising,Conventional:Conventional},
         type : 'GET',
         success : function(response){

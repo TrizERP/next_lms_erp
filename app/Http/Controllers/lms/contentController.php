@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\lms;
 use App\Http\Controllers\Controller;
+use App\Services\OpenAIService;
 use App\Models\lms\chapterModel;
 use App\Models\lms\contentmappingtypeModel;
 use App\Models\lms\contentModel;
@@ -13,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 class contentController extends Controller
 {
@@ -132,7 +134,7 @@ class contentController extends Controller
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $data = array();
-
+        
         $lms_mapping_type = DB::table('lms_mapping_type')
             ->where('status', '=', 1)
             ->where('parent_id', '=', 0)
@@ -797,5 +799,90 @@ class contentController extends Controller
         ])->get()->toArray();
     }
         
-	
+	public function processAIData(Request $request)
+    {
+        $request->validate([
+            'standard_id' => 'required',
+            'subject_name' => 'required',
+            'chapter_name' => 'required',
+            'topic_name' => 'required',
+            'content_type' => 'required',
+            'content_category' => 'required',
+        ]);
+        $openAIService = new OpenAIService();
+        $generatedData = $openAIService->generateTitleAndDescription(
+        $request->topic_name,
+        $request->chapter_name,
+        $request->subject_name
+    );
+
+    return response()->json([
+        'title' => $generatedData['title'],
+        'description' => $generatedData['description'],
+    ]);
+    }
+    public function generateSportsData(Request $request)
+{   
+    try {
+    $request->validate([
+        'standard_id' => 'required',
+        'subject_name' => 'required',
+        'chapter_name' => 'required',
+        'topic_name' => 'required',
+        'content_category' => 'required',
+        'content_type' => 'required',
+    ]);
+
+    $openAIService = new OpenAIService();
+    $filePath = $openAIService->generateSportsData(
+        $request->topic_name,
+        $request->chapter_name,
+        $request->subject_name,
+        $request->content_category,
+        $request->content_type,
+    );
+
+    if ($filePath) {
+        return response()->json(['file_url' => $filePath]);
+    } else {
+        return response()->json(['error' => 'Failed to generate.'], 500);
+    }
+}catch (\Exception $e) {
+        Log::error('Error generating Data: ' . $e->getMessage());
+        return response()->json(['error' => 'Internal Server Error'], 500);
+    }
+}
+public function generateLessonPlan(Request $request)
+{   
+    try {
+    $request->validate([
+        'standard_id' => 'required',
+        'subject_name' => 'required',
+        'chapter_name' => 'required',
+        'topic_name' => 'required',
+        'content_category' => 'required',
+        'content_type' => 'required',
+        'booklist_data' => 'required|array',
+    ]);
+
+    $openAIService = new OpenAIService();
+    $filePath = $openAIService->generateLessonPlan(
+        $request->topic_name,
+        $request->chapter_name,
+        $request->subject_name,
+        $request->content_category,
+        $request->content_type,
+        $request->booklist_data
+    );
+
+    if ($filePath) {
+        return response()->json(['file_url' => $filePath]);
+    } else {
+        return response()->json(['error' => 'Failed to generate.'], 500);
+    }
+}catch (\Exception $e) {
+        Log::error('Error generating Data: ' . $e->getMessage());
+        return response()->json(['error' => 'Internal Server Error'], 500);
+    }
+}
 }

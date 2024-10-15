@@ -68,6 +68,9 @@ use App\Http\Controllers\WhatsappController;
 use App\Http\Controllers\oldDocumentTransfer;
 use App\Http\Controllers\BotManController;
 use App\Http\Controllers\reuirementController;
+use App\Http\Controllers\ChatbotController;
+use App\Http\Controllers\lms\chapterController as LmsChapterController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -500,7 +503,9 @@ Route::any('python_timetable',[AJAXController::class, 'pythonTimetable'])->name(
 Route::post('transferDocs', [oldDocumentTransfer::class, 'storeImagesToDigitalOcean']);
 Route::get('convertDoc',[oldDocumentTransfer::class, 'ConvertBinaryData']);
 Route::get('transport_Onboarding', [tourController::class, 'transportOnboarding'])->name('transportOnboarding');
-Route::match(['get', 'post'], '/botman', 'App\Http\Controllers\BotManController@handle');
+Route::match(['get', 'post'], '/chatbot', [ChatbotController::class, 'handle']);
 // 03-06-24
 Route::resource('requirements', reuirementController::class);
 Route::get('customers_requirement', [reuirementController::class, 'ReportData'])->name('customers_requirement');
+Route::post('/paraphrase',[LmsChapterController::class,'paraphraseContentAjax'])->name('paraphrase.ajax');
+Route::post('/paraphrase-file', [LmsChapterController::class, 'paraphraseFile'])->name('paraphrase.file');

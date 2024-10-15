@@ -82,8 +82,10 @@ class WhatsappController extends Controller
             $sub_institute_id = $request->get('sub_institute_id');
             $syear = $request->get('syear');
         }
-        //$this->updateMessageStatus($sub_institute_id,$syear);
-        $data['data'] = WhatsappSentMessage::with('student')->with('standard')->with('division')->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->orderBy('id', 'DESC')->get()->toArray();
+        $update = $this->updateMessageStatus($sub_institute_id,$syear);
+        // echo "<pre>";print_r($update);exit;
+
+        $data['data'] = WhatsappSentMessage::with('student')->with('standard')->with('division')->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->orderBy('id', 'DESC')->limit(2500)->get()->toArray();
         // echo "<pre>";print_r($data);exit;
         //return view('whatsapp.whatsapp_send_messages.index', ["data" => $data]);
         return is_mobile($type, 'whatsapp.whatsapp_send_messages.index', $data, "view");
@@ -318,6 +320,9 @@ class WhatsappController extends Controller
                     }
                     $messagesid = $twilioResponse->sid;
 
+                    if (isset($twilioResponse->errorCode) && $twilioResponse->errorCode!=null) {
+                        $messageStatus .= ' (' . $twilioResponse->errorCode . ')';
+                    }
                     $saveMesasge = new WhatsappSentMessage();
                     $saveMesasge->sub_institute_id = session()->get('sub_institute_id');
                     $saveMesasge->syear = session()->get('syear');
@@ -490,15 +495,21 @@ class WhatsappController extends Controller
 
     public function updateMessageStatus($sub_institute_id, $syear)
     {
-        $updateStatus = WhatsappSentMessage::where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->whereRaw('message_status not in ("read","undelivered","failed")')->where('sent_date', date('Y-m-d'))->get()->toArray();
+        $updateStatus = WhatsappSentMessage::where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->whereRaw('message_status in ("accepted","delivered","sent","queued")')->where('sent_date', date('Y-m-d'))->get()->toArray();
         foreach ($updateStatus as $key => $value) {
             if ($value['uri'] != null) {
                 $messageSid = $value['uri']; // sid
                 $token = WhatappUserDetail::where('sub_institute_id', $sub_institute_id)->orderBy('id', 'DESC')->first();
                 $client = new Client($token['user_whatsapp_sid'], $token['user_whatsapp_token']);
                 $message = $client->messages($messageSid)->fetch();
+                // echo "<pre>";print_r($message);exit;
                 // Check the message status
                 $messageStatus = $message->status;
+                // Check if error_code exists and append it to the status if present
+                if (isset($message->errorCode) && $message->errorCode!=null) {
+                    $messageStatus .= ' (' . $message->errorCode . ')';
+                }
+                // $messageStatus = $message->status.' ('.$message->error_code.')';
                 $update = WhatsappSentMessage::where('id', $value['id'])->update([
                     'message_status' => $messageStatus,
                 ]);
