@@ -120,6 +120,7 @@
         z-index: 9;
         margin: 0px 25px;
     }
+
 </style>
 
 <div id="page-wrapper">
@@ -212,7 +213,9 @@
                     $str = str_replace(htmlspecialchars("<<school_image>>"), "/storage/school/" . $value['school_image'], $str);
                     $str = str_replace(htmlspecialchars("<<school_address>>"), $value['school_address'], $str);
                     $str = str_replace(htmlspecialchars("<<years>>"), session()->get('syear') . "-" . (session()->get('syear') + 1), $str);
-
+                    // cn 15-10-2024
+                    $str = str_replace(htmlspecialchars("<<nationality>>"), $value['nationality'], $str);
+                    // cn 15-10-2024
                     // cn card 07-08-2024
                     if(!empty($data['receiptBook'])){
                         $receiptBook = $data['receiptBook'];
@@ -248,7 +251,7 @@
         <div class="row">
             <div class="col-md-12 form-group">
                 <center>
-                    <button class="btn btn-success" onclick="printdiv('printPage');">Print</button>
+                <button class="btn btn-success" onclick="printdiv('printPage');">Print</button>
                 </center>
             </div>
         </div>
