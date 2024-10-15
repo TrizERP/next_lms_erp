@@ -117,6 +117,12 @@ class admissionEnquiryController extends Controller
             $sub_institute_id = $request->get('sub_institute_id');
             $syear = $request->get('syear');            
         }
+        // for stnadalone admission_enquiry
+        else if($type=='webForm'){
+            $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');
+        }
+        // echo "<pre>";print_r($request->all());exit;
         $category = castModel::get()->toArray();
 
         $dataCustomFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "admission_enquiry"])
@@ -148,8 +154,11 @@ class admissionEnquiryController extends Controller
         if (count($category) > 0) {
             $res['category'] = $category;
         }
-
-        return is_mobile($type, 'admission/enquiry/add_admission_enquiry', $res, 'view');
+        if($type=='webForm'){
+            return is_mobile($type, 'admission/enquiry/admission_enquiry', $res, 'view');
+        }else{
+            return is_mobile($type, 'admission/enquiry/add_admission_enquiry', $res, 'view');
+        }
     }
 
     public function convert_number_to_words($number)
@@ -294,7 +303,11 @@ class admissionEnquiryController extends Controller
             $sub_institute_id = $request->get('sub_institute_id');
             $syear = $request->get('syear');   
             $user_id = $request->input("user_id");
-                     
+        }
+        // for stnadalone admission_enquiry
+        else if($type=='webForm'){
+            $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');
         }
 
         $data = $request->except([
@@ -554,8 +567,11 @@ class admissionEnquiryController extends Controller
 
             $res['status_code'] = "1";
             $res['message'] = "Added successfully";
-
-            return is_mobile($type, "admission_enquiry.index", $res);
+            if($type=='webForm'){
+                return redirect('admission_enquiry?sub_institute_id='.$sub_institute_id.'&syear='.$syear.'&type=webForm')->with(['data'=>$res]);
+            }else{
+                return is_mobile($type, "admission_enquiry.index", $res);
+            }
         }
     }
 

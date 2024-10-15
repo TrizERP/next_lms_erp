@@ -58,3 +58,5 @@ Route::controller(admissionRegistrationController::class)->group(function () {
     Route::get('ajax_getDivision', 'ajax_getDivision')->name('ajax_getDivision');
 });
 
+Route::get('admission_enquiry', [admissionEnquiryController::class, 'create']); // for hills standalone
+Route::post('admission_enquiry/store', [admissionEnquiryController::class, 'store'])->name('admission_enquiry.storeNew'); // for hills standalone
