@@ -54,6 +54,7 @@ $student_id_arr = implode(",",array_values($data['students_ids']));
 <input type="hidden" id="division_id" name="division_id" value="{{$data['division_id']}}">
 <input type="hidden" id="term_id" name="term_id" value="{{$data['term_id']}}">
 <input type="hidden" id="syear" name="syear" value="{{$data['syear']}}">
+<input type="hidden" id="result_type" name="result_type" value="{{$data['result_type']}}">
 <input type="hidden" id="student_arr" name="student_arr" value="{{$student_id_arr}}">
 </form>
 

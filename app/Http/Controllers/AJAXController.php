@@ -2409,7 +2409,7 @@ class AJAXController extends Controller
             $div = $request->division;
         }
         if(isset($request->module) && $request->module=='admission_enquiry'){
-        	$sub_institute_id=session()->get('sub_institute_id');
+        	$sub_institute_id= isset($request->sub_institute_id) ? $request->sub_institute_id : session()->get('sub_institute_id') ;
 
         	$dataList = DB::table('tblstudent as ts')
         	->Join('tblstudent_enrollment as se',function($q) use($sub_institute_id){
