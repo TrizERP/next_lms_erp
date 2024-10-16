@@ -258,6 +258,10 @@
                 url: "{{ route('leave-apply.store') }}",
                 data: formData,
                 success: function(data) {
+                    console.log(data);
+                    if(data){
+                        alert('Leave Applied Successfully !!');
+                    }
                     location.reload()
                 },
                 error: function(xhr) {
