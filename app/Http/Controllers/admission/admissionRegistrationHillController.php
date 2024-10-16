@@ -36,8 +36,8 @@ class admissionRegistrationHillController extends Controller
         }
 
         $data = DB::table('admission_enquiry as ae')
-            ->leftJoin('admission_registration_v1 as ar', function ($join) {
-                $join->whereRaw('ae.id = ar.enquiry_id');
+            ->leftJoin('admission_registration_v1 as ar', function ($join) use ($sub_institute_id)  {
+                $join->on('ae.id','=','ar.enquiry_id')->where('ar.sub_institute_id',$sub_institute_id);
             })->leftJoin('tblstudent as ts', function ($join) {
                 $join->whereRaw('ts.admission_id = ae.id AND ts.admission_year = ae.syear AND ts.sub_institute_id = ae.sub_institute_id');
             })->leftJoin('standard as s', function ($join) use ($sub_institute_id) {
@@ -46,6 +46,7 @@ class admissionRegistrationHillController extends Controller
             ->selectRaw('ae.*,ar.*,ae.enquiry_no AS enquiry_no,COUNT(ts.id) AS total_student_count,ae.remarks AS enquiry_remark,s.name AS std_name,CONCAT_WS(" ",COALESCE(ae.first_name,"-"),COALESCE(ae.middle_name,"-"),COALESCE(ae.last_name,"-")) as full_name,ae.id as id')
             ->where('ae.sub_institute_id', $sub_institute_id)
             ->where('ae.syear', $syear)->groupBy('ae.id')->get()->toArray();
+
         $data = array_map(function ($value) {
             return (array) $value;
         }, $data);
@@ -88,11 +89,13 @@ class admissionRegistrationHillController extends Controller
             $sub_institute_id = $request->get('sub_institute_id');
             $syear = $request->get('syear');
         }
-        $pindate = isset($data["pint_date"]) ? Carbon::createFromFormat('d-m-Y',$data["pint_date"])->format('Y-m-d') : null;
-        $condate = isset($data["conf_date"]) ? Carbon::createFromFormat('d-m-Y',$data["conf_date"])->format('Y-m-d') : null;
+       
         $i=0;
         if(!empty($students)){
             foreach($students as $enquiry_id=>$data){
+                $pindate = isset($data["pint_date"]) ? Carbon::createFromFormat('d-m-Y',$data["pint_date"])->format('Y-m-d') : null;
+                $condate = isset($data["conf_date"]) ? Carbon::createFromFormat('d-m-Y',$data["conf_date"])->format('Y-m-d') : null;
+
                $dataArr = [
                 "enquiry_id"=> $enquiry_id,
                 "enquiry_no"=> $data["enquiry_no"],
@@ -101,7 +104,9 @@ class admissionRegistrationHillController extends Controller
                 "activity"=> $data["activity"],
                 "p_int"=> $data["pint"],
                 "p_int_date"=>$pindate,
-                // "p_int_time"=> $data["pint_time"],
+                "p_int_time"=> $data["pint_time"],
+                "p_int_remark"=> $data["p_int_remark"],
+                "p_int_attandance"=> $data["p_int_attandance"],
                 "confi"=> $data["conf"],
                 "confi_date"=> $condate,
                 // "confi_time"=> $data["conf_time"],
