@@ -783,8 +783,8 @@ class teacherapiController extends Controller
 
             $teacher_name = $result[0]->name;
 
-            $data = json_decode($request->get('data'), true);
-
+            $data[] = json_decode($request->get('data'), true);
+          
             foreach ($data as $key => $val) {
                 DB::table('dicipline')->insert([
                     'syear'            => $request->get('syear'),
