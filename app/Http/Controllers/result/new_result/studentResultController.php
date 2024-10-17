@@ -204,7 +204,7 @@ class studentResultController extends Controller
         $standard_id = $value['standard_id'];
         $reopen_date = '';
 
-        $teacher_name = DB::table('class_teacher as ct')->join('tbluser as us', 'ct.teacher_id', '=', 'us.id')->selectRaw('ct.standard_id,ct.division_id,ct.teacher_id,concat_ws(" ",us.first_name,us.last_name) as teacher_name')->where(['ct.syear' => $syear, 'ct.sub_institute_id' => $sub_institute_id, 'ct.standard_id' => $value['standard_id'], 'ct.division_id' => $value['section_id']])->first();
+        $teacher_name = DB::table('class_teacher as ct')->join('tbluser as us', 'ct.teacher_id', '=', 'us.id')->selectRaw('ct.standard_id,ct.division_id,ct.teacher_id,concat_ws(" ",us.first_name,us.last_name) as teacher_name,us.last_name')->where(['ct.syear' => $syear, 'ct.sub_institute_id' => $sub_institute_id, 'ct.standard_id' => $value['standard_id'], 'ct.division_id' => $value['section_id']])->first();
            // for teachers signature standard_wise
         $result_teacher = $this->getExamMasterSettigs($standard_id);
         if (!empty($result_teacher)) {
@@ -261,6 +261,7 @@ class studentResultController extends Controller
         }
         //Start Bonafide certificate Tags
         $html_content = str_replace(htmlspecialchars("<<class_teacher_name>>"), isset($teacher_name->teacher_name) ? $teacher_name->teacher_name : ' ', $html_content);
+        $html_content = str_replace(htmlspecialchars("<<class_teacher_lastname>>"), isset($teacher_name->last_name) ? $teacher_name->last_name : ' ', $html_content);
         $html_content = str_replace(htmlspecialchars("<<academic_years>>"), $display_year, $html_content);
         $html_content = str_replace(htmlspecialchars("<<term_name>>"), $term_name, $html_content);
         $html_content = str_replace(htmlspecialchars("<<student_image_value>>"), $student_image_path, $html_content);
@@ -5295,7 +5296,7 @@ private function buildDisciplineTable($decipline_data)
             $skill_ids = explode(',', $skillset_ids);
             $all_group = explode(',', $all_group);
 
-            $table .= '<th style="text-align:left;font-size:large !important;background:white !important" colspan="5"><b>' . $heading . '</b></th></tr>';
+            $table .= '<th style="text-align:left;font-size:large;background:white !important" colspan="5"><b>' . $heading . '</b></th></tr>';
 
             foreach($sub_title as $key => $value)
             {
@@ -5310,12 +5311,12 @@ private function buildDisciplineTable($decipline_data)
 	        		continue;
 	    		}
 
-                $table .= '<tr><th style="text-align:left;font-size:medium !important;background:white !important;"><b>' . $value . '</b></th>';
+                $table .= '<tr><th style="text-align:left;font-size:medium;background:white !important;"><b>' . $value . '</b></th>';
                 $get_result_activity_marks = $get_sub_activity = $sub_sub_id = [];  
 
                 foreach($sub_sub_title as $key1 => $value1)
                 {
-                    $table .= '<th style="text-align:center;font-size:medium !important;color:black;background:white !important"><b>' . $value1->title . '</b></th>';
+                    $table .= '<th style="text-align:center;font-size:medium;color:black;background:white !important"><b>' . $value1->title . '</b></th>';
 
                     $get_result_activity_masters = DB::table('result_activity_master')
                     ->selectRaw('*, 
@@ -5358,17 +5359,17 @@ private function buildDisciplineTable($decipline_data)
 
                         foreach ($activity_master_id as $ak => $activity_id) {
                             if(isset($get_sub_activity[$activity_id]) && !empty($get_sub_activity[$activity_id])){
-                                $table.='<tr><td style="text-align:left;font-size:medium !important;width:60%;background:white !important;"><b>'.$activity_master_title[$ak].'</b></td>';
+                                $table.='<tr><td style="text-align:left;font-size:medium;width:60%;background:white !important;"><b>'.$activity_master_title[$ak].'</b></td>';
                                 foreach($sub_sub_title as $key1 => $value1)
                                 {
-                                        $table .= '<td style="text-align:center;font-size:medium !important;background:white !important;color:black;width:10%;">N/A</td>';
+                                        $table .= '<td style="text-align:center;font-size:medium;background:white !important;color:black;width:10%;">N/A</td>';
                                 }
                                
                                 $table.=' </tr>';
                                 foreach ($get_sub_activity[$activity_id] as $kr => $val) {
                                         // echo "<pre>";print_r($v->title);
                                       
-                                    $table.='<tr><td style="background:white !important;color:black;width:10%;">'.$val->title.'</td>';
+                                    $table.='<tr><td style="background:white;color:black;width:10%;">'.$val->title.'</td>';
                                     $count = [];
                                     foreach($sub_sub_title as $ke => $va)
                                     {
@@ -5391,16 +5392,18 @@ private function buildDisciplineTable($decipline_data)
                                     if(!isset($count[$activity_id])){
                                         foreach($sub_sub_title as $kk => $vv)
                                         {
-                                            $table .= '<td style="text-align:center;font-size:medium !important;background:white !important;color:black;width:10%;">N/A</td>';
+                                            $table .= '<td style="text-align:center;font-size:medium;background:white !important;color:black;width:10%;">N/A</td>';
                                         }
                                     }else{
                                         foreach($sub_sub_title as $kk => $vv)
                                         {
                                             if(isset($count[$activity_id][$kk])){
 
-                                                $table .= '<td style="text-align:center;font-size:medium !important;background:white !important;color:black;width:10%;"><img src="https://erp.triz.co.in/Images/check-hpc.png" alt="checkImg" style="width:16px;height:16px !important"></td>';
+                                                $table .= '<td style="text-align:center;font-size:medium;background:white !important;color:black;width:10%;">&#10004</td>';
+                                            }else if(in_array($sub_institute_id,[202])){
+                                                    $table .= '<td style="text-align:center;font-size:medium;background:white !important;color:black;width:10%;">-</td>';
                                             }else{
-                                                $table .= '<td style="text-align:center;font-size:medium !important;background:white !important;color:black;width:10%;"></td>';
+                                                $table .= '<td style="text-align:center;font-size:medium;background:white !important;color:black;width:10%;">-</td>';
                                             }
                                         }
                                     }
@@ -5409,7 +5412,7 @@ private function buildDisciplineTable($decipline_data)
                                 }
                                 // $table.='</tr>';
                             }else{
-                                $table .= '<tr><td style="text-align:left;font-size:medium !important;width:60%;background:white !important;">' . $activity_master_title[$ak] .'</td>';
+                                $table .= '<tr><td style="text-align:left;font-size:medium;width:60%;background:white !important;">' . $activity_master_title[$ak] .'</td>';
                                 $checked = 0;
                                 if(isset($get_result_activity_marks[$activity_master_title[$ak]]) && !empty($get_result_activity_marks[$activity_master_title[$ak]]))
                                 {
@@ -5423,15 +5426,18 @@ private function buildDisciplineTable($decipline_data)
                                 if($checked==0){
                                     foreach($get_result_activity_marks[$activity_master_title[$ak]] as $get_result_activity_mark)
                                     {
-                                        $table .= '<td style="text-align:center;font-size:medium !important;background:white !important;color:black;width:10%;">NA</td>';
+                                        $table .= '<td style="text-align:center;font-size:medium;background:white !important;color:black;width:10%;">NA</td>';
                                     }
                                 }else{
                                     foreach($get_result_activity_marks[$activity_master_title[$ak]] as $get_result_activity_mark)
                                     {
-                                        $table .= '<td style="text-align:center;font-size:medium !important;background:white !important;color:black;width:10%;">';
+                                        $table .= '<td style="text-align:center;font-size:medium;background:white !important;color:black;width:10%;">';
                                         if(isset($get_result_activity_mark[0]) && $get_result_activity_mark[0]->activity_id==$activity_master_id[$ak])
                                         {
                                             $table .= '&#10004';
+
+                                        }else if(in_array($sub_institute_id,[202])){
+                                            $table .= '-';
                                         }
                                         $table .= '</td>';
                                     
