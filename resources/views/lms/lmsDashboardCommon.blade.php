@@ -397,8 +397,8 @@ if(isset($data['lmsData'])){
                                        <!-- img div -->
                                           <div class="d1" style="width:80%">
                                              @php
-                                             if(empty($per80) && empty($per60) && empty($per40) && empty($per20) && empty($per10)){
-                                                $noPer[]="https://erp.triz.co.in/storage/student/".$data['studentData']['image'];
+                                             if(empty($per80) && empty($per60) && empty($per40) && empty($per20) && empty($per10) && isset($data['studentData']->image)){
+                                                $noPer[]="https://erp.triz.co.in/storage/student/".$data['studentData']->image;
                                              }
                                              @endphp
 
