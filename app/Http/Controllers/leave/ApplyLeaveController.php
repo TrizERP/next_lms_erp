@@ -157,7 +157,7 @@ class ApplyLeaveController extends Controller
             $syear = $request->syear;
             $user_id = $request->get('user_id');
         }
-
+        $type="API";
         $request->validate([
             'type_leave' => 'required',
             'leave_type' => 'required|exists:hrms_leave_types,id',
@@ -168,11 +168,23 @@ class ApplyLeaveController extends Controller
             'comment' => 'required',
         ]);
 
-        HrmsEmpLeave::updateOrCreate([
-                'user_id' => ($request->emp_id!=0) ? $request->emp_id : $user_id,
-                'from_date' => $request->from_date,
-            ],
-            [
+        // HrmsEmpLeave::updateOrCreate([
+        //         'user_id' => ($request->emp_id!=0) ? $request->emp_id : $user_id,
+        //         'from_date' => $request->from_date,
+        //     ],
+        //     [
+        //         'sub_institute_id' => $subInstituteId,
+        //         'department_id' => $request->department_id,
+        //         'leave_type_id' => $request->leave_type,
+        //         'day_type' => $day_type,
+        //         'from_date' => $request->from_date,
+        //         'to_date' => $request->to_date,
+        //         'slot' => $request->slot ?? 'NULL',
+        //         'comment' => $request->comment,
+        //     ]);
+
+            // 16-10-2024 start for cancelled leave updated for same date and same user
+            $inData = [
                 'sub_institute_id' => $subInstituteId,
                 'department_id' => $request->department_id,
                 'leave_type_id' => $request->leave_type,
@@ -181,11 +193,29 @@ class ApplyLeaveController extends Controller
                 'to_date' => $request->to_date,
                 'slot' => $request->slot ?? 'NULL',
                 'comment' => $request->comment,
-            ]);
+                'user_id' => ($request->emp_id!=0) ? $request->emp_id : $user_id,
+                'from_date' => $request->from_date,
+            ];
+
+            $where = [
+                'user_id' => ($request->emp_id!=0) ? $request->emp_id : $user_id,
+                'from_date' => $request->from_date,
+            ];
+
+            // check Data Exists 
+            $checkExists = HrmsEmpLeave::where($where)->where('status','pending')->first();
+            // echo "<pre>";print_r($checkExists);exit;
+            if(!empty($checkExists)){
+                $update = HrmsEmpLeave::where($where)->where('id',$checkExists->id)->update($inData);
+            }else{
+                $inData['created_at']=now();
+                $insert = HrmsEmpLeave::insert($inData);
+            }
+            //16-10-2024 end
 
         $res['status_code']=1;
         $res['message']="Leave Applied successfully";
-        
+        // exit;
         return is_mobile($type, "leave-apply.index", $res);
         // return response()->json(['message' => 'Holiday saved successfully !!'], 200);
     }
