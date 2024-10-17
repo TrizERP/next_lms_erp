@@ -783,8 +783,26 @@ class teacherapiController extends Controller
 
             $teacher_name = $result[0]->name;
 
-            $data[] = json_decode($request->get('data'), true);
+//$data[] = json_decode($request->get('data'), true);
           
+$dataString = $request->get('data');
+
+// Check if the data is being passed correctly
+if (is_null($dataString)) {
+    return response()->json(['status' => 0,'message' => 'No data provided'], 400);
+}
+
+// Decode the JSON
+$dataArray = json_decode($dataString, true);
+
+// Check if JSON decoding was successful
+if (is_null($dataArray)) {
+    return response()->json(['status' => 0,'message' => 'Invalid JSON format'], 400);
+}
+
+// Proceed with your logic
+$data[] = $dataArray;
+
             foreach ($data as $key => $val) {
                 DB::table('dicipline')->insert([
                     'syear'            => $request->get('syear'),
