@@ -104,9 +104,7 @@
         <td align="center" {{-- rowspan=4 --}}>
             <b>From {{ $employeeData['school_name']->ReceiptHeader }}</b>
             <br>
-            
-            <br>
-            <br>
+           <img src="https://erp.triz.co.in/Images/MMIS_stamp.png" width="200" height="160" alt="mmis_stamp">
             <br>
             <b>Authorised Signatory</b>
         </td>
