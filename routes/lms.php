@@ -81,7 +81,6 @@ Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute',
     Route::get('ajax_ChapterwiseLOmaster', [lomasterController::class, 'ajax_ChapterwiseLOmaster'])->name('ajax_ChapterwiseLOmaster');
 
     Route::resource('lmsdashboard', lmsDashboardController::class);
-    Route::get('lmsdashboard_teacher', [lmsDashboardController::class,'teacherIndex'])->name('teacherIndex');
     
     Route::resource('lo_master', lomasterController::class);
 
