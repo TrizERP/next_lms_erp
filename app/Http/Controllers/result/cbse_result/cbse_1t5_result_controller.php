@@ -1006,7 +1006,7 @@ else
                             'title' => "Result ".$record->result_type,
                             'result_type' => $record->result_type,
                             'term_id' => $record->term_id,
-                            'student_id' => $record->student_id,
+                            'student_id' => (string) $record->student_id,
                             'pdf_link' => "https://" . $_SERVER['SERVER_NAME'] . "/storage/result_pdf/" . $pdf_filename
                         ];
 

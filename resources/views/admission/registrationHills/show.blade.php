@@ -44,8 +44,10 @@
                                     <th>H.N.Remakrs</th>
                                     <th>Activity</th>
                                     <th>P.INT.</th>
-                                    <!-- <th>P.INT. Date</th> -->
-                                    <!-- <th>P.INT. Time</th> -->
+                                    <th>P.INT. Date</th>
+                                    <th>P.INT. Time</th>
+                                    <th>P.Attandance</th>
+                                    <th>P.Remarks</th>
                                     <th>CONF.</th>
                                     <th>CONF. Date</th>
                                     <!-- <th>CONF. Time</th> -->
@@ -115,12 +117,21 @@
                                             @endforeach
                                         </select>
                                     </td>
-                                    {{-- <td>
+                                    <td>
                                         <input type="text" name="students[{{$value['id']}}][pint_date]" class="pint_date form-control mydatepicker" disabled="true" autocomplete="off" @if(isset($value['p_int_date'])) value="{{$value['p_int_date']}}" @endif>
                                     </td>
                                     <td>
                                         <input type="time" name="students[{{$value['id']}}][pint_time]" class="pint_time form-control" disabled="true" autocomplete="off" @if(isset($value['p_int_time'])) value="{{$value['p_int_time']}}" @endif>
-                                    </td> --}}
+                                    </td>
+                                    <!-- // 15-10-2024 -->
+                                    <td>
+                                        <input type="text" name="students[{{$value['id']}}][p_int_attandance]" class="p_int_attandance form-control" disabled="true" autocomplete="off" @if(isset($value['p_int_attandance'])) value="{{$value['p_int_attandance']}}" @endif>
+                                    </td>
+                                    <td>
+                                        <textarea name="students[{{$value['id']}}][p_int_remark]" class="p_int_remark form-control" disabled="true" autocomplete="off" >@if(isset($value['p_int_remark'])){{$value['p_int_remark']}}@endif</textarea>
+                                    </td>
+                                    <!-- // 15-10-2024 -->
+
                                     <td class="tdwidth">  <select name="students[{{$value['id']}}][conf]" class="conf form-control" disabled="true">
                                             <option value="">select</option>
                                             @foreach($data['confArr'] as $key => $cvalue)
@@ -253,7 +264,7 @@ $(function () {
 
     $(".ckbox1").on("click", function () {
         var row = $(this).closest('tr');
-        var fields = ['hn', 'hn_remarks', 'activity', 'pint', 'conf', 'paid', 'transport','enquiry_no','pint_date','pint_time','conf_date','conf_time','mobile','email','admission_standard'];
+        var fields = ['hn', 'hn_remarks', 'activity', 'pint', 'conf', 'paid', 'transport','enquiry_no','pint_date','pint_time','conf_date','conf_time','mobile','email','admission_standard','p_int_remark','p_int_attandance'];
 
         // Iterate over each field and toggle the disabled property
         fields.forEach(function(field) {
