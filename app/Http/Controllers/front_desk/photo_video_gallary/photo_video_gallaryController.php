@@ -192,9 +192,9 @@ class photo_video_gallaryController extends Controller
                 $new_data[$val->album_title][] = $val;
             }
             if(!empty($new_data)){
-                $response['status'] = 1;
-                $response['message'] = "Success";
-                $response['data'] = $new_data;
+                $response['status'] = 0; //1
+                $response['message'] = "You can only add photo/video.";//Success
+                //$response['data'] = $new_data;
             }else{
                 $response['status'] = 0;
                 $response['message'] = "No Data Found";
