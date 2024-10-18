@@ -123,11 +123,11 @@ function getLMSDashboard(grade,standard,division,student_id){
     if(student_id!==''){
         dataList = {grade:grade,standard:standard,division:division,students_id:student_id};
         $.ajax({
-            url : "{{route('teacherIndex')}}",
+            url : "{{route('lmsdashboard.index')}}",
             data : dataList,
             type : 'GET',
             success : function(result){
-                window.location.href = '/lms/lmsdashboard_teacher?grade=' + grade + '&standard=' + standard + '&division=' + division + '&students_id=' + student_id;
+                window.location.href = '/lms/lmsdashboard?grade=' + grade + '&standard=' + standard + '&division=' + division + '&students_id=' + student_id;
             }
         })
     }
@@ -226,21 +226,26 @@ $(document).ready(function() {
       $('.CurrentTable').removeClass('show');
       $('.CurrentTable').removeClass('active');
 
-        var $currentTable = $('.CurrentTable[data-val="collapseExample2_' + sub + '"]');
-        
-        $currentTable.toggleClass('active');
-        $('.ProgressCircle').removeClass('activeCircle');
-        $('.ProgressCircle[data-val="' + sub + '"]').toggleClass('activeCircle');
-        
-        var $firstRow = $currentTable.find('tbody tr:first');
-        if ($firstRow.length) {
-            $firstRow.addClass('activeChapter');
-            var ch = $firstRow.data('val');
-            toggleSections(sub, ch);
-        } else {
-            hideSections();
-        }
-    }
+      var $currentTable = $('.CurrentTable[data-val="collapseExample2_' + sub + '"]');
+      $currentTable.toggleClass('active');
+
+      // Update the progress circle to the active state
+      $('.ProgressCircle').removeClass('activeCircle');
+      $('.ProgressCircle[data-val="' + sub + '"]').toggleClass('activeCircle');
+
+      // Get the first row from the current table
+      var $firstRow = $currentTable.find('tbody tr:first');
+
+      // If there is a first row, trigger activeTr function for it
+      if ($firstRow.length) {
+         var ch = $firstRow.data('val');
+         var sub_id = sub;
+         $firstRow.addClass('activeChapter');
+         activeTr($firstRow.attr('id'), ch, sub_id);
+      } else {
+         hideSections();
+      }
+   }
 
     function activeTr(trsub, ch_id, sub_id) {
         $('.trsub').removeClass('activeChapter');
