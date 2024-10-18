@@ -143,48 +143,32 @@ if(isset($data['lmsData'])){
             <div class="circleDiv d-flex flex-wrap" style="width:100%">
                <!-- current div 1  -->
                <div class="currentDiv1" style="width:50%;padding-right:30px">
-                  <div class="circularDivs row">
-                     @if(!empty($data['selectedCurrentData']['currentdata']['standarddata']['subjectdata']) && isset($data['selectedCurrentData']['currentdata']['standarddata']['subjectdata']))
-                     @foreach($data['selectedCurrentData']['currentdata']['standarddata']['subjectdata'] as $key=>$value)
-                     @php  
-                        $exam = $value['examdata'];
-                        $getObtain = array_column($exam, 'obtain');
-                        $totalObtain = array_sum($getObtain);
-                        $getMarks = array_column($exam, 'total');
-                        $totalMarks = array_sum($getMarks);
-                        $per = ($totalMarks!=0) ? round(($totalObtain * 100) / $totalMarks,2) : 0;
-                        $wavePer = ($per!=0) ? ($per+100) : 0;
-                     @endphp
-                     <style>
-                        .wave{{$key}} {
-                           background: #{{$colours2[$key]}}; 
-                        }
-                        .circleLast{{$key}}{
-                           box-shadow : 0 0 0 5px #{{$colours2[$key]}}; 
-                           border : 0px;
-                        }
-                        .wave{{$key}}{
-                           height : {{$wavePer}}% !important;
-                        }
-                        .wave{{$key}}:before,
-                        .wave{{$key}}:after{
-                           height : {{$wavePer}}% !important;
-                        }
-                     </style>
-                     <div class="progress-circle col-md-2">
-                        <a class="ProgressCircle {{$loop->first ? 'activeCircle' : ''}}" data-bs-toggle="collapse" data-val="{{$value['subject_id']}}" href="#collapseExample2_{{$value['subject_id']}}" aria-expanded="false" aria-controls="collapseExample2_{{$value['subject_id']}}" onclick="currentCircle('{{$value['subject_id']}}')">
+               <div class="circularDivs row">
+        @if(!empty($data['selectedCurrentData']['currentdata']['standarddata']['subjectdata']))
+            @foreach($data['selectedCurrentData']['currentdata']['standarddata']['subjectdata'] as $key => $value)
+                @php  
+                    $exam = $value['examdata'];
+                    $getObtain = array_column($exam, 'obtain');
+                    $totalObtain = array_sum($getObtain);
+                    $getMarks = array_column($exam, 'total');
+                    $totalMarks = array_sum($getMarks);
+                    $per = ($totalMarks != 0) ? round(($totalObtain * 100) / $totalMarks, 2) : 0;
+                    $wavePer = ($per != 0) ? ($per + 100) : 0;
+                @endphp
+                
+                <div class="progress-circle col-md-2">
+                    <a class="ProgressCircle {{$loop->first ? 'activeCircle' : ''}}" data-bs-toggle="collapse" data-val="{{$value['subject_id']}}" href="#collapseExample2_{{$value['subject_id']}}" aria-expanded="false" aria-controls="collapseExample2_{{$value['subject_id']}}" onclick="currentCircle('{{$value['subject_id']}}')">
                         <div class="subjectName">
-                           <h4 style="opacity: 1000;z-index: 1000;color:black">{{$value['title']}}</h4>
-                           <div class="circle circleLast{{$key}} d-block">
-                              <div class="wave wave{{$key}}"></div>
-                           </div>
+                            <h4 style="color:black">{{$value['title']}}</h4>
+                            <div class="circle circleLast circleLast{{$key}}" style="box-shadow: 0 0 0 5px #{{$colours2[$key]}};">
+                                <div class="wave wave{{$key}}" style="background: #{{$colours2[$key]}}; height: {{$wavePer}}% !important;"></div>
+                            </div>
                         </div>
-                          
-                        </a>
-                     </div>
-                     @endforeach
-                     @endif
-                  </div>
+                    </a>
+                </div>
+            @endforeach
+        @endif
+    </div>
                   <div class="circularDivData cardData"  style="padding-top:0px !important;">
                      @if(!empty($data['selectedCurrentData']['currentdata']['subjectdata']) && isset($data['selectedCurrentData']['currentdata']['subjectdata']))
                      @foreach($data['selectedCurrentData']['currentdata']['subjectdata'] as $sub_id=>$value)   
