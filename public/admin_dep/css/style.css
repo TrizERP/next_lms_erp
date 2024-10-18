@@ -19,3 +19,18 @@ top: 30%;
 left: 50%;
 transform: translate(-50%, -50%);
 }
+
+.resizable {
+    resize: both;
+    overflow: auto;
+}
+
+.resizableHorizontal {
+    resize: horizontal;
+    overflow: auto;
+}
+
+.resizableVertical {
+    resize: vertical;
+    overflow: auto;
+}
