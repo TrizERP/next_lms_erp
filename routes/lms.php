@@ -262,5 +262,6 @@ Route::get('intrestArea', [lmsCounsellingController::class, 'intrestArea']);
 Route::post('/ai/processData',[contentController::class,'processAIData'])->name('ai.processData');
 Route::post('/ai/generateLessonPlan', [contentController::class, 'generateLessonPlan'])->name('ai.generateLessonPlan');
 Route::post('/ai/generateSportsData', [contentController::class, 'generateSportsData'])->name('ai.generateSportsData');
+Route::post('/ai/generateLessonPlanNew', [contentController::class, 'generateLessonPlanNew'])->name('ai.generateLessonPlanNew');
 Route::post('/paraphraseNew', [ParaphraseController::class, 'paraphrase']);
 Route::post('/set-book-session',[contentController::class,'setBookSession'])->name('set-book-session');

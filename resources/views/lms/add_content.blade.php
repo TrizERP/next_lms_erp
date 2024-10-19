@@ -221,6 +221,8 @@
                                 <input type="file" id='filename' name="filename" class="form-control"
                                        onChange='getFileNameWithExt(event)'>
                             </div>
+                            <div id="upload_div1"></div>
+                            </div>
                         </div>
 
                         <div class="col-md-8">
@@ -265,7 +267,7 @@
                             <div class="form-group">
                                 <label for="subject">Select Content Catergory:</label>
                                 <select name="content_category" id="content_category" class="form-control">
-
+                                        <option value="">--Select--</option>
                                     @if(isset($data['content_category']))
                                         @foreach($data['content_category'] as $key => $value)
                                             <option
@@ -545,6 +547,104 @@
             $(".basic_advanced_div").hide();
         } else {
             $(".basic_advanced_div").show();
+        }
+    }
+
+    $(document).ready(function () {
+        // Trigger AI processing when content type or category changes
+        $('#content_category').change(function() {
+            processAIData();
+        });
+        $('#contentType').change(function() {
+            processAIData();
+        });
+    });
+
+    function processAIData() {
+        var standardId = "{{ $data['breadcrum_data']->standard_id ?? '' }}";
+        var subjectName = "{{ $data['breadcrum_data']->subject_name ?? '' }}";
+        var chapterName = "{{ $data['breadcrum_data']->chapter_name ?? '' }}";
+        var topicName = "{{ $data['breadcrum_data']->topic_name ?? '' }}";
+        var contentType = $('#contentType').val();
+        var contentCategory = $('#content_category').val();
+        let fileNames=[];
+        $('.book-file-names').each(function(){
+            fileNames.push($(this).val());
+        });
+
+        console.log('Content Type:', contentType);
+        console.log('Content Category:', contentCategory);
+        if (contentType && contentCategory) {
+            console.log('Both content type and category are selected.');
+
+            if (contentType === 'pdf' || contentType === 'jpg') {
+                console.log('Processing AI data...');
+                $.ajax({
+                    url: "{{ route('ai.processData') }}",
+                    type: 'POST',
+                    data: {
+                        standard_id: standardId,
+                        subject_name: subjectName,
+                        chapter_name: chapterName,
+                        topic_name: topicName,
+                        content_type: contentType,
+                        content_category: contentCategory,
+                        _token: '{{ csrf_token() }}'
+                    },
+                    success: function(response) {
+                        $('#title').val(response.title);
+                        $('#description').val(response.description);
+                    },
+                    error: function(xhr) {
+                        console.error(xhr);
+                        alert('An error occurred while processing your request.');
+                    }
+                });
+
+                console.log('Generating Data...');
+                $.ajax({
+                    url: "{{ route('ai.generateSportsData') }}",
+                    type: 'POST',
+                    data: {
+                        standard_id: standardId,
+                        subject_name: subjectName,
+                        chapter_name: chapterName,
+                        topic_name: topicName,
+                        content_category: contentCategory,
+                        content_type: contentType,
+                        booklist_data: fileNames,
+                        _token: '{{ csrf_token() }}'
+                    },
+                    success: function(response) {
+                        if (response.file_url) {
+                             $('#upload_div1').empty();
+                            var downloadLink = $('<a>', {
+                                href: response.file_url,
+                                text: 'Download ' + contentType.toUpperCase(),
+                                target: '_blank',
+                                download: ''
+                            });
+                            $('#upload_div1').append(downloadLink);
+                            console.log(contentType.toUpperCase() + ' URL:', response.file_url);
+                            downloadLink.css({
+                                display: 'block',
+                                margin: '10px 0',
+                                color: 'blue',
+                                textDecoration: 'underline'
+                            });
+                        } else {
+                            console.error(contentType.toUpperCase() + ' URL not found in response.');
+                            alert('An error occurred while generating the ' + contentType.toUpperCase() + '.');
+                        }
+                    },
+                    error: function(xhr) {
+                        console.error(xhr);
+                        alert('An error occurred while generating the ' + contentType.toUpperCase() + '.');
+                    }
+                });
+            }
+        } else {
+            console.log('Content type or category is not selected.');
         }
     }
 

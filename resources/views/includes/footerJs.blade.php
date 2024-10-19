@@ -8,19 +8,7 @@ $route = ['dashboard'];
 <footer class="footer text-center"> {{date('Y')}} &copy; Triz Innovation PVT LTD. <a href="{{route('siteMap')}}" style="color:blue;"> Site Map </a> |  <a href="{{route('privacyPolicy')}}" style="color:blue;"> Privacy Policy </a> |  <a href="{{ route('termAndCondition')}}" style="color:blue;"> Term & Condition </a> |  <a href="{{ route('otherPolicy') }}" style="color:blue;"> Other Policy </a> </footer>
 
 </div>
-<div class="help-guide">
-  <div class="help-head">
-    <div class="guide-title">Help Guide</div>
-    <div class="dropdown">
-        <button class="dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown"
-                aria-haspopup="true" aria-expanded="false">
-        </button>
-       
-    </div>
-      <div class="help-arraw">
-          <i class="mdi mdi-chevron-down"></i>
-      </div>
-  </div>
+
     <div class="help-body" style="display:none;">
         <div class="w-auto gutter-10 main-nav justify-content-center">
             <div class="row">
@@ -394,8 +382,6 @@ $route = ['dashboard'];
           }
       });
 
-      var path1 = "{{ route('ajax_load_helpguide') }}";
-
       $.ajax({
           url: path1,
           data: 'menu_id=' + menu_id,
@@ -590,5 +576,326 @@ $route = ['dashboard'];
     window.open(url, '_blank');
     }
 
-
 </script>
+<!-- Chatbot HTML -->
+<meta name="csrf-token" content="{{ csrf_token() }}">
+<div id="chatbot-container" style="position: fixed; bottom: 70px; right: 20px; width: 300px; border: 1px solid #ccc; border-radius: 10px; background-color: white; display: none;">
+    <div id="chatbot-header" style="background-color: #007bff; color: white; padding: 10px; border-top-left-radius: 10px; border-top-right-radius: 10px;">
+        Scholar Clone
+        <button id="minimize-chatbot" title="Minimize" style="float: right; background: none; border: none; color: white; margin-left: 5px;">_</button>
+        <button id="refresh-chatbot" title="Refresh" style="float: right; background: none; border: none; color: white; margin-left: 5px;">⟳</button>
+        <button id="close-chatbot" title="Close" style="float: right; background: none; border: none; color: white;">×</button>
+    </div>
+    <div id="messages" style="height: 300px; overflow-y: auto" class="clearfix"></div>
+    <div id="loading" style="display: none; float: left; clear: both">
+    <span class="dots">
+        <span class="dot" style="font-size: 10px;">●</span>
+        <span class="dot" style="font-size: 10px;">●</span>
+        <span class="dot" style="font-size: 10px;">●</span>
+    </span>
+    <span style="font-size: 10px;">Scholar clone is typing...</span>
+</div>
+    <input type="text" id="user_input" placeholder="Type a message..." style="width: calc(100% - 20px); margin: 10px; padding: 10px; border: 1px solid #ccc; border-radius: 5px;">
+    <button id="send_button" style="width: calc(100% - 20px); margin: 10px; padding: 10px; background-color: #007bff; color: white; border: none; border-radius: 5px;">Send</button>
+</div>
+<button id="open-chatbot" style="position: fixed; bottom: 50px; right: 20px;color: white; border: none; border-radius: 5px; padding: 10px;">
+<span class="tooltip">Hey! I am Scholar Clone</span>
+</button>
+
+
+<!-- Chatbot JavaScript -->
+<script>
+    document.getElementById('open-chatbot').onclick = function() {
+    document.getElementById('chatbot-container').style.display = 'block';
+    this.style.display = 'none'; // Hide the "Chat with us" button
+
+    document.getElementById('messages').innerHTML += `
+        <div style="display: inline-block; max-width: 80%; text-align: left; background-color: #f1f1f1; padding: 10px; border-radius: 5px; margin: 5px 0; float: left; clear: both;">
+            Hello! I am Scholar clone, How can I assist you today?
+        </div>`;
+    
+    // Add FAQ buttons
+    document.getElementById('messages').innerHTML += `
+        <div style="display: inline-block; max-width: 80%; text-align: left; background-color: #f1f1f1; padding: 10px; border-radius: 5px; margin: 5px 0; float: left; clear: both;">
+    <h6 style="margin-bottom: 10px; color: #333;">Some popular FAQ's</h6>
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+        <button class="faq-button" data-message="Fees" style="width: 100%; padding: 2px 0;border-radius: 5px; background-color: #4CAF50; color: white; border: none; cursor: pointer; font-size: 12px;">Fees</button>
+        <button class="faq-button" data-message="Attendance" style="width: 100%; padding: 2px 0; border-radius: 5px;background-color: #2196F3; color: white; border: none; cursor: pointer; font-size: 12px;">Attendance</button>
+        <button class="faq-button" data-message="Grades" style="width: 100%; padding: 2px 0; border-radius: 5px;background-color: #f44336; color: white; border: none; cursor: pointer; font-size: 12px;">Grades</button>
+    </div>
+</div>`;
+
+    // Add event listeners for FAQ buttons
+    document.querySelectorAll('.faq-button').forEach(button => {
+        button.addEventListener('click', function() {
+            var message = this.getAttribute('data-message');
+            sendMessage(message); // Use the same sendMessage function to handle button clicks
+        });
+    });
+};
+
+// Function to send messages
+function sendMessage(message) {
+    if (message.trim() === '') return; // Prevent sending empty messages
+    
+    // Display user message
+    document.getElementById('messages').innerHTML += `<div style="display: inline-block; max-width: 80%; text-align: right; background-color: #e0f7fa; padding: 10px; border-radius: 5px; margin: 5px 0; float: right; clear: both;">${message}</div><br>`;
+    document.getElementById('user_input').value = ''; // Clear input field
+    document.getElementById('loading').style.display = 'block';
+    document.getElementById('send_button').disabled = true;
+    // Send the message to the backend
+    fetch('/chatbot', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({ 'message': message })
+    })
+    .then(response => response.json())
+    .then(data => {
+      document.getElementById('send_button').disabled = false;
+      document.getElementById('loading').style.display = 'none'; 
+        // Display bot response
+        document.getElementById('messages').innerHTML += `<div style="display: inline-block; max-width: 80%; text-align: left; background-color: #f1f1f1; padding: 10px; border-radius: 5px; margin: 5px 0; float:left; clear: both;">${data.message}</div>`;
+        
+        // Scroll to the bottom of the messages
+        document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        document.getElementById('send_button').disabled = false;
+        document.getElementById('loading').style.display = 'none';
+    });
+}
+
+    document.getElementById('close-chatbot').onclick = function() {
+      fetch('/flush-session', {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': '{{ csrf_token() }}', // Include CSRF token for security
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+        document.getElementById('messages').innerHTML = '';
+        document.getElementById('chatbot-container').style.display = 'none';
+        document.getElementById('open-chatbot').style.display = 'block'; // Show the button again when closing
+      }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+    };
+    document.getElementById('minimize-chatbot').onclick = function() {
+    const chatbotContainer = document.getElementById('chatbot-container');
+    const messages = document.getElementById('messages');
+    const userInput = document.getElementById('user_input');
+    const sendButton = document.getElementById('send_button');
+
+    if (chatbotContainer.style.height === '40px') {
+        chatbotContainer.style.height = 'auto';
+        messages.style.display = 'block';
+        userInput.style.display = 'block';
+        sendButton.style.display = 'block';
+    } else {
+        chatbotContainer.style.height = '40px';
+        messages.style.display = 'none';
+        userInput.style.display = 'none';
+        sendButton.style.display = 'none';
+    }
+};
+
+document.getElementById('refresh-chatbot').onclick = function() {
+  fetch('/flush-session', {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': '{{ csrf_token() }}', // Include CSRF token for security
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Clear the messages
+            document.getElementById('messages').innerHTML = ''; 
+            document.getElementById('messages').innerHTML += `
+                <div style="display: inline-block; max-width: 80%; text-align: left; background-color: #f1f1f1; padding: 10px; border-radius: 5px; margin: 5px 0;float: left; clear: both;">
+                    Hello! I am Scholar clone, How can I assist you today?
+                </div>`;
+                document.getElementById('messages').innerHTML += `
+                <div style="display: inline-block; max-width: 80%; text-align: left; background-color: #f1f1f1; padding: 10px; border-radius: 5px; margin: 5px 0; float: left; clear: both;">
+                    <h6 style="margin-bottom: 10px; color: #333;">Some popular FAQ's</h6>
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <button class="faq-button" data-message="Fees" style="width: 100%; padding: 2px 0;border-radius: 5px; background-color: #4CAF50; color: white; border: none; cursor: pointer; font-size: 12px;">Fees</button>
+                        <button class="faq-button" data-message="Attendance" style="width: 100%; padding: 2px 0; border-radius: 5px;background-color: #2196F3; color: white; border: none; cursor: pointer; font-size: 12px;">Attendance</button>
+                        <button class="faq-button" data-message="Grades" style="width: 100%; padding: 2px 0; border-radius: 5px;background-color: #f44336; color: white; border: none; cursor: pointer; font-size: 12px;">Grades</button>
+                    </div>
+                </div>`;
+
+    // Add event listeners for FAQ buttons
+    document.querySelectorAll('.faq-button').forEach(button => {
+        button.addEventListener('click', function() {
+            var message = this.getAttribute('data-message');
+            sendMessage(message); // Use the same sendMessage function to handle button clicks
+        });
+    });
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+};
+
+    document.getElementById('send_button').onclick = function() {
+        var userInput = document.getElementById('user_input').value;
+        if (userInput.trim() === '') return; // Prevent sending empty messages
+        // Display user message
+        document.getElementById('messages').innerHTML += '<div style="display: inline-block; max-width: 80%; text-align: right; background-color: #e0f7fa; padding: 10px; border-radius: 5px; margin: 5px 0; float: right;clear: both">' + userInput + '</div><br>';
+        document.getElementById('user_input').value = ''; // Clear input field
+        console.log("User: ",userInput);
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('send_button').disabled = true;
+         fetch('/chatbot', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') // Ensure CSRF token is included
+            },
+            body: JSON.stringify({ 'message': userInput })
+        })
+         .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json(); // Get raw responsejson
+        })
+        .then(data => {
+            console.log('Raw response:', data); // Log raw response
+            let botReply = data.message;
+            /*if (jsonMatch) {
+                const jsonResponse = JSON.parse(jsonMatch[0]);
+                botReply = text.replace(jsonMatch[0], '').trim();
+                console.log('Bot: ',botReply);
+            }*/
+            // Display bot response
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('send_button').disabled = false;
+        
+            document.getElementById('messages').innerHTML += `
+                <div style="display: inline-block; max-width: 80%; text-align: left; background-color: #f1f1f1; padding: 10px; border-radius: 5px; margin: 5px 0;float:left; clear: both;">
+                     ${botReply}
+                </div>`;
+            
+            // Scroll to the bottom of the messages
+            document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
+        })
+        .catch(error => {
+          document.getElementById('send_button').disabled = false;
+          document.getElementById('loading').style.display = 'none';
+            console.error('There was a problem with the fetch operation:', error);
+        });
+    };
+</script>
+<style>
+  #messages::-webkit-scrollbar {
+    width: 8px;
+  }
+  #messages {
+    padding-top: 10px;
+    padding-right: 10px;
+    padding-bottom: 0px;
+    padding-left: 10px;
+  }
+  #open-chatbot {
+    background: url('/Images/293633-middle-removebg.png') no-repeat center center; 
+    background-size: contain;
+    width: 100px; 
+    height: 100px; 
+    border: none;
+    cursor: pointer;
+}
+#open-chatbot .tooltip {
+    visibility: hidden;
+    width: 120px;
+    background-color: white;
+    color: black;
+    text-align: center;
+    border-radius: 5px;
+    padding: 5px 0;
+    position: absolute;
+    z-index: 1;
+    bottom: 80%; 
+    left: 50%;
+    margin-left: -60px;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  #open-chatbot .tooltip::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: white transparent transparent transparent;
+  }
+  #open-chatbot:hover .tooltip {
+    visibility: visible;
+    opacity: 1;
+  }
+  #chatbot-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #007bff;
+    color: white;
+    padding: 10px;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+}
+
+#chatbot-header button {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    margin-left: 5 px;
+}
+
+#chatbot-header button:hover {
+    background-color: #0056b3;
+}
+@keyframes blink {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.3;
+    }
+}
+
+.dot {
+    animation: blink 1s infinite;
+    display: inline-block;
+    margin-right: 2px;
+}
+
+.dot:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.dot:nth-child(3) {
+    animation-delay: 0.4s;
+}
+#loading{
+    padding-top: 0px;
+    padding-right: 10px;
+    padding-bottom: 10px;
+    padding-left: 10px;
+}
+
+</style>
