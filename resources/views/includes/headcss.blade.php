@@ -99,6 +99,24 @@
         height: 100%;
         border: none;
     }
+
+    .iframe-container-new {
+        position: relative;
+        width: 100%;
+        padding-bottom: 86.25%; /* 16:9 aspect ratio */
+        height: 0;
+        overflow: relative;
+    }
+
+    .responsive-iframe-new {
+        position: absolute;
+        top: 0;
+        left: 65px;
+        right: 100px;
+        width: 100%;
+        height: 100%;
+        border: none;
+    }
     </style>
 
     <!-- Global site tag (gtag.js) - Google Analytics -->
