@@ -36,8 +36,12 @@
                             <th>Curriculum Name</th>
                             <th>Curriculum Alignment</th>
                             <th>Holistic Curriculum</th>
-                            <th>Subject Curricula</th>
+                            <!-- <th>Subject Curricula</th> -->
                             <th>Model Integration</th>
+                            <th>Objective</th>
+                            <th>Chapter</th>
+                            <th>Outcome</th>
+                            <th>Assessment Tool</th>
                             <th class="text-left">Action</th>
                         </tr>
                         </thead>
@@ -49,13 +53,13 @@
                                 <td>{{$value->subject_name}}</td>
                                 <td>{{$data['boards'][$value->board_id]}}</td>
                                 <td>{{$value->curriculum_name}}</td>
-                                <td>{{$value->curriculum_alignment}}</td>
-                                <td>{{$value->holistic_curriculum}}</td>
-                                <td>
+                                <td>{{substr($value->curriculum_alignment,0,300)}}.....</td>
+                                <td>{{substr($value->holistic_curriculum,0,300)}}.....</td>
+                                {{-- <td>
                                     @foreach($value->subject_curricula_name as $k => $v)
                                         {{$k+1}}) {{$v->display_name}}<br>
                                     @endforeach
-                                </td>
+                                </td>--}}
                                 <td>
                                     @php 
                                         $model_integration=[];
@@ -67,6 +71,10 @@
                                     {{isset($data['model_integration'][$v]) ? ($k+1).') '.$data['model_integration'][$v] : '-'}}<br>    
                                     @endforeach
                                 </td>
+                                <td>{{substr($value->objective,0,300)}}.....</td>
+                                <td>{{substr($value->chapter,0,300)}}.....</td>
+                                <td>{{substr($value->outcome,0,300)}}.....</td>
+                                <td>{{substr($value->assessment_tool,0,300)}}.....</td>
                                 <td>
                                     <div class="d-inline">
                                         <a href="{{ route('lms_curriculum.edit',$value->id)}}" class="btn btn-info btn-outline">

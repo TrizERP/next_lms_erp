@@ -29,17 +29,17 @@ class lmsCurriculumController extends Controller
         ->groupBy('lc.id')
         ->get()->toArray();
        
-        $newData = [];
-        foreach ($getData as $key => $value) {
-            $newData[$key] = $value;
-            $newData[$key]->subject_curricula_name = DB::table('sub_std_map')->where('standard_id',$value->standard_id)->whereRaw('subject_id IN ('.$value->subject_curricula.')')->select('display_name')->get()->toArray();
-        }
+        // $newData = [];
+        // foreach ($getData as $key => $value) {
+        //     $newData[$key] = $value;
+        //     $newData[$key]->subject_curricula_name = DB::table('sub_std_map')->where('standard_id',$value->standard_id)->whereRaw('subject_id IN ('.$value->subject_curricula.')')->select('display_name')->get()->toArray();
+        // }
         // echo "<pre>";print_r($newData);exit;
         $res['status_code'] = 1;
         $res['message'] = "SUCCESS";
         $res['boards'] = ['CBSE', 'ICSE', 'IB', 'GSEB'];
         $res['model_integration'] = ['CBE (Competency-Based Education)','PBL (Project-Based Learning)','STEAM (Science, Technology, Engineering, Arts, and Mathematics)','SEL (Social-Emotional Learning)'];
-        $res['allData'] = $newData;
+        $res['allData'] = $getData;
         return is_mobile($type, 'lms/lms_curriculum/index', $res, "view");
     }
 
@@ -162,20 +162,26 @@ class lmsCurriculumController extends Controller
         $curriculum_name = $request->curriculum_name;
         $curriculum_alignment = $request->curriculum_alignment;
         $holistic_curriculum = $request->holistic_curriculum;
+        // added on 18-10-2024
+        $objective = $request->objective;
+        $chapter = $request->chapter;
+        $outcome = $request->outcome;
+        $assessment_tool = $request->assessment_tool;
+        // endded on 18-10-2024
 
         $model_integration = $subject_curricula = '';
 
-        foreach($request->subject_curricula as $key => $value){
-            $subject_curricula .= $value.',';            
-        }
+        // foreach($request->subject_curricula as $key => $value){
+        //     $subject_curricula .= $value.',';            
+        // }
 
         foreach($request->model_integration as $key => $value){
             $model_integration .= $value.',';            
         }
 
-        if($subject_curricula!=''){
-            $subject_curricula = rtrim($subject_curricula,',');            
-        }
+        // if($subject_curricula!=''){
+        //     $subject_curricula = rtrim($subject_curricula,',');            
+        // }
         if($model_integration!=''){
             $model_integration = rtrim($model_integration,',');            
         }
@@ -189,8 +195,12 @@ class lmsCurriculumController extends Controller
             'curriculum_name'=>$curriculum_name,
             'curriculum_alignment'=>$curriculum_alignment,
             'holistic_curriculum'=>$holistic_curriculum,
-            'subject_curricula'=>$subject_curricula,
+            // 'subject_curricula'=>$subject_curricula,
             'model_integration'=>$model_integration,
+            'objective'=>$objective,
+            'chapter'=>$chapter,
+            'outcome'=>$outcome,
+            'assessment_tool'=>$assessment_tool,
         ];
 
         if($types=='update'){
