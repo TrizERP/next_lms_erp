@@ -571,6 +571,7 @@ protected function generateMore($topicName, $chapterName, $subjectName, $content
                 Session::put('state', 'grades');
                 return "Please provide your unique student ID to fetch your grades.";
             } else {
+                Session::put('state','AI');
                 return $this->handleInitialState($input); // Handle other unrecognized inputs
             }
             break;
@@ -583,16 +584,19 @@ protected function generateMore($topicName, $chapterName, $subjectName, $content
         case 'grades':
             $botResponse = $this->handleGradesState($input);
             break;
-        default:
-            Session::put('state', 'initial');
+        case 'AI':
             $botResponse = $this->handleDynamicResponse($input);
+            break;
+        default:
+            $botResponse = $this->handleDynamicResponse($input);
+            break;
     }
 
     // Log the conversation (user input and bot response)
     $this->logConversation($input, $botResponse);
 
     // Ask for feedback after delivering the final output
-    if (in_array($state, ['fees', 'attendance', 'grades'])) {
+    if (in_array($state, ['fees', 'attendance', 'grades','AI'])) {
         Session::put('state', 'feedback'); // Switch to feedback state
         return $botResponse . "<br><br> \n\nAre you satisfied with the response? (Yes/No)";
     }
@@ -605,7 +609,7 @@ public function handleFeedback($input)
 {
     if (stripos($input, 'yes') !== false) {
         Session::put('state', 'initial'); // Reset state to initial
-        return "Thank you for your feedback!";
+        return "Thank you for your feedback! feel free to ask further questions!";
     } elseif (stripos($input, 'no') !== false) {
         Session::put('state', 'initial'); // Reset state to initial
         return "Sorry to hear that. How can I further assist you?";
@@ -631,6 +635,7 @@ public function handleFeedback($input)
             // Generic greeting response
             return "Hello! How can I assist you today?";
         } else {
+            Session::put('state', 'AI');
             return $this->handleDynamicResponse($input); // Pass any unrecognized input to OpenAI
         }
     }
@@ -672,19 +677,28 @@ public function handleFeedback($input)
         Session::put('state', 'initial');
         return $grades;
     }
-
-    // Dynamic response handling via OpenAI
     protected function handleDynamicResponse($input)
     {
         // Send user input to OpenAI for a dynamic response
-        $response = $this->client->completions()->create([
-            'model' => 'gpt-4',  // or another OpenAI model like 'gpt-3.5-turbo'
-            'prompt' => $input,
-            'max_tokens' => 150,
-            'temperature' => 0.7,
-        ]);
+        try{
+            $response = $this->client->chat()->create([
+                'model' => 'gpt-3.5-turbo',
+                'messages' => [
+                    ['role' => 'user', 'content' => $input],
+                ],
+                'max_tokens' => 150, 
+            ]);
+            Session::put('state','initial');
+            return $response['choices'][0]['message']['content'];
+        }catch (RequestException $e) {
+            Log::error('OpenAI API Error: ' . $e->getMessage());
+            Session::put('state','initial');
+            return [
+                'title' => 'Error generating title',
+                'description' => 'Error: ' . $e->getMessage(),
+            ];
+        }
 
-        return $response['choices'][0]['text'];
     }
 
     protected function getAttendance($studentId)
