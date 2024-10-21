@@ -1,5 +1,6 @@
 @extends('layout')
 @section('container')
+@include('includes.headcss')
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row bg-title">
@@ -23,17 +24,14 @@
                         <strong>{{ $sessionData['message'] }}</strong>
                     </div>
             @endif
+           
         <center>            
             <ul class="nav nav-tabs tab-title mb-4 inst-nav">
                 <li class="nav-item"><a href="#section-linemove-1" class="nav-link section-linemove-1 active" aria-selected="true" data-toggle="tab"><span>Institute Details</span></a></li>
                 <li class="nav-item"><a href="#section-linemove-2" class="nav-link section-linemove-2" aria-selected="false" data-toggle="tab"><span>Add Departments</span></a></li>
-                <li class="nav-item"><a href="#section-linemove-3" class="nav-link section-linemove-3" aria-selected="false" data-toggle="tab"><span>School Handbook</span></a></li>
+                <li class="nav-item"><a href="#section-linemove-5" class="nav-link section-linemove-5" aria-selected="false" data-toggle="tab"><span>School Handbook</span></a></li>
                 <li class="nav-item"><a href="#section-linemove-4" class="nav-link section-linemove-4" aria-selected="false" data-toggle="tab"><span>Organization Chart</span></a></li>
-                <li class="nav-item">
-                    <a href="https://skill-portal.vercel.app/softskills" target="_blank" class="nav-link">
-                        <span>My Skills & Certification</span>
-                    </a>
-                </li>
+                <li class="nav-item"><a href="#section-linemove-3" class="nav-link section-linemove-3" aria-selected="false" data-toggle="tab"><span>My Skills & Certification</span></a></li>
             </ul> 
         </center>
 
@@ -152,9 +150,14 @@
                 <!-- tab 1 ends  -->
                 <!-- tab 2 start  -->
                 <div class="tab-pane p-3" id="section-linemove-2" role="tabpanel">    
-                    @include('HRMS.department.tabDepartment')
+                   @include('HRMS.department.tabDepartment')
                 </div>
                 <!-- tab 2 ends  -->
+                 <!-- tab 3 starts  -->
+                 <div class="tab-pane p-3" id="section-linemove-3" role="tabpanel">    
+                   @include('lms.triz_skills')
+                </div>
+                <!-- tab 3 ends  -->
             </div >
             <!-- end tabs  -->
         </div>
@@ -164,10 +167,21 @@
 @include('includes.footerJs')
 @if(isset($_REQUEST['module']) && $_REQUEST['module']=='add_task')
 <script>
+    //@include('HRMS.department.tabDepartment')
     $(document).ready(function(){
-        $('#section-linemove-1, #section-dep-0, .section-linemove-1, .section-dep-0').removeClass('active');
-        $('#section-linemove-2, #section-dep-2, .section-linemove-2, .section-dep-2').addClass('active');
-    })
+        $(document).ready(function() {
+        setTimeout(function() {
+            
+            $('#section-linemove-1').removeClass('active show');
+            $('.section-linemove-1').removeClass('active');
+
+            $('#section-linemove-2').addClass('active show');
+            $('.section-linemove-2').addClass('active');
+            $('#section-linemove-3').addClass('active show');
+            $('.section-linemove-3').addClass('active');
+        }, 500);
+    });
+});
 </script>
 @endif
 @include('includes.footer')
