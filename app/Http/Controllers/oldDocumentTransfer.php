@@ -86,7 +86,8 @@ class oldDocumentTransfer extends Controller
         // // Fetch the file content from the given URL
         // $fileContents = file_get_contents($url);
         $filePath = $_SERVER['DOCUMENT_ROOT'].'converted_json.json';
-          // Check if the file exists
+
+        // Check if the file exists
           if (!file_exists($filePath)) {
             return response()->json(['error' => 'File not found'], 404);
         }
@@ -95,8 +96,7 @@ class oldDocumentTransfer extends Controller
         $jsonData = file_get_contents($filePath);
 
         // Decode the JSON data
-        $data = json_decode($jsonData, true);
-
+        // $data = json_decode($jsonData, true);
         // Check for JSON decoding errors
         if (json_last_error() !== JSON_ERROR_NONE) {
             return response()->json(['error' => 'JSON decoding error: ' . json_last_error_msg()], 500);
@@ -104,6 +104,8 @@ class oldDocumentTransfer extends Controller
 
         // Return the data as a JSON response
         $dataArray = json_decode($jsonData, true);
+        // echo "<Pre>";print_r($dataArray);exit;
+
         // foreach ($dataArray as $key => $value) {
         //     $binaryData = $value['binaryData'];  // URL to fetch the file (or binary data if locally available)
         //     $contentType = $value['contentType'];  // Content type (e.g., application/pdf)
@@ -139,8 +141,16 @@ class oldDocumentTransfer extends Controller
         //     echo "<pre>";print_r($fileName);exit;
         // }
         $storedFiles=[];
+        $message='Please wait we are proccessing!';
         foreach ($dataArray as $value) {
-            $blobData = isset($value['mediumBlob']) ? base64_decode($value['mediumBlob'],true) : null;
+            $fileSize=$value['size'];
+
+            if($fileSize==0){
+                $blobData = isset($value['mediumBlob']) ? $value['mediumBlob'] : null;
+            }else{
+                $blobData = isset($value['mediumBlob']) ? base64_decode($value['mediumBlob'],true) : null;
+            }
+            // echo "<pre>";print_r($blobData);exit;
             $empId=$value['empId'];
             $filename='emp_'.$empId.'_'.$value['fileName'];
             // return response($blobData, 200)
@@ -161,17 +171,29 @@ class oldDocumentTransfer extends Controller
                 // Step 3: Upload to DigitalOcean Spaces
                 $storagePath = 'public/staff_document/' . $filename;
                 $storedFiles[] = $storagePath;
-
                 $disk = Storage::disk('digitalocean');
-                
-                // Store the file
-                $disk->put($storagePath, fopen($tempFilePath, 'r+'), 'public');
-            
+                if (Storage::disk('digitalocean')->exists($storagePath)) {
+                    Storage::disk('digitalocean')->delete($storagePath);
+                    // Store the file
+                } 
+
+                if($fileSize!=0){
+                    $disk->put($storagePath, fopen($tempFilePath, 'r+'), 'public');
+                }else{
+                    // $fileContents = file_get_contents($blobData);
+
+                    $fileContents = @file_get_contents($value['mediumBlob']); // The '@' suppresses warnings
+
+                    if ($fileContents !== false) {
+                        // Store the file in DigitalOcean Spaces
+                       $disk=Storage::disk('digitalocean')->put($storagePath, $fileContents, 'public');
+                    }
+                }
                 // Clean up temporary file
                 unlink($tempFilePath);
                 // store in database
-              
-                if($disk){
+                $checkData = DB::table('staff_document')->where('user_id',$empId)->where('file_name',$filename)->where('document_type_id',$docId)->get()->toArray();
+                if($disk && empty($checkData)){
                     $insertData = [
                         "user_id"=>$empId,
                         "document_type_id"=>$docId,
@@ -181,16 +203,18 @@ class oldDocumentTransfer extends Controller
                         "created_at"=>now(),
 
                     ];
+                    // echo "<pre>";print_r($insertData);exit;
                     $insert = DB::table('staff_document')->insert($insertData);
+                    $message='Stored Files';
                 }
-
-            } else {
-                return "Invalid data or failed to decode base64.";
+                $message = 'File stored successfully!';
+            }else{
+                $message = 'Blob Data not found!';
             }
         }
         // exit;
 
-        return response()->json(['message' => 'File stored successfully!','Total stored files'=>count($storedFiles), 'storedFiles' => $storedFiles]);
+        return response()->json(['message' =>$message,'Total stored files'=>count($storedFiles), 'storedFiles' => $storedFiles]);
     }
 
 }

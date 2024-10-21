@@ -135,6 +135,7 @@ class contentController extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $data = array();
         
+        
         $lms_mapping_type = DB::table('lms_mapping_type')
             ->where('status', '=', 1)
             ->where('parent_id', '=', 0)
@@ -866,7 +867,7 @@ public function generateLessonPlan(Request $request)
     ]);
 
     $openAIService = new OpenAIService();
-    $filePath = $openAIService->generateLessonPlan(
+    $result = $openAIService->generateLessonPlan(
         $request->topic_name,
         $request->chapter_name,
         $request->subject_name,
@@ -874,9 +875,11 @@ public function generateLessonPlan(Request $request)
         $request->content_type,
         $request->booklist_data
     );
-
-    if ($filePath) {
-        return response()->json(['file_url' => $filePath]);
+    if (isset($result['fileUrl']) && isset($result['prompt'])) {
+        return response()->json([
+            'file_url' => $result['fileUrl'],
+            'prompt' => $result['prompt']
+        ]);
     } else {
         return response()->json(['error' => 'Failed to generate.'], 500);
     }
@@ -885,4 +888,41 @@ public function generateLessonPlan(Request $request)
         return response()->json(['error' => 'Internal Server Error'], 500);
     }
 }
+public function generateLessonPlanNew(Request $request)
+{   
+    try {
+    $request->validate([
+        'standard_id' => 'required',
+        'subject_name' => 'required',
+        'chapter_name' => 'required',
+        'topic_name' => 'required',
+        'content_category' => 'required',
+        'content_type' => 'required',
+        'booklist_data' => 'required|array',
+        'prompt' => 'required'
+    ]);
+    $openAIService = new OpenAIService();
+    $result = $openAIService->generateLessonPlanNew(
+        $request->topic_name,
+        $request->chapter_name,
+        $request->subject_name,
+        $request->content_category,
+        $request->content_type,
+        $request->booklist_data,
+        $request -> prompt
+    );
+    if (isset($result['fileUrl']) && isset($result['prompt'])) {
+        return response()->json([
+            'file_url' => $result['fileUrl'],
+            'prompt' => $result['prompt']
+        ]);
+    } else {
+        return response()->json(['error' => 'Failed to generate.'], 500);
+    }
+}catch (\Exception $e) {
+        Log::error('Error generating Data: ' . $e->getMessage());
+        return response()->json(['error' => 'Internal Server Error'], 500);
+    }
+}
+
 }
