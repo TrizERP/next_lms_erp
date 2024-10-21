@@ -71,9 +71,6 @@ use App\Http\Controllers\reuirementController;
 use App\Http\Controllers\ChatbotController;
 use App\Http\Controllers\lms\chapterController as LmsChapterController;
 
-use App\Http\Controllers\ChatbotController;
-use App\Http\Controllers\lms\chapterController as LmsChapterController;
-
 
 /*
 |--------------------------------------------------------------------------
@@ -506,7 +503,6 @@ Route::any('python_timetable',[AJAXController::class, 'pythonTimetable'])->name(
 Route::post('transferDocs', [oldDocumentTransfer::class, 'storeImagesToDigitalOcean']);
 Route::get('convertDoc',[oldDocumentTransfer::class, 'ConvertBinaryData']);
 Route::get('transport_Onboarding', [tourController::class, 'transportOnboarding'])->name('transportOnboarding');
-Route::match(['get', 'post'], '/chatbot', [ChatbotController::class, 'handle']);
 Route::match(['get', 'post'], '/chatbot', [ChatbotController::class, 'handle']);
 // 03-06-24
 Route::resource('requirements', reuirementController::class);

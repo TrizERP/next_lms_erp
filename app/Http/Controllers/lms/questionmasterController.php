@@ -184,9 +184,6 @@ class questionmasterController extends Controller
             ->LeftJoin('lms_question_mapping as ltm', 'ltm.questionmaster_id', '=', 'lms_question_master.id')                       
             ->leftJoin('lms_mapping_type as t', 't.id', 'ltm.mapping_type_id')
             ->leftJoin('lms_mapping_type as t1', function($query) {
-            ->LeftJoin('lms_question_mapping as ltm', 'ltm.questionmaster_id', '=', 'lms_question_master.id')
-            ->LeftJoin('lms_mapping_type as t', 't.id', 'ltm.mapping_type_id')
-            ->LeftJoin('lms_mapping_type as t1', function($query) {
                 $query->on('t1.id', 'ltm.mapping_value_id');
             })
             ->leftJoin('lms_online_exam_answer as loea','loea.question_id','=','lms_question_master.id')
