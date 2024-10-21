@@ -167,20 +167,16 @@
 @include('includes.footerJs')
 @if(isset($_REQUEST['module']) && $_REQUEST['module']=='add_task')
 <script>
+    //@include('HRMS.department.tabDepartment')
     $(document).ready(function(){
         $(document).ready(function() {
         setTimeout(function() {
             
             $('#section-linemove-1').removeClass('active show');
-            $('#section-linemove-2').removeClass('active show');
-            $('#section-linemove-3').removeClass('active show');
-
-            
             $('.section-linemove-1').removeClass('active');
-            $('.section-linemove-2').removeClass('active');
-            $('.section-linemove-3').removeClass('active');
 
-            
+            $('#section-linemove-2').addClass('active show');
+            $('.section-linemove-2').addClass('active');
             $('#section-linemove-3').addClass('active show');
             $('.section-linemove-3').addClass('active');
         }, 500);
