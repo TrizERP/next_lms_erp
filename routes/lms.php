@@ -63,6 +63,7 @@ Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute',
     Route::get('career_counselling',[\App\Http\Controllers\lms\ONetOnlineDataController::class,'career_counselling'])->name('career_counselling');
     Route::get('career_counselling_education',[\App\Http\Controllers\lms\ONetOnlineDataController::class,'career_counselling_edu'])->name('career_counselling_education');
     Route::get('career_counselling_knowing-yourself',[\App\Http\Controllers\lms\ONetOnlineDataController::class,'career_counselling_ky'])->name('career_counselling_knowing-yourself');
+    Route::get('career_report',[\App\Http\Controllers\lms\ONetOnlineDataController::class,'career_report'])->name('career_report');
 
     Route::resource('chapter_master', chapterController::class);
     Route::resource('course_master', courseController::class);
