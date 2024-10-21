@@ -236,6 +236,13 @@
                                 <textarea type="text" rows="4" class="form-control" id="description" name="description" placeholder="Description"></textarea>
                             </div>
                         </div>
+                        <div class="col-md-8">
+                            <div class="form-group">
+                                <label for="prompt" id="test123">Prompt</label>
+                                <textarea type="text" rows="4" class="form-control" id="prompt" name="prompt" placeholder="Prompt"></textarea>
+                                <button id="refreshPrompt" style="cursor: pointer;">🔄</button> <!-- Refresh icon -->
+                            </div>
+                        </div>
                     </div>
                     <div class="row align-items-center">
                         <!-- <div class="col-md-4">

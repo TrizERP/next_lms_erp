@@ -797,5 +797,129 @@ class contentController extends Controller
         ])->get()->toArray();
     }
         
-	
+	public function processAIData(Request $request)
+    {
+        $request->validate([
+            'standard_id' => 'required',
+            'subject_name' => 'required',
+            'chapter_name' => 'required',
+            'topic_name' => 'required',
+            'content_type' => 'required',
+            'content_category' => 'required',
+        ]);
+        $openAIService = new OpenAIService();
+        $generatedData = $openAIService->generateTitleAndDescription(
+        $request->topic_name,
+        $request->chapter_name,
+        $request->subject_name
+    );
+
+    return response()->json([
+        'title' => $generatedData['title'],
+        'description' => $generatedData['description'],
+    ]);
+    }
+    public function generateSportsData(Request $request)
+{   
+    try {
+    $request->validate([
+        'standard_id' => 'required',
+        'subject_name' => 'required',
+        'chapter_name' => 'required',
+        'topic_name' => 'required',
+        'content_category' => 'required',
+        'content_type' => 'required',
+    ]);
+
+    $openAIService = new OpenAIService();
+    $filePath = $openAIService->generateSportsData(
+        $request->topic_name,
+        $request->chapter_name,
+        $request->subject_name,
+        $request->content_category,
+        $request->content_type,
+    );
+
+    if ($filePath) {
+        return response()->json(['file_url' => $filePath]);
+    } else {
+        return response()->json(['error' => 'Failed to generate.'], 500);
+    }
+}catch (\Exception $e) {
+        Log::error('Error generating Data: ' . $e->getMessage());
+        return response()->json(['error' => 'Internal Server Error'], 500);
+    }
+}
+public function generateLessonPlan(Request $request)
+{   
+    try {
+    $request->validate([
+        'standard_id' => 'required',
+        'subject_name' => 'required',
+        'chapter_name' => 'required',
+        'topic_name' => 'required',
+        'content_category' => 'required',
+        'content_type' => 'required',
+        'booklist_data' => 'required|array',
+    ]);
+
+    $openAIService = new OpenAIService();
+    $result = $openAIService->generateLessonPlan(
+        $request->topic_name,
+        $request->chapter_name,
+        $request->subject_name,
+        $request->content_category,
+        $request->content_type,
+        $request->booklist_data
+    );
+    if (isset($result['fileUrl']) && isset($result['prompt'])) {
+        return response()->json([
+            'file_url' => $result['fileUrl'],
+            'prompt' => $result['prompt']
+        ]);
+    } else {
+        return response()->json(['error' => 'Failed to generate.'], 500);
+    }
+}catch (\Exception $e) {
+        Log::error('Error generating Data: ' . $e->getMessage());
+        return response()->json(['error' => 'Internal Server Error'], 500);
+    }
+}
+public function generateLessonPlanNew(Request $request)
+{   
+    try {
+    $request->validate([
+        'standard_id' => 'required',
+        'subject_name' => 'required',
+        'chapter_name' => 'required',
+        'topic_name' => 'required',
+        'content_category' => 'required',
+        'content_type' => 'required',
+        'booklist_data' => 'required|array',
+        'prompt' => 'required'
+    ]);
+    $openAIService = new OpenAIService();
+    $result = $openAIService->generateLessonPlanNew(
+        $request->topic_name,
+        $request->chapter_name,
+        $request->subject_name,
+        $request->content_category,
+        $request->content_type,
+        $request->booklist_data,
+        $request -> prompt
+    );
+    if (isset($result['fileUrl']) && isset($result['prompt'])) {
+        return response()->json([
+            'file_url' => $result['fileUrl'],
+            'prompt' => $result['prompt']
+        ]);
+    } else {
+        return response()->json(['error' => 'Failed to generate.'], 500);
+    }
+}catch (\Exception $e) {
+        Log::error('Error generating Data: ' . $e->getMessage());
+        return response()->json(['error' => 'Internal Server Error'], 500);
+    }
+}
+
 }

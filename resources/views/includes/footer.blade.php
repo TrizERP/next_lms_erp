@@ -1,4 +1,4 @@
-<!--<script src="https://miraibot.ai/embed@latest.js" id="687e1c179bbf486788f11fa77d33f82f"></script>-->
+
 <div id="loading-overlay" style="display:none;">
 <center>
   <img src="/admin_dep/images/loader-man.gif" id="loading-gif" alt="loading-gif" >
@@ -125,13 +125,6 @@
 
 	            }
         	});
-		});
-
-		// Help Guide
-		$('.help-body').hide(100);
-		$('.guide-title').on('click', function(event) {
-		    $('.help-guide').toggleClass('active', 100);
-		    $('.help-body').slideToggle(100);
 		});
 
 	</script>
