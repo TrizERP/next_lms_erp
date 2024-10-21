@@ -106,7 +106,6 @@ Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute',
     Route::get('ajax_LoMasterwiseLoIndicator', [loindicatorController::class, 'ajax_LoMasterwiseLoIndicator'])
         ->name('ajax_LoMasterwiseLoIndicator');
 
-
     Route::resource('question_master', questionmasterController::class);
     Route::get('question_mapped_value', [questionmasterController::class, 'getMappedValue'])->name('question_mapped_value');
 
