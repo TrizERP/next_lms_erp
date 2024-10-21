@@ -43,21 +43,21 @@
                   <!-- enter curriculum Alignment -->
                   <div class="col-md-3 form-group">
                      <label for="curriculum_alignment">Curriculum Alignment</label>
-                     <textarea name="curriculum_alignment" id="curriculum_alignment" class="form-control">{{$edit->curriculum_alignment}}</textarea>
+                     <textarea name="curriculum_alignment" id="curriculum_alignment" class="form-control resizableVertical" row="4">{{$edit->curriculum_alignment}}</textarea>
                   </div>
                   <!-- enter Holistic curriculum -->
                   <div class="col-md-3 form-group">
                      <label for="holistic_curriculum">Holistic Curriculum</label>
-                     <textarea name="holistic_curriculum" id="holistic_curriculum" class="form-control">{{$edit->holistic_curriculum}}</textarea>
+                     <textarea name="holistic_curriculum" id="holistic_curriculum" class="form-control resizableVertical" row="4">{{$edit->holistic_curriculum}}</textarea>
                   </div>
                   <!-- Select Subject Curricula  -->
-                  <div class="col-md-3 form-group">
+                  {{--  <div class="col-md-3 form-group">
                      <label for="subject_curricula">Subject Curricula</label>
                      <select name="subject_curricula[]" id="subject_curricula" required class="form-control" multiple>
                         <option value="">Select</option>
                        
                      </select>
-                  </div>
+                  </div> --}}
                   <!-- Select Board  -->
                   <div class="col-md-3 form-group">
                      <label for="model_integration">Model Integration</label>
@@ -68,6 +68,28 @@
                         @endforeach
                      </select>
                   </div>
+                  <!-- added on 18-10-2024  -->
+                  <!-- enter objective -->
+                  <div class="col-md-3 form-group">
+                     <label for="objective">Objective</label>
+                     <textarea name="objective" id="objective" class="form-control resizableVertical" row="4">{{$edit->objective}}</textarea>
+                  </div>
+                     <!-- enter chapter -->
+                     <div class="col-md-3 form-group">
+                     <label for="chapter">Chapter</label>
+                     <textarea name="chapter" id="chapter" class="form-control resizableVertical" row="4">{{$edit->chapter}}</textarea>
+                  </div>
+                     <!-- enter outcome -->
+                     <div class="col-md-3 form-group">
+                     <label for="outcome">Outcome</label>
+                     <textarea name="outcome" id="outcome" class="form-control resizableVertical" row="4">{{$edit->outcome}}</textarea>
+                  </div>
+                     <!-- enter assessment_tool -->
+                     <div class="col-md-3 form-group">
+                     <label for="assessment_tool">Assessment Tool</label>
+                     <textarea name="assessment_tool" id="assessment_tool" class="form-control resizableVertical" row="4">{{$edit->assessment_tool}}</textarea>
+                  </div>
+                  <!-- end 18-10-2024 -->
                </div>
                <div class="col-md-12">
                   <center>
@@ -81,46 +103,46 @@
 </div>
 @include('includes.footerJs')
 <script>
-    $(document).ready(function(){
-      @if(isset($edit->standard_id))
-         var standardID = "{{$edit->standard_id}}";
-         getStandard(standardID);
-      @endif 
-      $('#standardS').change(function () {
-         var standardID = $("#standardS").val();
-         getStandard(standardID);
-      });
+   //  $(document).ready(function(){
+   //    @if(isset($edit->standard_id))
+   //       var standardID = "{{$edit->standard_id}}";
+   //       getStandard(standardID);
+   //    @endif 
+   //    $('#standardS').change(function () {
+   //       var standardID = $("#standardS").val();
+   //       getStandard(standardID);
+   //    });
 
-    })
+   //  })
 
-    function getStandard(standardID){
-      var selectedSubjects = @json($subjectArr); 
-      $("#subject_curricula").empty();
-        $("#subject_curricula").append('<option value="">Select</option>');
-        if (standardID) {
-            $.ajax({
-                type: "GET",
-                url: "/api/get-all-subject-list?standard_id=" + standardID,
-                success: function (res) {
-                  //   console.log(res);
-                    if (res) {
-                        $("#subject_curricula").empty();
-                        $("#subject_curricula").append('<option value="">Select</option>');
-                        $.each(res, function (key, value) {
-                           //  $("#subject_curricula").append('<option value="' + key + '">' + value + '</option>');
-                           var selected = selectedSubjects.includes(key.toString()) ? 'selected' : '';
-                           $("#subject_curricula").append('<option value="' + key + '" ' + selected + '>' + value + '</option>');
-                        });
+   //  function getStandard(standardID){
+   //    var selectedSubjects = @json($subjectArr); 
+   //    $("#subject_curricula").empty();
+   //      $("#subject_curricula").append('<option value="">Select</option>');
+   //      if (standardID) {
+   //          $.ajax({
+   //              type: "GET",
+   //              url: "/api/get-all-subject-list?standard_id=" + standardID,
+   //              success: function (res) {
+   //                //   console.log(res);
+   //                  if (res) {
+   //                      $("#subject_curricula").empty();
+   //                      $("#subject_curricula").append('<option value="">Select</option>');
+   //                      $.each(res, function (key, value) {
+   //                         //  $("#subject_curricula").append('<option value="' + key + '">' + value + '</option>');
+   //                         var selected = selectedSubjects.includes(key.toString()) ? 'selected' : '';
+   //                         $("#subject_curricula").append('<option value="' + key + '" ' + selected + '>' + value + '</option>');
+   //                      });
 
-                    } else {
-                        $("#subject_curricula").empty();
-                    }
-                }
-            });
-        } else {
-            $("#subject_curricula").empty();
-        }
-    }
+   //                  } else {
+   //                      $("#subject_curricula").empty();
+   //                  }
+   //              }
+   //          });
+   //      } else {
+   //          $("#subject_curricula").empty();
+   //      }
+   //  }
 </script>
 @include('includes.footer')
 @endsection

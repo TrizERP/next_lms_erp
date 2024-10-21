@@ -44,21 +44,21 @@
                   <!-- enter curriculum Alignment -->
                   <div class="col-md-3 form-group">
                      <label for="curriculum_alignment">Curriculum Alignment</label>
-                     <textarea name="curriculum_alignment" id="curriculum_alignment" class="form-control"></textarea>
+                     <textarea name="curriculum_alignment" id="curriculum_alignment" class="form-control resizableVertical" row="4"></textarea>
                   </div>
                   <!-- enter Holistic curriculum -->
                   <div class="col-md-3 form-group">
                      <label for="holistic_curriculum">Holistic Curriculum</label>
-                     <textarea name="holistic_curriculum" id="holistic_curriculum" class="form-control"></textarea>
+                     <textarea name="holistic_curriculum" id="holistic_curriculum" class="form-control resizableVertical" row="4"></textarea>
                   </div>
                   <!-- Select Subject Curricula  -->
-                  <div class="col-md-3 form-group">
+                  {{-- <div class="col-md-3 form-group">
                      <label for="subject_curricula">Subject Curricula</label>
                      <select name="subject_curricula[]" id="subject_curricula" required class="form-control" multiple>
                         <option value="">Select</option>
                        
-                     </select>
-                  </div>
+                     </select> 
+                  </div>--}}
                   <!-- Select Board  -->
                   <div class="col-md-3 form-group">
                      <label for="model_integration">Model Integration</label>
@@ -69,6 +69,28 @@
                         @endforeach
                      </select>
                   </div>
+               <!-- added on 18-10-2024  -->
+               <!-- enter objective -->
+               <div class="col-md-3 form-group">
+                  <label for="objective">Objective</label>
+                  <textarea name="objective" id="objective" class="form-control resizableVertical" row="4"></textarea>
+               </div>
+               <!-- enter chapter -->
+               <div class="col-md-3 form-group">
+                  <label for="chapter">Chapter</label>
+                  <textarea name="chapter" id="chapter" class="form-control resizableVertical" row="4"></textarea>
+               </div>
+               <!-- enter outcome -->
+               <div class="col-md-3 form-group">
+                  <label for="outcome">Outcome</label>
+                  <textarea name="outcome" id="outcome" class="form-control resizableVertical" row="4"></textarea>
+               </div>
+               <!-- enter assessment_tool -->
+               <div class="col-md-3 form-group">
+                  <label for="assessment_tool">Assessment Tool</label>
+                  <textarea name="assessment_tool" id="assessment_tool" class="form-control resizableVertical" row="4"></textarea>
+               </div>
+               <!-- end 18-10-2024 -->
                </div>
                <div class="col-md-12">
                   <center>
