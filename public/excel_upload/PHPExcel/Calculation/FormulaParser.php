@@ -139,7 +139,7 @@ class PHPExcel_Calculation_FormulaParser
             // embeds are doubled
             // end marks token
             if ($inString) {
-                if ($this->_formula{$index} == PHPExcel_Calculation_FormulaParser::QUOTE_DOUBLE) {
+                if ($this->_formula[$index] == PHPExcel_Calculation_FormulaParser::QUOTE_DOUBLE) {
                     if ((($index + 2) <= $formulaLength) && ($this->_formula{$index + 1} == PHPExcel_Calculation_FormulaParser::QUOTE_DOUBLE)) {
                         $value .= PHPExcel_Calculation_FormulaParser::QUOTE_DOUBLE;
                         ++$index;

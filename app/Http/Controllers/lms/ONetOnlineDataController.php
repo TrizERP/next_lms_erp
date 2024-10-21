@@ -51,12 +51,6 @@ class ONetOnlineDataController extends Controller
         return is_mobile($type, '/lms/counselling/career_counselling_ky', null, "view");
     }
 
-    public function career_report(Request $request)
-    {
-        $type = $request->input('type');
-        return is_mobile($type, '/lms/counselling/career_report', null, "view");
-    }
-
     public function showCategoryWiseData(Request $request)
     {
 
