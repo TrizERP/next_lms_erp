@@ -112,8 +112,8 @@
         position: absolute;
         top: 0;
         left: 65px;
-        right: 100px;
-        width: 100%;
+        right: 65px;
+        width: 95%;
         height: 100%;
         border: none;
     }

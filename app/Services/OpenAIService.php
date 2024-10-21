@@ -571,7 +571,6 @@ protected function generateMore($topicName, $chapterName, $subjectName, $content
                 Session::put('state', 'grades');
                 return "Please provide your unique student ID to fetch your grades.";
             } else {
-                Session::put('state','AI');
                 return $this->handleInitialState($input); // Handle other unrecognized inputs
             }
             break;
@@ -679,7 +678,6 @@ public function handleFeedback($input)
     }
     protected function handleDynamicResponse($input)
     {
-        // Send user input to OpenAI for a dynamic response
         try{
             $response = $this->client->chat()->create([
                 'model' => 'gpt-3.5-turbo',
@@ -704,14 +702,12 @@ public function handleFeedback($input)
     protected function getAttendance($studentId)
 {
     try {
-        // Example query to fetch attendance from the database
         $pendingFees = DB::table('fees')
                         ->where('student_id', $studentId)
                         ->value('pendingFees');
         
         return $pendingFees ? $pendingFees . 'Rs' : 'Fees record not found.';
     } catch (\Illuminate\Database\QueryException $e) {
-        // Handle table not found or any other database-related exceptions
         Log::error('Database error: ' . $e->getMessage());
         return 'Sorry for the inconvenience, please contact site admin.';
     }
@@ -720,14 +716,12 @@ public function handleFeedback($input)
 protected function getPendingFees($studentId)
 {
     try {
-        // Example query to fetch attendance from the database
         $fees = DB::table('attendances')
                         ->where('student_id', $studentId)
                         ->value('attendance_percentage');
         
         return $attendance ? $attendance . '%' : 'Attendance record not found.';
     } catch (\Illuminate\Database\QueryException $e) {
-        // Handle table not found or any other database-related exceptions
         Log::error('Database error: ' . $e->getMessage());
         return 'Sorry for the inconvenience, please contact site admin.';
     }
@@ -736,7 +730,6 @@ protected function getPendingFees($studentId)
 protected function getGrades($studentId)
 {
     try {
-        // Example query to fetch grades from the database
         $grades = DB::table('grades')
                     ->where('student_id', $studentId)
                     ->pluck('grade', 'subject');
@@ -752,40 +745,28 @@ protected function getGrades($studentId)
 
         return $gradeList;
     } catch (\Illuminate\Database\QueryException $e) {
-        // Handle table not found or any other database-related exceptions
         Log::error('Database error: ' . $e->getMessage());
         return 'Sorry for the inconvenience, please contact site admin.';
     }
 }
 public function logConversation($userInput, $botResponse)
 {
-    // Get the current conversation from session or initialize it
     $conversation = Session::get('conversation', []);
 
-    // Append new interaction (user input and bot response)
     $conversation[] = [
         'user' => $userInput,
         'bot' => $botResponse,
         'timestamp' => now()->toDateTimeString()
     ];
 
-    // // Save updated conversation in session
-    // Session::put('conversation', $conversation);
-
-    // Save the conversation to a JSON file for NLP tuning
     $conversationFilePath = storage_path('app/conversations/conversation_' . now()->format('Ymd_His') . '.json');
     $finalFilePath = storage_path('app/conversations/conversation.json'); // Use a single file to store all conversations
 
-    // Initialize an array to hold existing conversations
     $existingConversations = [];
 
-    // Check if the file already exists
     if (file_exists($finalFilePath)) {
-        // Read the existing conversations
         $existingConversations = json_decode(file_get_contents($finalFilePath), true);
     }
-
-    // Check for duplicates
     $isDuplicate = false;
     if (!empty($existingConversations) && is_array($existingConversations)) {
     foreach ($existingConversations as $existingConversation) {
@@ -795,35 +776,25 @@ public function logConversation($userInput, $botResponse)
         }
     }
 }
-
-    // If it's not a duplicate, add the new conversation
     if (!$isDuplicate) {
         $existingConversations[] = $conversation;
-
-        // Save the updated conversations back to the file
         file_put_contents($finalFilePath, json_encode($existingConversations, JSON_PRETTY_PRINT));
     }
 }
 public function trackKeyIssues($input)
 {
-    // Keywords to track
     $keywords = ['fees', 'grades', 'attendance'];
-
-    // Get existing counts or initialize them
     $issueCounts = json_decode(Storage::get('key_issues.json'), true) ?? [
         'fees' => 0,
         'grades' => 0,
         'attendance' => 0
     ];
 
-    // Increment count for each detected keyword
     foreach ($keywords as $keyword) {
         if (stripos($input, $keyword) !== false) {
             $issueCounts[$keyword]++;
         }
     }
-
-    // Save updated counts back to the JSON file
     Storage::put('key_issues.json', json_encode($issueCounts, JSON_PRETTY_PRINT));
 }
 
