@@ -1,5 +1,8 @@
 @include('includes.lmsheadcss')
 <link rel="stylesheet" href="../../../tooltip/enjoyhint/jquery.enjoyhint.css">
+<meta http-equiv="cache-control" content="private, max-age=0, no-cache">
+<meta http-equiv="pragma" content="no-cache">
+<meta http-equiv="expires" content="0">
 <!-- Content main Section -->
 <div class="content-main flex-fill">
     <div class="row">
@@ -12,6 +15,9 @@
                     <li class="breadcrumb-item active" aria-current="page">Result</li>
                 </ol>
             </nav>
+        </div>   
+        <div class="col-md-6" align="right">
+          <a href="{{route('pal.index')}}" class="btn btn-primary">Back To PAL</a>
         </div>        
     </div>
 
@@ -250,14 +256,14 @@
         </div>    
     </div>
 </div>
-@if(!empty($data['rightInterest']))
+{{-- @if(!empty($data['rightInterest']))
 <div class="card" style="padding:10px;margin:20px">
     <h5 style="background:#010101;color:#fff;border-radius:10px;padding:10px">Occupations</h5>
     <div class="occupationDiv" id="occupationDiv">
 
     </div>
 </div>
-@endif
+@endif --}}
 @include('includes.lmsfooterJs')
 <script type="text/javascript">
 $(document).ready(function(){
