@@ -1,4 +1,6 @@
-<head>
+<!DOCTYPE html>
+<html lang="en">
+    <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -85,10 +87,11 @@
         }
         .iframe-container {
         position: relative;
-        width: 110%;
+        width: 96%;
         padding-bottom: 86.25%; /* 16:9 aspect ratio */
         height: 0;
         overflow: hidden;
+        margin-left: 5%;
     }
 
     .responsive-iframe {
@@ -99,31 +102,13 @@
         height: 100%;
         border: none;
     }
-
-    .iframe-container-new {
-        position: relative;
-        width: 100%;
-        padding-bottom: 86.25%; /* 16:9 aspect ratio */
-        height: 0;
-        overflow: relative;
-    }
-
-    .responsive-iframe-new {
-        position: absolute;
-        top: 0;
-        left: 65px;
-        right: 65px;
-        width: 95%;
-        height: 100%;
-        border: none;
-    }
     </style>
 
     <!-- Global site tag (gtag.js) - Google Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-153077517-1"></script>
+    <!-- <script async src="https://www.googletagmanager.com/gtag/js?id=UA-153077517-1"></script> -->
     <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
     
-    <script>
+    <!-- <script>
         window.dataLayer = window.dataLayer || [];
 
         function gtag() {
@@ -132,6 +117,6 @@
 
         gtag('js', new Date());
         gtag('config', 'UA-153077517-1');
-    </script>
+    </script> -->
   
 </head>

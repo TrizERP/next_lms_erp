@@ -15,6 +15,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
 use function App\Helpers\sendSMS;
+use function App\Helpers\SearchStudent;
 use GenTux\Jwt\GetsJwtToken;
 
 class admissionEnquiryController extends Controller
@@ -49,6 +50,11 @@ class admissionEnquiryController extends Controller
         }
         $marking_period_id=session()->get('marking_period_id');
 
+        $customFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "admission_enquiry"])
+        ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1) and user_type="" ')
+        ->get();
+        
+        // echo "<pre>";print_r($columns);exit;
         $data = DB::table('admission_enquiry')
             ->leftJoin('admission_form as af', 'af.enquiry_id', '=', 'admission_enquiry.id')
             //->leftJoin('tblstudent', 'tblstudent.admission_id', '=', 'admission_enquiry.id') //Hide by 02-01-2024 rajesh loading issue
@@ -68,7 +74,7 @@ class admissionEnquiryController extends Controller
                 IF(fu.status = "close","pink","") as enq_color,
                 DATE_FORMAT(fu.follow_up_date,"%d-%m-%Y") as next_follow_up_date,
                 af.form_no as form_number,
-                IF(fu.follow_up_date = CURDATE(),"#0aa884","") as todays_next_followup ')
+                IF(fu.follow_up_date = CURDATE(),"#0aa884","") as todays_next_followup')
             ->where('admission_enquiry.sub_institute_id', $sub_institute_id)
             ->where('admission_enquiry.syear', $syear)
             ->groupBy('admission_enquiry.id')
@@ -80,6 +86,7 @@ class admissionEnquiryController extends Controller
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['data'] = $data;
+        $res['dataCustomFields']=$customFields;
 
         return is_mobile($type, 'admission/enquiry/show_admission_enquiry', $res, 'view');
     }
@@ -110,6 +117,12 @@ class admissionEnquiryController extends Controller
             $sub_institute_id = $request->get('sub_institute_id');
             $syear = $request->get('syear');            
         }
+        // for stnadalone admission_enquiry
+        else if($type=='webForm'){
+            $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');
+        }
+        // echo "<pre>";print_r($request->all());exit;
         $category = castModel::get()->toArray();
 
         $dataCustomFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "admission_enquiry"])
@@ -127,7 +140,7 @@ class admissionEnquiryController extends Controller
 
         $FORM_NO = $this->get_enquiry_no($sub_institute_id, $syear);
 
-        $standard = standardModel::where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
+        $standard = standardModel::where(['sub_institute_id' => $sub_institute_id])->orderBy('sort_order')->get()->toArray();
         // return $standard;exit;
         $res['status_code'] = 1;
         $res['message'] = "Success";
@@ -141,8 +154,11 @@ class admissionEnquiryController extends Controller
         if (count($category) > 0) {
             $res['category'] = $category;
         }
-
-        return is_mobile($type, 'admission/enquiry/add_admission_enquiry', $res, 'view');
+        if($type=='webForm'){
+            return is_mobile($type, 'admission/enquiry/admission_enquiry', $res, 'view');
+        }else{
+            return is_mobile($type, 'admission/enquiry/add_admission_enquiry', $res, 'view');
+        }
     }
 
     public function convert_number_to_words($number)
@@ -287,7 +303,11 @@ class admissionEnquiryController extends Controller
             $sub_institute_id = $request->get('sub_institute_id');
             $syear = $request->get('syear');   
             $user_id = $request->input("user_id");
-                     
+        }
+        // for stnadalone admission_enquiry
+        else if($type=='webForm'){
+            $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');
         }
 
         $data = $request->except([
@@ -302,7 +322,7 @@ class admissionEnquiryController extends Controller
 
         $standard = standardModel::where([
             'id' => $data['admission_standard'], 'sub_institute_id' => $sub_institute_id,
-        ])->get()->toArray();
+        ])->orderBy('sort_order')->get()->toArray();
         $standard_name = $standard[0]['name'];
 
         if ($sub_institute_id == 198) // For Admission Registration Receipt (Maheshvari)
@@ -547,8 +567,11 @@ class admissionEnquiryController extends Controller
 
             $res['status_code'] = "1";
             $res['message'] = "Added successfully";
-
-            return is_mobile($type, "admission_enquiry.index", $res);
+            if($type=='webForm'){
+                return redirect('admission_enquiry?sub_institute_id='.$sub_institute_id.'&syear='.$syear.'&type=webForm')->with(['data'=>$res]);
+            }else{
+                return is_mobile($type, "admission_enquiry.index", $res);
+            }
         }
     }
 
@@ -605,13 +628,24 @@ class admissionEnquiryController extends Controller
             $i++;
         }
 
-        $standard = standardModel::where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
+        $standard = standardModel::where(['sub_institute_id' => $sub_institute_id])->orderBy('sort_order')->get()->toArray();
+        $siblingsData = [];
+
+        if(isset($editData['0']['siblings']) && !empty($editData['0']['siblings'])){
+            $siblingsExplode = explode(',',$editData['0']['siblings']);
+            foreach ($siblingsExplode as $skey => $svalue) {
+                $studentData=SearchStudent("","","","","","", "", "","", "", $svalue);
+                $siblingsData[] = $studentData[0] ?? '';
+            }
+        }
+        // echo "<pre>";print_r($siblingsData);exit;
 
         $res['status_code'] = "1";
         $res['message'] = "Successfully";
         $res['editData'] = $editData['0'];
         $res['standard'] = $standard;
         $res['custom_fields'] = $dataCustomFields;
+        $res['siblingsData'] = $siblingsData;
         if (count($finalfieldsData) > 0) {
             $res['data_fields'] = $finalfieldsData;
         }

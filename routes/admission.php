@@ -4,6 +4,7 @@ use App\Http\Controllers\admission\admissionEnquiryController;
 use App\Http\Controllers\admission\admissionFollowUpController;
 use App\Http\Controllers\admission\admissionFormController;
 use App\Http\Controllers\admission\admissionRegistrationController;
+use App\Http\Controllers\admission\admissionRegistrationHillController;
 use App\Http\Controllers\admission\admissionReportController;
 use App\Http\Controllers\admission\onlineAdmissionConfirmController;
 use Illuminate\Support\Facades\Route;
@@ -12,6 +13,7 @@ use Illuminate\Support\Facades\Route;
 Route::group(['prefix' => 'admission', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], static function () {
     Route::resource('admission_enquiry', admissionEnquiryController::class);
     Route::resource('admission_registration', admissionFormController::class);
+    Route::resource('admission_registration_v1', admissionRegistrationHillController::class);
     Route::resource('admission_confirmation', admissionRegistrationController::class);
     Route::resource('admission_follow_up', admissionFollowUpController::class);
     Route::resource('online_admission_confirm', onlineAdmissionConfirmController::class);
@@ -56,3 +58,5 @@ Route::controller(admissionRegistrationController::class)->group(function () {
     Route::get('ajax_getDivision', 'ajax_getDivision')->name('ajax_getDivision');
 });
 
+Route::get('admission_enquiry', [admissionEnquiryController::class, 'create']); // for hills standalone
+Route::post('admission_enquiry/store', [admissionEnquiryController::class, 'store'])->name('admission_enquiry.storeNew'); // for hills standalone

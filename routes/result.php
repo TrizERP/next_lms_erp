@@ -54,6 +54,7 @@ use App\Http\Controllers\result\approve_mobile_result\approve_mobile_result_cont
 use App\Http\Controllers\result\result_skillset\resultSkillsetController;
 use App\Http\Controllers\result\result_activity_master\resultActivityMasterController;
 use App\Http\Controllers\result\result_activity_marks\resultActivityMarksController;
+use App\Http\Controllers\result\result_activity_marks\resultActivityMarksV1Controller;
 use App\Http\Controllers\lms\pal\resultPersonalizeMarksController;
 use App\Http\Controllers\result\new_result\allResultController;
 
@@ -86,6 +87,7 @@ Route::group(['prefix' => 'result', 'middleware' => ['session', 'menu', 'logRout
     Route::resource('result_skillset', resultSkillsetController::class);
     Route::resource('result_activity_master', resultActivityMasterController::class);
     Route::resource('result_activity_marks', resultActivityMarksController::class);
+    Route::resource('result_activity_marks_V1', resultActivityMarksV1Controller::class);
     Route::resource('all_results', allResultController::class);    
 
     Route::post('cbse_1t5_result/show_result', ['as' => 'cbse_1t5_result.show_result', 'uses' => 'result\cbse_result\cbse_1t5_result_controller@show_result']);
@@ -123,6 +125,7 @@ Route::POST('/uploadResultAPI', [upload_result_controller::class, 'uploadResultA
 Route::get('api/get-standard-list', [AJAXController::class, 'getStandardList']);
 Route::get('api/get-division-list', [AJAXController::class, 'getDivisionList']);
 Route::get('api/get-subject-list', [AJAXController::class, 'getSubjectList']);
+Route::get('api/get-all-subject-list', [AJAXController::class, 'getAllSubjectList']);
 /** get exam list */
 Route::get('api/get-exam-name-list', [AJAXController::class, 'getExamsList']);
 Route::get('api/get-exam-master-list', [AJAXController::class, 'getExamsMasterList']);

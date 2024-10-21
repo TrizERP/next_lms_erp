@@ -301,7 +301,7 @@ class apiController extends Controller
                     }
                 }        
             }
-            // echo "<pre>";print_r($studentData);exit;
+            // echo "<pre>";print_r($data);exit;
             // end by saroj uma 08/03/024
             
             $send_data = [];

@@ -793,7 +793,7 @@ else
 
             foreach ($reg_bk_off as $key => $val) 
             {
-                if(($val->month_id == '42023' || $val->month_id == '72023') && $val->student_quota != '2383') 
+                if(($val->month_id == '42024' || $val->month_id == '72024') && $val->student_quota != '2383') 
                 //Condition added by Rajesh 21_07_2022 only Quarter-1 fees paid to display result 
                 //Condition added by jinal 07_10_2022 only Quarter-2 fees paid to display result
                 //condition remove by rajesh 29-07-2023  || $val->month_id == '102023' for Altius
@@ -921,6 +921,9 @@ else
                     }
                     elseif( count($second_sql) > 0)
                     {
+                        $new_data['title'] = "Result Regular";
+                        $new_data['result_type'] = "Regular";
+                        $new_data['term_id'] = $request->get('term_id');
                         $new_data['student_id'] = $request->get('student_id');
                         $new_data['pdf_link'] = $second_sql[0]->file_name;
 
@@ -943,67 +946,87 @@ else
                 if(count($data) > 0)
                 {
 
-                    $html = $data[0]->html;
-
-                    $css_name = "http://".$_SERVER['SERVER_NAME'];
-                    $result_css = '<link rel="stylesheet" href="'.$css_name.'/css/result.css" />';
-                    $dom = '<!DOCTYPE html>
+                // Prepare common elements
+                    $css_name = "https://" . $_SERVER['SERVER_NAME'];
+                    $result_css = '<link rel="stylesheet" href="' . $css_name . '/css/result.css" />';
+                    $dom_template = '<!DOCTYPE html>
                         <html>
                             <head>
                                <title></title>
                                <meta charset="UTF-8">
-                               <meta name="viewport" content="width=device-width, initial-scale=1.0">';
-                    $dom .= "<style>
-
-                            </style>";       
-                    $dom .= $result_css;       
-                    $dom .= '</head>
+                               <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                               <style></style>' . $result_css . '
+                            </head>
                             <body>
-                                <div>
-                                    ##HTML_SEC##
-                                </div>
+                                <div>##HTML_SEC##</div>
                             </body>
                         </html>';
 
-                    $path = 'src="http://' . $_SERVER['HTTP_HOST'];
-                    $html = str_replace('src="', $path, $html);
-                    $html = str_replace('display:flex;', 'display: -webkit-box; -webkit-box-pack: center;', $html);
-                    $html = str_replace('##HTML_SEC##', $html, $dom);                
-        
-
-                    //Start For Empty folder before creating new PDF
+                    // Empty the folder before creating new PDFs
                     $folder_path = $_SERVER['DOCUMENT_ROOT'] . '/storage/result_pdf/*';
-                    $files = glob($folder_path); // get all file names
-                    foreach($files as $file){ // iterate files
-                      if(is_file($file)) {
-                        unlink($file); // delete file
-                      }
+                    $files = glob($folder_path); // Get all file names
+                    foreach ($files as $file) {
+                        if (is_file($file)) {
+                            unlink($file); // Delete file
+                        }
                     }
-                    //END For Empty folder before creating new PDF
-                    
+
                     $save_path = $_SERVER['DOCUMENT_ROOT'] . '/storage/result_pdf';
-
                     $CUR_TIME = date('YmdHis');
-                    $html_filename = $request->get('student_id').'_'.$CUR_TIME . ".html";
-                    $pdf_filename = $request->get('student_id').'_'.$CUR_TIME . ".pdf";
-                    
-                    $html_file_path = $save_path . '/' . $html_filename;
-                    $pdf_file_path = $save_path . '/' . $pdf_filename;
-                    file_put_contents($html_file_path, $html);
-                    //$soni = $save_path."/95634_20211130160457.html";                
-                    htmlToPDF($html_file_path, $pdf_file_path); 
-                    // htmlToPDFLandscape($html_file_path, $pdf_file_path); 
-                    unlink($html_file_path);
+                    $results = []; // Store multiple records with pdf links
 
-                    $new_data['student_id'] = $request->get('student_id');
-                    $new_data['pdf_link'] = "http://".$_SERVER['SERVER_NAME']."/storage/result_pdf/".$pdf_filename;
+                    foreach ($data as $index => $record) {
+                        // Prepare HTML for each record
+                        $html = $record->html;
+                        $dom = str_replace('##HTML_SEC##', $html, $dom_template);
 
+                        $path = 'src="https://' . $_SERVER['HTTP_HOST'];
+                        $html = str_replace('src="', $path, $dom);
+                        $html = str_replace('display:flex;', 'display: -webkit-box; -webkit-box-pack: center;', $html);
+
+                        // Generate unique filenames for HTML and PDF
+                        $html_filename = $record->student_id . '_' . $CUR_TIME . '_' . $index . ".html";
+                        $pdf_filename = $record->student_id . '_' . $CUR_TIME . '_' . $index . ".pdf";
+
+                        $html_file_path = $save_path . '/' . $html_filename;
+                        $pdf_file_path = $save_path . '/' . $pdf_filename;
+
+                        // Save HTML to a file
+                        file_put_contents($html_file_path, $html);
+
+                        // Convert HTML to PDF
+                        htmlToPDF($html_file_path, $pdf_file_path); 
+                        // If needed: htmlToPDFLandscape($html_file_path, $pdf_file_path); 
+
+                        // Remove the HTML file after conversion
+                        unlink($html_file_path);
+
+                        // Prepare the response data for each record
+                        $new_data = [
+                            'title' => "Result ".$record->result_type,
+                            'result_type' => $record->result_type,
+                            'term_id' => $record->term_id,
+                            'student_id' => (string) $record->student_id,
+                            'pdf_link' => "https://" . $_SERVER['SERVER_NAME'] . "/storage/result_pdf/" . $pdf_filename
+                        ];
+
+                        // Add each result to the array
+                        if($record->student_id == 97382)
+                            $results[] = $new_data;
+                        else
+                            $results = $new_data;
+                    }
+
+                    // Final response with all records and their PDF links
                     $response['status'] = 1;
-                    $response['message'] = "Success";  
-                    $response['data'] = $new_data;             
+                    $response['message'] = "Success";
+                    $response['data'] = $results;          
                 }
                 elseif( count($second_sql) > 0)
                 {
+                    $new_data['title'] = "Result Regular";
+                    $new_data['result_type'] = "Regular";
+                    $new_data['term_id'] = $request->get('term_id');
                     $new_data['student_id'] = $request->get('student_id');
                     $new_data['pdf_link'] = $second_sql[0]->file_name;
 

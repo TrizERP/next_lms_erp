@@ -442,7 +442,7 @@ class fees_collect_controller extends Controller
             $other_bk_off_month_head_wise2 = OtherBreackOfMonthHead($stu_arr, $search_ids,$last_syear,$sub_institute_id); // for previous year
             $year_arr2 = FeeMonthId($last_syear,$sub_institute_id) ?? []; // for previous year
             $head_wise_fees2 = FeeBreakoffHeadWise($stu_arr,'','','',$last_syear,$sub_institute_id); // for previous year
-
+            // return $head_wise_fees2;exit;
             $reg_fee_heads2 = [];
             $reg_fee_bk2 = [];
 
@@ -1236,6 +1236,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
         $get_cumulative_result = DB::table('fees_title')
         ->selectRaw('id,display_name,cumulative_name,append_name')
         ->where('sub_institute_id', $sub_institute_id)
+        ->where('syear', $syear) // added syear to check cumulative 
         ->whereNotNull('cumulative_name')
         ->orderBy('sort_order')->get()->toArray();
 
@@ -1243,11 +1244,17 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
         return (array)$value;
         }, $get_cumulative_result);
 
+        // check if show_month is 1 in fees_config master than print month names instead of cumulative_name
+        if (!empty($config_master)) {
+            $get_cumulative_result = [];
+        }
+
         $cumulative_arr = $append_arr = array();
         foreach ($get_cumulative_result as $key => $value) {
             $cumulative_arr[$value['display_name']] = $value['cumulative_name'];
             $append_arr[$value['display_name']] = $value['append_name'];
         }
+        // echo "<pre>";print_r($append_arr);exit;
         // 31/03/2021 - END FOR making cumulative fees recepit array
        
         //fees title or fees head with  month and without month like tution fees (apr)
@@ -1988,7 +1995,8 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
         $fees_paid_arr2 = [];
         foreach ($paid_result2 as $id => $arr) {
             $fees_paid_arr2[$arr->term_id] = $arr->amount;
-            $discount_arr[$arr->term_id] = $arr->fees_discount;
+            // if previous fees has discount then minus it from previous remain fees 2024-10-10
+            $discount_arr2[$arr->term_id] = $arr->fees_discount;
         }
         // echo "<pre>";print_r($discount_arr);exit;
 
@@ -2089,7 +2097,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                 {
                     $left_bk_table[$i]['remain'] =  $left_bk_table[$i]['remain'] - $discount_arr[$id];
                 }
-            } else {
+            }else {
                 $left_bk_table[$i]['discount'] = 0;
             }
 
@@ -2248,13 +2256,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                     ];
                 }
                 if (isset($arr['amount'])) {
-                      // 03-06-24 by uma for institute_id =248 // commented on 2024-07-30
-                    // if(isset($arr['disc_amount']) && $arr['disc_amount']>0){
-                    //     $reg_bk_month_wise[$arr['title']] += ($arr['amount']-$arr['disc_amount']); 
-                    // }else{
-                        $reg_bk_month_wise[$arr['title']] += $arr['amount'];
-                    // }
-                    // $reg_bk_month_wise[$arr['title']] += $arr['amount'];
+                    $reg_bk_month_wise[$arr['title']] += $arr['amount'];
                     $reg_month_wise[$arr['title']] = [
                         'title' => $arr['title'],
                         'amount' => $reg_bk_month_wise[$arr['title']],
@@ -2276,13 +2278,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                     ];
                 }
                 if (isset($arr['amount'])) {
-                    // commented on 2024-07-30
-                    // if(isset($arr['disc_amount']) && $arr['disc_amount']>0 && $arr['amount']>=$arr['disc_amount']){
-                    //     $reg_bk_month_wise2[$arr['title']] += ($arr['amount']-$arr['disc_amount']); 
-                    // }else{
-                        $reg_bk_month_wise2[$arr['title']] += ($arr['amount']);
-                    // }
-                    // $reg_bk_month_wise2[$arr['title']] += $arr['amount'];
+                    $reg_bk_month_wise2[$arr['title']] += ($arr['amount']);
                     $reg_month_wise2[$arr['title']] = [
                         'title' => $arr['title'],
                         'amount' => $reg_bk_month_wise2[$arr['title']],
@@ -2300,6 +2296,12 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             $full_bk2 = array_merge($reg_bk_month_wise2, $other_bk_off2);
             $full_bk_new2 = array_merge($reg_month_wise2, $other_bk_off2);
             $previous = array_sum($full_bk2);
+            // if previous fees has discount then minus it from previous remain fees 2024-10-10
+            if(!empty($discount_arr2)){
+                $pdiscount=array_sum($discount_arr2);
+                $previous = $previous - $pdiscount; 
+            }
+
             if($previous > 0){
             $full_bk['Previous Fees'] = $previous;
             $stu_detail['previous_fees'] = $previous;
@@ -2310,7 +2312,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             );
             }
         }
-
+      
      //24-04-2021 START Check Cheque Return charges
 
         $get_cheque_return_amt = SchoolModel::where(['id' => $sub_institute_id])->get()->toArray();
@@ -2430,7 +2432,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             $syear = $request->syear;
         }
         $res = $this->getBk($request, $id);
-        // echo "<pre>";print_r($sub_institute_id);exit;
+        // echo "<pre>";print_r($res);exit;
         $res['bank_data'] = bankmasterModel::get()->toArray();
         
         $config = tblfeesConfigModel::where([
@@ -2775,12 +2777,15 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
         })
         ->Join('standard as std', 'std.id', '=', 'se.standard_id')
         ->Join('division as d', 'd.id', '=', 'se.section_id')
-        ->join('fees_collect as fee','fee.receipt_no','=','fc.reciept_id')
+        ->join('fees_collect as fee',function($q) use($sub_institute_id,$syear,$stud_id){
+            $q->on('fee.receipt_no','=','fc.reciept_id')->where(['fee.sub_institute_id'=>$sub_institute_id,'fee.syear'=>$syear])
+            ->where('fee.student_id',$stud_id);
+        })
         ->leftJoin('tbluser as u','u.id','=','fc.cancelled_by')
-        ->selectRaw('fc.*,CONCAT_WS(" ",COALESCE(s.first_name),COALESCE(s.middle_name),COALESCE(s.last_name)) as student_name,s.enrollment_no,IFNULL(s.uniqueid,"-") as uniqueid,std.name as std,d.name as divi,fee.payment_mode,GROUP_CONCAT(fc.term_id) AS month_ids,fee.cheque_bank_name, fee.bank_branch, fee.cheque_no,CONCAT_WS(" ",COALESCE(u.first_name),COALESCE(u.middle_name),COALESCE(u.last_name)) as cancelled_by,SUM(IFNULL(fc.amountpaid, 0)) AS actual_amountpaid')
+        ->selectRaw('fc.*,CONCAT_WS(" ",COALESCE(s.first_name),COALESCE(s.middle_name),COALESCE(s.last_name)) as student_name,s.enrollment_no,IFNULL(s.uniqueid,"-") as uniqueid,std.name as std,d.name as divi,fee.payment_mode,GROUP_CONCAT(fee.term_id) AS month_ids,fee.cheque_bank_name, fee.bank_branch, fee.cheque_no,CONCAT_WS(" ",COALESCE(u.first_name),COALESCE(u.middle_name),COALESCE(u.last_name)) as cancelled_by,SUM(IFNULL(fee.amount, 0)) AS actual_amountpaid')
         ->where(['fc.sub_institute_id'=>$sub_institute_id,'fc.syear'=>$syear])
         ->where('fc.student_id',$stud_id)
-        ->groupBy('reciept_id')
+        ->groupByRaw('reciept_id')
         ->get()->toArray();
         // cancel data end
         $res['status_code'] = 1;

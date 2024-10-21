@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\api\apiController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -13,6 +14,18 @@ use Illuminate\Support\Facades\Route;
 | is assigned the "api" middleware group. Enjoy building your API!
 |
 */
+
+
+Route::post('whats-send-app',function (Request $request) {
+    \Illuminate\Support\Facades\Log::info(json_encode($request->all()));
+});
+
+Route::post('whats-comming-app',function (Request $request) {
+    \Illuminate\Support\Facades\Log::info(json_encode($request->all()));
+});
+
+Route::post('update-message',[\App\Http\Controllers\WhatsappController::class,'updateDeliveryStatus']);
+Route::post('incoming-message',[\App\Http\Controllers\WhatsappController::class,'incomingMessage']);
 
 
 Route::controller(apiController::class)->group(function () {

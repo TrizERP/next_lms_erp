@@ -10,6 +10,9 @@ use DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Http\Client\HttpClientException;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Dompdf\Dompdf;
+
 
 class oldDocumentTransfer extends Controller
 {
@@ -43,6 +46,7 @@ class oldDocumentTransfer extends Controller
 
     public function storeImagesToDigitalOcean(Request $request)
     {
+     
         // $directory = public_path('images');
         if($request->type=="storage"){
             $directory = storage_path('app/public/'.$request->directory);
@@ -71,6 +75,122 @@ class oldDocumentTransfer extends Controller
             $message="stored";
         }
         return $message;
+    }
+
+    public function ConvertBinaryData(Request $request)
+    {
+        // $url = $request->binaryData;  // URL to fetch the file (or binary data if locally available)
+        // $contentType = $request->contentTypr;  // Content type (e.g., application/pdf)
+        // $fileName = 'emp_'.$request->empId.'_'.$request->fileName;  // File name (e.g., file.pdf)
+
+        // // Fetch the file content from the given URL
+        // $fileContents = file_get_contents($url);
+        $filePath = $_SERVER['DOCUMENT_ROOT'].'converted_json.json';
+          // Check if the file exists
+          if (!file_exists($filePath)) {
+            return response()->json(['error' => 'File not found'], 404);
+        }
+
+        // Read the file content
+        $jsonData = file_get_contents($filePath);
+
+        // Decode the JSON data
+        $data = json_decode($jsonData, true);
+
+        // Check for JSON decoding errors
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            return response()->json(['error' => 'JSON decoding error: ' . json_last_error_msg()], 500);
+        }
+
+        // Return the data as a JSON response
+        $dataArray = json_decode($jsonData, true);
+        // foreach ($dataArray as $key => $value) {
+        //     $binaryData = $value['binaryData'];  // URL to fetch the file (or binary data if locally available)
+        //     $contentType = $value['contentType'];  // Content type (e.g., application/pdf)
+        //     $fileName = 'emp_'.$value['empId'].'_'.$value['fileName'];  // File name (e.g., file.pdf)
+        //     // echo "<pre>";print_r($binaryData);exit;
+        //     if ($binaryData) {
+        //         // Handle raw binary data directly
+        //         $contentType = $value['contentType'] ?? 'application/octet-stream'; // Default content type if not provided
+        //         $fileName = 'emp_' . $value['empId'] . '_' . $value['fileName'];  // File name (e.g., file.pdf)
+
+        //         // Define the file path where the binary data will be processed or saved
+        //         $filePath = public_path('old_to_new/doc_transfer/') . $fileName;
+
+        //         // Save the binary data to the file (if needed) or process it directly
+        //         // If you want to display the data directly, comment out the file writing part
+        //         file_put_contents($filePath, $binaryData);
+                
+
+        //         // Output file path for debugging
+        //         echo "<pre>"; print_r("File saved to: " . $filePath); exit;
+
+        //         // To directly display the binary data in the browser
+        //         // Uncomment the following lines if you want to directly display the binary data
+        //         /*
+        //         header('Content-Type: ' . $contentType);
+        //         header('Content-Disposition: inline; filename="' . $fileName . '"');
+        //         echo $binaryData;
+        //         exit;
+        //         */
+        //     } else {
+        //         return response()->json(['error' => 'No binary data found in JSON.'], 400);
+        //     }
+        //     echo "<pre>";print_r($fileName);exit;
+        // }
+        $storedFiles=[];
+        foreach ($dataArray as $value) {
+            $blobData = isset($value['mediumBlob']) ? base64_decode($value['mediumBlob'],true) : null;
+            $empId=$value['empId'];
+            $filename='emp_'.$empId.'_'.$value['fileName'];
+            // return response($blobData, 200)
+            // ->header('Content-Type', 'application/pdf')
+            // ->header('Content-Disposition', 'inline; filename="document.pdf"');
+            if ($blobData !== false) {
+                // Generate filename and path
+                $empId = $value['empId'];
+                $docId = $value['docId'];
+                $docTitle = $value['docTitle'];
+                $sub_institute_id = $value['sub_institute_id'];
+
+                $filename = 'emp_' . $empId . '_' . $value['fileName'];
+
+                $tempFilePath = tempnam(sys_get_temp_dir(), 'pdf');
+                file_put_contents($tempFilePath, $blobData);
+            
+                // Step 3: Upload to DigitalOcean Spaces
+                $storagePath = 'public/staff_document/' . $filename;
+                $storedFiles[] = $storagePath;
+
+                $disk = Storage::disk('digitalocean');
+                
+                // Store the file
+                $disk->put($storagePath, fopen($tempFilePath, 'r+'), 'public');
+            
+                // Clean up temporary file
+                unlink($tempFilePath);
+                // store in database
+              
+                if($disk){
+                    $insertData = [
+                        "user_id"=>$empId,
+                        "document_type_id"=>$docId,
+                        "document_title"=>$docTitle,
+                        "file_name"=>$filename,
+                        "sub_institute_id"=>$sub_institute_id,
+                        "created_at"=>now(),
+
+                    ];
+                    $insert = DB::table('staff_document')->insert($insertData);
+                }
+
+            } else {
+                return "Invalid data or failed to decode base64.";
+            }
+        }
+        // exit;
+
+        return response()->json(['message' => 'File stored successfully!','Total stored files'=>count($storedFiles), 'storedFiles' => $storedFiles]);
     }
 
 }

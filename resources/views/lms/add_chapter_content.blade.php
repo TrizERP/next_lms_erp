@@ -618,9 +618,6 @@ use DB;
         $('#contentType').change(function() {
             processAIData();
         });
-        $('#refreshPrompt').on('click', function() {
-        processAIDataNew();
-    });
     });
 
     function processAIData() {
@@ -679,9 +676,6 @@ use DB;
                         _token: '{{ csrf_token() }}'
                     },
                     success: function(response) {
-                        console.log(response.prompt);
-                        $("#test123").val("Prompt");
-                        $('#prompt').val(response.prompt);
                         if (response.file_url) {
                              $('#upload_div1').empty();
                             var downloadLink = $('<a>', {
@@ -713,64 +707,6 @@ use DB;
             console.log('Content type or category is not selected.');
         }
     }
-    function processAIDataNew(){
-        var standardId = "{{ $data['breadcrum_data']->standard_id ?? '' }}";
-        var subjectName = "{{ $data['breadcrum_data']->subject_name ?? '' }}";
-        var chapterName = "{{ $data['breadcrum_data']->chapter_name ?? '' }}";
-        var topicName = "{{ $data['breadcrum_data']->topic_name ?? '' }}";
-        var contentType = $('#contentType').val();
-        var contentCategory = $('#content_category').val();
-        let fileNames=[];
-        $('.book-file-names').each(function(){
-            fileNames.push($(this).val());
-        });
-        var promptNew = $('#prompt').val();
-        console.log('Generating Data...');
-                $.ajax({
-                    url: "{{ route('ai.generateLessonPlanNew') }}",
-                    type: 'POST',
-                    data: {
-                        standard_id: standardId,
-                        subject_name: subjectName,
-                        chapter_name: chapterName,
-                        topic_name: topicName,
-                        content_category: contentCategory,
-                        content_type: contentType,
-                        booklist_data: fileNames,
-                        prompt: promptNew,
-                        _token: '{{ csrf_token() }}'
-                    },
-                    success: function(response) {
-                        console.log(response.prompt);
-                        $("#test123").val("Prompt");
-                        $('#prompt').val(response.prompt);
-                        $('#upload_div1').empty();
-                        if (response.file_url) {
-                            var downloadLink = $('<a>', {
-                                href: response.file_url,
-                                text: 'Download ' + contentType.toUpperCase(),
-                                target: '_blank',
-                                download: ''
-                            });
-                            $('#upload_div1').append(downloadLink);
-                            console.log(contentType.toUpperCase() + ' URL:', response.file_url);
-                            downloadLink.css({
-                                display: 'block',
-                                margin: '10px 0',
-                                color: 'blue',
-                                textDecoration: 'underline'
-                            });
-                        } else {
-                            console.error(contentType.toUpperCase() + ' URL not found in response.');
-                            alert('An error occurred while generating the ' + contentType.toUpperCase() + '.');
-                        }
-                    },
-                    error: function(xhr) {
-                        console.error(xhr);
-                        alert('An error occurred while generating the ' + contentType.toUpperCase() + '.');
-                    }
-                });
-    }  
 </script>
 @include('includes.footer')
 @endsection

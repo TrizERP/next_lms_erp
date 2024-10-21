@@ -102,19 +102,20 @@
                 <table id="example" class="table table-bordered">
                     <thead>
                         <tr>
-                            <th>Sr No.</th>
-                            <th>{{ App\Helpers\get_string('grno','request')}}</th>
-                            <th>{{ App\Helpers\get_string('studentname','request')}}</th>
-                            <th>{{ App\Helpers\get_string('standard','request')}}</th>
-                            <th>{{ App\Helpers\get_string('division','request')}}</th>
-                            <th>Mobile No.</th>
-                            <th>Fees Head</th>
-                            <th>Receipt No.</th>
-                            <th>Remark</th>
-                            <th>Payment Mode</th>
-                            <th>Received Date</th>
-                            <th>Paid Amount</th>
-                            <th>Ledger</th>
+                            <th>SR NO.</th>
+                            <th>{{ strtoupper(App\Helpers\get_string('studentname','request')) }}</th>
+                            <th>{{ strtoupper(App\Helpers\get_string('grno','request')) }}</th>
+                            <th>ROLL NO.</th>
+                            <th>{{ strtoupper(App\Helpers\get_string('standard','request')) }}</th>
+                            <!-- <th>{{ strtoupper(App\Helpers\get_string('division','request')) }}</th> -->
+                            <!-- <th>Mobile No.</th> -->
+                            <th>OTHER TITLE</th>
+                            <th>REC NO.</th>
+                            <!-- <th>Remark</th> -->
+                            <th>PAYMODE</th>
+                            <th>AMOUNT</th>
+                            <th>RECEIVED DATE</th>
+                            <th class="text-left">LEDGER</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -135,22 +136,29 @@
                         @php $student_total = 0; @endphp
                         <tr>
                             <td>{{$j}}</td>
-                            <td>{{$fees_value['enrollment_no']}}</td>
                             <td>{{$fees_value['student_name']}}</td>
-                            <td>{{$fees_value['standard_name']}}</td>
-                            <td>{{$fees_value['division_name']}}</td>
-                            <td>{{$fees_value['mobile']}}</td>
+                            <td>{{$fees_value['enrollment_no']}}</td>
+                            <td>{{$fees_value['roll_no']}}</td>
+                            <td>{{$fees_value['standard_name'].'-'.$fees_value['division_name']}}</td>
+                            <!-- <td>{{$fees_value['division_name']}}</td> -->
+                            <!-- <td>{{$fees_value['mobile']}}</td> -->
                             <td>{{$fees_value['fees_head']}}</td>
                             <td>{{$fees_value['receipt_id']}}</td>
-                            <td>
+                            {{-- <td>
                                 @if($fees_value['deduction_remarks'] != "")
                                 {{$fees_value['deduction_remarks']}}
                                 @else -
                                 @endif
+                            </td> --}}
+                            <td>
+                                @if(session()->get('sub_institute_id')==47)
+                                    {{$fees_value['bank_name'].'-'.$fees_value['cheque_dd_no']}}
+                                @else
+                                    {{$fees_value['payment_mode']}}
+                                @endif
                             </td>
-                            <td>{{$fees_value['payment_mode']}}</td>
-                            <td>{{date('d-m-Y',strtotime($fees_value['deduction_date']))}}</td>
                             <td>{{$fees_value['deduction_amount']}}</td>
+                            <td>{{date('d-m-Y',strtotime($fees_value['deduction_date']))}}</td>
                             <td>
                                 <button type="button" class="btn btn-info float-right" data-toggle="modal" onclick="javascript:save_data({{$fees_value['student_id']}});">View Ledger</button>
                             </td>
@@ -168,11 +176,11 @@
                             <td></td>
                             <td></td>
                             <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
+                            <!-- <td></td> -->
+                            <!-- <td></td> -->
                             <td>Total</td>
                             <td>{{$grand_total}}</td>
+                            <td></td>
                             <td></td>
                         </tr>
 
@@ -267,9 +275,13 @@
                 url: path,
                 data:'student_id='+val,
                 success: function(result){
-                    $('#reprint_receipt_html').html(result);
-                    $('#student_id').val(val);
-                    $('#ChapterModal').modal('show');
+                    if(result!==''){
+                        $('#reprint_receipt_html').html(result);
+                        $('#student_id').val(val);
+                        $('#ChapterModal').modal('show');
+                    }else{
+                        alert('No Imperest Fees Found');
+                    }
                 }
         });
     }

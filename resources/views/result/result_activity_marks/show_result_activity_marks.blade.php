@@ -131,7 +131,7 @@
         $.ajax({
                 type: "GET",
                 url: "{{route('getActivityLists')}}",
-                data:{skill_id:activity_master,type:'API'},
+                data:{skill_id:activity_master,type:'API',level:4},
                 success: function (result) {
                     if (Array.isArray(result) && result.length > 0) {
                         // Clear the select options before appending new ones

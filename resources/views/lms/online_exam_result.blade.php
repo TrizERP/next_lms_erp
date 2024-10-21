@@ -244,15 +244,67 @@
                     @endforeach
 
                     @endif
+                   
                 </div>
             </div>
-        </div>        
+        </div>    
     </div>
 </div>
+@if(!empty($data['rightInterest']))
+<div class="card" style="padding:10px;margin:20px">
+    <h5 style="background:#010101;color:#fff;border-radius:10px;padding:10px">Occupations</h5>
+    <div class="occupationDiv" id="occupationDiv">
+
+    </div>
+</div>
+@endif
 @include('includes.lmsfooterJs')
 <script type="text/javascript">
 $(document).ready(function(){
     $('[data-toggle="tooltip"]').tooltip();   
 });
+@if(!empty($data['rightInterest']))
+    $(document).ready(function(){
+        var rightInterest = @json($data['rightInterest']);
+        const {
+        Realistic = 0,
+        Investigative = 0,
+        Artistic = 0,
+        Social = 0,
+        Enterprising = 0,
+        Conventional = 0
+    } = rightInterest;
+
+    $.ajax({
+        url: '{{route("intrestEnterScores")}}',
+        data : {Realistic:Realistic,Investigative:Investigative,Artistic:Artistic,Social:Social,Enterprising:Enterprising,Conventional:Conventional},
+        type : 'GET',
+        success : function(response){
+            // console.log(response.career);
+            if(response.career){
+                console.log(response.career);
+                var ul =`<div class="container-fluid mb-5">
+                            <div class="coursr-chp-list" id="cource-chap-list">`;
+                            // Loop through mappedValue within each mappedItem
+                            var i = 1;
+                            $.each(response.career, function(index, value) {
+                            ul+=`<div class="row card single-chp mb-2">
+                                        <div class="col-md-4 mb-2 chp-details">
+                                            <div class="count">${i++}</div>
+                                            <div class="title">
+                                            ${value.title}
+                                            </div>
+                                        </div>
+                                    </div>`;
+                            });
+                            ul += ` </div>
+                                </div>`;
+                 $('#occupationDiv').append(ul);
+            }
+        }
+    })
+
+})
+@endif
 </script>
 @include('includes.footer')

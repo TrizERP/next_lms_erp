@@ -46,6 +46,8 @@ use App\Http\Controllers\lms\pal\palController;
 use App\Http\Controllers\lms\virtualclassroomController;
 use App\Http\Controllers\school_setup\sub_std_mapController;
 use App\Http\Controllers\lms\lmsDashboardController;
+use App\Http\Controllers\lms\lmsCurriculumController;
+use App\Http\Controllers\lms\lmsSyllabusController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\lms\ParaphraseController;
 
@@ -61,6 +63,7 @@ Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute',
     Route::get('career_counselling',[\App\Http\Controllers\lms\ONetOnlineDataController::class,'career_counselling'])->name('career_counselling');
     Route::get('career_counselling_education',[\App\Http\Controllers\lms\ONetOnlineDataController::class,'career_counselling_edu'])->name('career_counselling_education');
     Route::get('career_counselling_knowing-yourself',[\App\Http\Controllers\lms\ONetOnlineDataController::class,'career_counselling_ky'])->name('career_counselling_knowing-yourself');
+    Route::get('career_report',[\App\Http\Controllers\lms\ONetOnlineDataController::class,'career_report'])->name('career_report');
 
     Route::resource('chapter_master', chapterController::class);
     Route::resource('course_master', courseController::class);
@@ -201,7 +204,8 @@ Route::post('show_question_wise_report',
     // Route::get('ajax_SaveAnnotations', 'lms\assignment\annotateAssignmentController@ajax_SaveAnnotations')->name('ajax_SaveAnnotations');
 
     Route::resource('subjectwise_graph', chapterController::class);
-
+    Route::resource('lms_curriculum', lmsCurriculumController::class);
+    Route::resource('lms_syllabus', lmsSyllabusController::class);
     //Route::get('questionReport', 'student\questionWiseReportController@index')->name('question_wise_report');
     //Route::post('show_question_wise_report', 'student\questionWiseReportController@show_question_wise_report')->name('show_question_wise_report');
 
@@ -257,11 +261,11 @@ Route::get('intrestQuestions', [lmsCounsellingController::class, 'intrestQuestio
 Route::get('intrestResults', [lmsCounsellingController::class, 'intrestResults']);
 Route::get('intrestJobzone', [lmsCounsellingController::class, 'intrestJobzone']);
 Route::get('intrestCareers', [lmsCounsellingController::class, 'intrestCareers']);
-Route::get('intrestEnterScore', [lmsCounsellingController::class, 'intrestEnterScore']);
+Route::get('/api/get-curriculum-list', [lmsSyllabusController::class, 'getCurriculums']);
+Route::get('intrestEnterScore', [lmsCounsellingController::class, 'intrestEnterScore'])->name('intrestEnterScores');
 Route::get('intrestArea', [lmsCounsellingController::class, 'intrestArea']);
 Route::post('/ai/processData',[contentController::class,'processAIData'])->name('ai.processData');
 Route::post('/ai/generateLessonPlan', [contentController::class, 'generateLessonPlan'])->name('ai.generateLessonPlan');
 Route::post('/ai/generateSportsData', [contentController::class, 'generateSportsData'])->name('ai.generateSportsData');
-Route::post('/ai/generateLessonPlanNew', [contentController::class, 'generateLessonPlanNew'])->name('ai.generateLessonPlanNew');
 Route::post('/paraphraseNew', [ParaphraseController::class, 'paraphrase']);
 Route::post('/set-book-session',[contentController::class,'setBookSession'])->name('set-book-session');

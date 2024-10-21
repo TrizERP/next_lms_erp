@@ -45,8 +45,11 @@ class PettyCashReportController extends Controller
             ->join('tbluser as u',function($join){
                  $join->on('u.id', '=', 'p.user_id')->where('u.status',1); // 23-04-24 by uma
             })
-            ->where(['p.sub_institute_id' => $sub_institute_id, 'p.title_id' => $title_id])
+            ->where(['p.sub_institute_id' => $sub_institute_id])
             ->whereBetween('p.created_on', array($from_date, $to_date))
+            ->when($title_id,function($q) use ($title_id){
+                $q->where(['p.title_id' => $title_id]);
+            })
             ->get();
 
         $type = $request->input('type');

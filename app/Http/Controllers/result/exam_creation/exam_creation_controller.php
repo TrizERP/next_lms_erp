@@ -224,6 +224,8 @@ class exam_creation_controller extends Controller
 
         $exams = DB::table("result_exam_master")
             ->where("SubInstituteId", session()->get('sub_institute_id'))
+            ->where("standard_id", $data['standard_id'])
+            ->where("term_id", $data['term_id'])
             ->pluck("ExamTitle", "Id")->toArray();
         $data['exams'] = $exams;
 

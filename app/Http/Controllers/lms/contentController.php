@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\lms;
 use App\Http\Controllers\Controller;
 use App\Services\OpenAIService;
+use App\Services\OpenAIService;
 use App\Models\lms\chapterModel;
 use App\Models\lms\contentmappingtypeModel;
 use App\Models\lms\contentModel;
@@ -14,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Log;
 
 class contentController extends Controller
@@ -134,6 +136,7 @@ class contentController extends Controller
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $data = array();
+        
         
         $lms_mapping_type = DB::table('lms_mapping_type')
             ->where('status', '=', 1)

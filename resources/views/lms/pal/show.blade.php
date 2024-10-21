@@ -96,6 +96,7 @@
 </div>
 @include('includes.lmsfooterJs')
 <script>
+
 function generateExam(grade_id,subject_id,chapter_id,standard_id,enrollment_no){
       if (chapter_id !== '' && chapter_id !== 'undefined') {
         window.location.href = '/lms/pal/create?subject_id='+subject_id+'&chapter_id='+chapter_id+'&grade_id='+grade_id+'&standard_id='+standard_id+'&enrollment_no='+enrollment_no;

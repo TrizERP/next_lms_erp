@@ -117,76 +117,54 @@ class tblstudentFeesDetailController extends Controller
         }
         //END Insert or Update into Fees Details Table
 
-        //START Insert or Update into Payment Method Mapping Table
-        $studentpaymentmapping = tblstudentPaymentMethodMappingModel::where([
-            'sub_institute_id' => $sub_institute_id, 'student_id' => $request->get('student_id'),
-        ])
-            ->get()->toArray();
-        if (count($studentpaymentmapping) > 0) {//Update 
-            $payment_method = $request->get('payment_method');
-            $month_date = $request->get('month_date');
-            $month_remark = $request->get('month_remark');
+        //START Insert or Update into Payment Method Mapping Table 25-09-2024 start
+        $payment_method = $request->get('payment_method');
+        $month_date = $request->get('month_date');
+        $month_remark = $request->get('month_remark');
 
-            foreach ($payment_method as $monthid => $method) {
-                $remark_value = $date_value = "";
-                if (isset ($month_remark[$monthid]) && $month_remark[$monthid] != "") {
-                    $remark_value = $month_remark[$monthid] ?? '';
-                }
-
-                $pdata = [
-                    'student_id'       => $request->get('student_id'),
-                    'syear'            => $syear,
-                    'sub_institute_id' => $sub_institute_id,
-                    'month_id'         => $monthid,
-                    'payment_method'   => $method,
-                    'remarks'          => $remark_value,
-                    'created_by'       => $user_id,
-                ];
-
-                if (isset ($month_date[$monthid]) && $month_date[$monthid] != "" && $month_date[$monthid] != null) {
-                    $pdata['payment_date'] = date("Y-m-d", strtotime($month_date[$monthid]));
-                }
-
-                tblstudentPaymentMethodMappingModel::where([
-                    'student_id'       => $request->get('student_id'),
-                    'sub_institute_id' => $sub_institute_id,
-                    'month_id'         => $monthid,
-                ])
-                    ->update($pdata);
+        foreach ($payment_method as $monthid => $method) {
+            // check entries exists or not with month and student_id
+            $checkArr = [
+                'sub_institute_id' => $sub_institute_id, 
+                'student_id' => $request->get('student_id'),
+                'month_id'=>$monthid
+            ];
+            $checkData = tblstudentPaymentMethodMappingModel::where($checkArr)->get()->toArray();
+            // make data array to insert or update
+            $remark_value = $date_value = null;
+            if (isset ($month_remark[$monthid]) && $month_remark[$monthid] != "") {
+                $remark_value = $month_remark[$monthid];
             }
 
-        } else //Insert
-        {
-            $payment_method = $request->get('payment_method');
-            $month_date = $request->get('month_date');
-            $month_remark = $request->get('month_remark');
+            if (isset($month_date[$monthid]) && $month_date[$monthid] != "") {
+                $date_value = date("Y-m-d", strtotime($month_date[$monthid]));
+            }
 
-            foreach ($payment_method as $monthid => $method) {
-                $remark_value = $date_value = "";
-                if (isset ($month_remark[$monthid]) && $month_remark[$monthid] != "") {
-                    $remark_value = $month_remark[$monthid];
-                }
+            $pdata = array(
+                'student_id'       => $request->get('student_id'),
+                'syear'            => $syear,
+                'sub_institute_id' => $sub_institute_id,
+                'month_id'         => $monthid,
+                'payment_method'   => $method,
+                'payment_date'     => $date_value,
+                'remarks'          => $remark_value,
+                'created_by'       => $user_id,
+            );
 
-                $pdata = array(
-                    'student_id'       => $request->get('student_id'),
-                    'syear'            => $syear,
-                    'sub_institute_id' => $sub_institute_id,
-                    'month_id'         => $monthid,
-                    'payment_method'   => $method,
-                    'remarks'          => $remark_value,
-                    'created_by'       => $user_id,
-                );
-
-                if (isset ($month_date[$monthid]) && $month_date[$monthid] != "" && $month_date[$monthid] != null) {
-                    $pdata['payment_date'] = date("Y-m-d", strtotime($month_date[$monthid]));
-                }
-
+            // if data exists then update data into table 
+            if(!empty($checkData)){
+                tblstudentPaymentMethodMappingModel::where([
+                                'student_id'       => $request->get('student_id'),
+                                'sub_institute_id' => $sub_institute_id,
+                                'month_id'         => $monthid,
+                            ])->update($pdata);
+            }
+            // if data not exists then insert data into table 
+            else{
                 tblstudentPaymentMethodMappingModel::insert($pdata);
             }
         }
-
-        //ENd Insert or Update into Payment Method Mapping Table        
-
+        // 25-09-2024 end 
 
         $res['status_code'] = 1;
         $res['message'] = "Student Fees Details Successfully Updated.";

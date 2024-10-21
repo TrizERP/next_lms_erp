@@ -59,14 +59,13 @@
                                         style="width:100%">
                                         <thead>
                                             <tr>
-                                                <th data-toggle="tooltip" title="Select All"><input type="checkbox"
-                                                        name="" id="checkedAll"></th>
+                                                <th data-toggle="tooltip" title="Select All"><input type="checkbox" name="" id="checkedAll"></th>
                                                 <th data-toggle="tooltip" title="No">No</th>
                                                 <th data-toggle="tooltip" title="Name of Holiday">Name of Holiday</th>
                                                 <th data-toggle="tooltip" title="Date">Date</th>
                                                 <th data-toggle="tooltip" title="Type">Type</th>
                                                 <th data-toggle="tooltip" title="Department">Department</th>
-                                                <th data-toggle="tooltip" title="Action">Action</th>
+                                                <th data-toggle="tooltip" title="Action" class="text-left">Action</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -390,6 +389,7 @@
             var ids = [];
             var id = $(this).data('id');
             ids.push(id);
+            deleteHoliday(ids)
         });
 
         function deleteHoliday(ids) {

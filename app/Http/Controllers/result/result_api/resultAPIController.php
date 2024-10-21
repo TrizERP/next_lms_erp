@@ -7,94 +7,90 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
+use App\Http\Controllers\lms\questionmasterController;
+use App\Http\Controllers\lms\counselling\lmsCounsellingController;
 
 class resultAPIController extends Controller
 {
     //
-
-    public function resultPersonalize(Request $request){
-        $type = $request->type;
+    public function resultPersonalize(Request $request)
+    {
         $sub_institute_id = $request->sub_institute_id;
-        $syear = $request->syear;
-        $res['status_code']=0;
-        $res['message']="No data Found"; 
-        // previous data start
-        $allData = DB::table('result_personalize_marks')->selectRaw('student_name,enrollment_no,standard,subject,sum(total) as total,sum(obtain) as obtain,syear')->where('sub_institute_id',$sub_institute_id)
-        ->when($request->enrollment_no, function ($q) use($request) {
-            $q->where('enrollment_no',$request->enrollment_no);
-        })->when($request->standard, function ($q) use($request) {
-            $q->where('standard',$request->standard);
-        })->groupBy(['subject','standard'])->get()->toArray();  
-        $previous_marks=[];
-
+        $res['status_code'] = 0;
+        $res['message'] = "No data Found"; 
+    
+        // Fetch overall data
+        $allData = DB::table('result_personalize_marks')
+            ->selectRaw('student_name, enrollment_no, standard, subject, sum(total) as total, sum(obtain) as obtain, syear')
+            ->where('sub_institute_id', $sub_institute_id)
+            ->when($request->enrollment_no, fn($q) => $q->where('enrollment_no', $request->enrollment_no))
+            ->when($request->standard, fn($q) => $q->where('standard', $request->standard))
+            ->groupBy(['subject', 'standard'])
+            ->get()
+            ->toArray();
+    
+        // Initialize arrays
         $previous_marks['previousdata']['overallresult'] = [];
         $standardData = [];
-        
-        foreach ($allData as $key => $value) {
+    
+        foreach ($allData as $value) {
+            // Group overall results by standard
             $previous_marks['previousdata']['overallresult'][$value->standard][] = [
                 "subjectname" => $value->subject,
                 "totalmarks" => $value->total,
                 "totalobtain" => $value->obtain,
             ];
-        
-            $getSingledata = DB::table('result_personalize_marks')
-                ->selectRaw('group_concat(exam) as title, sum(total) as total, sum(obtain) as obtain, standard, subject')
+    
+            // Fetch detailed exam data
+            $examData = DB::table('result_personalize_marks')
+                ->selectRaw('group_concat(exam) as title, sum(total) as total, sum(obtain) as obtain')
                 ->where([
                     'standard' => $value->standard,
                     'subject' => $value->subject,
                     'sub_institute_id' => $sub_institute_id,
+                    'enrollment_no' => $value->enrollment_no
                 ])
-                ->where('enrollment_no',$value->enrollment_no)
                 ->groupBy('standard', 'exam')
                 ->get()
                 ->toArray();
-        
-            foreach ($getSingledata as $index => $data) {
-                if (!isset($standardData[$value->standard])) {
-                    $standardData[$value->standard] = [
-                        'standardname' => $value->standard,
-                        'totalmarks' => 0,
-                        'totalobtain' => 0,
-                        'subjectdata' => [],
-                    ];
-                }
-        
-                $standardData[$value->standard]['totalmarks'] += $data->total;
-                $standardData[$value->standard]['totalobtain'] += $data->obtain;
-        
-                // Check if the subject already exists in the subjectdata array
+    
+            // Update standard data
+            if (!isset($standardData[$value->standard])) {
+                $standardData[$value->standard] = [
+                    'standardname' => $value->standard,
+                    'totalmarks' => 0,
+                    'totalobtain' => 0,
+                    'subjectdata' => []
+                ];
+            }
+    
+            $standardData[$value->standard]['totalmarks'] += $value->total;
+            $standardData[$value->standard]['totalobtain'] += $value->obtain;
+            // Process subject data
+            foreach ($examData as $exam) {
                 $subjectIndex = array_search($value->subject, array_column($standardData[$value->standard]['subjectdata'], 'title'));
-        
+    
+                $examEntry = [
+                    "title" => $exam->title,
+                    "marks" => $exam->total,
+                    "obtain" => $exam->obtain
+                ];
+    
                 if ($subjectIndex !== false) {
-                    // If the subject exists, add the exam data to the subject's array
-                    $standardData[$value->standard]['subjectdata'][$subjectIndex]['examdata'][] = [
-                        "title" => $data->title,
-                        "marks" => $data->total,
-                        "obtain" => $data->obtain,
-                    ];
+                    $standardData[$value->standard]['subjectdata'][$subjectIndex]['examdata'][] = $examEntry;
                 } else {
-                    // If the subject doesn't exist, create a new entry in the subjectdata array
                     $standardData[$value->standard]['subjectdata'][] = [
                         "title" => $value->subject,
-                        "examdata" => [
-                            [
-                                "title" => $data->title,
-                                "marks" => $data->total,
-                                "obtain" => $data->obtain,
-                            ],
-                        ],
+                        "examdata" => [$examEntry]
                     ];
                 }
             }
         }
-        
+
         $previous_marks['previousdata']['standarddata'] = array_values($standardData);
         
-        // previous data end
-        
         return $previous_marks;
-    }
-
+    }    
 
     public function currentResult(Request $request){
         $type = $request->type;
@@ -105,74 +101,81 @@ class resultAPIController extends Controller
         // (system table) result_exam_master & result_create_exam & result_marks & standard & subject		
         // db::enableQueryLog();
         // standard data			
-        $allData =DB::table('result_exam_master as rem')
-        ->join('result_create_exam as rce',function($join){
-            $join->on('rem.Id','=','rce.exam_id')->on('rce.standard_id','=','rem.standard_id');
+      // Fetch all necessary data in a single query
+        $allData = DB::table('result_exam_master as rem')
+        ->join('result_create_exam as rce', function ($join) {
+            $join->on('rem.Id', '=', 'rce.exam_id')
+                ->on('rce.standard_id', '=', 'rem.standard_id');
         })
-        ->join('result_marks as rm','rm.exam_id','=','rce.id')
-        ->join('tblstudent as s','rm.student_id','=','s.id')
-        ->join('tblstudent_enrollment as se',function ($q) use($syear) {
-            $q->on('se.student_id','=','s.id')->where('se.syear',$syear)->whereNull('se.end_date');
+        ->join('result_marks as rm', 'rm.exam_id', '=', 'rce.id')
+        ->join('tblstudent as s', 'rm.student_id', '=', 's.id')
+        ->join('tblstudent_enrollment as se', function ($q) use ($syear) {
+            $q->on('se.student_id', '=', 's.id')
+                ->where('se.syear', $syear)
+                ->whereNull('se.end_date');
         })
-        ->join('standard as std','std.id','=','se.standard_id')
-        ->join('subject as sub','sub.id','=','rce.subject_id')  
-        ->selectRaw('std.id as standard,rem.Id as exam_id,rem.ExamTitle,rem.standard_id,rce.id as create_id,rce.subject_id,rce.title as exam_title,sub.subject_name as subject,sum(rm.points) as obtain,sum(rce.points) as total,group_concat(DISTINCT rce.title) as title')
-        ->where('rem.SubInstituteId',$sub_institute_id)
-        ->where('rce.syear',$syear)
-        ->when($request->standard,function($q) use($request) {
-            $q->where('rem.standard_id',$request->standard);
-        })->when($request->student_id,function($q) use($request) {
-            $q->where('rm.student_id',$request->student_id)->groupBy('rm.student_id');
+        ->join('standard as std', 'std.id', '=', 'se.standard_id')
+        ->join('subject as sub', 'sub.id', '=', 'rce.subject_id')
+        ->selectRaw('
+            std.id as standard, rem.Id as exam_id, rem.ExamTitle, rem.standard_id, 
+            rce.id as create_id, rce.subject_id, rce.title as exam_title, 
+            sub.subject_name as subject, sum(rm.points) as obtain, 
+            sum(rce.points) as total, std.name as standard_name
+        ')
+        ->where('rem.SubInstituteId', $sub_institute_id)
+        ->where('rce.syear', $syear)
+        ->when($request->standard, function ($q) use ($request) {
+            $q->where('rem.standard_id', $request->standard);
         })
-        ->groupBy(['standard','subject','create_id'])      
-        ->get()->toArray();
-        // dd(db::getQueryLog($allData));
-        $newData =$subjectdata=[];
-        $stdObtMark = $stdTotMark=0;
-        foreach ($allData as $value) {
-            $examData = [
-                'title' => $value->exam_title,
-                'total' => $value->total,
-                'obtain' => $value->obtain,
-            ];
-            $stdTotMark += $value->total;
-            $stdObtMark += $value->obtain;
-            
-            $getSTDname=DB::table('standard')->where('id',$value->standard)->where('sub_institute_id',$sub_institute_id)->first();
-        
-            if (isset($newData[$value->standard])) {
-                $subjectData = &$newData[$value->standard]['subjectdata'];
-        
-                $subjectIndex = array_search($value->subject, array_column($subjectData, 'title'));
-        
-                if ($subjectIndex !== false) {
-                    $newData[$value->standard]['subjectdata'][$subjectIndex]['examdata'][] = $examData;
-                } else {
-                    $newData[$value->standard]['subjectdata'][] = [
-                        'subject_id'=>$value->subject_id,
-                        'title' => $value->subject,
-                        'examdata' => [$examData],
-                    ];
-                }
-                 // Update 'totalmarks' and 'totalobtain'
-                $newData[$value->standard]['totalmarks'] += $stdTotMark;
-                $newData[$value->standard]['totalobtain'] += $stdObtMark;
-            } else {
-                $newData[$value->standard] = [
-                    'standardname' => $getSTDname->name,
-                    'totalmarks' => $stdTotMark,
-                    'totalobtain' => $stdObtMark,                    
-                    'subjectdata' => [
-                        [
-                            'subject_id'=>$value->subject_id,
-                            'title' => $value->subject,
-                            'examdata' => [$examData],
-                        ],
-                    ],
-                ];
+        ->when($request->student_id, function ($q) use ($request) {
+            $q->where('rm.student_id', $request->student_id)
+                ->groupBy('rm.student_id');
+        })
+        ->groupBy(['standard', 'subject', 'create_id'])
+        ->get()
+        ->toArray();
 
-            }
-         
+        $newData = [];
+        $stdObtMark = $stdTotMark = 0;
+
+        // Process data
+        foreach ($allData as $value) {
+        $examData = [
+            'title' => $value->exam_title,
+            'total' => $value->total,
+            'obtain' => $value->obtain,
+        ];
+
+        $stdTotMark += $value->total;
+        $stdObtMark += $value->obtain;
+
+        // Check if standard already exists in the array
+        if (!isset($newData[$value->standard])) {
+            $newData[$value->standard] = [
+                'standardname' => $value->standard_name,
+                'totalmarks' => 0,
+                'totalobtain' => 0,
+                'subjectdata' => [],
+            ];
+        }
+
+        $subjectData = &$newData[$value->standard]['subjectdata'];
+
+        $subjectIndex = array_search($value->subject, array_column($subjectData, 'title'));
+
+        // If subject exists, append exam data, else create a new subject entry
+        if ($subjectIndex !== false) {
+            $subjectData[$subjectIndex]['examdata'][] = $examData;
+        } else {
+            $subjectData[] = [
+                'subject_id' => $value->subject_id,
+                'title' => $value->subject,
+                'examdata' => [$examData],
+            ];
+        }
+
+        $newData[$value->standard]['totalmarks'] += $value->total;
+        $newData[$value->standard]['totalobtain'] += $value->obtain;
         }
         
         // Flatten the structure
@@ -209,14 +212,13 @@ class resultAPIController extends Controller
         })
         ->groupBy(['standard','subject','create_id'])      
         ->get()->toArray();
+
         $subTotMark = $subObtMark = 0;
         $allchapterdata=[];
-        
         set_time_limit(300);
-
         // db::enableQueryLog();
         $chapterData = DB::table('question_paper as qp')
-            ->select('qp.standard_id','qp.subject_id','qp.id AS question_paper_id','qp.paper_name','le.student_id','le.question_paper_id',DB::raw('SUM(qp.total_marks) as total_marks'),DB::raw('SUM(IFNULL(le.total_right, 0)) AS obtain_marks'),'qp.question_ids',DB::raw('GROUP_CONCAT(qm.question_title) as question_titles'),'ch.chapter_name',DB::raw('ch.id as chapter_id'),)
+            ->select('qp.standard_id','qp.subject_id','qp.id AS question_paper_id','qp.paper_name','le.student_id','le.question_paper_id',DB::raw('SUM(qp.total_marks) as total_marks'),DB::raw('SUM(IFNULL(le.total_right, 0)) AS obtain_marks'),'qp.question_ids',DB::raw('GROUP_CONCAT(qm.question_title) as question_titles'),DB::raw('GROUP_CONCAT(qp.question_ids) as question_str'),'ch.chapter_name',DB::raw('ch.id as chapter_id'),)
             ->leftjoin('lms_online_exam as le', 'le.question_paper_id', '=', 'qp.id')
             ->join('lms_question_master as qm', function ($join) {
                 $join->on('qm.sub_institute_id','=','qp.sub_institute_id')->whereRaw('qm.id IN (qp.question_ids)');
@@ -228,7 +230,7 @@ class resultAPIController extends Controller
                 $q->where('qp.subject_id', $request->subject_id);
             })
             ->where('qp.syear',$syear)
-            // ->where('le.student_id',$request->student_id)
+            ->where('le.student_id',$request->student_id) // for student wise chapter data
             ->groupBy('ch.chapter_name')
             ->get()->toArray();
             // dd($chapterData);exit;
@@ -295,7 +297,7 @@ class resultAPIController extends Controller
             })
             ->join('tblstudent as s','s.id','=','loe.student_id')
             ->join('tblstudent_enrollment as se','se.student_id','=','s.id')
-            ->selectRaw("qp.*,lqm.*,loe.*,s.*,sum(qp.total_marks) as total_marks, sum(IFNULL(loe.total_right, '0')) AS obtain_marks")
+            ->selectRaw("qp.*,lqm.*,loe.*,s.*,sum(qp.total_marks) as total_marks, sum(IFNULL(loe.total_right, '0')) AS obtain_marks,GROUP_CONCAT(qp.question_ids) as question_ids")
             ->whereRaw('qp.standard_id='.$request->standard.'  and qp.sub_institute_id='.$sub_institute_id.' and qp.syear='.$syear.' and lqm.chapter_id='.$row->chapter_id.' ')->groupBy('qp.subject_id')->get()->toArray();
             // echo "<pre>";print_r($getCurrentStudentExam->question_paper_id);exitand loe.question_paper_id NOT IN ('.$getCurrentStudentExam->question_paper_id.') ;
             $progressData = $all_students=[];
@@ -324,40 +326,72 @@ class resultAPIController extends Controller
             }
            
             $progressData = array_values($progressData);
-           
-            $chapters[$row->chapter_id]=array(
-                "title"=>$row->chapter_name,
-                "totalmarks"=>$row->total_marks,
-                "totalobtain"=>$row->obtain_marks,
-                "chapterrank"=>4,
-                "recommendation"=>array(
-                    array(
-                        "type"=>"video",
-                        "title"=>"video-1",
-                        "link"=>"https://youtu.be/wDchsz8nmbo?si=O8Md_owjD1ipg383",
-                    ),
-                    array(
-                        "type"=>"video",
-                        "title"=>"video-2",
-                        "link"=>"https://youtu.be/wDchsz8nmbo?si=O8Md_owjD1ipg383",
-                    ), 
-                    array(
-                        "type"=>"video",
-                        "title"=>"video-3",
-                        "link"=>"https://youtu.be/wDchsz8nmbo?si=O8Md_owjD1ipg383",
-                    ),
-                     array(
-                        "type"=>"video",
-                        "title"=>"video-4",
-                        "link"=>"https://youtu.be/wDchsz8nmbo?si=O8Md_owjD1ipg383",
-                    ),
-                ),
-                "chapteroutcome"=> $transformedData,
-                "chapterprogress"=> $progressData,
-            );
-        }
+
+            if ($value->subject_id == $row->subject_id) {
+                $studentPer = $this->calculatePercentage($row->obtain_marks, $row->total_marks);
+                $chper = ($row->total_marks>0) ? ($studentPer) /10 : 0;
+                $controller = new questionmasterController;
+
+                $interestsCount = ['Realistic' => 0, 'Investigative' => 0, 'Artistic' => 0, 'Social' => 0, 'Enterprising' => 0, 'Conventional' => 0];
+
+                // Get question map values
+                if (isset($row->question_ids)) {
+                    $question_ids = explode(',', $row->question_ids);
+                    
+                    foreach ($question_ids as $qv) {
+                        $getQuestionData = DB::table('lms_question_master')->where('id', $qv)->first();
+                        
+                        if (!empty($getQuestionData) && $getQuestionData->subject_id == $row->subject_id && $row->chapter_id == $getQuestionData->chapter_id) {
+                            $request2 = new Request(['question_id' => $qv]);
+                            $mapValues = $controller->getMappedValue($request2);
+                            
+                            foreach ($mapValues['MappedData'] as $item) {
+                                $interests = $this->extractInterests($item);
+                                foreach ($interestsCount as $key => $valued) {
+                                    $interestsCount[$key] += $interests[$key];
+                                }
+                            }
+                        }
+                    }
+                }
+
+                $conPercentages = [];
+                foreach ($interestsCount as $key => $values) {
+                    $conPercentages[$key] = $this->calculatePercentage($values, 40);
+                }
+
+                // Get occupation
+                $lmsCounsellingController = new lmsCounsellingController;
+                $request3 = new Request($conPercentages);
+                $intrestOccupation = $lmsCounsellingController->intrestEnterScore($request3);
+                $dataArray = $intrestOccupation->getData(true);
+
+                // Prepare occupation data
+                $occupation = [];
+                if (isset($dataArray['career']) && !empty($dataArray['career'])) {
+                    foreach ($dataArray['career'] as $cv) {
+                        $occupation[] = [
+                            "type" => "video",
+                            "title" => $cv['title'],
+                            "link" => "https://main--lms-portal-site.netlify.app/content-model?data=" . $cv['code'],
+                        ];
+                    }
+                }
+
+                // Collect chapter data
+                $chapters[$value->subject_id][] = [
+                    "title" => $row->chapter_name,
+                    "totalmarks" => $row->total_marks,
+                    "totalobtain" => $row->obtain_marks,
+                    "chapterrank" => round($chper, 2),
+                    "recommendation" => $occupation,
+                    "chapteroutcome" => $transformedData,
+                    "chapterprogress" => $progressData,
+                ];
+            }
+            }
             if(isset($item->subject_id)){
-                $allchapterdata[$item->subject_id]['chapterdata'] = $chapters;
+                $allchapterdata[$value->subject_id]['chapterdata'] = $chapters;
             }
         }
 
@@ -372,7 +406,6 @@ class resultAPIController extends Controller
              }             
         }
         $current_marks['currentdata']['subjectdata'] = $flattenedData2; 
-        
 
         // get current students details
         $studentDetail = DB::table('tblstudent as s')
@@ -388,7 +421,7 @@ class resultAPIController extends Controller
         ->where('s.id', '=', $request->student_id)
         ->groupBy('sos.student_id')
         ->first();
-    
+        // exit;
         $current_marks['currentdata']['student_id'] = isset($studentDetail->student_id) ? $studentDetail->student_id : null; 
         $current_marks['currentdata']['syear'] = isset($request->syear) ? $request->syear : null;
         $current_marks['currentdata']['sub_institute_id'] = isset($request->sub_institute_id) ? $request->sub_institute_id : null;                
@@ -401,4 +434,24 @@ class resultAPIController extends Controller
         $current_marks['currentdata']['optional_subjects'] =isset($studentDetail->optional_subject) ?  $studentDetail->optional_subject : null;                                       
         return $current_marks;
     }
+
+    // Function to calculate percentage
+    function calculatePercentage($value, $total) {
+        return ($total > 0) ? round(($value * 100) / $total) : 0;
+    }
+
+    // Function to extract interests from mapped values
+    function extractInterests($mappedValue) {
+        $interests = ['Realistic' => 0, 'Investigative' => 0, 'Artistic' => 0, 'Social' => 0, 'Enterprising' => 0, 'Conventional' => 0];
+        
+        if (isset($mappedValue->name) && $mappedValue->name == "Interests") {
+            foreach ($mappedValue->mappedValue as $v) {
+                if (array_key_exists($v->name, $interests)) {
+                    $interests[$v->name]++;
+                }
+            }
+        }
+        return $interests;
+    }
+
 }

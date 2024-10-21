@@ -8,6 +8,7 @@ use App\Models\lms\counselling\counsellingOnlineExamModel;
 use App\Models\lms\counselling\OnetContentModelReference;
 use App\Models\lms\counselling\OnetCareerCluster;
 use App\Models\lms\counselling\OnetEmployer;
+use App\Models\lms\counselling\OnetInstitutes;
 use App\Models\lms\counselling\OnetOccupationData;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -323,9 +324,50 @@ class lmsCounsellingController extends Controller
                 'element_type' => 'job_zones',
             ];
         }
-
         // Append the job zones structure to the result array
         $result[] = $jobZonesJson;
+
+        // Initialize the base structure of the JSON response
+        $allOccupationJson = [
+            'level' => 1,
+            'element_id' => '',
+            'element_name' => 'All Occupation',
+            'element_type' => 'occupation',
+            'children' => [[
+                    'level' => 2,
+                    'element_id' => 'all',
+                    'element_name' => 'All Occupation',
+                    'element_type' => 'occupation'
+            ]]
+        ];
+        $result[] = $allOccupationJson;
+
+        // Fetch data from the database
+        $industries = DB::table('o_net_data_sub_categories as a')
+            ->select('a.id as element_id', 'a.sub_category_name as element_name')
+            ->where('a.o_net_data_category_id', 12)
+            ->get();
+
+        // Initialize the base structure of the JSON response
+        $industriesJson = [
+            'level' => 1,
+            'element_id' => '',
+            'element_name' => 'Industries',
+            'element_type' => 'industries',
+            'children' => []
+        ];
+
+        // Loop through the database result and format it
+        foreach ($industries as $industry) {
+            $industriesJson['children'][] = [
+                'level' => 2,
+                'element_id' => $industry->element_id,
+                'element_name' => $industry->element_name,
+                'element_type' => 'industries'
+            ];
+        }
+        // Append the Industries structure to the result array
+        $result[] = $industriesJson;
 
         // Return the final JSON response
         return response()->json($result);
@@ -341,6 +383,8 @@ class lmsCounsellingController extends Controller
         $work_styles = $request->input('work_styles');
         $work_values = $request->input('work_values');
         $job_zones = $request->input('job_zones');
+        $industries = $request->input('industries');
+        $occupation = $request->input('occupation');
 
         // Build the initial query
         $query = DB::table('onet_occupation_data as od')
@@ -448,6 +492,15 @@ class lmsCounsellingController extends Controller
                         }
                     });
             });
+        }
+
+        if ($industries) {
+            // Explode the industries string into an array
+            $industriesArray = explode(',', $industries);
+
+            // Join the 'o_net_data_tables' table on 'od.onetsoc_code' and 'dt.code'
+            $query->join('o_net_data_tables as dt', 'dt.code', '=', 'od.onetsoc_code')
+                  ->whereIn('dt.o_net_sub_category_id', $industriesArray);
         }
 
         // Group by onetsoc_code and get the results
@@ -898,7 +951,7 @@ class lmsCounsellingController extends Controller
             "children" => $children
         ];
     }
-    public function getInstituteData()
+    public function getInstituteData1()
     {
         // Fetch the data using an inner join
         $institutes = DB::table('onet_institute_data as oid')
@@ -931,6 +984,8 @@ class lmsCounsellingController extends Controller
                 'oic.enrollment',
                 'oic.placement'
             )
+            ->inRandomOrder()
+            ->limit(20)
             ->get();
 
         // Group courses by institute
@@ -989,12 +1044,21 @@ class lmsCounsellingController extends Controller
         // Return the result as a JSON response
         return response()->json(array_values($result));
     }
+    public function getInstituteData()
+    {
+        //$institutes = OnetInstitutes::all();
+        $institutes = OnetInstitutes::inRandomOrder()->limit(200)->get();
+        return response()->json($institutes);
+    }
+
     public function getCourseData()
     {
         // First query to group institutes by course
         $courses = DB::table('onet_institute_courses as oic')
         ->selectRaw('GROUP_CONCAT(DISTINCT oic.institute_id) as institute_id, oic.aicte_id, oic.college_name, oic.description, oic.programme, oic.university, oic.course_level, oic.course_name, oic.course_type, oic.course_fees, oic.intake, oic.enrollment, oic.placement')
         ->groupBy('oic.course_name')
+        ->inRandomOrder()
+        ->limit(20)
         ->get();
 
     // Initialize an empty array to store the final result
@@ -1070,11 +1134,11 @@ class lmsCounsellingController extends Controller
         $response = $sectors->groupBy('title')->map(function ($items) {
             return [
                 'title' => $items->first()->title,
-                'image' => $items->first()->image,
                 'data' => $items->map(function ($item) {
                     return [
                         'name' => $item->name,
                         'description' => $item->description,
+                        'image' => $item->image,
                         'education' => $item->education,
                         'city' => $item->city,
                         'state' => $item->state,
@@ -1298,6 +1362,83 @@ class lmsCounsellingController extends Controller
                 $errorMessage = $response->body();
                 return response()->json(['error' => $errorMessage], $statusCode); // Return the error message with status code
             }
+        } catch (RequestException $exception) {
+            $errorMessage = $exception->getMessage();
+            return response()->json(['error' => $errorMessage], 500); // Return the exception message with a 500 status code
+        }
+    }
+    public function matchProfile(Request $request)
+    {
+        try {
+            $response = [
+            "interest_profile" => [
+                [
+                    "Realistic" => 25,
+                    "Investigative" => 40,
+                    "Artistic" => 20,
+                    "Social" => 35,
+                    "Enterprising" => 24,
+                    "Conventional" => 35,
+                    "job_zone" => "1",
+                ]
+            ],
+            "exist_student_profile" => [
+                [
+                    "student_id" => 97382,
+                    "name" => "Evaan Rajesh Rafaliya",
+                    "data" => [
+                        [
+                            "standard" => 8,
+                            "interests" => [
+                                ["type" => "Interests", "element_id" => "1.B.1.a", "name" => "Realistic"],
+                                ["type" => "Interests", "element_id" => "1.B.1.b", "name" => "Investigative"],
+                                ["type" => "Interests", "element_id" => "1.B.1.c", "name" => "Artistic"],
+                            ],
+                            "basic_skills" => [
+                                ["type" => "Skills", "element_id" => "2.A.1.a", "name" => "Reading Comprehension"],
+                                ["type" => "Skills", "element_id" => "2.A.1.b", "name" => "Active Listening"],
+                                ["type" => "Skills", "element_id" => "2.A.1.c", "name" => "Writing"],
+                            ],
+                            "knowledge" => [
+                                ["type" => "Knowledge", "element_id" => "2.C.1.a", "name" => "Administration and Management"],
+                                ["type" => "Knowledge", "element_id" => "2.C.1.b", "name" => "Administrative"],
+                                ["type" => "Knowledge", "element_id" => "2.C.1.c", "name" => "Economics and Accounting"],
+                            ],
+                            "abilities" => [
+                                ["type" => "Abilities", "element_id" => "1.A.1.a.1", "name" => "Oral Comprehension"],
+                                ["type" => "Abilities", "element_id" => "1.A.1.a.3", "name" => "Oral Expression"],
+                                ["type" => "Abilities", "element_id" => "1.A.1.a.2", "name" => "Written Comprehension"],
+                            ]
+                        ],
+                        [
+                            "standard" => 7,
+                            "interests" => [
+                                ["type" => "Interests", "element_id" => "1.B.1.a", "name" => "Realistic"],
+                                ["type" => "Interests", "element_id" => "1.B.1.b", "name" => "Investigative"],
+                                ["type" => "Interests", "element_id" => "1.B.1.c", "name" => "Artistic"],
+                            ],
+                            "basic_skills" => [
+                                ["type" => "Skills", "element_id" => "2.A.1.a", "name" => "Reading Comprehension"],
+                                ["type" => "Skills", "element_id" => "2.A.1.b", "name" => "Active Listening"],
+                                ["type" => "Skills", "element_id" => "2.A.1.c", "name" => "Writing"],
+                            ],
+                            "knowledge" => [
+                                ["type" => "Knowledge", "element_id" => "2.C.1.a", "name" => "Administration and Management"],
+                                ["type" => "Knowledge", "element_id" => "2.C.1.b", "name" => "Administrative"],
+                                ["type" => "Knowledge", "element_id" => "2.C.1.c", "name" => "Economics and Accounting"],
+                            ],
+                            "abilities" => [
+                                ["type" => "Abilities", "element_id" => "1.A.1.a.1", "name" => "Oral Comprehension"],
+                                ["type" => "Abilities", "element_id" => "1.A.1.a.3", "name" => "Oral Expression"],
+                                ["type" => "Abilities", "element_id" => "1.A.1.a.2", "name" => "Written Comprehension"],
+                            ]
+                        ],
+                        // Add the same structure for other standards as per the example provided
+                    ]
+                ]
+            ]
+        ];
+        return response()->json($response);
         } catch (RequestException $exception) {
             $errorMessage = $exception->getMessage();
             return response()->json(['error' => $errorMessage], 500); // Return the exception message with a 500 status code

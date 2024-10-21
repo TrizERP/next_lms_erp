@@ -121,4 +121,7 @@ Route::group(['prefix' => 'hrms', 'middleware' => ['session', 'menu', 'logRoute'
     // multiple employee hrms attendance
     Route::get('multiple_attendance_report',[HrmsController::Class,'multipleAttendanceReportIndex'])->name('multiple_attendance_report.index');
     Route::get('multiple_attendance_report/create',[HrmsController::Class,'multipleAttendanceReportCreate'])->name('multiple_attendance_report.create');
+    // daywise employee attendance altius
+    Route::get('daywise_attendance_report',[HrmsController::Class,'DaywiseAttendanceReportIndex'])->name('daywise_attendance_report.index');
+    Route::get('daywise_attendance_report/create',[HrmsController::Class,'DaywiseAttendanceportCreate'])->name('daywise_attendance_report.create');
 });

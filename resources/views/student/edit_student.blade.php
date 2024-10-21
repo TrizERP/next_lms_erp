@@ -262,6 +262,7 @@ datalist {
                                         {{ App\Helpers\SearchChain('4','single','grade,std,div',$student_data->grade_id,$student_data->standard_id,$student_data->section_id) }}
                                         <div class="col-md-4 form-group">
                                             <span></span>
+                                            <input type="hidden" name="editable" value='@if($data["edit_disable"] == "disabled") 0 @else 1 @endif'>
                                         </div>
                                         <div class="col-md-4 form-group">
                                             <span></span>
@@ -275,7 +276,7 @@ datalist {
                                         <div class="col-md-4 form-group">
                                             <label>{{App\Helpers\get_string('studentquota','request')}}<i class="mdi mdi-lead-pencil"></i></label>
                                             @php 
-                                            if(session()->get('sub_institute_id') != 257 && count($data['feesData']) != 0) {
+                                            if(session()->get('sub_institute_id') != 257 && (isset($data['feesData']['fees_data']) && count($data['feesData']['fees_data']) != 0)) {
                                                 $disable = "style=pointer-events:none";
                                                 $readonly = "readonly";
                                             }
@@ -343,8 +344,8 @@ datalist {
                                         <div class="col-md-4 form-group">
                                             <label>Optional Subject 4</label>
                                             <select id='optional_subject' name="optional_subject4[]" multiple class="form-control">
-                                                @if(isset($data['optional_subject_data']))
-                                                    @foreach($data['optional_subject_data'] as $key => $value)
+                                                @if(isset($data['hilldOptional4']))
+                                                    @foreach($data['hilldOptional4'] as $key => $value)
                                                         <option @if( in_array($value['subject_id'],$data['student_optional_subject_data4']) ) selected @endif value="{{ $value['subject_id'] }}">{{ $value['subject_name'] }}</option>
                                                     @endforeach
                                                 @endif                                                   
@@ -353,8 +354,8 @@ datalist {
                                         <div class="col-md-4 form-group">
                                             <label>Optional Subject 5</label>
                                             <select id='optional_subject' name="optional_subject5[]" multiple class="form-control">
-                                                @if(isset($data['optional_subject_data']))
-                                                    @foreach($data['optional_subject_data'] as $key => $value)
+                                                @if(isset($data['hilldOptional5']))
+                                                    @foreach($data['hilldOptional5'] as $key => $value)
                                                         <option @if( in_array($value['subject_id'],$data['student_optional_subject_data5']) ) selected @endif value="{{ $value['subject_id'] }}">{{ $value['subject_name'] }}</option>
                                                     @endforeach
                                                 @endif                                                   
@@ -363,8 +364,8 @@ datalist {
                                         <div class="col-md-4 form-group">
                                             <label>Optional Subject 6</label>
                                             <select id='optional_subject' name="optional_subject6[]" multiple class="form-control">
-                                                @if(isset($data['optional_subject_data']))
-                                                    @foreach($data['optional_subject_data'] as $key => $value)
+                                                @if(isset($data['hilldOptional6']))
+                                                    @foreach($data['hilldOptional6'] as $key => $value)
                                                         <option @if( in_array($value['subject_id'],$data['student_optional_subject_data6']) ) selected @endif value="{{ $value['subject_id'] }}">{{ $value['subject_name'] }}</option>
                                                     @endforeach
                                                 @endif                                                   
@@ -825,7 +826,9 @@ datalist {
                                                     <th>{{App\Helpers\get_string('studentname','request')}}</th>
                                                     <th>{{App\Helpers\get_string('standard','request')}}</th>
                                                     <th>{{App\Helpers\get_string('division','request')}}</th>
-                                                    <th class="text-left">Mobile</th>
+                                                    <th>Mobile</th>
+                                                    <th>{{ App\Helpers\get_string('studentmobile','request')}}</th>
+                                                    <th class="text-left">Mother Mobile</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -841,6 +844,8 @@ datalist {
                                                     <td>{{$pvalue['std_name']}}</td>
                                                     <td>{{$pvalue['div_name']}}</td>
                                                     <td>{{$pvalue['mobile']}}</td>
+                                                    <td>{{$pvalue['student_mobile']}}</td>
+                                                    <td>{{$pvalue['mother_mobile']}}</td>
                                                 </tr>
                                             @php
                                             $j++;

@@ -9,7 +9,7 @@
         $sub_institute_id = session()->get('sub_institute_id');
         
 		@endphp
-		@if(session()->get('user_profile_name') == 'Admin' || session()->get('user_profile_name') == 'School Admin')
+		@if((session()->get('user_profile_name') == 'Admin' || session()->get('user_profile_name') == 'School Admin') || ($sub_institute_id==254 && (session()->get('user_profile_name') =='Teacher')))
             <div class="row">
                 <div class="col-sm-5 text-right">
                     <input class="btn btn-warning mb-4" type="button" onclick="printDiv('printableArea');" value="Print Paper" />
@@ -54,6 +54,7 @@ $student_id_arr = implode(",",array_values($data['students_ids']));
 <input type="hidden" id="division_id" name="division_id" value="{{$data['division_id']}}">
 <input type="hidden" id="term_id" name="term_id" value="{{$data['term_id']}}">
 <input type="hidden" id="syear" name="syear" value="{{$data['syear']}}">
+<input type="hidden" id="result_type" name="result_type" value="{{$data['result_type']}}">
 <input type="hidden" id="student_arr" name="student_arr" value="{{$student_id_arr}}">
 </form>
 
@@ -62,6 +63,7 @@ $student_id_arr = implode(",",array_values($data['students_ids']));
 
    function printMob(divName) {
     var studentData = <?php echo json_encode($data['all_stud_html']); ?>;
+    // console.log(studentData);
     // Loop through each student ID and associated HTML
     for (var studentId in studentData) {
         if (studentData.hasOwnProperty(studentId)) {
