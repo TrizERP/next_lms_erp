@@ -1104,17 +1104,30 @@ class PayrollController extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $list['month'] = date('M');
         $list['year'] = date('Y');
-        $employeeSalaryData = [];
+        $employeeData = [];
         if($request->month && $request->year) {
             $list['month'] = $request->month;
             $list['year'] = $request->year;
             // $employeeSalaryData = EmployeeMonthlySalaryData::with('getUser')->where([['month',$request->month],['year', $request->year],['sub_institute_id', $sub_institute_id]])->get();
-            $employeeSalaryData = DB::table('employee_monthly_salary_data as emd')->join('tbluser as u','u.id','=','emd.employee_id')->where([['emd.month',$request->month],['emd.year', $request->year],['emd.sub_institute_id', $sub_institute_id]])->where('u.status',1)->get();
+            $employeeSalaryData = DB::table('employee_monthly_salary_data as emd')
+            ->where([
+                ['emd.month', $request->month],
+                ['emd.year', $request->year],
+                ['emd.sub_institute_id', $sub_institute_id]
+            ])
+            ->whereNotNull('total_payment')
+            ->get()->toArray();
+        
+            $employeeData = [];
+            foreach ($employeeSalaryData as $key => $value) {
+                $employeeData[$key] = $value;
+                $getUserData = employeeDetails($sub_institute_id, $value->employee_id);
+                $employeeData[$key]->usersDetails = isset($getUserData[0]) ? $getUserData[0] : [];
+            }
         }
         $currentYear = date('Y');
-        // echo "<pre>";print_r($employeeSalaryData);exit;
-        return view('payroll.payroll_bankwise_report.index', ['employees' => $employeeSalaryData,'list'=>$list,'months' => $months,'years' => $years,'currentYear'=>$currentYear]);
-
+        // echo "<pre>";print_r($employeeData);exit;
+        return view('payroll.payroll_bankwise_report.index', ['employees' => $employeeData,'list'=>$list,'months' => $months,'years' => $years,'currentYear'=>$currentYear]);
 
     }
 
@@ -1305,7 +1318,7 @@ class PayrollController extends Controller
                     $q->whereIn('u.department_id',$request->department_id);
                 });
             })
-            ->selectRaw('employee_monthly_salary_data.*,u.id,CONCAT_WS(" ",COALESCE(u.first_name, "-"),COALESCE(u.last_name, "-")) as full_name,u.employee_no,u.department_id as department_ids')
+            ->selectRaw('employee_monthly_salary_data.*,u.id,CONCAT_WS(" ",COALESCE(u.first_name, "-"),COALESCE(u.middle_name, "-"),COALESCE(u.last_name, "-")) as full_name,u.employee_no,u.department_id as department_ids')
             ->where([['employee_monthly_salary_data.month',$request->month],['employee_monthly_salary_data.year',$request->year],['employee_monthly_salary_data.sub_institute_id',$sub_institute_id]])
             ->get()->toArray();
 
