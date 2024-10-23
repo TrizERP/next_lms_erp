@@ -94,7 +94,7 @@ class LeaveReportController extends Controller
         $employees = tbluserModel::where('sub_institute_id', $sub_institute_id)->whereRaw('department_id in ('.$department_id.')')->get()->toArray();
 
         $get_employee_leave_lists = DB::table('hrms_emp_leaves as hel')
-        ->selectRaw("hel.*, u.*,CONCAT_WS(' ',u.first_name,u.last_name) AS employee_name, hlt.leave_type, hlt.id as leave_id, hel.status as hel_status")
+        ->selectRaw("hel.*, u.*,CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name) AS employee_name, hlt.leave_type, hlt.id as leave_id, hel.status as hel_status")
         ->join('tbluser as u', 'u.id', '=', 'hel.user_id')
         ->join('hrms_leave_types as hlt', function($join) use ($sub_institute_id) {
             $join->on('hlt.id', '=', 'hel.leave_type_id')

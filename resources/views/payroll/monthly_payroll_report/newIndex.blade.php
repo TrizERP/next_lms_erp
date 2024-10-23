@@ -82,6 +82,7 @@
                             <th>SR No.</th>
                             <th>Emp No</th>
                             <th>Employee Name</th>
+                            <th>Department</th>
                             <th>Total Day</th>
                             @foreach($data['header'] as $hkey => $col)
                                 <th class="text-left">{{$col}} </th>
@@ -95,6 +96,7 @@
                             <td>{{$key+1}}</td>
                             <td>{{$value['employee_no']}}</td>
                             <td>{{$value['full_name'] ?? '-' .'('.$value['user_profile'] ?? '-' .')'}}</td>
+                            <td>{{$value['department']}}</td>
                             <td>
                                 <input type="text" id="totalDay_{{$value['id']}}" name="payrollVal[{{$value['id']}}][total_day]" onkeyup="getData(this,{{$value['id']}})" class="form-control" value="{{ isset($value['monthlyData']->total_day) ? round($value['monthlyData']->total_day,2) : $value['totalDay'] }}" {{$readonly}}>
                             </td>
