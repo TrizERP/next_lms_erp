@@ -552,12 +552,11 @@ protected function generateMore($topicName, $chapterName, $subjectName, $content
 
     // Track the key issues based on user input
     $this->trackKeyIssues($input);
-
     // If in feedback state, handle feedback
     if ($state === 'feedback') {
         return $this->handleFeedback($input);
     }
-
+    
     // Handle the conversation based on the current state
     switch ($state) {
         case 'initial':
@@ -571,7 +570,7 @@ protected function generateMore($topicName, $chapterName, $subjectName, $content
                 Session::put('state', 'grades');
                 return "Please provide your unique student ID to fetch your grades.";
             } else {
-                return $this->handleInitialState($input); // Handle other unrecognized inputs
+                return $this->handleInitialState($input);
             }
             break;
         case 'fees':
@@ -593,7 +592,6 @@ protected function generateMore($topicName, $chapterName, $subjectName, $content
 
     // Log the conversation (user input and bot response)
     $this->logConversation($input, $botResponse);
-
     // Ask for feedback after delivering the final output
     if (in_array($state, ['fees', 'attendance', 'grades','AI'])) {
         Session::put('state', 'feedback'); // Switch to feedback state
@@ -635,7 +633,7 @@ public function handleFeedback($input)
             return "Hello! How can I assist you today?";
         } else {
             Session::put('state', 'AI');
-            return $this->handleDynamicResponse($input); // Pass any unrecognized input to OpenAI
+            return $this->handleDynamicResponse($input);
         }
     }
 
@@ -686,11 +684,9 @@ public function handleFeedback($input)
                 ],
                 'max_tokens' => 150, 
             ]);
-            Session::put('state','initial');
             return $response['choices'][0]['message']['content'];
         }catch (RequestException $e) {
             Log::error('OpenAI API Error: ' . $e->getMessage());
-            Session::put('state','initial');
             return [
                 'title' => 'Error generating title',
                 'description' => 'Error: ' . $e->getMessage(),

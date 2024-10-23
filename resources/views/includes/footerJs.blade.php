@@ -624,12 +624,18 @@ $route = ['dashboard'];
         <button class="faq-button" data-message="Grades" style="width: 100%; padding: 2px 0; border-radius: 5px;background-color: #f44336; color: white; border: none; cursor: pointer; font-size: 12px;">Grades</button>
     </div>
 </div>`;
-
-    // Add event listeners for FAQ buttons
+document.getElementById('user_input').addEventListener('keypress', function(event) {
+    if (event.key === 'Enter') { 
+        event.preventDefault(); 
+        var userInput = this.value; 
+        sendMessage(userInput); 
+    }
+});
+    
     document.querySelectorAll('.faq-button').forEach(button => {
         button.addEventListener('click', function() {
             var message = this.getAttribute('data-message');
-            sendMessage(message); // Use the same sendMessage function to handle button clicks
+            sendMessage(message); 
         });
     });
 };
@@ -734,8 +740,6 @@ document.getElementById('refresh-chatbot').onclick = function() {
                         <button class="faq-button" data-message="Grades" style="width: 100%; padding: 2px 0; border-radius: 5px;background-color: #f44336; color: white; border: none; cursor: pointer; font-size: 12px;">Grades</button>
                     </div>
                 </div>`;
-
-    // Add event listeners for FAQ buttons
     document.querySelectorAll('.faq-button').forEach(button => {
         button.addEventListener('click', function() {
             var message = this.getAttribute('data-message');
