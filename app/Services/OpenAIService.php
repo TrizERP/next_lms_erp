@@ -584,6 +584,24 @@ protected function generateMore($topicName, $chapterName, $subjectName, $content
             break;
         case 'AI':
             $botResponse = $this->handleDynamicResponse($input);
+            $endPhrases = [
+                "Thank you",
+                "Are you satisfied with the response",
+                "May I further help you",
+                "Is there anything else I can assist you with?",
+                "Have a great day!",
+                "Feel free to ask if you have more questions!",
+                "Goodbye",
+                "Take care",
+                "You're welcome! If you have any more questions, feel free to ask.",
+                "You're welcome! If you have any more questions or need further assistance, feel free to ask. I'm here to help!"
+            ];
+            $state='initial';
+            foreach ($endPhrases as $phrase) {
+                if (stripos($botResponse, $phrase) !== false) {
+                    $state='AI';
+                }
+            }
             break;
         default:
             $botResponse = $this->handleDynamicResponse($input);
@@ -677,6 +695,9 @@ public function handleFeedback($input)
     protected function handleDynamicResponse($input)
     {
         try {
+            $conversationHistory = Session::get('conversationHistory', []);
+            $conversationHistory[] = ['role' => 'user', 'content' => $input];
+
             $response = $this->client->post('https://api.openai.com/v1/chat/completions', [
                 'verify' => false,
                 'headers' => [
@@ -685,9 +706,7 @@ public function handleFeedback($input)
                 ],
                 'json' => [
                     'model' => 'gpt-3.5-turbo',
-                    'messages' => [
-                        ['role' => 'user', 'content' => $input],
-                    ],
+                    'messages' => $conversationHistory,
                     'max_tokens' => 4096,
                     'temperature' => 1.8,
                     'top_p' => 0.5,
@@ -696,6 +715,8 @@ public function handleFeedback($input)
     
             $data = json_decode($response->getBody(), true);
             $generatedText = $data['choices'][0]['message']['content'];
+            $conversationHistory[] = ['role' => 'assistant', 'content' => $generatedText];
+            Session::put('conversationHistory', $conversationHistory);
             return $generatedText;
             
         }catch (RequestException $e) {
