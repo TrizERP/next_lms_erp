@@ -21,7 +21,8 @@ class OpenAIService
 
     public function __construct()
     {
-        $this->client = OpenAI::client(env('OPENAI_API_KEY'));
+        $this->client = new Client();
+        $this->apiKey = env('OPENAI_API_KEY');
     }
 
     public function generateTitleAndDescription($topicName, $chapterName, $subjectName)
@@ -127,7 +128,6 @@ class OpenAIService
     }
 
     try {
-        // Call GPT-3.5 API to generate text
         $response = $this->client->post('https://api.openai.com/v1/chat/completions', [
             'verify' => false,
             'headers' => [
@@ -308,37 +308,37 @@ class OpenAIService
     $prompt =     "Generate a image in a very realistic approach for the topic '{$topicName}' in the chapter '{$chapterName}' of the subject '{$subjectName}'.\n" .
                   "Please refer to the following resources for more information:\n{$linksString}\n" .
                   "Strictly avoid any personal replies or apologies; and content should be on strictly Indian context with proper english and avoid incorrect spellings or ununderstood text ;Only provide the main content.\n";
-        try {
-            $response = $this->client->post('https://api.openai.com/v1/images/generations', [
-                'verify' => false,
-                'headers' => [
-                    'Authorization' => 'Bearer ' . $this->apiKey,
-                    'Content-Type' => 'application/json',
-                ],
-                'json' => [
-                    'model' => 'dall-e-3',
-                    'prompt' => $prompt,
-                    'n' => 1,
-                    'size' => '1024x1024'
-                ],
-            ]);
-            Log::info("Prompt for image: " . $prompt);
-            $data = json_decode($response->getBody(), true);
-            $imageUrls = [];
-            foreach ($data['data'] as $imageData) {
-                $imageUrls[] = $imageData['url'];
-                break;
-            }
-            return $imageUrls;
-        } catch (RequestException $e) {
-            if ($e->getResponse()->getStatusCode() == 429) {
-                // Log::warning('Rate limit exceeded. Retrying in ' . $retryDelay . ' seconds...');
-                // sleep($retryDelay); // Wait before retrying
-                // continue; // Retry the request
-            }
-            Log::error('OpenAI Image API Error: ' . $e->getMessage());
-            return null;
-        }
+        // try {
+        //     $response = $this->client->post('https://api.openai.com/v1/images/generations', [
+        //         'verify' => false,
+        //         'headers' => [
+        //             'Authorization' => 'Bearer ' . $this->apiKey,
+        //             'Content-Type' => 'application/json',
+        //         ],
+        //         'json' => [
+        //             'model' => 'dall-e-3',
+        //             'prompt' => $prompt,
+        //             'n' => 1,
+        //             'size' => '1024x1024'
+        //         ],
+        //     ]);
+        //     Log::info("Prompt for image: " . $prompt);
+        //     $data = json_decode($response->getBody(), true);
+        //     $imageUrls = [];
+        //     foreach ($data['data'] as $imageData) {
+        //         $imageUrls[] = $imageData['url'];
+        //         break;
+        //     }
+        //     return $imageUrls;
+        // } catch (RequestException $e) {
+        //     if ($e->getResponse()->getStatusCode() == 429) {
+        //         // Log::warning('Rate limit exceeded. Retrying in ' . $retryDelay . ' seconds...');
+        //         // sleep($retryDelay); // Wait before retrying
+        //         // continue; // Retry the request
+        //     }
+        //     Log::error('OpenAI Image API Error: ' . $e->getMessage());
+        //     return null;
+        // }
     }
     public function generateSportsData($topicName, $chapterName, $subjectName, $contentCategory,$contentType)
     {   
@@ -676,15 +676,28 @@ public function handleFeedback($input)
     }
     protected function handleDynamicResponse($input)
     {
-        try{
-            $response = $this->client->chat()->create([
-                'model' => 'gpt-3.5-turbo',
-                'messages' => [
-                    ['role' => 'user', 'content' => $input],
+        try {
+            $response = $this->client->post('https://api.openai.com/v1/chat/completions', [
+                'verify' => false,
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $this->apiKey,
+                    'Content-Type' => 'application/json',
                 ],
-                'max_tokens' => 150, 
+                'json' => [
+                    'model' => 'gpt-3.5-turbo',
+                    'messages' => [
+                        ['role' => 'user', 'content' => $input],
+                    ],
+                    'max_tokens' => 4096,
+                    'temperature' => 1.8,
+                    'top_p' => 0.5,
+                ],
             ]);
-            return $response['choices'][0]['message']['content'];
+    
+            $data = json_decode($response->getBody(), true);
+            $generatedText = $data['choices'][0]['message']['content'];
+            return $generatedText;
+            
         }catch (RequestException $e) {
             Log::error('OpenAI API Error: ' . $e->getMessage());
             return [
