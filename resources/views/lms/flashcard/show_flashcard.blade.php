@@ -19,19 +19,22 @@
                         <li class="breadcrumb-item"><a href="{{route('course_master.index')}}">LMS</a></li>
                         <li class="breadcrumb-item"><a href="{{ route('chapter_master.index',['standard_id'=>$data['breadcrum_data']->standard_id ?? '','subject_id'=>$data['breadcrum_data']->subject_id ?? '']) }}">{{$data['breadcrum_data']->subject_name ?? ''}}</a></li>
                         <li class="breadcrumb-item"><a href="{{ route('topic_master.index',['id'=>$data['breadcrum_data']->chapter_id ?? '']) }}">{{$data['breadcrum_data']->chapter_name ?? ''}}</a></li>
-                        <li class="breadcrumb-item"><a href="{{ route('topic_master.index',['id'=>$data['breadcrum_data']->chapter_id ?? '']) }}">{{$data['breadcrum_data']->topic_name ?? ''}}</a></li>
+                        {{--<li class="breadcrumb-item"><a href="{{ route('topic_master.index',['id'=>$data['breadcrum_data']->chapter_id ?? '']) }}">{{$data['breadcrum_data']->topic_name ?? ''}}</a></li> --}}
                         <li class="breadcrumb-item active" aria-current="page">Create Flash Card</li>
                     </ol>
                 </nav>
             </div>
             @php
+            $user_profile = Session::get('user_profile_name');
             if(isset($_REQUEST['preload_lms'])){
                 $preload_lms = "preload_lms=preload_lms";
             }
             @endphp
+            @if(strtoupper($user_profile) == 'LMS TEACHER' || strtoupper($user_profile) == 'TEACHER')
             <div class="col-md-3 mb-4 text-md-right">
-                <a href="{{ route('lms_flashcard.create',['content_id' => $_REQUEST['content_id'],$preload_lms ?? '']) }}" class="btn btn-info add-new"><i class="fa fa-plus"></i> Add Flash Card</a>
+                <a href="{{ route('lms_flashcard.create',['chapter_id' => $_REQUEST['chapter_id'],$preload_lms ?? '']) }}" class="btn btn-info add-new"><i class="fa fa-plus"></i> Add Flash Card</a>
             </div>
+            @endif
         </div>
 
     <div class="row">
@@ -57,7 +60,9 @@
                                         <th>Frontend</th>
                                         <th>Backend</th>
                                         <th>Status</th>
+                                        @if(strtoupper($user_profile) == 'LMS TEACHER' || strtoupper($user_profile) == 'TEACHER')
                                         <th>Action</th>
+                                        @endif
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -80,6 +85,7 @@
                                             Hide
                                             @endif
                                         </td>
+                                        @if(strtoupper($user_profile) == 'LMS TEACHER' || strtoupper($user_profile) == 'TEACHER')
                                         <td>
                                             <div class="d-flex align-items-center justify-content-end">
                                                 <a class="btn btn-outline-success" href="{{ route('lms_flashcard.edit',[$fcdata->id])}}">
@@ -92,6 +98,7 @@
                                                 </form>
                                             </div>
                                         </td>
+                                        @endif
                                     </tr>
                                     @endforeach
                                     @else
