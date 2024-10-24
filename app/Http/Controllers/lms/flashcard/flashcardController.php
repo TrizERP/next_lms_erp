@@ -242,13 +242,13 @@ class flashcardController extends Controller
     {
         $type = $request->input('type');
         $flashcarddata = flashcardModel::where(["id" => $id])->get()->toArray();
-        $content_id = $flashcarddata[0]['content_id'];
+        $chapter_id = $flashcarddata[0]['chapter_id'];
 
         flashcardModel::where(["id" => $id])->delete();
         $res['status_code'] = "1";
         $res['message'] = "Flash Card Deleted Successfully";
 
-        return redirect()->route('lms_flashcard.index', ['content_id' => $content_id]);
+        return redirect()->route('lms_flashcard.index', ['chapter_id' => $chapter_id]);
     }
 
     function ajaxdestroyanswer_master(Request $request)
