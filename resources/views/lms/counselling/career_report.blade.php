@@ -1,11 +1,18 @@
 @extends('layout')
 @section('container')
+<!-- Calendly link widget begin -->
+<link href="https://assets.calendly.com/assets/external/widget.css" rel="stylesheet">
+<script src="https://assets.calendly.com/assets/external/widget.js" type="text/javascript" async></script>
+<!-- Calendly link widget end -->   
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row bg-title">
             <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
                 <h4 class="page-title">Counseling Report</h4>
             </div>
+        </div>
+        <div class="container text-center mt-5">
+            <a href="" onclick="Calendly.initPopupWidget({url: 'https://calendly.com/scholarclone/30min'});return false;" class="btn btn-primary btn-lg" role="button">Book an Appointment</a>
         </div>
     <style>
         body {
@@ -216,7 +223,7 @@
             <h1>Career Counseling Report</h1>
             <p>Guiding you towards a successful career</p>
         </div>
-        
+     
         <div class="section">
             <h2 class="section-title">Personal Information</h2>
             <div class="content">
