@@ -150,7 +150,7 @@
                 <!-- tab 1 ends  -->
                 <!-- tab 2 start  -->
                 <div class="tab-pane p-3" id="section-linemove-2" role="tabpanel">    
-                   
+                   @include('HRMS.department.tabDepartment')
                 </div>
                 <!-- tab 2 ends  -->
                  <!-- tab 3 starts  -->

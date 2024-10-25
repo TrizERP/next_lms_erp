@@ -1813,13 +1813,12 @@ exit; */
                     ->on('fr.sub_institute_id', '=', 'tse.sub_institute_id');
             })
             ->where(function ($query) {
-                $query->where('fp.razorpay_dashboard_ps', '!=', 'captured')
-                    ->where('fp.razorpay_dashboard_ps', '!=', 'refunded')
-                    ->orWhereNull('fp.razorpay_dashboard_ps');
+                $query->whereNotIn('fp.razorpay_dashboard_ps', ['captured', 'refunded', 'rajesh'])
+                      ->orWhereNull('fp.razorpay_dashboard_ps');
             })
             ->whereNotNull('fp.razorpay_order_id')
             ->groupBy('fp.id')
-            ->get();
+            ->get(); // ->on('tse.syear', '=', 'fr.syear')
 
         if ( !empty($payment_data) ) {
 
