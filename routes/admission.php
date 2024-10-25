@@ -20,6 +20,8 @@ Route::group(['prefix' => 'admission', 'middleware' => ['session', 'menu', 'logR
 
     Route::get('admissionAI', [admissionEnquiryController::class,'admissionAI'])->name('admissionAI');
 
+    Route::get('admission_registration_v1_report', [admissionRegistrationHillController::class,'registrationV1Reoprt'])->name('registration_v1_report.index');
+
     Route::controller(admissionRegistrationController::class)->group(function () {
         Route::post('admission_student', 'saveStudent')->name('admission_student');
     });

@@ -19,10 +19,11 @@
             </div>
             @endif
             <div class="row">
-                <div class="col-lg-3 col-sm-3 col-xs-3">
+                <div class="col-lg-4 col-sm-4 col-xs-4">
                     <span class="d-inline-block mb-2" tabindex="0" data-toggle="tooltip" title="Once student is enrolled in System it cannot be edited & deleted. ">
                       <button class="btn btn-danger" style="pointer-events: none;" type="button" disabled="">Note</button>
                     </span>
+                    <a class="btn btn-secondary" href="{{route('registration_v1_report.index')}}" target="_blank">Report</a>
                 </div>
                 <div class="col-lg-12 col-sm-12 col-xs-12">
                 <form action="{{ route('admission_registration_v1.store') }}" enctype="multipart/form-data" method="post"  id="myForm" onsubmit="return validateForm()">
@@ -185,55 +186,68 @@
 
 <script src="{{ asset("/plugins/bower_components/datatables/datatables.min.js") }}"></script>
 <script>
- $(document).ready(function () {
-        var table = $('#example').DataTable({
-            select: true,
-            lengthMenu: [
-                [-1,100, 500, 1000],
-                ['Show All','100', '500', '1000']
-            ],
-            dom: 'Bfrtip',
-            buttons: [
-                {
-                    extend: 'pdfHtml5',
-                    title: 'Admission Registration Report',
-                    orientation: 'landscape',
-                    pageSize: 'LEGAL',
-                    pageSize: 'A0',
-                    exportOptions: {
-                        columns: ':visible'
-                    },
+$(document).ready(function () {
+    var table = $('#example').DataTable({
+        select: true,
+        lengthMenu: [
+            [-1, 100, 500, 1000],
+            ['Show All', '100', '500', '1000']
+        ],
+        dom: 'Bfrtip',
+        buttons: [
+            {
+                extend: 'pdfHtml5',
+                title: 'Admission Registration Report',
+                orientation: 'landscape',
+                pageSize: 'LEGAL',
+                exportOptions: {
+                    columns: ':visible'
                 },
-                {extend: 'csv', text: ' CSV', title: 'Admission Registration Report'},
-                {extend: 'excel', text: ' EXCEL', title: 'Admission Registration Report'},
-                {
-                    extend: 'print', 
-                    text: ' PRINT', 
-                    title: 'Admission Registration Report',
-                    customize: function (win) {
-                        $(win.document.body).append(`<div style="text-align: right;margin-top:20px">Printed on: {{date('d-m-Y H:i:s')}}</div>`);
-                        $('#all_values').addClass('flex-on-print');
-                    }
-                },
-                'pageLength'
-            ],
-        });
+            },
+            { extend: 'csv', text: ' CSV', title: 'Admission Registration Report' },
+            { extend: 'excel', text: ' EXCEL', title: 'Admission Registration Report' },
+            {
+                extend: 'print',
+                text: ' PRINT',
+                title: 'Admission Registration Report',
+                customize: function (win) {
+                    $(win.document.body).append(`<div style="text-align: right;margin-top:20px">Printed on: {{date('d-m-Y H:i:s')}}</div>`);
+                    $('#all_values').addClass('flex-on-print');
+                }
+            },
+            'pageLength'
+        ],
+    });
 
-        $('#example thead tr').clone(true).appendTo('#example thead');
-        $('#example thead tr:eq(1) th').each(function (i) {
-            var title = $(this).text();
+    // Clone header row for search inputs
+    $('#example thead tr').clone(true).appendTo('#example thead');
+    $('#example thead tr:eq(1) th').each(function (i) {
+        var title = $(this).text();
+        if ($(this).hasClass('select-search')) {
+            // If it is a select column, create a select dropdown
+            var select = $('<select><option value="">Search ' + title + '</option></select>')
+                .appendTo($(this).empty())
+                .on('change', function () {
+                    var val = $.fn.dataTable.util.escapeRegex($(this).val());
+                    table.column(i).search(val ? '^' + val + '$' : '', true, false).draw();
+                });
+            
+            // Populate the select dropdown with unique column values
+            table.column(i).data().unique().sort().each(function (d, j) {
+                select.append('<option value="' + d + '">' + d + '</option>');
+            });
+        } else {
+            // If it is a text column, create a text input
             $(this).html('<input type="text" placeholder="Search ' + title + '" />');
 
             $('input', this).on('keyup change', function () {
                 if (table.column(i).search() !== this.value) {
-                    table
-                        .column(i)
-                        .search(this.value)
-                        .draw();
+                    table.column(i).search(this.value).draw();
                 }
             });
-        });
+        }
     });
+});
 
 </script>
 <script>
@@ -256,7 +270,14 @@
 }
 function checkAll(chkName){
     $('.'+chkName).each(function() {
-            $(this).prop('checked', !$(this).prop('checked'));
+             $(this).prop('checked', !$(this).prop('checked'));
+            var row = $(this).closest('tr');
+            var fields = ['hn', 'hn_remarks', 'activity', 'pint', 'conf', 'paid', 'transport','enquiry_no','pint_date','pint_time','conf_date','conf_time','mobile','email','admission_standard','p_int_remark','p_int_attandance'];
+            fields.forEach(function(field) {
+                row.find('.' + field).prop('disabled', function (i, v) {
+                return !v;
+            });
+        });
         });
    }
 
