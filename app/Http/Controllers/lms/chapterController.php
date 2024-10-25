@@ -116,8 +116,18 @@ class chapterController extends Controller
             foreach ($content_data as $content) {
                 $content_data_array[$content['chapter_id']][$content['content_category']][] = $content;
             }
+            // After processing all content, append flashcards at the end
+            foreach ($content_data_array as $chapter_id => &$chapter_content) {
+                
+                if (!isset($chapter_content['Flash Cards'])) {
+                    $chapter_content['Flash Cards'] =$flash =DB::table('lms_flashcard')
+                    ->where(['chapter_id' => $chapter_id, 'sub_institute_id' => $sub_institute_id, 'status' => 1])
+                    ->get()
+                    ->toArray();
+                }
+            }
         }
-
+        // echo "<pre>";print_r($content_data_array);exit;
         $data['content_data'] = $content_data_array;
 
         $data['basic_ids'] = $data['basic_ids'][0];
