@@ -6,6 +6,10 @@
 .tooltip-inner {
     max-width: 1100px !important;
 }
+
+.control-bar a:hover, .control-bar input:hover, [contenteditable]:focus, [contenteditable]:hover{
+        background : #fff !important;
+    }
 </style>
 {{--@include('includes.header')
 @include('includes.sideNavigation')--}}
@@ -20,7 +24,7 @@
                         <li class="breadcrumb-item"><a href="{{route('course_master.index')}}">LMS</a></li>
                         <li class="breadcrumb-item"><a href="{{ route('chapter_master.index',['standard_id'=>$data['breadcrum_data']->standard_id ?? '' ,'subject_id'=>$data['breadcrum_data']->subject_id ?? '' ]) }}">{{$data['breadcrum_data']->subject_name ?? '' }}</a></li>
                         <li class="breadcrumb-item"><a href="{{ route('topic_master.index',['id'=>$data['breadcrum_data']->chapter_id ?? '' ]) }}">{{$data['breadcrum_data']->chapter_name ?? '' }}</a></li>
-                        <li class="breadcrumb-item"><a href="{{ route('topic_master.index',['id'=>$data['breadcrum_data']->chapter_id ?? '' ]) }}">{{$data['breadcrum_data']->topic_name ?? '' }}</a></li>
+                        {{-- <li class="breadcrumb-item"><a href="{{ route('topic_master.index',['id'=>$data['breadcrum_data']->chapter_id ?? '' ]) }}">{{$data['breadcrum_data']->topic_name ?? '' }}</a></li>--}}
                         <li class="breadcrumb-item active" aria-current="page">Add Flash Card</li>
                     </ol>
                 </nav>
@@ -43,8 +47,8 @@
                     <input type="hidden" name="standard_id" id="standard_id" value="{{$data['breadcrum_data']->standard_id ?? '' }}">
                     <input type="hidden" name="subject_id" id="subject_id" value="{{$data['breadcrum_data']->subject_id ?? '' }}">
                     <input type="hidden" name="chapter_id" id="chapter_id" value="{{$data['breadcrum_data']->chapter_id ?? '' }}">
-                    <input type="hidden" name="topic_id" id="topic_id" value="{{$data['breadcrum_data']->topic_id ?? '' }}">
-                   <input type="hidden" name="content_id" id="content_id" value="@if( isset($data['flashcard_data']['content_id'])){{$data['flashcard_data']['content_id']}} @else {{$_REQUEST['content_id']}} @endif">
+                    {{--<input type="hidden" name="topic_id" id="topic_id" value="{{$data['breadcrum_data']->topic_id ?? '' }}">
+                  <input type="hidden" name="content_id" id="content_id" value="@if( isset($data['flashcard_data']['content_id'])){{$data['flashcard_data']['content_id']}} @else {{$_REQUEST['content_id']}} @endif">--}}
 
                     <div class="row">
                         <div class="col-md-8">
@@ -57,7 +61,7 @@
                         <div class="col-md-8">
                             <div class="form-group">
                                 <label for="topicType">Front Text</label>
-                                <textarea name="front_text" id="front_text" contenteditable="true">
+                                <textarea name="front_text" id="front_text" contenteditable="true" class="noHover">
                                 @if( isset($data['flashcard_data']['front_text']))
                                 {{$data['flashcard_data']['front_text']}}
                                 @endif
@@ -68,7 +72,7 @@
                         <div class="col-md-8">
                             <div class="form-group">
                                 <label for="topicType">Back Text</label>
-                                <textarea name="back_text" id="back_text" contenteditable="true">
+                                <textarea name="back_text" id="back_text" contenteditable="true" class="noHover">
                                 @if( isset($data['flashcard_data']['back_text']))
                                 {{$data['flashcard_data']['back_text']}}
                                 @endif
