@@ -510,6 +510,6 @@ Route::get('customers_requirement', [reuirementController::class, 'ReportData'])
 Route::post('/paraphrase',[LmsChapterController::class,'paraphraseContentAjax'])->name('paraphrase.ajax');
 Route::post('/paraphrase-file', [LmsChapterController::class, 'paraphraseFile'])->name('paraphrase.file');
 Route::post('/flush-session', function () {
-    Session::flush(); // Clear all session data
+    Session::forget('state'); 
     return response()->json(['success' => true]);
 });
