@@ -21,7 +21,8 @@ class OpenAIService
 
     public function __construct()
     {
-        $this->client = OpenAI::client(env('OPENAI_API_KEY'));
+        $this->client = new Client();
+        $this->apiKey = env('OPENAI_API_KEY');
     }
 
     public function generateTitleAndDescription($topicName, $chapterName, $subjectName)
@@ -127,7 +128,6 @@ class OpenAIService
     }
 
     try {
-        // Call GPT-3.5 API to generate text
         $response = $this->client->post('https://api.openai.com/v1/chat/completions', [
             'verify' => false,
             'headers' => [
@@ -308,37 +308,37 @@ class OpenAIService
     $prompt =     "Generate a image in a very realistic approach for the topic '{$topicName}' in the chapter '{$chapterName}' of the subject '{$subjectName}'.\n" .
                   "Please refer to the following resources for more information:\n{$linksString}\n" .
                   "Strictly avoid any personal replies or apologies; and content should be on strictly Indian context with proper english and avoid incorrect spellings or ununderstood text ;Only provide the main content.\n";
-        try {
-            $response = $this->client->post('https://api.openai.com/v1/images/generations', [
-                'verify' => false,
-                'headers' => [
-                    'Authorization' => 'Bearer ' . $this->apiKey,
-                    'Content-Type' => 'application/json',
-                ],
-                'json' => [
-                    'model' => 'dall-e-3',
-                    'prompt' => $prompt,
-                    'n' => 1,
-                    'size' => '1024x1024'
-                ],
-            ]);
-            Log::info("Prompt for image: " . $prompt);
-            $data = json_decode($response->getBody(), true);
-            $imageUrls = [];
-            foreach ($data['data'] as $imageData) {
-                $imageUrls[] = $imageData['url'];
-                break;
-            }
-            return $imageUrls;
-        } catch (RequestException $e) {
-            if ($e->getResponse()->getStatusCode() == 429) {
-                // Log::warning('Rate limit exceeded. Retrying in ' . $retryDelay . ' seconds...');
-                // sleep($retryDelay); // Wait before retrying
-                // continue; // Retry the request
-            }
-            Log::error('OpenAI Image API Error: ' . $e->getMessage());
-            return null;
-        }
+        // try {
+        //     $response = $this->client->post('https://api.openai.com/v1/images/generations', [
+        //         'verify' => false,
+        //         'headers' => [
+        //             'Authorization' => 'Bearer ' . $this->apiKey,
+        //             'Content-Type' => 'application/json',
+        //         ],
+        //         'json' => [
+        //             'model' => 'dall-e-3',
+        //             'prompt' => $prompt,
+        //             'n' => 1,
+        //             'size' => '1024x1024'
+        //         ],
+        //     ]);
+        //     Log::info("Prompt for image: " . $prompt);
+        //     $data = json_decode($response->getBody(), true);
+        //     $imageUrls = [];
+        //     foreach ($data['data'] as $imageData) {
+        //         $imageUrls[] = $imageData['url'];
+        //         break;
+        //     }
+        //     return $imageUrls;
+        // } catch (RequestException $e) {
+        //     if ($e->getResponse()->getStatusCode() == 429) {
+        //         // Log::warning('Rate limit exceeded. Retrying in ' . $retryDelay . ' seconds...');
+        //         // sleep($retryDelay); // Wait before retrying
+        //         // continue; // Retry the request
+        //     }
+        //     Log::error('OpenAI Image API Error: ' . $e->getMessage());
+        //     return null;
+        // }
     }
     public function generateSportsData($topicName, $chapterName, $subjectName, $contentCategory,$contentType)
     {   
@@ -552,12 +552,11 @@ protected function generateMore($topicName, $chapterName, $subjectName, $content
 
     // Track the key issues based on user input
     $this->trackKeyIssues($input);
-
     // If in feedback state, handle feedback
     if ($state === 'feedback') {
         return $this->handleFeedback($input);
     }
-
+    
     // Handle the conversation based on the current state
     switch ($state) {
         case 'initial':
@@ -571,7 +570,7 @@ protected function generateMore($topicName, $chapterName, $subjectName, $content
                 Session::put('state', 'grades');
                 return "Please provide your unique student ID to fetch your grades.";
             } else {
-                return $this->handleInitialState($input); // Handle other unrecognized inputs
+                return $this->handleInitialState($input);
             }
             break;
         case 'fees':
@@ -585,6 +584,24 @@ protected function generateMore($topicName, $chapterName, $subjectName, $content
             break;
         case 'AI':
             $botResponse = $this->handleDynamicResponse($input);
+            $endPhrases = [
+                "Thank you",
+                "Are you satisfied with the response",
+                "May I further help you",
+                "Is there anything else I can assist you with?",
+                "Have a great day!",
+                "Feel free to ask if you have more questions!",
+                "Goodbye",
+                "Take care",
+                "You're welcome! If you have any more questions, feel free to ask.",
+                "You're welcome! If you have any more questions or need further assistance, feel free to ask. I'm here to help!"
+            ];
+            $state='initial';
+            foreach ($endPhrases as $phrase) {
+                if (stripos($botResponse, $phrase) !== false) {
+                    $state='AI';
+                }
+            }
             break;
         default:
             $botResponse = $this->handleDynamicResponse($input);
@@ -593,7 +610,6 @@ protected function generateMore($topicName, $chapterName, $subjectName, $content
 
     // Log the conversation (user input and bot response)
     $this->logConversation($input, $botResponse);
-
     // Ask for feedback after delivering the final output
     if (in_array($state, ['fees', 'attendance', 'grades','AI'])) {
         Session::put('state', 'feedback'); // Switch to feedback state
@@ -635,7 +651,7 @@ public function handleFeedback($input)
             return "Hello! How can I assist you today?";
         } else {
             Session::put('state', 'AI');
-            return $this->handleDynamicResponse($input); // Pass any unrecognized input to OpenAI
+            return $this->handleDynamicResponse($input);
         }
     }
 
@@ -678,19 +694,33 @@ public function handleFeedback($input)
     }
     protected function handleDynamicResponse($input)
     {
-        try{
-            $response = $this->client->chat()->create([
-                'model' => 'gpt-3.5-turbo',
-                'messages' => [
-                    ['role' => 'user', 'content' => $input],
+        try {
+            $conversationHistory = Session::get('conversationHistory', []);
+            $conversationHistory[] = ['role' => 'user', 'content' => $input];
+
+            $response = $this->client->post('https://api.openai.com/v1/chat/completions', [
+                'verify' => false,
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $this->apiKey,
+                    'Content-Type' => 'application/json',
                 ],
-                'max_tokens' => 150, 
+                'json' => [
+                    'model' => 'gpt-3.5-turbo',
+                    'messages' => $conversationHistory,
+                    'max_tokens' => 4096,
+                    'temperature' => 1.8,
+                    'top_p' => 0.5,
+                ],
             ]);
-            Session::put('state','initial');
-            return $response['choices'][0]['message']['content'];
+    
+            $data = json_decode($response->getBody(), true);
+            $generatedText = $data['choices'][0]['message']['content'];
+            $conversationHistory[] = ['role' => 'assistant', 'content' => $generatedText];
+            Session::put('conversationHistory', $conversationHistory);
+            return $generatedText;
+            
         }catch (RequestException $e) {
             Log::error('OpenAI API Error: ' . $e->getMessage());
-            Session::put('state','initial');
             return [
                 'title' => 'Error generating title',
                 'description' => 'Error: ' . $e->getMessage(),
