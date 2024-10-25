@@ -624,12 +624,18 @@ $route = ['dashboard'];
         <button class="faq-button" data-message="Grades" style="width: 100%; padding: 2px 0; border-radius: 5px;background-color: #f44336; color: white; border: none; cursor: pointer; font-size: 12px;">Grades</button>
     </div>
 </div>`;
-
-    // Add event listeners for FAQ buttons
+document.getElementById('user_input').addEventListener('keypress', function(event) {
+    if (event.key === 'Enter') { 
+        event.preventDefault(); 
+        var userInput = this.value; 
+        sendMessage(userInput); 
+    }
+});
+    
     document.querySelectorAll('.faq-button').forEach(button => {
         button.addEventListener('click', function() {
             var message = this.getAttribute('data-message');
-            sendMessage(message); // Use the same sendMessage function to handle button clicks
+            sendMessage(message); 
         });
     });
 };
@@ -734,8 +740,6 @@ document.getElementById('refresh-chatbot').onclick = function() {
                         <button class="faq-button" data-message="Grades" style="width: 100%; padding: 2px 0; border-radius: 5px;background-color: #f44336; color: white; border: none; cursor: pointer; font-size: 12px;">Grades</button>
                     </div>
                 </div>`;
-
-    // Add event listeners for FAQ buttons
     document.querySelectorAll('.faq-button').forEach(button => {
         button.addEventListener('click', function() {
             var message = this.getAttribute('data-message');
@@ -755,7 +759,6 @@ document.getElementById('refresh-chatbot').onclick = function() {
         // Display user message
         document.getElementById('messages').innerHTML += '<div style="display: inline-block; max-width: 80%; text-align: right; background-color: #e0f7fa; padding: 10px; border-radius: 5px; margin: 5px 0; float: right;clear: both">' + userInput + '</div><br>';
         document.getElementById('user_input').value = ''; // Clear input field
-        console.log("User: ",userInput);
         document.getElementById('loading').style.display = 'block';
         document.getElementById('send_button').disabled = true;
          fetch('/chatbot', {
@@ -773,7 +776,6 @@ document.getElementById('refresh-chatbot').onclick = function() {
             return response.json(); // Get raw responsejson
         })
         .then(data => {
-            console.log('Raw response:', data); // Log raw response
             let botReply = data.message;
             /*if (jsonMatch) {
                 const jsonResponse = JSON.parse(jsonMatch[0]);
