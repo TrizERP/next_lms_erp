@@ -88,7 +88,7 @@ $editData = array();
                         <div class="col-md-3 form-group">
                             <label>Previous Standard </label>
                             <select id='previous_standard' name='previous_standard' disabled="disabled" class="form-control">
-                                <option value=""> Select Standard </option>
+                                {{--<option value=""> Select Standard </option>
                                 <option value="NURSERY" @if(isset($editData['previous_standard'])) @if($editData['previous_standard'] == 'NURSERY') selected="selected" @endif @endif> Nursery </option>
                                 <option value="JRKG" @if(isset($editData['previous_standard'])) @if($editData['previous_standard'] == 'JRKG') selected="selected" @endif @endif> Jrkg </option>
                                 <option value="SRKG" @if(isset($editData['previous_standard'])) @if($editData['previous_standard'] == 'SRKG') selected="selected" @endif @endif> Srkg </option>
@@ -107,7 +107,11 @@ $editData = array();
                                 <option value="11SCI" @if(isset($editData['previous_standard'])) @if($editData['previous_standard'] == '11SCI') selected="selected" @endif @endif> 11 SCI </option>
                                 <option value="12COM" @if(isset($editData['previous_standard'])) @if($editData['previous_standard'] == '12COM') selected="selected" @endif @endif> 12 COM </option>
                                 <option value="12ART" @if(isset($editData['previous_standard'])) @if($editData['previous_standard'] == '12ART') selected="selected" @endif @endif> 12 ART </option>
-                                <option value="12SCI" @if(isset($editData['previous_standard'])) @if($editData['previous_standard'] == '12SCI') selected="selected" @endif @endif> 12 SCI </option>
+                                <option value="12SCI" @if(isset($editData['previous_standard'])) @if($editData['previous_standard'] == '12SCI') selected="selected" @endif @endif> 12 SCI </option>--}}
+
+                                @foreach($data['standard'] as $key=>$previous)
+                                <option value="{{$previous['id']}}" @if(isset($editData['previous_standard']) && $previous['id']==$editData['previous_standard']) Selected @endif> {{$previous['name']}}</option>
+                                @endforeach
                             </select>
                         </div>
                         <div class="col-md-3 form-group">

@@ -58,6 +58,7 @@
                                     <th>Previous Standard</th>
                                     <th>Admission Standard</th>
                                     <th>Enquiry Remarks</th>
+                                    <th>Transport Fees</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -112,6 +113,7 @@
                                     <td>{{$data['previous_standard']}}</td>
                                     <td>{{$data['std_name']}}</td>
                                     <td>{{$data['enquiry_remark']}}</td>
+                                    <td>{{$data['transport_fees']}}</td>
                                 </tr>
                                 @php
                             $j++;

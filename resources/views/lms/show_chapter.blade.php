@@ -4,6 +4,16 @@
 @extends('lmslayout')
 @section('container')
 use DB;
+<style>
+    .flashTitle, .flashFrontEnd, .flashBackEnd {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    padding: 10px;
+    background-color: #fff;
+    border-radius: 5px;
+    margin-bottom:32px;
+}
+
+</style>
 <!-- Content main Section -->
 <div class="content-main flex-fill">
     <h1 class="h4 mb-3">Chapter List</h1>
@@ -247,6 +257,53 @@ use DB;
                          @php
                         $no = 1;
                         @endphp
+                        <!-- flashcard start  -->
+                        @if($con_key=='Flash Cards')
+                        <div class="row chapter-content-box my-2 py-2 mx-0">
+                            <div class="col-md-10 chapter-img-box">
+                            @foreach( $content as $flashcontent )
+                                <a data-toggle="modal" data-target="#exampleModal_{{$flashcontent->id}}" class="btn btn-outline-primary btn-sm mx-1" data-original-title="View Flash Card"><i class="mdi mdi-cards-playing-outline"></i></a>
+                                <!-- Modal -->
+                                <div class="modal fade" id="exampleModal_{{$flashcontent->id}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                                <div class="modal-dialog" role="document" style="max-width:1000px">
+                                    <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="exampleModalLabel">Flash Card : {{$chdata->chapter_name}}</h5>
+                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                        </button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <h4><b>Title :</b></h4>
+                                        <div class="flashTitle">
+                                            <h5>{{$flashcontent->title}}</h5>
+                                        </div>
+                                        <h4><b>Front Text :</b></h4>
+                                        <div class="flashFrontEnd">
+                                           {!! $flashcontent->front_text !!}
+                                        </div>
+                                        <h4><b>Back Text :</b></h4>
+                                        <div class="flashBackEnd">
+                                           {!! $flashcontent->back_text!!}
+                                        </div>
+                                    </div>
+                                  
+                                    </div>
+                                </div>
+                                </div>
+                                <!-- flasg model end  -->
+                            @endforeach
+                            </div>
+                            @if(strtoupper($user_profile) == 'LMS TEACHER' || strtoupper($user_profile) == 'TEACHER')
+                            <div class="col-md-2 chapter-img-box">
+                                <a href="{{ route('lms_flashcard.index',['chapter_id' =>$chdata->id,$preload_lms ?? '' ])}}" target="_blank"
+                                   class="btn btn-outline-warning btn-sm mx-1" data-toggle="tooltip" title="" data-original-title="Add Flash Card"><i class="mdi mdi-cards-playing-outline"></i></a>
+                            </div>
+                            @endif
+                        </div>
+                           
+                        <!-- else flashcard -->
+                        @else
                         @foreach( $content as $single_content )
                             {{-- @php
                                 echo "<pre>"; print_r($single_content); exit;
@@ -281,11 +338,11 @@ use DB;
                             @if($_REQUEST['perm'] == $data['sub_institute_id'])
                             <div class="col-md-2 time text-secondary d-flex justify-content-end"
                                  style="font-size: 20px;" >
-                                <a href="{{ route('lms_flashcard.index',['content_id' => $single_content['id'],$preload_lms ?? '' ])}}"
+                                {{-- <a href="{{ route('lms_flashcard.index',['content_id' => $single_content['id'],$preload_lms ?? '' ])}}"
                                    target="_blank"
                                    class="btn btn-outline-warning btn-sm mx-1" data-toggle="tooltip" title=""
                                    data-original-title="Add Flash Card"><i
-                                        class="mdi mdi-cards-playing-outline"></i></a>
+                                        class="mdi mdi-cards-playing-outline"></i></a> --}}
                                 <a href="{{ route('content_master.edit',['content_master' => $single_content['id'],'std_id'=>$single_content['standard_id'],$preload_lms ?? ''])}}"
                                    class="btn btn-outline-success btn-sm mx-1"><i
                                         class="mdi mdi-pencil-outline"></i></a>
@@ -301,13 +358,18 @@ use DB;
                             @endif
                         </div>
                         @endforeach
+                    @endif <!-- flashcard end if -->
                     </div>
+
+
                     @php $subColapse++; @endphp
                     @endforeach
                 </div>
+
                 @endif
                 @php $collapse++; @endphp
             @endforeach
+
             @else
             <div class="card single-chp">
                 No Records Found.
