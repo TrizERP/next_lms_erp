@@ -62,7 +62,8 @@ class syllabusController extends Controller
                 ->join('tbluser as u',function($q){
                     $q->on('u.id','=','c.created_by');
                 })
-                ->selectRaw('c.*,s.name std_name ,su.display_name,,CONCAT_WS(" ",COALESCE(u.first_name,"-"),COALESCE(u.last_name,"-")) as createdBy')
+                ->leftJoin('lms_curriculum as lc','lc.id','c.curriculum_id')
+                ->selectRaw('c.*,s.name std_name ,su.display_name,,CONCAT_WS(" ",COALESCE(u.first_name,"-"),COALESCE(u.last_name,"-")) as createdBy,lc.curriculum_name')
                 ->where("c.syear", "=", $syear)
                 ->where("c.sub_institute_id", "=", $sub_institute_id)
                 ->where("t.teacher_id", "=", $user_id)
@@ -79,7 +80,8 @@ class syllabusController extends Controller
                 ->join('tbluser as u',function($q){
                     $q->on('u.id','=','c.created_by');
                 })
-                ->selectRaw('c.*,s.name std_name ,su.display_name,CONCAT_WS(" ",COALESCE(u.first_name,"-"),COALESCE(u.last_name,"-")) as createdBy')
+                ->leftJoin('lms_curriculum as lc','lc.id','c.curriculum_id')
+                ->selectRaw('c.*,s.name std_name ,su.display_name,CONCAT_WS(" ",COALESCE(u.first_name,"-"),COALESCE(u.last_name,"-")) as createdBy,lc.curriculum_name')
                 ->where("c.syear", "=", $syear)
                 ->where("c.sub_institute_id", "=", $sub_institute_id)
                 ->orderBy('c.id','DESC')
@@ -163,7 +165,12 @@ class syllabusController extends Controller
         $no_of_periods = $request->no_of_periods  ?? null;
         $no_of_days = $request->no_of_days  ?? null;
         $assement_tool = $request->assement_tool  ?? null;
-
+        // 25-10-2024
+        $curriculum_id = $request->curriculum_id;
+        $syllabus_objectives = $request->syllabus_objectives;
+        $learning_outcomes = $request->learning_outcomes;
+        $suggested_materials = $request->suggested_materials;
+        $progress_tracking = $request->progress_tracking;
         // echo "<pre>";print_r($request->all());exit;
 
         $values = [
@@ -179,6 +186,11 @@ class syllabusController extends Controller
             'assesment_tool'   => $assement_tool,
             'file_name'        => $file_name,
             'date_'            => $date,
+            'curriculum_id'=>$curriculum_id,
+            'objectives'=>$syllabus_objectives,
+            'learning_outcomes'=>$learning_outcomes,
+            'suggested_materials'=>$suggested_materials,
+            'progress_tracking'=>$progress_tracking,
             'created_by'       => $user_id,
             'sub_institute_id' => $sub_institute_id,
             'created_at'       => now(),
