@@ -53,8 +53,8 @@
                                 <td>{{$value->subject_name}}</td>
                                 <td>{{$data['boards'][$value->board_id]}}</td>
                                 <td>{{$value->curriculum_name}}</td>
-                                <td>{{substr($value->curriculum_alignment,0,300)}}.....</td>
-                                <td>{{substr($value->holistic_curriculum,0,300)}}.....</td>
+                                <td>{{substr($value->curriculum_alignment,0,100)}}.....</td>
+                                <td>{{substr($value->holistic_curriculum,0,100)}}.....</td>
                                 {{-- <td>
                                     @foreach($value->subject_curricula_name as $k => $v)
                                         {{$k+1}}) {{$v->display_name}}<br>
@@ -71,11 +71,16 @@
                                     {{isset($data['model_integration'][$v]) ? ($k+1).') '.$data['model_integration'][$v] : '-'}}<br>    
                                     @endforeach
                                 </td>
-                                <td>{{substr($value->objective,0,300)}}.....</td>
-                                <td>{{substr($value->chapter,0,300)}}.....</td>
-                                <td>{{substr($value->outcome,0,300)}}.....</td>
-                                <td>{{substr($value->assessment_tool,0,300)}}.....</td>
+                                <td>{{substr($value->objective,0,100)}}.....</td>
+                                <td>{{substr($value->chapter,0,100)}}.....</td>
+                                <td>{{substr($value->outcome,0,100)}}.....</td>
+                                <td>{{substr($value->assessment_tool,0,100)}}.....</td>
                                 <td>
+                                    <div class="d-inline">
+                                        <a class="btn btn-secondary btn-outline" data-toggle="modal" data-target="#exampleModal_{{$value->id}}">
+                                             <span class="mdi mdi-eye-outline"></span>
+                                        </a>
+                                    </div>
                                     <div class="d-inline">
                                         <a href="{{ route('lms_curriculum.edit',$value->id)}}" class="btn btn-info btn-outline">
                                             <i class="ti-pencil-alt"></i>
@@ -98,7 +103,7 @@
             </div>
         </div>
     </div>
-
+    @include('lms.lms_curriculum.model')
     @include('includes.footerJs')
     <script>
         $(document).ready(function () {
