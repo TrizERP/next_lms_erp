@@ -564,7 +564,7 @@ protected function generateMore($topicName, $chapterName, $subjectName, $content
         case 'initial':
             if (stripos($input, 'fees') !== false) {
                 Session::put('state', 'fees');
-                return "What issue regarding fees would you like to discuss? (e.g., pending fees)";
+                return $this->handleFeesState($input);
             } elseif (stripos($input, 'attendance') !== false) {
                 Session::put('state', 'attendance');
                 return "Please provide your unique student ID to display attendance.";
@@ -645,17 +645,14 @@ public function handleFeedback($input)
     {
         if (stripos($input, 'fees') !== false) {
             Session::put('state', 'fees');
-            return "What issue regarding fees would you like to discuss? (e.g., pending fees)";
+            return $this->handleFeesState($input);
         } elseif (stripos($input, 'attendance') !== false) {
             Session::put('state', 'attendance');
             return "Please provide your unique student ID to display attendance.";
         } elseif (stripos($input, 'grades') !== false) {
             Session::put('state', 'grades');
             return "Please provide your unique student ID to fetch your grades.";
-        } elseif (stripos($input, 'hello') !== false || stripos($input, 'hi') !== false) {
-            // Generic greeting response
-            return "Hello! How can I assist you today?";
-        } else {
+        }  else {
             Session::put('state', 'AI');
             return $this->handleDynamicResponse($input);
         }
