@@ -125,6 +125,12 @@ class chapterController extends Controller
                     ->get()
                     ->toArray();
                 }
+                if (!isset($chapter_content['Mindmap'])) {
+                    $chapter_content['Mindmap'] = array();
+                }
+                if (!isset($chapter_content['Virtual Lab'])) {
+                    $chapter_content['Virtual Lab'] = array();
+                }
             }
         }
         // echo "<pre>";print_r($content_data_array);exit;

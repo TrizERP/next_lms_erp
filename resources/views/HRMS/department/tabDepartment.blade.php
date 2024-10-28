@@ -1,5 +1,4 @@
 <script src="{{ asset("/ckeditor_wiris/ckeditor4/ckeditor.js") }}"></script>
-@include('HRMS.department.tabModel')
 <style>
    .activeTrue{
    background : #dfdddd !important;
@@ -42,8 +41,8 @@ $taskType = ['Daily Task','Weekly Task','Monthly Task','Yearly Task'];
          <div class="main main-2" style="padding:20px">
             <!-- <div class="divHead">
                <h3><b>Manage Task</b></h3>
-            </div>
-            <hr class="headHr"> -->
+               </div>
+               <hr class="headHr"> -->
             <div class="divBody">
                <form action="{{route('institute_detail.store')}}" method="post" class="row mt-4" enctype="multipart/form-data">
                   @csrf
@@ -89,16 +88,17 @@ $taskType = ['Daily Task','Weekly Task','Monthly Task','Yearly Task'];
                      <!-- skills -->
                      <div class="col-md-4 form-group">
                         <label>Skills </label>
-                       {{-- <input type="email" id='skill0' list="dataLists" name="arr[0][skills]" class="form-control skillInput" multiple  autocomplete="off" >
+                        {{-- <input type="email" id='skill0' list="dataLists" name="arr[0][skills]" class="form-control skillInput" multiple  autocomplete="off" >
                         <datalist id="dataLists">
                            @foreach($data['skillLists'] as $k=>$val)
                            <option value="{{$val->skills}}"></option>
-                        @endforeach
-                        </datalist> --}}
+                           @endforeach
+                        </datalist>
+                        --}}
                         <select name="arr[0][skills][]" id="skill0" class="form-control" multiple>
-                            @foreach($data['skillLists'] as $k=>$val)
-                            <option value="{{$val->name}}">{{$val->name}}</option>
-                            @endforeach
+                           @foreach($data['skillLists'] as $k=>$val)
+                           <option value="{{$val->name}}">{{$val->name}}</option>
+                           @endforeach
                         </select>
                      </div>
                      <!-- add KRA -->
@@ -131,7 +131,7 @@ $taskType = ['Daily Task','Weekly Task','Monthly Task','Yearly Task'];
                            @endforeach
                         </select>
                      </div>
-                        <!-- add manageby -->
+                     <!-- add manageby -->
                      <div class="col-md-4  form-group">
                         <label for="manageby">Monitoring / Observation Points</label>
                         <textarea name="arr[0][observation_point]" id="observation_point0" class="form-control"></textarea>
@@ -142,10 +142,10 @@ $taskType = ['Daily Task','Weekly Task','Monthly Task','Yearly Task'];
                   </div>
                   <!-- submit button  -->
                   <div class="col-md-12">
-                  <center>
-                  <input type="submit" value="Assign Task" name="add" class="btn btn-primary ml-2">
-                  <a id="cloneTaskButton" class="btn btn-success"><span class="mdi mdi-plus" style="color:#fff"></span></a>
-                  </center>
+                     <center>
+                        <input type="submit" value="Assign Task" name="add" class="btn btn-primary ml-2">
+                        <a id="cloneTaskButton" class="btn btn-success"><span class="mdi mdi-plus" style="color:#fff"></span></a>
+                     </center>
                   </div>
                </form>
             </div>
@@ -155,124 +155,124 @@ $taskType = ['Daily Task','Weekly Task','Monthly Task','Yearly Task'];
       <!-- tab 3 ends  -->
       <!-- tab 1  -->
       <div class="tab-pane p-3 active" id="section-dep-0" role="tabpanel">
-      <!-- add department -->
-      <div class="main main-0">
-      <!-- <div class="divHead">
-      <h3><b>Add Department</b></h3>
-      </div>
-      <hr class="headHr"> -->
-      <div class="divBody">
-      <form action="{{route('institute_detail.store')}}" method="post" class="row mt-4">
-      @csrf
-      <input type="hidden" name="formName" value="addDepartment">
-      <div class="col-md-4 form-group">
-      <label for="deparment_title">Department Name</label>
-      <input type="text" name="department_name" id="department_name" placeholder="Department Name" required class="form-control" autocomplete="off">
-      </div>
-      <!-- for sub department  -->
-      <div class="col-md-4 form-group">
-      <input type="checkbox" id="is_subDepartment" name="is_subDepartment">
-      <label for="deparment_title">Is Sub Department ?</label>
-      <select name="parentDiv" id="hideDep" class="form-control">
-      <option value="">Select Department</option>
-      @foreach($data['departmentData']['departmentList'] as $key=>$value)
-      <option value="{{$value['id']}}">{{$value['department']}}</option>
-      @endforeach
-      </select>
-      </div>
-      <div class="col-md-4 form-group">
-      <label class="control-label">Calculate PF/PT</label>
-      <div class="radio-list">
-      <label class="radio-inline p-0">
-      <div class="radio radio-success">
-      <input type="radio" checked="" name="is_calculated" id="calculate" value="0" required>
-      <label for="calculate">Calculate</label>
-      </div>
-      </label>
-      <label class="radio-inline">
-      <div class="radio radio-success">
-      <input type="radio" name="is_calculated" id="not_calculate" value="1" required>
-      <label for="not_calculate">Not Calculate</label>
-      </div>
-      </label>
-      </div>
-      </div>
-      <div class="col-md-12 form-group">
-      <label for="roles_responsibility">Aims & Objectives</label>
-      <!-- <textarea name="roles_responsibility" id="roles_responsibility" class="form-control"  style="height:10vh"></textarea> -->
-      <textarea name="roles_responsibility" id="roles_responsibility" contenteditable="true"></textarea>
-      </div>
-      <div class="col-md-12">
-      <center>
-      <input type="submit" name="add" Value="Add Department" class="btn btn-primary">
-      </center>
-      </div>
-      </form>
-      <!-- Sub viewLists   -->
-      <div class="viewList mt-6">
-      <div id="accordion">
-      <div class="card border-none">
-      <div class="card-header bg-white" id="subDepartmentAccordation">
-      <button class="btn btn-outline-info collapsed" data-toggle="collapse" data-target="#subDepartmentCollapse" aria-expanded="false" aria-controls="collapseTwo">
-      View Added Departments
-      </button>
-      </div>
-      <div id="subDepartmentCollapse" class="collapse" aria-labelledby="subDepartmentAccordation" data-parent="#accordion">
-      <div class="card-body table-responsive mt-20 tz-report-table">
-      <table id="subDepartmentTable" class="table table-striped" style="width:100% !important">
-      <thead>
-      <tr>
-      <th>Sr No.</th>
-      <th>Department</th>
-      <th>Main Department</th>
-      <th><span class="mdi mdi-account-multiple" style="font-size:1.5rem"></span></th>
-      <th>Aims & Objectives</th>
-      <th class="text-left">Action</th>
-      </tr>
-      </thead>
-      <tbody>
-      @foreach($data['departmentData']['SubDepartmentList'] as $key=>$value)
-      <tr>
-      <td>{{$key+1}}</td>
-      <td>{{$value['department']}}</td>
-      <td>{{$value['mainDepartment']}}</td>
-      <td><a onclick="getEmpModel('{{$value['emp_ids']}}','{{$value['department']}}','sub department')">{{$value['total_emp']}}</a></td>
-      <td>{!! substr($value['roles_responsibility'],0,200) !!}....</td>
-      <td class="text-left">
-      <div class="d-inline">
-      @if($value['sub_institute_id']!=0 && $value['total_subDep']==0)
-      <a data-toggle="modal" data-target="#departmentEdit{{$value['id']}}" class="btn btn-info btn-outline">
-      <i class="ti-pencil-alt"></i>
-      </a>
-      </div>
-      <!-- can not delete if sub_institute and total employee > 0 -->
-      @if($value['total_emp']==0  && $value['total_subDep']==0) 
-      <form action="{{ route('institute_detail.destroy', $value['id'])}}" method="post" class="d-inline">
-      @csrf
-      @method('DELETE')
-      <input type="hidden" name="formName" value="addDepartment">
-      <button type="submit" onclick="return confirmDelete();" class="btn btn-info btn-outline-danger">
-      <i class="ti-trash"></i>
-      </button>
-      </form>
-      @endif
-      @else 
-      -
-      @endif
-      </td>
-      </tr>
-      @endforeach
-      </tbody>
-      </table>
-      </div>
-      </div>
-      </div>
-      </div>
-      </div>
-      <!-- viewlist end  -->
-      </div>
-      </div>
-      <!-- add department end -->
+         <!-- add department -->
+         <div class="main main-0">
+            <!-- <div class="divHead">
+               <h3><b>Add Department</b></h3>
+               </div>
+               <hr class="headHr"> -->
+            <div class="divBody">
+               <form action="{{route('institute_detail.store')}}" method="post" class="row mt-4">
+                  @csrf
+                  <input type="hidden" name="formName" value="addDepartment">
+                  <div class="col-md-4 form-group">
+                     <label for="deparment_title">Department Name</label>
+                     <input type="text" name="department_name" id="department_name" placeholder="Department Name" required class="form-control" autocomplete="off">
+                  </div>
+                  <!-- for sub department  -->
+                  <div class="col-md-4 form-group">
+                     <input type="checkbox" id="is_subDepartment" name="is_subDepartment">
+                     <label for="deparment_title">Is Sub Department ?</label>
+                     <select name="parentDiv" id="hideDep" class="form-control">
+                        <option value="">Select Department</option>
+                        @foreach($data['departmentData']['departmentList'] as $key=>$value)
+                        <option value="{{$value['id']}}">{{$value['department']}}</option>
+                        @endforeach
+                     </select>
+                  </div>
+                  <div class="col-md-4 form-group">
+                     <label class="control-label">Calculate PF/PT</label>
+                     <div class="radio-list">
+                        <label class="radio-inline p-0">
+                           <div class="radio radio-success">
+                              <input type="radio" checked="" name="is_calculated" id="calculate" value="0" required>
+                        <label for="calculate">Calculate</label>
+                        </div>
+                        </label>
+                        <label class="radio-inline">
+                           <div class="radio radio-success">
+                              <input type="radio" name="is_calculated" id="not_calculate" value="1" required>
+                        <label for="not_calculate">Not Calculate</label>
+                        </div>
+                        </label>
+                     </div>
+                  </div>
+                  <div class="col-md-12 form-group">
+                     <label for="roles_responsibility">Aims & Objectives</label>
+                     <!-- <textarea name="roles_responsibility" id="roles_responsibility" class="form-control"  style="height:10vh"></textarea> -->
+                     <textarea name="roles_responsibility" id="roles_responsibility" contenteditable="true"></textarea>
+                  </div>
+                  <div class="col-md-12">
+                     <center>
+                        <input type="submit" name="add" Value="Add Department" class="btn btn-primary">
+                     </center>
+                  </div>
+               </form>
+               <!-- Sub viewLists   -->
+               <div class="viewList mt-6">
+                  <div id="accordion">
+                     <div class="card border-none">
+                        <div class="card-header bg-white" id="subDepartmentAccordation">
+                           <button class="btn btn-outline-info collapsed" data-toggle="collapse" data-target="#subDepartmentCollapse" aria-controls="collapseTwo">
+                           View Added Departments
+                           </button>
+                        </div>
+                        <div id="subDepartmentCollapse" class="collapse" aria-labelledby="subDepartmentAccordation" data-parent="#accordion">
+                           <div class="card-body table-responsive mt-20 tz-report-table">
+                              <table id="subDepartmentTable" class="table table-striped" style="width:100% !important">
+                                 <thead>
+                                    <tr>
+                                       <th>Sr No.</th>
+                                       <th>Department</th>
+                                       <th>Main Department</th>
+                                       <th><span class="mdi mdi-account-multiple" style="font-size:1.5rem"></span></th>
+                                       <th>Aims & Objectives</th>
+                                       <th class="text-left">Action</th>
+                                    </tr>
+                                 </thead>
+                                 <tbody>
+                                    @foreach($data['departmentData']['SubDepartmentList'] as $key=>$value)
+                                    <tr>
+                                       <td>{{$key+1}}</td>
+                                       <td>{{$value['department']}}</td>
+                                       <td>{{$value['mainDepartment']}}</td>
+                                       <td><a onclick="getEmpModel('{{$value['emp_ids']}}','{{$value['department']}}','sub department')">{{$value['total_emp']}}</a></td>
+                                       <td>{!! substr($value['roles_responsibility'],0,200) !!}....</td>
+                                       <td class="text-left">
+                                          <div class="d-inline">
+                                             @if($value['sub_institute_id']!=0 && $value['total_subDep']==0)
+                                             <a data-toggle="modal" data-target="#departmentEdit{{$value['id']}}" class="btn btn-info btn-outline">
+                                             <i class="ti-pencil-alt"></i>
+                                             </a>
+                                          </div>
+                                          <!-- can not delete if sub_institute and total employee > 0 -->
+                                          @if($value['total_emp']==0  && $value['total_subDep']==0) 
+                                          <form action="{{ route('institute_detail.destroy', $value['id'])}}" method="post" class="d-inline">
+                                             @csrf
+                                             @method('DELETE')
+                                             <input type="hidden" name="formName" value="addDepartment">
+                                             <button type="submit" onclick="return confirmDelete();" class="btn btn-info btn-outline-danger">
+                                             <i class="ti-trash"></i>
+                                             </button>
+                                          </form>
+                                          @endif
+                                          @else 
+                                          -
+                                          @endif
+                                       </td>
+                                    </tr>
+                                    @endforeach
+                                 </tbody>
+                              </table>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+               <!-- viewlist end  -->
+            </div>
+         </div>
+         <!-- add department end -->
       </div>
       <!-- tab 2 start  -->
       <div class="tab-pane p-3" id="section-dep-1" role="tabpanel">
@@ -280,8 +280,8 @@ $taskType = ['Daily Task','Weekly Task','Monthly Task','Yearly Task'];
          <div class="main main-1" style="padding:20px">
             <!-- <div class="divHead">
                <h3><b>Manage Employee</b></h3>
-            </div>
-            <hr class="headHr"> -->
+               </div>
+               <hr class="headHr"> -->
             <div class="divBody">
                <div class="table-responsive mt-20 tz-report-table">
                   <table id="example" class="table table-striped" style="width:100% !important">
