@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\ImageManagerStatic as Image;
 use Illuminate\Support\Facades\Session; 
+use Illuminate\Http\Request;
+use App\Http\Controllers\fees\fees_collect\fees_collect_controller;
 use OpenAI;
 
 set_time_limit(200);
@@ -576,6 +578,10 @@ protected function generateMore($topicName, $chapterName, $subjectName, $content
         case 'fees':
             $botResponse = $this->handleFeesState($input);
             break;
+        case 'pending_fees_grno':
+            $grno = trim($input);
+            $botResponse = $this->getPendingFees($grno);
+            break;
         case 'attendance':
             $botResponse = $this->handleAttendanceState($input);
             break;
@@ -611,7 +617,7 @@ protected function generateMore($topicName, $chapterName, $subjectName, $content
     // Log the conversation (user input and bot response)
     $this->logConversation($input, $botResponse);
     // Ask for feedback after delivering the final output
-    if (in_array($state, ['fees', 'attendance', 'grades','AI'])) {
+    if (in_array($state, ['pending_fees_grno', 'attendance', 'grades','AI'])) {
         Session::put('state', 'feedback'); // Switch to feedback state
         return $botResponse . "<br><br> \n\nAre you satisfied with the response? (Yes/No)";
     }
@@ -660,9 +666,8 @@ public function handleFeedback($input)
     {
         if (stripos($input, 'pending') !== false) {
             // Fetch pending fees from the database (example)
-            $pendingFees = $this->getPendingFees($input);
-            Session::put('state', 'initial');
-            return $pendingFees;
+            Session::put('state', 'pending_fees_grno');
+        return "Please provide your GR No. to check the pending fees.";
         } else {
             Session::put('state', 'initial');
             return "I'm sorry, I didn't understand that. Please specify if you need help with pending fees.";
@@ -746,11 +751,31 @@ public function handleFeedback($input)
 protected function getPendingFees($studentId)
 {
     try {
-        $fees = DB::table('attendances')
-                        ->where('student_id', $studentId)
-                        ->value('attendance_percentage');
-        
-        return $attendance ? $attendance . '%' : 'Attendance record not found.';
+        $grno = $studentId;
+            // make request to send in fees controller
+            $sub_institute_id = session()->get('sub_institute_id');
+            $syear = session()->get('syear');
+
+            $reqArr = [
+                'type' => "API",
+                'grno' => $grno,
+                'sub_institute_id' => $sub_institute_id,
+                'syear' => $syear,
+            ];
+
+            $request = new Request($reqArr);
+            // send created request to fees_collect controller function show_student
+            $feesController = new fees_collect_controller;
+            $feesData = json_decode($feesController->show_student($request));
+            if (isset($feesData->stu_data) && !empty($feesData->stu_data)) {
+                $details = 'Fees Details';
+                foreach ($feesData->stu_data as $key => $value) {
+                    $details .= '<br><br><p><b>Student Name : </b>' . $value->first_name . ' ' . $value->middle_name . ' ' . $value->last_name . '<br><b>GR No. : </b>' . $value->enrollment_no . '<br><b>Pending Fees : </b>' . $value->bkoff . '</p>';
+                }
+                return $details;
+            } else {
+                return 'Not able to find fees from this GR No.';
+            }
     } catch (\Illuminate\Database\QueryException $e) {
         Log::error('Database error: ' . $e->getMessage());
         return 'Sorry for the inconvenience, please contact site admin.';
