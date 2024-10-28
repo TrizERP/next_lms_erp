@@ -53,10 +53,7 @@ br {
                         <ul class="nav nav-tabs tab-title mb-4">
                             <li class="nav-item"><a href="#section-linemove-1" class="nav-link active" aria-selected="true" data-toggle="tab"><span>Personal Details</span></a></li>
                             <li class="nav-item"><a href="#section-linemove-2" class="nav-link" aria-selected="false" data-toggle="tab"><span>Upload Document</span></a></li>
-                            <li class="nav-item"><a href="#section-linemove-3" class="nav-link" aria-selected="false" data-toggle="tab"><span>Job Focus</span></a></li>
-                            <li class="nav-item"><a href="#section-linemove-4" class="nav-link" aria-selected="false" data-toggle="tab"><span>Soft Skills</span></a></li>
-                            <li class="nav-item"><a href="#section-linemove-5" class="nav-link" aria-selected="false" data-toggle="tab"><span>Technical Skills</span></a></li>
-                            <li class="nav-item"><a href="#section-linemove-6" class="nav-link" aria-selected="false" data-toggle="tab"><span>Certifications</span></a></li>
+                            <li class="nav-item"><a href="#section-linemove-3" class="nav-link" aria-selected="false" data-toggle="tab"><span>My Skills & Certifications</span></a></li>
                         </ul>
                         </center>
 
@@ -637,6 +634,11 @@ br {
                         @include('user.documentModel')
                     </div>
                     <!-- tab 2 ends  -->
+                     <!-- tab 3 start  -->
+                    <div class="tab-pane p-3" id="section-linemove-3" role="tabpanel">
+                        @include('lms.triz_skills')
+                    </div>
+                    <!-- tab 3 ends  -->
                 </div>
                 <!-- tabs ends  -->
                 </div>

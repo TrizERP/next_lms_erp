@@ -8,6 +8,7 @@ use App\Http\Controllers\settings\tblcustomfieldsController;
 use App\Http\Controllers\settings\templateMasterController;
 use App\Http\Controllers\settings\announcementController;
 use App\Http\Controllers\settings\masterSetupSelectController;
+use App\Http\Controllers\settings\TrizSkillsController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -26,6 +27,7 @@ Route::group(['prefix' => 'settings', 'middleware' => ['session', 'menu', 'logRo
     Route::get('announcement_dashboard',[announcementController::class,'dashboardData']);
 
     Route::resource('master_setup', masterSetupSelectController::class);
+    Route::get('triz_skills',[TrizSkillsController::class,'triz_skills'])->name('triz-skills');
 
 });
 // no permisson check

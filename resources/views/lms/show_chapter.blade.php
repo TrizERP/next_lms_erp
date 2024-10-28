@@ -245,6 +245,7 @@ use DB;
                     @endphp
                         <div class="mb-2 mt-2 chapter-content-single p-3 d-flex align-items-center" data-collapse_id="{{ $chdata->id }}-{{ $subColapse }}" onclick="tarCollapse(this)" >
                             <div class="content-category">{{ $con_key }}</div>
+                            <!-- main heading that will be used for seperate flashcard div -->
                             <div class="help-arraw">
                                 <i class="mdi mdi-chevron-down"></i>
                             </div>
@@ -534,7 +535,7 @@ use DB;
         $('#chapter-content-tar-list-' + target_id).toggleClass('show');
     }
 
-
+//.chapter-details
 </script>
 @include('includes.lmsfooterJs')
 @include('includes.footer')

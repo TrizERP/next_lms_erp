@@ -1,25 +1,4 @@
-<script>
-        var botmanWidget = {
-            title: "ScholarClone ChatBot",
-			introMessage: "Welcome to ScholarClone, How can I Help you?",
-			placeholderText: "Enter a message...",
-			mainColor: "#25bdea",
-			headerTextColor: "#333",
-			bubbleBackground: "#25bdea",
-			bubbleAvatarUrl: "",
-			desktopHeight: 375,
-			desktopWidth: 300,
-			mobileHeight: "100%",
-			mobileWidth: "300px",
-			videoHeight: 160,
-			aboutLink: "https://trizinnovation.com",
-			aboutText: "Powered by ScholarClone",
-			timeFormat: "HH:MM",
-			dateTimeFormat: "dd-mm-yyyy HH:MM"
-        };
-    </script>
-   
-    <script src='https://cdn.jsdelivr.net/npm/botman-web-widget@0/build/js/widget.js'></script>
+ 
 
 <div id="loading-overlay" style="display:none;">
 <center>
@@ -147,13 +126,6 @@
 
 	            }
         	});
-		});
-
-		// Help Guide
-		$('.help-body').hide(100);
-		$('.guide-title').on('click', function(event) {
-		    $('.help-guide').toggleClass('active', 100);
-		    $('.help-body').slideToggle(100);
 		});
 
 	</script>
