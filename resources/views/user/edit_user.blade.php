@@ -29,6 +29,12 @@ br {
 .dropdown-content input[type="checkbox"] {
     margin-right: 10px;
 }
+.mainHead{
+        background:#a2cdf3;
+    }
+    .subHead{
+        background:#d9edff;
+    }
 </style>
 
 <div id="page-wrapper">
@@ -53,13 +59,12 @@ br {
                         <ul class="nav nav-tabs tab-title mb-4">
                             <li class="nav-item"><a href="#section-linemove-1" class="nav-link active" aria-selected="true" data-toggle="tab"><span>Personal Details</span></a></li>
                             <li class="nav-item"><a href="#section-linemove-2" class="nav-link" aria-selected="false" data-toggle="tab"><span>Upload Document</span></a></li>
-                            <li class="nav-item"><a href="#section-linemove-3" class="nav-link" aria-selected="false" data-toggle="tab"><span>Job Focus</span></a></li>
-                            <li class="nav-item"><a href="#section-linemove-4" class="nav-link" aria-selected="false" data-toggle="tab"><span>Soft Skills</span></a></li>
-                            <li class="nav-item"><a href="#section-linemove-5" class="nav-link" aria-selected="false" data-toggle="tab"><span>Technical Skills</span></a></li>
-                            <li class="nav-item"><a href="#section-linemove-6" class="nav-link" aria-selected="false" data-toggle="tab"><span>Certifications</span></a></li>
+                            @if(!empty($data['salary_structure']))
+                            <li class="nav-item"><a href="#section-linemove-3" class="nav-link" aria-selected="false" data-toggle="tab"><span>Salary</span></a></li>
+                            @endif
+                            <li class="nav-item"><a href="#section-linemove-4" class="nav-link" aria-selected="false" data-toggle="tab"><span>My Skills & Certifications</span></a></li>
                         </ul>
                         </center>
-
                     @php
                     $departments = $data['departments'];
                     $new_emp_code = $data['new_emp_code'];
@@ -75,6 +80,9 @@ br {
                     $subject_data_selected_arr = $data['subject_data_selected_arr'];
                     $custom_fields = $data['custom_fields'];
                     $data_fields = $data['data_fields'];
+                    $payrollTypes = $data['payroll_types'];
+                    $salary_deposit = $data['salary_deposit'];
+                    $SalaryStructure = $data['salary_structure'];
                     $data = $data['data'];
                     @endphp
                     <!-- tabs starts  -->
@@ -649,6 +657,16 @@ br {
                         @include('user.documentModel')
                     </div>
                     <!-- tab 2 ends  -->
+                      <!-- tab 4 start  -->
+                      <div class="tab-pane p-3" id="section-linemove-3" role="tabpanel">
+                        @include('payroll.employee_salary_structure.salaryDetails')
+                    </div>
+                    <!-- tab 4 ends  -->
+                     <!-- tab 4 start  -->
+                    <div class="tab-pane p-3" id="section-linemove-4" role="tabpanel">
+                        @include('lms.triz_skills')
+                    </div>
+                    <!-- tab 4 ends  -->
                 </div>
                 <!-- tabs ends  -->
                 </div>

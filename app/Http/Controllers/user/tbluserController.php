@@ -302,6 +302,38 @@ class tbluserController extends Controller
             $pluckedData[$setup->type]['fieldvalue'] = $setup->selOptions; // array ['skills']['select skill']=skill1 || skill 2 || skill 3
         }
         // end 29-07-2024
+
+        // 29-10-2024 salary data
+        $payrollTypes = DB::table('payroll_types')->where(['sub_institute_id'=>$sub_institute_id,'status'=>1])->get()->toArray();
+        // get type id of salary deposite
+        $SalaryDeposit=[]; 
+        $getSalaryDeposit = DB::table('payroll_types')->where(['sub_institute_id'=>$sub_institute_id,'payroll_name'=>'Salary Deposit'])->first();
+        if(!empty($getSalaryDeposit)){
+            // get employee salary structure to get amount
+            $getSalaryMonthlyStructrue = DB::table('employee_monthly_salary_data')->where(['sub_institute_id'=>$sub_institute_id,'employee_id'=>$id])->get()->toArray();
+            foreach ($getSalaryMonthlyStructrue as $key => $value) {
+                $depositId=$getSalaryDeposit->id; // type id
+                $jsonData=json_decode($value->employee_salary_data,true); // json decode monthly salary data
+                // check employee have salary deposit or not 
+               if(isset($jsonData[$depositId]) && $jsonData[$depositId]!=null && $jsonData[$depositId]!=0 && $jsonData[$depositId]!=''){
+                $depositArr = [
+                    'year'=>$value->year,
+                    'month'=>$value->month,
+                    'amount'=>$jsonData[$depositId],
+                ];
+                $SalaryDeposit[]=$depositArr;
+               }
+            }
+        // echo "<pre>";print_r($SalaryDeposit);exit;
+        }
+        // get year wise salary data
+       $SalaryStructure = DB::table('employee_salary_structures')->where(['sub_institute_id'=>$sub_institute_id,'employee_id'=>$id])->orderBy('id','DESC')->get()->toArray();
+
+        $res['payroll_types']=$payrollTypes;
+        $res['salary_deposit']=$SalaryDeposit;
+        $res['salary_structure']=$SalaryStructure;
+        
+        // 29-10-2024 end
         $res['masterSetups'] = $pluckedData;
         $res['departments'] = $departments;
         $res['employees'] = tbluserModel::where('sub_institute_id',$sub_institute_id)->get();
@@ -312,7 +344,7 @@ class tbluserController extends Controller
         $res['user_profiles'] = $data;
         $res['new_emp_code'] = $new_emp_code;
         $res['data'] = $editData;
-        // echo "<pre>";print_r($res['masterSetups']);exit;
+        // echo "<pre>";print_r($res['salary_deposit']);exit;
         return is_mobile($type, "user/edit_user", $res, "view");
     }
 

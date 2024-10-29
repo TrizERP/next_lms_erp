@@ -286,11 +286,14 @@ class studentCertificateController extends Controller
         $date_in_word = ucwords($number_controller->toWords(date('dS', strtotime($value['dob'])))." of ".
             date('F', strtotime($value['dob']))." ".
             $this->convert_number_to_words(date('Y', strtotime($value['dob']))));
-
+        if($sub_institute_id==47){
+            $date_in_word = str_replace([' And ', ' Of '], ' ', $date_in_word);
+        }
+        // echo "<pre>";print_r($date_in_word);exit;
         $males = ["male","Male","MALE","M"];
         $females =["female","Female","FEMALE","F"];
 
-        $cap_his_her =  $small_his_her = $cap_he_she = $small_he_she = $mr_miss = $daughter_son = '';
+        $cap_his_her =  $small_his_her = $cap_he_she = $small_he_she = $mr_miss = $daughter_son = $mast_miss = '';
         if(in_array($value['gender'],$males)){
             $cap_his_her = 'His';
             $small_his_her = 'his';
@@ -298,13 +301,15 @@ class studentCertificateController extends Controller
             $small_he_she = 'he';
             $mr_miss = 'Mr.';
             $daughter_son = 'son';
+            $mast_miss = 'Mast.';
         } else if(in_array($value['gender'],$females)){
             $cap_his_her = 'Her';
             $small_his_her = 'her';
             $cap_he_she = 'She';
             $small_he_she = 'she';
             $mr_miss = 'Miss.';
-            $daughter_son = 'daughter';            
+            $daughter_son = 'daughter';
+            $mast_miss = 'Miss.';
         }    
         $resultController = new studentResultController;
         $getSub = $resultController->get_subject($sub_institute_id,$syear,$value['id'],$value['standard_id']);
@@ -384,7 +389,6 @@ LIMIT 1");
             $tdOptionalData = $subjectImplode.'<br>'.$optionalImplode;
         }else{
             $tdOptionalData = $get_standard_subjects[0]->subject_name ?? '-';
-            
         }
 
         $get_student_attendances = DB::table('attendance_student')
@@ -432,6 +436,7 @@ LIMIT 1");
         $html_content = str_replace(htmlspecialchars("<<his_her>>"), $small_his_her, $html_content);
         $html_content = str_replace(htmlspecialchars("<<HE_SHE>>"), $cap_he_she, $html_content);
         $html_content = str_replace(htmlspecialchars("<<he_she>>"), $small_he_she, $html_content);
+        $html_content = str_replace(htmlspecialchars("<<mast_miss>>"), $mast_miss, $html_content);
         $html_content = str_replace(htmlspecialchars("<<certificate_reason>>"), $certificate_reason, $html_content);
         //END Bonafide certificate Tags
         // transfer certificate detals
@@ -552,10 +557,10 @@ LIMIT 1");
         $post_start_date_final_ex = explode(',',$get_term->post_start_date);
         $post_end_date_final_ex = explode(',',$get_term->post_end_date);
 
-        $post_start_date = $post_start_date_ex[0];
+        $post_start_date =  isset($post_start_date_ex[0]) ? $post_start_date_ex[0] : '-';
         $post_end_date = isset($post_end_date_ex[1]) ? $post_end_date_ex[1] : $post_end_date_ex[0];
-        $post_start_date_final =  $post_start_date_final_ex[0];
-        $post_end_date_final = isset($post_end_date_final_ex) ? $post_end_date_final_ex[1] : $post_end_date_final_ex[0];
+        $post_start_date_final =  isset($post_start_date_final_ex[0]) ? $post_start_date_final_ex[0] : '-';
+        $post_end_date_final = isset($post_end_date_final_ex[1]) ? $post_end_date_final_ex[1] : $post_end_date_final_ex[0];
 
         $cal_event = DB::table('calendar_events as ce')
             ->join('academic_year as ay', 'ce.syear', '=', 'ay.syear')
