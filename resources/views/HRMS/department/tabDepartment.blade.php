@@ -1,4 +1,4 @@
-<script src="{{ asset('/ckeditor_wiris/ckeditor4/ckeditor.js') }}"></script>
+<script src="{{ asset("/ckeditor_wiris/ckeditor4/ckeditor.js") }}"></script>
 @include('HRMS.department.tabModel')
 <style>
    .activeTrue{
@@ -10,7 +10,7 @@
    }
    /* .hideDiv{
    /* display:none; */
-   /* } */ 
+   /* } */ */
    table.table-striped.table-hover.dataTable {
    width:100% !important;
    }
