@@ -23,7 +23,7 @@
                             <div class="card-body text-center">
                                 <div>{{$data['student_name']}}</div>
                                 <div>{{$data['medium']}}</div>
-                                <form action="https://dev.triz.co.in/fees/razorpay/online_fees_razorpayResponseHandler" method="POST" >
+                                <form action="https://erp.triz.co.in/fees/razorpay/online_fees_razorpayResponseHandler" method="POST" >
                                     @csrf
                                     <input type="hidden" value ="{{$data['student_id']}}" name="student_id">
                                     <input type="hidden" value ="{{$data['inserted_id']}}" name="inserted_id">
