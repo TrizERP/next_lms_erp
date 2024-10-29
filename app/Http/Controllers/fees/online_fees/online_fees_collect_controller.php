@@ -1926,7 +1926,8 @@ exit; */
             try {
 
                 //Fetch payment information by razorpay_payment_id
-                $response = $api->payment->fetch($input['razorpay_payment_id'])->capture(array('amount' => $payment['amount'], 'currency' => 'INR'));
+                //$response = $api->payment->fetch($input['razorpay_payment_id'])->capture(array('amount' => $payment['amount'], 'currency' => 'INR'));
+                $response = $api->payment->fetch($input['razorpay_payment_id']);
 
                 $json_response = $this->razorpay_payment_response_data_to_array($response);
 
@@ -1935,7 +1936,7 @@ exit; */
                     ->where(["id" => $_REQUEST["inserted_id"]])
                     ->get();
                 $payment_status_res = $response['status'];
-                $payment_status = "PS";
+                $payment_status = ($payment_status_res == "captured") ? 'PS' : 'PR';
 
 
                 $update_arr = array(
@@ -1955,12 +1956,18 @@ exit; */
                     ->where($where_arr)
                     ->update($update_arr);
 
+                if($payment_status_res == 'captured'){
+                    $data = $this->pay_fees($request, $get_all_data[0]->student_id, $get_all_data[0]->syear, $get_all_data[0]->sub_institute_id, ($get_all_data[0]->amount / 100), $input['razorpay_payment_id']);
+                    $type = $request->input('type');
+                    return \App\Helpers\is_mobile($type, "fees/online_fees_collect/receipt_view", $data, "view");
+                }
+                else 
+                {
+                    $type = $request->input('type');
+                    $school_data = array();
+                    return \App\Helpers\is_mobile($type, "fees/online_fees_collect/show_error", $school_data, "view");
+                }
 
-                $data = $this->pay_fees($request, $get_all_data[0]->student_id, $get_all_data[0]->syear, $get_all_data[0]->sub_institute_id, ($payment['amount'] / 100), $input['razorpay_payment_id']);
-                $type = $request->input('type');
-
-
-                return \App\Helpers\is_mobile($type, "fees/online_fees_collect/receipt_view", $data, "view");
             } catch (Exception $e) {
                 return $e->getMessage();
                 $res_josn = json_encode($e->getMessage());
