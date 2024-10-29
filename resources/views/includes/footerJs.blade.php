@@ -14,7 +14,6 @@ $route = ['dashboard'];
     <div class="dropdown">
         <button class="dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown"
                 aria-haspopup="true" aria-expanded="false">
-            <!-- <i class="mdi mdi-dots-vertical"></i> -->
         </button>
         <!--  <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
            <a class="dropdown-item" href="#">Action</a>
@@ -646,7 +645,7 @@ $route = ['dashboard'];
         Scholar Clone
         <button id="minimize-chatbot" title="Minimize" style="float: right; background: none; border: none; color: white; margin-left: 5px;">_</button>
         <button id="refresh-chatbot" title="Refresh" style="float: right; background: none; border: none; color: white; margin-left: 5px;">⟳</button>
-        <button id="close-chatbot" title="Close" style="float: right; background: none; border: none; color: white;  font-size: 30px">×</button>
+        <button id="close-chatbot" title="Close" style="float: right; background: none; border: none; color: red;  font-size: 30px">×</button>
     </div>
     <div id="messages" style="height: 300px; overflow-y: auto" class="clearfix"></div>
     <div id="loading" style="display: none; float: left; clear: both">
@@ -703,9 +702,9 @@ document.getElementById('user_input').addEventListener('keypress', function(even
                 document.querySelector('.faq-button-fees').addEventListener('click', function() {
                 document.getElementById('messages').innerHTML += `
                     <div style="display: inline-block; max-width: 80%; text-align: left; background-color: #f1f1f1; padding: 10px; border-radius: 5px; margin: 5px 0; float: left; clear: both;">
-                        <pstyle="margin-bottom: 10px; color: #333;">Fees FAQ's:</p>
-                        <div style="display: flex; flex-direction: column; gap: 5px;">
-                            <button class="fees-button" data-message="Pending Fees" style="width: 100%; padding: 2px 0; border-radius: 5px; background-color: #4CAF50; color: white; border: none; cursor: pointer; font-size: 12px;">Pending Fees</button>
+                        <p style="margin-bottom: 5px; color: #333;">Fees FAQ's:</p> <!-- Reduced margin-bottom -->
+                        <div style="display: flex; flex-direction: column; gap: 1px;"> <!-- Reduced gap -->
+                            <button class="fees-button" data-message="Pending Fees" style="width: 100%; padding: 0px; border-radius: 5px; background-color: #4CAF50; color: white; border: none; cursor: pointer; font-size: 12px;">Pending Fees</button>
                         </div>
                     </div>`;
             });
@@ -835,9 +834,9 @@ document.getElementById('refresh-chatbot').onclick = function() {
     document.querySelector('.faq-button-fees').addEventListener('click', function() {
                 document.getElementById('messages').innerHTML += `
                     <div style="display: inline-block; max-width: 80%; text-align: left; background-color: #f1f1f1; padding: 10px; border-radius: 5px; margin: 5px 0; float: left; clear: both;">
-                        <pstyle="margin-bottom: 10px; color: #333;">Fees FAQ's:</p>
-                        <div style="display: flex; flex-direction: column; gap: 5px;">
-                            <button class="fees-button" data-message="Pending Fees" style="width: 100%; padding: 2px 0; border-radius: 5px; background-color: #4CAF50; color: white; border: none; cursor: pointer; font-size: 12px;">Pending Fees</button>
+                        <p style="margin-bottom: 5px; color: #333;">Fees FAQ's:</p> <!-- Reduced margin-bottom -->
+                        <div style="display: flex; flex-direction: column; gap: 1px;"> <!-- Reduced gap -->
+                            <button class="fees-button" data-message="Pending Fees" style="width: 100%; padding: 0px; border-radius: 5px; background-color: #4CAF50; color: white; border: none; cursor: pointer; font-size: 12px;">Pending Fees</button>
                         </div>
                     </div>`;
             });
