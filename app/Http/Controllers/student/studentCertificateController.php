@@ -552,10 +552,10 @@ LIMIT 1");
         $post_start_date_final_ex = explode(',',$get_term->post_start_date);
         $post_end_date_final_ex = explode(',',$get_term->post_end_date);
 
-        $post_start_date = $post_start_date_ex[0];
+        $post_start_date =  isset($post_start_date_ex[0]) ? $post_start_date_ex[0] : '-';
         $post_end_date = isset($post_end_date_ex[1]) ? $post_end_date_ex[1] : $post_end_date_ex[0];
-        $post_start_date_final =  $post_start_date_final_ex[0];
-        $post_end_date_final = isset($post_end_date_final_ex) ? $post_end_date_final_ex[1] : $post_end_date_final_ex[0];
+        $post_start_date_final =  isset($post_start_date_final_ex[0]) ? $post_start_date_final_ex[0] : '-';
+        $post_end_date_final = isset($post_end_date_final_ex[1]) ? $post_end_date_final_ex[1] : $post_end_date_final_ex[0];
 
         $cal_event = DB::table('calendar_events as ce')
             ->join('academic_year as ay', 'ce.syear', '=', 'ay.syear')
