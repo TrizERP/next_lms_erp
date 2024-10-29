@@ -1740,9 +1740,9 @@ exit; */
         $amount = 0;
 
         if ($payment_acsept_type == "fix") {
-            $amount = number_format(floatval($_REQUEST["total"]) * 100, 2, '.', '');
+            $amount = number_format(floatval($_REQUEST["total"]) * 100, 0, '.', '');
         } else {
-            $amount = number_format(floatval($_REQUEST["pay_amount"]) * 100, 2, '.', '');
+            $amount = number_format(floatval($_REQUEST["pay_amount"]) * 100, 0, '.', '');
         }
 
         $student_id = $_REQUEST["student_id"];
@@ -1759,10 +1759,31 @@ exit; */
             ->get();
         //echo '<pre>RAJESH'; print_r($get_map_bank_detail); exit;
 
+        $api = new Api($get_map_bank_detail[0]->key_id, $get_map_bank_detail[0]->key_secret);
+
+        try {
+            $orderData = [
+                'receipt'         => 'order_' . uniqid(),
+                'amount'          => $amount, // Convert amount to paise for Razorpay
+                'currency'        => 'INR',
+                'payment_capture' => 1 // Auto capture
+            ];
+
+            $razorpayOrder = $api->order->create($orderData);
+
+            $request->session()->put('razorpay_order_id', $razorpayOrder['id']);
+
+        } catch (\Exception $e) {
+            Session::put('error', $e->getMessage());
+            $school_data = array();
+            return \App\Helpers\is_mobile($type, "fees/online_fees_collect/show_error", $school_data, "view");
+        }
+
         $in_arr = array(
             "student_id" => $_REQUEST["student_id"],
             "syear" => session()->get("syear"),
             "amount" => $amount,
+            "razorpay_order_id" => $razorpayOrder['id'],
             "razorpay_payment_status" => "PR",
             "razorpay_payment_date" => now(),
             "sub_institute_id" => session()->get("sub_institute_id"),
@@ -1781,6 +1802,7 @@ exit; */
             "inserted_id" => $id,
             "student_name" => $medium_data[0]->student_name,
             "medium" => $medium_data[0]->uniqueid,
+            "order_id" => $razorpayOrder['id'],
         );
         // echo '<pre>'; print_r($id); exit;
         $type = "web";

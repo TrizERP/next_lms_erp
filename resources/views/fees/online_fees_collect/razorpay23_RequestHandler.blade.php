@@ -33,6 +33,7 @@
                                             data-buttontext="Pay Now"
                                             data-name="{{$data['student_name']}}"
                                             data-description="{{$data['medium']}}"
+                                            data-order_id="{{$data['order_id']}}"
                                             data-theme.color="#ff7529">
                                     </script>
                                 </form>
