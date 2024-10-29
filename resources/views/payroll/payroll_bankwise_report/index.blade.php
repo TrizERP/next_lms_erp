@@ -79,24 +79,41 @@
                     <table id="example" class="table table-striped">
                         <thead>
                         <tr>
+                            <th>Sr No.</th>
                             <th>Emp No</th>
                             <th>Employee Name</th>
+                            <!--<th>Department</th>-->
                             <th>Bank Name</th>
                             <th>A/C No.</th>
                             <th>IFSC Code</th>
-                            <th class="text-left">Net Payable Amount</th>
+                            <th>Net Payable Amount</th>
+                            <th class="text-left">Narration</th>
                         </tr>
                         </thead>
                         <tbody>
                         @php $allTotal = $empTotal= 0; @endphp
                         @foreach($employees as $key=> $employee)
                         <tr>
-                            <td>{{$employee->employee_no}}</td>
-                            <td>{{$employee->first_name .' '. $employee->last_name}}</td>
-                            <td>{{$employee->bank_name}}</td>
-                            <td>{{$employee->account_no}}</td>
-                            <td>{{$employee->ifsc_code}}</td>
+                            <td>{{$key+1}}</td>
+                            <td>{{isset($employee->usersDetails['employee_no']) ? $employee->usersDetails['employee_no'] : '-'}}</td>
+                            <td>{{isset($employee->usersDetails['full_name']) ? $employee->usersDetails['full_name'] : '-'}}</td>
+                            <!--<td>{{isset($employee->usersDetails['department']) ? $employee->usersDetails['department'] : '-'}}</td>-->
+                            <td>{{isset($employee->usersDetails['bank_name']) ? $employee->usersDetails['bank_name'] : '-'}}</td>
+                            <td>{{isset($employee->usersDetails['account_no']) ? $employee->usersDetails['account_no'] : '-'}}</td>
+                            <td>{{isset($employee->usersDetails['ifsc_code']) ? $employee->usersDetails['ifsc_code'] : '-'}}</td>
                             <td>{{$employee->total_payment}}</td>
+                            @php 
+                                $narration = 'Salary';
+                                if(isset($employee->usersDetails['department'])){
+                                    if(in_array($employee->usersDetails['department'],['Visiting Faculty Teachers'])){
+                                        $narration ='Professional Fees';
+                                    }
+                                    else if(in_array($employee->usersDetails['department'],['Pre-Primary Other','House Keeping Department'])){
+                                        $narration ='Wages';
+                                    }
+                                }
+                            @endphp 
+                            <td>MMIS {{$narration}} for {{$list['month'].' '.$list['year']}}</td>
                         </tr>
                         @php 
                             $allTotal += $employee->total_payment;
@@ -108,9 +125,12 @@
                             <td><b>Total</b></td>
                             <td><b>{{$empTotal}}</b></td>
                             <td></td>
+                            <!--<td></td>-->
+                            <td></td>
                             <td></td>
                             <td></td>
                             <td><b>{{$allTotal}}</b></td>
+                            <td></td>
                         </tr>
                         @endif  
                         </tbody>

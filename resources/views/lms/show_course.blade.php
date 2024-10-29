@@ -59,12 +59,15 @@ use DB;
                             @foreach($data['content_category'] as $ckey => $cval)
                             @php
                                 $active_tab = "";
-                                if($i == 1)
+                                $tab_name = str_replace(' ', '',$cval['category_name']);
+                                if(isset($_REQUEST['activeMenu']) && $_REQUEST['activeMenu']==$tab_name){
+                                    $active_tab = "active";
+                                }
+                                else if(!isset($_REQUEST['activeMenu']) && $i == 1)
                                 {
                                     $active_tab = "active";
                                 }
                                 $i++;
-                                $tab_name = str_replace(' ', '',$cval['category_name']);
                             @endphp
                                 <li class="nav-item">
                                     <a class="nav-link {{$active_tab}}" id="{{$tab_name}}-tab" data-toggle="tab" href="#{{$tab_name}}" role="tab" aria-controls="home" aria-selected="true">{{$cval['category_name']}}</a>
@@ -109,12 +112,15 @@ use DB;
                             @foreach($data['content_category'] as $ckey => $cval)
                                     @php
                                         $active_body_tab = "";
-                                        if($j == 1)
+                                        $tab_name = str_replace(' ', '',$cval['category_name']);
+                                        if(isset($_REQUEST['activeMenu']) && $_REQUEST['activeMenu']==$tab_name){
+                                            $active_tab = "active";
+                                        }
+                                        else if(!isset($_REQUEST['activeMenu']) && $j == 1)
                                         {
                                             $active_body_tab = "show active";
                                         }
                                         $j++;
-                                        $tab_name = str_replace(' ', '',$cval['category_name']);
                                         $style="";
                                     @endphp
                                     <div class="tab-pane fade {{$active_body_tab}}" id="{{$tab_name}}" role="tabpanel"

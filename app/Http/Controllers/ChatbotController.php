@@ -24,7 +24,6 @@ class ChatbotController extends Controller
     // Capture the user input message
     $message = $request->input('message');
 
-    Log::info('Received message: ' . $message);
 
     // Handle user input and get the bot response
     $response = $this->openAIService->handleUserInput($message);
@@ -41,7 +40,6 @@ class ChatbotController extends Controller
         // Create BotMan instance
         $botman = BotManFactory::create([]);
         $message = $request->input('message');
-        Log::info('Received message: ' . $message);
         
         // Define an array of replies
         $replies = [

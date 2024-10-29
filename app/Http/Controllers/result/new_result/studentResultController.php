@@ -916,7 +916,7 @@ class studentResultController extends Controller
             }
             // get percentage 
             // echo "<pre>";print_r($total_mark);exit;
-            $subTot = isset($subjectTot[$title->subject_id]) ? $subjectTot[$title->subject_id] : 0;
+            $subTot = isset($subjectTot[$val->subject_id]) ? $subjectTot[$val->subject_id] : 0;
             $table .= '<td class="data_center grade_of_both">' . $this->getGrade($grade_arr_mmis, $total_mark, $both_term_ob_mark) . '</td>';
             $get_all_ob_mark += $both_term_ob_mark;
             $get_all_tot_mark += $overall_total;
@@ -2554,7 +2554,7 @@ $overall_total = $overall_total / 2;
         } 
         // scholastic grade range 
         $get_grade_ranges = $this->getGradeRange($standard_id);
-        
+        // echo "<pre>";print_r($standard_id);exit;
         $head_scholastic=$head_co_scholastic=" ";
 
         if($sub_institute_id==47){
@@ -5756,38 +5756,77 @@ private function buildDisciplineTable($decipline_data)
         return $res;
     }
     public function get_cma_detailAssm($standard_id, $student_id, $format){
-        $table = '<table class="aca-year" cellspacing="0" cellpadding="0" border="1" width="100%">
-        <tr>
-            <th align="center"><b>SKILLS/ COMPETENCES</b></th>
-            <th align="center"><b>ENG.</b></th>
-            <th align="center"><b>Hindi</b></th>
-            <th align="center"><b>GUJ</b></th>
-            <th align="center"><b>SKILLS/ COMPETENCES</b></th>
-            <th align="center"><b>ENG.</b></th>
-            <th align="center"><b>Hindi</b></th>
-            <th align="center"><b>GUJ</b></th>
-        </tr>
-        <tr>
-            <td align="center">Listening (5)</td>
-            <td align="center"></td>
-            <td align="center"></td>
-            <td align="center"></td>
-            <td align="center">Analytical Skills(5)</td>
-            <td align="center"></td>
-            <td align="center"></td>
-            <td align="center"></td>
-        </tr>
-        <tr>
-        <td align="center">Speaking (5)</td>
-        <td align="center"></td>
-        <td align="center"></td>
-        <td align="center"></td>
-        <td align="center">Agility and Adaptability(5)</td>
-        <td align="center"></td>
-        <td align="center"></td>
-        <td align="center"></td>
-    </tr>
-        </table>';
+        $syear = session()->get('syear');
+        $sub_institute_id = session()->get('sub_institute_id');
+        $extra_term =$extra_exam = "1=1";
+        if ($format != "yearly"){
+            $extra_term = "term_id = " . $format;
+            $extra_exam = "comark.term_id = " . $format;
+        }
+        $table='<div  width="100%" style="display:flex">';
+        $term_name = DB::table('academic_year')->whereRaw($extra_term)->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->get()->toArray();
+        $responce_arr = array();
+
+        $sql_mark_grade = "select * from result_co_scholastic where sub_institute_id = " . $sub_institute_id . " and " . $extra_term . " ";
+        $ret_mark_grade = DB::select(DB::raw($sql_mark_grade));
+        $extra_where="1=1";
+
+        $ret_data = $this->co_scholaticQuery($sub_institute_id,$syear,$student_id,$standard_id,$extra_exam,'skill_competence');
+            // echo "<pre>";print_r($ret_data);exit;
+            $part1Head=$part2Head=$coData1=$coData2=[];
+            foreach ($ret_data as $id => $arr) {
+                if($arr->part_no==1){
+                    $part1Head[$arr->parent_id] = $arr->parent_title;
+                    $coData1[$arr->child_title][$arr->parent_id]=$arr->marks;
+                }
+                if($arr->part_no==2){
+                    $part2Head[$arr->parent_id] = $arr->parent_title;
+                    $coData2[$arr->child_title][$arr->parent_id]=$arr->marks;
+                }
+            }
+          // table 1
+          if(!empty($coData1)){
+            $table.='<table class="aca-year" cellspacing="0" cellpadding="0" border="1" width="100%">
+            <tr><th><b>SKILLS/ COMPETENCES</td></th>';
+                foreach ($part1Head as $key => $value) {
+                    $table.='<th align="center"><b>'.$value.'</b></th>';
+                }
+             $table.='</tr>';
+                    foreach ($coData1 as $k => $val) {
+                        $table.='<tr><td><b>'.$k.'</b></td>';
+                        foreach ($part1Head as $key => $value) {
+                        if(isset($val[$key])){
+                            $table.='<td align="center">'.$val[$key].'</td>';
+                        }else{
+                            $table.='<td align="center">0.00</td>';
+                        }
+                    }
+                    $table.='</tr>';
+                }
+          }
+          // table 2
+        if(!empty($coData2)){
+                $table.='<table class="aca-year" cellspacing="0" cellpadding="0" border="1" width="100%">
+                <tr><th><b>SKILLS/ COMPETENCES</td></th>';  
+                foreach ($part2Head as $key => $value) {
+                    $table.='<th align="center"><b>'.$value.'</b></th>';
+                }
+                $table.='</tr>'; 
+                    foreach ($coData2 as $k => $val) {
+                        $table.='<tr><td><b>'.$k.'</b></td>';
+                        foreach ($part2Head as $key => $value) {
+                            if(isset($val[$key])){
+                                $table.='<td align="center">'.$val[$key].'</td>';
+                            }else{
+                                $table.='<td align="center">0.00</td>';
+                            }
+                        }
+                        $table.='</tr>';
+                }    
+                $table.='</table>';
+          }
+          $table.='</div>';
+            // echo "<pre>";print_r($table);exit;
         $res['table'] = $table;
         return $res;
     }
@@ -5815,22 +5854,7 @@ private function buildDisciplineTable($decipline_data)
             $type = $ret_mark_grade[0]->mark_type;
             if ($type == "GRADE") {
               // Define your query using the query builder
-                $ret_data = DB::table('result_co_scholastic_marks_entries as comark')
-                    ->selectRaw('comark.student_id,comark.co_scholastic_id,comark.term_id,cop.title as parent_title,co.title as child_title,IFNULL(cograde.title,"-") as obtain_grade')
-                    ->join('result_co_scholastic_grades as cograde', 'cograde.id', '=', 'comark.grade')
-                    ->join('result_co_scholastic as co', 'co.id', '=', 'comark.co_scholastic_id')
-                    ->join('result_co_scholastic_parent as cop', 'cop.id', '=', 'co.parent_id')
-                    ->where('comark.syear', $syear)
-                    ->whereRaw($extra_exam)
-                    ->where('comark.standard_id', $standard_id)
-                    ->where('co.standard_id', $standard_id)
-                    ->where('comark.student_id', $student_id)
-                    ->where('comark.sub_institute_id', $sub_institute_id)
-                    ->orderBy('comark.student_id')
-                    ->orderBy('cop.sort_order')
-                    ->orderBy('co.sort_order')
-                    ->orderBy('comark.term_id')
-                    ->get();
+                $ret_data = $this->co_scholaticQuery($sub_institute_id,$syear,$student_id,$standard_id,$extra_exam,'co_scholastic');
 
                 foreach ($ret_data as $id => $arr) {
                     $data_arr[$arr->parent_title][$arr->term_id][$arr->co_scholastic_id]['student_id'] = $arr->student_id;
@@ -5870,5 +5894,39 @@ private function buildDisciplineTable($decipline_data)
         $res['table'] = $table;
         return $res;
     }
+    
+    public function co_scholaticQuery($sub_institute_id,$syear,$student_id,$standard_id,$extra_exam,$partname=''){
+        $select = 'comark.student_id,comark.co_scholastic_id,comark.term_id,cop.title as parent_title,co.title as child_title,cop.part_no,cop.part_name,cop.part_no,cop.part_name,cop.id as parent_id';
 
+        if($partname=='skill_competence'){
+            $select .= ',IFNULL(comark.points,"0") as marks';
+        }else{
+            $select .=',IFNULL(cograde.title,"-") as obtain_grade';
+        }
+       $query = DB::table('result_co_scholastic_marks_entries as comark')
+            ->selectRaw($select)
+            ->when($partname=='co_scholastic',function($q){
+                $q->join('result_co_scholastic_grades as cograde', 'cograde.id', '=', 'comark.grade');
+            })
+            ->join('result_co_scholastic as co', 'co.id', '=', 'comark.co_scholastic_id')
+            ->join('result_co_scholastic_parent as cop', 'cop.id', '=', 'co.parent_id')
+            ->where('comark.syear', $syear)
+            ->whereRaw($extra_exam)
+            ->where('comark.standard_id', $standard_id)
+            ->where('co.standard_id', $standard_id)
+            ->where('comark.student_id', $student_id)
+            ->where('comark.sub_institute_id', $sub_institute_id)
+            ->when($partname=='co_scholastic',function($q){
+                $q->where('cop.part_name','=','co_scholastic');
+            })
+            ->when($partname=='skill_competence',function($q){
+                $q->where('cop.part_name','=','skill_competence');
+            })
+            ->orderBy('comark.student_id')
+            ->orderBy('cop.sort_order')
+            ->orderBy('co.sort_order')
+            ->orderBy('comark.term_id')
+            ->get();
+            return $query;
+    }
 }

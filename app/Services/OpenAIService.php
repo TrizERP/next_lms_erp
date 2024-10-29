@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\ImageManagerStatic as Image;
 use Illuminate\Support\Facades\Session; 
+use Illuminate\Http\Request;
+use App\Http\Controllers\fees\fees_collect\fees_collect_controller;
 use OpenAI;
 
 set_time_limit(200);
@@ -21,7 +23,8 @@ class OpenAIService
 
     public function __construct()
     {
-        $this->client = OpenAI::client(env('OPENAI_API_KEY'));
+        $this->client = new Client();
+        $this->apiKey = env('OPENAI_API_KEY');
     }
 
     public function generateTitleAndDescription($topicName, $chapterName, $subjectName)
@@ -127,7 +130,6 @@ class OpenAIService
     }
 
     try {
-        // Call GPT-3.5 API to generate text
         $response = $this->client->post('https://api.openai.com/v1/chat/completions', [
             'verify' => false,
             'headers' => [
@@ -308,37 +310,37 @@ class OpenAIService
     $prompt =     "Generate a image in a very realistic approach for the topic '{$topicName}' in the chapter '{$chapterName}' of the subject '{$subjectName}'.\n" .
                   "Please refer to the following resources for more information:\n{$linksString}\n" .
                   "Strictly avoid any personal replies or apologies; and content should be on strictly Indian context with proper english and avoid incorrect spellings or ununderstood text ;Only provide the main content.\n";
-        try {
-            $response = $this->client->post('https://api.openai.com/v1/images/generations', [
-                'verify' => false,
-                'headers' => [
-                    'Authorization' => 'Bearer ' . $this->apiKey,
-                    'Content-Type' => 'application/json',
-                ],
-                'json' => [
-                    'model' => 'dall-e-3',
-                    'prompt' => $prompt,
-                    'n' => 1,
-                    'size' => '1024x1024'
-                ],
-            ]);
-            Log::info("Prompt for image: " . $prompt);
-            $data = json_decode($response->getBody(), true);
-            $imageUrls = [];
-            foreach ($data['data'] as $imageData) {
-                $imageUrls[] = $imageData['url'];
-                break;
-            }
-            return $imageUrls;
-        } catch (RequestException $e) {
-            if ($e->getResponse()->getStatusCode() == 429) {
-                // Log::warning('Rate limit exceeded. Retrying in ' . $retryDelay . ' seconds...');
-                // sleep($retryDelay); // Wait before retrying
-                // continue; // Retry the request
-            }
-            Log::error('OpenAI Image API Error: ' . $e->getMessage());
-            return null;
-        }
+        // try {
+        //     $response = $this->client->post('https://api.openai.com/v1/images/generations', [
+        //         'verify' => false,
+        //         'headers' => [
+        //             'Authorization' => 'Bearer ' . $this->apiKey,
+        //             'Content-Type' => 'application/json',
+        //         ],
+        //         'json' => [
+        //             'model' => 'dall-e-3',
+        //             'prompt' => $prompt,
+        //             'n' => 1,
+        //             'size' => '1024x1024'
+        //         ],
+        //     ]);
+        //     Log::info("Prompt for image: " . $prompt);
+        //     $data = json_decode($response->getBody(), true);
+        //     $imageUrls = [];
+        //     foreach ($data['data'] as $imageData) {
+        //         $imageUrls[] = $imageData['url'];
+        //         break;
+        //     }
+        //     return $imageUrls;
+        // } catch (RequestException $e) {
+        //     if ($e->getResponse()->getStatusCode() == 429) {
+        //         // Log::warning('Rate limit exceeded. Retrying in ' . $retryDelay . ' seconds...');
+        //         // sleep($retryDelay); // Wait before retrying
+        //         // continue; // Retry the request
+        //     }
+        //     Log::error('OpenAI Image API Error: ' . $e->getMessage());
+        //     return null;
+        // }
     }
     public function generateSportsData($topicName, $chapterName, $subjectName, $contentCategory,$contentType)
     {   
@@ -552,18 +554,17 @@ protected function generateMore($topicName, $chapterName, $subjectName, $content
 
     // Track the key issues based on user input
     $this->trackKeyIssues($input);
-
     // If in feedback state, handle feedback
     if ($state === 'feedback') {
         return $this->handleFeedback($input);
     }
-
+    
     // Handle the conversation based on the current state
     switch ($state) {
         case 'initial':
             if (stripos($input, 'fees') !== false) {
                 Session::put('state', 'fees');
-                return "What issue regarding fees would you like to discuss? (e.g., pending fees)";
+                return $this->handleFeesState($input);
             } elseif (stripos($input, 'attendance') !== false) {
                 Session::put('state', 'attendance');
                 return "Please provide your unique student ID to display attendance.";
@@ -571,11 +572,15 @@ protected function generateMore($topicName, $chapterName, $subjectName, $content
                 Session::put('state', 'grades');
                 return "Please provide your unique student ID to fetch your grades.";
             } else {
-                return $this->handleInitialState($input); // Handle other unrecognized inputs
+                return $this->handleInitialState($input);
             }
             break;
         case 'fees':
             $botResponse = $this->handleFeesState($input);
+            break;
+        case 'pending_fees_grno':
+            $grno = trim($input);
+            $botResponse = $this->getPendingFees($grno);
             break;
         case 'attendance':
             $botResponse = $this->handleAttendanceState($input);
@@ -585,6 +590,24 @@ protected function generateMore($topicName, $chapterName, $subjectName, $content
             break;
         case 'AI':
             $botResponse = $this->handleDynamicResponse($input);
+            $endPhrases = [
+                "Thank you",
+                "Are you satisfied with the response",
+                "May I further help you",
+                "Is there anything else I can assist you with?",
+                "Have a great day!",
+                "Feel free to ask if you have more questions!",
+                "Goodbye",
+                "Take care",
+                "You're welcome! If you have any more questions, feel free to ask.",
+                "You're welcome! If you have any more questions or need further assistance, feel free to ask. I'm here to help!"
+            ];
+            $state='initial';
+            foreach ($endPhrases as $phrase) {
+                if (stripos($botResponse, $phrase) !== false) {
+                    $state='AI';
+                }
+            }
             break;
         default:
             $botResponse = $this->handleDynamicResponse($input);
@@ -593,9 +616,8 @@ protected function generateMore($topicName, $chapterName, $subjectName, $content
 
     // Log the conversation (user input and bot response)
     $this->logConversation($input, $botResponse);
-
     // Ask for feedback after delivering the final output
-    if (in_array($state, ['fees', 'attendance', 'grades','AI'])) {
+    if (in_array($state, ['pending_fees_grno', 'attendance', 'grades','AI'])) {
         Session::put('state', 'feedback'); // Switch to feedback state
         return $botResponse . "<br><br> \n\nAre you satisfied with the response? (Yes/No)";
     }
@@ -623,19 +645,16 @@ public function handleFeedback($input)
     {
         if (stripos($input, 'fees') !== false) {
             Session::put('state', 'fees');
-            return "What issue regarding fees would you like to discuss? (e.g., pending fees)";
+            return $this->handleFeesState($input);
         } elseif (stripos($input, 'attendance') !== false) {
             Session::put('state', 'attendance');
             return "Please provide your unique student ID to display attendance.";
         } elseif (stripos($input, 'grades') !== false) {
             Session::put('state', 'grades');
             return "Please provide your unique student ID to fetch your grades.";
-        } elseif (stripos($input, 'hello') !== false || stripos($input, 'hi') !== false) {
-            // Generic greeting response
-            return "Hello! How can I assist you today?";
-        } else {
+        }  else {
             Session::put('state', 'AI');
-            return $this->handleDynamicResponse($input); // Pass any unrecognized input to OpenAI
+            return $this->handleDynamicResponse($input);
         }
     }
 
@@ -644,9 +663,8 @@ public function handleFeedback($input)
     {
         if (stripos($input, 'pending') !== false) {
             // Fetch pending fees from the database (example)
-            $pendingFees = $this->getPendingFees($input);
-            Session::put('state', 'initial');
-            return $pendingFees;
+            Session::put('state', 'pending_fees_grno');
+        return "Please provide your GR No. to check the pending fees.";
         } else {
             Session::put('state', 'initial');
             return "I'm sorry, I didn't understand that. Please specify if you need help with pending fees.";
@@ -678,19 +696,33 @@ public function handleFeedback($input)
     }
     protected function handleDynamicResponse($input)
     {
-        try{
-            $response = $this->client->chat()->create([
-                'model' => 'gpt-3.5-turbo',
-                'messages' => [
-                    ['role' => 'user', 'content' => $input],
+        try {
+            $conversationHistory = Session::get('conversationHistory', []);
+            $conversationHistory[] = ['role' => 'user', 'content' => $input];
+
+            $response = $this->client->post('https://api.openai.com/v1/chat/completions', [
+                'verify' => false,
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $this->apiKey,
+                    'Content-Type' => 'application/json',
                 ],
-                'max_tokens' => 150, 
+                'json' => [
+                    'model' => 'gpt-3.5-turbo',
+                    'messages' => $conversationHistory,
+                    'max_tokens' => 4096,
+                    'temperature' => 1.8,
+                    'top_p' => 0.5,
+                ],
             ]);
-            Session::put('state','initial');
-            return $response['choices'][0]['message']['content'];
+    
+            $data = json_decode($response->getBody(), true);
+            $generatedText = $data['choices'][0]['message']['content'];
+            $conversationHistory[] = ['role' => 'assistant', 'content' => $generatedText];
+            Session::put('conversationHistory', $conversationHistory);
+            return $generatedText;
+            
         }catch (RequestException $e) {
             Log::error('OpenAI API Error: ' . $e->getMessage());
-            Session::put('state','initial');
             return [
                 'title' => 'Error generating title',
                 'description' => 'Error: ' . $e->getMessage(),
@@ -716,11 +748,31 @@ public function handleFeedback($input)
 protected function getPendingFees($studentId)
 {
     try {
-        $fees = DB::table('attendances')
-                        ->where('student_id', $studentId)
-                        ->value('attendance_percentage');
-        
-        return $attendance ? $attendance . '%' : 'Attendance record not found.';
+        $grno = $studentId;
+            // make request to send in fees controller
+            $sub_institute_id = session()->get('sub_institute_id');
+            $syear = session()->get('syear');
+
+            $reqArr = [
+                'type' => "API",
+                'grno' => $grno,
+                'sub_institute_id' => $sub_institute_id,
+                'syear' => $syear,
+            ];
+
+            $request = new Request($reqArr);
+            // send created request to fees_collect controller function show_student
+            $feesController = new fees_collect_controller;
+            $feesData = json_decode($feesController->show_student($request));
+            if (isset($feesData->stu_data) && !empty($feesData->stu_data)) {
+                $details = 'Fees Details';
+                foreach ($feesData->stu_data as $key => $value) {
+                    $details .= '<br><br><p><b>Student Name : </b>' . $value->first_name . ' ' . $value->middle_name . ' ' . $value->last_name . '<br><b>GR No. : </b>' . $value->enrollment_no . '<br><b>Pending Fees : </b>' . $value->bkoff . '</p>';
+                }
+                return $details;
+            } else {
+                return 'Not able to find fees from this GR No.';
+            }
     } catch (\Illuminate\Database\QueryException $e) {
         Log::error('Database error: ' . $e->getMessage());
         return 'Sorry for the inconvenience, please contact site admin.';
