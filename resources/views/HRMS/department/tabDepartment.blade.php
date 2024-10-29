@@ -9,7 +9,6 @@
    }
    /* .hideDiv{
    /* display:none; */
-   /* } */ */
    table.table-striped.table-hover.dataTable {
    width:100% !important;
    }
@@ -309,7 +308,7 @@ $taskType = ['Daily Task','Weekly Task','Monthly Task','Yearly Task'];
                      </tr>
                      @endforeach
                   </tbody>
-                  <table>
+                </table>
                </div>
                <!-- end table -->
             </div>
@@ -320,7 +319,6 @@ $taskType = ['Daily Task','Weekly Task','Monthly Task','Yearly Task'];
    </div>
    <!-- tab content end  -->
 </div>
-@include('includes.lmsfooterJs')
 <script>
    CKEDITOR.config.toolbar_Full = [
      { name: 'document', items: ['Source'] },
