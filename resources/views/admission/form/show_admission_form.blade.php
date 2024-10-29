@@ -58,7 +58,9 @@
                                     <th>Previous Standard</th>
                                     <th>Admission Standard</th>
                                     <th>Enquiry Remarks</th>
+                                    @if(session()->get('sub_institute_id')==254)
                                     <th>Transport Fees</th>
+                                    @endif
                                 </tr>
                             </thead>
                             <tbody>
@@ -113,7 +115,9 @@
                                     <td>{{$data['previous_standard']}}</td>
                                     <td>{{$data['std_name']}}</td>
                                     <td>{{$data['enquiry_remark']}}</td>
+                                    @if(session()->get('sub_institute_id')==254)
                                     <td>{{$data['transport_fees']}}</td>
+                                    @endif
                                 </tr>
                                 @php
                             $j++;

@@ -58,7 +58,10 @@ class admissionRegistrationController extends Controller
             })->leftJoin('standard as s', function ($join) {
                 $join->on('s.id', '=', 'ae.admission_standard')->on('ts.sub_institute_id', '=', 'ae.sub_institute_id');
             })
-            ->selectRaw("ae.*,COUNT(ts.id) AS total_student_count,ae.remarks AS enquiry_remark,s.name AS std_name")
+            ->leftJoin('admission_registration_v1 as ar', function ($join) use($sub_institute_id) {
+                $join->whereRaw('ar.enquiry_id = af.enquiry_id')->where('ar.sub_institute_id', $sub_institute_id);
+            })
+            ->selectRaw("ae.*,COUNT(ts.id) AS total_student_count,ae.remarks AS enquiry_remark,s.name AS std_name,ar.transport_fees")
             ->where('ae.sub_institute_id', $sub_institute_id)
             ->where('ae.syear', $syear)
             ->groupBy(['ae.first_name','ae.middle_name','ae.last_name'])
