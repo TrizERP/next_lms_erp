@@ -916,7 +916,7 @@ class studentResultController extends Controller
             }
             // get percentage 
             // echo "<pre>";print_r($total_mark);exit;
-            $subTot = isset($subjectTot[$title->subject_id]) ? $subjectTot[$title->subject_id] : 0;
+            $subTot = isset($subjectTot[$val->subject_id]) ? $subjectTot[$val->subject_id] : 0;
             $table .= '<td class="data_center grade_of_both">' . $this->getGrade($grade_arr_mmis, $total_mark, $both_term_ob_mark) . '</td>';
             $get_all_ob_mark += $both_term_ob_mark;
             $get_all_tot_mark += $overall_total;
@@ -2554,7 +2554,7 @@ $overall_total = $overall_total / 2;
         } 
         // scholastic grade range 
         $get_grade_ranges = $this->getGradeRange($standard_id);
-        
+        // echo "<pre>";print_r($standard_id);exit;
         $head_scholastic=$head_co_scholastic=" ";
 
         if($sub_institute_id==47){

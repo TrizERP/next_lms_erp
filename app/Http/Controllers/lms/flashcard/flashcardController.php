@@ -53,13 +53,18 @@ class flashcardController extends Controller
             })
             ->join('subject as sub', 'sub.id', 'lms_flashcard.subject_id')
             ->join('chapter_master as c', 'c.id', 'lms_flashcard.chapter_id')
+            // ->where([
+            //     'lms_flashcard.sub_institute_id' => $sub_institute_id, 'lms_flashcard.syear' => $syear,
+            //     'lms_flashcard.content_id'       => $request->get('content_id'),
+            // ])
             ->where([
                 'lms_flashcard.sub_institute_id' => $sub_institute_id, 'lms_flashcard.syear' => $syear,
-                'lms_flashcard.content_id'       => $request->get('content_id'),
+                'lms_flashcard.chapter_id'       => $request->get('chapter_id'),
             ])
             ->get();
-        $data['content_data'] = contentModel::find($request->content_id)->toArray();
-        $data['breadcrum_data'] = $this->getBreadcrum($sub_institute_id, $data['content_data']['chapter_id'] ?? '', $data['content_data']['topic_id']);
+        // $data['content_data'] = contentModel::find($request->content_id)->toArray();
+        // $data['breadcrum_data'] = $this->getBreadcrum($sub_institute_id, $data['content_data']['chapter_id'] ?? '', $data['content_data']['topic_id']);
+        $data['breadcrum_data'] = $this->getBreadcrum($sub_institute_id, $request->chapter_id ?? '','');
 
         return $data;
     }
@@ -117,8 +122,8 @@ class flashcardController extends Controller
         }
         $syear = $request->session()->get('syear');
 
-        $content_data = contentModel::where('id', $request->get('content_id'))->get()->toArray();
-
+        $content_data = contentModel::where('chapter_id', $request->get('chapter_id'))->get()->toArray();
+        
         $data['grade_id'] = $content_data[0]['grade_id'];
         $data['standard_id'] = $content_data[0]['standard_id'];
         $data['subject_id'] = $content_data[0]['subject_id'];
@@ -126,8 +131,8 @@ class flashcardController extends Controller
         $data['chapter_id'] = $content_data[0]['chapter_id'];
         $data['topic_id'] = $content_data[0]['topic_id'];
 
-        $data['content_data'] = contentModel::find($request->content_id)->toArray();
-        $data['breadcrum_data'] = $this->getBreadcrum($sub_institute_id,$data['content_data']['chapter_id'],$data['content_data']['topic_id']);
+        // $data['content_data'] = contentModel::find($request->content_id)->toArray();
+        $data['breadcrum_data'] = $this->getBreadcrum($sub_institute_id,$request->chapter_id,'');
         // $dara['breadcrum_data'] = $content_data[0]['topic_id'];
         // echo $data['chapter_id'];exit; 
         return is_mobile($type, 'lms/flashcard/add_flashcard', $data, "view");
@@ -152,8 +157,8 @@ class flashcardController extends Controller
             'standard_id'      => $request->get('standard_id'),
             'subject_id'       => $request->get('subject_id'),
             'chapter_id'       => $request->get('chapter_id'),
-            'topic_id'         => $request->get('topic_id'),
-            'content_id'       => $request->get('content_id'),
+            // 'topic_id'         => $request->get('topic_id'),
+            // 'content_id'       => $request->get('content_id'),
             'title'            => $request->get('title'),
             'front_text'       => $request->get('front_text'),
             'back_text'        => $request->get('back_text'),
@@ -171,7 +176,7 @@ class flashcardController extends Controller
         ];
         $type = $request->input('type');
 
-        return redirect()->route('lms_flashcard.index', ['content_id' => $request->get('content_id')]);
+        return redirect()->route('lms_flashcard.index', ['chapter_id' => $request->get('chapter_id')]);
     }
 
     /**
@@ -188,7 +193,7 @@ class flashcardController extends Controller
 
         $data['flashcard_data'] = flashcardModel::find($id)->toArray();
 
-        $data['breadcrum_data'] = $this->getBreadcrum($sub_institute_id, $data['flashcard_data']['chapter_id'] ?? '', $data['flashcard_data']['topic_id']);
+        $data['breadcrum_data'] = $this->getBreadcrum($sub_institute_id, $data['flashcard_data']['chapter_id'] ?? '', '');
 
         return is_mobile($type, "lms/flashcard/add_flashcard", $data, "view");
     }
@@ -205,8 +210,8 @@ class flashcardController extends Controller
             'standard_id'      => $request->get('standard_id'),
             'subject_id'       => $request->get('subject_id'),
             'chapter_id'       => $request->get('chapter_id'),
-            'topic_id'         => $request->get('topic_id'),
-            'content_id'       => $request->get('content_id'),
+            // 'topic_id'         => $request->get('topic_id'),
+            // 'content_id'       => $request->get('content_id'),
             'title'            => $request->get('title'),
             'front_text'       => $request->get('front_text'),
             'back_text'        => $request->get('back_text'),
@@ -224,7 +229,7 @@ class flashcardController extends Controller
         ];
         $type = $request->input('type');
 
-        return redirect()->route('lms_flashcard.index', ['content_id' => $request->get('content_id')]);
+        return redirect()->route('lms_flashcard.index', ['chapter_id' => $request->get('chapter_id')]);
     }
 
     /**
@@ -237,13 +242,13 @@ class flashcardController extends Controller
     {
         $type = $request->input('type');
         $flashcarddata = flashcardModel::where(["id" => $id])->get()->toArray();
-        $content_id = $flashcarddata[0]['content_id'];
+        $chapter_id = $flashcarddata[0]['chapter_id'];
 
         flashcardModel::where(["id" => $id])->delete();
         $res['status_code'] = "1";
         $res['message'] = "Flash Card Deleted Successfully";
 
-        return redirect()->route('lms_flashcard.index', ['content_id' => $content_id]);
+        return redirect()->route('lms_flashcard.index', ['chapter_id' => $chapter_id]);
     }
 
     function ajaxdestroyanswer_master(Request $request)

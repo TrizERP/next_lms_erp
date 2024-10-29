@@ -48,6 +48,9 @@ class admissionFormController extends Controller
         $data = DB::table('admission_enquiry as ae')
             ->leftJoin('admission_form as af', function ($join) {
                 $join->whereRaw('ae.id = af.enquiry_id');
+            })
+            ->leftJoin('admission_registration_v1 as ar', function ($join) {
+                $join->whereRaw('ar.enquiry_id = af.enquiry_id');
             })->leftJoin('tblstudent as ts', function ($join) {
                 $join->whereRaw('ts.admission_id = ae.id AND ts.admission_year = ae.syear AND ts.sub_institute_id = ae.sub_institute_id');
             })->leftJoin('standard as s', function ($join) use ($sub_institute_id,$marking_period_id) {
@@ -57,7 +60,7 @@ class admissionFormController extends Controller
                 // });
             })
             ->selectRaw('ae.*,COUNT(ts.id) AS total_student_count,ae.remarks AS enquiry_remark,s.name AS std_name,af.form_no,
-                af.admission_docket_no,af.registration_no,af.id as form_id,af.admission_form_fee,af.receipt_id,af.receipt_html')
+                af.admission_docket_no,af.registration_no,af.id as form_id,af.admission_form_fee,af.receipt_id,af.receipt_html,ar.transport_fees')
             ->where('ae.sub_institute_id', $sub_institute_id)
             ->where('ae.syear', $syear)->groupBy('ae.id')->get()->toArray();
 

@@ -82,7 +82,7 @@
                             <th>Sr No.</th>
                             <th>Emp No</th>
                             <th>Employee Name</th>
-                            <th>Department</th>
+                            <!--<th>Department</th>-->
                             <th>Bank Name</th>
                             <th>A/C No.</th>
                             <th>IFSC Code</th>
@@ -97,7 +97,7 @@
                             <td>{{$key+1}}</td>
                             <td>{{isset($employee->usersDetails['employee_no']) ? $employee->usersDetails['employee_no'] : '-'}}</td>
                             <td>{{isset($employee->usersDetails['full_name']) ? $employee->usersDetails['full_name'] : '-'}}</td>
-                            <td>{{isset($employee->usersDetails['department']) ? $employee->usersDetails['department'] : '-'}}</td>
+                            <!--<td>{{isset($employee->usersDetails['department']) ? $employee->usersDetails['department'] : '-'}}</td>-->
                             <td>{{isset($employee->usersDetails['bank_name']) ? $employee->usersDetails['bank_name'] : '-'}}</td>
                             <td>{{isset($employee->usersDetails['account_no']) ? $employee->usersDetails['account_no'] : '-'}}</td>
                             <td>{{isset($employee->usersDetails['ifsc_code']) ? $employee->usersDetails['ifsc_code'] : '-'}}</td>
@@ -108,7 +108,7 @@
                                     if(in_array($employee->usersDetails['department'],['Visiting Faculty Teachers'])){
                                         $narration ='Professional Fees';
                                     }
-                                    else if(in_array($employee->usersDetails['department'],['Pre-Primary Teacher Other','House Keeping Department'])){
+                                    else if(in_array($employee->usersDetails['department'],['Pre-Primary Other','House Keeping Department'])){
                                         $narration ='Wages';
                                     }
                                 }
@@ -125,7 +125,7 @@
                             <td><b>Total</b></td>
                             <td><b>{{$empTotal}}</b></td>
                             <td></td>
-                            <td></td>
+                            <!--<td></td>-->
                             <td></td>
                             <td></td>
                             <td></td>

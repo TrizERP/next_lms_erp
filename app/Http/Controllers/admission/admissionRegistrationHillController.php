@@ -45,7 +45,9 @@ class admissionRegistrationHillController extends Controller
             })
             ->selectRaw('ae.*,ar.*,ae.enquiry_no AS enquiry_no,COUNT(ts.id) AS total_student_count,ae.remarks AS enquiry_remark,s.name AS std_name,CONCAT_WS(" ",COALESCE(ae.first_name,"-"),COALESCE(ae.middle_name,"-"),COALESCE(ae.last_name,"-")) as full_name,ae.id as id')
             ->where('ae.sub_institute_id', $sub_institute_id)
-            ->where('ae.syear', $syear)->groupBy('ae.id')->get()->toArray();
+            ->where('ae.syear', $syear)
+            ->orderBy('ae.id','DESC')
+            ->groupBy('ae.id')->get()->toArray();
 
         $data = array_map(function ($value) {
             return (array) $value;
@@ -182,5 +184,91 @@ class admissionRegistrationHillController extends Controller
           }
 
         return is_mobile($type, 'admission_registration_v1.index', $res);
+    }
+
+    public function registrationV1Reoprt(Request $request){
+        $type = $request->type;
+        $sub_institute_id = $request->session()->get("sub_institute_id");
+
+        $syear = session()->get("syear");
+        if($type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');            
+        }
+
+        $data = DB::table('admission_enquiry as ae')
+        ->leftJoin('admission_registration_v1 as ar', function ($join) use ($sub_institute_id)  {
+            $join->on('ae.id','=','ar.enquiry_id')->where('ar.sub_institute_id',$sub_institute_id);
+        })->leftJoin('tblstudent as ts', function ($join) {
+            $join->whereRaw('ts.admission_id = ae.id AND ts.admission_year = ae.syear AND ts.sub_institute_id = ae.sub_institute_id');
+        })->leftJoin('standard as s', function ($join) use ($sub_institute_id) {
+            $join->whereRaw("s.id = ae.admission_standard AND s.sub_institute_id = '".$sub_institute_id."'");
+        })
+        ->selectRaw('ae.*,ar.*,ae.enquiry_no AS enquiry_no,COUNT(ts.id) AS total_student_count,ae.remarks AS enquiry_remark,s.name AS std_name,CONCAT_WS(" ",COALESCE(ae.first_name,"-"),COALESCE(ae.middle_name,"-"),COALESCE(ae.last_name,"-")) as full_name,ae.id as id')
+        ->where('ae.sub_institute_id', $sub_institute_id)
+        ->where('ae.syear', $syear)
+        ->when($request->enq_no,function($q) use($request){
+            $q->where('ar.enquiry_no',$request->enq_no);
+        })
+        ->when($request->mobile,function($q) use($request){
+            $q->where('ae.mobile',$request->mobile);
+        })
+        ->when($request->hn,function($q) use($request){
+            $q->where('ar.h_n',$request->hn);
+        })
+        ->when($request->pint,function($q) use($request){
+            $q->where('ar.p_int',$request->pint);
+        })
+        ->when($request->pintdate,function($q) use($request){
+            $q->where('ar.p_int_date',date('Y-m-d',strtotime($request->pintdate)));
+        })
+        ->when($request->conf,function($q) use($request){
+            $q->where('ar.confi',$request->conf);
+        })
+        ->when($request->confidate,function($q) use($request){
+            $q->where('ar.confi_date',date('Y-m-d',strtotime($request->confidate)));
+        })
+        ->when($request->fees_paid,function($q) use($request){
+            $q->where('ar.paid',$request->fees_paid);
+        })
+        ->when($request->transport_fees,function($q) use($request){
+            $q->where('ar.transport_fees',$request->transport_fees);
+        })
+        ->orderBy('ae.id','DESC')
+        ->groupBy('ae.id')
+        ->get()->toArray();
+
+        $data = array_map(function ($value) {
+            return (array) $value;
+        }, $data);
+
+        $res['mobile']=$request->mobile;
+        $res['enq_no']=$request->enq_no;
+        $res['hn']=$request->hn;
+        $res['pint']=$request->pint;
+        $res['pintdate']=$request->pintdate;
+        $res['conf']=$request->conf;
+        $res['confidate']=$request->confidate;
+        $res['paid_fees']=$request->fees_paid;
+        $res['transport_fees']=$request->transport_fees;
+        // echo "<pre>";print_r($request->all());exit;
+        $res['hnArr'] = [1,2,3];
+        $res['pIntArr'] = ["C","I","C/A","NO","W/L"];
+        $res['confArr'] = ["C","C/A","NO","W/L"];
+        $res['yesNo'] = ["Yes","No"];
+        $res['data'] = $data;
+        
+        return is_mobile($type, 'admission/registrationHills/report', $res, 'view');
     }
 }
