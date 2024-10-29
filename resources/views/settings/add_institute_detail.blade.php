@@ -9,11 +9,11 @@
             </div>
         </div>       
         <div class="card">            
-<style>
-    .inst-nav{
-        margin-bottom: 0px !important;
-    }
-</style>
+        <style>
+            .inst-nav{
+                margin-bottom: 0px !important;
+            }
+        </style>
             @if ($sessionData = Session::get('data')) 
                 @if($sessionData['status_code'] == 1)
                     <div class="alert alert-success alert-block">
@@ -147,30 +147,42 @@
                     </form>  
                 </div>
                 <!-- tab 1 ends  -->
-                <!-- tab 2 start  -->
-                <div class="tab-pane p-3" id="section-linemove-2" role="tabpanel">    
+               
+                 <!-- tab 3 starts  -->
+                 <div class="tab-pane p-3" id="section-linemove-3" role="tabpanel">    
+                   @include('lms.triz_skills')
+                </div>
+                <!-- tab 3 ends  -->
+                 <!-- tab 2 start  -->
+                 <div class="tab-pane p-3" id="section-linemove-2" role="tabpanel">    
                    @include('HRMS.department.tabDepartment')
                 </div>
                 <!-- tab 2 ends  -->
-                 <!-- tab 3 starts  -->
-                <!-- tab 3 ends  -->
             </div >
             <!-- end tabs  -->
         </div>
     </div>        
 </div>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="../../../admin_dep/js/cbpFWTabs.js"></script>
-<script>
-    // Initialize the tab functionality
-    (function() {
-        [].slice.call(document.querySelectorAll('.sttabs')).forEach(function(el) {
-            new CBPFWTabs(el);
-        });
-    })();
-</script>
 @include('includes.footerJs')
 @if(isset($_REQUEST['module']) && $_REQUEST['module']=='add_task')
+<script>
+    //@include('HRMS.department.tabDepartment')
+    $(document).ready(function(){
+        $(document).ready(function() {
+        setTimeout(function() {
+            
+            $('#section-linemove-1').removeClass('active show');
+            $('.section-linemove-1').removeClass('active');
+
+            $('#section-linemove-2').addClass('active show');
+            $('.section-linemove-2').addClass('active');
+            $('#section-linemove-3').addClass('active show');
+            $('.section-linemove-3').addClass('active');
+        }, 500);
+    });
+});
+</script>
 @endif
 @include('includes.footer')
 @endsection

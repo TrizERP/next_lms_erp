@@ -14,7 +14,6 @@ $route = ['dashboard'];
     <div class="dropdown">
         <button class="dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown"
                 aria-haspopup="true" aria-expanded="false">
-            <!-- <i class="mdi mdi-dots-vertical"></i> -->
         </button>
         <!--  <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
            <a class="dropdown-item" href="#">Action</a>
@@ -451,18 +450,6 @@ $route = ['dashboard'];
 
     // //   alert('asd');
 
-  //   var url = {{ route('tourUpdate') }} + "?module="+module;
-    //   var xhttp = new XMLHttpRequest();
-    //   xhttp.onreadystatechange = function() {
-    //     if (this.readyState == 4 && this.status == 200) {
-    //       alert("success");
-    //     }
-    //   };
-    //   xhttp.open("GET", url, true);
-    //   xhttp.send();
-    // }
-
-
 </script>
 <script type="text/javascript">
     var options = {
@@ -645,8 +632,13 @@ $route = ['dashboard'];
     <div id="chatbot-header" style="background-color: #007bff; color: white; padding: 10px; border-top-left-radius: 10px; border-top-right-radius: 10px;">
         Scholar Clone
         <button id="minimize-chatbot" title="Minimize" style="float: right; background: none; border: none; color: white; margin-left: 5px;">_</button>
+<<<<<<< HEAD
         <button id="refresh-chatbot" title="Refresh" style="float: right; background: none; border: none; color: white; margin-left: 5px;">&#10227</button>
         <button id="close-chatbot" title="Close" style="float: right; background: none; border: none; color: red; font-size: 30px">&times</button>
+=======
+        <button id="refresh-chatbot" title="Refresh" style="float: right; background: none; border: none; color: white; margin-left: 5px;">⟳</button>
+        <button id="close-chatbot" title="Close" style="float: right; background: none; border: none; color: red;  font-size: 30px">×</button>
+>>>>>>> 95f844c45830f3cfda506eb1e757dc4926205e4b
     </div>
     <div id="messages" style="height: 300px; overflow-y: auto" class="clearfix"></div>
     <div id="loading" style="display: none; float: left; clear: both">
@@ -953,6 +945,12 @@ document.getElementById('refresh-chatbot').onclick = function() {
     visibility: visible;
     opacity: 1;
   }
+  button#close-chatbot {
+        transition: color 0.3s; 
+    }
+  button#close-chatbot:hover {
+        color: red; 
+    }
   #chatbot-header {
     display: flex;
     justify-content: space-between;
