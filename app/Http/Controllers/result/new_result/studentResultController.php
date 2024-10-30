@@ -611,62 +611,127 @@ class studentResultController extends Controller
                     if ($title->subject_id == $val->subject_id && $terms->term_id == $title->term_id) {
                         $foundMarks = false;
                         $ob_mark = 0;
-                        $title_exam[$title->exam_id][] = $title->ExamTitle;
-                        // all exam marks 
-                        foreach ($exam_marks as $index => $marks) {
-                            $obtained_marks[$title->exam_id][] = $ab_ex_na ?? 0;
-                            $to_marks[$title->exam_id][] = $title->points;
-                            $to_weight[$title->exam_id] = $title->weightage;
+                        // By Rajesh - Display periodic test exam and other diaply type 06-08-2024
+                        $arr = $title->exam_id;
+                        $title_exam[$arr][] = $title->ExamTitle;
+                        $weightage = $title->weightage;
+                         // all exam marks 
+                         foreach ($exam_marks as $index => $marks) {
                             if ($title->id == $marks->exam_id) {
                                 // for AB,NA,EX
-                                if ($marks->points == "0.00" || $marks->points == "") {
+                                if ($marks->is_absent!='' && in_array($marks->is_absent,["N.A.","EX","AB"])) {
                                     $ab_ex_na = $marks->is_absent;
-                                    if ($marks->is_absent == '') {
-                                        $ab_ex_na = 0;
+                                    $obtained_marks[$arr][] = $ab_ex_na;
+
+                                    $to_marks[$arr][] = $title->points;
+                                    if($ab_ex_na=="AB" && !in_array($title->ExamTitle,['PA1','PA2'])){
+                                        $to_weight[$arr] = $weightage;
+                                    }else{
+                                        $to_weight[$arr][] = $title->con_point;    
                                     }
-                                    
                                 } else {
+                                    $to_marks[$arr][] = $title->points;
                                     $ob_mark = $marks->points;
+
+                                    if(!in_array($title->ExamTitle,['PA1','PA2'])){
+                                        $to_weight[$arr] = $weightage;
+                                    }else{
+                                        $to_weight[$arr][] = $title->con_point;
+                                    }
                                     // store marks in array to get best of 2 
-                                    $obtained_marks[$title->exam_id][] = $ob_mark;
-                                  
-                                    $foundMarks = true;
+                                    if(!in_array($marks->is_absent,["N.A.","EX","AB"])){
+                                        $obtained_marks[$arr][] = $ob_mark;
+                                    }
                                 }
                                 break;
                             }
                         }
                     }
                 }
-
-                $ob_main_mark = 0;
+                // echo $val->subject_name.'<br>'.$val->subject_id.'<br>';
+                // echo "<pre>";print_r($obtained_marks);
+                $ob_main_mark = $ab_ex_na = $total_marks = 0;
                 // for best of 2 exam wise 
-                if (!empty($obtained_marks)) {
-                    foreach ($obtained_marks as $exam_id => $marksArray) {
-                        $t_m = 0;
-                        $tt = "";
-                        $w_m = isset($to_weight[$exam_id]) ? $to_weight[$exam_id] : 0; // Check if the key exists
-                        foreach ($marksArray as $index => $value) {
-                            if (isset($to_marks[$exam_id][$index])) {
-                                $t_m += $to_marks[$exam_id][$index];
-                                $tt = isset($title_exam[$exam_id][$index]) ? $title_exam[$exam_id][$index] : 0;
+                if (!empty($title_exam)) {
+                    foreach ($title_exam as $exam_id => $marksArray) {                                
+                        $convert_mark = 0;
+                        $obtained_mark_arr = $obtained_marks[$exam_id] ?? [];
+                        // convert marks if best of 2
+                        $pAB=1;
+                        if(in_array('PA1',$marksArray)){
+                            $pamarks=0;
+                            foreach ($obtained_mark_arr as $mk => $mv) {
+                                // echo $mv;
+                                $w_m = $to_weight[$exam_id][$mk] ?? 0; // Check if the key exists
+                                $t_m = $to_marks[$exam_id][$mk];
+                                if(is_numeric($mv)){
+                                    $pamarks +=($t_m != 0) ? (($mv / $t_m) * $w_m) : 0;
+                                }else{
+                                   $pAB = $pAB+1;
+                                }
+                            }
+                            $convert_mark = $pamarks;
+                        }
+                        else if(in_array('PA2',$marksArray)){
+                            $pamarks=0;
+                            foreach ($obtained_mark_arr as $mk => $mv) {
+                                // echo $mv;
+                                $w_m = $to_weight[$exam_id][$mk] ?? 0; // Check if the key exists
+                                $t_m = $to_marks[$exam_id][$mk];
+                                if(is_numeric($mv)){
+                                    $pamarks +=($t_m != 0) ? (($mv / $t_m) * $w_m) : 0;
+                                }else{
+                                   $pAB = $pAB+1;
+                                }
+                            }
+                            $convert_mark = $pamarks;
+                        }
+                        else{
+                            $w_m = $to_weight[$exam_id] ?? 0; // Check if the key exists
+                            $t_m = array_sum(array_intersect_key($to_marks[$exam_id] ?? [], $marksArray));
+                            $obtained_mark_sum = array_sum($obtained_mark_arr);
+                            $convert_mark = ($obtained_mark_sum != 0) ? (($obtained_mark_sum / $t_m) * $w_m) : 0;
+                            // for AB 
+                            foreach ($obtained_mark_arr as $mk => $mv) {
+                                $w_m = $to_weight[$exam_id] ?? 0;
+                                $t_m = $to_marks[$exam_id];
+                                if(in_array($mv,["N.A.","EX","AB"])){
+                                   $pAB = $pAB+1;
+                                }
                             }
                         }
-                        $obtained_mark_sum = array_sum($marksArray);
-                        if ($t_m !== 0) {
-                            $ob_main_mark += (($obtained_mark_sum / $t_m) * $w_m);
-                        } else {
-                            $ob_main_mark += 0;
+                        // echo $pAB.'<br>';
+                         // get mark for total mark 
+                         $ob_main_mark += $convert_mark;
+
+                        if(count($obtained_mark_arr) > 1) {
+                            $total_marks += $w_m;
+                            if($pAB>=3){
+                                $tdVal = 'AB';
+                            }
+                            else{
+                                $tdVal = number_format($convert_mark, 2);
+                            }
+                            $table .= '<td class="data_center"  ' . $exam_id . '-'.$val->subject_id.'-'.$pAB.'>' . $tdVal . '</td>';
+                        }else {
+                            if (!empty($obtained_mark_arr) && !in_array($obtained_mark_arr[0],["N.A.","EX"])) {
+                                $total_marks += $w_m;
+                            }
+                            
+                            if(!empty($obtained_mark_arr) && !in_array($obtained_mark_arr[0],["N.A.","EX","AB"])){
+                                $tdVal = number_format($convert_mark, 2);
+                            }else{
+                                $tdVal = $obtained_mark_arr[0] ?? "0.00"; // print AB,NA,EX
+                            }
+                            $table .= '<td class="data_center else" ' . $exam_id . '-'.$val->subject_id.'-'.$pAB.' >' . $tdVal . '</td>';
                         }
-                        $convert_mark = (($obtained_mark_sum / $t_m) * $w_m);
-                       $table .= '<td class="data_center t-' . $t_m . ' weightage-'.$w_m.' m-'.$obtained_mark_sum.' e-'.$tt.' ">' . number_format($convert_mark,2) . '</td>';
                     }
                 } else {
-                    // if marks not found 
+                    // If marks not found
                     foreach ($title_exam as $exam_id => $marksArray) {
-                        $table .= '<td class="data_center no_mark '.$title->id.'">0.00</td>';
+                        $table .= '<td class="data_center no_mark ' . $exam_id . '">0.00</td>';
                     }
-
-                }
+                }  
 
                 $obtained_mark_formatted = number_format($ob_main_mark, 2);
                 
@@ -679,12 +744,13 @@ class studentResultController extends Controller
             }
             // get percentage 
             $grade_arr_mmis = $this->getGradeScale($standard_id, '');
-            $table .= '<td class="data_center tot_of_both">' . number_format($both_term_ob_mark, 2) . '</td><td class="data_center grade_of_both">' . $this->getGrade($grade_arr_mmis, $overall_total, $both_term_ob_mark) . '</td>';
+            $table .= '<td class="data_center tot_of_both">' . number_format($both_term_ob_mark, 2) . '</td><td class="data_center grade_of_both">' . $this->getGrade($grade_arr_mmis, $total_mark, $both_term_ob_mark)  . '</td>';
             $get_all_ob_mark += $both_term_ob_mark;
             $get_all_tot_mark += $overall_total;
 
             $table .= '</tr>';
         }
+        // exit;
         $table .= '<tr>';
         $table_per = $rep_val = '';
         $table_all = '';
