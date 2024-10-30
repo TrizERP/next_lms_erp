@@ -1839,6 +1839,7 @@ exit; */
                       ->orWhereNull('fp.razorpay_dashboard_ps');
             })
             ->whereNotNull('fp.razorpay_order_id')
+            ->whereBetween('fp.created_at', [now()->subDays(3), now()])
             ->groupBy('fp.id')
             ->get(); // ->on('tse.syear', '=', 'fr.syear')
 
