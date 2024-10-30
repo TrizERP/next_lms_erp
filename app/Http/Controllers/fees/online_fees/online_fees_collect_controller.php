@@ -1835,7 +1835,7 @@ exit; */
                     ->on('fr.sub_institute_id', '=', 'tse.sub_institute_id');
             })
             ->where(function ($query) {
-                $query->whereNotIn('fp.razorpay_dashboard_ps', ['captured', 'refunded', 'rajesh'])
+                $query->whereNotIn('fp.razorpay_dashboard_ps', ['captured', 'refunded', 'rajesh','failed'])
                       ->orWhereNull('fp.razorpay_dashboard_ps');
             })
             ->whereNotNull('fp.razorpay_order_id')
@@ -1848,22 +1848,33 @@ exit; */
                 $id = $data->id;
                 $key_id = $data->key_id;
                 $key_secret = $data->key_secret;
-                $payment_id = $data->razorpay_order_id;
+                $order_id = $data->razorpay_order_id;
                 $student_id = $data->student_id;
                 $amount = round($data->amount,0);
 
                 // initial razorpay api
                 $api = new Api($key_id, $key_secret);
-                $payment = $api->payment->fetch($payment_id);
+                //$payment = $api->payment->fetch($payment_id);
+                $paymentCollection = $api->order->fetch($order_id)->payments();
 
-                if ( !empty( $payment ) ) {
+                //echo "<pre>";
+                //echo "RAJESH-".$paymentCollection['count'];
+                //print_r($paymentCollection);
+                //exit();
+
+                if (!empty($paymentCollection) && $paymentCollection['count'] > 0) {
+                	
+                	$payment = $paymentCollection['items'][0]; // Access the first payment object
+                    
                     $status = $payment['status'];
+                    $payment_id = $payment['id'];
                     $json_response = $this->razorpay_payment_response_data_to_array($payment);
 
                     $update_arr = array(
                         "razorpay_dashboard_ps" => $status,
                         "icici_bank_res" => "cron",
                         "razorpay_bank_res" => $json_response,
+                        'razorpay_order_id' => $payment_id,
                         "updated_at" => now()
                     );
                 //echo "<pre>IF-PAY"; print_r($data); exit;
