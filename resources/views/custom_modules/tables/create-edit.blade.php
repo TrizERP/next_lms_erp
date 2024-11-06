@@ -160,6 +160,43 @@
                         <span style="color: red">{{$message}}</span>
                         @enderror
                     </div>
+                    <?php
+                    $division = false;
+                    $standard = false;
+                    ?>`
+                    @if(isset($customModuleTable['whereColumns']))
+
+                    @foreach($customModuleTable['whereColumns'] as $where_column)
+                        @if($where_column['column_name'] == 'Division')
+                         <?php
+                                $division = true
+                             ?>
+                        @endif
+                            @if($where_column['column_name'] == 'Standard')
+                               <?php
+                                    $standard = true
+                                   ?>
+                            @endif
+                    @endforeach
+                    @endif
+
+
+
+                    <div class="col-md-4 form-group">
+                        <label>Include Standard</label>
+                        <input type="checkbox" id='standard' name="standard" {{$standard ? 'checked' : ''}} class="form-control" value="1">
+                        @error('access_link')
+                        <span style="color: red">{{$message}}</span>
+                        @enderror
+                    </div>
+
+                    <div class="col-md-4 form-group">
+                        <label>Include Division</label>
+                        <input type="checkbox" id='division' name="division" {{$division ? 'checked': ''}} class="form-control" value="1">
+                        @error('access_link')
+                        <span style="color: red">{{$message}}</span>
+                        @enderror
+                    </div>
 
                     <input type="hidden" name="id" value="{{$customModuleTable['id']}}">
                     <div class="col-md-12 form-group">

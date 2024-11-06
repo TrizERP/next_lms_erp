@@ -272,7 +272,7 @@ class WhatsappController extends Controller
 
         // Check if an image source was found
         if (isset($matches[1]) || isset($match[1])) {
-            sleep(40);
+            //sleep(40);
         }
 
         if (count($hrefArray) == 0) {
@@ -298,11 +298,11 @@ class WhatsappController extends Controller
             $path = Storage::disk('digitalocean')->putFileAs('public/whatsapp', $file, $filename, 'public');
             // Ensure hrefArray and textArray have elements before accessing them
             if ($path) {
-                $attachment = env('DO_PATH').$path;
+                $attachment = $path;
                 $prepareMessageFileBody['contentVariables'] = json_encode([
                     "1" => $attachment,
                 ]);
-                $prepareMessageFileBody['contentSid'] = "HXb8e33eff5c13a6882183ec4f3ea8a4ba";
+                $prepareMessageFileBody['contentSid'] = "HXe1dfea2d6ce4025bc5b48035c1b2ce07";
             }
         }
 

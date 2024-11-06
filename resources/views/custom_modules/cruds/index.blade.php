@@ -42,27 +42,44 @@
                             @foreach($data['data']['view'] as $key => $value)
                                 <tr>
                                     @foreach($data['data']['columns'] as $column)
-                                        @if ($column['column_name'] == 'image')
+                                        @if($column['column_name'] == 'Division')
+                                            @foreach($data['data']['division'] as $division)
+                                                @if ($division['id'] == $value[$column['column_name']])
+                                                    <td>{{$division['name']}}</td>
+                                                @endif
+                                            @endforeach
+                                        @elseif($column['column_name'] == 'Standard')
+                                            @foreach($data['data']['standard'] as $standard)
+                                                @if ($standard['id'] == $value[$column['column_name']])
+                                                    <td>{{$standard['name']}}</td>
+                                                @endif
+                                            @endforeach
+                                        @elseif ($column['column_name'] == 'image')
 
-                                            <td><a href="{{asset('images/'.$value[$column['column_name']])}}" target="_blank">link</a>
+                                            <td><a href="{{asset('images/'.$value[$column['column_name']])}}"
+                                                   target="_blank">link</a>
                                             </td>
                                         @else
                                             <td>{{$value[$column['column_name']]}}</td>
                                         @endif
                                     @endforeach
-                                        <td>
-                                            <div class="d-inline">
-                                                <a href="{{ url('custom-module/create-view/' . $data['data']['id'] . '/update/' . $value->id) }}"
-                                                   class="btn btn-info btn-outline"><i class="ti-pencil-alt"></i></a>
-                                            </div>
-                                            <form class="d-inline" action="{{ route('custom_module_crud.delete', $value->id)}}" method="post">
-                                                @csrf
-                                                @method('DELETE')
-                                                <input type="hidden" value="{{$data['data']['table_name']}}" name="table_name">
-                                                <input type="hidden" value="{{$data['data']['id']}}" name="view_id">
-                                                <button type="submit" class="btn btn-info btn-outline-danger"><i class="ti-trash"></i></button>
-                                            </form>
-                                        </td>
+                                    <td>
+                                        <div class="d-inline">
+                                            <a href="{{ url('custom-module/create-view/' . $data['data']['id'] . '/update/' . $value->id) }}"
+                                               class="btn btn-info btn-outline"><i class="ti-pencil-alt"></i></a>
+                                        </div>
+                                        <form class="d-inline"
+                                              action="{{ route('custom_module_crud.delete', $value->id)}}"
+                                              method="post">
+                                            @csrf
+                                            @method('DELETE')
+                                            <input type="hidden" value="{{$data['data']['table_name']}}"
+                                                   name="table_name">
+                                            <input type="hidden" value="{{$data['data']['id']}}" name="view_id">
+                                            <button type="submit" class="btn btn-info btn-outline-danger"><i
+                                                    class="ti-trash"></i></button>
+                                        </form>
+                                    </td>
                                 </tr>
                                 @php
                                     $j++;

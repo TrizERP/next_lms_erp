@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\CustomModuleTable;
 use App\Models\CustomModuleTableColumn;
 use App\Models\DynamicModel;
+use App\Models\school_setup\divisionModel;
+use App\Models\school_setup\standardModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -32,7 +34,7 @@ class CustomModuleController extends Controller
     {
         $type = $request->input('type');
         if ($id) {
-            $customModuleTable = CustomModuleTable::find($id);
+            $customModuleTable = CustomModuleTable::with('whereColumns')->find($id);
             return is_mobile($type, "custom_modules.tables.create-edit", compact('customModuleTable'), "view", 'compact');
             //return view('HRMS.hrms_job_title.create', compact('hrmsJobTitle'));
         }
@@ -89,6 +91,45 @@ class CustomModuleController extends Controller
         $customModuleTable->table_name = $prefixTableName;
         $customModuleTable->sub_institute_id = $subInstituteId;
         $customModuleTable->save();
+
+        $tableColumn = CustomModuleTableColumn::where('table_id', $customModuleTable->id);
+        if (isset($request->division)) {
+                $tableColumn = $tableColumn->where('column_name','Division')->first();
+            if (!$tableColumn) {
+                $tableColumn = new CustomModuleTableColumn();
+                $tableColumn->column_name = 'Division';
+                $tableColumn->table_id = $customModuleTable->id;
+                $tableColumn->auto_increment = 0;
+                $tableColumn->type = 'integer';
+                $tableColumn->length = "255";
+                $tableColumn->not_null = 0;
+                $tableColumn->index = null;
+                $tableColumn->default = null;
+                $tableColumn->save();
+            }
+        } else  {
+            $tableColumn->where('column_name','Division')->delete();
+        }
+        if (isset($request->standard)) {
+                $tableColumn = $tableColumn->where('column_name','Standard')->first();
+            if (!$tableColumn) {
+                $tableColumn = new CustomModuleTableColumn();
+                $tableColumn->column_name = 'Standard';
+                $tableColumn->table_id = $customModuleTable->id;
+                $tableColumn->auto_increment = 0;
+                $tableColumn->type = 'integer';
+                $tableColumn->length = "255";
+                $tableColumn->not_null = 0;
+                $tableColumn->index = null;
+                $tableColumn->default = null;
+                $tableColumn->save();
+            }
+        } else {
+            $tableColumn->where('column_name','Standard')->delete();
+        }
+
+
+
         return is_mobile($type, "custom-module.tables", null, "redirect");
     }
 
@@ -291,7 +332,9 @@ class CustomModuleController extends Controller
         $subInstituteId = $request->session()->get('sub_institute_id');
         $data['data'] = CustomModuleTable::with('columns')->where([['sub_institute_id', $subInstituteId],['id',$id]])->first();
         $data['data']['view'] = DynamicModel::readRecords($data['data']['table_name']);
-
+        $data['data']['division'] =  divisionModel::where('sub_institute_id', $request->session()->get('sub_institute_id'))->get(['id', 'name']);
+        $data['data']['standard'] =  standardModel::where('sub_institute_id', $request->session()->get('sub_institute_id'))->get(['id', 'name']);
+        //return $data;
         return is_mobile($type, "custom_modules.cruds.index", $data, "view");
     }
 
@@ -304,6 +347,10 @@ class CustomModuleController extends Controller
         }
         $prepareView['id']  = 0;
         $data['data']['view'] = $prepareView;
+        $data['data']['division'] = divisionModel::where('sub_institute_id', $request->session()->get('sub_institute_id'))->get(['id', 'name']);
+        $data['data']['standard'] =  standardModel::where('sub_institute_id', $request->session()->get('sub_institute_id'))->get(['id', 'name']);
+
+
         if (isset($data['data']['table_name'])) {
            $getRecords = DynamicModel::readSingleRecord($data['data']['table_name'], $viewId);
             if($getRecords) $data['data']['view'] = $getRecords;

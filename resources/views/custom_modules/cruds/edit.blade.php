@@ -17,32 +17,67 @@
                     <strong>{{ $message }}</strong>
                 </div>
             @endif
-            <form action="{{ route('custom_module_crud.store', $data['data']['id']) }}" enctype="multipart/form-data" method="post">
+            <form action="{{ route('custom_module_crud.store', $data['data']['id']) }}" enctype="multipart/form-data"
+                  method="post">
                 @csrf
 
                 <div class="col-lg-3 col-sm-3 col-xs-3">
-                    <a href="{{ route('custom_module_crud.index',$data['data']['id']) }}" class="btn btn-info add-new"> Back </a>
+                    <a href="{{ route('custom_module_crud.index',$data['data']['id']) }}" class="btn btn-info add-new">
+                        Back </a>
                 </div>
                 <div class="row mt-3">
                     @foreach($data['data']['columns'] as $column)
-                        @if($column['column_name'] == 'id') @continue @endif
-
+                        @if($column['column_name'] == 'id')
+                            @continue
+                        @endif
                         <div class="col-md-6 mt-2">
                             <label>{{$column['column_name']}} </label>
-                            @if (Str::startsWith($column['column_name'], "image_"))
-                                <input type="file" id="{{$column['column_name']}}" {{$data['data']['view'][$column['column_name']] ? "hidden":"" }} name="{{$column['column_name']}}" class="form-control" value="{{$data['data']['view'][$column['column_name']]}}">
-                                <input type="file" id="{{$column['column_name']}}" {{$data['data']['view'][$column['column_name']] ? "":"hidden" }} name="new_{{$column['column_name']}}" class="form-control" value="{{$data['data']['view'][$column['column_name']]}}">
-                               @if ($data['data']['view']['id'] > 0)
-                                <a href="{{asset('images/'.$data['data']['view'][$column['column_name']])}}" target="_blank">link</a>
+                            @if($column['column_name'] == 'Division')
+                                <select class="form-control" id="{{$column['column_name']}}" required
+                                        name="{{$column['column_name']}}">
+                                    @foreach($data['data']['division'] as $division)
+                                        @if ($data['data']['view'][$column['column_name']] == $division['id'])
+                                            <option value="{{$division['id']}}" selected>{{$division['name']}}</option>
+                                        @else
+                                            <option value="{{$division['id']}}">{{$division['name']}}</option>
+                                        @endif
+                                    @endforeach
+
+                                </select>
+                            @elseif($column['column_name'] == 'Standard')
+                                <select class="form-control" id="{{$column['column_name']}}" required
+                                        name="{{$column['column_name']}}">
+                                    @foreach($data['data']['standard'] as $standard)
+                                        @if ($data['data']['view'][$column['column_name']] == $standard['id'])
+                                            <option value="{{$standard['id']}}" selected>{{$standard['name']}}</option>
+                                        @else
+                                            <option value="{{$standard['id']}}">{{$standard['name']}}</option>
+                                        @endif
+                                    @endforeach
+
+                                </select>
+                            @elseif (Str::startsWith($column['column_name'], "image_"))
+                                <input type="file" id="{{$column['column_name']}}"
+                                       {{$data['data']['view'][$column['column_name']] ? "hidden":"" }} name="{{$column['column_name']}}"
+                                       class="form-control" value="{{$data['data']['view'][$column['column_name']]}}">
+                                <input type="file" id="{{$column['column_name']}}"
+                                       {{$data['data']['view'][$column['column_name']] ? "":"hidden" }} name="new_{{$column['column_name']}}"
+                                       class="form-control" value="{{$data['data']['view'][$column['column_name']]}}">
+                                @if ($data['data']['view']['id'] > 0)
+                                    <a href="{{asset('images/'.$data['data']['view'][$column['column_name']])}}"
+                                       target="_blank">link</a>
                                 @endif
                             @elseif (Str::startsWith($column['column_name'], "date_"))
-                                    <input type="date" id="{{$column['column_name']}}" required name="{{$column['column_name']}}" class="form-control"
-                                           value="{{$data['data']['view'][$column['column_name']]}}">
+                                <input type="date" id="{{$column['column_name']}}" required
+                                       name="{{$column['column_name']}}" class="form-control"
+                                       value="{{$data['data']['view'][$column['column_name']]}}">
                             @elseif (Str::startsWith($column['column_name'], "date_time"))
-                                <input type="datetime-local" id="{{$column['column_name']}}" required name="{{$column['column_name']}}" class="form-control"
+                                <input type="datetime-local" id="{{$column['column_name']}}" required
+                                       name="{{$column['column_name']}}" class="form-control"
                                        value="{{$data['data']['view'][$column['column_name']]}}">
                             @else
-                                <input type="text" id="{{$column['column_name']}}" required name="{{$column['column_name']}}" class="form-control"
+                                <input type="text" id="{{$column['column_name']}}" required
+                                       name="{{$column['column_name']}}" class="form-control"
                                        value="{{$data['data']['view'][$column['column_name']]}}">
                             @endif
                             @error('column_name')
@@ -50,13 +85,14 @@
                             @enderror
                         </div>
                     @endforeach
-                        <input type="text" hidden  name="view_id" value="{{$data['data']['view']['id']}}" class="btn btn-success">
+                    <input type="text" hidden name="view_id" value="{{$data['data']['view']['id']}}"
+                           class="btn btn-success">
                     {{--<input type="hidden" value="{{$data['column_id']}}" name="col_id">--}}
                 </div>
                 <div class="row mt-4">
                     <div class="form-group align-center">
                         <center>
-                        <input type="submit" name="submit" id="Submit" value="Submit" class="btn btn-success">
+                            <input type="submit" name="submit" id="Submit" value="Submit" class="btn btn-success">
 
                         </center>
                     </div>

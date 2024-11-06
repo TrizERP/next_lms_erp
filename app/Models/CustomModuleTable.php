@@ -12,4 +12,8 @@ class CustomModuleTable extends Model
     public function columns() {
         return $this->hasMany(CustomModuleTableColumn::class,'table_id');
     }
+
+    public function whereColumns() {
+        return $this->hasMany(CustomModuleTableColumn::class,'table_id')->whereIn('column_name',['Division','Standard']);
+    }
 }

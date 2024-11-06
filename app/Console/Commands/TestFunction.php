@@ -88,7 +88,7 @@ class TestFunction extends Command
     public function handle()
     {
 
-       /* $attachment = "public/whatsapp/download.jpeg";
+       /*$attachment = "public/whatsapp/download.jpeg";
         $prepareMessagFileeBody['contentVariables'] = json_encode([
             "1" => $attachment,
         ]);
@@ -99,8 +99,8 @@ class TestFunction extends Command
         $authToken = env('TWILIO_AUTH_TOKEN');
         $client = new Client($accountSid, $authToken);
         $twilioResponse = $client->messages->create(
-        //'whatsapp:+919638141767',
-            'whatsapp:+917621070302',
+        'whatsapp:+917621070302',
+            //'whatsapp:+917621070302',
             [
                 "contentSid" => $prepareMessagFileeBody['contentSid'],
                 "messagingServiceSid" => $messagingServiceSid,
@@ -108,9 +108,9 @@ class TestFunction extends Command
                 "contentVariables" => $prepareMessagFileeBody['contentVariables'],
             ]
         );
-        dd($twilioResponse);
+        dd($twilioResponse);*/
 
-        dd('done');*/
+
 
 
         $message = "Triz ";
