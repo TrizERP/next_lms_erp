@@ -182,7 +182,7 @@ $route = ['dashboard'];
                                       </div>
                                       <div class="col-3 m-0 p-1">
                                           <button class="btn btn-outline-secondary rounded border w-100 mb-0 h-100"
-                                                  title="Gönder!"><i class="fa fa-paper-plane" aria-hidden="true"></i>
+                                                  title="G�nder!"><i class="fa fa-paper-plane" aria-hidden="true"></i>
                                           </button>
                                       </div>
                                   </div>
@@ -207,7 +207,7 @@ $route = ['dashboard'];
             setTimeout(() => {
                 $('#loading-overlay').hide();
             },3000)
-        });
+     ���});
 </script>
 <!-- /#wrapper -->
 <!-- jQuery -->
@@ -450,18 +450,6 @@ $route = ['dashboard'];
 
     // //   alert('asd');
 
-  //   var url = {{ route('tourUpdate') }} + "?module="+module;
-    //   var xhttp = new XMLHttpRequest();
-    //   xhttp.onreadystatechange = function() {
-    //     if (this.readyState == 4 && this.status == 200) {
-    //       alert("success");
-    //     }
-    //   };
-    //   xhttp.open("GET", url, true);
-    //   xhttp.send();
-    // }
-
-
 </script>
 <script type="text/javascript">
     var options = {
@@ -644,15 +632,20 @@ $route = ['dashboard'];
     <div id="chatbot-header" style="background-color: #007bff; color: white; padding: 10px; border-top-left-radius: 10px; border-top-right-radius: 10px;">
         Scholar Clone
         <button id="minimize-chatbot" title="Minimize" style="float: right; background: none; border: none; color: white; margin-left: 5px;">_</button>
+<<<<<<< HEAD
+        <button id="refresh-chatbot" title="Refresh" style="float: right; background: none; border: none; color: white; margin-left: 5px;">&#10227</button>
+        <button id="close-chatbot" title="Close" style="float: right; background: none; border: none; color: red; font-size: 30px">&times</button>
+=======
         <button id="refresh-chatbot" title="Refresh" style="float: right; background: none; border: none; color: white; margin-left: 5px;">⟳</button>
         <button id="close-chatbot" title="Close" style="float: right; background: none; border: none; color: red;  font-size: 30px">×</button>
+>>>>>>> 95f844c45830f3cfda506eb1e757dc4926205e4b
     </div>
     <div id="messages" style="height: 300px; overflow-y: auto" class="clearfix"></div>
     <div id="loading" style="display: none; float: left; clear: both">
     <span class="dots">
-        <span class="dot" style="font-size: 10px;">●</span>
-        <span class="dot" style="font-size: 10px;">●</span>
-        <span class="dot" style="font-size: 10px;">●</span>
+        <span class="dot" style="font-size: 10px;">&#9679</span>
+        <span class="dot" style="font-size: 10px;">&#9679</span>
+        <span class="dot" style="font-size: 10px;">&#9679</span>
     </span>
     <span style="font-size: 10px;">Scholar clone is typing...</span>
 </div>

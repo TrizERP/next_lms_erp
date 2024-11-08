@@ -9,11 +9,11 @@
             </div>
         </div>       
         <div class="card">            
-<style>
-    .inst-nav{
-        margin-bottom: 0px !important;
-    }
-</style>
+        <style>
+            .inst-nav{
+                margin-bottom: 0px !important;
+            }
+        </style>
             @if ($sessionData = Session::get('data')) 
                 @if($sessionData['status_code'] == 1)
                     <div class="alert alert-success alert-block">
@@ -25,13 +25,12 @@
                     </div>
             @endif
            
-        <center>            
+        <center>       
             <ul class="nav nav-tabs tab-title mb-4 inst-nav">
                 <li class="nav-item"><a href="#section-linemove-1" class="nav-link section-linemove-1 active" aria-selected="true" data-toggle="tab"><span>Institute Details</span></a></li>
                 <li class="nav-item"><a href="#section-linemove-2" class="nav-link section-linemove-2" aria-selected="false" data-toggle="tab"><span>Add Departments</span></a></li>
                 <li class="nav-item"><a href="#section-linemove-5" class="nav-link section-linemove-5" aria-selected="false" data-toggle="tab"><span>School Handbook</span></a></li>
                 <li class="nav-item"><a href="#section-linemove-4" class="nav-link section-linemove-4" aria-selected="false" data-toggle="tab"><span>Organization Chart</span></a></li>
-                <li class="nav-item"><a href="#section-linemove-3" class="nav-link section-linemove-3" aria-selected="false" data-toggle="tab"><span>My Skills & Certification</span></a></li>
             </ul> 
         </center>
 

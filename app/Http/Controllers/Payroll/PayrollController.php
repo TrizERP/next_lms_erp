@@ -1131,8 +1131,9 @@ class PayrollController extends Controller
 
     }
 
-    public function monthlyPayrollPdf(Request $request,$id, $month, $year)
+    public function monthlyPayrollPdf(Request $request,$id, $month, $year,$pdfType='')
     {
+
         $sub_institute_id = $request->session()->get('sub_institute_id');
         
         $employeeSalaryData = EmployeeMonthlySalaryData::with('getUser')->where([['employee_id', $id],[ 'sub_institute_id', $sub_institute_id],['month', $month],['year', $year]])->first();
@@ -1150,6 +1151,7 @@ class PayrollController extends Controller
             ->first();
 
         $payrollTypes = PayrollType::where('sub_institute_id',$sub_institute_id)->where('status', 1)->orderBy('sort_order')->get();
+
         if ($employeeSalaryData) {
             $employeeData = [];
             $employeeData['name'] = $get_user_detail->first_name . ' '. $get_user_detail->last_name;
@@ -1218,8 +1220,22 @@ class PayrollController extends Controller
             $employeeData['total_actual_payment'] = $actualpayment;
             view()->share('employeeData',$employeeData);
             $pdf = PDF::loadView('payroll.monthly_payroll_report.employeeSalaryPdf');
-            return $pdf->download('salary.pdf');
-        } else{
+
+            if($pdfType=='storeDoc'){
+                $pdfContent = $pdf->output();
+                $fileName = 'emp_' . $id . '_payslip_'.$month.'_'.$year.'.pdf';
+                $file_path = 'public/staff_document/' . $fileName;
+                if (Storage::disk('digitalocean')->exists($file_path)) {
+                    Storage::disk('digitalocean')->delete($file_path);
+                }
+
+                Storage::disk('digitalocean')->put($file_path, $pdfContent, 'public');
+                
+                return $fileName;
+            }else{
+                return $pdf->download('salary.pdf');
+            }
+        } else if($pdfType!='storeDoc'){
             return redirect()->back();
         }
     }
@@ -1847,7 +1863,25 @@ class PayrollController extends Controller
                 $i++;
             }
          }
+        // store pdf 29-10-2024
+        $pdfName = $this->monthlyPayrollPdf($request,$emp_id, $request->month, $request->year,'storeDoc');
 
+        if(isset($pdfName)){
+            $docTitle = 'Payslip '.$request->month.' '.$request->year;
+            $checkDoc = DB::table('staff_document')->where(['sub_institute_id'=>$sub_institute_id,'document_type_id'=>56,'user_id'=>$emp_id,'file_name'=>$pdfName])->get()->first();
+
+            $pdfData = ['document_title'=>$docTitle,'sub_institute_id'=>$sub_institute_id,'document_type_id'=>56,'user_id'=>$emp_id,'file_name'=>$pdfName];
+
+            if(empty($checkDoc)){
+                $pdfData['created_at']=now();
+                $insertDoc = DB::table('staff_document')->insert($pdfData);
+            }else{
+                $pdfData['updated_at']=now();
+                $updateDoc = DB::table('staff_document')->where(['sub_institute_id'=>$sub_institute_id,'document_type_id'=>56,'user_id'=>$emp_id,'file_name'=>$pdfName])->update($pdfData);
+            }
+        }
+        
+        // store pdf 29-10-2024 end
         if($i==0){
             $res['status_code'] = 0;
             $res['message'] = "Not able to add data";

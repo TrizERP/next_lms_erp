@@ -137,12 +137,12 @@
     // Load personalized learning path for debugging
     function loadPersonalizedLearningPath(studentId) {
         console.log("Personalized learning path:");
-        // fetch(`/get-personalized-learning-path/${studentId}`)
-        //     .then(response => response.json())
-        //     .then(data => {
-        //         console.log("Personalized learning path:", data.recommendations);
-        //     })
-        //     .catch(error => console.error('Error fetching personalized learning path for particular student:', error));
+        fetch(`/get-personalized-learning-path/${studentId}`)
+            .then(response => response.json())
+            .then(data => {
+                console.log("Personalized learning path:", data.recommendations);
+            })
+            .catch(error => console.error('Error fetching personalized learning path for particular student:', error));
     }
 
     // Click event on the main network
