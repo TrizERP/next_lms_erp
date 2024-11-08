@@ -272,3 +272,26 @@ Route::post('/ai/generateLessonPlanNew', [contentController::class, 'generateLes
 Route::post('/ai/generateSportsData', [contentController::class, 'generateSportsData'])->name('ai.generateSportsData');
 Route::post('/paraphraseNew', [ParaphraseController::class, 'paraphrase']);
 Route::post('/set-book-session',[contentController::class,'setBookSession'])->name('set-book-session');
+
+
+// use App\Http\Controllers\lms\Neo4jSyncController;
+// use App\Http\Controllers\lms\GraphController;
+// use App\Http\Controllers\lms\RecommendationController;
+// use App\Http\Controllers\lms\GraphControllerNew;
+
+
+// Route::get('/get-students', [GraphControllerNew::class, 'getStudents']);
+// Route::get('/get-related-data/{nodeId}', [GraphControllerNew::class, 'getRelatedData']);
+// Route::get('/get-chapters-for-subject/{subjectId}', [GraphControllerNew::class, 'getChaptersForSubject']);
+// Route::get('/get-questions-for-chapter/{chapterId}', [GraphControllerNew::class, 'getQuestionsForChapter']);
+// Route::get('/recommendations', [RecommendationController::class, 'getRecommendations']);
+// Route::get('/graph-data', [GraphController::class, 'getGraphData']);
+// Route::get('/graph-data-learning-path', [GraphController::class, 'getLearningPath']);
+
+// Route::get('/welcome', function () {
+//     return view('welcomenew');
+// });
+// Route::get('/dashboard', function () {
+//     return view('recommend');
+// });
+// Route::get('/sync-neo4j', [Neo4jSyncController::class, 'sync']);
