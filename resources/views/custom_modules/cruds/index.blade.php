@@ -42,7 +42,13 @@
                             @foreach($data['data']['view'] as $key => $value)
                                 <tr>
                                     @foreach($data['data']['columns'] as $column)
-                                        @if($column['column_name'] == 'Division')
+                                        @if($column['column_name'] == 'academic_section')
+                                            @foreach($data['data']['academic_section'] as $academic_section)
+                                                @if ($academic_section['id'] == $value[$column['column_name']])
+                                                    <td>{{$academic_section['title']}}</td>
+                                                @endif
+                                            @endforeach
+                                        @elseif($column['column_name'] == 'Division')
                                             @foreach($data['data']['division'] as $division)
                                                 @if ($division['id'] == $value[$column['column_name']])
                                                     <td>{{$division['name']}}</td>

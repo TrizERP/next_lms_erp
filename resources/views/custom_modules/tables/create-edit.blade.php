@@ -161,20 +161,20 @@
                         @enderror
                     </div>
                     <?php
-                    $division = false;
-                    $standard = false;
-                    ?>`
+                        $student = false;
+                    $staff = false;
+                    ?>
                     @if(isset($customModuleTable['whereColumns']))
 
                     @foreach($customModuleTable['whereColumns'] as $where_column)
                         @if($where_column['column_name'] == 'Division')
                          <?php
-                                $division = true
+                                $student = true
                              ?>
                         @endif
-                            @if($where_column['column_name'] == 'Standard')
+                            @if($where_column['column_name'] == 'staff_mobile')
                                <?php
-                                    $standard = true
+                                    $staff = true
                                    ?>
                             @endif
                     @endforeach
@@ -182,7 +182,7 @@
 
 
 
-                    <div class="col-md-4 form-group">
+                   {{-- <div class="col-md-4 form-group">
                         <label>Include Standard</label>
                         <input type="checkbox" id='standard' name="standard" {{$standard ? 'checked' : ''}} class="form-control" value="1">
                         @error('access_link')
@@ -196,6 +196,17 @@
                         @error('access_link')
                         <span style="color: red">{{$message}}</span>
                         @enderror
+                    </div>--}}
+
+                    <div class="col-md-2 form-group">
+                        <label>Include Student</label>
+                        <input type="checkbox" id='student' name="student" {{$student ? 'checked' : ''}} class="form-control" value="1">
+
+                    </div>
+                    <div class="col-md-2 form-group">
+                        <label>Include Staff</label>
+                        <input type="checkbox" id='staff' name="staff" {{$staff ? 'checked' : ''}} class="form-control" value="1">
+
                     </div>
 
                     <input type="hidden" name="id" value="{{$customModuleTable['id']}}">

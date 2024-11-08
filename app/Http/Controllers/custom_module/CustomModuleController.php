@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\CustomModuleTable;
 use App\Models\CustomModuleTableColumn;
 use App\Models\DynamicModel;
+use App\Models\school_setup\academic_sectionModel;
 use App\Models\school_setup\divisionModel;
 use App\Models\school_setup\standardModel;
 use Illuminate\Http\Request;
@@ -73,7 +74,7 @@ class CustomModuleController extends Controller
         }
         $prefixTableName = $request->table_name;
         if (!Str::startsWith($request->table_name, "Z_")) {
-            $prefixTableName =  "Z_" . $request->table_name;
+            $prefixTableName = "Z_" . $request->table_name;
         }
 
         $customModuleTable->module_name = $request->module_name;
@@ -93,8 +94,81 @@ class CustomModuleController extends Controller
         $customModuleTable->save();
 
         $tableColumn = CustomModuleTableColumn::where('table_id', $customModuleTable->id);
+
+        if (isset($request->student)) {
+            $tableColumnData = $tableColumn->where([
+                ['column_name', 'first_name'],
+                ['column_name', 'middle_name'],
+                ['column_name', 'last_name'],
+                ['column_name', 'enrollment_no'],
+                ['column_name', 'mobile'],
+                ['column_name', 'mother_mobile'],
+                ['column_name', 'email'],
+                ['column_name', 'academic_section'],
+                ['column_name', 'Standard'],
+                ['column_name', 'Division'],
+                ['column_name', 'roll_no']
+            ])->first();
+            if (!$tableColumnData) {
+                DB::table('custom_module_table_columns')->insert([
+                    ["column_name" => 'first_name', "table_id" => $customModuleTable->id, "auto_increment" => 0, "type" => 'varchar', "length" => 255, 'not_null' => 0, 'index' => null, 'default' => null],
+                    ["column_name" => 'middle_name', "table_id" => $customModuleTable->id, "auto_increment" => 0, "type" => 'varchar', "length" => 255, 'not_null' => 0, 'index' => null, 'default' => null],
+                    ["column_name" => 'last_name', "table_id" => $customModuleTable->id, "auto_increment" => 0, "type" => 'varchar', "length" => 255, 'not_null' => 0, 'index' => null, 'default' => null],
+                    ["column_name" => 'enrollment_no', "table_id" => $customModuleTable->id, "auto_increment" => 0, "type" => 'varchar', "length" => 255, 'not_null' => 0, 'index' => null, 'default' => null],
+                    ["column_name" => 'mobile', "table_id" => $customModuleTable->id, "auto_increment" => 0, "type" => 'varchar', "length" => 255, 'not_null' => 0, 'index' => null, 'default' => null],
+                    ["column_name" => 'mother_mobile', "table_id" => $customModuleTable->id, "auto_increment" => 0, "type" => 'varchar', "length" => 255, 'not_null' => 0, 'index' => null, 'default' => null],
+                    ["column_name" => 'email', "table_id" => $customModuleTable->id, "auto_increment" => 0, "type" => 'varchar', "length" => 255, 'not_null' => 0, 'index' => null, 'default' => null],
+                    ["column_name" => 'academic_section', "table_id" => $customModuleTable->id, "auto_increment" => 0, "type" => 'integer', "length" => 255, 'not_null' => 0, 'index' => null, 'default' => null],
+                    ["column_name" => 'Standard', "table_id" => $customModuleTable->id, "auto_increment" => 0, "type" => 'integer', "length" => 255, 'not_null' => 0, 'index' => null, 'default' => null],
+                    ["column_name" => 'Division', "table_id" => $customModuleTable->id, "auto_increment" => 0, "type" => 'integer', "length" => 255, 'not_null' => 0, 'index' => null, 'default' => null],
+                    ["column_name" => 'roll_no', "table_id" => $customModuleTable->id, "auto_increment" => 0, "type" => 'varchar', "length" => 255, 'not_null' => 0, 'index' => null, 'default' => null],
+                ]);
+            }
+        } else {
+            $tableColumn->where([
+                ['column_name', 'first_name'],
+                ['column_name', 'middle_name'],
+                ['column_name', 'last_name'],
+                ['column_name', 'enrollment_no'],
+                ['column_name', 'mobile'],
+                ['column_name', 'mother_mobile'],
+                ['column_name', 'email'],
+                ['column_name', 'academic_section'],
+                ['column_name', 'Standard'],
+                ['column_name', 'Division'],
+                ['column_name', 'roll_no']
+            ])->delete();
+        }
+
+        if (isset($request->staff)) {
+            $tableColumnData = $tableColumn->where([
+                ['column_name', 'first_name'],
+                ['column_name', 'middle_name'],
+                ['column_name', 'last_name'],
+                ['column_name', 'staff_mobile'],
+                ['column_name', 'email']
+            ])->first();
+            if (!$tableColumnData) {
+                DB::table('custom_module_table_columns')->insert([
+                    ["column_name" => 'first_name', "table_id" => $customModuleTable->id, "auto_increment" => 0, "type" => 'varchar', "length" => 255, 'not_null' => 0, 'index' => null, 'default' => null],
+                    ["column_name" => 'middle_name', "table_id" => $customModuleTable->id, "auto_increment" => 0, "type" => 'varchar', "length" => 255, 'not_null' => 0, 'index' => null, 'default' => null],
+                    ["column_name" => 'last_name', "table_id" => $customModuleTable->id, "auto_increment" => 0, "type" => 'varchar', "length" => 255, 'not_null' => 0, 'index' => null, 'default' => null],
+                    ["column_name" => 'staff_mobile', "table_id" => $customModuleTable->id, "auto_increment" => 0, "type" => 'varchar', "length" => 255, 'not_null' => 0, 'index' => null, 'default' => null],
+                    ["column_name" => 'email', "table_id" => $customModuleTable->id, "auto_increment" => 0, "type" => 'varchar', "length" => 255, 'not_null' => 0, 'index' => null, 'default' => null],
+                ]);
+            }
+        } else {
+            $tableColumn->where([
+                ['column_name', 'first_name'],
+                ['column_name', 'middle_name'],
+                ['column_name', 'last_name'],
+                ['column_name', 'staff_mobile'],
+                ['column_name', 'email']
+            ])->delete();
+        }
+
         if (isset($request->division)) {
-                $tableColumn = $tableColumn->where('column_name','Division')->first();
+            $tableColumn = $tableColumn->where('column_name', 'Division')->first();
             if (!$tableColumn) {
                 $tableColumn = new CustomModuleTableColumn();
                 $tableColumn->column_name = 'Division';
@@ -107,11 +181,11 @@ class CustomModuleController extends Controller
                 $tableColumn->default = null;
                 $tableColumn->save();
             }
-        } else  {
-            $tableColumn->where('column_name','Division')->delete();
+        } else {
+            $tableColumn->where('column_name', 'Division')->delete();
         }
         if (isset($request->standard)) {
-                $tableColumn = $tableColumn->where('column_name','Standard')->first();
+            $tableColumn = $tableColumn->where('column_name', 'Standard')->first();
             if (!$tableColumn) {
                 $tableColumn = new CustomModuleTableColumn();
                 $tableColumn->column_name = 'Standard';
@@ -125,28 +199,29 @@ class CustomModuleController extends Controller
                 $tableColumn->save();
             }
         } else {
-            $tableColumn->where('column_name','Standard')->delete();
+            $tableColumn->where('column_name', 'Standard')->delete();
         }
-
 
 
         return is_mobile($type, "custom-module.tables", null, "redirect");
     }
 
-    public function tableDelete(Request $request, $id)
+    public
+    function tableDelete(Request $request, $id)
     {
         $type = $request->input('type');
         if ($id > 0) {
             $table = CustomModuleTable::find($id);
             if (!empty($table)) {
-                DB::statement('DROP TABLE IF EXISTS '. $table->table_name);
+                DB::statement('DROP TABLE IF EXISTS ' . $table->table_name);
             }
             CustomModuleTable::where('id', $id)->delete();
         }
         return is_mobile($type, "custom-module.tables", null, "redirect");
     }
 
-    public function tableColumnCreate(Request $request, $id, $colId = 0)
+    public
+    function tableColumnCreate(Request $request, $id, $colId = 0)
     {
         $data['column_name'] = '';
         $data['column_length'] = 0;
@@ -172,7 +247,8 @@ class CustomModuleController extends Controller
         return is_mobile($type, "custom_modules.tables.columns.index", $data, "view");
     }
 
-    public function tableColumnStore(Request $request, $id)
+    public
+    function tableColumnStore(Request $request, $id)
     {
 
         $type = $request->input('type');
@@ -203,7 +279,8 @@ class CustomModuleController extends Controller
 
     }
 
-    public function tableColumnDelete(Request $request, $id, $colId)
+    public
+    function tableColumnDelete(Request $request, $id, $colId)
     {
         $type = $request->input('type');
         if ($id > 0) {
@@ -212,7 +289,8 @@ class CustomModuleController extends Controller
         return is_mobile($type, ["route" => "custom_module_table_column.create", "id" => $id], null, "redirect", '', 1);
     }
 
-    public function createDBTable(Request $request, $id)
+    public
+    function createDBTable(Request $request, $id)
     {
         $type = $request->input('type');
         $getTableData = CustomModuleTable::with('columns')->whereId($id)->first();
@@ -230,7 +308,7 @@ class CustomModuleController extends Controller
             $existingColumnNames = array_column($existingColumns, 'Field');
 
             // Exclude 'created_at' and 'updated_at' columns from being altered
-            $excludedColumns = ['id','sub_institute_id', 'created_at', 'updated_at'];
+            $excludedColumns = ['id', 'sub_institute_id', 'created_at', 'updated_at'];
 
             // Prepare the column definitions for adding new columns
             $newColumns = [];
@@ -282,7 +360,7 @@ class CustomModuleController extends Controller
                 $columnDefinition = $column['column_name'] . " " . $column['type'];
 
                 if (isset($column['length'])) {
-                    $columnDefinition .=  $column['length'] > 0 ? " ({$column['length']})" : ($column['type'] == 'varchar' ? "(255)" : " ");
+                    $columnDefinition .= $column['length'] > 0 ? " ({$column['length']})" : ($column['type'] == 'varchar' ? "(255)" : " ");
                 }
 
                 if ($column['auto_increment'] == 1) {
@@ -326,43 +404,48 @@ class CustomModuleController extends Controller
 // sub_institute_id int NOT NULL DEFAULT '0',
     }
 
-    public function crudIndex(Request $request, $id)
+    public
+    function crudIndex(Request $request, $id)
     {
         $type = $request->input('type');
         $subInstituteId = $request->session()->get('sub_institute_id');
-        $data['data'] = CustomModuleTable::with('columns')->where([['sub_institute_id', $subInstituteId],['id',$id]])->first();
+        $data['data'] = CustomModuleTable::with('columns')->where([['sub_institute_id', $subInstituteId], ['id', $id]])->first();
         $data['data']['view'] = DynamicModel::readRecords($data['data']['table_name']);
-        $data['data']['division'] =  divisionModel::where('sub_institute_id', $request->session()->get('sub_institute_id'))->get(['id', 'name']);
-        $data['data']['standard'] =  standardModel::where('sub_institute_id', $request->session()->get('sub_institute_id'))->get(['id', 'name']);
-        //return $data;
+        $data['data']['division'] = divisionModel::where('sub_institute_id', $request->session()->get('sub_institute_id'))->get(['id', 'name']);
+        $data['data']['standard'] = standardModel::where('sub_institute_id', $request->session()->get('sub_institute_id'))->get(['id', 'name']);
+        $data['data']['academic_section'] = academic_sectionModel::where('sub_institute_id', $request->session()->get('sub_institute_id'))->get(['id', 'title','short_name','medium']);
         return is_mobile($type, "custom_modules.cruds.index", $data, "view");
     }
 
-    public function crudCreate(Request $request, $id, $viewId = 0)
+    public
+    function crudCreate(Request $request, $id, $viewId = 0)
     {
         $data['data'] = CustomModuleTable::with('columns')->find($id);
-        $prepareView  = [];
-        foreach ($data['data']['columns'] as $key=>  $column) {
-            $prepareView[$column['column_name']]  = '';
+        $prepareView = [];
+        foreach ($data['data']['columns'] as $key => $column) {
+            $prepareView[$column['column_name']] = '';
         }
-        $prepareView['id']  = 0;
+        $prepareView['id'] = 0;
         $data['data']['view'] = $prepareView;
         $data['data']['division'] = divisionModel::where('sub_institute_id', $request->session()->get('sub_institute_id'))->get(['id', 'name']);
-        $data['data']['standard'] =  standardModel::where('sub_institute_id', $request->session()->get('sub_institute_id'))->get(['id', 'name']);
+        $data['data']['standard'] = standardModel::where('sub_institute_id', $request->session()->get('sub_institute_id'))->get(['id', 'name']);
+        $data['data']['academic_section'] = academic_sectionModel::where('sub_institute_id', $request->session()->get('sub_institute_id'))->get(['id', 'title','short_name','medium']);
+
 
 
         if (isset($data['data']['table_name'])) {
-           $getRecords = DynamicModel::readSingleRecord($data['data']['table_name'], $viewId);
-            if($getRecords) $data['data']['view'] = $getRecords;
+            $getRecords = DynamicModel::readSingleRecord($data['data']['table_name'], $viewId);
+            if ($getRecords) $data['data']['view'] = $getRecords;
         }
 
         $type = $request->input('type');
         return is_mobile($type, "custom_modules.cruds.edit", $data, "view");
     }
 
-    public function crudStore(Request $request, $id)
+    public
+    function crudStore(Request $request, $id)
     {
-        $data = $request->except(['_token','view_id','new_image', 'submit']);
+        $data = $request->except(['_token', 'view_id', 'new_image', 'submit']);
         $type = $request->input('type');
         $columns = collect($data)->keys()->toArray();
         if ($id) {
@@ -387,7 +470,7 @@ class CustomModuleController extends Controller
             }
             $getTable = CustomModuleTable::with('columns')->find($id);
 
-            $data = array_filter($data, function($key) {
+            $data = array_filter($data, function ($key) {
                 return strpos($key, 'new_') !== 0;
             }, ARRAY_FILTER_USE_KEY);
 
@@ -395,7 +478,7 @@ class CustomModuleController extends Controller
                 $data['sub_institute_id'] = $request->session()->get('sub_institute_id');
                 $dynamicModel = new DynamicModel([], $columns);
                 if ($request->view_id) {
-                    $dynamicModel->updateRecord($getTable['table_name'], $request->view_id,$data);
+                    $dynamicModel->updateRecord($getTable['table_name'], $request->view_id, $data);
                 } else {
                     $dynamicModel->createRecord($getTable['table_name'], $data);
                 }
@@ -405,7 +488,9 @@ class CustomModuleController extends Controller
 
     }
 
-    public function viewDelete(Request $request, $id) {
+    public
+    function viewDelete(Request $request, $id)
+    {
         $type = $request->input('type');
         if ($id > 0 && $request->table_name) {
             DynamicModel::deleteRecord($request->table_name, $id);

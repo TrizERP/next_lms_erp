@@ -31,8 +31,20 @@
                             @continue
                         @endif
                         <div class="col-md-6 mt-2">
-                            <label>{{$column['column_name']}} </label>
-                            @if($column['column_name'] == 'Division')
+                            <label>{{ ucwords(str_replace('_', ' ', $column['column_name'])) }}</label>
+                        @if($column['column_name'] == 'academic_section')
+                                <select class="form-control" id="{{$column['column_name']}}" required
+                                        name="{{$column['column_name']}}">
+                                    @foreach($data['data']['academic_section'] as $academic_section)
+                                        @if ($data['data']['view'][$column['column_name']] == $academic_section['id'])
+                                            <option value="{{$academic_section['id']}}" selected>{{$academic_section['title']}} - {{$academic_section['short_name']}} - {{$academic_section['medium']}}</option>
+                                        @else
+                                            <option value="{{$academic_section['id']}}">{{$academic_section['title']}} - {{$academic_section['short_name']}} - {{$academic_section['medium']}}</option>
+                                        @endif
+                                    @endforeach
+
+                                </select>
+                            @elseif($column['column_name'] == 'Division')
                                 <select class="form-control" id="{{$column['column_name']}}" required
                                         name="{{$column['column_name']}}">
                                     @foreach($data['data']['division'] as $division)
