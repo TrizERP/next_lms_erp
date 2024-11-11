@@ -513,3 +513,25 @@ Route::post('/flush-session', function () {
     Session::forget('state'); 
     return response()->json(['success' => true]);
 });
+
+use App\Http\Controllers\Neo4jSyncController;
+use App\Http\Controllers\GraphController;
+use App\Http\Controllers\RecommendationController;
+use App\Http\Controllers\GraphControllerNew;
+
+
+Route::get('/get-students', [GraphControllerNew::class, 'getStudents']);
+Route::get('/get-related-data/{nodeId}', [GraphControllerNew::class, 'getRelatedData']);
+Route::get('/get-chapters-for-subject/{subjectId}', [GraphControllerNew::class, 'getChaptersForSubject']);
+Route::get('/get-questions-for-chapter/{chapterId}', [GraphControllerNew::class, 'getQuestionsForChapter']);
+Route::get('/get-personalized-learning-path/{studentId}', [GraphControllerNew::class, 'getPersonalizedLearningPath']);
+Route::get('/recommendations', [RecommendationController::class, 'getRecommendations']);
+Route::get('/graph-data', [GraphController::class, 'getGraphData']);
+Route::get('/graph-data-learning-path', [GraphController::class, 'getLearningPath']);
+Route::get('/welcome', function () {
+    return view('welcomenew');
+});
+Route::get('/dashboardnew', function () {
+    return view('dashboardNeo4j');
+})->name('dashboardNeo4j');
+Route::get('/sync-neo4j', [Neo4jSyncController::class, 'sync']);
