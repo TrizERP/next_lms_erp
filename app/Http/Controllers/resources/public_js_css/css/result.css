@@ -1,0 +1,352 @@
+@font-face {
+  font-family: 'Saira Semi Condensed';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Saira SemiCondensed Regular'), local('SairaSemiCondensed-Regular'), url(styles/fonts/E1gvqhdADptsO-uwP-KYOlfo_ba-o039M5F8h0BZEpM.woff2) format('woff2');
+  unicode-range: U+0102-0103, U+1EA0-1EF9, U+20AB;
+}
+
+tbody {
+    color: #000 !important;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Saira Semi Condensed';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Saira SemiCondensed Regular'), local('SairaSemiCondensed-Regular'), url(styles/fonts/E1gvqhdADptsO-uwP-KYOg28fXH_Au7Fcda010_w2ik.woff2) format('woff2');
+  unicode-range: U+0100-024F, U+1E00-1EFF, U+20A0-20AB, U+20AD-20CF, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Saira Semi Condensed';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Saira SemiCondensed Regular'), local('SairaSemiCondensed-Regular'), url(styles/fonts/E1gvqhdADptsO-uwP-KYOk_viB2zVz6tDDe85Nl1PNo.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215;
+}
+/* saira-semi-condensed-regular - latin */
+@font-face {
+  font-family: 'Saira Semi Condensed';
+  font-style: normal;
+  font-weight: 400;
+  src: url('/fonts/saira-semi-condensed-v4-latin-regular.eot'); /* IE9 Compat Modes */
+  src: local('Saira SemiCondensed Regular'), local('SairaSemiCondensed-Regular'),
+       url('/fonts/saira-semi-condensed-v4-latin-regular.eot?#iefix') format('embedded-opentype'), /* IE6-IE8 */
+       url('/fonts/saira-semi-condensed-v4-latin-regular.woff2') format('woff2'), /* Super Modern Browsers */
+       url('/fonts/saira-semi-condensed-v4-latin-regular.woff') format('woff'), /* Modern Browsers */
+       url('/fonts/saira-semi-condensed-v4-latin-regular.ttf') format('truetype'), /* Safari, Android, iOS */
+       url('/fonts/saira-semi-condensed-v4-latin-regular.svg#SairaSemiCondensed') format('svg'); /* Legacy iOS */
+}
+
+
+
+@media print
+   {
+	   
+	   
+    /* vietnamese */
+ @font-face {
+  font-family: 'Saira Semi Condensed';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Saira SemiCondensed Regular'), local('SairaSemiCondensed-Regular'), url(styles/fonts/E1gvqhdADptsO-uwP-KYOlfo_ba-o039M5F8h0BZEpM.woff2) format('woff2');
+  unicode-range: U+0102-0103, U+1EA0-1EF9, U+20AB;
+}
+tbody {
+    color: #000 !important;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Saira Semi Condensed';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Saira SemiCondensed Regular'), local('SairaSemiCondensed-Regular'), url(styles/fonts/E1gvqhdADptsO-uwP-KYOg28fXH_Au7Fcda010_w2ik.woff2) format('woff2');
+  unicode-range: U+0100-024F, U+1E00-1EFF, U+20A0-20AB, U+20AD-20CF, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Saira Semi Condensed';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Saira SemiCondensed Regular'), local('SairaSemiCondensed-Regular'), url(styles/fonts/E1gvqhdADptsO-uwP-KYOk_viB2zVz6tDDe85Nl1PNo.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215;
+}
+      report-card-bg>table, .report-card-bg>table tr td, .report-card-bg>table tr th, table tr th   
+	  {font-family:'Saira Semi Condensed' !important; }
+	  	  
+	  
+.report-card-bg>table
+{
+	font-family: 'Saira Semi Condensed', sans-serif !important;
+	font-size:10px !important;
+	display:inline-table;
+}
+.report-card-bg>table tr td, .report-card-bg>table tr th 
+{
+	padding:0px 5px;
+	color:#181818;
+	font-family: 'Saira Semi Condensed', sans-serif !important;
+	
+}
+table tr th
+{
+	background: rgba(255,175,75,1);
+	background: -moz-linear-gradient(top, rgba(255,175,75,1) 0%, rgba(255,146,10,1) 100%);
+	background: -webkit-gradient(left top, left bottom, color-stop(0%, rgba(255,175,75,1)), color-stop(100%, rgba(255,146,10,1)));
+	background: -webkit-linear-gradient(top, rgba(255,175,75,1) 0%, rgba(255,146,10,1) 100%);
+	background: -o-linear-gradient(top, rgba(255,175,75,1) 0%, rgba(255,146,10,1) 100%);
+	background: -ms-linear-gradient(top, rgba(255,175,75,1) 0%, rgba(255,146,10,1) 100%);
+	background: linear-gradient(to bottom, rgba(255,175,75,1) 0%, rgba(255,146,10,1) 100%);
+	filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#ffaf4b', endColorstr='#ff920a', GradientType=0 );
+	color:#191919;
+	font-size:10px !important;
+	
+}
+.main-th
+{
+	background: rgba(15,15,15,1);
+	background: -moz-linear-gradient(top, rgba(15,15,15,1) 0%, rgba(36,36,36,1) 100%);
+	background: -webkit-gradient(left top, left bottom, color-stop(0%, rgba(15,15,15,1)), color-stop(100%, rgba(36,36,36,1)));
+	background: -webkit-linear-gradient(top, rgba(15,15,15,1) 0%, rgba(36,36,36,1) 100%);
+	background: -o-linear-gradient(top, rgba(15,15,15,1) 0%, rgba(36,36,36,1) 100%);
+	background: -ms-linear-gradient(top, rgba(15,15,15,1) 0%, rgba(36,36,36,1) 100%);
+	background: linear-gradient(to bottom, rgba(15,15,15,1) 0%, rgba(36,36,36,1) 100%);
+	filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#0f0f0f', endColorstr='#242424', GradientType=0 );
+	color:#fff !important;
+			
+}
+table.report-card tr td
+{
+	padding:2px 0px;
+	font-family: 'Saira Semi Condensed', sans-serif !important;
+	font-size:10px !important;
+	
+}
+.b-b
+{
+/*	border-bottom:3px solid #242424; */
+	padding-bottom:5px;
+}
+
+.report-card-bg
+{
+	padding:25px;
+	width:90%;
+	margin:0 auto;
+	/*background-image:url('assets/img/bg.jpg');*/
+	background-position:center center;
+	background-repeat:repeat;
+	font-family: 'Saira Semi Condensed', sans-serif !important;
+	top:16px;
+    position: relative;
+}
+.main-table
+{
+	background-color:#d7d7d7;
+	padding:0px 8px 8px 8px;
+	background-image:url('assets/img/bg-1.png');
+	background-position:left center;
+	background-repeat:repeat;
+	font-family: 'Saira Semi Condensed' !important;
+}
+.report-card h3
+{
+	margin:0px;
+	color:#f37a0d;
+	font-family: 'Saira Semi Condensed', sans-serif;
+}
+table.aca-year tr th, table.aca-year tr td
+{
+	padding:2px 5px;
+	font-family: 'Saira Semi Condensed', sans-serif;
+	font-size:10px !important;
+	border:1px solid #e68023;
+	border-collapse: collapse;
+}
+table.signature tr td
+{
+	padding:2px 5px !important;
+	white-space:nowrap;
+}
+label
+{
+	font-weight:bold;
+	
+}
+.b-b td
+{
+	width:33.3333333% !important
+}
+.p-t td
+{
+	padding-top:50px !important;
+}
+.p-t-b
+{
+	padding-top:30px !important;
+	padding-bottom:30px !important;
+}
+.p-t-10
+{
+	padding-top:10px !important;
+}
+.annexure
+{
+	border: 2px solid #e68023;
+	border-collapse: collapse;
+	padding: 3px 10px;
+	position: relative;
+	display: inline-block;
+	border-radius:4px;
+}
+.b-n
+{
+	border:none;
+}
+   }
+   
+    report-card-bg>table, .report-card-bg>table tr td, .report-card-bg>table tr th, table tr th   
+	  {font-family:georgia, times, serif;}
+	  
+	  
+.report-card-bg>table
+{
+	font-family: 'Saira Semi Condensed', sans-serif;
+	font-size:12px;
+	display:inline-table;
+}
+.report-card-bg>table tr td, .report-card-bg>table tr th 
+{
+	padding:3px 5px;
+	color:#181818;
+	font-family: 'Saira Semi Condensed', sans-serif;
+}
+table tr th
+{
+	background: rgba(255,175,75,1);
+	background: -moz-linear-gradient(top, rgba(255,175,75,1) 0%, rgba(255,146,10,1) 100%);
+	background: -webkit-gradient(left top, left bottom, color-stop(0%, rgba(255,175,75,1)), color-stop(100%, rgba(255,146,10,1)));
+	background: -webkit-linear-gradient(top, rgba(255,175,75,1) 0%, rgba(255,146,10,1) 100%);
+	background: -o-linear-gradient(top, rgba(255,175,75,1) 0%, rgba(255,146,10,1) 100%);
+	background: -ms-linear-gradient(top, rgba(255,175,75,1) 0%, rgba(255,146,10,1) 100%);
+	background: linear-gradient(to bottom, rgba(255,175,75,1) 0%, rgba(255,146,10,1) 100%);
+	filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#ffaf4b', endColorstr='#ff920a', GradientType=0 );
+	color:#191919;
+}
+.main-th
+{
+	background: rgba(15,15,15,1);
+	background: -moz-linear-gradient(top, rgba(15,15,15,1) 0%, rgba(36,36,36,1) 100%);
+	background: -webkit-gradient(left top, left bottom, color-stop(0%, rgba(15,15,15,1)), color-stop(100%, rgba(36,36,36,1)));
+	background: -webkit-linear-gradient(top, rgba(15,15,15,1) 0%, rgba(36,36,36,1) 100%);
+	background: -o-linear-gradient(top, rgba(15,15,15,1) 0%, rgba(36,36,36,1) 100%);
+	background: -ms-linear-gradient(top, rgba(15,15,15,1) 0%, rgba(36,36,36,1) 100%);
+	background: linear-gradient(to bottom, rgba(15,15,15,1) 0%, rgba(36,36,36,1) 100%);
+	filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#0f0f0f', endColorstr='#242424', GradientType=0 );
+	color:#fff !important;
+			
+}
+table.report-card tr td
+{
+	padding:2px 0px;
+	font-family: 'Saira Semi Condensed', sans-serif;
+}
+.b-b
+{
+	/* border-bottom:3px solid #242424; */
+	padding-bottom:5px;
+}
+.report-card-bg
+{
+	padding:25px;
+	width:90%;
+	margin:0 auto;
+	/*background-image:url('assets/img/bg.jpg');*/
+	background-position:center center;
+	background-repeat:repeat;
+	font-family: 'Saira Semi Condensed', sans-serif;
+}
+.main-table
+{
+	background-color:#d7d7d7;
+	padding:0px 8px 8px 8px;
+	background-image:url('assets/img/bg-1.png');
+	background-position:left center;
+	background-repeat:repeat;
+	font-family: 'Saira Semi Condensed', sans-serif;
+}
+.report-card h3
+{
+	margin:0px;
+	color:#f37a0d;
+	font-family: 'Saira Semi Condensed', sans-serif;
+}
+table.aca-year tr th, table.aca-year tr td
+{
+	padding:2px 5px;
+	font-family: 'Saira Semi Condensed', sans-serif;
+	border-color:#e68023;
+	border-collapse: collapse;
+}
+table.signature tr td
+{
+	padding:2px 5px !important;
+	white-space:nowrap;
+}
+
+label
+{
+	font-weight:bold;
+	
+}
+.b-b td
+{
+	width:33.3333333% !important
+}
+.p-t td
+{
+	padding-top:50px !important;
+}
+.p-t-b
+{
+	padding-top:30px !important;
+	padding-bottom:30px !important;
+}
+.p-t-10
+{
+	padding-top:10px !important;
+}
+.annexure
+{
+	border: 2px solid #e68023;
+	padding: 3px 10px;
+	position: relative;
+	display: inline-block;
+	border-radius:4px;
+}
+.b-n
+{
+	border:none;
+}
+p {
+    margin : 0;
+} 
+.sc-hd {
+    font-size: 26px;
+    font-weight: 600;        
+    color:#f37a0d;
+}
+.ma-hd {
+    font-size: 18px;
+    font-weight: 500;        
+    color:#f37a0d;
+}
+.rg-hd {
+    font-size: 14px;
+    font-weight: 400;       
+    color:#f37a0d;
+}
+br {
+    display: block;
+}
