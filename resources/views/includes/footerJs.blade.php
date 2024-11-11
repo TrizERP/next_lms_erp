@@ -632,13 +632,8 @@ $route = ['dashboard'];
     <div id="chatbot-header" style="background-color: #007bff; color: white; padding: 10px; border-top-left-radius: 10px; border-top-right-radius: 10px;">
         Scholar Clone
         <button id="minimize-chatbot" title="Minimize" style="float: right; background: none; border: none; color: white; margin-left: 5px;">_</button>
-<<<<<<< HEAD
         <button id="refresh-chatbot" title="Refresh" style="float: right; background: none; border: none; color: white; margin-left: 5px;">&#10227</button>
         <button id="close-chatbot" title="Close" style="float: right; background: none; border: none; color: red; font-size: 30px">&times</button>
-=======
-        <button id="refresh-chatbot" title="Refresh" style="float: right; background: none; border: none; color: white; margin-left: 5px;">⟳</button>
-        <button id="close-chatbot" title="Close" style="float: right; background: none; border: none; color: red;  font-size: 30px">×</button>
->>>>>>> 95f844c45830f3cfda506eb1e757dc4926205e4b
     </div>
     <div id="messages" style="height: 300px; overflow-y: auto" class="clearfix"></div>
     <div id="loading" style="display: none; float: left; clear: both">
