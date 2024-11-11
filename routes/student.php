@@ -119,6 +119,8 @@ Route::group(['prefix' => 'student', 'middleware' => ['session', 'menu', 'logRou
     Route::post('save_student_attendance', [studentAttendanceController::class, 'saveStudentAttendance'])->name("save_student_attendance");
     Route::get('daywise_student_attendance', [studentAttendanceController::class, 'daywiseStudentAttendance'])->name("daywise_student_attendance_report");
     Route::post('show_daywise_student_attendance', [studentAttendanceController::class, 'showDaywiseStudentAttendance'])->name("show_daywise_student_attendance_report");
+    // 2024-11-11
+    Route::get('studentAttendanceChatAPI', [studentAttendanceController::class, 'studentAttendanceChatAPI'])->name("studentAttendanceChatAPI");
 
     Route::get('student_health_report', [studentInfirmaryController::class, 'studentHealthReport'])->name("student_health_report");
     Route::post('show_student_health_report', [studentInfirmaryController::class, 'showStudentHealthReport'])->name("show_student_health_report");
