@@ -1740,9 +1740,9 @@ exit; */
         $amount = 0;
 
         if ($payment_acsept_type == "fix") {
-            $amount = number_format(floatval($_REQUEST["total"]) * 100, 2, '.', '');
+            $amount = number_format(floatval($_REQUEST["total"]) * 100, 0, '.', '');
         } else {
-            $amount = number_format(floatval($_REQUEST["pay_amount"]) * 100, 2, '.', '');
+            $amount = number_format(floatval($_REQUEST["pay_amount"]) * 100, 0, '.', '');
         }
 
         $student_id = $_REQUEST["student_id"];
@@ -1759,10 +1759,31 @@ exit; */
             ->get();
         //echo '<pre>RAJESH'; print_r($get_map_bank_detail); exit;
 
+        $api = new Api($get_map_bank_detail[0]->key_id, $get_map_bank_detail[0]->key_secret);
+
+        try {
+            $orderData = [
+                'receipt'         => 'order_' . uniqid(),
+                'amount'          => $amount, // Convert amount to paise for Razorpay
+                'currency'        => 'INR',
+                'payment_capture' => 1 // Auto capture
+            ];
+
+            $razorpayOrder = $api->order->create($orderData);
+
+            $request->session()->put('razorpay_order_id', $razorpayOrder['id']);
+
+        } catch (\Exception $e) {
+            Session::put('error', $e->getMessage());
+            $school_data = array();
+            return \App\Helpers\is_mobile($type, "fees/online_fees_collect/show_error", $school_data, "view");
+        }
+
         $in_arr = array(
             "student_id" => $_REQUEST["student_id"],
             "syear" => session()->get("syear"),
             "amount" => $amount,
+            "razorpay_order_id" => $razorpayOrder['id'],
             "razorpay_payment_status" => "PR",
             "razorpay_payment_date" => now(),
             "sub_institute_id" => session()->get("sub_institute_id"),
@@ -1781,6 +1802,7 @@ exit; */
             "inserted_id" => $id,
             "student_name" => $medium_data[0]->student_name,
             "medium" => $medium_data[0]->uniqueid,
+            "order_id" => $razorpayOrder['id'],
         );
         // echo '<pre>'; print_r($id); exit;
         $type = "web";
@@ -1813,10 +1835,11 @@ exit; */
                     ->on('fr.sub_institute_id', '=', 'tse.sub_institute_id');
             })
             ->where(function ($query) {
-                $query->whereNotIn('fp.razorpay_dashboard_ps', ['captured', 'refunded', 'rajesh'])
+                $query->whereNotIn('fp.razorpay_dashboard_ps', ['captured', 'refunded', 'rajesh','failed'])
                       ->orWhereNull('fp.razorpay_dashboard_ps');
             })
             ->whereNotNull('fp.razorpay_order_id')
+            ->whereBetween('fp.created_at', [now()->subDays(3), now()])
             ->groupBy('fp.id')
             ->get(); // ->on('tse.syear', '=', 'fr.syear')
 
@@ -1826,22 +1849,33 @@ exit; */
                 $id = $data->id;
                 $key_id = $data->key_id;
                 $key_secret = $data->key_secret;
-                $payment_id = $data->razorpay_order_id;
+                $order_id = $data->razorpay_order_id;
                 $student_id = $data->student_id;
                 $amount = round($data->amount,0);
 
                 // initial razorpay api
                 $api = new Api($key_id, $key_secret);
-                $payment = $api->payment->fetch($payment_id);
+                //$payment = $api->payment->fetch($payment_id);
+                $paymentCollection = $api->order->fetch($order_id)->payments();
 
-                if ( !empty( $payment ) ) {
+                //echo "<pre>";
+                //echo "RAJESH-".$paymentCollection['count'];
+                //print_r($paymentCollection);
+                //exit();
+
+                if (!empty($paymentCollection) && $paymentCollection['count'] > 0) {
+                	
+                	$payment = $paymentCollection['items'][0]; // Access the first payment object
+                    
                     $status = $payment['status'];
+                    $payment_id = $payment['id'];
                     $json_response = $this->razorpay_payment_response_data_to_array($payment);
 
                     $update_arr = array(
                         "razorpay_dashboard_ps" => $status,
                         "icici_bank_res" => "cron",
                         "razorpay_bank_res" => $json_response,
+                        'razorpay_order_id' => $payment_id,
                         "updated_at" => now()
                     );
                 //echo "<pre>IF-PAY"; print_r($data); exit;
@@ -1904,7 +1938,8 @@ exit; */
             try {
 
                 //Fetch payment information by razorpay_payment_id
-                $response = $api->payment->fetch($input['razorpay_payment_id'])->capture(array('amount' => $payment['amount'], 'currency' => 'INR'));
+                //$response = $api->payment->fetch($input['razorpay_payment_id'])->capture(array('amount' => $payment['amount'], 'currency' => 'INR'));
+                $response = $api->payment->fetch($input['razorpay_payment_id']);
 
                 $json_response = $this->razorpay_payment_response_data_to_array($response);
 
@@ -1913,7 +1948,7 @@ exit; */
                     ->where(["id" => $_REQUEST["inserted_id"]])
                     ->get();
                 $payment_status_res = $response['status'];
-                $payment_status = "PS";
+                $payment_status = ($payment_status_res == "captured") ? 'PS' : 'PR';
 
 
                 $update_arr = array(
@@ -1933,12 +1968,18 @@ exit; */
                     ->where($where_arr)
                     ->update($update_arr);
 
+                if($payment_status_res == 'captured'){
+                    $data = $this->pay_fees($request, $get_all_data[0]->student_id, $get_all_data[0]->syear, $get_all_data[0]->sub_institute_id, ($get_all_data[0]->amount / 100), $input['razorpay_payment_id']);
+                    $type = $request->input('type');
+                    return \App\Helpers\is_mobile($type, "fees/online_fees_collect/receipt_view", $data, "view");
+                }
+                else 
+                {
+                    $type = $request->input('type');
+                    $school_data = array();
+                    return \App\Helpers\is_mobile($type, "fees/online_fees_collect/show_error", $school_data, "view");
+                }
 
-                $data = $this->pay_fees($request, $get_all_data[0]->student_id, $get_all_data[0]->syear, $get_all_data[0]->sub_institute_id, ($payment['amount'] / 100), $input['razorpay_payment_id']);
-                $type = $request->input('type');
-
-
-                return \App\Helpers\is_mobile($type, "fees/online_fees_collect/receipt_view", $data, "view");
             } catch (Exception $e) {
                 return $e->getMessage();
                 $res_josn = json_encode($e->getMessage());
