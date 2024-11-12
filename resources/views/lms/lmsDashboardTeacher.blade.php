@@ -179,6 +179,52 @@ $(document).ready(function() {
         $('#collapseExample3_' + divId + '_' + ch).show();
 
         $('.recommendation').hide();
+
+        var Realistic= $('#input_Realistic_' + divId + '_' + ch).val();
+        var Investigative= $('#input_Investigative_' + divId + '_' + ch).val();
+        var Artistic= $('#input_Artistic_' + divId + '_' + ch).val();
+        var Social= $('#input_Social_' + divId + '_' + ch).val();
+        var Enterprising= $('#input_Enterprising_' + divId + '_' + ch).val();
+        var Conventional= $('#input_Conventional_' + divId + '_' + ch).val();
+        $('#recommendationDiv_'+ divId + '_' + ch).empty();
+        $.ajax({
+            url: 'https://erp.triz.co.in/intrestEnterScore',
+            data: {
+                Realistic: Realistic,
+                Investigative: Investigative,
+                Artistic: Artistic,
+                Social: Social,
+                Enterprising: Enterprising,
+                Conventional: Conventional
+            },
+            type: 'GET',
+            success: function(response) {
+                console.log(response);
+
+                if (response.career && response.career.length > 0) {
+                    // Loop through each career item in the response
+                console.log(response.career);
+
+                    response.career.forEach(function(rval) {
+                        // Create the HTML structure for each career recommendation
+                        const careerHtml = `<a href="${rval.href}" class="d-flex" target="_blank">
+                                    <div style="width:90%">${rval.title}</div>
+                                    <div style="width:10%">
+                                        <span class="mdi mdi-arrow-right-drop-circle-outline"></span>
+                                    </div>
+                                </a>`;
+                        // Append to the container
+                        $('#recommendationDiv_'+ divId + '_' + ch).append(careerHtml);
+                    });
+                } else {
+                    $('#recommendationDiv_'+ divId + '_' + ch).html('<p>No career recommendations found.</p>');
+                }
+            },
+            error: function() {
+                $('#recommendationDiv_'+ divId + '_' + ch).html('<p>Failed to load recommendations. Please try again.</p>');
+            }
+        });
+
         $('#recommendation_' + divId + '_' + ch).show();
 
         $('.curveData').hide();

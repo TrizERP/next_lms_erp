@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use function App\Helpers\is_mobile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 
 class tbluserController extends Controller
 {
@@ -228,8 +229,20 @@ class tbluserController extends Controller
         $subject_data_selected_arr = array();
 
         if ($type == "API") {
+            $validator = Validator::make($request->all(), [
+                'sub_institute_id' => 'required|numeric',
+                'syear' => 'required|numeric',
+                'type' => 'required',
+            ]);
+    
+            if ($validator->fails()) {
+                $res['status'] = '0';
+                $res['message'] = $validator->messages()->first();
+                return is_mobile($type, "add_user.index", $res);
+            }
             $sub_institute_id = $request->input('sub_institute_id');
             $syear = $request->input('syear');
+            
         } else {
             $sub_institute_id = $request->session()->get('sub_institute_id');
             $syear = session()->get('syear');
