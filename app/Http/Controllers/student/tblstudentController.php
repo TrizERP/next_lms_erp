@@ -524,6 +524,16 @@ class tblstudentController extends Controller
         if ($type == "API") {
             $sub_institute_id = $request->input('sub_institute_id');
             $syear = $request->input('syear');
+            $validator = Validator::make($request->all(), [
+                'sub_institute_id'  => 'required|numeric',
+                'syear'   => 'required|numeric',
+            ]);
+            
+            if ($validator->fails()) {
+                $res['status'] = '0';
+                $res['response'] = $validator->messages()->first();
+		        return is_mobile($type, "student/edit_student", $res, "view");
+            } 
         } else {
             $sub_institute_id = $request->session()->get('sub_institute_id');
             $syear = session()->get('syear');

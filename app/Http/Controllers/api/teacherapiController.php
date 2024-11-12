@@ -49,8 +49,6 @@ class teacherapiController extends Controller
 
         $payload = $this->jwtPayload();
 
-        $response = ['status' => '1', 'message' => 'Success', 'data' => []];
-
         $user_profile_id = $request->input("user_profile_id");
         $user_profile_name = $request->input("user_profile_name");
         $sub_institute_id = $request->input("sub_institute_id");
@@ -63,8 +61,11 @@ class teacherapiController extends Controller
         ]);
 
         if ($validator->fails()) {
-            $response['response'] = $validator->messages();
+            $response['status'] = '0';
+            $response['response'] = $validator->messages()->first();
         } else {
+            $response = ['status' => '1', 'message' => 'Success', 'data' => []];
+
             $data = DB::table("teacher_mobile_homescreen")
                 ->where([
                     "status"            => "Yes",

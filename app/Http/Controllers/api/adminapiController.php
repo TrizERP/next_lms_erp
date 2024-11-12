@@ -1004,19 +1004,22 @@ class adminapiController extends Controller
         }
 
         $response = [];
+        
         $validator = Validator::make($request->all(), [
             'sub_institute_id' => 'required|numeric',
+            'from_date'        => 'required|date_format:Y-m-d',
+            'to_date'          => 'required|date_format:Y-m-d|after_or_equal:from_date',
         ]);
 
         if ($validator->fails()) {
             $response['response'] = $validator->messages();
         } else {
-            $from_date = date('Y-m-d');
-            $to_date = date('Y-m-d');
+            $from_date = ($request->input('from_date')!='') ? $request->input('from_date') : date('Y-m-d');
+            $to_date = ($request->input('to_date')!='') ? $request->input('to_date') : date('Y-m-d');
             $sub_institute_id = $request->input('sub_institute_id');
 
             $proxydata = [];
-
+            
             $proxydata = proxyModel::select('proxy_master.*', 's.name as standard_name', 'd.name as division_name',
                 DB::raw('concat_ws(" ",u.first_name,u.middle_name,u.last_name) as teacher_name'),
                 DB::raw('concat_ws(" ",u1.first_name,u1.middle_name,u1.last_name) as proxy_teacher_name'),
@@ -1027,11 +1030,11 @@ class adminapiController extends Controller
                 ->join('tbluser as u1', 'u1.id', '=', 'proxy_master.proxy_teacher_id')
                 ->join('period as p', 'p.id', '=', 'proxy_master.period_id')
                 ->join('subject as sub', 'sub.id', '=', 'proxy_master.subject_id')
-                ->where(['proxy_master.sub_institute_id' => $sub_institute_id])
+                ->where('proxy_master.sub_institute_id',$sub_institute_id)
                 ->whereBetween('proxy_date', [$from_date, $to_date])
                 ->get();
 
-            if (count($proxydata) > 0) {
+            if (count($proxydata)>0) {
                 $response['status'] = 1;
                 $response['message'] = "Success";
                 $response['data'] = $proxydata;
