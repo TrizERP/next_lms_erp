@@ -15,6 +15,8 @@ use function Symfony\Component\HttpKernel\Profiler\read;
 use function App\Helpers\send_FCM_Notification;
 use function App\Helpers\sendNotification;
 use App\Models\school_setup\SchoolModel;
+use Illuminate\Support\Facades\Validator;
+use App\Http\Controllers\student\yearly_attendance_controller;
 
 class studentAttendanceController extends Controller
 {
@@ -447,8 +449,9 @@ class studentAttendanceController extends Controller
         $standard_id = $res['standard_id'] = $request->input("standard");
         $division_id = $res['division_id'] =  $request->input("division");
         $selected_year = $res['year'] = $request->input("year");
-        $syear = $request->session()->get('syear');
-        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $enroll = $res['enrollment_no'] = $request->input("enrollment_no");
+        $syear = session()->get('syear');
+        $sub_institute_id = session()->get('sub_institute_id');
         $batch="";
 
         if($type=="API"){
@@ -465,7 +468,7 @@ class studentAttendanceController extends Controller
         }
 
         // get student list 
-        $student_data = $res['student_data'] =  SearchStudent($grade_id, $standard_id, $division_id,"","", "","","", "", "","",$batch);
+        $student_data = $res['student_data'] =  SearchStudent($grade_id, $standard_id, $division_id,"","", "","","", "", $enroll,"",$batch);
 
         $from_date = $selected_year . "-" . $month . "-01";
         $to_date = date('Y-m-t', strtotime($selected_year . "-" . $month));
@@ -501,7 +504,10 @@ class studentAttendanceController extends Controller
         if(isset($division_id)){
             $whereAtt['section_id'] = $division_id;    
         }
-     
+
+        if(isset($enroll) && isset($student_data[0])){
+            $whereAtt['student_id'] = $student_data[0]['id'];
+        }
         $attendanceData = DB::table("attendance_student")
             ->where($whereAtt)
             ->whereBetween("attendance_date", [$from_date, $to_date])
@@ -555,7 +561,7 @@ class studentAttendanceController extends Controller
         $student_id = $request->input("student_id");
         $sub_institute_id = $request->input("sub_institute_id");
         $syear = $request->input("syear");
-
+        
         $attendace_data = $event_data = $holiday_data = $vacation_data = [];
         if ($student_id != "" && $sub_institute_id != "" && $syear != "") {
             $attendance_data = DB::table('attendance_student')->select('attendance_date', 'attendance_code')
@@ -788,6 +794,113 @@ class studentAttendanceController extends Controller
                 
               $res = 1;
             }
+        return $res;
+    }
+
+    public function studentAttendanceChatAPI(Request $request){
+        try {
+            if (!$this->jwtToken()->validate()) {
+                $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+                return response()->json($response, 401);
+            }
+        } catch (\Exception $e) {
+            $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+            return response()->json($response, 401);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'sub_institute_id' => 'required|numeric',
+            'syear'            => 'required|numeric',
+            'enrollment_no'    => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            $error = $validator->messages();
+            $res['status']=0;
+            $res['message'] = $error->first();
+        } else {
+            // get student Data 
+            $student_data = SearchStudent("", "", "","","","","","", "", $request->enrollment_no);
+
+            // get monthly attendance
+            $montRequest = new Request([
+                "type"=>$request->type,
+                "token"=>$request->token,
+                "sub_institute_id"=>$request->sub_institute_id,
+                "year"=>$request->syear,
+                "syear"=>$request->syear,
+                "month"=> date('m'),
+                'enrollment_no'=>$request->enrollment_no,
+            ]);
+            $monthly = json_decode($this->showMonthwiseStudentAttendance($montRequest),true);
+            $workingDay = $presentDays = $absentDays = 0;
+            if(isset($monthly['attendance_data']) && !empty($monthly['attendance_data'])){
+                $w = $p = $a =0;
+                foreach ($monthly['attendance_data'] as $key => $value) {
+                    foreach ($value as $key2 => $value2) {
+                        $workingDay+=($w+1);
+                        if($value2=="P"){
+                            $presentDays +=($p+1);
+                        }else{
+                            $absentDays += ($a+1);
+                        }
+                    }
+                }
+            }
+            $monthAtt = [
+                'workingDays'=>$workingDay,
+                'presentDays'=>$presentDays,
+                'absentDays'=>$absentDays,
+            ];
+            
+            // get yearly attendance
+            $academicData = DB::table('academic_year')->where(['sub_institute_id'=>$request->sub_institute_id,'syear'=>$request->syear])->get()->toArray();
+            $from_date = isset($academicData[0]->post_start_date) ? $academicData[0]->post_start_date : date('Y-m-d');
+            $to_date = date('Y-m-d');
+            if(isset($academicData[0]->post_start_date)){
+                foreach ($academicData as $key => $value) {
+                    $to_date = $value->post_end_date;
+                }
+            }
+            $yearlyRequest = new Request([
+                "type"=>$request->type,
+                "token"=>$request->token,
+                "sub_institute_id"=>$request->sub_institute_id,
+                "year"=>$request->syear,
+                "syear"=>$request->syear,
+                "from_date"=>$from_date,
+                "to_date"=>$to_date,
+                'enrollment_no'=>$request->enrollment_no,
+            ]);
+
+            $yearlyController  = new yearly_attendance_controller;
+            $yearly = json_decode($yearlyController->showYearlyStudentAttendance($yearlyRequest),true);
+
+            $yworkingDay = $ypresentDays = $yabsentDays = 0;
+            if(isset($yearly['attendance_data']) && !empty($yearly['attendance_data'])){
+                $w = $p = $a =0;
+                foreach ($yearly['attendance_data'] as $key => $value) {
+                    foreach ($value as $key2 => $value2) {
+                        $ypresentDays +=$value2;
+                    }
+                }
+                foreach ($yearly['working_day'] as $key => $value) {
+                    $yworkingDay+=$value;
+                }
+            }
+            $yearlyAtt = [
+                'workingDays'=>$yworkingDay,
+                'presentDays'=>$ypresentDays,
+                'absentDays'=>($yworkingDay - $ypresentDays),
+            ];
+            // return $yearlyAtt;exit;
+            $res['status']=1;
+            $res['message'] = "Success";
+            $res['monthly'] = $monthAtt;
+            $res['yearly'] = $yearlyAtt;
+            $res['student_data'] = $student_data;
+        }
+
         return $res;
     }
 }
