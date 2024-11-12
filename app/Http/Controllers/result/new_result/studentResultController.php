@@ -473,7 +473,7 @@ class studentResultController extends Controller
         //$html_content = str_replace(htmlspecialchars("<<result>>"), strtoupper($main_result['result']), $html_content);
             $html_content = str_replace(htmlspecialchars("<<result>>"), $main_result['result'], $html_content);
         }
-        $html_content = str_replace(htmlspecialchars("<<school_open_date>>"), $reopen_date, $html_content);
+        $html_content = str_replace(htmlspecialchars("<<school_open_date>>"),                                                                                          $reopen_date, $html_content);
 
         if (strpos($html_content, htmlspecialchars('<<activity_tag_marks>>')) !== false) {
             $main_result = $this->get_activity_marks($standard_id, $value['id'], $format, "no_zero");

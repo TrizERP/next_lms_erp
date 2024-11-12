@@ -30,16 +30,18 @@ class yearly_attendance_controller extends Controller
         $grade_id = $request->input("grade");
         $standard_id = $request->input("standard");
         $division_id = $request->input("division");
+        $enroll = $res['enrollment_no'] = $request->input("enrollment_no");
+
         // $selected_year = $request->input("year");
-        $syear = $request->session()->get('syear');
-        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+        $sub_institute_id = session()->get('sub_institute_id');
 
         if($type=="API"){
             $syear = $request->get('syear');
             $sub_institute_id = $request->get('sub_institute_id');
         }
         
-        $student_data = SearchStudent($grade_id, $standard_id, $division_id,$sub_institute_id,$syear);
+        $student_data = SearchStudent($grade_id, $standard_id, $division_id,$sub_institute_id,$syear,"","","", "", $enroll);
 
         $whereAtt['syear'] = $syear;
         $whereAtt['sub_institute_id'] = $sub_institute_id;
@@ -50,7 +52,9 @@ class yearly_attendance_controller extends Controller
         if(isset($division_id)){
             $whereAtt['section_id'] = $division_id;    
         }
-        
+        if(isset($enroll) && isset($student_data[0])){
+            $whereAtt['student_id'] = $student_data[0]['id'];
+        }
         $attendanceData = DB::table("attendance_student")
             ->where($whereAtt)
             ->whereBetween("attendance_date", [$from_date, $to_date])
