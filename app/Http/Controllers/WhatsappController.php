@@ -624,4 +624,25 @@ class WhatsappController extends Controller
         // You can now use $number and $message as needed
         return response()->json($response);
     }
+
+    public function updateCRMWhatsappStatus(Request $request){
+        $response = [];
+        foreach ($request->messageIds as $id => $messageId) {
+            $token = WhatappUserDetail::where('sub_institute_id', 1)->orderBy('id', 'DESC')->first();
+            $client = new Client($token['user_whatsapp_sid'], $token['user_whatsapp_token']);
+            $message = $client->messages($messageId)->fetch();
+            // echo "<pre>";print_r($message);exit;
+            // Check the message status
+            $response[$id]['status'] = $message->status;
+            $response[$id]['error'] ='';
+            // Check if error_code exists and append it to the status if present
+            if (isset($message->errorCode) && $message->errorCode!=null) {
+                $response[$id]['error'] = $message->errorCode;
+            }
+
+        return response()->json($response);
+
+        }
+           
+    }
 }
