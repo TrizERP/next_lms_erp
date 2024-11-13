@@ -535,3 +535,8 @@ Route::get('/dashboardnew', function () {
     return view('dashboardNeo4j');
 })->name('dashboardNeo4j');
 Route::get('/sync-neo4j', [Neo4jSyncController::class, 'sync']);
+
+
+// 12-11-2024
+Route::get('crm-whatsapp', [\App\Http\Controllers\WhatsappController::class, 'whatsappCRM'])->withoutMiddleware([Authenticate::class])->name('crm-whatsapp');
+// 12-11-2024 end
