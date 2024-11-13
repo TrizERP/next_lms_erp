@@ -384,6 +384,7 @@ class WhatsappController extends Controller
 
 
         return is_mobile($type, 'whatsapp_send_messages.index', $res, "redirect");
+
     }
 
 
@@ -548,5 +549,100 @@ class WhatsappController extends Controller
             'is_seen' => 1
         ]);
         return is_mobile($type, "whatsapp/whatsapp_reply/index", $whatsappChats, "view");
+    }
+
+    public function whatsappCRM(Request $request)
+    {
+        // echo "<pre>";print_r($re);exit;
+        $numbers = $request->get('number');  
+        $message = $request->get('message');
+        $file_url = $request->get('file_url');
+        // check has file and which template should be use
+        if (empty($file_url)) {
+            // Ensure textArray is not empty before accessing it
+            $prepareMessageBody['contentVariables'] = json_encode([
+                "1" => isset($message) ? $message: null,
+            ]);
+            $prepareMessageBody['contentSid'] = "HX3a292a1ee72924adb532e807a2ed9b36";
+        } else {
+             // save file in erp
+            $fileContents = file_get_contents($file_url);
+            $fileName = basename($file_url); // e.g., '13_11_24_whatsapptest.jpeg'
+            $filePath = public_path('whatsapp/wp_sent_files/' . $fileName);
+            if (!file_exists(dirname($filePath))) {
+                mkdir(dirname($filePath), 0755, true);
+            }
+            // Save the file content to the specified path
+            $isSaved = file_put_contents($filePath, $fileContents);
+            // save file in erp end
+            // Ensure hrefArray and textArray have elements before accessing them
+            $fileMess = '<img alt="" src="'.$file_url.'" style="width: 1600px; height: 1600px;" />'.$message;
+            list($textArray, $hrefArray) = $this->mediaFound($fileMess);
+            $attachment = isset($hrefArray[0]) ? $hrefArray[0] : null;
+            $prepareMessageBody['contentVariables'] = json_encode([
+                "1" => isset($attachment) ? $attachment : null,
+                "2" => isset($message) ? $message : null,
+            ]);
+            $prepareMessageBody['contentSid'] = "HXc03a5ef4627d8843b071363756007a1b";
+        }
+        // echo "<pre>";print_r($prepareMessageBody);exit;
+        // send message to all users
+        $response = [];
+        $numArr = !empty($numbers) ? explode(',',$numbers) : [];
+        if(!empty($numArr)){
+            $token = WhatappUserDetail::where('sub_institute_id',1)->first();
+            foreach ($numArr as $key => $value) {
+                $messagingServiceSid = 'MGdec43b1bbd9428a72fa0c7a633905319';
+                $client = new Client($token['user_whatsapp_sid'], $token['user_whatsapp_token']);
+                $twilioResponse = $client->messages->create(
+                    'whatsapp:+91' . $value,
+                    [
+                        "contentSid" => $prepareMessageBody['contentSid'],
+                        "messagingServiceSid" => $messagingServiceSid,
+                        "from" => "whatsapp:+91" . $token['user_whatsapp_no'],
+                        "contentVariables" => $prepareMessageBody['contentVariables'],
+                    ]
+                );
+                // Check message status
+                $messageStatus = $twilioResponse->status;
+                $messageUri = $twilioResponse->uri;
+                // Check if there was an error
+                $errorStatus='';
+                if ($twilioResponse->errorCode) {
+                    $errorStatus = $twilioResponse->errorMessage;
+                }
+                $messagesid = $twilioResponse->sid;
+
+                $response[$value]=[
+                    "status"=>$messageStatus,
+                    "message_uri"=>$messageUri,
+                    "message_error"=>$errorStatus,
+                    "message_id"=>$messagesid,
+                ];
+            }
+        }
+        // You can now use $number and $message as needed
+        return response()->json($response);
+    }
+
+    public function updateCRMWhatsappStatus(Request $request){
+        $response = [];
+        foreach ($request->messageIds as $id => $messageId) {
+            $token = WhatappUserDetail::where('sub_institute_id', 1)->orderBy('id', 'DESC')->first();
+            $client = new Client($token['user_whatsapp_sid'], $token['user_whatsapp_token']);
+            $message = $client->messages($messageId)->fetch();
+            // echo "<pre>";print_r($message);exit;
+            // Check the message status
+            $response[$id]['status'] = $message->status;
+            $response[$id]['error'] ='';
+            // Check if error_code exists and append it to the status if present
+            if (isset($message->errorCode) && $message->errorCode!=null) {
+                $response[$id]['error'] = $message->errorCode;
+            }
+
+        return response()->json($response);
+
+        }
+           
     }
 }
