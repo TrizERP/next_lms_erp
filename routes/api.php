@@ -39,3 +39,7 @@ Route::controller(apiController::class)->group(function () {
     Route::post('gcm_insert', 'gcm_insert');
     Route::get('testkey', 'testkey');
 });
+
+// 12-11-2024
+Route::get('crm-whatsapp', [\App\Http\Controllers\WhatsappController::class, 'whatsappCRM'])->withoutMiddleware([Authenticate::class])->name('crm-whatsapp');
+Route::get('crm-whatsapp-update', [\App\Http\Controllers\WhatsappController::class, 'updateCRMWhatsappStatus'])->withoutMiddleware([Authenticate::class])->name('updateCRMWhatsappStatus');
