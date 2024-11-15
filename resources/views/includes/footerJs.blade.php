@@ -182,7 +182,7 @@ $route = ['dashboard'];
                                       </div>
                                       <div class="col-3 m-0 p-1">
                                           <button class="btn btn-outline-secondary rounded border w-100 mb-0 h-100"
-                                                  title="Gönder!"><i class="fa fa-paper-plane" aria-hidden="true"></i>
+                                                  title="Gï¿½nder!"><i class="fa fa-paper-plane" aria-hidden="true"></i>
                                           </button>
                                       </div>
                                   </div>
@@ -207,7 +207,7 @@ $route = ['dashboard'];
             setTimeout(() => {
                 $('#loading-overlay').hide();
             },3000)
-        });
+     ï¿½ï¿½ï¿½});
 </script>
 <!-- /#wrapper -->
 <!-- jQuery -->
@@ -632,13 +632,8 @@ $route = ['dashboard'];
     <div id="chatbot-header" style="background-color: #007bff; color: white; padding: 10px; border-top-left-radius: 10px; border-top-right-radius: 10px;">
         Scholar Clone
         <button id="minimize-chatbot" title="Minimize" style="float: right; background: none; border: none; color: white; margin-left: 5px;">_</button>
-<<<<<<< HEAD
         <button id="refresh-chatbot" title="Refresh" style="float: right; background: none; border: none; color: white; margin-left: 5px;">&#10227</button>
         <button id="close-chatbot" title="Close" style="float: right; background: none; border: none; color: red; font-size: 30px">&times</button>
-=======
-        <button id="refresh-chatbot" title="Refresh" style="float: right; background: none; border: none; color: white; margin-left: 5px;">âŸ³</button>
-        <button id="close-chatbot" title="Close" style="float: right; background: none; border: none; color: red;  font-size: 30px">Ã—</button>
->>>>>>> 95f844c45830f3cfda506eb1e757dc4926205e4b
     </div>
     <div id="messages" style="height: 300px; overflow-y: auto" class="clearfix"></div>
     <div id="loading" style="display: none; float: left; clear: both">
@@ -674,7 +669,7 @@ $route = ['dashboard'];
     <h6 style="margin-bottom: 10px; color: #333;">Some popular FAQ's</h6>
     <div style="display: flex; flex-direction: column; gap: 10px;">
         <button class="faq-button-fees" data-message="Fees" style="width: 100%; padding: 2px 0;border-radius: 5px; background-color: #4CAF50; color: white; border: none; cursor: pointer; font-size: 12px;">Fees</button>
-        <button class="faq-button" data-message="Attendance" style="width: 100%; padding: 2px 0; border-radius: 5px;background-color: #2196F3; color: white; border: none; cursor: pointer; font-size: 12px;">Attendance</button>
+        <button class="faq-button-attendance" data-message="Attendance" style="width: 100%; padding: 2px 0; border-radius: 5px;background-color: #2196F3; color: white; border: none; cursor: pointer; font-size: 12px;">Attendance</button>
         <button class="faq-button" data-message="Grades" style="width: 100%; padding: 2px 0; border-radius: 5px;background-color: #f44336; color: white; border: none; cursor: pointer; font-size: 12px;">Grades</button>
     </div>
 </div>`;
@@ -710,6 +705,25 @@ document.getElementById('user_input').addEventListener('keypress', function(even
                     sendMessage(message);
                 }
             });
+
+            document.querySelector('.faq-button-attendance').addEventListener('click', function() {
+    document.getElementById('messages').innerHTML += `
+        <div style="display: inline-block; max-width: 80%; text-align: left; background-color: #f1f1f1; padding: 10px; border-radius: 5px; margin: 5px 0; float: left; clear: both;">
+            <p style="margin-bottom: 5px; color: #333;">Attendance Options:</p>
+            <div style="display: flex; flex-direction: column; gap: 1px;">
+                <button class="attendance-button" data-message="Monthly Attendance" style="width: 100%; padding: 0px; border-radius: 5px; background-color: #2196F3; color: white; border: none; cursor: pointer; font-size: 12px;">Monthly Attendance</button>
+                <button class="attendance-button" data-message="Yearly Attendance" style="width: 100%; padding: 0px; border-radius: 5px; background-color: #2196F3; color: white; border: none; cursor: pointer; font-size: 12px;">Yearly Attendance</button>
+            </div>
+        </div>`;
+});
+
+// Use event delegation for dynamically added attendance buttons
+document.getElementById('messages').addEventListener('click', function(event) {
+    if (event.target.classList.contains('attendance-button')) {
+        var message = event.target.getAttribute('data-message');
+        sendMessage(message);
+    }
+});
 };
 
 // Function to send messages
@@ -793,7 +807,7 @@ document.getElementById('close-chatbot').onclick = function() {
 };
 
 document.getElementById('refresh-chatbot').onclick = function() {
-  fetch('/flush-session', {
+    fetch('/flush-session', {
         method: 'POST',
         headers: {
             'X-CSRF-TOKEN': '{{ csrf_token() }}', // Include CSRF token for security
@@ -806,49 +820,81 @@ document.getElementById('refresh-chatbot').onclick = function() {
             // Clear the messages
             document.getElementById('messages').innerHTML = ''; 
             document.getElementById('messages').innerHTML += `
-                <div style="display: inline-block; max-width: 80%; text-align: left; background-color: #f1f1f1; padding: 10px; border-radius: 5px; margin: 5px 0;float: left; clear: both;">
+                <div style="display: inline-block; max-width: 80%; text-align: left; background-color: #f1f1f1; padding: 10px; border-radius: 5px; margin: 5px 0; float: left; clear: both;">
                     Hello! I am Scholar clone, How can I assist you today?
                 </div>`;
-                document.getElementById('messages').innerHTML += `
+
+            document.getElementById('messages').innerHTML += `
                 <div style="display: inline-block; max-width: 80%; text-align: left; background-color: #f1f1f1; padding: 10px; border-radius: 5px; margin: 5px 0; float: left; clear: both;">
                     <h6 style="margin-bottom: 10px; color: #333;">Some popular FAQ's</h6>
                     <div style="display: flex; flex-direction: column; gap: 10px;">
-                        <button class="faq-button-fees" data-message="Fees" style="width: 100%; padding: 2px 0;border-radius: 5px; background-color: #4CAF50; color: white; border: none; cursor: pointer; font-size: 12px;">Fees</button>
-                        <button class="faq-button" data-message="Attendance" style="width: 100%; padding: 2px 0; border-radius: 5px;background-color: #2196F3; color: white; border: none; cursor: pointer; font-size: 12px;">Attendance</button>
-                        <button class="faq-button" data-message="Grades" style="width: 100%; padding: 2px 0; border-radius: 5px;background-color: #f44336; color: white; border: none; cursor: pointer; font-size: 12px;">Grades</button>
+                        <button class="faq-button-fees" data-message="Fees" style="width: 100%; padding: 2px 0; border-radius: 5px; background-color: #4CAF50; color: white; border: none; cursor: pointer; font-size: 12px;">Fees</button>
+                        <button class="faq-button-attendance" data-message="Attendance" style="width: 100%; padding: 2px 0; border-radius: 5px; background-color: #2196F3; color: white; border: none; cursor: pointer; font-size: 12px;">Attendance</button>
+                        <button class="faq-button" data-message="Grades" style="width: 100%; padding: 2px 0; border-radius: 5px; background-color: #f44336; color: white; border: none; cursor: pointer; font-size: 12px;">Grades</button>
                     </div>
                 </div>`;
-    document.querySelectorAll('.faq-button').forEach(button => {
+                document.querySelectorAll('.faq-button').forEach(button => {
         button.addEventListener('click', function() {
             var message = this.getAttribute('data-message');
-            sendMessage(message); // Use the same sendMessage function to handle button clicks
+            sendMessage(message); 
         });
     });
-    document.querySelector('.faq-button-fees').addEventListener('click', function() {
-                document.getElementById('messages').innerHTML += `
-                    <div style="display: inline-block; max-width: 80%; text-align: left; background-color: #f1f1f1; padding: 10px; border-radius: 5px; margin: 5px 0; float: left; clear: both;">
-                        <p style="margin-bottom: 5px; color: #333;">Fees FAQ's:</p> <!-- Reduced margin-bottom -->
-                        <div style="display: flex; flex-direction: column; gap: 1px;"> <!-- Reduced gap -->
-                            <button class="fees-button" data-message="Pending Fees" style="width: 100%; padding: 0px; border-radius: 5px; background-color: #4CAF50; color: white; border: none; cursor: pointer; font-size: 12px;">Pending Fees</button>
-                        </div>
-                    </div>`;
-            });
-            
-            // Use event delegation for dynamically added buttons
-            document.getElementById('.fees-button').addEventListener('click', function(event) {
-                var message=''; 
+            // Event delegation for dynamically added FAQ buttons (Fees, Attendance, etc.)
+            document.getElementById('messages').addEventListener('click', function(event) {
+                var message = '';
+                if (!document.querySelector('.fees-button')) {
                 if (event.target.classList.contains('fees-button')) {
-                    var message = event.target.getAttribute('data-message');
-                    sendMessage(message);
+                message = event.target.getAttribute('data-message');  
+                sendMessage(message);  
+                  }
                 }
+                // Check if clicked element is the "Fees" button
+                if (event.target.classList.contains('faq-button-fees')) {
+                    // Add Fees child buttons dynamically
+                    if (!document.querySelector('.fees-button')) {
+                        document.getElementById('messages').innerHTML += `
+                            <div style="display: inline-block; max-width: 80%; text-align: left; background-color: #f1f1f1; padding: 10px; border-radius: 5px; margin: 5px 0; float: left; clear: both;">
+                                <p style="margin-bottom: 5px; color: #333;">Fees FAQ's:</p>
+                                <div style="display: flex; flex-direction: column; gap: 1px;">
+                                    <button class="fees-button" data-message="Pending Fees" style="width: 100%; padding: 0px; border-radius: 5px; background-color: #4CAF50; color: white; border: none; cursor: pointer; font-size: 12px;">Pending Fees</button>
+                                </div>
+                            </div>`;
+                    }
+                }
+
+                if (event.target.classList.contains('faq-button-attendance')) {
+                  if (!document.querySelector('.attendance-button')) {
+                    attendanceState();
+                }
+              }
             });
-}
+
+        }
     })
     .catch(error => {
         console.error('Error:', error);
     });
 };
+function attendanceState(){
+  document.getElementById('messages').innerHTML += `
+                                <div style="display: inline-block; max-width: 80%; text-align: left; background-color: #f1f1f1; padding: 10px; border-radius: 5px; margin: 5px 0; float: left; clear: both;">
+                                    <p style="margin-bottom: 5px; color: #333;">Attendance Options:</p>
+                                    <div style="display: flex; flex-direction: column; gap: 1px;">
+                                        <button class="attendance-button" data-message="Monthly Attendance" style="width: 100%; padding: 0px; border-radius: 5px; background-color: #2196F3; color: white; border: none; cursor: pointer; font-size: 12px;">Monthly Attendance</button>
+                                        <button class="attendance-button" data-message="Yearly Attendance" style="width: 100%; padding: 0px; border-radius: 5px; background-color: #2196F3; color: white; border: none; cursor: pointer; font-size: 12px;">Yearly Attendance</button>
+                                        </div>
+                                    </div>`;
 
+                            // Use event delegation for dynamically added attendance buttons
+                            document.getElementById('.attendance-button').addEventListener('click', function(event) {
+                                var message = ''; 
+                                // Check if the clicked element has the class 'attendance-button'
+                                if (event.target.classList.contains('attendance-button')) {
+                                    message = event.target.getAttribute('data-message');
+                                    sendMessage(message);
+                                }
+                              });
+}
     document.getElementById('send_button').onclick = function() {
         var userInput = document.getElementById('user_input').value;
         if (userInput.trim() === '') return; // Prevent sending empty messages
@@ -947,10 +993,10 @@ document.getElementById('refresh-chatbot').onclick = function() {
   }
   button#close-chatbot {
         transition: color 0.3s; 
-    }
+  }
   button#close-chatbot:hover {
         color: red; 
-    }
+  }
   #chatbot-header {
     display: flex;
     justify-content: space-between;
@@ -960,15 +1006,14 @@ document.getElementById('refresh-chatbot').onclick = function() {
     padding: 10px;
     border-top-left-radius: 10px;
     border-top-right-radius: 10px;
-}
-
+} 
 #chatbot-header button {
     background: none;
     border: none;
     color: white;
     cursor: pointer;
     margin-left: 5 px;
-}
+} 
 
 #chatbot-header button:hover {
     background-color: #0056b3;
