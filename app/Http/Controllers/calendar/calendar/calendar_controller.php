@@ -321,4 +321,27 @@ class calendar_controller extends Controller
 
         return json_encode($res);
     }
+
+    public function searchByDate(Request $request){
+        // echo "<pre>";print_r($request->all());exit;
+        $type = $request->type;
+        $res = session()->get('data');
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+        if($type=="API"){
+            $sub_institute_id = $request->sub_institute_id;
+            $syear = $request->syear;
+        }
+
+        if($request->has('submit') && $request->submit=="Search"){
+            // echo "<pre>";print_r($request->all());exit;
+            $res['from_date'] = $from_date = $request->from_date;
+            $res['to_date'] = $to_date = $request->to_date;
+            $res['searchData'] = DB::table('calendar_events')->where(['sub_institute_id'=>$sub_institute_id])
+                ->whereBetween('school_date',[$from_date,$to_date])
+                ->get()->toArray();
+            // echo "<pre>";print_r($res['searchData']);exit;
+        }
+        return is_mobile($type, "calendar/calendar/dateWise", $res, "view");
+    }
 }
