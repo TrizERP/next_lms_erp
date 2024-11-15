@@ -11,4 +11,5 @@ Route::controller(calendar_controller::class)->group(function () {
     Route::post('/studentCalenderAPI', 'studentCalenderAPI');
     Route::get('calendar/fetchData', 'fetchData');
     Route::post('calendar/TeacherFetchData', 'TeacherFetchData');
+    Route::get('calendar/searchByDate', 'searchByDate')->name('searchByDate');
 });

@@ -20,6 +20,7 @@
             <div class="row">
                 <div class="col-md-12">
                     <button class="btn btn-primary" onclick="openGrid()">Print</button>
+                    <a href="{{route('searchByDate')}}" class="btn btn-success">List Events</a>
                 </div>
                 <div class="col-md-12">
                     <div class="white-box">
