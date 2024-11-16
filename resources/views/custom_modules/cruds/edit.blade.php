@@ -27,25 +27,89 @@
                 </div>
                 <div class="row mt-3">
                     @foreach($data['data']['columns'] as $column)
+                            <?php
+                            $fieldVal = json_decode($column['field_value'], true);
+                            ?>
                         @if($column['column_name'] == 'id')
                             @continue
                         @endif
                         <div class="col-md-6 mt-2">
                             <label>{{ ucwords(str_replace('_', ' ', $column['column_name'])) }}</label>
-                        @if($column['column_name'] == 'academic_section')
-                                <select class="form-control" id="{{$column['column_name']}}" required
+                            @if($column['field_type'] == 'File')
+                                <input type="file" id="{{$column['column_name']}}"
+                                       {{$data['data']['view'][$column['column_name']] ? "hidden":"" }} name="{{$column['column_name']}}"
+                                       class="form-control" value="{{$data['data']['view'][$column['column_name']]}}">
+                                <input type="file" id="{{$column['column_name']}}"
+                                       {{$data['data']['view'][$column['column_name']] ? "":"hidden" }} name="new_{{$column['column_name']}}"
+                                       class="form-control" value="{{$data['data']['view'][$column['column_name']]}}">
+                                @if ($data['data']['view']['id'] > 0)
+                                    <a href="{{asset('images/'.$data['data']['view'][$column['column_name']])}}"
+                                       target="_blank">link</a>
+                                @endif
+                            @elseif($column['field_type'] == 'checkbox')
+                                @foreach($fieldVal as $val)
+                                        <?php
+                                        $checkboxVal = json_decode($data['data']['view'][$column['column_name']]);
+                                        ?>
+                                    @if(is_array($checkboxVal) && in_array($val, $checkboxVal))
+                                        <span style="display: block"> {{$val}} <input type="checkbox" checked
+                                                                                      name="{{$column['column_name']}}[]"
+                                                                                      value="{{$val}}"></span>
+                                    @else
+                                        <span style="display: block"> {{$val}} <input type="checkbox"
+                                                                                      name="{{$column['column_name']}}[]"
+                                                                                      value="{{$val}}"></span>
+                                    @endif
+                                @endforeach
+                            @elseif($column['field_type'] == 'drop-down')
+                                <select class="form-control" id="{{$column['column_name']}}"
+                                        name="{{$column['column_name']}}">0
+                                    <option value=""
+                                    >Select {{ucwords(str_replace('_', ' ', $column['column_name']))}}</option>
+                                    @foreach($fieldVal as $val)
+                                        @if ($data['data']['view'][$column['column_name']] == $val)
+                                            <option value="{{$val}}" selected
+                                            >{{$val}}</option>
+                                        @else
+                                            <option value="{{$val}}"
+                                            >{{$val}}</option>
+                                        @endif
+                                    @endforeach
+
+                                </select>
+
+                            @elseif($column['field_type'] == 'radio-button')
+                                @foreach($fieldVal as $val)
+                                    @if ($data['data']['view'][$column['column_name']] == $val)
+                                    <span style="display: block"> {{$val}} <input type="radio" checked
+                                                                                  name="{{$column['column_name']}}"
+                                                                                  value="{{$val}}"></span>
+                                    @else
+                                        <span style="display: block"> {{$val}} <input type="radio"
+                                                                                      name="{{$column['column_name']}}"
+                                                                                      value="{{$val}}"></span>
+                                    @endif
+                                @endforeach
+
+                            @elseif($column['column_name'] == 'academic_section')
+                                <select class="form-control" id="{{$column['column_name']}}"
                                         name="{{$column['column_name']}}">
                                     @foreach($data['data']['academic_section'] as $academic_section)
                                         @if ($data['data']['view'][$column['column_name']] == $academic_section['id'])
-                                            <option value="{{$academic_section['id']}}" selected>{{$academic_section['title']}} - {{$academic_section['short_name']}} - {{$academic_section['medium']}}</option>
+                                            <option value="{{$academic_section['id']}}"
+                                                    selected>{{$academic_section['title']}}
+                                                - {{$academic_section['short_name']}}
+                                                - {{$academic_section['medium']}}</option>
                                         @else
-                                            <option value="{{$academic_section['id']}}">{{$academic_section['title']}} - {{$academic_section['short_name']}} - {{$academic_section['medium']}}</option>
+                                            <option value="{{$academic_section['id']}}">{{$academic_section['title']}}
+                                                - {{$academic_section['short_name']}}
+                                                - {{$academic_section['medium']}}</option>
                                         @endif
                                     @endforeach
 
                                 </select>
                             @elseif($column['column_name'] == 'Division')
-                                <select class="form-control" id="{{$column['column_name']}}" required
+                                <select class="form-control" id="{{$column['column_name']}}"
                                         name="{{$column['column_name']}}">
                                     @foreach($data['data']['division'] as $division)
                                         @if ($data['data']['view'][$column['column_name']] == $division['id'])
@@ -57,7 +121,7 @@
 
                                 </select>
                             @elseif($column['column_name'] == 'Standard')
-                                <select class="form-control" id="{{$column['column_name']}}" required
+                                <select class="form-control" id="{{$column['column_name']}}"
                                         name="{{$column['column_name']}}">
                                     @foreach($data['data']['standard'] as $standard)
                                         @if ($data['data']['view'][$column['column_name']] == $standard['id'])
@@ -66,34 +130,18 @@
                                             <option value="{{$standard['id']}}">{{$standard['name']}}</option>
                                         @endif
                                     @endforeach
-
                                 </select>
-                            @elseif (Str::startsWith($column['column_name'], "image_"))
-                                <input type="file" id="{{$column['column_name']}}"
-                                       {{$data['data']['view'][$column['column_name']] ? "hidden":"" }} name="{{$column['column_name']}}"
-                                       class="form-control" value="{{$data['data']['view'][$column['column_name']]}}">
-                                <input type="file" id="{{$column['column_name']}}"
-                                       {{$data['data']['view'][$column['column_name']] ? "":"hidden" }} name="new_{{$column['column_name']}}"
-                                       class="form-control" value="{{$data['data']['view'][$column['column_name']]}}">
-                                @if ($data['data']['view']['id'] > 0)
-                                    <a href="{{asset('images/'.$data['data']['view'][$column['column_name']])}}"
-                                       target="_blank">link</a>
-                                @endif
-                            @elseif (Str::startsWith($column['column_name'], "date_"))
-                                <input type="date" id="{{$column['column_name']}}" required
-                                       name="{{$column['column_name']}}" class="form-control"
-                                       value="{{$data['data']['view'][$column['column_name']]}}">
-                            @elseif (Str::startsWith($column['column_name'], "date_time"))
-                                <input type="datetime-local" id="{{$column['column_name']}}" required
+                            @elseif ($column['field_type'] == "date")
+                                <input type="date" id="{{$column['column_name']}}"
                                        name="{{$column['column_name']}}" class="form-control"
                                        value="{{$data['data']['view'][$column['column_name']]}}">
                             @else
-                                <input type="text" id="{{$column['column_name']}}" required
+                                <input type="text" id="{{$column['column_name']}}"
                                        name="{{$column['column_name']}}" class="form-control"
                                        value="{{$data['data']['view'][$column['column_name']]}}">
                             @endif
-                            @error('column_name')
-                            <span style="color: red">{{$message}}</span>
+                            @error($column['column_name'])
+                            <div class="error" style="color: red">{{ $message }}</div>
                             @enderror
                         </div>
                     @endforeach

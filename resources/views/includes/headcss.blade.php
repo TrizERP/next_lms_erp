@@ -6,49 +6,53 @@
     <meta name="author" content="">
     <link rel="icon" type="image/png" sizes="16x16" href="images/favicon.png">
     <title>TRIZ ERP</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+
 
     <link href="{{ asset("/plugins/bower_components/calendar/dist/fullcalendar.css") }}" rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link rel="stylesheet" href="{{ asset("/plugins/bower_components/calendar/dist/fullcalendar.css") }}"></noscript>
 
     <link href="{{ asset("/admin_dep/css/bootstrap.css") }}" rel="stylesheet" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link rel="stylesheet" href="{{ asset("/admin_dep/css/bootstrap.css") }}"></noscript>
-    
+
     <link href="{{ asset("/admin_dep/css/bootstrap-select.css") }}" rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link rel="stylesheet" href="{{ asset("/admin_dep/css/bootstrap-select.css") }}"></noscript>
-    
+
     <link href="{{ asset("/admin_dep/css/bootstrap-datepicker.min.css") }}" rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link rel="stylesheet" href="{{ asset("/admin_dep/css/bootstrap-datepicker.min.css") }}"></noscript>
-    
+
     <link href="{{ asset("/admin_dep/css/docs.css") }}" rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link rel="stylesheet" href="{{ asset("/admin_dep/css/bootstrap-datepicker.min.css") }}"></noscript>
-    
+
     <link href="{{ asset("/admin_dep/css/css3.css") }}" rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link rel="stylesheet" href="{{ asset("/admin_dep/css/css3.css") }}"></noscript>
-    
+
     <link href="{{ asset("/admin_dep/css/fontawesome.css") }}" rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link rel="stylesheet" href="{{ asset("/admin_dep/css/fontawesome.min.css") }}"></noscript>
-    
+
     <link href="{{ asset("/admin_dep/css/materialdesignicons.min.css") }}" rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link rel="stylesheet" href="{{ asset("/admin_dep/css/materialdesignicons.min.css") }}"></noscript>
-    
+
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons"></noscript>
-    
+
     <link href="{{ asset("/admin_dep/css/elements.css") }}" rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link rel="stylesheet" href="{{ asset("/admin_dep/css/elements.css") }}"></noscript>
-    
+
     <link href="{{ asset("/admin_dep/css/style.css") }}" rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link rel="stylesheet" href="{{ asset("/admin_dep/css/style.css") }}"></noscript>
-    
+
 
     <link href="{{ asset("/plugins/bower_components/toast-master/css/jquery.toast.css") }}" rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link rel="stylesheet" href="{{ asset("/plugins/bower_components/toast-master/css/jquery.toast.css") }}"></noscript>
-     
+
 
     <link href="https://cdn.datatables.net/buttons/1.5.6/css/buttons.dataTables.min.css" rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'"
           type="text/css"/>
     <noscript><link rel="stylesheet" href="https://cdn.datatables.net/buttons/1.5.6/css/buttons.dataTables.min.css"></noscript>
-          
+
 
     <style type="text/css">
         @media print {
@@ -88,7 +92,7 @@
     <!-- Global site tag (gtag.js) - Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=UA-153077517-1"></script>
     <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
-    
+
     <script>
         window.dataLayer = window.dataLayer || [];
 
@@ -99,5 +103,5 @@
         gtag('js', new Date());
         gtag('config', 'UA-153077517-1');
     </script>
-  
+
 </head>

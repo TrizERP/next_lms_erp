@@ -230,6 +230,8 @@ class CustomModuleController extends Controller
         $data['column_index'] = '';
         $data['column_default'] = '';
         $data['column_auto_increment'] = 0;
+        $data['field_type'] = 'text-field';
+        $data['field_value'] = '';
         $data['column_id'] = 0;
         if ($colId) {
             $findColumnData = CustomModuleTableColumn::find($colId);
@@ -240,6 +242,8 @@ class CustomModuleController extends Controller
             $data['column_index'] = $findColumnData['index'];
             $data['column_default'] = $findColumnData['default'];
             $data['column_auto_increment'] = $findColumnData['auto_increment'];
+            $data['field_type'] = $findColumnData['field_type'];
+            $data['field_value'] = implode(',', json_decode($findColumnData['field_value']));
             $data['column_id'] = $colId;
         }
         $data['data'] = CustomModuleTable::with('columns')->whereId($id)->first();
@@ -250,7 +254,6 @@ class CustomModuleController extends Controller
     public
     function tableColumnStore(Request $request, $id)
     {
-
         $type = $request->input('type');
         $request->validate([
             'column_name' => [
@@ -274,6 +277,8 @@ class CustomModuleController extends Controller
         $tableColumn->not_null = $request->has('column_not_null') ? 1 : 0;
         $tableColumn->index = $request->column_index;
         $tableColumn->default = $request->column_default;
+        $tableColumn->field_type = $request->field_type;
+        $tableColumn->field_value = json_encode(explode(',', $request->field_value));
         $tableColumn->save();
         return is_mobile($type, ["route" => "custom_module_table_column.create", "id" => $id], null, "redirect", '', 1);
 
@@ -413,7 +418,7 @@ class CustomModuleController extends Controller
         $data['data']['view'] = DynamicModel::readRecords($data['data']['table_name']);
         $data['data']['division'] = divisionModel::where('sub_institute_id', $request->session()->get('sub_institute_id'))->get(['id', 'name']);
         $data['data']['standard'] = standardModel::where('sub_institute_id', $request->session()->get('sub_institute_id'))->get(['id', 'name']);
-        $data['data']['academic_section'] = academic_sectionModel::where('sub_institute_id', $request->session()->get('sub_institute_id'))->get(['id', 'title','short_name','medium']);
+        $data['data']['academic_section'] = academic_sectionModel::where('sub_institute_id', $request->session()->get('sub_institute_id'))->get(['id', 'title', 'short_name', 'medium']);
         return is_mobile($type, "custom_modules.cruds.index", $data, "view");
     }
 
@@ -429,15 +434,12 @@ class CustomModuleController extends Controller
         $data['data']['view'] = $prepareView;
         $data['data']['division'] = divisionModel::where('sub_institute_id', $request->session()->get('sub_institute_id'))->get(['id', 'name']);
         $data['data']['standard'] = standardModel::where('sub_institute_id', $request->session()->get('sub_institute_id'))->get(['id', 'name']);
-        $data['data']['academic_section'] = academic_sectionModel::where('sub_institute_id', $request->session()->get('sub_institute_id'))->get(['id', 'title','short_name','medium']);
-
-
+        $data['data']['academic_section'] = academic_sectionModel::where('sub_institute_id', $request->session()->get('sub_institute_id'))->get(['id', 'title', 'short_name', 'medium']);
 
         if (isset($data['data']['table_name'])) {
             $getRecords = DynamicModel::readSingleRecord($data['data']['table_name'], $viewId);
             if ($getRecords) $data['data']['view'] = $getRecords;
         }
-
         $type = $request->input('type');
         return is_mobile($type, "custom_modules.cruds.edit", $data, "view");
     }
@@ -445,9 +447,33 @@ class CustomModuleController extends Controller
     public
     function crudStore(Request $request, $id)
     {
-        $data = $request->except(['_token', 'view_id', 'new_image', 'submit']);
-        $type = $request->input('type');
+        $getTable = CustomModuleTable::with('columns')->find($id);
+        $fileKeys = collect($getTable['columns'])->where('field_type', 'File')->pluck('column_name')->toArray();
+        $checkboxKeys = collect($getTable['columns'])->where('field_type', 'checkbox')->pluck('column_name')->toArray();
+        $exceptKey = ['_token', 'view_id', 'submit'];
+
+        $validationKeys = collect($getTable['columns'])->where('not_null',1)->pluck('column_name')->toArray();
+        $prepareValidation = [];
+        foreach ($validationKeys as $validationKey) {
+            $prepareValidation[$validationKey] = 'required';
+        }
+        if ($id) {
+           foreach ($fileKeys as $fileKey) {
+               unset($prepareValidation[$fileKey]);
+           }
+        }
+
+        foreach ($request->files as $key => $file) {
+            if (Str::startsWith($key, 'new_')) {
+                $exceptKey[] = $key;
+            }
+        }
+
+        $request->validate($prepareValidation);
+        $data = $request->except($exceptKey);
         $columns = collect($data)->keys()->toArray();
+
+        $type = $request->input('type');
         if ($id) {
             if ($request->view_id) {
                 foreach ($request->files as $key => $file) {
@@ -462,17 +488,31 @@ class CustomModuleController extends Controller
             }
 
             foreach ($request->files as $key => $file) {
-                if (Str::startsWith($key, 'image_')) {
+                if (in_array($key, $fileKeys)) {
                     $imageName = time() . '.' . $file->getClientOriginalExtension();
                     $file->move(public_path('images'), $imageName);
                     $data[$key] = $imageName;
                 }
+                /*if (Str::startsWith($key, 'image_')) {
+                    $imageName = time() . '.' . $file->getClientOriginalExtension();
+                    $file->move(public_path('images'), $imageName);
+                    $data[$key] = $imageName;
+                }*/
             }
-            $getTable = CustomModuleTable::with('columns')->find($id);
+
+            $requestData = $request->all();
+            foreach (collect($requestData)->toArray() as $key => $requestValue) {
+                if (in_array($key, $checkboxKeys)) {
+                    $data[$key] = json_encode($requestValue);
+                }
+            }
+
 
             $data = array_filter($data, function ($key) {
                 return strpos($key, 'new_') !== 0;
             }, ARRAY_FILTER_USE_KEY);
+
+
 
             if (!empty($getTable)) {
                 $data['sub_institute_id'] = $request->session()->get('sub_institute_id');
