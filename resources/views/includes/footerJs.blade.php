@@ -696,8 +696,6 @@ document.getElementById('user_input').addEventListener('keypress', function(even
                         </div>
                     </div>`;
             });
-            
-            // Use event delegation for dynamically added buttons
             document.getElementById('messages').addEventListener('click', function(event) {
                 var message=''; 
                 if (event.target.classList.contains('fees-button')) {
@@ -711,8 +709,8 @@ document.getElementById('user_input').addEventListener('keypress', function(even
         <div style="display: inline-block; max-width: 80%; text-align: left; background-color: #f1f1f1; padding: 10px; border-radius: 5px; margin: 5px 0; float: left; clear: both;">
             <p style="margin-bottom: 5px; color: #333;">Attendance Options:</p>
             <div style="display: flex; flex-direction: column; gap: 1px;">
-                <button class="attendance-button" data-message="Monthly Attendance" style="width: 100%; padding: 0px; border-radius: 5px; background-color: #2196F3; color: white; border: none; cursor: pointer; font-size: 12px;">Monthly Attendance</button>
-                <button class="attendance-button" data-message="Yearly Attendance" style="width: 100%; padding: 0px; border-radius: 5px; background-color: #2196F3; color: white; border: none; cursor: pointer; font-size: 12px;">Yearly Attendance</button>
+                <button class="attendance-button" data-message="Monthly Attendance" style="width: 100%; padding: 0px; border-radius: 5px; background-color: #4cb04f; color: white; border: none; cursor: pointer; font-size: 12px;">Monthly Attendance</button>
+                <button class="attendance-button" data-message="Yearly Attendance" style="width: 100%;margin-top:5px; padding: 0px; border-radius: 5px; background-color: #2196F3; color: white; border: none; cursor: pointer; font-size: 12px;">Yearly Attendance</button>
             </div>
         </div>`;
 });
@@ -839,8 +837,7 @@ document.getElementById('refresh-chatbot').onclick = function() {
             sendMessage(message); 
         });
     });
-            // Event delegation for dynamically added FAQ buttons (Fees, Attendance, etc.)
-            document.getElementById('messages').addEventListener('click', function(event) {
+      document.getElementById('messages').addEventListener('click', function(event) {
                 var message = '';
                 if (!document.querySelector('.fees-button')) {
                 if (event.target.classList.contains('fees-button')) {
@@ -880,8 +877,8 @@ function attendanceState(){
                                 <div style="display: inline-block; max-width: 80%; text-align: left; background-color: #f1f1f1; padding: 10px; border-radius: 5px; margin: 5px 0; float: left; clear: both;">
                                     <p style="margin-bottom: 5px; color: #333;">Attendance Options:</p>
                                     <div style="display: flex; flex-direction: column; gap: 1px;">
-                                        <button class="attendance-button" data-message="Monthly Attendance" style="width: 100%; padding: 0px; border-radius: 5px; background-color: #2196F3; color: white; border: none; cursor: pointer; font-size: 12px;">Monthly Attendance</button>
-                                        <button class="attendance-button" data-message="Yearly Attendance" style="width: 100%; padding: 0px; border-radius: 5px; background-color: #2196F3; color: white; border: none; cursor: pointer; font-size: 12px;">Yearly Attendance</button>
+                                        <button class="attendance-button" data-message="Monthly Attendance" style="width: 100%; padding: 0px; border-radius: 5px; background-color: #4cb04f; color: white; border: none; cursor: pointer; font-size: 12px;">Monthly Attendance</button>
+                                        <button class="attendance-button" data-message="Yearly Attendance" style="width: 100%;margin-top:5px; padding: 0px; border-radius: 5px; background-color: #2196F3; color: white; border: none; cursor: pointer; font-size: 12px;">Yearly Attendance</button>
                                         </div>
                                     </div>`;
 

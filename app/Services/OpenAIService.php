@@ -653,7 +653,7 @@ protected function checkQnAFile($input)
     foreach ($qaData as $qaPair) {
         $similarity = 0;
         similar_text($input, $qaPair['Chat Question'], $similarity);
-        if ($similarity >= 90) {
+        if ($similarity >= 80) {
             $matches[] = $qaPair['Answer']; 
         }
     }
@@ -832,10 +832,8 @@ protected function getPendingFees($studentId)
 {
     try {
         $grno = $studentId;
-            // make request to send in fees controller
             $sub_institute_id = session()->get('sub_institute_id');
             $syear = session()->get('syear');
-
             $reqArr = [
                 'type' => "API",
                 'grno' => $grno,
@@ -868,16 +866,13 @@ protected function getGrades($studentId)
         $grades = DB::table('grades')
                     ->where('student_id', $studentId)
                     ->pluck('grade', 'subject');
-
         if ($grades->isEmpty()) {
             return 'No grades found for this student ID.';
         }
-
         $gradeList = '';
         foreach ($grades as $subject => $grade) {
             $gradeList .= "$subject: $grade\n";
         }
-
         return $gradeList;
     } catch (\Illuminate\Database\QueryException $e) {
         Log::error('Database error: ' . $e->getMessage());
@@ -932,6 +927,5 @@ public function trackKeyIssues($input)
     }
     Storage::put('key_issues.json', json_encode($issueCounts, JSON_PRETTY_PRINT));
 }
-
 }    
 
