@@ -653,7 +653,7 @@ protected function checkQnAFile($input)
     foreach ($qaData as $qaPair) {
         $similarity = 0;
         similar_text($input, $qaPair['Chat Question'], $similarity);
-        if ($similarity >= 80) {
+        if ($similarity >= 90) {
             $matches[] = $qaPair['Answer']; 
         }
     }

@@ -657,7 +657,7 @@ $route = ['dashboard'];
     document.getElementById('open-chatbot').onclick = function() {
     document.getElementById('chatbot-container').style.display = 'block';
     this.style.display = 'none'; // Hide the "Chat with us" button
-
+  
     document.getElementById('messages').innerHTML += `
         <div style="display: inline-block; max-width: 80%; text-align: left; background-color: #f1f1f1; padding: 10px; border-radius: 5px; margin: 5px 0; float: left; clear: both;">
             Hello! I am Scholar clone, How can I assist you today?
@@ -838,24 +838,9 @@ document.getElementById('refresh-chatbot').onclick = function() {
         });
     });
       document.getElementById('messages').addEventListener('click', function(event) {
-                var message = '';
-                if (!document.querySelector('.fees-button')) {
-                if (event.target.classList.contains('fees-button')) {
-                message = event.target.getAttribute('data-message');  
-                sendMessage(message);  
-                  }
-                }
-                // Check if clicked element is the "Fees" button
                 if (event.target.classList.contains('faq-button-fees')) {
-                    // Add Fees child buttons dynamically
                     if (!document.querySelector('.fees-button')) {
-                        document.getElementById('messages').innerHTML += `
-                            <div style="display: inline-block; max-width: 80%; text-align: left; background-color: #f1f1f1; padding: 10px; border-radius: 5px; margin: 5px 0; float: left; clear: both;">
-                                <p style="margin-bottom: 5px; color: #333;">Fees FAQ's:</p>
-                                <div style="display: flex; flex-direction: column; gap: 1px;">
-                                    <button class="fees-button" data-message="Pending Fees" style="width: 100%; padding: 0px; border-radius: 5px; background-color: #4CAF50; color: white; border: none; cursor: pointer; font-size: 12px;">Pending Fees</button>
-                                </div>
-                            </div>`;
+                        feesState();
                     }
                 }
 
@@ -872,6 +857,24 @@ document.getElementById('refresh-chatbot').onclick = function() {
         console.error('Error:', error);
     });
 };
+
+function feesState(){
+  document.getElementById('messages').innerHTML += `
+                            <div style="display: inline-block; max-width: 80%; text-align: left; background-color: #f1f1f1; padding: 10px; border-radius: 5px; margin: 5px 0; float: left; clear: both;">
+                                <p style="margin-bottom: 5px; color: #333;">Fees FAQ's:</p>
+                                <div style="display: flex; flex-direction: column; gap: 1px;">
+                                    <button class="fees-button" data-message="Pending Fees" style="width: 100%; padding: 0px; border-radius: 5px; background-color: #4CAF50; color: white; border: none; cursor: pointer; font-size: 12px;">Pending Fees</button>
+                                </div>
+                            </div>`;
+
+                document.getElementById('.fees-button').addEventListener('click', function(event) {
+                            var message = '';
+                if (event.target.classList.contains('fees-button')) {
+                message = event.target.getAttribute('data-message');  
+                sendMessage(message);  
+                  }
+              });
+}
 function attendanceState(){
   document.getElementById('messages').innerHTML += `
                                 <div style="display: inline-block; max-width: 80%; text-align: left; background-color: #f1f1f1; padding: 10px; border-radius: 5px; margin: 5px 0; float: left; clear: both;">
