@@ -395,8 +395,8 @@ class CustomModuleController extends Controller
               id bigint NOT NULL AUTO_INCREMENT,
             " . $columns . ",
             sub_institute_id int NOT NULL DEFAULT '0',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            created_at TIMESTAMP DEFAULT DATETIME,
+            updated_at TIMESTAMP DEFAULT DATETIME,
             PRIMARY KEY (`id`)
         ) ENGINE=INNODB;
     ";
