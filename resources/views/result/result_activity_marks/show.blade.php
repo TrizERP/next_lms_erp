@@ -16,7 +16,10 @@
     }
 
     th:first-child, td:first-child {
-        min-width: 450px;
+        min-width: 250px;
+        max-width: 250px;
+        white-space: normal; /* Enable text wrap */
+        word-wrap: break-word;
         border-right: 1px solid #ddd !important;
     }
     .wrapper1, .wrapper2 { width: 100%; overflow-x: scroll; overflow-y: hidden; }

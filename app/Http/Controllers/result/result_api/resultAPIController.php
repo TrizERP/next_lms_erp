@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
 use App\Http\Controllers\lms\questionmasterController;
 use App\Http\Controllers\lms\counselling\lmsCounsellingController;
+use Illuminate\Support\Facades\Http;
 
 class resultAPIController extends Controller
 {
@@ -215,7 +216,7 @@ class resultAPIController extends Controller
 
         $subTotMark = $subObtMark = 0;
         $allchapterdata=[];
-        set_time_limit(300);
+        // set_time_limit(300);
         // db::enableQueryLog();
         $chapterData = DB::table('question_paper as qp')
             ->select('qp.standard_id','qp.subject_id','qp.id AS question_paper_id','qp.paper_name','le.student_id','le.question_paper_id',DB::raw('SUM(qp.total_marks) as total_marks'),DB::raw('SUM(IFNULL(le.total_right, 0)) AS obtain_marks'),'qp.question_ids',DB::raw('GROUP_CONCAT(qm.question_title) as question_titles'),DB::raw('GROUP_CONCAT(qp.question_ids) as question_str'),'ch.chapter_name',DB::raw('ch.id as chapter_id'),)
@@ -360,23 +361,42 @@ class resultAPIController extends Controller
                     $conPercentages[$key] = $this->calculatePercentage($values, 40);
                 }
 
-                // Get occupation
-                $lmsCounsellingController = new lmsCounsellingController;
-                $request3 = new Request($conPercentages);
-                $intrestOccupation = $lmsCounsellingController->intrestEnterScore($request3);
-                $dataArray = $intrestOccupation->getData(true);
+                // // Get occupation
+                // $lmsCounsellingController = new lmsCounsellingController;
+                // $request3 = new Request($conPercentages);
+                // $intrestOccupation = $lmsCounsellingController->intrestEnterScore($request3);
+                // $dataArray = $intrestOccupation->getData(true);
+                
+                // Prepare occupation data 12-11-2024
+                // $occupation = [];
+                // $response = Http::timeout(5) // Timeout after 5 seconds
+                //                 ->get('https://erp.triz.co.in/intrestEnterScore', $conPercentages);
 
-                // Prepare occupation data
-                $occupation = [];
-                if (isset($dataArray['career']) && !empty($dataArray['career'])) {
-                    foreach ($dataArray['career'] as $cv) {
-                        $occupation[] = [
-                            "type" => "video",
-                            "title" => $cv['title'],
-                            "link" => "https://main--lms-portal-site.netlify.app/content-model?data=" . $cv['code'],
-                        ];
-                    }
-                }
+                // if ($response->successful()) {
+                //     // Get the JSON response
+                //     $scoreData = $response->json(); // Corrected to assign directly to an array, not as $scoreData[]
+                //     // Check for career data in response
+                //     if (isset($scoreData['career']) && !empty($scoreData['career'])) {
+                //         foreach ($scoreData['career'] as $ck => $cv) {
+                //             $occupation[] = [
+                //                 "type" => "video",
+                //                 "title" => $cv['title'],
+                //                 "link" => "https://main--lms-portal-site.netlify.app/content-model?data=" . $cv['code'],
+                //             ];
+                //         }
+                //     }
+                // }
+                // 12-11-2024 end
+
+                // if (isset($dataArray['career']) && !empty($dataArray['career'])) {
+                //     foreach ($dataArray['career'] as $cv) {
+                //         $occupation[] = [
+                //             "type" => "video",
+                //             "title" => $cv['title'],
+                //             "link" => "https://main--lms-portal-site.netlify.app/content-model?data=" . $cv['code'],
+                //         ];
+                //     }
+                // }
 
                 // Collect chapter data
                 $chapters[$value->subject_id][] = [
@@ -384,7 +404,8 @@ class resultAPIController extends Controller
                     "totalmarks" => $row->total_marks,
                     "totalobtain" => $row->obtain_marks,
                     "chapterrank" => round($chper, 2),
-                    "recommendation" => $occupation,
+                    // "recommendation" => $occupation,
+                    "recommendation" => $conPercentages,
                     "chapteroutcome" => $transformedData,
                     "chapterprogress" => $progressData,
                 ];
@@ -394,7 +415,7 @@ class resultAPIController extends Controller
                 $allchapterdata[$value->subject_id]['chapterdata'] = $chapters;
             }
         }
-
+      
         $flattenedData2 = [];
         
         foreach ($newData as $standard) {
