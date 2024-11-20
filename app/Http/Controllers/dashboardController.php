@@ -951,7 +951,7 @@ class dashboardController extends Controller
                         } elseif ($key == "Student Fees Chart") {
                             $res['studentFeesChart'] = 1;
                         } elseif ($key == "Recent fees collection") {
-                            $res['recentFeesCollection'] = $fees_collection;
+                            $res['recentFeesCollection'] = $fees_collection ?? []; // Use an empty array as fallback.
                         } elseif ($key == "Events") {
                             $res['calendarEvents'] = $calendarEvents;
                         } elseif ($key == "Student Leaves") {
@@ -1372,7 +1372,7 @@ class dashboardController extends Controller
                     } elseif ($key == "Student Fees Chart") {
                         $res['studentFeesChart'] = 1;
                     } elseif ($key == "Recent fees collection") {
-                        $res['recentFeesCollection'] = $fees_collection;
+                        $res['recentFeesCollection'] = $fees_collection ?? []; // Use an empty array as fallback.
                     } elseif ($key == "Events") {
                         $res['calendarEvents'] = $calendarEvents;
                     } elseif ($key == "Student Leaves") {
@@ -2242,7 +2242,7 @@ $fees_chart2_fees_data = [];
             $res['totalFees'] = ($fees_collects[0]['fees'] + $other_fees_collects[0]['fees']);
             $res['totalAdmission'] = $total_admission[0]->total_admissions;
             $res['parentCommunications'] = $parentCommunication;
-            $res['recentFeesCollection'] = $fees_collection;
+            $res['recentFeesCollection'] = $fees_collection ?? []; // Use an empty array as fallback.
             $res['studentBirthdays'] = $studentBirthdays;
             $res['teacherBirthdays'] = $teacherBirthdays;
             $res['calendarEvents'] = $calendarEvents;

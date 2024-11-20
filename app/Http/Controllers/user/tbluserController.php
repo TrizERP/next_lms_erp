@@ -276,7 +276,7 @@ class tbluserController extends Controller
 
         // auto increament 20-04-24
         $empCode = DB::table('tbluser')->where('id',$id)->first();
-
+        /* //Hide By Rajesh 19-11-2024 : Edit time not max+1 in emp_no (provide Add time only) 
         if(!isset($empCode->employee_no) || $empCode->employee_no=='' || $empCode->employee_no==null){
             $maxEmpCode = DB::table('tbluser')->selectRaw("MAX(CAST(employee_no AS INT)) AS new_emp_code")
             ->where('sub_institute_id', $sub_institute_id)->whereRaw('employee_no is not null')->limit(1)->orderBy('id')->get()->toArray();
@@ -289,6 +289,8 @@ class tbluserController extends Controller
         }else{
             $new_emp_code = $empCode->employee_no ? $empCode->employee_no : 1;
         }
+        */
+        $new_emp_code = $empCode->employee_no;
 
         $res['qualificationList'] = tbluserModel::where('sub_institute_id',$sub_institute_id)->where('status',1)->whereNotNull('qualification')->groupBy('qualification')->pluck('qualification');
 
