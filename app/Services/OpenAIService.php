@@ -28,10 +28,10 @@ class OpenAIService
         $this->apiKey = env('OPENAI_API_KEY');
     }
 
-    public function generateTitleAndDescription($topicName, $chapterName, $subjectName)
+    public function generateTitleAndDescription($topicName, $chapterName, $subjectName,$standard_name)
     {   
-        $prompt = "Generate a title and description for a topic named '{$topicName}' in the chapter '{$chapterName}' of the subject '{$subjectName}'.";
-
+        $prompt = "Generate a title and description for a topic named '{$topicName}' in the chapter '{$chapterName}' of the subject '{$subjectName}' in standard '{$standard_name}'. \n";
+        
         try {
             $response = $this->client->post('https://api.openai.com/v1/chat/completions', [
                 'verify' => false,
@@ -93,8 +93,12 @@ class OpenAIService
     //     return $text; // Return original text if summarization fails
     // }
     // }
-    public function generateLessonPlan($topicName, $chapterName, $subjectName, $contentCategory, $contentType, $booklistData) {   
+    public function generateLessonPlan($topicName, $chapterName, $subjectName, $contentCategory, $contentType, $booklistData,$curriculum_alignment,$holistic_curriculum,$objective,$assessment_tool,$objective_one,$learning_outcomes,$suggested_materials,$assessment_plan,$standard_name) {   
+    if($booklistData){
     $linksString = implode("\n", $booklistData);
+    } else{
+        $linksString = " ";
+    }
     $pdfFilePathNew = storage_path('app/public/pdfs/iess401.pdf'); 
     if(file_exists($pdfFilePathNew)){
         $pdfContent = file_get_contents($pdfFilePathNew);
@@ -105,28 +109,64 @@ class OpenAIService
     
     // Prepare the prompt based on category
     if($contentCategory == 'Worksheet' && $topicName != '1. VIDEOS'){
-        $prompt = "Create a detailed worksheet for the topic '{$topicName}' in the chapter '{$chapterName}' of the subject '{$subjectName}'.\n" .
-                  "Please refer to the following resources for more information:\n{$linksString}\n" .
+        $prompt = "Create a detailed '{$contentCategory}' for the topic '{$topicName}' in the chapter '{$chapterName}' of the subject '{$subjectName}' in standard '{$standard_name}'.\n" .
+                 "<strong>Curriculum Alignment:</strong>\n {$curriculum_alignment}\n" .
+                "<strong>Holistic Curriculum:</strong>\n {$holistic_curriculum}\n" .
+                "<strong>Objective:</strong>\n {$objective}\n" .
+                "<strong>Assessment Tool:</strong>\n {$assessment_tool}\n".  
+                "<strong>Syllabus:</strong>\n\n".
+                "<strong>Objectives:</strong>\n {$objective_one}\n".
+                "<strong>Learning Outcomes:</strong>\n {$learning_outcomes}\n".
+                "<strong>Suggested Materials:</strong>\n {$suggested_materials}\n".
+                "<strong>Assessment Plan:</strong>\n {$assessment_plan}\n".
+                 "Please refer to the following resources for more information:\n{$linksString}\n" .
                   "The response should be detailed enough and no. of questions should be minimum 50, focusing on all genres of questions like long, short, fill in the blanks, and MCQs with answers. Please include examples, explanations, and any relevant information.\n" .
                   "Strictly avoid any personal replies or apologies. Only provide the main content.";
         Log::info('Prompt: ' . $prompt);    
     } else if($topicName == '1. VIDEOS' && $contentCategory != 'Worksheet'){
-        $prompt = "Create a detailed '{$contentCategory}' for the chapter '{$chapterName}' of the subject '{$subjectName}'.\n" .
+        $prompt = "Create a detailed '{$contentCategory}' for the topic '{$topicName}' in the chapter '{$chapterName}' of the subject '{$subjectName}' in standard '{$standard_name}'.\n" .
+                "<strong>Curriculum Alignment:</strong>\n {$curriculum_alignment}\n" .
+                "<strong>Holistic Curriculum:</strong>\n {$holistic_curriculum}\n" .
+                "<strong>Objective:</strong>\n {$objective}\n" .
+                "<strong>Assessment Tool:</strong>\n {$assessment_tool}\n".
+                "<strong>Syllabus:</strong>\n\n".
+                "<strong>Objectives:</strong>\n {$objective_one}\n".
+                "<strong>Learning Outcomes:</strong>\n {$learning_outcomes}\n".
+                "<strong>Suggested Materials:</strong>\n {$suggested_materials}\n".
+                "<strong>Assessment Plan:</strong>\n {$assessment_plan}\n".
                    "Please refer to the following resources for more information:\n{$linksString}\n" .
                    "The response should be detailed enough to generate a PDF of at least 5 pages, focusing strictly on the basis of NCERT curriculum of '{$chapterName}' and structured '{$contentCategory}'. Minimum words should be 1000. Please include examples, explanations, and any relevant information.\n" .
                    "Strictly avoid any personal replies or apologies. Only provide the main content.";
         Log::info('Prompt: ' . $prompt);  
     } else if($contentCategory == 'Worksheet' && $topicName == '1. VIDEOS'){
-        $prompt = "Create a detailed worksheet for the chapter '{$chapterName}' of the subject '{$subjectName}'.\n" .
+        $prompt = "Create a detailed '{$contentCategory}' for the topic '{$topicName}' in the chapter '{$chapterName}' of the subject '{$subjectName}' in standard '{$standard_name}'.\n" .
+                  "<strong>Curriculum Alignment:</strong>\n {$curriculum_alignment}\n" .
+                "<strong>Holistic Curriculum:</strong>\n {$holistic_curriculum}\n" .
+                "<strong>Objective:\n {$objective}</strong>\n" .
+                "<strong>Assessment Tool:</strong>\n {$assessment_tool}\n".
+                  "<strong>Syllabus:</strong>\n\n".
+                "<strong>Objectives:</strong>\n {$objective_one}\n".
+                "<strong>Learning Outcomes:</strong>\n {$learning_outcomes}\n".
+                "<strong>Suggested Materials:</strong>\n {$suggested_materials}\n".
+                "<strong>Assessment Plan:</strong>\n {$assessment_plan}\n".
                   "Please refer to the following resources for more information:\n{$linksString}\n" .
                   "The response should be detailed enough and no. of questions should be minimum 50, focusing on all genres of questions like long, short, fill in the blanks, and MCQs with answers. Please include examples, explanations, and any relevant information.\n" .
                   "Strictly avoid any personal replies or apologies. Only provide the main content.";    
         Log::info('Prompt: ' . $prompt); 
     } else {
-        $prompt = "Create a detailed '{$contentCategory}' for the topic '{$topicName}' in the chapter '{$chapterName}' of the subject '{$subjectName}'.\n" .
-                  "Please refer to the following resources for more information:\n{$linksString}\n" .
-                  "The response should be detailed enough to generate a PDF of at least 5 pages, focusing strictly on the NCERT curriculum of '{$chapterName}' and structured '{$contentCategory}'. Minimum words should be 1000. Please include examples, explanations, and any relevant information.\n" .
-                  "Strictly avoid any personal replies or apologies. Only provide the main content.\n";
+        $prompt = "Create a detailed '{$contentCategory}' for the topic '{$topicName}' in the chapter '{$chapterName}' of the subject '{$subjectName}' in standard '{$standard_name}'.\n" .
+                "<strong>Curriculum Alignment:</strong>\n {$curriculum_alignment}\n" .
+                "<strong>Holistic Curriculum:</strong>\n {$holistic_curriculum}\n" .
+                "<strong>Objective:</strong>\n {$objective}\n" .
+                "<strong>Assessment Tool:</strong>\n {$assessment_tool}\n".
+                "<strong>Syllabus:</strong>\n\n".
+                "<strong>Objectives:</strong>\n {$objective_one}\n".
+                "<strong>Learning Outcomes:</strong>\n {$learning_outcomes}\n".
+                "<strong>Suggested Materials:</strong>\n {$suggested_materials}\n".
+                "<strong>Assessment Plan:</strong>\n {$assessment_plan}\n".
+                "Please refer to the following resources for more information:<br>{$linksString}\n" .
+                "The response should be detailed enough to generate a PDF of at least 5 pages, focusing strictly on the NCERT curriculum of '{$chapterName}' and structured '{$contentCategory}'. Minimum words should be 1000. Please include examples, explanations, and any relevant information.\n" .
+                "Strictly avoid any personal replies or apologies. Only provide the main content." ;
         Log::info('Prompt: ' . $prompt);    
     }
 
@@ -166,7 +206,7 @@ class OpenAIService
                     Log::info("Image in GLP: $url");
                 }
             } else {
-                Log::warning("No images generated for iteration $i.");
+                // Log::warning("No images generated for iteration $i.");
             }
         }
         
@@ -239,7 +279,11 @@ class OpenAIService
 
     public function generateLessonPlanNew($topicName, $chapterName, $subjectName, $contentCategory, $contentType, $booklistData, $prompt) {   
                 Log::info('Updated Prompt: ' . $prompt);    
-                $linksString = implode("\n", $booklistData);
+                if($booklistData){
+                    $linksString = implode("\n", $booklistData);
+                    } else{
+                        $linksString = " ";
+                    }
     
         try {
             // Call GPT-3.5 API to generate text
@@ -278,7 +322,7 @@ class OpenAIService
                         Log::info("Image in GLP: $url");
                     }
                 } else {
-                    Log::warning("No images generated for iteration $i.");
+                    // Log::warning("No images generated for iteration $i.");
                 }
             }
             
@@ -307,7 +351,11 @@ class OpenAIService
     }
     public function generateImage($topicName, $chapterName, $subjectName, $contentCategory, $contentType, $booklistData)
 {
-    $linksString = implode("\n", $booklistData);
+    if($booklistData){
+        $linksString = implode("\n", $booklistData);
+        } else{
+            $linksString = " ";
+        }
     $prompt =     "Generate a image in a very realistic approach for the topic '{$topicName}' in the chapter '{$chapterName}' of the subject '{$subjectName}'.\n" .
                   "Please refer to the following resources for more information:\n{$linksString}\n" .
                   "Strictly avoid any personal replies or apologies; and content should be on strictly Indian context with proper english and avoid incorrect spellings or ununderstood text ;Only provide the main content.\n";
@@ -390,7 +438,7 @@ class OpenAIService
             $formattedText = nl2br($generatedText);
 
             if ($contentType === 'pdf') {
-                $filePath = $this->createPDF($formattedText);
+                $filePath = $this->createPDFNEW($formattedText);
             } elseif ($contentType === 'jpg') {
                 $filePath = $this->createJPG($formattedText);
             } else {
@@ -443,8 +491,6 @@ class OpenAIService
     // Add the initial content only once
     $htmlContent .= "<div>{$content}</div><hr>";
 
-    Log::info('Image Paths: ' . print_r($imagePaths, true));
-
     // Add images to the PDF with generated content on each page
     foreach ($imagePaths as $imagePath) {
         $htmlContent .= "<div>";
@@ -468,6 +514,54 @@ class OpenAIService
 
         $htmlContent .= "</div>"; // Close the page div
     }
+
+    $htmlContent .= "
+            </body>
+        </html>
+    ";
+
+    $dompdf->loadHtml($htmlContent);
+    $dompdf->setPaper('A4', 'portrait');
+    $dompdf->render();
+    $fileName = time() . '.pdf';
+    $pdfFilePath = storage_path('app/public/pdfs/' . $fileName);
+    Log::info('PDF File Path: ' . $pdfFilePath);
+    file_put_contents($pdfFilePath, $dompdf->output());
+    return $pdfFilePath;
+}
+protected function createPDFNEW($content)
+{
+    set_time_limit(200);
+    $options = new Options();
+    $options->set('defaultFont', 'Comic Sans MS'); 
+    $dompdf = new Dompdf($options);
+    $fontPath = storage_path('fonts/Comic Sans MS.ttf');
+    if (!file_exists($fontPath)) {
+        throw new \Exception('Font file not found: ' . $fontPath);
+    }
+    $dompdf->getOptions()->set('isHtml5ParserEnabled', true);
+    $dompdf->getOptions()->set('isFontSubsettingEnabled', true);
+    $dompdf->getOptions()->set('isRemoteEnabled', true);
+
+    // Start the HTML content
+    $htmlContent = "
+        <html>
+            <head>
+                <style>
+                @font-face {
+                    font-family: 'Comic Sans MS';
+                    src: url('{$fontPath}') format('truetype');
+                }
+                body {
+                    font-family: 'Comic Sans MS', sans-serif;
+                }
+                </style>
+            </head>
+            <body>
+    ";
+
+    // Add the initial content only once
+    $htmlContent .= "<div>{$content}</div><hr>";
 
     $htmlContent .= "
             </body>
