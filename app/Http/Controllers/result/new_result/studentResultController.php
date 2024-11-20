@@ -657,36 +657,40 @@ class studentResultController extends Controller
                         $convert_mark = 0;
                         $obtained_mark_arr = $obtained_marks[$exam_id] ?? [];
                         // convert marks if best of 2
-                        $pAB=1;
                         if(in_array('PA1',$marksArray)){
                             $pamarks=0;
+                            $pAB = 1;
                             foreach ($obtained_mark_arr as $mk => $mv) {
                                 // echo $mv;
                                 $w_m = $to_weight[$exam_id][$mk] ?? 0; // Check if the key exists
                                 $t_m = $to_marks[$exam_id][$mk];
                                 if(is_numeric($mv)){
+                                	$pAB = 0;
                                     $pamarks +=($t_m != 0) ? (($mv / $t_m) * $w_m) : 0;
                                 }else{
-                                   $pAB = $pAB+1;
+                                   continue;
                                 }
                             }
                             $convert_mark = $pamarks;
                         }
                         else if(in_array('PA2',$marksArray)){
                             $pamarks=0;
+                            $pAB = 1;
                             foreach ($obtained_mark_arr as $mk => $mv) {
                                 // echo $mv;
                                 $w_m = $to_weight[$exam_id][$mk] ?? 0; // Check if the key exists
                                 $t_m = $to_marks[$exam_id][$mk];
                                 if(is_numeric($mv)){
+                                	$pAB = 0;
                                     $pamarks +=($t_m != 0) ? (($mv / $t_m) * $w_m) : 0;
                                 }else{
-                                   $pAB = $pAB+1;
+                                   continue;
                                 }
                             }
                             $convert_mark = $pamarks;
                         }
                         else{
+                        	$pAB = 1;
                             $w_m = $to_weight[$exam_id] ?? 0; // Check if the key exists
                             $t_m = array_sum(array_intersect_key($to_marks[$exam_id] ?? [], $marksArray));
                             $obtained_mark_sum = array_sum($obtained_mark_arr);
@@ -695,9 +699,10 @@ class studentResultController extends Controller
                             foreach ($obtained_mark_arr as $mk => $mv) {
                                 $w_m = $to_weight[$exam_id] ?? 0;
                                 $t_m = $to_marks[$exam_id];
-                                if(in_array($mv,["N.A.","EX","AB"])){
-                                   $pAB = $pAB+1;
-                                }
+                                if(is_numeric($mv))
+                                   	$pAB = 0;
+                                else
+                                    continue;
                             }
                         }
                         // echo $pAB.'<br>';
@@ -706,7 +711,7 @@ class studentResultController extends Controller
 
                         if(count($obtained_mark_arr) > 1) {
                             $total_marks += $w_m;
-                            if($pAB>=3){
+                            if($pAB){
                                 $tdVal = 'AB';
                             }
                             else{
@@ -721,7 +726,7 @@ class studentResultController extends Controller
                             if(!empty($obtained_mark_arr) && !in_array($obtained_mark_arr[0],["N.A.","EX","AB"])){
                                 $tdVal = number_format($convert_mark, 2);
                             }else{
-                                $tdVal = $obtained_mark_arr[0] ?? "0.00"; // print AB,NA,EX
+                                $tdVal = $obtained_mark_arr[0] ?? "-"; // print AB,NA,EX
                             }
                             $table .= '<td class="data_center else" ' . $exam_id . '-'.$val->subject_id.'-'.$pAB.' >' . $tdVal . '</td>';
                         }
@@ -729,7 +734,7 @@ class studentResultController extends Controller
                 } else {
                     // If marks not found
                     foreach ($title_exam as $exam_id => $marksArray) {
-                        $table .= '<td class="data_center no_mark ' . $exam_id . '">0.00</td>';
+                        $table .= '<td class="data_center no_mark ' . $exam_id . '">-</td>';
                     }
                 }  
 
@@ -781,9 +786,13 @@ class studentResultController extends Controller
         $syear = session()->get('syear');
         $sub_institute_id = session()->get('sub_institute_id');
         $extra_term =$extra_exam = "1=1";
+        $colspan = 1;
+        $col = 2;
         if ($format != "yearly"){
             $extra_term = "term_id = " . $format;
             $extra_exam = "rce.term_id = " . $format;
+            $colspan = 2;
+            $col = 1;
         }
         // get term_name 
         $term_name = DB::table('academic_year')->whereRaw($extra_term)->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->get()->toArray();
@@ -803,23 +812,27 @@ class studentResultController extends Controller
         <thead>
             <tr>
                 <th style="background:black;color:white"><b>Scholastic Areas:</b></th>';
-        $col = 1;
+        
         $total_term_marks =  $total_sub_marks = [];
         $total_weightage = $overall_total  = $all_colspan = 0;
-        $colspan = 2;
         // get both term name and total marks per subject 
         foreach ($term_name as $keys => $terms) {
             $term_exam_titles = array_filter($exam_title, function ($title) use ($terms, $total_weightage) {
                 $total_weightage += $title->weightage;
                 return $title->term_id == $terms->term_id;
             });
-            $colspan = 2;
+
             $table .= '<th colspan="' . (count($term_exam_titles) + $colspan) . '" style="text-align:center;background:black;color:white"><b>' . $terms->title . '</b></th>';
             // Initialize the total marks for each term to zero
             $total_term_marks[$terms->term_id] = 0;
             $total_sub_marks[$terms->term_id] = 0;
             $all_colspan += count($term_exam_titles);
         }
+
+        if ($format == "yearly"){
+            $table .= '<th colspan="' . $col . '" style="text-align:center;background:black;color:white"><b>Total</b></th>';
+        }
+
         $table .= '</tr><tr><th><b>Subject</b></th>';
         $weigthage = '';
         $subjectTot = [];
@@ -845,7 +858,10 @@ class studentResultController extends Controller
             $table .= '<th class="data_center"><b>Marks Obtained <br>' . $mark_tot . ' </b></th>';
             $overall_total += $total_mark;
         }
-        //total marks of both term headings     
+        //total marks of both term headings  
+        if ($format == "yearly"){
+            $table .= '<th  class="data_center"><b>Total Marks</b></th>';
+        }
         $table .= '<th  class="data_center"><b>Grade</b></th>
         </tr>
         </thead>
@@ -880,7 +896,7 @@ class studentResultController extends Controller
                                                 $obtained_marks[$arr][] = $ab_ex_na;
 
                                                 $to_marks[$arr][] = $title->points;
-                                                if($ab_ex_na=="AB" && $title->ExamTitle!='PA1'){
+                                                if($ab_ex_na=="AB" && $title->ExamTitle!='PA1' && $title->ExamTitle!='PA2'){
                                                     $to_weight[$arr] = $weightage;
                                                 }else{
                                                     $to_weight[$arr][] = $title->con_point;    
@@ -889,7 +905,7 @@ class studentResultController extends Controller
                                                 $to_marks[$arr][] = $title->points;
                                                 $ob_mark = $marks->points;
 
-                                                if($title->ExamTitle!='PA1'){
+                                                if($title->ExamTitle!='PA1' && $title->ExamTitle!='PA2'){
                                                     $to_weight[$arr] = $weightage;
                                                 }else{
                                                     $to_weight[$arr][] = $title->con_point;
@@ -912,21 +928,25 @@ class studentResultController extends Controller
                                     $convert_mark = 0;
                                     $obtained_mark_arr = $obtained_marks[$exam_id] ?? [];
                                     // convert marks if best of 2
-                                    $pAB=1;
-                                    if(in_array('PA1',$marksArray)){
+
+                                    if(in_array('PA1',$marksArray) || in_array('PA2',$marksArray)){
                                         $pamarks=0;
+                                        $pAB=1;
                                         foreach ($obtained_mark_arr as $mk => $mv) {
-                                            // echo $mv;
                                             $w_m = $to_weight[$exam_id][$mk] ?? 0; // Check if the key exists
                                             $t_m = $to_marks[$exam_id][$mk];
+                                            //echo $to_weight[$exam_id][$mk]."*".$mv."/".$to_marks[$exam_id][$mk]."<br/>";
                                             if(is_numeric($mv)){
+                                            	$pAB = 0;
                                                 $pamarks +=($t_m != 0) ? (($mv / $t_m) * $w_m) : 0;
                                             }else{
-                                               $pAB = $pAB+1;
+                                               continue;
                                             }
                                         }
+                                        //echo $pamarks;exit();
                                         $convert_mark = $pamarks;
                                     }else{
+                                    	$pAB=1;
                                         $w_m = $to_weight[$exam_id] ?? 0; // Check if the key exists
                                         $t_m = array_sum(array_intersect_key($to_marks[$exam_id] ?? [], $marksArray));
                                         $obtained_mark_sum = array_sum($obtained_mark_arr);
@@ -935,9 +955,10 @@ class studentResultController extends Controller
                                         foreach ($obtained_mark_arr as $mk => $mv) {
                                             $w_m = $to_weight[$exam_id] ?? 0;
                                             $t_m = $to_marks[$exam_id];
-                                            if(in_array($mv,["N.A.","EX","AB"])){
-                                               $pAB = $pAB+1;
-                                            }
+                                            if(is_numeric($mv))
+                                            	$pAB = 0;
+                                            else
+                                               continue;
                                         }
                                     }
                                     // echo $pAB.'<br>';
@@ -946,7 +967,7 @@ class studentResultController extends Controller
 
                                     if(count($obtained_mark_arr) > 1) {
                                         $total_marks += $w_m;
-                                        if($pAB>=3){
+                                        if($pAB){
                                             $tdVal = 'AB';
                                         }
                                         else{
@@ -961,7 +982,7 @@ class studentResultController extends Controller
                                         if(!empty($obtained_mark_arr) && !in_array($obtained_mark_arr[0],["N.A.","EX","AB"])){
                                             $tdVal = number_format($convert_mark, 2);
                                         }else{
-                                            $tdVal = $obtained_mark_arr[0] ?? "0.00"; // print AB,NA,EX
+                                            $tdVal = $obtained_mark_arr[0] ?? "-"; // print AB,NA,EX
                                         }
                                         $table .= '<td class="data_center else" ' . $exam_id . '-'.$val->subject_id.'-'.$pAB.' >' . $tdVal . '</td>';
                                     }
@@ -969,13 +990,16 @@ class studentResultController extends Controller
                             } else {
                                 // If marks not found
                                 foreach ($title_exam as $exam_id => $marksArray) {
-                                    $table .= '<td class="data_center no_mark ' . $exam_id . '">0.00</td>';
+                                    $table .= '<td class="data_center no_mark ' . $exam_id . '">-</td>';
                                 }
-                            }            
-                $obtained_mark_formatted = round($ob_main_mark);
+                            }
+                if ($format != "yearly")
+                	$obtained_mark_formatted = round($ob_main_mark);
+                else
+                	$obtained_mark_formatted = number_format($ob_main_mark,2);
                 
                 $table .= '<td class="data_center all_mark">' . $obtained_mark_formatted . '</td>';
-                $both_term_ob_mark += $obtained_mark_formatted;
+                $both_term_ob_mark += round($obtained_mark_formatted);
                 // Update the total marks for the current term
                 $total_term_marks[$terms->term_id] += $ob_main_mark;
                 $total_sub_marks[$terms->term_id] += $total_mark;
@@ -983,7 +1007,10 @@ class studentResultController extends Controller
             // get percentage 
             // echo "<pre>";print_r($total_mark);exit;
             $subTot = isset($subjectTot[$val->subject_id]) ? $subjectTot[$val->subject_id] : 0;
-            $table .= '<td class="data_center grade_of_both">' . $this->getGrade($grade_arr_mmis, $total_mark, $both_term_ob_mark) . '</td>';
+            if ($format == "yearly"){
+                $table .= '<td class="data_center grade_of_both">' . $both_term_ob_mark . '</td>';
+            }
+            $table .= '<td class="data_center grade_of_both" ' . $total_mark.'-'.$both_term_ob_mark.'-'.$overall_total.' >' . $this->getGrade($grade_arr_mmis, $overall_total, $both_term_ob_mark) . '</td>';
             $get_all_ob_mark += $both_term_ob_mark;
             $get_all_tot_mark += $overall_total;
             
@@ -999,9 +1026,13 @@ class studentResultController extends Controller
         $result = "Pass";
         $per = $this->getPer($get_all_ob_mark, $get_all_tot_mark);
         // get percentage and grade 
-        $table .= '<tr>
-        <td colspan=' . ($all_colspan)+1 . '><b>Percentage</b></td>
-        <td class="data_center"><b>' . round($per,1) . '%</b></td>
+        $table .= '<tr>';
+        if ($format == "yearly"){
+            $table .= '<td colspan=' . ($all_colspan + $col)+1 . '><b>Percentage</b></td>';
+        }else{
+            $table .= '<td colspan=' . ($all_colspan + $col) . '><b>Percentage</b></td>';
+        }
+        $table .= '<td class="data_center"><b>' . round($per,1) . '%</b></td>
         <td class="data_center"><b>' . $this->getGrade($grade_arr_mmis, $get_all_tot_mark,$get_all_ob_mark) . '</b></td>
         </tr>';
         $curr_std = DB::table('standard')->where('id', $standard_id)->first();
@@ -1684,7 +1715,7 @@ class studentResultController extends Controller
                 $col_per=1;
                 $col_grade=2;
                 }else{
-                    $table_per .="<td><b>Percentage</b></td>";
+                    $table_per .="<td><b>Total</b></td>";//Percentage
                     $col_per=2;
                     $col_grade=1;
                     $overall_per= $finalPer."%";
@@ -1694,8 +1725,9 @@ class studentResultController extends Controller
         // exit; 31-03-23 29-03-24
             $table_all = str_replace(htmlspecialchars("<<per>>"), $overall_per, $table_all);
             $table_all = str_replace(htmlspecialchars("<<grade>>"), $all_grade, $table_all);
-            $table .= '<tr>' . $table_per . '<td colspan="'.(count($exam_head)) + 1 .'" ><b>' . $overall_per . '</b></td><td class="data_center" >' . $all_grade . '</td></tr></tbody></table>';
-
+            $table .= '<tr>' . $table_per . '<td colspan="'.(count($exam_head)) .'" ><b>&nbsp;</b></td><td class="data_center" ><b>' . $tot_ob_mark . '</b></td><td class="data_center" ><b>' . $all_grade . '</b></td></tr></tbody></table>';
+		
+		$termAtten = $this->getTermAttendance($standard_id, $student_id, $format,'');
 
         $getStudentDetails = DB::table('tblstudent')->where('sub_institute_id',$sub_institute_id)->where('id',$student_id)->first();
         $stu_detail='<table class="aca-year" style="width:100%;border-collapse:collapse; border:1px solid #e68023;margin-bottom:10px" cellspacing="0"  border="1" align="right">
@@ -1708,7 +1740,7 @@ class studentResultController extends Controller
             <tr>
                 <td>'.\Carbon\Carbon::parse($getStudentDetails->dob)->format('d-m-Y').'</td>
                 <td>'.$getStudentDetails->enrollment_no.'</td>
-                <td></td>
+                <td>'.$overall_per.'</td>
             </tr>
             <tr>
                 <th><b><span style="font-size: medium;"><b>Height</span></b></th>
@@ -1718,7 +1750,7 @@ class studentResultController extends Controller
             <tr>
                 <td>'. (isset($getStudentDetails->height) ? $getStudentDetails->height : "-") .'</td>
                 <td>'. (isset($getStudentDetails->weight) ? $getStudentDetails->weight : "-") .'</td>
-                <td><br></td>
+                <td>'.$termAtten.'</td>
             </tr>
         </tbody>
     </table>';
