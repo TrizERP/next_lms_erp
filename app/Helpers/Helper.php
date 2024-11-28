@@ -2578,7 +2578,7 @@ if (!function_exists('get_string')) {
             ]; // Replace with your default content
 
             if (!File::exists($filePath)) {
-                File::put($filePath, $jsonContent);
+                File::put($filePath, json_encode($jsonContent, JSON_PRETTY_PRINT)); // Convert array to JSON string
             }   
             else{   
                 $existingContent = File::get($filePath);
