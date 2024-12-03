@@ -15,6 +15,9 @@ use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use function App\Helpers\is_mobile;
 use function App\Helpers\SearchStudent;
+use function App\Helpers\send_FCM_Notification;
+use function App\Helpers\sendNotification;
+use App\Models\school_setup\SchoolModel;
 
 class marks_entry_controller extends Controller
 {
@@ -672,7 +675,7 @@ class marks_entry_controller extends Controller
             }else{
                 
             if ($arr['points'] != '') {
-                if (preg_match("/[a-z]/i", $arr['points'])) {
+               if (preg_match("/[a-z]/i", $arr['points'])) {
                     if (strtoupper($arr['points']) == "AB" || strtoupper($arr['points']) == "N.A." || strtoupper($arr['points']) == "EX") {
 
                             $data = new marks_entry([
@@ -712,6 +715,12 @@ class marks_entry_controller extends Controller
                         'sub_institute_id' => $sub_institute_id,
                     ]); //'is_absent' => "-",
                     $data->save();
+
+                    //Start Send Marks Notification
+                    $sendRequest = new Request(['student_id'=>$student_id,'obtain_mark'=>$arr['points'],'exam_id'=>$arr['exam_id']]);
+                    if($sub_institute_id == 1)
+                        $sendNotification = $this->sendNotificationMarks($sendRequest);
+                    //End Send Marks Notification
                 }
             }
             $res = [
@@ -811,5 +820,79 @@ class marks_entry_controller extends Controller
         return is_mobile($type, "result/result_report/marks_approval_report", $responce_arr, "view");
     }
 
+    public function sendNotificationMarks(Request $request){
+        $sub_institute_id = session()->get('sub_institute_id');
+
+        $getStudent = DB::table('tblstudent')->select('*',DB::raw('CONCAT_WS(" ",COALESCE(first_name,"-"),COALESCE(last_name,"-")) as student_name'))->where('id',$request->student_id)->where('sub_institute_id',$sub_institute_id)->first();
+        // echo "<pre>";print_r($getStudent);exit;
+        $getExamname = DB::table('result_create_exam as r')
+        ->join('subject as s', function ($join) {
+            $join->on('s.id', '=', 'r.subject_id')
+                 ->on('s.sub_institute_id', '=', 'r.sub_institute_id');
+        })
+        ->select(
+            's.subject_name',
+            'r.title as exam_name',
+            'r.points',
+            DB::raw("DATE_FORMAT(r.exam_date, '%d-%m-%Y') as exam_date")
+        )
+        ->where('r.id', $request->exam_id)
+        ->where('r.sub_institute_id', session()->get('sub_institute_id'))
+        ->where('r.syear', session()->get('syear'))
+        ->limit(1)
+        ->first();
+
+        $text = $getStudent->student_name.' has got '.$request->obtain_mark.' out of '.$getExamname->points.' Marks in '.$getExamname->subject_name.'-'.$getExamname->exam_name.' Exam ('.$getExamname->exam_date.').';
+
+           $app_notification_content = [
+                'NOTIFICATION_TYPE'        => 'MarksEntry',
+                'NOTIFICATION_DATE'        => now(),
+                'STUDENT_ID'               => $request->student_id,
+                'NOTIFICATION_DESCRIPTION' => $text,
+                'STATUS'                   => 0,
+                'SUB_INSTITUTE_ID'         => session()->get('sub_institute_id'),
+                'SYEAR'                    => session()->get('syear'),
+                'SCREEN_NAME'              => 'marks_entry',
+                'CREATED_BY'               => session()->get('user_id'),
+                'CREATED_IP'               => $_SERVER['REMOTE_ADDR'],
+            ];
+
+            $gcm_data = DB::table('gcm_users')->where('mobile_no', $getStudent->mobile)
+                ->where('sub_institute_id', $sub_institute_id)->get()->toArray();
+
+            $gcmRegIds = [];
+            if (count($gcm_data) > 0) {
+                foreach ($gcm_data as $key1 => $val1) {
+                    $gcmRegIds[] = $val1->gcm_regid;
+                }
+            }
+
+            $pushMessage = $text;
+
+            $bunch_arr = array_chunk($gcmRegIds, 1000);
+
+            $res = 0;
+            $schoolData = SchoolModel::where(['id' => $sub_institute_id])->get()->toArray();
+
+            $schoolName = $schoolData[0]['SchoolName'];
+            $schoolLogo = $_SERVER['APP_URL'].'/admin_dep/images/'.$schoolData[0]['Logo'];
+
+            if (!empty($bunch_arr)) {
+                foreach ($bunch_arr as $val) {
+                    if (isset($val, $pushMessage)) {
+                        $type1 = 'Notification';
+                        $message = [
+                            'body'  => $pushMessage, 'TYPE' => $type1, 'USER_ID' => $request->student_id,
+                            'title' => $schoolName, 'image' => $schoolLogo,
+                        ];
+
+                       $pushStatus = send_FCM_Notification($val, $message, $sub_institute_id);
+                       sendNotification($app_notification_content);
+                    }
+                }
+              $res = 1;
+            }
+        return $res;
+    }
 
 }
