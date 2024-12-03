@@ -32,6 +32,20 @@ use DB;
 .toggle.btn.btn-warning {
     width: 200px !important;
 }
+#prompt {
+    width: 100%; 
+    height: 150px; 
+    overflow: auto; 
+    border: 1px solid #ccc; 
+    padding: 10px; 
+    box-sizing: border-box; 
+    white-space: pre-wrap; 
+    word-wrap: break-word; 
+}
+#prompt.focused {
+    border: 2px solid #26bdeb;
+}
+
 </style>
 <div id="overlay" style="display:none;">
     <center>
@@ -48,13 +62,17 @@ use DB;
         <div class="col-md-6">
             <h1 class="h4 mb-3">Add Content</h1>
             <nav aria-label="breadcrumb">
-                <ol class="breadcrumb bg-transparent p-0">
-                    <li class="breadcrumb-item"><a href="{{route('course_master.index')}}">LMS</a></li>
-                    <li class="breadcrumb-item"><a href="{{ route('chapter_master.index',['standard_id'=>$data['breadcrum_data']->standard_id ?? '','subject_id'=>$data['breadcrum_data']->subject_id ?? '']) }}">{{$data['breadcrum_data']->subject_name  ?? ''}}</a></li>
-                    <li class="breadcrumb-item"><a href="{{ route('topic_master.index',['id'=>$data['breadcrum_data']->chapter_id ?? '']) }}">{{$data['breadcrum_data']->chapter_name ?? ''}}</a></li>
-                    <li class="breadcrumb-item"><a href="{{ route('topic_master.index',['id'=>$data['breadcrum_data']->chapter_id ?? '']) }}">{{$data['breadcrum_data']->topic_name ?? ''}}</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">Add Content</li>
-                </ol>
+            <ol class="breadcrumb bg-transparent p-0">
+                <li class="breadcrumb-item"><a href="{{ route('course_master.index') }}">LMS</a></li>
+                <li class="breadcrumb-item"><a href="#">{{ $data['standard_name'] ?? 'Standard Not Found' }}</a></li>
+                <li class="breadcrumb-item"><a href="{{ route('chapter_master.index', ['standard_id' => $data['breadcrum_data']->standard_id ?? '', 'subject_id' => $data['breadcrum_data']->subject_id ?? '']) }}">{{ $data['breadcrum_data']->subject_name ?? '' }}</a></li>
+                <li class="breadcrumb-item"><a href="{{ route('topic_master.index', ['id' => $data['breadcrum_data']->chapter_id ?? '']) }}">{{ $data['breadcrum_data']->chapter_name ?? '' }}</a></li>
+                <li class="breadcrumb-item"><a href="{{ route('topic_master.index', ['id' => $data['breadcrum_data']->chapter_id ?? '']) }}">{{ $data['breadcrum_data']->topic_name ?? '' }}</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Add Content</li>
+                @php
+                   Log::info("Standard: ".$data['standard_name']);
+                @endphp
+            </ol>
             </nav>
         </div>
     </div>
@@ -240,7 +258,7 @@ use DB;
                         <div class="col-md-8">
                             <div class="form-group">
                                 <label for="prompt" id="test123">Prompt</label>
-                                <textarea type="text" rows="4" class="form-control" id="prompt" name="prompt" placeholder="Prompt"></textarea>
+                                <div type="text" rows="4" class="form-control" id="prompt" contenteditable="true" name="prompt" placeholder="Prompt"></div>
                                 <button id="refreshPrompt" style="cursor: pointer;">🔄</button> <!-- Refresh icon -->
                             </div>
                         </div>
@@ -399,6 +417,7 @@ use DB;
 @include('includes.lmsfooterJs')
 <script src="{{asset('/plugins/bower_components/bootstrap-tagsinput/dist/bootstrap-tagsinput.min.js')}}"></script>
 <script src="https://cdn.jsdelivr.net/gh/gitbrent/bootstrap4-toggle@3.6.1/js/bootstrap4-toggle.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
 <script type="text/javascript">
     $(function () {
@@ -611,6 +630,12 @@ use DB;
 </script>
 <script type="text/javascript">
     $(document).ready(function () {
+        $('#prompt').on('focus', function() {
+        $(this).addClass('focused');
+    });
+    $('#prompt').on('blur', function() {
+        $(this).removeClass('focused');
+    });
         // Trigger AI processing when content type or category changes
         $('#content_category').change(function() {
             processAIData();
@@ -630,18 +655,25 @@ use DB;
         var topicName = "{{ $data['breadcrum_data']->topic_name ?? '' }}";
         var contentType = $('#contentType').val();
         var contentCategory = $('#content_category').val();
+        var curriculumAlignment = "{{ $data['curriculum_alignment'] ?? '' }}";
+        var holisticCurriculum = "{{ $data['holistic_curriculum'] ?? '' }}";
+        var objective = "{{ $data['objective'] ?? '' }}";
+        var assessmentTool = "{{ $data['assessment_tool'] ?? '' }}";
+        var objectiveOne = "{{ $data['objective_one'] ?? '' }}";
+        var learningOutcomes = "{{ $data['learning_outcomes'] ?? '' }}";
+        var suggestedMaterials = "{{ $data['suggested_materials'] ?? '' }}";
+        var assessmentPlan = "{{ $data['assessment_plan'] ?? '' }}";
+        var standardName = "{{ $data['standard_name'] ?? '' }}";
+
+        console.log("STANDARD: ",standardName);
         let fileNames=[];
         $('.book-file-names').each(function(){
             fileNames.push($(this).val());
         });
-
-        console.log('Content Type:', contentType);
-        console.log('Content Category:', contentCategory);
         if (contentType && contentCategory) {
             console.log('Both content type and category are selected.');
 
             if (contentType === 'pdf' || contentType === 'jpg') {
-                console.log('Processing AI data...');
                 $.ajax({
                     url: "{{ route('ai.processData') }}",
                     type: 'POST',
@@ -652,6 +684,15 @@ use DB;
                         topic_name: topicName,
                         content_type: contentType,
                         content_category: contentCategory,
+                        curriculum_alignment: curriculumAlignment,
+                        holistic_curriculum: holisticCurriculum,
+                        objective: objective,
+                        assessment_tool: assessmentTool,
+                        objective_one: objectiveOne,               
+                        learning_outcomes: learningOutcomes,       
+                        suggested_materials: suggestedMaterials,   
+                        assessment_plan: assessmentPlan,
+                        standard_name: standardName,             
                         _token: '{{ csrf_token() }}'
                     },
                     success: function(response) {
@@ -663,8 +704,6 @@ use DB;
                         alert('An error occurred while processing your request.');
                     }
                 });
-
-                console.log('Generating Data...');
                 $.ajax({
                     url: "{{ route('ai.generateLessonPlan') }}",
                     type: 'POST',
@@ -675,13 +714,22 @@ use DB;
                         topic_name: topicName,
                         content_category: contentCategory,
                         content_type: contentType,
+                        curriculum_alignment: curriculumAlignment,
+                        holistic_curriculum: holisticCurriculum,
+                        objective: objective,
+                        assessment_tool: assessmentTool,
+                        objective_one: objectiveOne,               
+                        learning_outcomes: learningOutcomes,       
+                        suggested_materials: suggestedMaterials,   
+                        assessment_plan: assessmentPlan ,  
+                        standard_name: standardName,     
                         booklist_data: fileNames,
                         _token: '{{ csrf_token() }}'
                     },
                     success: function(response) {
                         console.log(response.prompt);
                         $("#test123").val("Prompt");
-                        $('#prompt').val(response.prompt);
+                        $('#prompt').html(response.prompt);
                         if (response.file_url) {
                              $('#upload_div1').empty();
                             var downloadLink = $('<a>', {
@@ -691,7 +739,6 @@ use DB;
                                 download: ''
                             });
                             $('#upload_div1').append(downloadLink);
-                            console.log(contentType.toUpperCase() + ' URL:', response.file_url);
                             downloadLink.css({
                                 display: 'block',
                                 margin: '10px 0',
@@ -724,7 +771,7 @@ use DB;
         $('.book-file-names').each(function(){
             fileNames.push($(this).val());
         });
-        var promptNew = $('#prompt').val();
+        var promptNew = $('#prompt').html();
         console.log('Generating Data...');
                 $.ajax({
                     url: "{{ route('ai.generateLessonPlanNew') }}",
@@ -743,7 +790,7 @@ use DB;
                     success: function(response) {
                         console.log(response.prompt);
                         $("#test123").val("Prompt");
-                        $('#prompt').val(response.prompt);
+                        $('#prompt').html(response.prompt);
                         $('#upload_div1').empty();
                         if (response.file_url) {
                             var downloadLink = $('<a>', {

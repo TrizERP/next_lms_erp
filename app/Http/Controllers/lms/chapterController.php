@@ -19,7 +19,6 @@ class chapterController extends Controller
     public function index(Request $request)
     {
         $data = $this->getData($request);
-        
         $type = $request->input('type');
         $res['sub_institute_id'] = session()->get('sub_institute_id');
         $res['status_code'] = 1;

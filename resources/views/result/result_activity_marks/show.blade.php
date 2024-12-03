@@ -94,11 +94,12 @@
                             </tr>
                         </thead>
                         <tbody>
+                            @php $i = 1; @endphp
                             @if(isset($data['skillData']))
                                 @foreach($data['skillData'] as $skillKey=>$skillValue)
                                     <tr>
                                         {{-- <td colspan="{{count($data['studentsList'])}}"><h4><b>{{$skillKey}}<b></h4></td> --}}
-                                        <td><b>{{$skillKey}}<b></td>
+                                        <td>{{$i++}}.<b>{{$skillKey}}<b></td>
                                         @foreach($data['studentsList'] as $stukey=>$stuvalue)
                                         <td>
                                             &nbsp;
@@ -109,7 +110,7 @@
                                     @foreach($skillValue as $key=>$value)
                                     <!-- sub Title  -->
                                     <tr>
-                                        <td><b>{{$value->title}}<b></td>
+                                        <td>{{$i++}}.<b>{{$value->title}}<b></td>
                                         @foreach($data['studentsList'] as $stukey=>$stuvalue)
                                         <td>
                                             &nbsp;
@@ -120,7 +121,7 @@
                                     @if(isset($data['activityGroup'][$value->id]))
                                     @foreach($data['activityGroup'][$value->id] as $key2=>$value2)
                                         <tr>
-                                            <td>
+                                            <td>{{$i++}}.
                                                 @if(isset($data['subActivityGroup'][$value2->id]))
                                                     <b>{{$value2->title}}</b>
                                                 @else 
@@ -154,7 +155,7 @@
                                         @if(isset($data['subActivityGroup'][$value2->id]))
                                             @foreach($data['subActivityGroup'][$value2->id] as $key3=>$value3)
                                             <tr>
-                                                <td>{{$value3->title}}</td>
+                                                <td>{{$i++}}.{{$value3->title}}</td>
                                                 @foreach($data['studentsList'] as $stukey=>$stuvalue)
                                                 <td>
                                                     <select name="marksArr[{{$stuvalue['id']}}][sub_activity_id][{{$value2->id}}][{{$value3->id}}]" id="groupedData" class="form-control">
