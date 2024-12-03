@@ -1919,8 +1919,8 @@ class PayrollController extends Controller
         // get Holidays 
         $get_hrms_holidays = DB::table('hrms_holidays')
         ->where('sub_institute_id', $sub_institute_id)
-        ->whereBetween('from_date',[$from_date,$to_date])
-        ->whereBetween('to_date',[$from_date,$to_date])
+        ->whereBetween('from_date',[$from_date->format('Y-m-d'),$to_date->format('Y-m-d')])
+        ->whereBetween('to_date',[$from_date->format('Y-m-d'),$to_date->format('Y-m-d')])
         ->whereRaw('FIND_IN_SET("'.$department_id.'", department)')
         ->get()->toArray();
         
@@ -1936,6 +1936,9 @@ class PayrollController extends Controller
                 $holidayDates[] = $date->format('Y-m-d');
             }
         }
+        //RAJESH 29-11-2024 make unique array of holiday
+        $holidayDates = array_values(array_unique($holidayDates));
+        
         // echo "<br>Holidays<br>";
         // echo "<pre>";print_r($holidayDates);
         // get users attandance
@@ -2013,8 +2016,8 @@ class PayrollController extends Controller
                     }
                 }
         }
-        // echo "<br>Leaves<br>";
-        // echo "<p/re>";print_r($leaveDates);
+        //echo "<br>Leaves<br>";
+        //echo "<pre>";print_r($leaveDates);
        // date not found in attandance and leave, no punch in and punch out and also no leave entry in database
         $noEnrty = 0;
         foreach ($noAtt as $key => $value) {

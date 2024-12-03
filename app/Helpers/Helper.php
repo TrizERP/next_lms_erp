@@ -2020,7 +2020,7 @@ if (!function_exists('getGrade')) {
 
 if (!function_exists('getGradeComment')) {
     function getGradeComment($grade_arr, $total_mark, $total_gain_mark)
-    {
+    { 
         if (!is_numeric($total_mark) || !is_numeric($total_gain_mark)) {
             return 0;
         }
