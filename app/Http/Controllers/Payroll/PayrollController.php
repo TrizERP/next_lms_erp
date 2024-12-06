@@ -1829,11 +1829,14 @@ class PayrollController extends Controller
         // echo "<pre>";print_r($request->all());exit;
         // make json
         foreach ($payrollVal as $emp_id => $value) {
-           $jsonVal[$emp_id] = json_encode($value['payrollHead']); 
+            if($value['total_day']>0 && count(array_filter($value['payrollHead'])) > 0){
+                $jsonVal[$emp_id] = json_encode($value['payrollHead']);
+                } 
         }
         // add update value;
         $i=0;
         foreach ($payrollVal as $emp_id => $value) {
+            if($value['total_day']>0  && count(array_filter($value['payrollHead'])) > 0){
             $employeeSalaryData = EmployeeMonthlySalaryData::where('employee_id', $emp_id)->where('month',$request->month)->where('year',$request->year)->where(['sub_institute_id'=> $sub_institute_id])->first();
 
             $dataArr = [
@@ -1843,43 +1846,40 @@ class PayrollController extends Controller
                 'sub_institute_id' => $sub_institute_id,
             ];
 
+            $dataArr['total_deduction'] = $value['total_deduction'] ?? 0;
+            $dataArr['total_payment'] = $value['total_payment'] ?? 0;
+            $dataArr['received_by'] = $value['received_by'] ?? 0;
+            $dataArr['total_day'] = $value['total_day'] ?? 0;
+            $dataArr['employee_salary_data'] = $jsonVal[$emp_id];
+
             if(!empty($employeeSalaryData)){
-                $dataArr['total_deduction'] = $value['total_deduction'];
-                $dataArr['total_payment'] = $value['total_payment'];
-                $dataArr['received_by'] = $value['received_by'];
-                $dataArr['total_day'] = $value['total_day'];
-                $dataArr['employee_salary_data'] = $jsonVal[$emp_id];
                 $dataArr['updated_at'] = now();
                 $update = DB::table("employee_monthly_salary_data")->where('id',$employeeSalaryData->id)->update($dataArr);
                 $i++;
             }else{
-                $dataArr['total_deduction'] = $value['total_deduction'];
-                $dataArr['total_payment'] = $value['total_payment'];
-                $dataArr['received_by'] = $value['received_by'];
-                $dataArr['total_day'] = $value['total_day'];
-                $dataArr['employee_salary_data'] = $jsonVal[$emp_id];
                 $dataArr['created_at'] = now();
                 $insert = DB::table("employee_monthly_salary_data")->insert($dataArr);
                 $i++;
             }
-         }
-        // store pdf 29-10-2024
-        $pdfName = $this->monthlyPayrollPdf($request,$emp_id, $request->month, $request->year,'storeDoc');
+            // store pdf 29-10-2024
+            $pdfName = $this->monthlyPayrollPdf($request,$emp_id, $request->month, $request->year,'storeDoc');
 
-        if(isset($pdfName)){
-            $docTitle = 'Payslip '.$request->month.' '.$request->year;
-            $checkDoc = DB::table('staff_document')->where(['sub_institute_id'=>$sub_institute_id,'document_type_id'=>56,'user_id'=>$emp_id,'file_name'=>$pdfName])->get()->first();
+            if(isset($pdfName)){
+                $docTitle = 'Payslip '.$request->month.' '.$request->year;
+                $checkDoc = DB::table('staff_document')->where(['sub_institute_id'=>$sub_institute_id,'document_type_id'=>56,'user_id'=>$emp_id,'file_name'=>$pdfName])->get()->first();
 
-            $pdfData = ['document_title'=>$docTitle,'sub_institute_id'=>$sub_institute_id,'document_type_id'=>56,'user_id'=>$emp_id,'file_name'=>$pdfName];
+                $pdfData = ['document_title'=>$docTitle,'sub_institute_id'=>$sub_institute_id,'document_type_id'=>56,'user_id'=>$emp_id,'file_name'=>$pdfName];
 
-            if(empty($checkDoc)){
-                $pdfData['created_at']=now();
-                $insertDoc = DB::table('staff_document')->insert($pdfData);
-            }else{
-                $pdfData['updated_at']=now();
-                $updateDoc = DB::table('staff_document')->where(['sub_institute_id'=>$sub_institute_id,'document_type_id'=>56,'user_id'=>$emp_id,'file_name'=>$pdfName])->update($pdfData);
+                if(empty($checkDoc)){
+                    $pdfData['created_at']=now();
+                    $insertDoc = DB::table('staff_document')->insert($pdfData);
+                }else{
+                    $pdfData['updated_at']=now();
+                    $updateDoc = DB::table('staff_document')->where(['sub_institute_id'=>$sub_institute_id,'document_type_id'=>56,'user_id'=>$emp_id,'file_name'=>$pdfName])->update($pdfData);
+                }
             }
-        }
+            }
+         }
         
         // store pdf 29-10-2024 end
         if($i==0){

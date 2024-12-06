@@ -137,7 +137,9 @@
                             @endif
                             @endforeach
 
-                            <td>@if(isset($value['monthlyData']->total_day))<a href="{{ env('APP_URL')."monthly-payroll-report/pdf/".$value['id']."/".$data['selMonth'].'/'.$data['selYear'] }}" class="btn btn-primary">PDF</a> @else - @endif </td>
+                            <td>@if(isset($value['monthlyData']->total_day))
+                                <a href="{{ env('APP_URL')."monthly-payroll-report/pdf/".$value['id']."/".$data['selMonth'].'/'.$data['selYear'] }}" class="btn btn-primary">PDF</a> 
+                                @else - @endif </td>
                             @if(!isset($value['monthlyData']->total_day))
                                  <script>
                                     $(document).ready(function(){
