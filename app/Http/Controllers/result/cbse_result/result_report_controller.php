@@ -287,7 +287,8 @@ class result_report_controller extends Controller
                 $type,
                 $exam_type,
                 $from_date,
-                $to_date
+                $to_date,
+                $term_id
             );
 
             $student_id_arr = [];
@@ -359,6 +360,7 @@ class result_report_controller extends Controller
                 $exam_create,                
                 $from_date,
                 $to_date,
+                $term_id,
                 //$additional_subjects
             );
 
@@ -744,18 +746,17 @@ class result_report_controller extends Controller
         $exam_create = null,        
         $from_date = null,
         $to_date = null,
+        $term_id,
         //$additional_subjects = null
     ) {
         if ($type == 'API') {
             $syear = $_REQUEST['syear'];
             $sub_institute_id = $_REQUEST['sub_institute_id'];
-            $term_id = 149;
             $standard_id = $all_student[0]['standard_id'];
             $division_id = $all_student[0]['division_id'];
         } else {
             $syear = session()->get('syear');
             $sub_institute_id = session()->get('sub_institute_id');
-            $term_id = session()->get('term_id');
             $standard_id = request()->input('standard');
             $division_id = request()->input('division');
         }
@@ -817,8 +818,10 @@ class result_report_controller extends Controller
             $arr['percentage'] = $per;
             $arr['grade'] = $grade_scale;
             $marks_arr[$arr['student_id']][$arr['subject_name']] = $arr;
-            $marks_arr[$arr['student_id']][$arr['subject_name']]['student_name'] = $rank[$arr['student_id']]['student_name'];
-            $marks_arr[$arr['student_id']][$arr['subject_name']]['roll_no'] = $rank[$arr['student_id']]['roll_no'];
+            //$marks_arr[$arr['student_id']][$arr['subject_name']]['student_name'] = $rank[$arr['student_id']]['student_name'];
+            $marks_arr[$arr['student_id']][$arr['subject_name']]['student_name'] = isset($rank[$arr['student_id']]) ? $rank[$arr['student_id']]['student_name'] : '-';
+
+            $marks_arr[$arr['student_id']][$arr['subject_name']]['roll_no'] = isset($rank[$arr['student_id']]) ? $rank[$arr['student_id']]['roll_no'] : '-';
         }
         $marks_arr['total_student'] = count($marks_arr);
 
@@ -844,18 +847,17 @@ class result_report_controller extends Controller
         $type,
         $exam_type = null,
         $from_date = null,
-        $to_date = null
+        $to_date = null,
+        $term_id
     ) {
         if ($type == 'API') {
             $syear = $_REQUEST['syear'];
             $sub_institute_id = $_REQUEST['sub_institute_id'];
-            $term_id = 149;
             $standard_id = $all_student[0]['standard_id'];
             $division_id = $all_student[0]['division_id'];
         } else {
             $syear = session()->get('syear');
             $sub_institute_id = session()->get('sub_institute_id');
-            $term_id = session()->get('term_id');
             $standard_id = request()->input('standard');
             $division_id = request()->input('division');
         }

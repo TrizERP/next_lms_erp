@@ -196,11 +196,7 @@
                         </div>
                         @endforeach
                         @endif
-                        @if (Session::get('sub_institute_id') == '198' ||
-                            Session::get('sub_institute_id') == '201' ||
-                            Session::get('sub_institute_id') == '202' ||
-                            Session::get('sub_institute_id') == '203' ||
-                            Session::get('sub_institute_id') == '204')
+                        @if (in_array(Session::get('sub_institute_id'), ['198','201','202','203','204','324','326','327']))
                         <div class="col-md-3 form-group">
                             <label>Admission Form Charges </label>
                             <input type="number" id='admission_fees' name="admission_fees" class="form-control">
@@ -222,10 +218,7 @@
                             <input type="hidden" name="hidden_std_id" id="hidden_std_id" value="">
                         </div>
 
-                        @if(Session::get('sub_institute_id') == '201' ||
-                            Session::get('sub_institute_id') == '202' ||
-                            Session::get('sub_institute_id') == '203' ||
-                            Session::get('sub_institute_id') == '204')
+                        @if (in_array(Session::get('sub_institute_id'), ['201','202','203','204','324','326','327']))
                         <div class="col-md-3 form-group">
                             <label style="display: none;" id="label_for_fees_amount">Fees Amount </label>
                             <input type="number" id='fees_amount' name="fees_amount" class="form-control" style="display: none;">

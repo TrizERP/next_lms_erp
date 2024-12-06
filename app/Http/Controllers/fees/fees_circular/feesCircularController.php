@@ -67,7 +67,7 @@ class feesCircularController extends Controller
         $stu_arr = array();
         $gb = array();
         $paid_other_join = "";
-        if ($sub_institute_id != 201 && $sub_institute_id != 202 && $sub_institute_id != 203 && $sub_institute_id != 204) {
+        if (!in_array($sub_institute_id, [201, 202, 203, 204,324,326,327])) {
             $studentData = SearchStudent($grade, $standard, $division);
         } else {
             $data = DB::table('tblstudent as s')
@@ -487,7 +487,7 @@ public function getBk(Request $request, $id)
         }
 
 
-        if ($sub_institute_id == 201 || $sub_institute_id == 202 || $sub_institute_id == 203 || $sub_institute_id == 204) {
+        if(in_array($sub_institute_id, [201,202,203,204,324,326,327])) {
             $feesCircularMaster = feesCircularMasterModel::where($whereArray)->get()->toArray();
             if (! isset($feesCircularMaster[0]['id'])) {
                 $res['status_code'] = 0;
@@ -614,7 +614,7 @@ public function getBk(Request $request, $id)
                 $res['receiptbook'] = $receiptBook[0];
             }
 
-            if ($sub_institute_id == 201 || $sub_institute_id == 202 || $sub_institute_id == 203 || $sub_institute_id == 204) {
+            if(in_array($sub_institute_id, [201,202,203,204,324,326,327])) {
                 $hillsterm = session()->get('term_id');
                 if (count($feesCircularMaster) > 0) {
                     $res['feesCircularMaster'] = $feesCircularMaster[0];
