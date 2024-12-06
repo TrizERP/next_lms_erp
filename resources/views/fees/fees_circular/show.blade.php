@@ -86,7 +86,7 @@
                                         <th>{{ App\Helpers\get_string('grno','request')}}</th>
                                         <th>{{ App\Helpers\get_string('studentname','request')}}</th>
                                         <th>{{ App\Helpers\get_string('standard','request')}}</th>
-                                        @if (Session::get('sub_institute_id') == '201' || Session::get('sub_institute_id') == '202' || Session::get('sub_institute_id') == '203' || Session::get('sub_institute_id') == '204')
+                                        @if (in_array(Session::get('sub_institute_id'), ['201','202','203','204','324','326','327']))
                                         <th>Fees Breakoff</th>
                                         <th>Fees Circular Amount</th>
                                         <th>Fees Circular Remarks</th>
@@ -107,7 +107,7 @@
                                         <td>{{$value['stu_data']['enrollment']}}</td>
                                             <td>{{$value['stu_data']['name']}}</td>
                                             <td>{{$value['stu_data']['stddiv']}}</td>
-                                            @if (Session::get('sub_institute_id') == '201' || Session::get('sub_institute_id') == '202' || Session::get('sub_institute_id') == '203' || Session::get('sub_institute_id') == '204')
+                                            @if (in_array(Session::get('sub_institute_id'), ['201','202','203','204','324','326','327']))
                                         <td>@foreach($value['total_fees'] as $i=>$val)
                                             @if($value['total_fees'][$i]['month_id'] == $month_id)
                                             {{$val['remain']}}

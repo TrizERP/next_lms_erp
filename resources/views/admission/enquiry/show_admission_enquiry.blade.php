@@ -62,11 +62,7 @@
                                         <th data-toggle="tooltip" title="Previous School Name">Previous</th>
                                         <th data-toggle="tooltip" title="Previous Standard">Previous</th>
                                         <th data-toggle="tooltip" title="Admission Standard">Admission</th>
-                                        @if(Session::get('sub_institute_id') == '198' ||
-                                            Session::get('sub_institute_id') == '201' ||
-                                            Session::get('sub_institute_id') == '202' ||
-                                            Session::get('sub_institute_id') == '203' ||
-                                            Session::get('sub_institute_id') == '204')
+                                        @if (in_array(Session::get('sub_institute_id'), ['198','201','202','203','204','324','326','327']))
                                             <th data-toggle="tooltip" title="Admission Form Charges">Admission</th>
                                             <th data-toggle="tooltip" title="Fees Circular Form No.">Fees</th>
                                             <th data-toggle="tooltip" title="Fees Amount">Fees</th>
@@ -146,10 +142,7 @@
                                         @if (Session::get('sub_institute_id') == '198')
                                             <td>{{$data['admission_fees']}}</td>
                                         @endif
-                                        @if(Session::get('sub_institute_id') == '201' ||
-                                            Session::get('sub_institute_id') == '202' ||
-                                            Session::get('sub_institute_id') == '203' ||
-                                            Session::get('sub_institute_id') == '204')
+                                        @if (in_array(Session::get('sub_institute_id'), ['198','201','202','203','204','324','326','327']))
                                             <td>{{$data['fees_circular_form_no']}}</td>
                                             <td>{{$data['fees_amount']}}</td>
                                             <td>{{$data['fees_remark']}}</td>

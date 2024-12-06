@@ -280,7 +280,7 @@ class apiController extends Controller
             foreach ($studentData as $key => $value) {
                 foreach ($value as $key1 => $value1) {
                     // added on 26-03-2024
-                    if(in_array($value1->sub_institute_id, [201, 202, 203, 204, 254])){
+                    if(in_array($value1->sub_institute_id, [201,202,203,204,254,324,326,327])){
                     	$first_name = strtoupper($value1->first_name);
                         // if student is in hills high and nursery then display only hills high standard
                         if(!isset($findStudent[$first_name])){

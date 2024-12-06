@@ -466,11 +466,12 @@ class admissionEnquiryController extends Controller
             $data['receipt_html'] = $recHtml_for_insert;
         }
 
-        if ($sub_institute_id == 201 || $sub_institute_id == 202 || $sub_institute_id == 203 || $sub_institute_id == 204) {
+        if(in_array($sub_institute_id, [201,202,203,204,324,326,327]))
+         {
             $check_exist_no = DB::table('admission_enquiry')
                 ->selectRaw('count(*) as total_no_exist')
                 ->where('fees_circular_form_no', $request->get('fees_circular_form_no'))
-                ->whereIn('sub_institute_id', [201, 202, 203, 204])->get()->toArray();
+                ->whereIn('sub_institute_id', [201,202,203,204,324,326,327])->get()->toArray();
 
             if ($check_exist_no[0]->total_no_exist > 0) {
                 $res['status_code'] = "0";
@@ -525,7 +526,7 @@ class admissionEnquiryController extends Controller
 
             return is_mobile($type, "admission/enquiry/receipt_view", $res, "view");
 
-        } elseif ($sub_institute_id == 201 || $sub_institute_id == 202 || $sub_institute_id == 203 || $sub_institute_id == 204) // For Prior fees collection from Admission inquiry (hillshigh)
+        } elseif(in_array($sub_institute_id, [201,202,203,204,324,326,327])) // For Prior fees collection from Admission inquiry (hillshigh)
         {
             $whereArray = array();
             $whereArray['syear'] = $syear;

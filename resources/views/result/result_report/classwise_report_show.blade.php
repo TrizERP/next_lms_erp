@@ -25,6 +25,8 @@
                 {
                     $all_student = $data['all_student'];
                 }
+
+                $gradeScale = \App\Helpers\getGradeScale();
             @endphp 
             <div class="card">  
                 <div class="col-lg-12 col-sm-12 col-xs-12">
@@ -42,6 +44,7 @@
                                         @endif
                                     <th>Total</th>
                                     <th>Percentage(%)</th>
+                                    <th>Grade</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -88,6 +91,7 @@
     @endif
     <td>{{$obtained_total}}/{{$total}}</td>
     <td>{{$percentage}}</td>
+    <td>{{ \App\Helpers\getGrade($gradeScale, $total, $obtained_total) }}</td>
 </tr>
                                 @endforeach
                             </tbody>    

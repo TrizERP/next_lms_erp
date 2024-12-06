@@ -596,6 +596,7 @@ class marks_entry_controller extends Controller
     {
 
         $sub_institute_id = session()->get('sub_institute_id');
+        $client_id = session()->get('client_id');
         $all_data = [];
 
         if (isset($_REQUEST["type"]) && $_REQUEST["type"] == "API") {
@@ -718,7 +719,7 @@ class marks_entry_controller extends Controller
 
                     //Start Send Marks Notification
                     $sendRequest = new Request(['student_id'=>$student_id,'obtain_mark'=>$arr['points'],'exam_id'=>$arr['exam_id']]);
-                    if($sub_institute_id == 1)
+                    if($client_id == 4 || $client_id == 11)
                         $sendNotification = $this->sendNotificationMarks($sendRequest);
                     //End Send Marks Notification
                 }
@@ -857,6 +858,8 @@ class marks_entry_controller extends Controller
                 'CREATED_IP'               => $_SERVER['REMOTE_ADDR'],
             ];
 
+            sendNotification($app_notification_content);
+
             $gcm_data = DB::table('gcm_users')->where('mobile_no', $getStudent->mobile)
                 ->where('sub_institute_id', $sub_institute_id)->get()->toArray();
 
@@ -887,7 +890,6 @@ class marks_entry_controller extends Controller
                         ];
 
                        $pushStatus = send_FCM_Notification($val, $message, $sub_institute_id);
-                       sendNotification($app_notification_content);
                     }
                 }
               $res = 1;

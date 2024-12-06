@@ -257,11 +257,7 @@ if(isset($data['editData']))
                             </div>
                             @endforeach
                             @endif
-                            @if (Session::get('sub_institute_id') == '198' ||
-                                Session::get('sub_institute_id') == '201' ||
-                                Session::get('sub_institute_id') == '202' ||
-                                Session::get('sub_institute_id') == '203' ||
-                                Session::get('sub_institute_id') == '204')
+                            @if (in_array(Session::get('sub_institute_id'), ['198','201','202','203','204','324','326','327']))
                             <div class="col-md-3 form-group">
                                 <label>Admission Form Charges </label>
                                 <input type="number" id='admission_fees' @if(isset($editData['admission_fees'])) value="{{$editData['admission_fees']}}" @endif required name="admission_fees" class="form-control">
