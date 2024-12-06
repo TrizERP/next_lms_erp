@@ -2043,11 +2043,15 @@ if (!function_exists('getGradeComment')) {
 
 
 if (!function_exists('getGradeScale')) {
-    function getGradeScale()
+    function getGradeScale($standard="") // 2024-12-06 added standard
     {
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
         $standard_id = session()->get('standard');
+
+        if($standard!=""){
+            $standard_id = $standard;
+        }
 
         $ret_grade = DB::table('result_std_grd_maping as sgm')
             ->join('grade_master_data as dt', 'dt.grade_id', '=', 'sgm.grade_scale')
