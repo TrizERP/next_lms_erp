@@ -19,38 +19,38 @@ class dynamic_report_controller extends Controller
      */
     public function index(Request $request)
     {
-        if (session()->has('data')) { // check if it exists
-            $data_arr = session('data'); // to retrieve value
-            if (isset($data_arr['message'])) {
-                $school_data['message'] = $data_arr['message'];
+        if (session()->has("data")) {
+            // check if it exists
+            $data_arr = session("data"); // to retrieve value
+            if (isset($data_arr["message"])) {
+                $school_data["message"] = $data_arr["message"];
             }
         }
 
-
         $school_data["data"] = $this->getData();
 
-        $type = $request->input('type');
+        $type = $request->input("type");
 
-        return is_mobile($type, 'dynamic_report/dynamic_report/show', $school_data, 'view');
+        return is_mobile($type,"dynamic_report/dynamic_report/show",$school_data,"view");
     }
 
     public function getData($id = "")
     {
         $where_arr = [
-            "sub_institute_id" => session()->get('sub_institute_id'),
+            "sub_institute_id" => session()->get("sub_institute_id"),
         ];
 
-        $data = array();
+        $data = [];
         if ($id != "") {
             $where_arr["id"] = $id;
-            $data = DB::table('report_module_data')
+            $data = DB::table("report_module_data")
                 ->where($where_arr)
                 ->get();
         } else {
-            $or_where_arr = array(
+            $or_where_arr = [
                 "privacy" => 1,
-            );
-            $data = DB::table('report_module_data')
+            ];
+            $data = DB::table("report_module_data")
                 ->where($where_arr)
                 ->orWhere($or_where_arr)
                 ->get();
@@ -67,15 +67,19 @@ class dynamic_report_controller extends Controller
 
     public function get_all_dd()
     {
-        $result = DB::table('report_module')->groupBy('main_module')->orderBy('id')->get()->toArray();
+        $result = DB::table("report_module")
+            ->groupBy("main_module")
+            ->orderBy("id")
+            ->get()
+            ->toArray();
 
-        $main_module = array();
+        $main_module = [];
         foreach ($result as $id => $arr) {
             $main_module[$arr->id] = $arr->main_module;
         }
 
         return [
-            'main_module' => $main_module,
+            "main_module" => $main_module,
         ];
     }
 
@@ -95,65 +99,76 @@ class dynamic_report_controller extends Controller
             ->whereIn("menu_id", $sub_module)
             ->get();
 
-        $sub_module_showing_name = array();
-        $sub_module_db_fields = array();
+        $sub_module_showing_name = [];
+        $sub_module_db_fields = [];
         foreach ($all_sub_module_fields as $id => $arr) {
-            $temp_showing_name = explode(",", $all_sub_module_fields[$id]->showing_name);
-            $temp_db_fields = explode("|", $all_sub_module_fields[$id]->database_fields);
-            $sub_module_showing_name = array_merge($sub_module_showing_name, $temp_showing_name);
-            $sub_module_db_fields = array_merge($sub_module_db_fields, $temp_db_fields);
+            $temp_showing_name = explode(
+                ",",
+                $all_sub_module_fields[$id]->showing_name
+            );
+            $temp_db_fields = explode(
+                "|",
+                $all_sub_module_fields[$id]->database_fields
+            );
+            $sub_module_showing_name = array_merge(
+                $sub_module_showing_name,
+                $temp_showing_name
+            );
+            $sub_module_db_fields = array_merge(
+                $sub_module_db_fields,
+                $temp_db_fields
+            );
         }
         $all_fields_name = $sub_module_showing_name;
         $all_fields_index = $sub_module_db_fields;
 
-        $send_arr = array(
+        $send_arr = [
             "report_name" => $_REQUEST["report_name"],
             "main_module" => $_REQUEST["main_module"],
-            "sub_module"  => $_REQUEST["sub_module"],
+            "sub_module" => $_REQUEST["sub_module"],
             "description" => $_REQUEST["description"],
-            "privacy"     => $privacy,
-            "all_fields"  => $all_fields_name,
-        );
+            "privacy" => $privacy,
+            "all_fields" => $all_fields_name,
+        ];
 
         $type = "";
 
-        return is_mobile($type, 'dynamic_report/dynamic_report/step2', $send_arr, 'view');
-
+        return is_mobile($type,"dynamic_report/dynamic_report/step2",$send_arr,"view");
     }
 
     public function dynamicReportStep3(Request $request)
     {
         $group_by_arr = [];
-        if (isset($_REQUEST["group_by1"]) && $_REQUEST["group_by1"] != '') {
+        if (isset($_REQUEST["group_by1"]) && $_REQUEST["group_by1"] != "") {
             $group_by_arr[] = $_REQUEST["group_by1"];
         }
-        if (isset($_REQUEST["group_by2"]) && $_REQUEST["group_by2"] != '') {
+        if (isset($_REQUEST["group_by2"]) && $_REQUEST["group_by2"] != "") {
             $group_by_arr[] = $_REQUEST["group_by2"];
         }
-        if (isset($_REQUEST["group_by3"]) && $_REQUEST["group_by3"] != '') {
+        if (isset($_REQUEST["group_by3"]) && $_REQUEST["group_by3"] != "") {
             $group_by_arr[] = $_REQUEST["group_by3"];
         }
 
         $sort_order_arr = [];
-        if (isset($_REQUEST["sort_order1"]) && $_REQUEST["sort_order1"] != '') {
+        if (isset($_REQUEST["sort_order1"]) && $_REQUEST["sort_order1"] != "") {
             $sort_order_arr[] = $_REQUEST["sort_order1"];
         }
-        if (isset($_REQUEST["sort_order2"]) && $_REQUEST["sort_order2"] != '') {
+        if (isset($_REQUEST["sort_order2"]) && $_REQUEST["sort_order2"] != "") {
             $sort_order_arr[] = $_REQUEST["sort_order2"];
         }
-        if (isset($_REQUEST["sort_order3"]) && $_REQUEST["sort_order3"] != '') {
+        if (isset($_REQUEST["sort_order3"]) && $_REQUEST["sort_order3"] != "") {
             $sort_order_arr[] = $_REQUEST["sort_order3"];
         }
 
         $old_data = unserialize($_REQUEST["old_data"]);
-        $old_data["selected_fields"] = explode(",", $_REQUEST["selected_fields"]);
+        $old_data["selected_fields"] = explode(",",$_REQUEST["selected_fields"]);
         $old_data["group_by"] = $group_by_arr;
         $old_data["sort_order"] = $sort_order_arr;
         $old_data["old_data"] = serialize($old_data);
 
         $type = "";
 
-        return is_mobile($type, 'dynamic_report/dynamic_report/step3', $old_data, 'view');
+        return is_mobile($type,"dynamic_report/dynamic_report/step3",$old_data,"view");
     }
 
     /**
@@ -163,12 +178,11 @@ class dynamic_report_controller extends Controller
      */
     public function create(Request $request)
     {
-        $type = $request->input('type');
+        $type = $request->input("type");
         $dataStore = $this->get_all_dd();
 
-        return is_mobile($type, 'dynamic_report/dynamic_report/add', $dataStore, 'view');
+        return is_mobile($type,"dynamic_report/dynamic_report/add",$dataStore,"view");
     }
-
 
     /**
      * Store a newly created resource in storage.
@@ -184,26 +198,25 @@ class dynamic_report_controller extends Controller
         unset($old_data["old_data"]);
         $old_data["condition"] = $_REQUEST["condition"];
 
-        $data = array(
-            'sub_institute_id' => session()->get('sub_institute_id'),
-            'report_name'      => $old_data["report_name"],
-            'description'      => $old_data["description"],
-            'privacy'          => $old_data["privacy"],
-        );
+        $data = [
+            "sub_institute_id" => session()->get("sub_institute_id"),
+            "report_name" => $old_data["report_name"],
+            "description" => $old_data["description"],
+            "privacy" => $old_data["privacy"],
+        ];
         $all_data = serialize($old_data);
         $data["all_data"] = $all_data;
 
-        DB::table('report_module_data')
-            ->insert($data);
+        DB::table("report_module_data")->insert($data);
 
-        $res = array(
-            'status_code' => 1,
-            'message'     => 'Data Saved',
-        );
+        $res = [
+            "status_code" => 1,
+            "message" => "Data Saved",
+        ];
 
-        $type = $request->input('type');
+        $type = $request->input("type");
 
-        return is_mobile($type, 'dynamic_report.index', $res, 'redirect');
+        return is_mobile($type, "dynamic_report.index", $res, "redirect");
     }
 
     /**
@@ -218,11 +231,11 @@ class dynamic_report_controller extends Controller
         //getting all data from table
         $data = $this->getData($id);
         // to resolve error of undefine index 0
-        if(!isset($data[0])){
-            $type="";
-            $res['status_code'] = 0;
-            $res['message']="Please Add Required Data to View Report";
-            return is_mobile($type, 'dynamic_report.index', $res);
+        if (!isset($data[0])) {
+            $type = "";
+            $res["status_code"] = 0;
+            $res["message"] = "Please Add Required Data to View Report";
+            return is_mobile($type, "dynamic_report.index", $res);
         }
         $all_detail = unserialize($data[0]->all_data);
 
@@ -233,8 +246,7 @@ class dynamic_report_controller extends Controller
             ->get();
         $main_module_name = $main_module_name[0]->main_module;
 
-
-        //gettting submodule name 
+        //gettting submodule name
         $sub_module = $all_detail["sub_module"];
         $sub_module[] = $main_module;
         $sub_module_name = DB::table("report_module")
@@ -249,618 +261,644 @@ class dynamic_report_controller extends Controller
         $sub_module_showing_name = [];
         $sub_module_db_fields = [];
         foreach ($all_sub_module_fields as $id => $arr) {
-            $temp_showing_name = explode(",", $all_sub_module_fields[$id]->showing_name);
-            $temp_db_fields = explode("|", $all_sub_module_fields[$id]->database_fields);
-            $sub_module_showing_name = array_merge($sub_module_showing_name, $temp_showing_name);
-            $sub_module_db_fields = array_merge($sub_module_db_fields, $temp_db_fields);
+            $temp_showing_name = explode(",",$all_sub_module_fields[$id]->showing_name);
+            $temp_db_fields = explode("|",$all_sub_module_fields[$id]->database_fields);
+            $sub_module_showing_name = array_merge($sub_module_showing_name,$temp_showing_name);
+            $sub_module_db_fields = array_merge($sub_module_db_fields,$temp_db_fields);
         }
         $all_fields_name = $sub_module_showing_name;
         $all_fields_index = $sub_module_db_fields;
         // echo "<pre>";print_r($all_fields_index);exit;
 
         $enrollment_join = [
-            'se.student_id'       => 's.id',
-            'se.sub_institute_id' => 's.sub_institute_id',
+            "se.student_id" => "s.id",
+            "se.sub_institute_id" => "s.sub_institute_id",
         ];
         $grade_join = [
-            'acs.id'               => 'se.grade_id',
-            'acs.sub_institute_id' => 'se.sub_institute_id',
+            "acs.id" => "se.grade_id",
+            "acs.sub_institute_id" => "se.sub_institute_id",
         ];
         $std_join = [
-            'st.id'               => 'se.standard_id',
-            'st.sub_institute_id' => 'se.sub_institute_id',
+            "st.id" => "se.standard_id",
+            "st.sub_institute_id" => "se.sub_institute_id",
         ];
         $div_join = [
-            'di.id'               => 'se.section_id',
-            'di.sub_institute_id' => 'se.sub_institute_id',
+            "di.id" => "se.section_id",
+            "di.sub_institute_id" => "se.sub_institute_id",
         ];
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
 
         // $query = new DB;
         $main_table_initial = "";
         $main_table_initial_capital = false;
         if ($main_module_name == "Homework") {
-            $this->query = DB::table('homework as hm');
+            $this->query = DB::table("homework as hm");
             $main_table_initial = "hm";
             foreach ($sub_module_name as $id => $arr) {
                 if ($arr->sub_module == "Student") {
-
                     $tblstudent_join = [
-                        'hm.student_id'       => 's.id',
-                        'hm.sub_institute_id' => 's.sub_institute_id',
+                        "hm.student_id" => "s.id",
+                        "hm.sub_institute_id" => "s.sub_institute_id",
                     ];
                     $subject_join = [
-                        'sj.id'               => 'hm.subject_id',
-                        'hm.sub_institute_id' => 'sj.sub_institute_id',
+                        "sj.id" => "hm.subject_id",
+                        "hm.sub_institute_id" => "sj.sub_institute_id",
                     ];
-                    $this->query->join('tblstudent as s', $tblstudent_join);
-                    $this->query->join('tblstudent_enrollment as se', $enrollment_join);
-                    $this->query->join('academic_section as acs', $grade_join);
-                    $this->query->join('standard as st', $std_join);
-                    $this->query->join('division as di', $div_join);
-                    $this->query->join('subject as sj', $subject_join);
+                    $this->query->join("tblstudent as s", $tblstudent_join);
+                    $this->query->join("tblstudent_enrollment as se",$enrollment_join);
+                    $this->query->join("academic_section as acs", $grade_join);
+                    $this->query->join("standard as st", $std_join);
+                    $this->query->join("division as di", $div_join);
+                    $this->query->join("subject as sj", $subject_join);
                 }
             }
-        } else {
+        } 
+        // 2024-12-07
+        else if($main_module_name == "Siblings Report"){
+            $this->query = DB::table("tblstudent as s");
+            $this->query->join("tblstudent_enrollment as se",$enrollment_join);
+            $this->query->join("standard as st", $std_join);
+            $this->query->whereRaw("s.sub_institute_id=$sub_institute_id AND se.syear=$syear");
+            $this->query->groupBy("s.mobile");
+            $this->query->havingRaw("COUNT(s.mobile) > 1");  
+        }
+        // 2024-12-07
+        else {
             if ($main_module_name == "Attendance") {
-                $this->query = DB::table('attendance_student as a');
+                $this->query = DB::table("attendance_student as a");
                 $main_table_initial = "a";
                 foreach ($sub_module_name as $id => $arr) {
-
                     if ($arr->sub_module == "Student") {
                         $tblstudent_join = [
-                            'a.student_id'       => 's.id',
-                            'a.sub_institute_id' => 's.sub_institute_id',
+                            "a.student_id" => "s.id",
+                            "a.sub_institute_id" => "s.sub_institute_id",
                         ];
 
-                        $this->query->join('tblstudent as s', $tblstudent_join);
-                        $this->query->join('tblstudent_enrollment as se', $enrollment_join);
-                        $this->query->join('academic_section as acs', $grade_join);
-                        $this->query->join('standard as st', $std_join);
-                        $this->query->join('division as di', $div_join);
+                        $this->query->join("tblstudent as s", $tblstudent_join);
+                        $this->query->join("tblstudent_enrollment as se",$enrollment_join);
+                        $this->query->join("academic_section as acs",$grade_join);
+                        $this->query->join("standard as st", $std_join);
+                        $this->query->join("division as di", $div_join);
                     }
                     if ($arr->sub_module == "Teacher") {
                         $tbluser_join = [
-                            'a.teacher_id'    => 'u.id',
-                            'a.user_group_id' => 'u.user_profile_id',
+                            "a.teacher_id" => "u.id",
+                            "a.user_group_id" => "u.user_profile_id",
                         ];
 
-                        $this->query->join('tbluser as u', $tbluser_join);
+                        $this->query->join("tbluser as u", $tbluser_join);
                     }
                 }
             } else {
                 if ($main_module_name == "Assignment") {
-                    $this->query = DB::table('homework as hm');
+                    $this->query = DB::table("homework as hm");
                     $main_table_initial = "hm";
                     foreach ($sub_module_name as $id => $arr) {
-
                         foreach ($sub_module_name as $id => $arr) {
                             if ($arr->sub_module == "Student") {
-
                                 $tblstudent_join = [
-                                    'hm.student_id'       => 's.id',
-                                    'hm.sub_institute_id' => 's.sub_institute_id',
+                                    "hm.student_id" => "s.id",
+                                    "hm.sub_institute_id" =>
+                                    "s.sub_institute_id",
                                 ];
                                 $subject_join = [
-                                    'sj.id'               => 'hm.subject_id',
-                                    'hm.sub_institute_id' => 'sj.sub_institute_id',
+                                    "sj.id" => "hm.subject_id",
+                                    "hm.sub_institute_id" =>
+                                    "sj.sub_institute_id",
                                 ];
-                                $this->query->join('tblstudent as s', $tblstudent_join);
-                                $this->query->join('tblstudent_enrollment as se', $enrollment_join);
-                                $this->query->join('academic_section as acs', $grade_join);
-                                $this->query->join('standard as st', $std_join);
-                                $this->query->join('division as di', $div_join);
-                                $this->query->join('subject as sj', $subject_join);
+                                $this->query->join("tblstudent as s",$tblstudent_join);
+                                $this->query->join("tblstudent_enrollment as se",$enrollment_join);
+                                $this->query->join("academic_section as acs",$grade_join);
+                                $this->query->join("standard as st", $std_join);
+                                $this->query->join("division as di", $div_join);
+                                $this->query->join("subject as sj",$subject_join);
                             }
                         }
                         if ($arr->sub_module == "Teacher") {
                             $tbluser_join = [
-                                'hm.created_by' => 'u.id',
+                                "hm.created_by" => "u.id",
                             ];
 
-                            $this->query->join('tbluser as u', $tbluser_join);
+                            $this->query->join("tbluser as u", $tbluser_join);
                         }
                     }
                 } else {
                     if ($main_module_name == "Mobile App User") {
-                        $this->query = DB::table('gcm_users as gu');
+                        $this->query = DB::table("gcm_users as gu");
                         $main_table_initial = "gu";
                         // foreach ($sub_module_name as $id => $arr) {
 
                         foreach ($sub_module_name as $id => $arr) {
                             if ($arr->sub_module == "Student") {
-
                                 $tblstudent_join = [
-                                    'gu.mobile_no'        => 's.mobile',
-                                    'gu.sub_institute_id' => 's.sub_institute_id',
+                                    "gu.mobile_no" => "s.mobile",
+                                    "gu.sub_institute_id" =>
+                                    "s.sub_institute_id",
                                 ];
 
-                                $this->query->join('tblstudent as s', $tblstudent_join);
-                                $this->query->join('tblstudent_enrollment as se', $enrollment_join);
-                                $this->query->join('academic_section as acs', $grade_join);
-                                $this->query->join('standard as st', $std_join);
-                                $this->query->join('division as di', $div_join);
+                                $this->query->join("tblstudent as s",$tblstudent_join);
+                                $this->query->join("tblstudent_enrollment as se",$enrollment_join);
+                                $this->query->join("academic_section as acs",$grade_join);
+                                $this->query->join("standard as st", $std_join);
+                                $this->query->join("division as di", $div_join);
                             }
                         }
                     } else {
                         if ($main_module_name == "Mobile Notification") {
-                            $this->query = DB::table('app_notification as n');
+                            $this->query = DB::table("app_notification as n");
                             $main_table_initial = "n";
                             $main_table_initial_capital = true;
                             // foreach ($sub_module_name as $id => $arr) {
 
                             foreach ($sub_module_name as $id => $arr) {
                                 if ($arr->sub_module == "Student") {
-
                                     $tblstudent_join = [
-                                        'n.student_id'       => 's.id',
-                                        'n.sub_institute_id' => 's.sub_institute_id',
+                                        "n.student_id" => "s.id",
+                                        "n.sub_institute_id" =>
+                                        "s.sub_institute_id",
                                     ];
 
-                                    $this->query->join('tblstudent as s', $tblstudent_join);
-                                    $this->query->join('tblstudent_enrollment as se', $enrollment_join);
-                                    $this->query->join('academic_section as acs', $grade_join);
-                                    $this->query->join('standard as st', $std_join);
-                                    $this->query->join('division as di', $div_join);
+                                    $this->query->join("tblstudent as s",$tblstudent_join);
+                                    $this->query->join("tblstudent_enrollment as se",$enrollment_join);
+                                    $this->query->join("academic_section as acs",$grade_join);
+                                    $this->query->join("standard as st",$std_join);
+                                    $this->query->join("division as di",$div_join);
                                     // }
                                 }
                             }
                         } else {
                             if ($main_module_name == "Sent SMS") {
-                                $this->query = DB::table('sms_sent_parents as sms');
+                                $this->query = DB::table(
+                                    "sms_sent_parents as sms"
+                                );
                                 $main_table_initial = "sms";
                                 // $main_table_initial_capital = true;
 
                                 foreach ($sub_module_name as $id => $arr) {
                                     if ($arr->sub_module == "Student") {
-
                                         $tblstudent_join = [
-                                            'sms.student_id'       => 's.id',
-                                            'sms.sub_institute_id' => 's.sub_institute_id',
+                                            "sms.student_id" => "s.id",
+                                            "sms.sub_institute_id" =>
+                                            "s.sub_institute_id",
                                         ];
 
-                                        $this->query->join('tblstudent as s', $tblstudent_join);
-                                        $this->query->join('tblstudent_enrollment as se', $enrollment_join);
-                                        $this->query->join('academic_section as acs', $grade_join);
-                                        $this->query->join('standard as st', $std_join);
-                                        $this->query->join('division as di', $div_join);
+                                        $this->query->join("tblstudent as s",$tblstudent_join);
+                                        $this->query->join("tblstudent_enrollment as se",$enrollment_join);
+                                        $this->query->join("academic_section as acs",$grade_join);
+                                        $this->query->join("standard as st",$std_join);
+                                        $this->query->join("division as di",$div_join);
                                     }
                                 }
-                            }else{
-                                if($main_module_name == "LMS"){
+                            } else {
+                                if ($main_module_name == "LMS") {
+                                    //SELECT st.name AS standard, chm.chapter_name AS chapter_name, sub.subject_name, COUNT(DISTINCT cm.content_category) AS total_main_content, GROUP_CONCAT(DISTINCT cm.content_category) AS content_type, COUNT(DISTINCT cm.title) AS total_sub_content,GROUP_CONCAT(DISTINCT cm.title) AS contents
+                                    // FROM content_master cm
+                                    // LEFT JOIN chapter_master chm ON chm.id = cm.chapter_id
+                                    // LEFT JOIN subject sub ON chm.subject_id = sub.id
+                                    // INNER JOIN standard st ON st.id = cm.standard_id
+                                    // WHERE cm.sub_institute_id = 1
+                                    // GROUP BY st.name, chm.chapter_name, sub.subject_name
 
-//                                     SELECT st.name AS standard, chm.chapter_name AS chapter_name, sub.subject_name, COUNT(DISTINCT cm.content_category) AS total_main_content, GROUP_CONCAT(DISTINCT cm.content_category) AS content_type, COUNT(DISTINCT cm.title) AS total_sub_content,GROUP_CONCAT(DISTINCT cm.title) AS contents
-// FROM content_master cm
-// LEFT JOIN chapter_master chm ON chm.id = cm.chapter_id
-// LEFT JOIN subject sub ON chm.subject_id = sub.id
-// INNER JOIN standard st ON st.id = cm.standard_id
-// WHERE cm.sub_institute_id = 1
-// GROUP BY st.name, chm.chapter_name, sub.subject_name
+                                    $this->query = DB::table("content_master as cm");
+                                    $main_table_initial = "cm";
 
+                                    foreach ($sub_module_name as $id => $arr) {
+                                        if ($arr->sub_module == "LMS") {
+                                            $sub_institute_id = session()->get(
+                                                "sub_institute_id"
+                                            );
 
-                    $this->query = DB::table('content_master as cm');
-                    $main_table_initial = "cm";
+                                            $std_join = [
+                                                "cm.standard_id" => "st.id",
+                                                "cm.sub_institute_id" =>
+                                                "st.sub_institute_id",
+                                            ];
+                                            $subject_join = [
+                                                "sj.id" => "cm.subject_id",
+                                                "cm.sub_institute_id" =>
+                                                "sj.sub_institute_id",
+                                            ];
+                                            $chapter_join = [
+                                                "chm.id" => "cm.chapter_id",
+                                            ];
+                                            $this->query->join("chapter_master as chm",$chapter_join);
+                                            $this->query->join("subject as sj",$subject_join);
+                                            $this->query->join("standard as st",$std_join);
+                                        }
+                                    }
+                                } else {
+                                    if ($main_module_name == "Bank Detail") {
+                                        $this->query = DB::table("tblstudent as s");
+                                        $main_table_initial = "s";
+                                        foreach ($sub_module_name as $id => $arr ) {
+                                            if ($arr->sub_module == "Student") {
+                                                $tblstudent_join = [
+                                                    "bk.student_id" => "s.id",
+                                                    "bk.sub_institute_id" =>
+                                                    "s.sub_institute_id",
+                                                ];
+                                                $this->query->join("tblstudent_enrollment as se",$enrollment_join);
+                                                $this->query->join("academic_section as acs",$grade_join);
+                                                $this->query->join("standard as st",$std_join);
+                                                $this->query->join("division as di",$div_join);
+                                                $this->query->leftjoin("tblstudent_bank_detail as bk",$tblstudent_join);
+                                            }
+                                        }
+                                    } else {
+                                        if ($main_module_name == "Transport") {
+                                            foreach ($sub_module_name as $id => $arr ) {
+                                                if ($arr->sub_module =="Vehicle") {
+                                                    $this->query = DB::table("transport_vehicle as tv");
+                                                    $main_table_initial = "tv";
+                                                    $tbltransport_join = [
+                                                        "tv.driver" => "tdd.id",
+                                                        "tv.sub_institute_id" =>
+                                                        "tdd.sub_institute_id",
+                                                    ];
 
-                        foreach ($sub_module_name as $id => $arr) {
-                            if ($arr->sub_module == "LMS") {
-                                $sub_institute_id = session()->get('sub_institute_id');
-                                                    
-                                $std_join = [
-                                    'cm.standard_id'       => 'st.id',
-                                    'cm.sub_institute_id' => 'st.sub_institute_id',
-                                ];
-                                $subject_join = [
-                                    'sj.id'               => 'cm.subject_id',
-                                   'cm.sub_institute_id' => 'sj.sub_institute_id',
-                                ];
-                                $chapter_join = [
-                                    'chm.id'               => 'cm.chapter_id',
-                                ];
-                                $this->query->join('chapter_master as chm', $chapter_join);
-                                $this->query->join('subject as sj', $subject_join);
-                                $this->query->join('standard as st', $std_join);
+                                                    $this->query->join("transport_driver_detail as tdd",function ($join) {
+                                                        $join->whereRaw("tv.driver = tdd.id or tv.conductor = tdd.id and tv.sub_institute_id")->where("tdd.status","Active");
+                                                        }
+                                                    );
+                                                }
+                                                if ($arr->sub_module == "Route") {
+                                                    $this->query = DB::table("transport_map_student as tms");
+                                                    $main_table_initial = "tms";
+                                                    $tblstudent_join = [
+                                                        "tms.student_id" =>"s.id",
+                                                        "tms.sub_institute_id" =>"s.sub_institute_id",
+                                                    ];
+                                                    $tblshift_join = [
+                                                        "tss.id" =>"tms.from_shift_id",
+                                                        "tss.id" =>"tms.to_shift_id",
+                                                    ];
+                                                    $tblstop_join = [
+                                                        "ts.id" =>"tms.from_stop",
+                                                        "ts.id" =>"tms.to_stop",
+                                                    ];
+                                                    $tblvehicle_join = [
+                                                        "tv.id" =>"tms.from_bus_id",
+                                                        "tv.id" =>"tms.to_bus_id",
+                                                    ];
+                                                    $this->query->join("tblstudent as s",$tblstudent_join);
+                                                    $this->query->join("tblstudent_enrollment as se",$enrollment_join);
+                                                    $this->query->join("academic_section as acs",$grade_join);
+                                                    $this->query->join("standard as st",$std_join);
+                                                    $this->query->join("division as di",$div_join);
+                                                    $this->query->leftjoin("transport_stop as ts",$tblstop_join);
+                                                    $this->query->leftjoin("transport_vehicle as tv",$tblvehicle_join);
+                                                    $this->query->leftjoin("transport_school_shift as tss",$tblshift_join);
+                                                }
+                                            }
+                                        } else {
+                                            if ($main_module_name =="Shift Wise Van Rate") {
+                                                $this->query = DB::table("tblstudent as s");
+                                                $main_table_initial = "s";
+                                                foreach ($sub_module_name as $id => $arr) {
+                                                    if ($arr->sub_module =="Student") {
+                                                        $tblstudent_join = [
+                                                            "tms.student_id" =>"s.id",
+                                                            "tms.sub_institute_id" =>"s.sub_institute_id",
+                                                        ];
+                                                        $tblvehicle_join = [
+                                                            "tv.id" =>"tms.from_bus_id",
+                                                        ];
+                                                        $this->query->join("tblstudent_enrollment as se",$enrollment_join);
+                                                        $this->query->join("academic_section as acs",$grade_join);
+                                                        $this->query->join("standard as st",$std_join);
+                                                        $this->query->join("division as di",$div_join);
+                                                        $this->query->leftjoin("transport_map_student as tms",$tblstudent_join);
+                                                        $this->query->leftjoin("transport_vehicle as tv",$tblvehicle_join);
+                                                    }
+                                                }
+                                            } else {
+                                                if ($main_module_name =="Online Payment LOG") {
+                                                    $this->query = DB::table(
+                                                        "tblstudent as s"
+                                                    );
+                                                    $main_table_initial = "s";
+                                                    foreach ($sub_module_name as $id => $arr) {
+                                                        if ($arr->sub_module =="Student") {
+                                                            $tblstudent_join = [
+                                                                "fp.student_id" =>"se.student_id",
+                                                                "fp.sub_institute_id" =>"se.sub_institute_id",
+                                                                "fp.syear" =>"se.syear",
+                                                                //'fp.syear' => session()->get('syear'),
+                                                            ];
+                                                            $this->query->join("tblstudent_enrollment as se",$enrollment_join);
+                                                            $this->query->join("academic_section as acs",$grade_join);
+                                                            $this->query->join("standard as st",$std_join);
+                                                            $this->query->join("division as di",$div_join);
+                                                            $this->query->leftjoin("fees_payment as fp",$tblstudent_join);
+                                                        }
+                                                    }
+                                                } else {
+                                                    if ($main_module_name =="Circular") {
+                                                        $this->query = DB::table("circular as c");
+                                                        $main_table_initial ="c";
+                                                        // $main_table_initial_capital = true;
 
-                            }
-                        }
-                    
-                }
-                else{
-                    if ($main_module_name == "Bank Detail") {
-                        $this->query = DB::table('tblstudent as s');
-                        $main_table_initial = "s";
-                        foreach ($sub_module_name as $id => $arr) {
-                            if ($arr->sub_module == "Student") {
-                                $tblstudent_join = [
-                                    'bk.student_id'       => 's.id',
-                                    'bk.sub_institute_id' => 's.sub_institute_id',
-                                ];
-                                $this->query->join('tblstudent_enrollment as se', $enrollment_join);
-                                $this->query->join('academic_section as acs', $grade_join);
-                                $this->query->join('standard as st', $std_join);
-                                $this->query->join('division as di', $div_join);
-                                $this->query->leftjoin('tblstudent_bank_detail as bk', $tblstudent_join);
-                            }
-                        }
-                    }
-                    else{
-                        if ($main_module_name == "Transport") {
-                            foreach ($sub_module_name as $id => $arr) {
-                                if ($arr->sub_module == "Vehicle") {
-                                    $this->query = DB::table('transport_vehicle as tv');
-                                    $main_table_initial = "tv";
-                                    $tbltransport_join = [
-                                        'tv.driver'       => 'tdd.id',
-                                        'tv.sub_institute_id' => 'tdd.sub_institute_id',
-                                    ];
-                                    
-                                    $this->query->join('transport_driver_detail as tdd', function($join){
-                                        $join->whereRaw('tv.driver = tdd.id or tv.conductor = tdd.id and tv.sub_institute_id')->where('tdd.status', 'Active');
-                                    });
-                                }
-                                if ($arr->sub_module == "Route") {
-                                    $this->query = DB::table('transport_map_student as tms');
-                                    $main_table_initial = "tms";
-                                    $tblstudent_join = [
-                                        'tms.student_id'       => 's.id',
-                                        'tms.sub_institute_id' => 's.sub_institute_id',
-                                    ];
-                                    $tblshift_join = [
-                                        'tss.id' => 'tms.from_shift_id',
-                                        'tss.id' => 'tms.to_shift_id',
-                                    ];
-                                    $tblstop_join = [
-                                        'ts.id' => 'tms.from_stop',
-                                        'ts.id' => 'tms.to_stop',
-                                    ];
-                                    $tblvehicle_join = [
-                                        'tv.id' => 'tms.from_bus_id',
-                                        'tv.id' => 'tms.to_bus_id',
-                                    ];
-                                    $this->query->join('tblstudent as s', $tblstudent_join);
-                                    $this->query->join('tblstudent_enrollment as se', $enrollment_join);
-                                    $this->query->join('academic_section as acs', $grade_join);
-                                    $this->query->join('standard as st', $std_join);
-                                    $this->query->join('division as di', $div_join);
-                                    $this->query->leftjoin('transport_stop as ts', $tblstop_join);
-                                    $this->query->leftjoin('transport_vehicle as tv', $tblvehicle_join);
-                                    $this->query->leftjoin('transport_school_shift as tss', $tblshift_join);
-                                }
-                            }
-                        }
-                    else{
-                        if ($main_module_name == "Shift Wise Van Rate") {
-                            $this->query = DB::table('tblstudent as s');
-                            $main_table_initial = "s";
-                            foreach ($sub_module_name as $id => $arr) {
-                                if ($arr->sub_module == "Student") {
-                                    $tblstudent_join = [
-                                        'tms.student_id'       => 's.id',
-                                        'tms.sub_institute_id' => 's.sub_institute_id',
-                                    ];
-                                    $tblvehicle_join = [
-                                        'tv.id' => 'tms.from_bus_id',
-                                    ];
-                                    $this->query->join('tblstudent_enrollment as se', $enrollment_join);
-                                    $this->query->join('academic_section as acs', $grade_join);
-                                    $this->query->join('standard as st', $std_join);
-                                    $this->query->join('division as di', $div_join);
-                                    $this->query->leftjoin('transport_map_student as tms', $tblstudent_join);
-                                    $this->query->leftjoin('transport_vehicle as tv', $tblvehicle_join);
-                                }
-                            }
-                        }
-                    else{
-                        if ($main_module_name == "Online Payment LOG") {
-                            $this->query = DB::table('tblstudent as s');
-                            $main_table_initial = "s";
-                            foreach ($sub_module_name as $id => $arr) {
-                                if ($arr->sub_module == "Student") {
-                                    $tblstudent_join = [
-                                        'fp.student_id'       => 'se.student_id',
-                                        'fp.sub_institute_id' => 'se.sub_institute_id',
-                                        'fp.syear' => 'se.syear',
-                                        //'fp.syear' => session()->get('syear'),
-                                    ];
-                                    $this->query->join('tblstudent_enrollment as se', $enrollment_join);
-                                    $this->query->join('academic_section as acs', $grade_join);
-                                    $this->query->join('standard as st', $std_join);
-                                    $this->query->join('division as di', $div_join);
-                                    $this->query->leftjoin('fees_payment as fp', $tblstudent_join);
-                                }
-                            }
-                        }        
-                    else {
-                        if ($main_module_name == "Circular") {
-                            $this->query = DB::table('circular as c');
-                            $main_table_initial = "c";
-                            // $main_table_initial_capital = true;
+                                                        foreach ($sub_module_name as $id => $arr) {
+                                                            if ($arr->sub_module =="Standard") {
+                                                                $standard_join = [
+                                                                    "c.standard_id" =>"st.id",
+                                                                ];
 
-                            foreach ($sub_module_name as $id => $arr) {
-                                if ($arr->sub_module == "Standard") {
-
-                                    $standard_join = [
-                                        'c.standard_id' => 'st.id',
-                                    ];
-
-                                    $this->query->join('standard as st', $standard_join);
+                                                                $this->query->join("standard as st",$standard_join);
+                                                            }
+                                                        }
+                                                    } else {
+                                                        if ($main_module_name =="Student Infirmary") {
+                                                            $this->query = DB::table("tblstudent as s");
+                                                            $main_table_initial ="s";
+                                                            foreach ($sub_module_name as $id => $arr) {
+                                                                if ($arr->sub_module =="Student") {
+                                                                    $tblstudent_join = [
+                                                                        "stm.student_id" =>"s.id",
+                                                                        "stm.sub_institute_id" =>"s.sub_institute_id",
+                                                                    ];
+                                                                    $this->query->join("tblstudent_enrollment as se",$enrollment_join);
+                                                                    $this->query->join("academic_section as acs",$grade_join);
+                                                                    $this->query->join("standard as st",$std_join);
+                                                                    $this->query->join("division as di",$div_join);
+                                                                    $this->query->join("student_infirmary as stm",$tblstudent_join);
+                                                                }
+                                                            }
+                                                        } else {
+                                                            if ($main_module_name =="Student Vaccination") {
+                                                                $this->query = DB::table("tblstudent as s");
+                                                                $main_table_initial ="s";
+                                                                foreach ($sub_module_name as $id =>$arr) {
+                                                                    if ($arr->sub_module =="Student") {
+                                                                        $tblstudent_join = [
+                                                                            "sv.student_id" =>"s.id",
+                                                                            "sv.sub_institute_id" =>"s.sub_institute_id",
+                                                                        ];
+                                                                        $this->query->join("tblstudent_enrollment as se",$enrollment_join);
+                                                                        $this->query->join("academic_section as acs",$grade_join);
+                                                                        $this->query->join("standard as st",$std_join);
+                                                                        $this->query->join("division as di",$div_join);
+                                                                        $this->query->join("student_vaccination as sv",$tblstudent_join);
+                                                                    }
+                                                                }
+                                                            } else {
+                                                                if ($main_module_name =="Student Height Weight") {
+                                                                    $this->query = DB::table("tblstudent as s");
+                                                                    $main_table_initial ="s";
+                                                                    foreach ($sub_module_name as $id =>$arr) {
+                                                                        if ($arr->sub_module =="Student") {
+                                                                            $tblstudent_join = [
+                                                                                "shw.student_id" =>"s.id",
+                                                                                "shw.sub_institute_id" =>"s.sub_institute_id",
+                                                                            ];
+                                                                            $this->query->join("tblstudent_enrollment as se",$enrollment_join);
+                                                                            $this->query->join("academic_section as acs",$grade_join);
+                                                                            $this->query->join("standard as st",$std_join);
+                                                                            $this->query->join("division as di",$div_join);
+                                                                            $this->query->join("student_height_weight as shw",$tblstudent_join);
+                                                                        }
+                                                                    }
+                                                                } else {
+                                                                    if ($main_module_name =="Student Health") {
+                                                                        $this->query = DB::table("tblstudent as s");
+                                                                        $main_table_initial ="s";
+                                                                        foreach ($sub_module_name as $id =>$arr) {
+                                                                            if ($arr->sub_module =="Student") {
+                                                                                $tblstudent_join = [
+                                                                                    "sh.student_id" =>"s.id",
+                                                                                    "sh.sub_institute_id" =>"s.sub_institute_id",
+                                                                                ];
+                                                                                
+                                                                                $this->query->join("tblstudent_enrollment as se",$enrollment_join);
+                                                                                $this->query->join("academic_section as acs",$grade_join);
+                                                                                $this->query->join("standard as st",$std_join);
+                                                                                $this->query->join("division as di",$div_join);
+                                                                                $this->query->join("student_health as sh",$tblstudent_join);
+                                                                            }
+                                                                        }
+                                                                    } else {
+                                                                        if ($main_module_name =="Anacdotal") {
+                                                                            $this->query = DB::table("tblstudent as s");
+                                                                            $main_table_initial ="s";
+                                                                            foreach ($sub_module_name as $id =>$arr) {
+                                                                                if ($arr->sub_module =="Student") {
+                                                                                    $tblstudent_join = [
+                                                                                        "a.student_id" =>"s.id",
+                                                                                        "a.sub_institute_id" =>"s.sub_institute_id",
+                                                                                    ];
+                                                                                    $this->query->join("tblstudent_enrollment as se",$enrollment_join);
+                                                                                    $this->query->join("academic_section as acs",$grade_join);
+                                                                                    $this->query->join("standard as st",$std_join);
+                                                                                    $this->query->join("division as di",$div_join);
+                                                                                    $this->query->join("student_anacdotal as a",$tblstudent_join);
+                                                                                }
+                                                                            }
+                                                                        } else {
+                                                                            if ($main_module_name =="Past Education") {
+                                                                                $this->query = DB::table("tblstudent as s"
+                                                                                );$main_table_initial ="s";
+                                                                                foreach ($sub_module_name as $id =>$arr) {
+                                                                                    if ($arr->sub_module =="Student") {
+                                                                                        $tblstudent_join = [
+                                                                                            "tpe.student_id" =>"s.id",
+                                                                                            "tpe.sub_institute_id" =>"s.sub_institute_id",
+                                                                                        ];
+                                                                                        $this->query->join("tblstudent_enrollment as se",$enrollment_join);
+                                                                                        $this->query->join("academic_section as acs",$grade_join);
+                                                                                        $this->query->join("standard as st",$std_join);
+                                                                                        $this->query->join("division as di",$div_join);
+                                                                                        $this->query->join("tblstudent_past_education as tpe",$tblstudent_join);
+                                                                                    }
+                                                                                }
+                                                                            } else {
+                                                                                if ($main_module_name =="Family History") {
+                                                                                    $this->query = DB::table("tblstudent as s");
+                                                                                    $main_table_initial ="s";
+                                                                                    foreach ($sub_module_name as $id =>$arr) {
+                                                                                        if ($arr->sub_module =="Student") {
+                                                                                            $tblstudent_join = [
+                                                                                                "tfh.student_id" =>"s.id",
+                                                                                                "tfh.sub_institute_id" =>"s.sub_institute_id",
+                                                                                            ];
+                                                                                            
+                                                                                            $this->query->join("tblstudent_enrollment as se",$enrollment_join);
+                                                                                            $this->query->join("academic_section as acs",$grade_join);
+                                                                                            $this->query->join("standard as st",$std_join);
+                                                                                            $this->query->join("division as di",$div_join);
+                                                                                            $this->query->join("tblstudent_family_history as tfh",$tblstudent_join);
+                                                                                        }
+                                                                                    }
+                                                                                } else {
+                                                                                    if ($main_module_name =="Parent Feedback") {
+                                                                                        $this->query = DB::table("tblstudent as s");
+                                                                                        $main_table_initial ="s";
+                                                                                        foreach ($sub_module_name as $id =>$arr) {
+                                                                                            if ($arr->sub_module =="Student") {
+                                                                                                $tblstudent_join = [
+                                                                                                    "tpf.student_id" =>"s.id",
+                                                                                                    "tpf.sub_institute_id" =>"s.sub_institute_id",
+                                                                                                ];
+                                                                                                $this->query->join("tblstudent_enrollment as se",$enrollment_join);
+                                                                                                $this->query->join("academic_section as acs",$grade_join);
+                                                                                                $this->query->join("standard as st",$std_join);
+                                                                                                $this->query->join("division as di",$div_join);
+                                                                                                $this->query->join("tblstudent_parent_feedback as tpf",$tblstudent_join);
+                                                                                            }
+                                                                                        }
+                                                                                    } else {
+                                                                                        if ($main_module_name =="Siblings Details") {
+                                                                                            $this->query = DB::table("tblstudent as s");
+                                                                                            $main_table_initial ="s";
+                                                                                            foreach ($sub_module_name as $id =>$arr) {
+                                                                                                if ($arr->sub_module =="Student") {
+                                                                                                    $this->query->join("tblstudent_enrollment as se",$enrollment_join);
+                                                                                                    $this->query->join("academic_section as acs",$grade_join);
+                                                                                                    $this->query->join("tblstudent_siblings as ts",function ($join) {
+                                                                                                            $join->whereRaw("FIND_IN_SET(s.id,ts.siblings_id) >0 and s.sub_institute_id = ts.sub_institute_id"
+                                                                                                            );
+                                                                                                        }
+                                                                                                    );
+                                                                                                }
+                                                                                            }
+                                                                                        } else {
+                                                                                            if ($main_module_name =="S2 Log") {
+                                                                                                $all_detail[
+                                                                                                    "table_name"
+                                                                                                ] =
+                                                                                                    "S2_LOG";
+                                                                                                $this->query = DB::table("S2_LOG as sl");
+                                                                                                $main_table_initial ="sl";
+                                                                                                foreach ($sub_module_name as $id =>$arr) {
+                                                                                                    $this->query->Leftjoin("tblstudent_bank_detail as tsbd",function ($q) {
+                                                                                                            $q->on("tsbd.UMRN","=","sl.UMRN_NO"
+                                                                                                            )->where("tsbd.sub_institute_id",session()->get("sub_institute_id")
+                                                                                                            );
+                                                                                                        }
+                                                                                                    );
+                                                                                                    $this->query->leftJoin("tblstudent_enrollment as se",function ($q) {
+                                                                                                            $q->on("se.student_id","=","tsbd.student_id")->where("se.syear",session()->get("syear")
+                                                                                                            );
+                                                                                                        }
+                                                                                                    );
+                                                                                                    $this->query->Leftjoin("standard as st","st.id","=","se.standard_id");
+                                                                                                    $this->query->groupBy("sl.id");
+                                                                                                }
+                                                                                                // $main_table_initial_capital = true;
+                                                                                            }
+                                                                                        }
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
-                        }
-                    else{
-                        if ($main_module_name == "Student Infirmary") {
-                            $this->query = DB::table('tblstudent as s');
-                            $main_table_initial = "s";
-                            foreach ($sub_module_name as $id => $arr) {
-                                if ($arr->sub_module == "Student") {
-                                    $tblstudent_join = [
-                                        'stm.student_id'       => 's.id',
-                                        'stm.sub_institute_id' => 's.sub_institute_id',
-                                    ];
-                                    $this->query->join('tblstudent_enrollment as se', $enrollment_join);
-                                    $this->query->join('academic_section as acs', $grade_join);
-                                    $this->query->join('standard as st', $std_join);
-                                    $this->query->join('division as di', $div_join);
-                                    $this->query->join('student_infirmary as stm', $tblstudent_join);
-                                }
-                            }
-                        }
-                    else{
-                        if ($main_module_name == "Student Vaccination") {
-                            $this->query = DB::table('tblstudent as s');
-                            $main_table_initial = "s";
-                            foreach ($sub_module_name as $id => $arr) {
-                                if ($arr->sub_module == "Student") {
-                                    $tblstudent_join = [
-                                        'sv.student_id'       => 's.id',
-                                        'sv.sub_institute_id' => 's.sub_institute_id',
-                                    ];
-                                    $this->query->join('tblstudent_enrollment as se', $enrollment_join);
-                                    $this->query->join('academic_section as acs', $grade_join);
-                                    $this->query->join('standard as st', $std_join);
-                                    $this->query->join('division as di', $div_join);
-                                    $this->query->join('student_vaccination as sv', $tblstudent_join);
-                                }
-                            }
-                        }
-                    else{
-                        if ($main_module_name == "Student Height Weight") {
-                            $this->query = DB::table('tblstudent as s');
-                            $main_table_initial = "s";
-                            foreach ($sub_module_name as $id => $arr) {
-                                if ($arr->sub_module == "Student") {
-                                    $tblstudent_join = [
-                                        'shw.student_id'       => 's.id',
-                                        'shw.sub_institute_id' => 's.sub_institute_id',
-                                    ];
-                                    $this->query->join('tblstudent_enrollment as se', $enrollment_join);
-                                    $this->query->join('academic_section as acs', $grade_join);
-                                    $this->query->join('standard as st', $std_join);
-                                    $this->query->join('division as di', $div_join);
-                                    $this->query->join('student_height_weight as shw', $tblstudent_join);
-                                }
-                            }
-                        }
-                    else{
-                        if ($main_module_name == "Student Health") {
-                            $this->query = DB::table('tblstudent as s');
-                            $main_table_initial = "s";
-                            foreach ($sub_module_name as $id => $arr) {
-                                if ($arr->sub_module == "Student") {
-                                    $tblstudent_join = [
-                                        'sh.student_id'       => 's.id',
-                                        'sh.sub_institute_id' => 's.sub_institute_id',
-                                    ];
-                                    $this->query->join('tblstudent_enrollment as se', $enrollment_join);
-                                    $this->query->join('academic_section as acs', $grade_join);
-                                    $this->query->join('standard as st', $std_join);
-                                    $this->query->join('division as di', $div_join);
-                                    $this->query->join('student_health as sh', $tblstudent_join);
-                                }
-                            }
-                        }
-                    else{
-                        if ($main_module_name == "Anacdotal") {
-                            $this->query = DB::table('tblstudent as s');
-                            $main_table_initial = "s";
-                            foreach ($sub_module_name as $id => $arr) {
-                                if ($arr->sub_module == "Student") {
-                                    $tblstudent_join = [
-                                        'a.student_id'       => 's.id',
-                                        'a.sub_institute_id' => 's.sub_institute_id',
-                                    ];
-                                    $this->query->join('tblstudent_enrollment as se', $enrollment_join);
-                                    $this->query->join('academic_section as acs', $grade_join);
-                                    $this->query->join('standard as st', $std_join);
-                                    $this->query->join('division as di', $div_join);
-                                    $this->query->join('student_anacdotal as a', $tblstudent_join);
-                                }
-                            }
-                        }
-                    else{
-                        if ($main_module_name == "Past Education") {
-                            $this->query = DB::table('tblstudent as s');
-                            $main_table_initial = "s";
-                            foreach ($sub_module_name as $id => $arr) {
-                                if ($arr->sub_module == "Student") {
-                                    $tblstudent_join = [
-                                        'tpe.student_id'       => 's.id',
-                                        'tpe.sub_institute_id' => 's.sub_institute_id',
-                                    ];
-                                    $this->query->join('tblstudent_enrollment as se', $enrollment_join);
-                                    $this->query->join('academic_section as acs', $grade_join);
-                                    $this->query->join('standard as st', $std_join);
-                                    $this->query->join('division as di', $div_join);
-                                    $this->query->join('tblstudent_past_education as tpe', $tblstudent_join);
-                                }
-                            }
-                        }
-                    else{
-                        if ($main_module_name == "Family History") {
-                            $this->query = DB::table('tblstudent as s');
-                            $main_table_initial = "s";
-                            foreach ($sub_module_name as $id => $arr) {
-                                if ($arr->sub_module == "Student") {
-                                    $tblstudent_join = [
-                                        'tfh.student_id'       => 's.id',
-                                        'tfh.sub_institute_id' => 's.sub_institute_id',
-                                    ];
-                                    $this->query->join('tblstudent_enrollment as se', $enrollment_join);
-                                    $this->query->join('academic_section as acs', $grade_join);
-                                    $this->query->join('standard as st', $std_join);
-                                    $this->query->join('division as di', $div_join);
-                                    $this->query->join('tblstudent_family_history as tfh', $tblstudent_join);
-                                }
-                            }
-                        }
-                    else{
-                        if ($main_module_name == "Parent Feedback") {
-                            $this->query = DB::table('tblstudent as s');
-                            $main_table_initial = "s";
-                            foreach ($sub_module_name as $id => $arr) {
-                                if ($arr->sub_module == "Student") {
-                                    $tblstudent_join = [
-                                        'tpf.student_id'       => 's.id',
-                                        'tpf.sub_institute_id' => 's.sub_institute_id',
-                                    ];
-                                    $this->query->join('tblstudent_enrollment as se', $enrollment_join);
-                                    $this->query->join('academic_section as acs', $grade_join);
-                                    $this->query->join('standard as st', $std_join);
-                                    $this->query->join('division as di', $div_join);
-                                    $this->query->join('tblstudent_parent_feedback as tpf', $tblstudent_join);
-                                }
-                            }
-                        }
-                    else{
-                        if ($main_module_name == "Siblings Details") {
-                            $this->query = DB::table('tblstudent as s');
-                            $main_table_initial = "s";
-                            foreach ($sub_module_name as $id => $arr) {
-                                if ($arr->sub_module == "Student") {
-                                    $this->query->join('tblstudent_enrollment as se', $enrollment_join);
-                                    $this->query->join('academic_section as acs', $grade_join);
-                                    $this->query->join('tblstudent_siblings as ts', function ($join) {
-                                        $join->whereRaw('FIND_IN_SET(s.id,ts.siblings_id) >0 and s.sub_institute_id = ts.sub_institute_id');
-                                    });
-                                }
-                            }
-                        }
-                    else {
-                        if ($main_module_name == "S2 Log") {
-                            $all_detail['table_name'] = 'S2_LOG';
-                            $this->query = DB::table('S2_LOG as sl');
-                            $main_table_initial = "sl";
-                            foreach ($sub_module_name as $id => $arr) {
-                                $this->query->Leftjoin('tblstudent_bank_detail as tsbd',function($q) {
-                                    $q->on('tsbd.UMRN','=','sl.UMRN_NO')->where('tsbd.sub_institute_id',session()->get('sub_institute_id'));
-                                });
-                                $this->query->leftJoin('tblstudent_enrollment as se', function($q) {
-                                    $q->on('se.student_id', '=', 'tsbd.student_id')
-                                      ->where('se.syear', session()->get('syear'));
-                                });
-                                $this->query->Leftjoin('standard as st', 'st.id','=','se.standard_id');
-                                $this->query->groupBy('sl.id');
-                            }
-                            // $main_table_initial_capital = true;
                         }
                     }
                 }
             }
         }
-    }
-    }
-}
-}
-                    }
-                }
-            }
-}
-}
-                    }
-                }
-}
-                }
-            }
-        }
-    }
-}
-//echo("<pre>");print_r($all_fields_name);exit;
-// |COUNT(DISTINCT cm.content_category) as total_content|GROUP_CONCAT(DISTINCT cm.content_category) as content_type|COUNT(DISTINCT cm.title) as total_sub_content|GROUP_CONCAT(DISTINCT cm.title) as sub_contents
+        // echo "<pre>";
+        // print_r($all_fields_name);
+        // exit();
+        // |COUNT(DISTINCT cm.content_category) as total_content|GROUP_CONCAT(DISTINCT cm.content_category) as content_type|COUNT(DISTINCT cm.title) as total_sub_content|GROUP_CONCAT(DISTINCT cm.title) as sub_contents
 
-// Standard,Chapter Name,Subject Name,Total Contents,Content Name,Total Sub Content,Sub Content Name
+        // Standard,Chapter Name,Subject Name,Total Contents,Content Name,Total Sub Content,Sub Content Name
         $col = [];
         foreach ($all_detail["selected_fields"] as $id => $val) {
-            if ($main_module_name !="Transport" && $all_fields_name[$val] == "Full Name") {
-                $col[] = DB::raw("concat_ws(' ',s.first_name,s.middle_name,s.last_name) as full_name");
-            }
-            elseif($main_module_name =="Siblings Details" && $all_fields_name[$val] == "Sibling Name")
-            {
-                $col[] = DB::raw("GROUP_CONCAT(concat_ws(' ',s.first_name,s.middle_name,s.last_name)) as full_name");
-            }
-            elseif($main_module_name =="Transport" && $all_fields_name[$val] == " Full Name")
-            {
-                if($sub_module_name[0] == "vehicle" ){
-                    $col[] = DB::raw("concat_ws(' ',tdd.first_name,tdd.last_name) as full_name");
-                }else{
-                    $col[] = DB::raw("concat_ws(' ',s.first_name,s.middle_name,s.last_name) as full_name");
+            if ($main_module_name != "Transport" &&$all_fields_name[$val] == "Full Name") {
+                $col[] = DB::raw(
+                    "concat_ws(' ',s.first_name,s.middle_name,s.last_name) as full_name"
+                );
+            } elseif ($main_module_name == "Siblings Details" &&$all_fields_name[$val] == "Sibling Name") {
+                $col[] = DB::raw(
+                    "GROUP_CONCAT(concat_ws(' ',s.first_name,s.middle_name,s.last_name)) as full_name"
+                );
+            } elseif ($main_module_name == "Transport" &&$all_fields_name[$val] == " Full Name") {
+                if ($sub_module_name[0] == "vehicle") {
+                    $col[] = DB::raw(
+                        "concat_ws(' ',tdd.first_name,tdd.last_name) as full_name"
+                    );
+                } else {
+                    $col[] = DB::raw(
+                        "concat_ws(' ',s.first_name,s.middle_name,s.last_name) as full_name"
+                    );
                 }
-            }
-            elseif($all_fields_name[$val]=="Chapter Name"){
-                $col[] = DB::raw("GROUP_CONCAT(DISTINCT chm.chapter_name) as chapter_name");
-            }
-            elseif($all_fields_name[$val]=="Content Name"){
-                $col[] = DB::raw("GROUP_CONCAT(DISTINCT cm.content_category) as content_type");
-            }
-            elseif($all_fields_name[$val]=="Sub Content Name"){
-                $col[] = DB::raw("GROUP_CONCAT(DISTINCT cm.title) as sub_contents");
-            }
-            elseif($all_fields_name[$val]=="Total Contents"){
-                $col[] = DB::raw("COUNT(DISTINCT cm.content_category) as total_content");
-            }
-            elseif( $all_fields_name[$val] == "Total Sub Content"){
-                $col[] = DB::raw("COUNT(DISTINCT cm.title) as total_sub_content");
-            }
-            else {
-/* echo("<pre>");print_r($all_fields_name);echo("<br>");echo"value";
-echo("<pre>");print_r($val); */
+            } elseif ($all_fields_name[$val] == "Chapter Name") {
+                $col[] = DB::raw(
+                    "GROUP_CONCAT(DISTINCT chm.chapter_name) as chapter_name"
+                );
+            } elseif ($all_fields_name[$val] == "Content Name") {
+                $col[] = DB::raw(
+                    "GROUP_CONCAT(DISTINCT cm.content_category) as content_type"
+                );
+            } elseif ($all_fields_name[$val] == "Sub Content Name") {
+                $col[] = DB::raw(
+                    "GROUP_CONCAT(DISTINCT cm.title) as sub_contents"
+                );
+            } elseif ($all_fields_name[$val] == "Total Contents") {
+                $col[] = DB::raw(
+                    "COUNT(DISTINCT cm.content_category) as total_content"
+                );
+            } elseif ($all_fields_name[$val] == "Total Sub Content") {
+                $col[] = DB::raw(
+                    "COUNT(DISTINCT cm.title) as total_sub_content"
+                );
+            } else {
+                /* echo("<pre>");print_r($all_fields_name);echo("<br>");echo"value";
+                 echo("<pre>");print_r($val); */
 
-
-             $col[] = $all_fields_index[$val];
+                $col[] = $all_fields_index[$val];
             }
         }
-       /*  echo "<pre>";print_r($all_detail);
-        exit; */
+        /*  echo "<pre>";print_r($all_detail);
+         exit; */
         $result = "";
-        $sub_institute_id = session()->get('sub_institute_id');
+        $sub_institute_id = session()->get("sub_institute_id");
         foreach ($all_detail["condition"] as $must_any => $arr) {
-            if(isset($all_detail["table_name"]) && $all_detail["table_name"] == 'S2_LOG')
-            {
+            if (isset($all_detail["table_name"]) &&$all_detail["table_name"] == "S2_LOG") {
                 $this->query->whereRaw("1 = 1");
-
-            }
-            else if ($main_table_initial_capital) {
-                $this->query->whereRaw("$main_table_initial.SUB_INSTITUTE_ID = $sub_institute_id");
-            } else {
-                $this->query->whereRaw("$main_table_initial.sub_institute_id = $sub_institute_id");
+            } elseif ($main_table_initial_capital) {
+                $this->query->whereRaw(
+                    "$main_table_initial.SUB_INSTITUTE_ID = $sub_institute_id"
+                );
+            }  else if(!in_array($main_module_name,["Siblings Report"])){
+                $this->query->whereRaw(
+                    "$main_table_initial.sub_institute_id = $sub_institute_id"
+                );
             }
             if ($must_any == "must") {
                 $count = count($all_detail["condition"]["must"]["field"]);
                 for ($i = 0; $i < $count; $i++) {
-                    if ($all_detail["condition"]["must"]["con"][$i] != '') {
+                    if ($all_detail["condition"]["must"]["con"][$i] != "") {
                         $sign = "";
 
-                        if ($all_detail["condition"]["must"]["con"][$i] == "equals") {
+                        if ($all_detail["condition"]["must"]["con"][$i] =="equals") {
                             $sign = "=";
                         }
-                        if ($all_detail["condition"]["must"]["con"][$i] == "not_equals") {
+                        if ($all_detail["condition"]["must"]["con"][$i] =="not_equals") {
                             $sign = "!=";
                         }
-                        if ($all_detail["condition"]["must"]["con"][$i] == "less_then") {
+                        if ($all_detail["condition"]["must"]["con"][$i] =="less_then") {
                             $sign = "<";
                         }
-                        if ($all_detail["condition"]["must"]["con"][$i] == "grater_then") {
+                        if ($all_detail["condition"]["must"]["con"][$i] =="grater_then") {
                             $sign = ">";
                         }
-                        $val = "'".$all_detail["condition"]["must"]["val"][$i]."'";
-                        $fld = $all_fields_index[$all_detail["condition"]["must"]["field"][$i]];
+                        $val ="'" .$all_detail["condition"]["must"]["val"][$i] ."'";
+                        $fld =
+                            $all_fields_index[
+                                $all_detail["condition"]["must"]["field"][$i]
+                            ];
 
                         $temp_fld_arr = explode("as ", $fld);
                         $fld = $temp_fld_arr[0];
@@ -872,23 +910,26 @@ echo("<pre>");print_r($val); */
                 $count = count($all_detail["condition"]["any"]["field"]);
                 $where = "";
                 for ($i = 0; $i < $count; $i++) {
-                    if ($all_detail["condition"]["any"]["con"][$i] != '') {
+                    if ($all_detail["condition"]["any"]["con"][$i] != "") {
                         $sign = "";
 
-                        if ($all_detail["condition"]["any"]["con"][$i] == "equals") {
+                        if ($all_detail["condition"]["any"]["con"][$i] =="equals") {
                             $sign = "=";
                         }
-                        if ($all_detail["condition"]["any"]["con"][$i] == "not_equals") {
+                        if ($all_detail["condition"]["any"]["con"][$i] =="not_equals") {
                             $sign = "!=";
                         }
-                        if ($all_detail["condition"]["any"]["con"][$i] == "less_then") {
+                        if ($all_detail["condition"]["any"]["con"][$i] =="less_then") {
                             $sign = "<";
                         }
-                        if ($all_detail["condition"]["any"]["con"][$i] == "grater_then") {
+                        if ($all_detail["condition"]["any"]["con"][$i] =="grater_then") {
                             $sign = ">";
                         }
-                        $val = "'".$all_detail["condition"]["any"]["val"][$i]."'";
-                        $fld = $all_fields_index[$all_detail["condition"]["any"]["field"][$i]];
+                        $val ="'" .$all_detail["condition"]["any"]["val"][$i] ."'";
+                        $fld =
+                            $all_fields_index[
+                                $all_detail["condition"]["any"]["field"][$i]
+                            ];
 
                         $temp_fld_arr = explode("as ", $fld);
                         $fld = $temp_fld_arr[0];
@@ -901,77 +942,97 @@ echo("<pre>");print_r($val); */
                 }
                 if ($where != "") {
                     $where = rtrim($where, "or");
-                    $where .= ')';
+                    $where .= ")";
                     $this->query->whereRaw($where);
                 }
             }
         }
         // EP-1
         if (isset($all_detail["group_by"][0])) {
-            $group_by_arr = explode(" as", $all_fields_index[$all_detail["group_by"][0]]);
+            $group_by_arr = explode(
+                " as",
+                $all_fields_index[$all_detail["group_by"][0]]
+            );
 
-    		$pattern = '/\((.*?)\)/';
-            	preg_match($pattern, $group_by_arr[0], $matches);
-           	 $field = str_replace(["(DISTINCT "], "", $matches[0] ?? $matches);
-       	 if(isset($matches[0])){
-         	   $order = substr($field, 0,-1);
-        	}else{
-        	    $order = $group_by_arr[0];
-       	 }
+            $pattern = "/\((.*?)\)/";
+            preg_match($pattern, $group_by_arr[0], $matches);
+            $field = str_replace(["(DISTINCT "], "", $matches[0] ?? $matches);
+            if (isset($matches[0])) {
+                $order = substr($field, 0, -1);
+            } else {
+                $order = $group_by_arr[0];
+            }
 
             $this->query->groupBy($group_by_arr[0]);
             if (isset($all_detail["sort_order"][0])) {
                 $this->query->orderBy($order, $all_detail["sort_order"][0]);
             }
         }
-// EP-2
+        // EP-2
 
- if (isset($all_detail["group_by"]) && isset($all_detail["group_by"][1])) {
-    // $group_by_arr = explode(" as", $all_fields_index[$all_detail["group_by"][2]]);
-        $group_by_arr = explode(" as", $all_fields_index[$all_detail["group_by"][1]]);
-        $pattern = '/\((.*?)\)/';
-        preg_match($pattern, $group_by_arr[0], $matches);
-        $field = str_replace(["(DISTINCT "], "", $matches[0] ?? $matches);
-        if(isset($matches[0])){
-            $order = substr($field, 0,-1);
-        }else{
-            $order = $group_by_arr[0];
-        }
+        if (
+            isset($all_detail["group_by"]) &&
+            isset($all_detail["group_by"][1])
+        ) {
+            // $group_by_arr = explode(" as", $all_fields_index[$all_detail["group_by"][2]]);
+            $group_by_arr = explode(
+                " as",
+                $all_fields_index[$all_detail["group_by"][1]]
+            );
+            $pattern = "/\((.*?)\)/";
+            preg_match($pattern, $group_by_arr[0], $matches);
+            $field = str_replace(["(DISTINCT "], "", $matches[0] ?? $matches);
+            if (isset($matches[0])) {
+                $order = substr($field, 0, -1);
+            } else {
+                $order = $group_by_arr[0];
+            }
 
-        $this->query->groupBy($order);
-        if (isset($all_detail["sort_order"]) && isset($all_detail["sort_order"][2])) {
-            $this->query->orderBy($order, $all_detail["sort_order"][2]);
-        }
-    }        // EP-3
-        if (isset($all_detail["group_by"]) && isset($all_detail["group_by"][2])) {
-    // $group_by_arr = explode(" as", $all_fields_index[$all_detail["group_by"][2]]);
-        $group_by_arr = explode(" as", $all_fields_index[$all_detail["group_by"][2]]);
-        $pattern = '/\((.*?)\)/';
-        preg_match($pattern, $group_by_arr[0], $matches);
-        $field = str_replace(["(DISTINCT "], "", $matches[0] ?? $matches);
-        if(isset($matches[0])){
-            $order = substr($field, 0,-1);
-        }else{
-            $order = $group_by_arr[0];
-        }
+            $this->query->groupBy($order);
+            if (
+                isset($all_detail["sort_order"]) &&
+                isset($all_detail["sort_order"][2])
+            ) {
+                $this->query->orderBy($order, $all_detail["sort_order"][2]);
+            }
+        } // EP-3
+        if (
+            isset($all_detail["group_by"]) &&
+            isset($all_detail["group_by"][2])
+        ) {
+            // $group_by_arr = explode(" as", $all_fields_index[$all_detail["group_by"][2]]);
+            $group_by_arr = explode(
+                " as",
+                $all_fields_index[$all_detail["group_by"][2]]
+            );
+            $pattern = "/\((.*?)\)/";
+            preg_match($pattern, $group_by_arr[0], $matches);
+            $field = str_replace(["(DISTINCT "], "", $matches[0] ?? $matches);
+            if (isset($matches[0])) {
+                $order = substr($field, 0, -1);
+            } else {
+                $order = $group_by_arr[0];
+            }
 
-        $this->query->groupBy($order);
-        if (isset($all_detail["sort_order"]) && isset($all_detail["sort_order"][2])) {
-            $this->query->orderBy($order, $all_detail["sort_order"][2]);
+            $this->query->groupBy($order);
+            if (
+                isset($all_detail["sort_order"]) &&
+                isset($all_detail["sort_order"][2])
+            ) {
+                $this->query->orderBy($order, $all_detail["sort_order"][2]);
+            }
         }
-    }
 
         // echo "<pre>";print_r($col);exit;
         // $this->query->select($col);
-        // if(isset($counts) && $counts == "counts"){
-        //     $this->query->selectRaw(implode(', ', $col));
-        // }else{
-        $this->query->select($col);
-        // }
+        if(in_array($main_module_name,["Siblings Report"])){ // add module name in array when there is group_concat,count,concat_ws and other clauses
+            $this->query->selectRaw(DB::raw(implode(', ', $col)));
+        }else{
+            $this->query->select($col);
+        }
         $result = $this->query->get();
         $tbl_detail = [];
         foreach ($all_detail["selected_fields"] as $id => $val) {
-
             $field_arr = explode("as ", $all_fields_index[$val]);
 
             if (isset($field_arr[1])) {
@@ -987,13 +1048,13 @@ echo("<pre>");print_r($val); */
             $tbl_heading[] = $all_fields_name[$val];
         }
 
-        $result_data = array();
+        $result_data = [];
         $result_data["tbl_heading"] = $tbl_heading;
         $result_data["tbl_detail"] = $tbl_detail;
         $result_data["result"] = $result;
         $type = "";
 
-        return is_mobile($type, 'dynamic_report/dynamic_report/show_report', $result_data, 'view');
+        return is_mobile($type,"dynamic_report/dynamic_report/show_report",$result_data,"view");
     }
 
     /**
@@ -1007,35 +1068,40 @@ echo("<pre>");print_r($val); */
     {
         $all_dd = $this->get_all_dd();
 
-        $allData = DB::table('LEARNING_OUTCOME_INDICATOR')->where('ID', $id)->get()->toArray();
+        $allData = DB::table("LEARNING_OUTCOME_INDICATOR")
+            ->where("ID", $id)
+            ->get()
+            ->toArray();
 
         $standard = $allData[0]->STANDARD;
         $medium = $allData[0]->MEDIUM;
 
         $where = [
-            'LEARNING_OUTCOME_PDF.standard' => $standard,
-            'LEARNING_OUTCOME_PDF.medium'   => $medium,
+            "LEARNING_OUTCOME_PDF.standard" => $standard,
+            "LEARNING_OUTCOME_PDF.medium" => $medium,
         ];
 
-        $std_sub_map = DB::table('LEARNING_OUTCOME_PDF')
+        $std_sub_map = DB::table("LEARNING_OUTCOME_PDF")
             ->where($where)
-            ->pluck('LEARNING_OUTCOME_PDF.DISPLAY_SUBJECT', 'LEARNING_OUTCOME_PDF.SUBJECTS');
+            ->pluck(
+                "LEARNING_OUTCOME_PDF.DISPLAY_SUBJECT",
+                "LEARNING_OUTCOME_PDF.SUBJECTS"
+            );
 
         $data = [
-            'medium'           => $all_dd['medium'],
-            'std'              => $all_dd['std'],
-            'selected_medium'  => $allData[0]->MEDIUM,
-            'selected_std'     => $allData[0]->STANDARD,
-            'selected_subject' => $allData[0]->SUBJECT,
-            'learning_outcome' => $allData[0]->INDICATOR,
-            'subject'          => $std_sub_map,
-            'id'               => $id,
-
+            "medium" => $all_dd["medium"],
+            "std" => $all_dd["std"],
+            "selected_medium" => $allData[0]->MEDIUM,
+            "selected_std" => $allData[0]->STANDARD,
+            "selected_subject" => $allData[0]->SUBJECT,
+            "learning_outcome" => $allData[0]->INDICATOR,
+            "subject" => $std_sub_map,
+            "id" => $id,
         ];
 
-        $type = $request->input('type');
+        $type = $request->input("type");
 
-        return is_mobile($type, "learning_outcome/indicator_mapping/edit", $data, "view");
+        return is_mobile($type,"learning_outcome/indicator_mapping/edit",$data,"view");
     }
 
     /**
@@ -1049,23 +1115,23 @@ echo("<pre>");print_r($val); */
     public function update(Request $request, $id)
     {
         $data = [
-            'MEDIUM'     => $request->get('medium'),
-            'STANDARD'   => $request->get('std'),
-            'SUBJECT'    => $request->get('subject'),
-            'INDICATOR'  => $request->get('learning_outcome'),
-            'UPDATED_AT' => now(),
-            'UPDATED_BY' => $request->session()->get('user_id'),
+            "MEDIUM" => $request->get("medium"),
+            "STANDARD" => $request->get("std"),
+            "SUBJECT" => $request->get("subject"),
+            "INDICATOR" => $request->get("learning_outcome"),
+            "UPDATED_AT" => now(),
+            "UPDATED_BY" => $request->session()->get("user_id"),
         ];
 
-        DB::table('LEARNING_OUTCOME_INDICATOR')
+        DB::table("LEARNING_OUTCOME_INDICATOR")
             ->where(["ID" => $id])
             ->update($data);
 
         $res = [
             "status_code" => 1,
-            "message"     => "Data Saved",
+            "message" => "Data Saved",
         ];
-        $type = $request->input('type');
+        $type = $request->input("type");
 
         return is_mobile($type, "indicator_mapping.index", $res, "redirect");
     }
@@ -1079,15 +1145,15 @@ echo("<pre>");print_r($val); */
      */
     public function destroy(Request $request, $id)
     {
-        $type = $request->input('type');
+        $type = $request->input("type");
 
-        DB::table('report_module_data')
+        DB::table("report_module_data")
             ->where(["id" => $id])
             ->delete();
 
         $res = [
             "status_code" => 1,
-            "message"     => "Data Deleted",
+            "message" => "Data Deleted",
         ];
 
         return is_mobile($type, "dynamic_report.index", $res, "redirect");
