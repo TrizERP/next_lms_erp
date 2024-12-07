@@ -52,7 +52,14 @@
                                                 @php
                                                     $path = 'storage/app/public/driver/' . $val;
                                                 @endphp
-                                                <img src="{{ asset($path) }}" height="30%" width="30%">                                        
+                                                <img src="{{ asset($path) }}" height="30%" width="30%">  
+                                                @elseif($ind == "siblings_details")    
+                                                    @php 
+                                                    $siblingsArr = explode('####', $val);
+                                                    @endphp   
+                                                    @foreach($siblingsArr as $k=>$v)  
+                                                        <span>{{$v}}</span><br>    
+                                                    @endforeach                          
                                                 @else
                                                     {{$val}}
                                                 @endif
