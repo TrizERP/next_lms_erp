@@ -387,7 +387,7 @@ class result_report_controller extends Controller
                     $join->whereRaw("rm.sub_institute_id = e.sub_institute_id AND rm.exam_id = e.id");
                 })
                 ->selectRaw("e.title as ExamTitle, SUM(e.points) AS total_points,
-                    e.subject_id,s.display_name as subject_name,rm.student_id,SUM(rm.points) as obtained_points")
+                    e.subject_id,s.display_name as subject_name,IFNULL(s.elective_subject,'-') as opt_sub,rm.student_id,SUM(rm.points) as obtained_points")
                 ->where("e.term_id", "=", $term_id)
                 ->where("e.sub_institute_id", "=", $sub_institute_id)
                 ->where("e.syear", "=", $syear)
@@ -415,7 +415,7 @@ class result_report_controller extends Controller
             $date_arr = [];
 
             foreach ($result as $id => $arr) {
-                $date_arr[$arr['subject_name']] = $arr['subject_name'] . '(' . $arr['total_points'] . ')';
+                $date_arr[$arr['subject_name']] = [$arr['subject_name'] . '(' . $arr['total_points'] . ')',$arr['opt_sub']];
             }
 
             $data['grade_id'] = $grade_id;
