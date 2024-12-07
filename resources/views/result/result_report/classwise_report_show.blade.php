@@ -44,9 +44,9 @@
                         <th>Roll No.</th>
                         <th>Student Name</th>
                         @if(isset($data['date_arr']))
-                        @foreach($data['date_arr'] as $k => $date_point)
-                        <th>{{$date_point}}</th>
-                        @endforeach
+                           @foreach($data['date_arr'] as $k => $date_point)
+                              <th>{{isset($date_point[0]) ? $date_point[0] : '-'}}</th>
+                           @endforeach
                         @endif
                         <th>Total</th>
                         <th>Percentage(%)</th>
@@ -66,24 +66,45 @@
                         @if(isset($data['date_arr']))
                         @foreach($data['date_arr'] as $k => $date_point)
                            @if(isset($data['WRT_data'][$student_id][$k]) && count($data['WRT_data'][$student_id][$k]) > 0)
-                           @if($data['WRT_data'][$student_id][$k]['is_absent'] == 'AB')
-                           <td style="font-weight: bold;color:red;">{{$data['WRT_data'][$student_id][$k]['is_absent']}}</td>
-                           @php
-                              $total += $data['WRT_data'][$student_id][$k]['total_points'];
-                              $obtained_total += $data['WRT_data'][$student_id][$k]['obtained_points'];
-                           @endphp
-                           @elseif($data['WRT_data'][$student_id][$k]['is_absent'] == 'EX' || $data['WRT_data'][$student_id][$k]['is_absent'] == 'N.A.')
-                           <td style="font-weight: bold;color:red;">{{$data['WRT_data'][$student_id][$k]['is_absent']}}</td>
-                           @php
-                              $obtained_total += $data['WRT_data'][$student_id][$k]['obtained_points'];
-                           @endphp
-                           @else
-                           <td>{{$data['WRT_data'][$student_id][$k]['obtained_points']}}</td>
-                           @php
-                              $total += $data['WRT_data'][$student_id][$k]['total_points'];
-                              $obtained_total += $data['WRT_data'][$student_id][$k]['obtained_points'];
-                           @endphp
-                           @endif
+                              @if($data['WRT_data'][$student_id][$k]['is_absent'] == 'AB')
+                              <td style="font-weight: bold;color:red;">{{$data['WRT_data'][$student_id][$k]['is_absent']}}</td>
+                                 @php
+                                    if(in_array(session()->get('sub_institute_id'),[67]) && isset($date_point[1]) && $date_point[1]=="Yes"){
+                                       $total += 0;
+                                       $obtained_total += 0;
+                                    }else{
+                                       $total += $data['WRT_data'][$student_id][$k]['total_points'];
+                                       $obtained_total += $data['WRT_data'][$student_id][$k]['obtained_points'];
+                                    }
+                                 @endphp
+                              @elseif($data['WRT_data'][$student_id][$k]['is_absent'] == 'EX' || $data['WRT_data'][$student_id][$k]['is_absent'] == 'N.A.')
+                                 <td style="font-weight: bold;color:red;">{{$data['WRT_data'][$student_id][$k]['is_absent']}}</td>
+                                 @php
+                                    $obtained_total += $data['WRT_data'][$student_id][$k]['obtained_points'];
+                                 @endphp
+                              @else
+                              <td>
+                                 @php
+                                    $sub_mark = $data['WRT_data'][$student_id][$k]['obtained_points'];
+                                    if(in_array(session()->get('sub_institute_id'),[67]) && isset($date_point[1]) && $date_point[1]=="Yes")
+                                    {
+                                       if($data['WRT_data'][$student_id][$k]['total_points']>$data['WRT_data'][$student_id][$k]['obtained_points']){
+                                          $sub_mark = \App\Helpers\getGrade($gradeScale, $data['WRT_data'][$student_id][$k]['total_points'], $data['WRT_data'][$student_id][$k]['obtained_points']);
+                                       }
+                                    }
+                                 @endphp 
+                                 {{$sub_mark}}
+                              </td>
+                                 @php
+                                    if(in_array(session()->get('sub_institute_id'),[67]) && isset($date_point[1]) && $date_point[1]=="Yes"){
+                                       $total += 0;
+                                       $obtained_total += 0;
+                                    }else{
+                                       $total += $data['WRT_data'][$student_id][$k]['total_points'];
+                                       $obtained_total += $data['WRT_data'][$student_id][$k]['obtained_points'];
+                                    }
+                                 @endphp
+                              @endif
                            @php
                               $per = ($total != 0) ? (($obtained_total * 100) / $total) : 0;
                               $percentage = number_format($per,2);
