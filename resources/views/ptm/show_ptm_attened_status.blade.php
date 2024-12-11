@@ -59,7 +59,7 @@
         @endphp
             <div class="card">
                 <div class="panel-body">
-                <form method="POST" action="{{ route('add_ptm_attened_status.store') }}">
+                <form method="POST" action="{{ route('add_ptm_attened_status.store') }}" onsubmit="return validateForm()">
                     @csrf
                     <div class="col-lg-12 col-sm-12 col-xs-12">
                     <div class="table-responsive">
@@ -145,9 +145,37 @@
 	         }
 	     }
 	}
+
+    function validateForm() {
+        var checkboxes = document.querySelectorAll('input[name^="students["]');
+        var anyChecked = false;
+        
+        checkboxes.forEach(function(checkbox) {
+            if (checkbox.checked) {
+                anyChecked = true;
+            }
+        });
+        
+        if (!anyChecked) {
+            alert("Please select at least one checkbox");
+            return false; 
+        }
+        
+        return true;
+    }
 </script>
 <script>
 $(document).ready(function () {
+    $('#grade').prop('required',true);
+
+    $('#grade').on('change',function(){
+        $('#standard').prop('required',true);
+    })
+
+    $('#standard').on('change',function(){
+        $('#divison').prop('required',true);
+    })
+
     $('#example').DataTable();
 });
 </script>

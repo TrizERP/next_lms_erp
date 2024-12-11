@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Route;
 Route::group(['prefix' => 'ptm', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function() {
     Route::resource('add_ptm_time_slot_master', ptmtimeslotmasterController::class);
     Route::resource('add_ptm_attened_status', ptmattenedstatusController::class);
+    Route::get('ptm_report',[ptmattenedstatusController::class,'ptmReport'])->name('ptm_report.index');
 });
 
 Route::controller(ptmattenedstatusController::class)->group(function () {
