@@ -144,9 +144,13 @@ class courseController extends Controller
     public function course_search(Request $request)
     {
         $type = $request->input('type');
-        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $sub_institute_id[0] = $request->session()->get('sub_institute_id');
         $grade = $request->input('grade');
         $standard = $request->input('standard');
+
+		if($request->has('perm') && $request->perm==1){
+			$sub_institute_id[1] = 1;
+		}
 
         $mycourse_arr = [];
         $extra = "";
@@ -159,30 +163,58 @@ class courseController extends Controller
                 s.standard_id,
                 (SELECT concat_ws(',','".$stu_data[0]['standard_id']."',group_concat(id))
                 FROM standard
-                WHERE sub_institute_id = '".$sub_institute_id."' AND grade_id IN (
+                WHERE sub_institute_id IN (".implode(',',$sub_institute_id).") AND grade_id IN (
                 SELECT id
                 FROM academic_section
-                WHERE sub_institute_id = '".$sub_institute_id."' AND title = 'Other'))
+                WHERE sub_institute_id IN (".implode(',',$sub_institute_id).") AND title = 'Other'))
             )";
         }
 
-        if ($grade != "") {
-            $extra .= " AND STD.grade_id = '".$grade."'";
-        }
-        if ($standard != "") {
-            $extra .= " AND STD.id = '".$standard."'";
-        }
+        // if ($grade != "") {
+        //     $extra .= " AND STD.grade_id = '".$grade."'";
+        // }
+        // if ($standard != "") {
+        //     $extra .= " AND STD.id = '".$standard."'";
+        // }
 
-        $arr = DB::select("SELECT STD.name AS standard_name,s.display_name AS subject_name,s.subject_id,STD.id AS standard_id,s.sub_institute_id,
-                s.display_image,GROUP_CONCAT(DISTINCT(CONCAT_WS('/',cp.chapter_name,cp.id))) AS chapter_list,
-                ifnull(s.subject_category,'My Course') AS content_category
-                FROM sub_std_map s
-                INNER JOIN standard STD ON STD.id = s.standard_id
-                LEFT JOIN chapter_master cp ON cp.subject_id = s.subject_id
-                LEFT JOIN content_master c ON c.subject_id = s.subject_id AND c.standard_id = s.standard_id AND c.sub_institute_id = s.sub_institute_id
-                WHERE s.sub_institute_id = '".$sub_institute_id."' AND allow_content = 'Yes'
-                 ".$extra."
-                GROUP BY s.subject_id,s.standard_id,s.subject_category ORDER BY s.sort_order");
+        // $arr = DB::select("SELECT STD.name AS standard_name,s.display_name AS subject_name,s.subject_id,STD.id AS standard_id,s.sub_institute_id,
+        //         s.display_image,GROUP_CONCAT(DISTINCT(CONCAT_WS('/',cp.chapter_name,cp.id))) AS chapter_list,
+        //         ifnull(s.subject_category,'My Course') AS content_category
+        //         FROM sub_std_map s
+        //         INNER JOIN standard STD ON STD.id = s.standard_id
+        //         LEFT JOIN chapter_master cp ON cp.subject_id = s.subject_id
+        //         LEFT JOIN content_master c ON c.subject_id = s.subject_id AND c.standard_id = s.standard_id AND c.sub_institute_id = s.sub_institute_id
+        //         WHERE s.sub_institute_id IN (".implode(',',$sub_institute_id).") AND allow_content = 'Yes'
+        //          ".$extra."
+        //         GROUP BY s.subject_id,s.standard_id,s.subject_category ORDER BY s.sort_order");
+
+		if ($grade != "") {
+			$extra .= "STD.grade_id = '".$grade."'";
+		}
+		if ($standard != "") {
+			$extra .= " AND STD.id = '".$standard."'";
+		}
+
+		$arr = DB::select("SELECT STD.name AS standard_name,s.display_name AS subject_name,s.subject_id,STD.id AS standard_id,s.sub_institute_id, s.display_image,GROUP_CONCAT(DISTINCT(CONCAT_WS('/', cp.chapter_name, cp.id))) AS chapter_list,IFNULL(s.subject_category, 'My Course') AS content_category
+				FROM  sub_std_map s
+				INNER JOIN standard STD ON STD.id = s.standard_id
+				LEFT JOIN chapter_master cp ON cp.subject_id = s.subject_id
+				LEFT JOIN content_master c ON c.subject_id = s.subject_id AND c.standard_id = s.standard_id AND c.sub_institute_id = s.sub_institute_id
+				WHERE 
+					s.sub_institute_id IN (".implode(',',$sub_institute_id).") 
+					AND allow_content = 'Yes'
+					AND (
+						IFNULL(s.subject_category, 'My Course') = 'SEL' 
+						OR (IFNULL(s.subject_category, 'My Course') != 'SEL' AND (
+						".$extra."
+						))
+					)
+				GROUP BY 
+					s.subject_id, s.standard_id, s.subject_category
+				ORDER BY 
+					s.sort_order;
+				");
+
 
         $arr = json_decode(json_encode($arr), true);
         if (count($arr) > 0) {
@@ -200,7 +232,7 @@ class courseController extends Controller
         $res['message'] = "SUCCESS";
         $res['grade'] = $grade;
         $res['standard'] = $standard;
-		$res['sub_institute_id'] = $sub_institute_id;
+		$res['sub_institute_id'] = $sub_institute_id[0];
 
         return is_mobile($type, 'lms/show_course', $res, "view");
     }

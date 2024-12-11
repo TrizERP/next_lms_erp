@@ -410,4 +410,48 @@ class ptmattenedstatusController extends Controller
         return json_encode($res);
     }
 
+
+    public function ptmReport(Request $request){
+        $type= $request->type;
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+
+        $from_date=$to_date=now();
+        if($request->has('Search')){
+            $from_date = $request->from_date;
+            $to_date = $request->to_date;
+            $res['grade_id'] = $grade = $request->grade;
+            $res['standard_id'] = $standard = $request->standard;
+            $res['division_id'] = $division = $request->division;
+
+            $res['details'] = DB::table('ptm_booking_master as pbm')
+            ->join('ptm_time_slots_master as psm','psm.id','=','pbm.TIME_SLOT_ID')
+            ->join('tblstudent as s','s.id','=','pbm.STUDENT_ID')
+            ->join('tblstudent_enrollment as se',function($join) use($sub_institute_id,$syear){
+                $join->on('se.student_id','=','s.id')->where(['se.sub_institute_id'=>$sub_institute_id]);
+            })
+            ->join('standard as std','std.id','=','se.standard_id')
+            ->join('division as d','d.id','=','se.section_id')
+            ->selectRaw('pbm.*,psm.title as slot_title,psm.from_time,psm.to_time,std.name as standard,d.name as division,CONCAT_WS(" ",COALESCE(s.first_name,""),COALESCE(s.middle_name,""),COALESCE(s.last_name,"")) as student_name,s.mobile')
+            ->when($request->grade,function($q) use($grade){
+                $q->where('se.grade_id',$grade);
+            })
+            ->when($request->standard,function($q) use($standard){
+                $q->where('se.standard_id',$standard);
+            })
+            ->when($request->division,function($q) use($division){
+                $q->where('se.section_id',$division);
+            })
+            ->where(['pbm.sub_institute_id'=>$sub_institute_id,'se.syear'=>$syear])
+            ->whereBetween('pbm.DATE',[$from_date,$to_date])
+            ->get()->toArray();
+            // echo "<pre>";print_r($res);exit;
+        }
+
+        $res['from_date'] = $from_date;
+        $res['to_date'] = $to_date;
+
+        return is_mobile($type, "ptm/ptm_report", $res, "view");
+    }
+
 }
