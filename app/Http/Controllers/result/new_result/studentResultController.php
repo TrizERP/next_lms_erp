@@ -481,7 +481,12 @@ class studentResultController extends Controller
             $html_content = str_replace(htmlspecialchars("<<activity_tag_marks>>"), $main_result['table'], $html_content);
         }
 
-        // 2024-09-11 MMIS std 9th co scholatic added
+        if (strpos($html_content, htmlspecialchars('<<hpc_hills_nursary>>')) !== false) {
+            $main_result = $this->get_hpc_hills_nursary($standard_id, $value['id'], $format, "no_zero");
+            $html_content = str_replace(htmlspecialchars("<<hpc_hills_nursary>>"), $main_result['table'], $html_content);
+        }
+
+        // 2024-09-11 MMIS std 9th co scholatic added 
         $mmisPartB9 = $this->mmisPartB9($standard_id, $value['id'], $format);
         $html_content = str_replace(htmlspecialchars("<<part_b_scholastic>>"), $mmisPartB9, $html_content);
 
@@ -5661,6 +5666,218 @@ private function buildDisciplineTable($decipline_data)
                 //         }
                 //     }
                 // }
+            }
+            $table .= '</tbody></table>';
+        }
+        // exit;
+        $res['table'] = $table;
+        return $res;
+    }
+
+    public function get_hpc_hills_nursary($standard_id, $student_id, $format, $digit)
+    {
+        $syear = session()->get('syear');
+        $sub_institute_id = session()->get('sub_institute_id');
+        $format_sub_different = [61, 195];
+
+        if ($format == "yearly") {
+            $extra_term =$extra_exam = "1=1";
+        } else {
+            $extra_term = "term_id = " . $format;
+            $extra_exam = "rce.term_id = " . $format;
+        }
+
+        // get term_name 
+        $term_name = DB::table('academic_year')->whereRaw($extra_term)->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->get()->toArray();
+
+        $get_result_skillsets = DB::table('result_skillset')->selectRaw('*,
+        	group_concat(title order by sort_order SEPARATOR "|") as all_title,
+        	GROUP_CONCAT(id ORDER BY sort_order ASC) as all_id,
+        	group_concat(`group`) as all_group')
+            ->where(['sub_institute_id' => $sub_institute_id,'standard'=>$standard_id])
+            ->groupBy('main_title')
+            ->orderByRaw('main_sort_order')
+            ->get()->toArray();
+        
+        $table = '';
+  
+        foreach($get_result_skillsets as $key=>$get_result_skillset)
+        {
+            
+            $table .= '<table  class="curricular_table" cellspacing="0"  border="1">
+            <thead>
+            <tr class="curricular_thead_tr_main">';
+            $style = '';
+            $heading = $get_result_skillset->main_title;
+            $sub_title_heading = $get_result_skillset->all_title;
+            $skillset_ids = $get_result_skillset->all_id;
+            $all_group = $get_result_skillset->all_group;
+
+            $sub_title = explode('|', $sub_title_heading);
+            $skill_ids = explode(',', $skillset_ids);
+            $all_group = explode(',', $all_group);
+
+            $table .= '<th class="curricular_th" style="font-size:18px"><b>' . $heading . '</b></th></tr>';
+
+            foreach($sub_title as $key => $value)
+            {
+                if(isset($all_group[$key])) 
+				{
+        		$sub_sub_title = DB::table('result_activity_group as rag')
+            		->where('rag.sub_institute_id', $sub_institute_id)
+            		->where('rag.group', $all_group[$key])
+            		->get()
+            		->toArray();
+	    		} else {
+	        		continue;
+	    		}
+
+                $table .= '<tr class="curricular_thead_tr"><th class="curricular_th"><b>' . $value . '</b></th>';
+                $get_result_activity_marks = $get_sub_activity = $sub_sub_id = [];  
+
+                $span_classes = ["span_0","span_1","span_2","span_3","span_4","span_5"];
+                $first_char = [];
+                foreach($sub_sub_title as $key1 => $value1)
+                {
+                    $firstCharacter = substr($value1->title, 0, 1);
+                    $first_char[$key1] = $firstCharacter;
+                    $table .= '<th  class="curricular_th"><span class="'.$span_classes[$key1].'">' . $value1->title . '</span></th>';
+
+                    $get_result_activity_masters = DB::table('result_activity_master')
+                    ->selectRaw('*, 
+                    	group_concat(title ORDER BY sort_order ASC SEPARATOR "|") as activity_master_title,
+                    	GROUP_CONCAT(id ORDER BY sort_order ASC) as ids')
+                    ->where(['sub_institute_id' => $sub_institute_id])
+                    ->where('skill_id', $skill_ids[$key])
+                    ->where('standard',$standard_id)
+                    ->orderBy('sort_order')
+                    ->get()->toArray();
+                    
+                    foreach($get_result_activity_masters as $get_result_activity_master)
+                    {
+                        $activity_master_id = explode(',', $get_result_activity_master->ids);
+                        $activity_master_title = explode('|', $get_result_activity_master->activity_master_title);
+
+                        foreach($activity_master_id as $key2 => $activity_id)
+                        {
+                            if(isset($activity_master_title[$key2])){
+                            $get_result_activity_marks[$activity_master_title[$key2]][] = DB::table('result_activity_marks')
+                            ->where(['sub_institute_id' => $sub_institute_id])
+                            ->where('activity_id', $activity_id)
+                            ->where('group_id', $value1->id)
+                            ->where('student_id', $student_id)
+                            ->where('syear',$syear)
+                            ->get()->toArray();
+
+                            if(!isset($get_sub_activity[$activity_id])){
+                                $get_sub_activity[$activity_id]= DB::table('result_sub_activity')->where('sub_skill_id',$activity_id)->get()->toArray();
+                            }
+                            }
+                        }
+                    }
+                }
+                // echo "<pre>";print_r($get_sub_activity);
+                $table .= '</tr>';
+                if(isset($get_result_activity_masters) && !empty($get_result_activity_masters)){
+                    foreach($get_result_activity_masters as $get_result_activity_master)
+                    {
+                        $activity_master_title = explode('|', $get_result_activity_master->activity_master_title);
+                        $activity_master_id = explode(',', $get_result_activity_master->ids);
+
+                        foreach ($activity_master_id as $ak => $activity_id) {
+                            if(isset($get_sub_activity[$activity_id]) && !empty($get_sub_activity[$activity_id])){
+                                $table.='<tr class="curricular_tbody_tr"><td class="curricular_td"><span class="'.$span_classes[$key1].'">'.$activity_master_title[$ak].'</span></td>';
+                                foreach($sub_sub_title as $key1 => $value1)
+                                {
+                                        $table .= '<td class="curricular_td""><span class="dash">N/A</span></td>';
+                                }
+                               
+                                $table.=' </tr>';
+                                foreach ($get_sub_activity[$activity_id] as $kr => $val) {
+                                        // echo "<pre>";print_r($v->title);
+                                      
+                                    $table.='<tr class="curricular_tbody_tr"><td class="curricular_td">'.$val->title.'</td>';
+                                    $count = [];
+                                    foreach($sub_sub_title as $ke => $va)
+                                    {
+                                        $marks = DB::table('result_activity_marks')
+                                        ->where(['sub_institute_id' => $sub_institute_id])
+                                        ->where('activity_id', $activity_id)
+                                        ->where('sub_activity_id', $val->id)
+                                        ->where('group_id', $va->id)
+                                        ->where('student_id', $student_id)
+                                        ->where('syear',$syear)
+                                        ->first();
+
+                                        if(!empty($marks)){
+                                            if(isset($marks->group_id) && $marks->group_id==$va->id){
+                                               
+                                                $count[$activity_id][$ke]=1;
+                                            }
+                                        }
+                                    }
+                                    if(!isset($count[$activity_id])){
+                                        foreach($sub_sub_title as $kk => $vv)
+                                        {
+                                            $table .= '<td class="curricular_td"><span class="dash">N/A</span></td>';
+                                        }
+                                    }else{
+                                        foreach($sub_sub_title as $kk => $vv)
+                                        {
+                                            if(isset($count[$activity_id][$kk])){
+
+                                                $table .= '<td class="curricular_td"><psan class="'.$span_classes[$key1].'">&#10004</span></td>';
+                                            }else if(in_array($sub_institute_id,[202])){
+                                                    $table .= '<td class="curricular_td"><span class="dash">-</span></td>';
+                                            }else{
+                                                $table .= '<td class="curricular_td"><span class="dash">-</span></td>';
+                                            }
+                                        }
+                                    }
+                                    $table.='</tr>';
+                                    
+                                }
+                                // $table.='</tr>';
+                            }else{
+                                if(isset($activity_master_title[$ak])){
+                                    $table .= '<tr class="curricular_tbody_tr"><td  class="curricular_td">' . $activity_master_title[$ak] .'</td>';
+                                    $checked = 0;
+                                    if(isset($get_result_activity_marks[$activity_master_title[$ak]]) && !empty($get_result_activity_marks[$activity_master_title[$ak]]))
+                                    {
+                                        foreach($get_result_activity_marks[$activity_master_title[$ak]] as $get_result_activity_mark)
+                                        {
+                                            if(isset($get_result_activity_mark[0]) && $get_result_activity_mark[0]->activity_id==$activity_master_id[$ak]){
+                                                $checked++;
+                                            }                                  
+                                        }
+                                    }
+                                    if($checked==0){
+                                        foreach($get_result_activity_marks[$activity_master_title[$ak]] as $get_result_activity_mark)
+                                        {
+                                            $table .= '<td class="curricular_td"><span class="dash">NA</span></td>';
+                                        }
+                                    }else{
+                                        foreach($get_result_activity_marks[$activity_master_title[$ak]] as $kPoint => $get_result_activity_mark)
+                                        {
+                                            $table .= '<td class="curricular_td">';
+                                            if(isset($get_result_activity_mark[0]) && $get_result_activity_mark[0]->activity_id==$activity_master_id[$ak])
+                                            {
+                                                $table .= '<span class="'.$span_classes[$kPoint].'">'.$first_char[$kPoint].'</span>';
+                                            }else if(in_array($sub_institute_id,[202])){
+                                                $table .= '&nbsp;';
+                                            }
+                                            $table .= '</td>';
+                                        
+                                        }
+                                    }
+                                }
+                                $table .= '</tr>';
+                            }
+
+                        }
+                    }
+                }
+              
             }
             $table .= '</tbody></table>';
         }

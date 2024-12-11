@@ -92,6 +92,16 @@ $student_id_arr = implode(",",array_values($data['students_ids']));
 
 </script>
 <script type="text/javascript">
+   $(document).ready(function () {
+    // Remove the 'table-hover' class from all tables
+    $('table').removeClass('table-hover'); 
+
+    // Example of applying again if new tables are added dynamically
+    $(document).on('DOMNodeInserted', function () {
+        $('table').removeClass('table-hover');
+    });
+});
+
     // function printDiv(divName) {
     //     var studentData = @json($data['all_stud_html']);
         
