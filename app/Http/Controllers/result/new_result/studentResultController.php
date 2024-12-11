@@ -112,7 +112,7 @@ class studentResultController extends Controller
         foreach ($data as $key => $value) {
             $html_content = $tData[0]['html_content'];
             $class = '';
-            if (in_array($sub_institute_id,[201,202,203,254,324,326,327])){ 
+            if (in_array($sub_institute_id,[254])){ //201,202,203,254,324,326,327
                 $class = 'class="report-card-bg2"';
             }else{
                 $class = 'class="report-card-bg"';
