@@ -112,12 +112,29 @@ class studentResultController extends Controller
         foreach ($data as $key => $value) {
             $html_content = $tData[0]['html_content'];
             $class = '';
-            if (in_array($sub_institute_id,[254])){ //201,202,203,254,324,326,327
-                $class = 'class="report-card-bg2"';
+            if (in_array($sub_institute_id,[201,202,203,254])){ 
+                $class = 'class="report-card-bg"';
             }else{
                 $class = 'class="report-card-bg"';
             }
-            $new_html_content = '<div id="' . $value['id'] . '" ' . $class . ' style="page-break-before:avoid !important;page-break:always !important;">' . $this->create_html_content($syear, $sub_institute_id, $html_content, $value, $template, $result_trust, $format) . '</div>';
+            $new_html_content = '<div id="' . $value['id'] . '"><div ' . $class . ' style="page-break-before:avoid !important;page-break:always !important;"><div class="print-header" style="background:#fff" ><table class="report-card" width="100%" cellspacing="0" cellpadding="0">
+            <tbody>
+                <tr>
+                    <td align="left" class="part1 headerPart1">
+                        <!--  <img src="/storage/result/left_logo/20241014104545.PNG" alt="SCHOOL LEFT LOGO" style="height: 50px !important;">   -->
+                        <img src="https://erp.triz.co.in/admin_dep/images/hills_logo.png" alt="hills_logo"
+                            class="logo1">
+                        <img src="https://erp.triz.co.in/Images/Hills_Birdie_logo.png" alt="Hills_Birdie"
+                            class="logo2"><br>
+                    </td>
+
+                    <td align="left" class="part2">
+                        <img src="https://erp.triz.co.in/Images/hills_nursary_address.png" alt="address"
+                            class="address">
+                    </td>
+                </tr>
+            </tbody>
+        </table> <hr style="margin-top:10px;margin-bottom:0px;background:black;padding:1px !important"></div>' . $this->create_html_content($syear, $sub_institute_id, $html_content, $value, $template, $result_trust, $format) . '</div></div>';
             $new_html .= $new_html_content;
             $all_stud_html[$value['id']] = $new_html_content;
         }
@@ -474,7 +491,7 @@ class studentResultController extends Controller
         //$html_content = str_replace(htmlspecialchars("<<result>>"), strtoupper($main_result['result']), $html_content);
             $html_content = str_replace(htmlspecialchars("<<result>>"), $main_result['result'], $html_content);
         }
-        $html_content = str_replace(htmlspecialchars("<<school_open_date>>"),$reopen_date, $html_content);
+        $html_content = str_replace(htmlspecialchars("<<school_open_date>>"),                                                                                          $reopen_date, $html_content);
 
         if (strpos($html_content, htmlspecialchars('<<activity_tag_marks>>')) !== false) {
             $main_result = $this->get_activity_marks($standard_id, $value['id'], $format, "no_zero");
@@ -5700,7 +5717,7 @@ private function buildDisciplineTable($decipline_data)
         
         $table = '';
   
-        foreach($get_result_skillsets as $key=>$get_result_skillset)
+        foreach($get_result_skillsets as $keym=>$get_result_skillset)
         {
             
             $table .= '<table  class="curricular_table" cellspacing="0"  border="1">
@@ -5839,7 +5856,21 @@ private function buildDisciplineTable($decipline_data)
                                 // $table.='</tr>';
                             }else{
                                 if(isset($activity_master_title[$ak])){
-                                    $table .= '<tr class="curricular_tbody_tr"><td  class="curricular_td">' . $activity_master_title[$ak] .'</td>';
+                                   $printClass = '';
+
+                                    if(in_array($standard_id,[2277,2293,2287,2300,2291,2304])){
+                                        $printClass = 'nursey_'.$key.'_'.$ak;
+                                    }
+                                    if(in_array($standard_id,[2281,2295,2285,2298,2288,2301])){
+                                        $printClass = 'junior_'.$key.'_'.$ak;
+                                    }
+                                    if(in_array($standard_id,[2282,2296,2286,2299,2290,2303])){
+                                        $printClass = 'senior_'.$key.'_'.$ak;
+                                    }
+                                
+                                    // $printClass = 'class_'.$key.'_'.$ak;
+
+                                    $table .= '<tr class="curricular_tbody_tr '.$printClass.'"><td  class="curricular_td">' . $activity_master_title[$ak].'</td>'; // .'-'.$key.'('.$ak.')'
                                     $checked = 0;
                                     if(isset($get_result_activity_marks[$activity_master_title[$ak]]) && !empty($get_result_activity_marks[$activity_master_title[$ak]]))
                                     {
@@ -5863,7 +5894,7 @@ private function buildDisciplineTable($decipline_data)
                                             {
                                                 $table .= '<span class="'.$span_classes[$kPoint].'">'.$first_char[$kPoint].'</span>';
                                             }else if(in_array($sub_institute_id,[202])){
-                                                $table .= '&nbsp;';
+                                                $table .= '-';
                                             }
                                             $table .= '</td>';
                                         
@@ -5880,6 +5911,50 @@ private function buildDisciplineTable($decipline_data)
             }
             $table .= '</tbody></table>';
         }
+        // toddleer
+
+
+        if(in_array($standard_id,[2277,2293,2287,2300,2291,2304])){
+            $table.='<style>@media print{
+                .nursey_1_5,
+                .nursey_3_1{
+                    margin-bottom:114px;
+                }
+                
+            }</style>';
+        }
+        // juniors
+        if(in_array($standard_id,[2281,2295,2285,2298,2288,2301])){
+            $table.='<style>@media print{
+                .junior_0_12{
+                    margin-bottom:120px;
+                }
+                .junior_3_6,
+                .junior_5_1{
+                    margin-bottom:150px;
+                }
+                .junior_2_2{
+                    margin-bottom:180px;
+                }
+                
+            }</style>';
+        }
+
+// seniors
+        if(in_array($standard_id,[2282,2296,2286,2299,2290,2303])){
+            $table.='<style>@media print{
+                .senior_0_12,
+                .senior_2_2,
+                .senior_3_7
+                {
+                    margin-bottom:140px;
+                } 
+                .senior_5_2{
+                    margin-bottom:130px;
+                }
+            }</style>';
+        }
+      
         // exit;
         $res['table'] = $table;
         return $res;
