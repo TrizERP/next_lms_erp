@@ -5648,7 +5648,7 @@ private function buildDisciplineTable($decipline_data)
         
         $table = '';
   
-        foreach($get_result_skillsets as $key=>$get_result_skillset)
+        foreach($get_result_skillsets as $keym=>$get_result_skillset)
         {
             
             $table .= '<table  class="curricular_table" cellspacing="0"  border="1">
@@ -5787,7 +5787,10 @@ private function buildDisciplineTable($decipline_data)
                                 // $table.='</tr>';
                             }else{
                                 if(isset($activity_master_title[$ak])){
-                                    $table .= '<tr class="curricular_tbody_tr"><td  class="curricular_td">' . $activity_master_title[$ak] .'</td>';
+                                  
+                                    $printClass = 'class_'.$key.'_'.$ak;
+
+                                    $table .= '<tr class="curricular_tbody_tr '.$printClass.'"><td  class="curricular_td">' . $activity_master_title[$ak].'</td>'; // .'-'.$key.'('.$ak.')'
                                     $checked = 0;
                                     if(isset($get_result_activity_marks[$activity_master_title[$ak]]) && !empty($get_result_activity_marks[$activity_master_title[$ak]]))
                                     {
@@ -5811,7 +5814,7 @@ private function buildDisciplineTable($decipline_data)
                                             {
                                                 $table .= '<span class="'.$span_classes[$kPoint].'">'.$first_char[$kPoint].'</span>';
                                             }else if(in_array($sub_institute_id,[202])){
-                                                $table .= '&nbsp;';
+                                                $table .= '-';
                                             }
                                             $table .= '</td>';
                                         
@@ -5828,6 +5831,43 @@ private function buildDisciplineTable($decipline_data)
             }
             $table .= '</tbody></table>';
         }
+        // toddleer
+        if(in_array($standard_id,[2277,2293,2287,2300,2291,2304])){
+            $table.='<style>@media print{
+                .class_1_7{
+                    margin-bottom:70px;
+                }
+                .class_3_7{
+                    margin-bottom:74px;
+                }
+            }</style>';
+        }
+        // juniors
+        if(in_array($standard_id,[2281,2295,2285,2298,2288,2301])){
+            $table.='<style>@media print{
+                .class_1_2{
+                    margin:0px;
+                }
+                
+            }</style>';
+        }
+
+// seniors
+        if(in_array($standard_id,[2282,2296,2286,2299,2290,2303])){
+            $table.='<style>@media print{
+                .class_1_2{
+                    margin-bottom:40px;
+                }
+                .class_3_2{
+                    margin-bottom:20px;
+                }
+                .class_5_3{
+                    margin-bottom:50px;
+                }
+                
+            }</style>';
+        }
+      
         // exit;
         $res['table'] = $table;
         return $res;
