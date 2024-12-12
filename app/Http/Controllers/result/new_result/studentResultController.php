@@ -429,6 +429,7 @@ class studentResultController extends Controller
             $html_content = str_replace(htmlspecialchars("<<scholastic_marks_t1_mmis>>"), $main_result['table'], $html_content);
             $html_content = str_replace(htmlspecialchars("<<teacher_remark>>"), $main_result['remark'], $html_content);
             $html_content = str_replace(htmlspecialchars("<<result>>"), $main_result['result'], $html_content);
+            $html_content = str_replace(htmlspecialchars("<<custom_note_1>>"), $main_result['custom_note_1'], $html_content);
         }
 
         if (strpos($html_content, htmlspecialchars('<<scholastic_marks_mmis>>')) !== false) {
@@ -436,6 +437,7 @@ class studentResultController extends Controller
             $html_content = str_replace(htmlspecialchars("<<scholastic_marks_mmis>>"), $main_result['table'], $html_content);
             $html_content = str_replace(htmlspecialchars("<<teacher_remark>>"), $main_result['remark'], $html_content);
             $html_content = str_replace(htmlspecialchars("<<result>>"), $main_result['result'], $html_content);
+            $html_content = str_replace(htmlspecialchars("<<custom_note_1>>"), $main_result['custom_note_1'], $html_content);
         }
 
         if ((strpos($html_content, htmlspecialchars('<<scholastic_grade_marks>>')) !== false) || (strpos($html_content, htmlspecialchars('<<co_scholastic_grade_marks>>')) !== false)) {
@@ -530,7 +532,7 @@ class studentResultController extends Controller
     public function getExamMasterSettigs($standard_id)
     {
         $result = DB::table('result_master_confrigration')
-            ->select('teacher_sign', 'principal_sign', 'director_signatiure', 'reopen_date')
+            ->select('teacher_sign', 'principal_sign', 'director_signatiure')->selectRaw('DATE_FORMAT(reopen_date, "%d-%m-%Y") as reopen_date')
             ->where('standard_id', $standard_id)
             ->where('sub_institute_id', session()->get('sub_institute_id'))
             ->where('syear', session()->get('syear'))
@@ -618,14 +620,14 @@ class studentResultController extends Controller
         $table .= '</tr>
         </thead>
         <tbody>';
-        $tot_ob_mark =$tot_sub_mark =$get_all_ob_mark=$get_all_tot_mark = 0;
+        $tot_ob_mark =$tot_sub_mark =$get_all_ob_mark=$get_all_tot_mark = $failed = 0;
         // get all subject name 
         foreach ($get_subject as $val) {
             $both_term_ob_mark = 0;
             $table .= '<tr><td>' . $val->subject_name . '</td>';
             // get term wise eam and marks 
             foreach ($term_name as $keys => $terms) {
-                $obtained_marks = $to_marks = $to_weight = [];
+                $obtained_marks = $to_marks = $to_weight = $obtained_mark = $to_mark = [];
                 $title_exam = []; 
                  // get marks by exam id wise
                 foreach ($exam_name as $key => $title) {
@@ -637,21 +639,22 @@ class studentResultController extends Controller
                         $title_exam[$arr][] = $title->ExamTitle;
                         $weightage = $title->weightage;
                          // all exam marks 
+                        //$obtained_mark = $to_mark = [];
                          foreach ($exam_marks as $index => $marks) {
                             if ($title->id == $marks->exam_id) {
                                 // for AB,NA,EX
                                 if ($marks->is_absent!='' && in_array($marks->is_absent,["N.A.","EX","AB"])) {
                                     $ab_ex_na = $marks->is_absent;
-                                    $obtained_marks[$arr][] = $ab_ex_na;
+                                    $obtained_mark[$arr][] = $ab_ex_na;
 
-                                    $to_marks[$arr][] = $title->points;
+                                    $to_mark[$arr][] = $title->points;
                                     if($ab_ex_na=="AB" && !in_array($title->ExamTitle,['PA1','PA2'])){
                                         $to_weight[$arr] = $weightage;
                                     }else{
                                         $to_weight[$arr][] = $title->con_point;    
                                     }
                                 } else {
-                                    $to_marks[$arr][] = $title->points;
+                                    $to_mark[$arr][] = $title->points;
                                     $ob_mark = $marks->points;
 
                                     if(!in_array($title->ExamTitle,['PA1','PA2'])){
@@ -661,16 +664,53 @@ class studentResultController extends Controller
                                     }
                                     // store marks in array to get best of 2 
                                     if(!in_array($marks->is_absent,["N.A.","EX","AB"])){
-                                        $obtained_marks[$arr][] = $ob_mark;
+                                        $obtained_mark[$arr][] = $ob_mark;
                                     }
                                 }
                                 break;
                             }
                         }
+
+                        foreach ($obtained_mark as $key => $values) {
+
+                            // Check if all values in the array are "AB"
+                            if (array_unique($values) === ['AB']) {
+                                $obtained_marks[$key] = ['AB'];
+                                continue; // Skip further processing for this key
+                            }else{
+                                // Convert all values to float to avoid string issues
+                                $values = array_map('floatval', $values);
+
+                                if (count($values) > 1) {
+                                    // Compute the best of [0] and [2], and add [1] if it exists
+                                    $bestOf = isset($values[2]) ? max($values[0], $values[2]) : $values[0];
+                                    $total = $bestOf + (isset($values[1]) ? $values[1] : 0);
+                                    $obtained_marks[$key] = [$total];
+                                } else {
+                                    // If there's only one value, retain it
+                                    $obtained_marks[$key] = [$values[0]];
+                                }
+                            }
+                        }
+                        foreach ($to_mark as $key => $values) {
+                            // Convert all values to float to avoid string issues
+                            $values = array_map('floatval', $values);
+
+                            if (count($values) > 1) {
+                                // Compute the best of [0] and [2], and add [1] if it exists
+                                $bestOf = isset($values[2]) ? max($values[0], $values[2]) : $values[0];
+                                $total = $bestOf + (isset($values[1]) ? $values[1] : 0);
+                                $to_marks[$key] = [$total];
+                            } else {
+                                // If there's only one value, retain it
+                                $to_marks[$key] = [$values[0]];
+                            }
+                        }
                     }
                 }
                 // echo $val->subject_name.'<br>'.$val->subject_id.'<br>';
-                // echo "<pre>";print_r($obtained_marks);
+                //echo "<pre>";print_r($obtained_marks);
+                //echo "<pre>";print_r($to_marks);exit();
                 $ob_main_mark = $ab_ex_na = $total_marks = 0;
                 // for best of 2 exam wise 
                 if (!empty($title_exam)) {
@@ -772,6 +812,11 @@ class studentResultController extends Controller
             $grade_arr_mmis = $this->getGradeScale($standard_id, '');
             //$table .= '<td class="data_center tot_of_both">' . number_format($both_term_ob_mark, 2) . '</td>';
             $table .= '<td class="data_center grade_of_both">' . $this->getGrade($grade_arr_mmis, $total_mark, $both_term_ob_mark)  . '</td>';
+
+            $sub_per = $this->getPer($both_term_ob_mark, $total_mark);
+            if ($sub_per < 33)
+                $failed++;
+
             $get_all_ob_mark += $both_term_ob_mark;
             $get_all_tot_mark += $overall_total;
 
@@ -790,10 +835,10 @@ class studentResultController extends Controller
         $curr_std = DB::table('standard')->where('id', $standard_id)->first();
         $next_std = DB::table('standard')->where('id', $curr_std->next_standard_id)->first();
 
-        if ($per > 33) {
+        if (empty($failed)) {
             $result = 'Passed & Promoted to Class : ' . $next_std->school_stream;
         } else {
-            $result = "fail";
+            $result = "Failed";
         }
 
     // Calculate the total marks for each term
@@ -801,8 +846,8 @@ class studentResultController extends Controller
         $table .= '</tr></tbody></table>';
         $res['table'] = $table;
         $res['remark'] = \App\Helpers\getGradeComment($grade_arr_mmis, 100, $per) ?? '-';
+        $res['custom_note_1'] = '(Term I & II)';
         return $res;
-
     }
 
     // 25-09-2024 start 
@@ -894,7 +939,7 @@ class studentResultController extends Controller
         </tr>
         </thead>
         <tbody>';
-        $tot_ob_mark =$tot_sub_mark =$get_all_ob_mark=$get_all_tot_mark = 0;
+        $tot_ob_mark =$tot_sub_mark =$get_all_ob_mark=$get_all_tot_mark = $failed = 0;
         // get all subject name 
         foreach ($get_subject as $val) {
             $both_term_ob_mark = 0;
@@ -1040,6 +1085,11 @@ class studentResultController extends Controller
                 $table .= '<td class="data_center grade_of_both">' . $both_term_ob_mark . '</td>';
             }
             $table .= '<td class="data_center grade_of_both" ' . $total_mark.'-'.$both_term_ob_mark.'-'.$overall_total.' >' . $this->getGrade($grade_arr_mmis, $overall_total, $both_term_ob_mark) . '</td>';
+
+            $sub_per = $this->getPer($both_term_ob_mark, $overall_total);
+            if ($sub_per < 33)
+                $failed++;
+
             $get_all_ob_mark += $both_term_ob_mark;
             $get_all_tot_mark += $overall_total;
             
@@ -1066,14 +1116,15 @@ class studentResultController extends Controller
         </tr>';
         $curr_std = DB::table('standard')->where('id', $standard_id)->first();
         $next_std = DB::table('standard')->where('id', $curr_std->next_standard_id)->first();
-        if ($per > 33) {
+        if (empty($failed)) {
             $result = 'Passed &amp; Promoted to Class : ' . $next_std->school_stream;
         } else {
-            $result = "fail";
+            $result = "Failed";
         }
-
-        $res_school = "";
+        
+        $res_school = $custom_note_1 = "";
 		if ($format == "yearly"){
+            $custom_note_1 .= "(Term I & II)";
       		$res_school .= '<tr>
 		       <td colspan="3" class="p-t-10">
 		        <b>Result : '.$result.'</b>
@@ -1081,7 +1132,7 @@ class studentResultController extends Controller
 		      </tr>
 		      <tr>
 		       <td colspan="3" class="p-t-10">
-		        <b>School Reopens on : 1st April, 2025</b>
+		        <b>School Reopens on : 01<sup>st</sup> April, 2025</b>
 		       </td>
 		      </tr>';
 		  }
@@ -1091,6 +1142,7 @@ class studentResultController extends Controller
         $table .= '</tr></tbody></table>';
         $res['table'] = $table;
         $res['remark'] = \App\Helpers\getGradeComment($grade_arr_mmis, 100, $per) ?? '-';
+        $res['custom_note_1'] = $custom_note_1;
         return $res;
     }
     // 25-09-2024 end 
