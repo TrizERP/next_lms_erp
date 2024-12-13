@@ -10,6 +10,7 @@ use GenTux\Jwt\GetsJwtToken;
 use function App\Helpers\aut_token;
 use Illuminate\Support\Facades\Validator;
 use function App\Helpers\htmlToPDF;
+use function App\Helpers\htmlToPDFHills;
 use function App\Helpers\htmlToPDFLandscape;
 use App\Models\result\result_html_model;
 use App\Http\Controllers\fees\fees_collect\fees_collect_controller;
@@ -961,14 +962,20 @@ else
 
                 // Prepare common elements
                     $css_name = "https://" . $_SERVER['SERVER_NAME'];
-                    $result_css = '<link rel="stylesheet" href="' . $css_name . '/css/result.css" />';
+                    if(in_array($request->get('sub_institute_id'),[201,202,203,204])){
+                        $result_css = '<link rel="stylesheet" href="' . $css_name . '/css/hpc_result.css" />';
+                    }else{
+                        $result_css = '<link rel="stylesheet" href="' . $css_name . '/css/result.css" />';
+                    }
+
+                    // if($sub_institute_id==202)
                     $dom_template = '<!DOCTYPE html>
                         <html>
                             <head>
                                <title></title>
                                <meta charset="UTF-8">
                                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                               <style></style>' . $result_css . '
+                               ' . $result_css . '
                             </head>
                             <body>
                                 <div>##HTML_SEC##</div>
@@ -1006,10 +1013,14 @@ else
 
                         // Save HTML to a file
                         file_put_contents($html_file_path, $html);
-
-                        // Convert HTML to PDF
-                        htmlToPDF($html_file_path, $pdf_file_path); 
-                        // If needed: htmlToPDFLandscape($html_file_path, $pdf_file_path); 
+                        if(in_array($request->get('sub_institute_id'),[201,202,203,204])){
+                            htmlToPDFHills($html_file_path, $pdf_file_path); 
+                        }else{
+                            // Convert HTML to PDF
+                            htmlToPDF($html_file_path, $pdf_file_path); 
+                            // If needed: htmlToPDFLandscape($html_file_path, $pdf_file_path); 
+                        }
+                    
 
                         // Remove the HTML file after conversion
                         unlink($html_file_path);

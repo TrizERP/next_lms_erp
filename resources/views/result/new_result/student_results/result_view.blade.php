@@ -1,5 +1,10 @@
 @include('includes.headcss') @include('includes.header') @include('includes.sideNavigation')
+
+@if(in_array(session()->get('sub_institute_id'),[201,202,203,204]) && $data['result_type']=="HPC")
+<link rel="stylesheet" href="/css/hpc_result.css" />
+@else 
 <link rel="stylesheet" href="/css/result.css" />
+@endif
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.8.0/html2pdf.bundle.min.js"></script>
 
 <div id="page-wrapper">
@@ -127,7 +132,12 @@ $student_id_arr = implode(",",array_values($data['students_ids']));
     var popupWin = window.open('', '_blank', 'width=300,height=300');
     popupWin.document.open();
     popupWin.document.write('<html>');
+    @if(in_array(session()->get('sub_institute_id'),[201,202,203,204]) && $data['result_type']=="HPC")
+    popupWin.document.write('<head><link rel="stylesheet" href="/css/hpc_result.css" /></head>');
+    @else 
     popupWin.document.write('<head><link rel="stylesheet" href="/css/result.css" /></head>');
+    @endif
+
     popupWin.document.write('<body onload="setTimeout(function() { window.print(); }, 2000);"><style>body{margin:0;padding:0}</style>');
 
     Object.keys(studentData).forEach(function(studentId) {

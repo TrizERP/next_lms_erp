@@ -112,13 +112,11 @@ class studentResultController extends Controller
         foreach ($data as $key => $value) {
             $html_content = $tData[0]['html_content'];
             $class = '';
-            if (in_array($sub_institute_id,[201,202,203,254])){ 
-                $class = 'class="report-card-bg"';
-            }else{
-                $class = 'class="report-card-bg"';
-            }
+           
+            $class = 'class="report-card-bg"';
             
-            $new_html_content = '<div id="' . $value['id'] . '" ' . $class . ' style="page-break-before:avoid !important;page-break:always !important;">' . $this->create_html_content($syear, $sub_institute_id, $html_content, $value, $template, $result_trust, $format) . '</div>';
+            $new_html_content = '<div id="' . $value['id'] . '"><div ' . $class . ' style="page-break-before:avoid !important;page-break:always !important;"></div>' . $this->create_html_content($syear, $sub_institute_id, $html_content, $value, $template, $result_trust, $format) . '</div></div>';
+
             $new_html .= $new_html_content;
             $all_stud_html[$value['id']] = $new_html_content;
         }
@@ -5706,7 +5704,6 @@ private function buildDisciplineTable($decipline_data)
         {
             
             $table .= '<table  class="curricular_table" cellspacing="0"  border="1">
-            <thead>
             <tr class="curricular_thead_tr_main">';
             $style = '';
             $heading = $get_result_skillset->main_title;
@@ -5718,7 +5715,7 @@ private function buildDisciplineTable($decipline_data)
             $skill_ids = explode(',', $skillset_ids);
             $all_group = explode(',', $all_group);
 
-            $table .= '<th class="curricular_th" style="font-size:18px"><b>' . $heading . '</b></th></tr>';
+            $table .= '<th class="curricular_th" style="font-size:18px" colspan="4"><b>' . $heading . '</b></th></tr>';
 
             foreach($sub_title as $key => $value)
             {
@@ -5841,21 +5838,26 @@ private function buildDisciplineTable($decipline_data)
                                 // $table.='</tr>';
                             }else{
                                 if(isset($activity_master_title[$ak])){
-                                   $printClass = '';
+                                   $printClass = $printStyle = '';
 
                                     if(in_array($standard_id,[2277,2293,2287,2300,2291,2304])){
                                         $printClass = 'nursey_'.$key.'_'.$ak;
                                     }
+                                      // juniors
                                     if(in_array($standard_id,[2281,2295,2285,2298,2288,2301])){
                                         $printClass = 'junior_'.$key.'_'.$ak;
+                                        if($key==0 && $ak==13){
+                                            $printStyle = 'style="page-break-after:always"';
+                                        }
                                     }
                                     if(in_array($standard_id,[2282,2296,2286,2299,2290,2303])){
                                         $printClass = 'senior_'.$key.'_'.$ak;
+                                        $printStyle = 'style="page-break-after:always"';
                                     }
                                 
                                     // $printClass = 'class_'.$key.'_'.$ak;
-
-                                    $table .= '<tr class="curricular_tbody_tr '.$printClass.'"><td  class="curricular_td">' . $activity_master_title[$ak].'</td>'; // .'-'.$key.'('.$ak.')'
+                                   
+                                    $table .= '<tr class="curricular_tbody_tr '.$printClass.'" '.$printStyle.'><td  class="curricular_td">' . $activity_master_title[$ak].'</td>'; // .'-'.$key.'('.$ak.')'
                                     $checked = 0;
                                     if(isset($get_result_activity_marks[$activity_master_title[$ak]]) && !empty($get_result_activity_marks[$activity_master_title[$ak]]))
                                     {
