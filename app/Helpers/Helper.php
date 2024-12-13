@@ -1732,6 +1732,17 @@ if (!function_exists('htmlToPDF')) {
     }
 }
 
+if (!function_exists('htmlToPDFHills')) {
+    function htmlToPDFHills($htmlPath, $pdfPath)
+    {
+        $command = '/usr/local/bin/wkhtmltopdf --header-html https://erp.triz.co.in/css/hpc_header.html --footer-html https://erp.triz.co.in/css/hpc_footer.html --margin-top 35mm --margin-bottom 15mm ';
+        $command .= " $htmlPath ";
+        $command .= " $pdfPath ";
+
+        return exec($command);
+    }
+}
+
 if (!function_exists('htmlToPDFPortraitLetter')) {
     function htmlToPDFPortraitLetter($htmlPath, $pdfPath)
     {
