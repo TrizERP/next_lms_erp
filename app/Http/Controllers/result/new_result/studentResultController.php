@@ -117,24 +117,8 @@ class studentResultController extends Controller
             }else{
                 $class = 'class="report-card-bg"';
             }
-            $new_html_content = '<div id="' . $value['id'] . '"><div ' . $class . ' style="page-break-before:avoid !important;page-break:always !important;"><div class="print-header" style="background:#fff" ><table class="report-card" width="100%" cellspacing="0" cellpadding="0">
-            <tbody>
-                <tr>
-                    <td align="left" class="part1 headerPart1">
-                        <!--  <img src="/storage/result/left_logo/20241014104545.PNG" alt="SCHOOL LEFT LOGO" style="height: 50px !important;">   -->
-                        <img src="https://erp.triz.co.in/admin_dep/images/hills_logo.png" alt="hills_logo"
-                            class="logo1">
-                        <img src="https://erp.triz.co.in/Images/Hills_Birdie_logo.png" alt="Hills_Birdie"
-                            class="logo2"><br>
-                    </td>
-
-                    <td align="left" class="part2">
-                        <img src="https://erp.triz.co.in/Images/hills_nursary_address.png" alt="address"
-                            class="address">
-                    </td>
-                </tr>
-            </tbody>
-        </table> <hr style="margin-top:10px;margin-bottom:0px;background:black;padding:1px !important"></div>' . $this->create_html_content($syear, $sub_institute_id, $html_content, $value, $template, $result_trust, $format) . '</div></div>';
+            
+            $new_html_content = '<div id="' . $value['id'] . '" ' . $class . ' style="page-break-before:avoid !important;page-break:always !important;">' . $this->create_html_content($syear, $sub_institute_id, $html_content, $value, $template, $result_trust, $format) . '</div>';
             $new_html .= $new_html_content;
             $all_stud_html[$value['id']] = $new_html_content;
         }
