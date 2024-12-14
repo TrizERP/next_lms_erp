@@ -40,8 +40,8 @@ class admissionReportController extends Controller
         if (isset($report)) {
 
              $extra = '';
-            if ($sub_institute_id == 201 || $sub_institute_id == 202 || $sub_institute_id == 203 || $sub_institute_id == 204) // for re-print fees_circular (hillshigh school)
-            {
+            if(in_array($sub_institute_id, [201,202,203,204,324,326,327]))
+            { // for re-print fees_circular (hillshigh school)
                 $extra = ",ai.id,ai.fees_circular_form_no as Form_No,ai.admission_fees,ai.fees_amount,ai.fees_remark,ai.fees_circular_html as fees_circular";
             }
             
@@ -62,7 +62,7 @@ class admissionReportController extends Controller
                     ai.gender, ai.mobile, ai.email, ai.address, DATE_FORMAT(ai.date_of_birth, '%d-%m-%Y') as date_of_birth, ai.age, ai.syear, ai.previous_school_name,s_previous.name as previous_standard,
                     s.name as admission_standard, ai.remarks,fu.status as enquiry_status, ai.source_of_enquiry, ai.created_by,
                     ai.counciler_name, ai.father_name,CONCAT_WS(' ',ts.first_name,ts.last_name) AS created_by, cs.caste_name $extra")
-                ->whereRaw("(ai.created_on BETWEEN '" . $from_date . "' AND '" . $to_date . "')
+                ->whereRaw("(DATE_FORMAT(ai.created_on, '%Y-%m-%d') BETWEEN '" . $from_date . "' AND '" . $to_date . "')
                     AND ai.sub_institute_id = '" . $sub_institute_id . "' AND ai.syear = '" . $syear . "'");
 
             if ($standard != '') {

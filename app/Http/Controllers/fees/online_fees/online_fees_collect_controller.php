@@ -688,7 +688,7 @@ class online_fees_collect_controller extends Controller
             ->whereNotNull('fp.icici_order_id')
             //->where('fp.created_at', '>=', now()->subDays(3))
             ->whereBetween('fp.created_at', [now()->subDays(3), now()->subMinutes(30)])
-//            ->whereIn('fp.sub_institute_id', $ids)
+//            ->whereIn('fp.sub_institute_id', [253])
 //            ->whereIn('fp.student_id', [199428,199461,195283,195156,195227])
             ->groupBy('fp.id')
             // ->orderBy('fp.id','DESC')
@@ -714,10 +714,15 @@ class online_fees_collect_controller extends Controller
                 $url = "https://eazypay.icicibank.com/EazyPGVerify?merchantid=".$key_id."&pgreferenceno=".$payment_id."&dstatus=Y";
                 $payment_status = Http::get($url);
                 $payment_ex = explode('&', $payment_status);
-                //echo "<pre>"; print_r($payment_status);exit;
+                //echo "<pre>"; print_r($payment_ex);exit;
 
                 $payment = [];
                 foreach ($payment_ex as $item) {
+                    // Skip empty or invalid items
+                    if (empty($item) || strpos($item, '=') === false) {
+                        continue; // Skip this iteration
+                    }
+
                     $itemParts = explode('=', $item);
                     $key = $itemParts[0];
                     $value = $itemParts[1];

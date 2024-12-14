@@ -1,15 +1,40 @@
 <style>
-    .modeltable td, .modeltable th b{
-        padding:6px;
-    }
-    .modeltable th{
-        padding:14px 6px;
-    }
-    .modeltable th b{
-        background: #e0edf1;
-        color: #141313;
+   .content {
+        font-family: Calibri;
+        width: 95%;
+        margin: 20px auto;
+        background-color: #d5ebf4;
         border-radius: 10px;
-        font-size: 1rem;
+        padding: 20px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        font-size:20px;text-align: justify;
+        line-height:1.3;
+    }
+    .header {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    .header h1 {
+        font-size: 24px;
+        margin: 10px 0;
+    }
+    .header img {
+        width: 100px;
+    }
+    .columns {
+        display: flex;
+        justify-content: space-between;
+        gap: 20px;
+    }
+    .column {
+        background-color: #f7f9fa;
+        border-radius: 8px;
+        padding: 15px;
+        flex: 1;
+    }
+    .column li {
+        list-style-type: disc; /* ensures bullets are shown */
+        margin-left: 20px; /* optional: adds space from the left */
     }
 </style>
 @foreach($data['allData'] as $key=>$value)
@@ -29,44 +54,54 @@
         </button>
       </div>
       <div class="modal-body">
-        <table class="tbale table-bordered modeltable" width="100%">
-            <tr>
-                <th><b>Standard :</b></th>
-                <th colspan="2"><b>Board :</b></th>
-            </tr>
-            <tr>
-                <td>{{$value->standard_name}}</td>
-                <td colspan="2">{{$data['boards'][$value->board_id]}}</td>
-            </tr>
-            <tr>
-                <th><b>Curriculum Alignment :</b></th>
-                <th><b>Holistic Curriculum :</b></th>
-                <th><b>Model Integration :</b></th>
-            </tr>
-            <tr>
-                <td>{{$value->curriculum_alignment}}</td>
-                <td>{{$value->holistic_curriculum}}</td>
-                <td>@foreach($model_integration as $k => $v)
-                {{isset($data['model_integration'][$v]) ? ($k+1).') '.$data['model_integration'][$v] : '-'}}<br>    
-                @endforeach</td>
-            </tr>
-            <tr>
-                <th><b>Objective :</b></th>
-                <th><b>Chapter :</b></th>
-                <th><b>Outcome :</b></th>
-            </tr>
-            <tr>
-                <td>{{$value->objective}}</td>
-                <td>{{$value->chapter}}</td>
-                <td>{{$value->outcome}}</td>
-            </tr>
-            <tr>
-                <th colspan="3"><b>Assessment Tool :</b></th>
-            </tr>
-            <tr>
-                <td colspan="3">{{$value->assessment_tool}}.....</td>
-            </tr>
-        </table>
+        <div class="content">
+            <div class="header">
+                <img src="../../../storage{{$value->display_image}}" alt="">
+                <h1>{{$data['boards'][$value->board_id]}} : {{$value->standard_name}} {{ strtoupper($value->subject_name) }} 
+                <br/>
+                @foreach($model_integration as $k => $v)
+                    {{isset($data['model_integration'][$v]) ? ($k+1).') '.$data['model_integration'][$v] : '-'}}     
+                @endforeach 
+
+                CURRICULAM</h1>
+            </div>
+            <div class="columns">
+                <div class="column">
+                    <h2>OBJECTIVE</h2>
+                    <p>{!! $value->objective !!}</p>
+                </div>
+                <!--<div class="column">
+                    <h2>OUTCOME</h2>
+                    <p>{!! $value->outcome !!}</p>
+                </div>
+                -->
+            </div>
+            <br/>
+            <div class="columns">
+                <div class="column">
+                    <h2>CURRICULUM ALIGNMENT</h2>
+                    <p>{!! $value->curriculum_alignment !!}</p>
+                </div>
+            </div>
+            <br/>
+            <div class="columns">
+                <div class="column">
+                    <h2>HOLISTIC CURRICULUM</h2>
+                    <p>{!! $value->holistic_curriculum !!}</p>
+                </div>
+            </div>
+            <br/>
+            <div class="columns">
+                <div class="column">
+                    <h2>CHAPTER</h2>
+                    <p>{!! $value->chapter !!}</p>
+                </div>
+                <div class="column">
+                    <h2>ASSESSMENT TOOL</h2>
+                    <p>{!! $value->assessment_tool !!}</p>
+                </div>
+            </div>
+        </div>
       </div>
     </div>
   </div>

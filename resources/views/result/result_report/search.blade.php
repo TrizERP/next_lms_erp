@@ -31,6 +31,7 @@
                                 <option value="merit_report">Merit Report</option>
                                 <option value="subject_progress_report">Subject Progress Report</option>
                                 <option value="classwise_report">Classwise Report</option>
+                                <option value="classwise_grade_report">Classwise Grade Report</option>
                                 <option value="overall_report">Overall Report</option>
                                 <option value="marks_report">Marks Report</option>
                                 <option value="weightage_conversion_report">Weightage Conversion Report</option>
@@ -231,6 +232,16 @@
         }
 
         if (report_val == 'classwise_report') {
+            document.getElementById('for_top_students').style.display = 'none';
+            document.getElementById('for_subject').style.display = 'none';
+            document.getElementById('for_roll_no').style.display = 'none';
+            document.getElementById('for_exam_type').style.display = 'block';
+            document.getElementById('for_from_date').style.display = 'none';
+            document.getElementById('for_to_date').style.display = 'none';
+            $('#subjects').prop('required', false);
+        }
+
+        if (report_val == 'classwise_grade_report') {
             document.getElementById('for_top_students').style.display = 'none';
             document.getElementById('for_subject').style.display = 'none';
             document.getElementById('for_roll_no').style.display = 'none';

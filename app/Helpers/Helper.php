@@ -1732,6 +1732,17 @@ if (!function_exists('htmlToPDF')) {
     }
 }
 
+if (!function_exists('htmlToPDFHills')) {
+    function htmlToPDFHills($htmlPath, $pdfPath)
+    {
+        $command = '/usr/local/bin/wkhtmltopdf --header-html https://erp.triz.co.in/css/hpc_header.html --footer-html https://erp.triz.co.in/css/hpc_footer.html --margin-top 35mm --margin-bottom 15mm ';
+        $command .= " $htmlPath ";
+        $command .= " $pdfPath ";
+
+        return exec($command);
+    }
+}
+
 if (!function_exists('htmlToPDFPortraitLetter')) {
     function htmlToPDFPortraitLetter($htmlPath, $pdfPath)
     {
@@ -2020,7 +2031,7 @@ if (!function_exists('getGrade')) {
 
 if (!function_exists('getGradeComment')) {
     function getGradeComment($grade_arr, $total_mark, $total_gain_mark)
-    {
+    { 
         if (!is_numeric($total_mark) || !is_numeric($total_gain_mark)) {
             return 0;
         }
@@ -2043,11 +2054,15 @@ if (!function_exists('getGradeComment')) {
 
 
 if (!function_exists('getGradeScale')) {
-    function getGradeScale()
+    function getGradeScale($standard="") // 2024-12-06 added standard
     {
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
         $standard_id = session()->get('standard');
+
+        if($standard!=""){
+            $standard_id = $standard;
+        }
 
         $ret_grade = DB::table('result_std_grd_maping as sgm')
             ->join('grade_master_data as dt', 'dt.grade_id', '=', 'sgm.grade_scale')

@@ -24,7 +24,7 @@ class lmsCurriculumController extends Controller
         $getData = DB::table('lms_curriculum as lc')
         ->join('standard as s','s.id','=','lc.standard_id')
         ->join('sub_std_map as ssm','ssm.subject_id','=','lc.subject_id')
-        ->selectRaw('lc.*,s.name as standard_name,ssm.display_name as subject_name')
+        ->selectRaw('lc.*,s.name as standard_name,ssm.display_name as subject_name,ssm.display_image')
         ->where('lc.sub_institute_id',$sub_institute_id)
         ->groupBy('lc.id')
         ->get()->toArray();
