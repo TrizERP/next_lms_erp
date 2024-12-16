@@ -230,7 +230,7 @@ class studentOptionalSubjectController extends Controller
                     ->where('sub_institute_id', $sub_institute_id)
                     ->where('syear', $syear)
                     ->when($sub_institute_id==254,function($q){
-                        $q->where('level',4);
+                        $q->whereIn('level',[4,5]);
                     })
                     ->first();
                 
