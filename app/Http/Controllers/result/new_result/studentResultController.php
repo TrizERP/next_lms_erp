@@ -457,6 +457,20 @@ class studentResultController extends Controller
             }
         // mmis perp results end 14-12-2024
 
+        // mmis 11 results start 17-12-2024 scholastic part
+        if (strpos($html_content, htmlspecialchars('<<scholastic_marks_11_mmis>>')) !== false) {
+            $scholastic = $this->get_mmis11Scholastic($standard_id, $value['id'], $format, "");
+            $html_content = str_replace(htmlspecialchars("<<scholastic_marks_11_mmis>>"), $scholastic['scholastic_table'], $html_content);
+            $html_content = str_replace(htmlspecialchars("<<scholastic_11_grade_marks>>"), $scholastic['scholastic_gradeRange'], $html_content);
+            $html_content = str_replace(htmlspecialchars("<<conduct_remark>>"), $scholastic['conducted'], $html_content);
+            $html_content = str_replace(htmlspecialchars("<<teacher_remark>>"), $scholastic['teacher_remark'], $html_content);
+        }
+        if (strpos($html_content, htmlspecialchars('<<co_scholastic_11_marks>>')) !== false) {
+            $co_result = $this->get_mmis11CoScholastic($standard_id, $value['id'], $format, '');
+            $html_content = str_replace(htmlspecialchars("<<co_scholastic_11_marks>>"), $co_result['co_scholastic_table'] ?? '', $html_content);
+            }
+        // mmis 11 results end 17-12-2024
+
         if (strpos($html_content, htmlspecialchars('<<co_scholastic_marks>>')) !== false) {
         $co_result = $this->get_co_scholastic($standard_id, $value['id'], $format, "double_zero");
         $html_content = str_replace(htmlspecialchars("<<co_scholastic_marks>>"), $co_result['scholastic'] ?? '', $html_content); 
@@ -6499,7 +6513,7 @@ private function buildDisciplineTable($decipline_data)
             // co scholatic parts 
             $gradeRange = $this->getGradeRange($standard_id);
             
-            $scholaticTableGrades .='<table class="aca-year"  style="width: 80%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0"  border="1">';
+            $scholaticTableGrades .='<table class="aca-year" style="width: 80%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0"  border="1">';
             $scholaticTableGrades .='<tr>
             <th align="center"><b>MARKS RANGE</th></b>';
             if(isset($gradeRange['mark_range']['SCHOLASTIC_MARKS_RANGE']) && !empty($gradeRange['mark_range']['SCHOLASTIC_MARKS_RANGE'])){
@@ -6572,7 +6586,7 @@ private function buildDisciplineTable($decipline_data)
                 }
                 // echo "<pre>";print_r($coData1);
 
-                if(!empty($skillPart)){
+                if(count($skillPart)>0){
                     $coScholaticTable.='<h4><b>SKILLS AND ABILITIES</b></h4>';
                     if(!empty($coData1)){
                     $coScholaticTable.='<div style="display:flex;width:100%">';
@@ -6613,7 +6627,7 @@ private function buildDisciplineTable($decipline_data)
                         $coData3[$arr->term_id][$arr->child_title]=$arr->marks ?? $arr->obtain_grade;
                     }
                 }
-                if(!empty($personalityPart)){
+                if(count($personalityPart)>0){
                     $coScholaticTable.='<h4><b>PERSONALITY AND CHARACTER</b></h4>';
                     if(!empty($coData3)){
                         $coScholaticTable.='<div style="display:flex;width:100%">';
@@ -6634,7 +6648,7 @@ private function buildDisciplineTable($decipline_data)
                 $co_scholaticQuery = $this->co_scholaticQuery($sub_institute_id,$syear,$student_id,$standard_id,$extra_exam,'co_scholastic');
                 $part1Head = $part2Head = $part3Head=$coData1=$coData2=$coData3=[];
         
-                if(!empty($co_scholaticQuery)){
+                if(count($co_scholaticQuery)>0){
                     foreach ($co_scholaticQuery as $id => $arr) {
                         if($arr->part_no==1){
                             $part1Head[$arr->term_id] = $arr->parent_title;
@@ -6656,15 +6670,15 @@ private function buildDisciplineTable($decipline_data)
                             $coScholaticTable.='</table>';
                         }
                     }
-                    $coScholaticTable.='</div>';
                 }
+                $coScholaticTable.='</div>';
+
         }
         if($coScholaticTable!=''){
             $co_grade_range = DB::table('result_co_scholatic_range')->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->get()->toArray();
             //co grade range
             if (!empty($co_grade_range)) {
-                $co_table = '<table class="aca-year hills_co" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" cellpadding="0" border="1">
-                <thead>
+                $coScholaticTableGrades .= '<table class="aca-year hills_co" style="width: 80%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" cellpadding="0" border="1">
                 <tr>
                 <th class="data_center"  style="width:312px"><b>MARKS RANGE</b></th>';
                 foreach ($co_grade_range as $key => $value) {
@@ -6684,13 +6698,245 @@ private function buildDisciplineTable($decipline_data)
                     }
                     $coScholaticTableGrades .= '</tr>';
                 }
-                $coScholaticTableGrades .= '</thead></table>';
+                $coScholaticTableGrades .= '</table>';
     
             }
         }
         // echo "<pre>";print_r($coScholaticTable);exit;
         $res['co_scholastic_table']=$coScholaticTable;
         $res['co_scholastic_gradeRange']=$coScholaticTableGrades;
+        return $res;
+    }
+
+    // mmis prep scholastic part
+    public function get_mmis11Scholastic($standard_id, $student_id, $format, $result_type){
+        $syear = session()->get('syear');
+        $sub_institute_id = session()->get('sub_institute_id');
+        $extra_term =$extra_exam = "1=1";
+        if ($format != "yearly"){
+            $extra_term = "term_id = " . $format;
+            $extra_exam = "rce.term_id = " . $format;
+        }
+        // get term_name 
+        $term_name = DB::table('academic_year')->whereRaw($extra_term)->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->get()->toArray();
+
+        // get subject
+        $get_subject = $this->get_subject($sub_institute_id,$syear,$student_id,$standard_id);
+        $exam_name = $this->get_exam_name($sub_institute_id,$syear,$standard_id,$extra_exam);
+        // get exam title 
+        $exam_title = $this->get_exam_title($sub_institute_id,$syear,$standard_id,$extra_exam);
+        //get exam marks
+        $exam_marks = $this->get_exam_marks($sub_institute_id,$student_id,'examWise',$syear);
+        // make marks subject and termwise
+        $markArr = $examTitle = [];
+        foreach ($exam_marks as $key => $value) {
+            if(!isset($markArr[$value->subject_id][$value->ExamTitle][$value->title]['OBT'])){
+                $markArr[$value->subject_id][$value->ExamTitle][$value->title]['OBT'] = 0;
+            }
+            if(!isset($markArr[$value->subject_id][$value->ExamTitle][$value->title]['MM'])){
+                $markArr[$value->subject_id][$value->ExamTitle][$value->title]['MM'] = 0;
+            }
+            if(!isset($markArr[$value->subject_id][$value->ExamTitle][$value->title]['weightage'])){
+                $markArr[$value->subject_id][$value->ExamTitle][$value->title]['weightage'] = 0;
+            }
+            $markArr[$value->subject_id][$value->ExamTitle][$value->title]['OBT'] += $value->points;
+            $markArr[$value->subject_id][$value->ExamTitle][$value->title]['MM'] += $value->total_points;
+            $markArr[$value->subject_id][$value->ExamTitle][$value->title]['weightage'] += $value->weightage;
+        }
+        // make sort order to print headwise
+        $customOrder = ['Unit Test', 'Term - 1', 'Term - 2']; // Define the desired order
+
+        foreach ($markArr as $subject_id => $terms) {
+            // Sort the terms based on custom order
+            uksort($terms, function ($a, $b) use ($customOrder) {
+                $posA = array_search($a, $customOrder);
+                $posB = array_search($b, $customOrder);
+                return $posA - $posB;
+            });
+            $markArr[$subject_id] = $terms; // Assign the sorted array back
+        }
+
+        // echo "<pre>";print_r($markArr);exit;
+        
+        // print table
+        $scholaticTable = $scholaticTableGrades = '';
+        $grade_arr = $this->getGradeScale($standard_id);
+        $all_mark = $total_mark = 0;
+        if(!empty($exam_marks)){
+            // scholastic parts
+            $scholaticTable .='<style>.data_center{text-align:center !important}</style><table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0"  border="1"><thead>';
+            $scholaticTable.='<tr>
+            <th rowspan="3"><b>Subject</b></th>
+            <th colspan="3" class="data_center"><b>Unit Test</b></th>
+            <th rowspan="2" colspan="3" class="data_center"><b>Half Yearly</b></th>
+            <th colspan="5" class="data_center"><b>Final Exam</b></th>
+            <th rowspan="3" class="data_center"><b>Total <br>marks<br> obtained <br>100 </b></th>
+         </tr>
+         <tr>
+            <th class="data_center"><b>I</b></th>
+            <th class="data_center"><b>II</b></th>
+            <th class="data_center">&nbsp;</b></th>
+            <th colspan="2" class="data_center"><b>THEORY</b></th>
+            <th colspan="2" class="data_center"><b>PRACTICAL</b></th>
+            <th class="data_center">&nbsp;</b></th>
+         </tr>
+         <tr>
+            <th class="data_center"><b>OUT <br> OF<br> 20  </b></th>
+            <th class="data_center"><b>OUT<br> OF <br>20  </b></th>
+            <th class="data_center"><b>WEIGHTAGE <br> 5% <br> OF I+II  </b></th>
+            <th class="data_center"><b>OBT </b></th>
+            <th class="data_center"><b>MM </b></th>
+            <th class="data_center"><b>WEIGHTAGE <br>20%</b></th>
+            <th class="data_center"><b>OBT </b></th>
+            <th class="data_center"><b>MM </b></th>
+            <th class="data_center"><b>OBT </b></th>
+            <th class="data_center"><b>MM </b></th>
+            <th class="data_center"><b>WEIGHTAGE <br>75%</b></th>
+         </tr>';
+            $scholaticTable.='</thead><tbody>';
+            foreach ($get_subject as $sk => $sv) {
+            $scholaticTable.='<tr>';
+            $scholaticTable.='<td>'.$sv->subject_name.'</td>';
+            $totMark = $totObtMarks= 0;
+                if(isset($markArr[$sv->subject_id])){
+                    if(isset($markArr[$sv->subject_id])){
+                        foreach ($markArr[$sv->subject_id] as $examTitle => $markVal) {
+                            $obt = $mm = $weightage = $obtFinal = $mmFinal= $convertMarks=$convertTP=0;
+                           if($examTitle=="Unit Test"){
+                            $obt1 = isset($markVal['UNIT TEST -1']['OBT']) ? $markVal['UNIT TEST -1']['OBT'] : 0;
+                            $obt2 = isset($markVal['UNIT TEST -2']['OBT']) ? $markVal['UNIT TEST -2']['OBT'] : 0;
+                            $obt += number_format($obt1+$obt2,2);
+                            $mm1 = isset($markVal['UNIT TEST -1']['MM']) ? $markVal['UNIT TEST -1']['MM'] : 0;
+                            $mm2 = isset($markVal['UNIT TEST -2']['MM']) ? $markVal['UNIT TEST -2']['MM'] : 0;
+                            $mm += number_format($mm1+$mm2,2);
+
+                            $weightage = isset($markVal['UNIT TEST -2']['weightage']) && $markVal['UNIT TEST -2']['weightage'] 
+                            ? $markVal['UNIT TEST -2']['weightage'] 
+                            : (isset($markVal['UNIT TEST -1']['weightage']) && $markVal['UNIT TEST -1']['weightage'] 
+                                ? $markVal['UNIT TEST -1']['weightage'] 
+                                : 0);
+                                
+                            $convertMarks  = ($mm > 0) ? number_format(($obt * $weightage ) / $mm,2) : '0.00';
+                            $totMark += $weightage;
+                            $totObtMarks += $convertMarks;
+
+                            $scholaticTable.='<td class="data_center">'.number_format($obt1,2).'</td>';
+                            $scholaticTable.='<td class="data_center">'.number_format($obt2,2).'</td>';
+                            $scholaticTable.='<td class="data_center"><b>'.$convertMarks.'</b></td>';
+                           }
+                           if($examTitle=="Term - 1"){
+                            $obt = isset($markVal['TERM -1']['OBT']) ? $markVal['TERM -1']['OBT'] : 0;
+                            $mm = isset($markVal['TERM -1']['MM']) ? $markVal['TERM -1']['MM'] : 0;
+                            $weightage = isset($markVal['TERM -1']['weightage']) ? $markVal['TERM -1']['weightage'] : 0;
+
+                            $convertMarks  = ($mm > 0) ? number_format(($obt * $weightage ) / $mm,2) : '0.00';
+                            $totMark += $weightage;
+                            $totObtMarks += $convertMarks;
+
+                            $scholaticTable.='<td class="data_center">'.number_format($obt,2).'</td>';
+                            $scholaticTable.='<td class="data_center">'.number_format($mm,2).'</td>';
+                            $scholaticTable.='<td class="data_center"><b>'.$convertMarks.'</b></td>';
+                           }
+                           if($examTitle=="Term - 2"){
+                            if(isset($markVal['THEORY'])){
+                                $obt = isset($markVal['THEORY']['OBT']) ? $markVal['THEORY']['OBT'] : 0;
+                                $mm = isset($markVal['THEORY']['MM']) ? $markVal['THEORY']['MM'] : 0;
+                                $obtFinal +=$obt;
+                                $mmFinal += $mm;
+                                $weightage = isset($markVal['THEORY']['weightage']) ? $markVal['THEORY']['weightage'] : 0;
+
+                                $convertMarks  = ($mm > 0) ? number_format(($obt * $weightage ) / $mm,2) : '0.00';
+                                $scholaticTable.='<td class="data_center">'.number_format($obt,2).'</td>';
+                                $scholaticTable.='<td class="data_center">'.number_format($mm,2).'</td>';
+                            }
+                            if(isset($markVal['PRATICAL'])){
+                                $obt = isset($markVal['PRATICAL']['OBT']) ? $markVal['PRATICAL']['OBT'] : 0;
+                                $mm = isset($markVal['PRATICAL']['MM']) ? $markVal['PRATICAL']['MM'] : 0;
+                                $obtFinal +=$obt;
+                                $mmFinal += $mm;
+                                $weightage = isset($markVal['PRATICAL']['weightage']) ? $markVal['PRATICAL']['weightage'] : 0;
+
+                                $convertMarks  = ($mm > 0) ? number_format(($obt * $weightage ) / $mm,2) : '0.00';
+                                $scholaticTable.='<td class="data_center">'.number_format($obt,2).'</td>';
+                                $scholaticTable.='<td class="data_center">'.number_format($mm,2).'</td>';
+                            }
+                            $convertTp = ($mmFinal > 0) ? number_format(($obtFinal * $weightage ) / $mmFinal,2) : '0.00';
+                            $totMark += $weightage;
+                            $totObtMarks += $convertTp;
+                            $scholaticTable.='<td class="data_center"><b>'.$convertTp.'</b></td>';
+
+                           }
+                        }
+                    }
+                    $scholaticTable.='<td class="data_center"><b>'.round($totObtMarks).'</b></td>';
+                }
+            $scholaticTable.='</tr>';
+            }
+            $scholaticTable .='</tbody></table>';
+            // Grade range table
+            $gradeRange = $this->getGradeRange($standard_id);
+            
+            $scholaticTableGrades .='<table class="aca-year"  style="width: 80%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0"  border="1">';
+            $scholaticTableGrades .='<tr>
+            <th align="center"><b>MARKS RANGE</th></b>';
+            if(isset($gradeRange['mark_range']['SCHOLASTIC_MARKS_RANGE']) && !empty($gradeRange['mark_range']['SCHOLASTIC_MARKS_RANGE'])){
+                foreach ($gradeRange['mark_range']['SCHOLASTIC_MARKS_RANGE'] as $key => $value) {
+                    $scholaticTableGrades.='<td align="center">'.$value.'</td>';
+                }
+            }
+            $scholaticTableGrades .='</tr><tr>
+            <th align="center"><b>GRADE</th></b>';
+            if(isset($gradeRange['mark_range']['GRADE']) && !empty($gradeRange['mark_range']['GRADE'])){
+                foreach ($gradeRange['mark_range']['GRADE'] as $key => $value) {
+                    $scholaticTableGrades.='<td align="center">'.$value.'</td>';
+                }
+            }
+            $scholaticTableGrades .='</tr><tr>
+            <th align="center"><b>REMARKS</th></b>';
+            if(isset($gradeRange['mark_range']['comment']) && !empty($gradeRange['mark_range']['comment'])){
+                foreach ($gradeRange['mark_range']['comment'] as $key => $value) {
+                    $scholaticTableGrades.='<td align="center">'.$value.'</td>';
+                }
+            }
+            $scholaticTableGrades .='<tr></table>';
+        }
+        
+        $per = $this->getPer($all_mark, $total_mark);
+
+        $curr_std = DB::table('standard')->where('id', $standard_id)->first();
+        $next_std = DB::table('standard')->where('id', $curr_std->next_standard_id)->first();
+
+        if ($per!='-') {
+            $result = 'Passed & Promoted to Class : ' . $next_std->school_stream;
+        } else {
+            $result = "Failed";
+        }
+
+        $res['scholastic_table']=$scholaticTable;
+        $res['scholastic_gradeRange']=$scholaticTableGrades;
+        $res['conducted'] = \App\Helpers\getGradeComment($grade_arr, 100, $per) ?? '-';
+        $res['teacher_remark'] = $result;
+
+        return $res;
+    }
+
+    public function get_mmis11CoScholastic($standard_id, $student_id, $format,$resulttype=''){
+        $syear = session()->get('syear');
+        $sub_institute_id = session()->get('sub_institute_id');
+        $extra_term =$extra_exam = "1=1";
+        $coScholasticTable = '';
+        $co_scholaticQuery = $this->co_scholaticQuery($sub_institute_id,$syear,$student_id,$standard_id,$extra_exam,'co_scholastic');
+        // echo "<pre>";print_r($student_id);
+        // echo "<pre>";print_r($co_scholaticQuery);exit;
+        if(count($co_scholaticQuery)>0){
+            $coScholasticTable .='<style>.data_center{text-align:center !important}</style><table class="aca-year"  style="width:100%;border-coScholasticTable:collapse; border:1px solid #e68023;" cellspacing="0"  border="1">';
+            $coScholasticTable.='<tr><th class="data_center" style="width:80%"><b>Subjects</b></th><th  class="data_center" ><b>Grade</b></th></tr>';
+            foreach ($co_scholaticQuery as $key => $value) {
+                $coScholasticTable.='<tr><td style="width:80%">'.$value->child_title.'</td><td class="data_center" >'.$value->obtain_grade.'</td></tr>';
+            }
+            $coScholasticTable.='</table>';
+        }
+        $res['co_scholastic_table'] = $coScholasticTable;
         return $res;
     }
 }
