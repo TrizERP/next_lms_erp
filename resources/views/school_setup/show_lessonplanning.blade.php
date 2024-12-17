@@ -21,7 +21,28 @@
                         <strong>{{ $data['message'] }}</strong>
                     </div>
         @endif
+<form action="{{route('lms_lessonplan.index')}}" method="post">                    
                     <!-- row -->
+            @php 
+               $grade=$standard=$subject='';
+               if(isset($data['grade_id'])){
+                $grade = $data['grade_id'];
+               }
+               if(isset($data['standard_id'])){
+                $standard = $data['standard_id'];
+               }
+               if(isset($data['subject_id'])){
+                $subject = $data['subject_id'];
+               }
+            @endphp
+               {{ App\Helpers\SearchChainSubject('4','single','grade,std,sub',$grade,$standard,$subject) }}
+               
+               <div class="col-md-12">
+                  <center>
+                     <input type="submit" value="Search" class="btn btn-primary">
+                  </center>
+               </div>
+</form>
                 <div class="row">
                     {{-- <div class="col-md-3">
                         <div class="white-box">
