@@ -305,7 +305,14 @@ table.report-card tr td {
     padding: 0px !important
 }
 
-.report-card-bg,.report-card-bg2 {
+.report-card-bg{
+    padding: 20px;
+    width: 90%;
+    margin: 0 auto !important;
+    position: relative !important;
+    font-family: 'Saira Semi Condensed', sans-serif !important;
+}
+.report-card-bg2 {
     padding: 20px;
     width: 90%;
     margin: 0 auto !important;
