@@ -1870,6 +1870,7 @@ class PayrollController extends Controller
 	                $i++;
 	            }
 	            // store pdf 29-10-2024
+                if($dataArr['total_day']!=0){
 	            $pdfName = $this->monthlyPayrollPdf($request,$emp_id, $request->month, $request->year,'storeDoc');
 
 	            if(isset($pdfName)){
@@ -1886,6 +1887,7 @@ class PayrollController extends Controller
 	                    $updateDoc = DB::table('staff_document')->where(['sub_institute_id'=>$sub_institute_id,'document_type_id'=>56,'user_id'=>$emp_id,'file_name'=>$pdfName])->update($pdfData);
 	                }
 	            }
+            }
             }
          }
         

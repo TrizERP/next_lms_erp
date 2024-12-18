@@ -858,7 +858,7 @@ class studentResultController extends Controller
         $next_std = DB::table('standard')->where('id', $curr_std->next_standard_id)->first();
 
         if (empty($failed)) {
-            $result = 'Passed & Promoted to Class : ' . $next_std->school_stream;
+            $result = 'Passed & Promoted to Class ' . $next_std->school_stream;
         } else {
             $result = "Failed";
         }
@@ -1139,7 +1139,7 @@ class studentResultController extends Controller
         $curr_std = DB::table('standard')->where('id', $standard_id)->first();
         $next_std = DB::table('standard')->where('id', $curr_std->next_standard_id)->first();
         if (empty($failed)) {
-            $result = 'Passed &amp; Promoted to Class : ' . $next_std->school_stream;
+            $result = 'Passed &amp; Promoted to Class ' . $next_std->school_stream;
         } else {
             $result = "Failed";
         }
@@ -6541,7 +6541,7 @@ private function buildDisciplineTable($decipline_data)
         $next_std = DB::table('standard')->where('id', $curr_std->next_standard_id)->first();
 
         if ($per!='-') {
-            $result = 'Passed & Promoted to Class : ' . $next_std->school_stream;
+            $result = 'Passed & Promoted to Class ' . $next_std->school_stream;
         } else {
             $result = "Failed";
         }
@@ -6654,11 +6654,11 @@ private function buildDisciplineTable($decipline_data)
                       
                     }
                     // echo "<pre>";print_r($coData2);exit;
-                    $coScholaticTable.='<div style="display:flex;">';
+                    $coScholaticTable.='<div style="display:flex;text-align:center">';
                     if(!empty($coData1)){
                             foreach ($term_name as $key => $terms) {
                             $coScholaticTable.='<table class="aca-year" cellspacing="0" cellpadding="0" border="1" width="50%">';
-                            $coScholaticTable .= '<tr><th align="center" style="width:70%">'. $part1Head[$terms->term_id] . '</th><th align="center">' . $terms->title . '</th></tr>';
+                            $coScholaticTable .= '<tr><th align="center" style="width:70%"><b>'. $part1Head[$terms->term_id] . '</b></th><th align="center"><b>' . $terms->title . '</b></th></tr>';
                             foreach ($coData1[$terms->term_id] as $sub => $term_data) {
                                 $coScholaticTable .= '<tr><td align="center" style="width:70%">' . $sub . '</td>';
                                 $coScholaticTable .= '<td align="center">' . $term_data . '</td>';
@@ -6674,7 +6674,7 @@ private function buildDisciplineTable($decipline_data)
         if($coScholaticTable!=''){
             $co_grade_range = DB::table('result_co_scholatic_range')->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->get()->toArray();
             //co grade range
-            if (!empty($co_grade_range)) {
+            if (!empty($co_grade_range) && $result_type=="playground") {
                 $coScholaticTableGrades .= '<table class="aca-year hills_co" style="width: 80%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" cellpadding="0" border="1">
                 <tr>
                 <th class="data_center"  style="width:312px"><b>MARKS RANGE</b></th>';
@@ -6741,7 +6741,7 @@ private function buildDisciplineTable($decipline_data)
             $markArr[$value->subject_id][$value->ExamTitle][$value->title]['weightage'] += $value->weightage;
         }
         // make sort order to print headwise
-        $customOrder = ['Unit Test', 'Term - 1', 'Term - 2']; // Define the desired order
+        $customOrder = ['Unit Test', 'Term - 1','Half Yearly', 'Term - 2','FINAL EXAM']; // Define the desired order
 
         foreach ($markArr as $subject_id => $terms) {
             // Sort the terms based on custom order
@@ -6758,7 +6758,7 @@ private function buildDisciplineTable($decipline_data)
         // print table
         $scholaticTable = $scholaticTableGrades = '';
         $grade_arr = $this->getGradeScale($standard_id);
-        $all_mark = $total_mark = 0;
+        $all_mark = $total_mark =$per= 0;
         if(!empty($exam_marks)){
             // scholastic parts
             $scholaticTable .='<style>.data_center{text-align:center !important}</style><table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0"  border="1"><thead>';
@@ -6791,6 +6791,7 @@ private function buildDisciplineTable($decipline_data)
             <th class="data_center"><b>WEIGHTAGE <br>75%</b></th>
          </tr>';
             $scholaticTable.='</thead><tbody>';
+            $overAllMark = $overAllObt = 0;
             foreach ($get_subject as $sk => $sv) {
             $scholaticTable.='<tr>';
             $scholaticTable.='<td>'.$sv->subject_name.'</td>';
@@ -6821,7 +6822,7 @@ private function buildDisciplineTable($decipline_data)
                             $scholaticTable.='<td class="data_center">'.number_format($obt2,2).'</td>';
                             $scholaticTable.='<td class="data_center"><b>'.$convertMarks.'</b></td>';
                            }
-                           if($examTitle=="Term - 1"){
+                           if($examTitle=="Term - 1" || $examTitle=="Half Yearly"){
                             $obt = isset($markVal['TERM -1']['OBT']) ? $markVal['TERM -1']['OBT'] : 0;
                             $mm = isset($markVal['TERM -1']['MM']) ? $markVal['TERM -1']['MM'] : 0;
                             $weightage = isset($markVal['TERM -1']['weightage']) ? $markVal['TERM -1']['weightage'] : 0;
@@ -6834,7 +6835,7 @@ private function buildDisciplineTable($decipline_data)
                             $scholaticTable.='<td class="data_center">'.number_format($mm,2).'</td>';
                             $scholaticTable.='<td class="data_center"><b>'.$convertMarks.'</b></td>';
                            }
-                           if($examTitle=="Term - 2"){
+                           if($examTitle=="Term - 2" || $examTitle=="FINAL EXAM"){
                             if(isset($markVal['THEORY'])){
                                 $obt = isset($markVal['THEORY']['OBT']) ? $markVal['THEORY']['OBT'] : 0;
                                 $mm = isset($markVal['THEORY']['MM']) ? $markVal['THEORY']['MM'] : 0;
@@ -6865,10 +6866,15 @@ private function buildDisciplineTable($decipline_data)
                            }
                         }
                     }
+                    $overAllMark +=$totMark;
+                    $overAllObt +=$totObtMarks;
                     $scholaticTable.='<td class="data_center"><b>'.round($totObtMarks).'</b></td>';
                 }
             $scholaticTable.='</tr>';
+            
             }
+            $per = $this->getPer($overAllObt,$overAllMark);
+            $scholaticTable.='<tr><td colspan="12"><b>Percentage</b></td><td class="data_center"><b>'.$per.'%</b></td><tr>';
             $scholaticTable .='</tbody></table>';
             // Grade range table
             $gradeRange = $this->getGradeRange($standard_id);
@@ -6895,16 +6901,16 @@ private function buildDisciplineTable($decipline_data)
                     $scholaticTableGrades.='<td align="center">'.$value.'</td>';
                 }
             }
+
             $scholaticTableGrades .='<tr></table>';
         }
-        
-        $per = $this->getPer($all_mark, $total_mark);
+
 
         $curr_std = DB::table('standard')->where('id', $standard_id)->first();
         $next_std = DB::table('standard')->where('id', $curr_std->next_standard_id)->first();
 
         if ($per!='-') {
-            $result = 'Passed & Promoted to Class : ' . $next_std->school_stream;
+            $result = 'Passed & Promoted to Class ' . $next_std->school_stream;
         } else {
             $result = "Failed";
         }
