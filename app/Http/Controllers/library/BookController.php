@@ -95,26 +95,26 @@ class BookController extends Controller
                 ->make(true);
         }
         $DonateCode = '';
-        if($sub_institute_id!=47){
+        if(!in_array($sub_institute_id,[47,254])){
             $lastItem = LibraryItem::where('sub_institute_id',$sub_institute_id)->where('item_code','like','%L%')->orderBy('id', 'desc')->first();
 
             if ($lastItem) {
                 // Extract the numeric part of the item_code and increment it
                 $lastItemCode = substr($lastItem->item_code, 1); // Remove the 'L' prefix
                 $nextItemCode = (int)$lastItemCode + 1;
-                $nextItemCode = str_pad($nextItemCode, 5, '0', STR_PAD_LEFT); // Ensure it's 5 digits
+                $nextItemCode = str_pad($nextItemCode, 6, '0', STR_PAD_LEFT); // Ensure it's 5 digits
                 $nextItemCode = 'L' . $nextItemCode;
             }else{
                 $nextItemCode = "L000001";
             }
-        }else{
+        }elseif(in_array($sub_institute_id,[47])){
             $purchase = LibraryItem::where('sub_institute_id',$sub_institute_id)->where('item_code','like','%A%')->orderBy('id', 'desc')->first();
             $Donate = LibraryItem::where('sub_institute_id',$sub_institute_id)->where('item_code','like','%D%')->orderBy('id', 'desc')->first();
             if ($purchase) {
                 // Extract the numeric part of the item_code and increment it
                 $lastItemCode = substr($purchase->item_code, 1); // Remove the 'L' prefix
                 $nextItemCode = (int)$lastItemCode + 1;
-                $nextItemCode = str_pad($nextItemCode, 5, '0', STR_PAD_LEFT); // Ensure it's 5 digits
+                $nextItemCode = str_pad($nextItemCode, 6, '0', STR_PAD_LEFT); // Ensure it's 5 digits
                 $nextItemCode = 'A' . $nextItemCode;
             }else{
                 $nextItemCode = "A000001";
@@ -124,12 +124,21 @@ class BookController extends Controller
                 // Extract the numeric part of the item_code and increment it
                 $lastDonateCode = substr($Donate->item_code, 1); // Remove the 'L' prefix
                 $DonateCode = (int)$lastDonateCode + 1;
-                $DonateCode = str_pad($DonateCode, 5, '0', STR_PAD_LEFT); // Ensure it's 5 digits
+                $DonateCode = str_pad($DonateCode, 6, '0', STR_PAD_LEFT); // Ensure it's 5 digits
                 $DonateCode = 'D' . $DonateCode;
             }else{
                 $DonateCode = "D000001";
             }
+        }else{
+            $lastItem = LibraryItem::where('sub_institute_id',$sub_institute_id)->orderBy('id', 'desc')->first();
+
+            if ($lastItem) {
+              $nextItemCode = ($lastItem->item_code + 1);
+            }else{
+                $nextItemCode = "0";
+            }
         }
+
         return view('library.books',compact('subjects','publisher_names','author_names','nextItemCode','DonateCode'));
     }
 
