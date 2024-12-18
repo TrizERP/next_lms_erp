@@ -331,81 +331,46 @@ class resultAPIController extends Controller
             if ($value->subject_id == $row->subject_id) {
                 $studentPer = $this->calculatePercentage($row->obtain_marks, $row->total_marks);
                 $chper = ($row->total_marks>0) ? ($studentPer) /10 : 0;
-                $controller = new questionmasterController;
+                $occupation = [];
+                // $controller = new questionmasterController;
 
-                $interestsCount = ['Realistic' => 0, 'Investigative' => 0, 'Artistic' => 0, 'Social' => 0, 'Enterprising' => 0, 'Conventional' => 0];
+                // $interestsCount = ['Realistic' => 0, 'Investigative' => 0, 'Artistic' => 0, 'Social' => 0, 'Enterprising' => 0, 'Conventional' => 0];
 
-                // Get question map values
-                if (isset($row->question_ids)) {
-                    $question_ids = explode(',', $row->question_ids);
+                // // Get question map values
+                // if (isset($row->question_ids)) {
+                //     $question_ids = explode(',', $row->question_ids);
                     
-                    foreach ($question_ids as $qv) {
-                        $getQuestionData = DB::table('lms_question_master')->where('id', $qv)->first();
+                //     foreach ($question_ids as $qv) {
+                //         $getQuestionData = DB::table('lms_question_master')->where('id', $qv)->first();
                         
-                        if (!empty($getQuestionData) && $getQuestionData->subject_id == $row->subject_id && $row->chapter_id == $getQuestionData->chapter_id) {
-                            $request2 = new Request(['question_id' => $qv]);
-                            $mapValues = $controller->getMappedValue($request2);
+                //         if (!empty($getQuestionData) && $getQuestionData->subject_id == $row->subject_id && $row->chapter_id == $getQuestionData->chapter_id) {
+                //             $request2 = new Request(['question_id' => $qv]);
+                //             $mapValues = $controller->getMappedValue($request2);
                             
-                            foreach ($mapValues['MappedData'] as $item) {
-                                $interests = $this->extractInterests($item);
-                                foreach ($interestsCount as $key => $valued) {
-                                    $interestsCount[$key] += $interests[$key];
-                                }
-                            }
-                        }
-                    }
-                }
-
-                $conPercentages = [];
-                foreach ($interestsCount as $key => $values) {
-                    $conPercentages[$key] = $this->calculatePercentage($values, 40);
-                }
-
-                // // Get occupation
-                // $lmsCounsellingController = new lmsCounsellingController;
-                // $request3 = new Request($conPercentages);
-                // $intrestOccupation = $lmsCounsellingController->intrestEnterScore($request3);
-                // $dataArray = $intrestOccupation->getData(true);
-                
-                // Prepare occupation data 12-11-2024
-                // $occupation = [];
-                // $response = Http::timeout(5) // Timeout after 5 seconds
-                //                 ->get('https://erp.triz.co.in/intrestEnterScore', $conPercentages);
-
-                // if ($response->successful()) {
-                //     // Get the JSON response
-                //     $scoreData = $response->json(); // Corrected to assign directly to an array, not as $scoreData[]
-                //     // Check for career data in response
-                //     if (isset($scoreData['career']) && !empty($scoreData['career'])) {
-                //         foreach ($scoreData['career'] as $ck => $cv) {
-                //             $occupation[] = [
-                //                 "type" => "video",
-                //                 "title" => $cv['title'],
-                //                 "link" => "https://main--lms-portal-site.netlify.app/content-model?data=" . $cv['code'],
-                //             ];
+                //             foreach ($mapValues['MappedData'] as $item) {
+                //                 $interests = $this->extractInterests($item);
+                //                 foreach ($interestsCount as $key => $valued) {
+                //                     $interestsCount[$key] += $interests[$key];
+                //                 }
+                //             }
                 //         }
                 //     }
                 // }
-                // 12-11-2024 end
 
-                // if (isset($dataArray['career']) && !empty($dataArray['career'])) {
-                //     foreach ($dataArray['career'] as $cv) {
-                //         $occupation[] = [
-                //             "type" => "video",
-                //             "title" => $cv['title'],
-                //             "link" => "https://main--lms-portal-site.netlify.app/content-model?data=" . $cv['code'],
-                //         ];
-                //     }
+                // $conPercentages = [];
+                // foreach ($interestsCount as $key => $values) {
+                //     $conPercentages[$key] = $this->calculatePercentage($values, 40);
                 // }
 
                 // Collect chapter data
                 $chapters[$value->subject_id][] = [
+                    "chapter_id" => $row->chapter_id,
                     "title" => $row->chapter_name,
                     "totalmarks" => $row->total_marks,
                     "totalobtain" => $row->obtain_marks,
                     "chapterrank" => round($chper, 2),
-                    // "recommendation" => $occupation,
-                    "recommendation" => $conPercentages,
+                    "recommendation" => $occupation,
+                    // "recommendation" => $conPercentages,
                     "chapteroutcome" => $transformedData,
                     "chapterprogress" => $progressData,
                 ];
@@ -475,4 +440,71 @@ class resultAPIController extends Controller
         return $interests;
     }
 
+    public function getPalMarks(Request $request){
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+        if($request->type=="API"){
+            $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');
+        }
+
+        $chpaterProgress=DB::table('question_paper as qp')
+                ->select('qp.standard_id','qp.subject_id','qp.id AS question_paper_id','qp.paper_name','le.student_id','le.question_paper_id',DB::raw('SUM(qp.total_marks) as total_marks'),DB::raw('SUM(IFNULL(le.total_right, 0)) AS obtain_marks'),'qp.question_ids',DB::raw('GROUP_CONCAT(qm.question_title) as question_titles'),DB::raw('GROUP_CONCAT(qp.question_ids) as question_str'),'ch.chapter_name',DB::raw('ch.id as chapter_id'),)
+                ->leftjoin('lms_online_exam_student as le', 'le.question_paper_id', '=', 'qp.id')
+                ->join('lms_question_master as qm', function ($join) {
+                    $join->on('qm.sub_institute_id','=','qp.sub_institute_id')->whereRaw('qm.id IN (qp.question_ids)');
+                })
+                ->join('chapter_master as ch', 'ch.id', '=', 'qm.chapter_id')
+                ->where('qp.sub_institute_id', $sub_institute_id)
+                ->where('qp.standard_id', $request->standard_id)
+                ->when($request->subject_id,function($q) use($request){
+                    $q->where('qp.subject_id', $request->subject_id);
+                })
+                ->where('qp.syear',$syear)
+                ->where('le.student_id',$request->student_id)
+                ->groupByRaw('qp.subject_id,ch.id')->get()->toArray();
+
+        return $chpaterProgress;
+    }
+
+    public function getMapValue(Request $request){
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+        if($request->type=="API"){
+            $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');
+        }
+        $query = DB::table('question_paper as qp')
+        ->select('qp.standard_id','qp.subject_id','qp.id AS question_paper_id','qp.paper_name','le.student_id','le.question_paper_id',DB::raw('SUM(qp.total_marks) as total_marks'),DB::raw('SUM(IFNULL(le.total_right, 0)) AS obtain_marks'),'qp.question_ids',DB::raw('GROUP_CONCAT(qm.question_title) as question_titles'),DB::raw('GROUP_CONCAT(DISTINCT qp.question_ids) as all_question_id'),'ch.chapter_name',DB::raw('ch.id as chapter_id'),)
+        ->when($request->exam_type=="pal",function($join){
+            $join->leftjoin('lms_online_exam_student as le', 'le.question_paper_id', '=', 'qp.id');
+        },function($join){
+            $join->leftjoin('lms_online_exam as le', 'le.question_paper_id', '=', 'qp.id');
+        })
+        ->join('lms_question_master as qm', function ($join) {
+            $join->on('qm.sub_institute_id','=','qp.sub_institute_id')->whereRaw('qm.id IN (qp.question_ids)');
+        })
+        ->join('chapter_master as ch', 'ch.id', '=', 'qm.chapter_id')
+        ->where('qp.sub_institute_id', $sub_institute_id)
+        ->where('qp.standard_id', $request->standard_id)
+        ->where('qp.subject_id', $request->subject_id)
+        ->where('qm.chapter_id', $request->chapter_id)
+        ->where('qp.syear',$syear)
+        ->where('le.student_id',$request->student_id)
+        ->groupByRaw('ch.id')->get()->toArray();
+
+        $mappedData = [];
+        foreach ($query as $key => $value) {
+           $getMappedValue = DB::table('lms_question_mapping as lqm')->join('lms_mapping_type as lmt', 'lmt.id', '=' ,'lqm.mapping_type_id')->join('lms_mapping_type as lmv', 'lmv.id','=','lqm.mapping_value_id')
+            ->selectRaw('lqm.id,lqm.questionmaster_id,lmt.name as type_name,lmv.name as value_name,count(lqm.questionmaster_id) as total_question,lmv.type')
+            ->whereRaw('lqm.questionmaster_id IN ('.$value->all_question_id.')')
+            ->where('lmv.type','!=','')
+            ->groupBy(['type_name','value_name'])->get()->toArray();
+
+            foreach ($getMappedValue as $k => $v) {
+                $mappedData[$v->type][] = $v;
+            }
+        }
+        return $mappedData;
+    }
 }
