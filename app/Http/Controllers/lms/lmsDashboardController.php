@@ -64,6 +64,8 @@ class lmsDashboardController extends Controller
 
             $request3 = new Request(['type' => "API", 'sub_institute_id' => $sub_institute_id, 'enrollment_no' => $currentData[0]->enrollment_no, 'student_id' => $currentData[0]->id, 'standard' => $currentData[0]->standard_id, 'syear' => $syear]);
             $res['selectedCurrentData'] = $resultAPIController->currentResult($request3);
+            $res['currentStandard'] = $currentData[0]->standard_id;
+            $res['currentStudentId'] = $currentData[0]->id;
         }
 
         // Get student data

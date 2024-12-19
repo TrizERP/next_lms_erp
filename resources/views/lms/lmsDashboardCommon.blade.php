@@ -190,7 +190,13 @@ if(isset($data['lmsData'])){
                      @foreach($data['selectedCurrentData']['currentdata']['subjectdata'] as $sub_id=>$value)   
                      <div class="collapse CurrentTable  {{$loop->first ? 'show' : '' }}" id="collapseExample2_{{$sub_id}}" data-val="collapseExample2_{{$sub_id}}">
                         <div class="card card-body p-4" style="height:316px;overflow-y:scroll;padding:10px !important">
-                           <h4>{{$value['subjectdata']}}</h4>
+                          
+                        <div style="display:flex">
+                              <h4 style="padding:10px;margin-bottom:0px">{{$value['subjectdata']}}</h4> 
+                              <a style="padding:10px;border-radius:10px;background:#f8931f" onclick="displayRegular();">Regular</a>&nbsp;&nbsp;
+                              <a style="padding:10px;border-radius:10px;background:#8cc63e" onclick="displayPal({{$sub_id}},{{$data['currentStandard']}},{{$data['currentStudentId']}});">PAL</a>
+                           </div>
+
                            @if(isset($value['chapterdata'][$sub_id]))
                            <table class="table table-borderless table-responsive" style="overflow-y:visible">
                               <thead>
@@ -201,7 +207,7 @@ if(isset($data['lmsData'])){
                                  <th style="width:10%">Percentage</th>
                               </tr>
                               </thead>
-                              <tbody>
+                              <tbody class="hideOnPal">
                               @foreach($value['chapterdata'][$sub_id] as $ch=>$chVal)
                               @php 
                               $chtotal = (isset($chVal['totalmarks'])) ? $chVal['totalmarks'] : 0;
@@ -209,7 +215,7 @@ if(isset($data['lmsData'])){
                               $chPer = ($chtotal!=0) ? ($chobt * 100) / $chtotal : 0;
                               $i = [1=>'#FDEE21',2=>'#FDEE21',3=>'#FDEE21',4=>'#8A8A8A',5=>'#8A8A8A'];
                               @endphp
-                              <tr class="trsub"  onclick="activeTr('tr{{$ch}}',{{$ch}},{{$sub_id}})" id="tr{{$ch}}_{{$sub_id}}" data-val="{{$ch}}">
+                              <tr class="trsub"  onclick="activeTr('tr{{$ch}}',{{$ch}},{{$sub_id}},{{$chVal['chapter_id']}})" id="tr{{$ch}}_{{$sub_id}}" data-val="{{$ch}}" data-ch="{{$chVal['chapter_id']}}">
                                  <td style="width:70%">{{isset($chVal['title']) ? $chVal['title'] : '-'}}</td>
                                  <td style="width:10%">{{$chtotal}}</td>
                                  <td style="width:10%">{{$chobt}}</td>
@@ -217,6 +223,9 @@ if(isset($data['lmsData'])){
                               </tr>
                               @endforeach
                               </tbody>
+                              <tbody class="showPal">
+                             
+                             </tbody>
                            </table>
                            @endif
                         </div>
@@ -228,7 +237,7 @@ if(isset($data['lmsData'])){
                <!-- cutrrent div  1 end  -->
                <!-- current div 2  -->
                <div class="currentDiv2" style="width:50%">
-                  @if(!empty($data['selectedCurrentData']['currentdata']['subjectdata']) && isset($data['selectedCurrentData']['currentdata']['subjectdata']))
+                  {{-- @if(!empty($data['selectedCurrentData']['currentdata']['subjectdata']) && isset($data['selectedCurrentData']['currentdata']['subjectdata']))
                   @foreach($data['selectedCurrentData']['currentdata']['subjectdata'] as $sub_id=>$value)   
                   <!-- get chapter data  -->
                   @if(isset($value['chapterdata'][$sub_id]))
@@ -307,7 +316,14 @@ if(isset($data['lmsData'])){
                   @endif
                   <!-- end chapoter data  -->
                   @endforeach
-                  @endif
+                  @endif --}}
+
+                  <!-- start new design -->
+                     <div class="mapping_parts">
+                      
+                     </div>
+                  <!-- end new design -->
+
                </div>
                <!-- cutrrent div 2 end  -->
             </div>
@@ -316,10 +332,10 @@ if(isset($data['lmsData'])){
       <!-- card 3 end  -->
 
        <!-- card 4 start  -->
-       <div class="lmscard" style="width:35%">
+       {{--<div class="lmscard hideForPal" style="width:35%">
          <div class="card border-radius-2">
             <div class="cardHead">
-               <h4>Occupations</h4>
+               <h4>Recommendation</h4>
             </div>
             <div class="cardData" style="padding:10px 10px;overflow-y: scroll;">
             @if(!empty($data['selectedCurrentData']['currentdata']['subjectdata']) && isset($data['selectedCurrentData']['currentdata']['subjectdata']))
@@ -345,11 +361,11 @@ if(isset($data['lmsData'])){
             </div>
 
          </div>
-      </div>
+      </div> --}}
        <!-- card 4 end  -->
 
        <!-- card 5 -->
-       <div class="lmscard" style="width:65%">
+       <div class="lmscard hideForPal" style="width:65%">
          <div class="card border-radius-2" style="height:370px">
           <!-- make 2 divs -->
             <div class="chDiv d-flex" style="width:100%">
