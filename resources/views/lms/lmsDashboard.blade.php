@@ -183,7 +183,13 @@
                      @foreach($data['selectedCurrentData']['currentdata']['subjectdata'] as $sub_id=>$value)   
                      <div class="collapse CurrentTable  {{$loop->first ? 'show' : '' }}" id="collapseExample2_{{$sub_id}}" data-val="collapseExample2_{{$sub_id}}">
                         <div class="card card-body p-4" style="height:316px;overflow-y:scroll;padding:10px !important">
-                           <h4>{{$value['subjectdata']}}</h4>
+
+                           <div style="display:flex">
+                              <h4 style="padding:10px;margin-bottom:0px">{{$value['subjectdata']}}</h4> 
+                              <a style="padding:10px;border-radius:10px;background:#f8931f" onclick="displayRegular();">Regular</a>&nbsp;&nbsp;
+                              <a style="padding:10px;border-radius:10px;background:#8cc63e" onclick="displayPal({{$sub_id}},{{$data['currentStandard']}},{{$data['currentStudentId']}});">PAL</a>
+                           </div>
+
                            @if(isset($value['chapterdata'][$sub_id]))
                            <table class="table table-borderless table-responsive" style="overflow-y:visible">
                               <thead>
@@ -194,7 +200,7 @@
                                  <th style="width:10%">Percentage</th>
                               </tr>
                               </thead>
-                              <tbody>
+                              <tbody class="hideOnPal">
                               @foreach($value['chapterdata'][$sub_id] as $ch=>$chVal)
                               @php 
                               $chtotal = (isset($chVal['totalmarks'])) ? $chVal['totalmarks'] : 0;
@@ -202,13 +208,16 @@
                               $chPer = ($chtotal!=0) ? ($chobt * 100) / $chtotal : 0;
                               $i = [1=>'#FDEE21',2=>'#FDEE21',3=>'#FDEE21',4=>'#8A8A8A',5=>'#8A8A8A'];
                               @endphp
-                              <tr class="trsub"  onclick="activeTr('tr{{$ch}}',{{$ch}},{{$sub_id}})" id="tr{{$ch}}_{{$sub_id}}" data-val="{{$ch}}">
+                              <tr class="trsub"  onclick="activeTr('tr{{$ch}}',{{$ch}},{{$sub_id}},{{$chVal['chapter_id']}})" id="tr{{$ch}}_{{$sub_id}}" data-val="{{$ch}}" data-ch="{{$chVal['chapter_id']}}">
                                  <td style="width:70%">{{isset($chVal['title']) ? $chVal['title'] : '-'}}</td>
                                  <td style="width:10%">{{$chtotal}}</td>
                                  <td style="width:10%">{{$chobt}}</td>
                                  <td style="width:10%" >{{round($chPer)}}</td>
                               </tr>
                               @endforeach
+                              </tbody>
+                              <tbody class="showPal">
+                             
                               </tbody>
                            </table>
                            @endif
@@ -221,7 +230,7 @@
                <!-- cutrrent div  1 end  -->
                <!-- current div 2  -->
                <div class="currentDiv2" style="width:50%">
-                  @if(!empty($data['selectedCurrentData']['currentdata']['subjectdata']) && isset($data['selectedCurrentData']['currentdata']['subjectdata']))
+                {{--  @if(!empty($data['selectedCurrentData']['currentdata']['subjectdata']) && isset($data['selectedCurrentData']['currentdata']['subjectdata']))
                   @foreach($data['selectedCurrentData']['currentdata']['subjectdata'] as $sub_id=>$value)   
                   <!-- get chapter data  -->
                   @if(isset($value['chapterdata'][$sub_id]))
@@ -300,7 +309,14 @@
                   @endif
                   <!-- end chapoter data  -->
                   @endforeach
-                  @endif
+                  @endif --}}
+
+                  <!-- start new design -->
+                     <div class="mapping_parts">
+                      
+                     </div>
+                  <!-- end new design -->
+
                </div>
                <!-- cutrrent div 2 end  -->
             </div>
@@ -309,7 +325,7 @@
       <!-- card 3 end  -->
 
        <!-- card 4 start  -->
-       <div class="lmscard" style="width:35%">
+       {{-- <div class="lmscard hideForPal" style="width:35%">
          <div class="card border-radius-2">
             <div class="cardHead">
                <h4>Occupations</h4>
@@ -338,11 +354,11 @@
             </div>
 
          </div>
-      </div>
+      </div> --}}
        <!-- card 4 end  -->
 
        <!-- card 5 -->
-       <div class="lmscard" style="width:65%">
+       <div class="lmscard hideForPal" style="width:65%">
          <div class="card border-radius-2" style="height:370px">
           <!-- make 2 divs -->
             <div class="chDiv d-flex" style="width:100%">
@@ -553,9 +569,11 @@
             if ($firstRow.length) {
                 $firstRow.addClass('activeChapter');
                 var ch = $firstRow.data('val');
+                var chapter = $firstRow.data('ch');
                 
                 // Show or hide sections based on row data
                 toggleSections(divId, ch);
+                getMapValue(divId, chapter, 'regular');
             } else {
                 hideSections();
             }
@@ -565,6 +583,8 @@
         $('.circle').on('click', function() {
             hideSections();
         });
+
+        $('.showPal').hide();
     });
 
     function toggleSections(divId, ch) {
@@ -580,43 +600,43 @@
          var Enterprising= $('#input_Enterprising_' + divId + '_' + ch).val();
          var Conventional= $('#input_Conventional_' + divId + '_' + ch).val();
          $('#recommendationDiv_'+ divId + '_' + ch).empty();
-         $.ajax({
-            url: 'https://erp.triz.co.in/intrestEnterScore',
-            data: {
-               Realistic: Realistic,
-               Investigative: Investigative,
-               Artistic: Artistic,
-               Social: Social,
-               Enterprising: Enterprising,
-               Conventional: Conventional
-            },
-            type: 'GET',
-            success: function(response) {
-               console.log(response);
+        // $.ajax({
+         //   url: 'https://erp.triz.co.in/intrestEnterScore',
+          //  data: {
+          //     Realistic: Realistic,
+          //     Investigative: Investigative,
+         //      Artistic: Artistic,
+         //       Social: Social,
+         //       Enterprising: Enterprising,
+          //      Conventional: Conventional
+          //   },
+          //   type: 'GET',
+          //   success: function(response) {
+           //     console.log(response);
 
-               if (response.career && response.career.length > 0) {
-                     // Loop through each career item in the response
-               console.log(response.career);
+            //    if (response.career && response.career.length > 0) {
+           //           // Loop through each career item in the response
+            //    console.log(response.career);
 
-                     response.career.forEach(function(rval) {
-                        // Create the HTML structure for each career recommendation
-                        const careerHtml = `<a href="${rval.href}" class="d-flex" target="_blank">
-                                    <div style="width:90%">${rval.title}</div>
-                                    <div style="width:10%">
-                                       <span class="mdi mdi-arrow-right-drop-circle-outline"></span>
-                                    </div>
-                                 </a>`;
-                        // Append to the container
-                        $('#recommendationDiv_'+ divId + '_' + ch).append(careerHtml);
-                     });
-               } else {
-                     $('#recommendationDiv_'+ divId + '_' + ch).html('<p>No career recommendations found.</p>');
-               }
-            },
-            error: function() {
-               $('#recommendationDiv_'+ divId + '_' + ch).html('<p>Failed to load recommendations. Please try again.</p>');
-            }
-         });
+            //          response.career.forEach(function(rval) {
+            //             // Create the HTML structure for each career recommendation
+            //             const careerHtml = `<a href="${rval.href}" class="d-flex" target="_blank">
+             //                        <div style="width:90%">${rval.title}</div>
+                //                     <div style="width:10%">
+             //                           <span class="mdi mdi-arrow-right-drop-circle-outline"></span>
+              //                       </div>
+              //                    </a>`;
+             //            // Append to the container
+             //            $('#recommendationDiv_'+ divId + '_' + ch).append(careerHtml);
+             //         });
+             //   } else {
+             //         $('#recommendationDiv_'+ divId + '_' + ch).html('<p>No career recommendations found.</p>');
+             //   }
+          //   },
+            // error: function() {
+           //     $('#recommendationDiv_'+ divId + '_' + ch).html('<p>Failed to load recommendations. Please try again.</p>');
+           //  }
+         // });
 
          $('#recommendation_' + divId + '_' + ch).show();
 
@@ -665,6 +685,9 @@
     function currentCircle(sub) {
       $('.CurrentTable').removeClass('show');
       $('.CurrentTable').removeClass('active');
+      $('.hideOnPal').show();
+      $('.hideForPal').show();
+      $('.showPal').hide();
 
       var $currentTable = $('.CurrentTable[data-val="collapseExample2_' + sub + '"]');
       $currentTable.toggleClass('active');
@@ -679,20 +702,156 @@
       // If there is a first row, trigger activeTr function for it
       if ($firstRow.length) {
          var ch = $firstRow.data('val');
+         var chapter = $firstRow.data('ch');
          var sub_id = sub;
          $firstRow.addClass('activeChapter');
-         activeTr($firstRow.attr('id'), ch, sub_id);
+         activeTr($firstRow.attr('id'), ch, sub_id,chapter);
       } else {
          hideSections();
       }
    }
 
-    function activeTr(trsub, ch_id, sub_id) {
+    function activeTr(trsub, ch_id, sub_id,chapterId) {
         $('.trsub').removeClass('activeChapter');
         $('#tr' + ch_id + '_' + sub_id).toggleClass('activeChapter');
         
         toggleSections(sub_id, ch_id);
+        getMapValue(sub_id,chapterId,'regular');
     }
+    function activeTrPal(trsub, ch_id, sub_id,chapterId) {
+
+        $('.trsubPal').removeClass('activeChapter');
+        $('.trsubPal'+ch_id+'_'+sub_id).toggleClass('activeChapter');
+       
+        toggleSections(sub_id, ch_id);
+        getMapValue(sub_id,chapterId,'pal');
+    }
+
+   function displayRegular(){
+      $('.showPal').hide();
+      $('.hideForPal').show();
+      $('.hideOnPal').show();
+   }
+
+   function displayPal(subject_id, standard_id, student_id) {
+    $('.hideOnPal').hide();
+    $('.hideForPal').hide();
+    $('.showPal').empty();
+    $.ajax({
+        url: "{{route('getPalMarks')}}",
+        type: 'GET',
+        data: {
+            subject_id: subject_id,
+            standard_id: standard_id,
+            student_id: student_id
+        },
+        success: function(result) {
+         $(".showPal").show();
+            $.each(result, function(index, data) {
+                // Calculate percentage
+                let totalMarks = parseFloat(data.total_marks);
+                let obtainMarks = parseFloat(data.obtain_marks);
+                let percentage = (totalMarks > 0) ? (obtainMarks / totalMarks * 100) : 0;
+
+                // Append the row to the table
+                var active = '';
+                if(index==0){
+                  var active = 'activeChapter';
+                }
+                let row = `
+                    <tr class="trsubPal ${active} trsubPal${data.chapter_id}_${subject_id}" onclick="activeTrPal('trPal${data.chapter_id}',${data.chapter_id},${subject_id},${data.chapter_id})" id="trPal${data.chapter_id}_${subject_id}" data-val="${data.chapter_id}">
+                        <td style="width:70%">${data.chapter_name ?? '-'}</td>
+                        <td style="width:10%">${totalMarks}</td>
+                        <td style="width:10%">${obtainMarks}</td>
+                        <td style="width:10%">${percentage}</td>
+                    </tr>
+                `;
+                $(".showPal").append(row);
+            });
+         },
+         error: function(xhr, status, error) {
+               console.error("Error: " + error);
+         }
+      });
+   }
+
+   function getMapValue(sub_id, chapterId, examType) {
+    var standard = "{{$data['currentStandard']}}";
+    var student = "{{$data['currentStudentId']}}";
+    $('.mapping_parts').empty(); // Clear the container before appending new data
+
+    $.ajax({
+        url: "{{route('getMapValue')}}",
+        type: 'GET',
+        data: {
+            standard_id: standard,
+            student_id: student,
+            subject_id: sub_id,
+            chapter_id: chapterId,
+            exam_type: examType
+        },
+        success: function(result) {
+         $('.mapping_parts').empty();
+            let mapData = ``;
+
+            // Check and append for each key
+            if (result['Abilities'] && result['Abilities'].length > 0) {
+                mapData += `
+                    <div class="divMap1" style="width:50%">
+                        <div class="mapTitle1">Abilities</div>
+                        <div class="mapList1">
+                            <ul>
+                                ${result['Abilities'].map(item => `<li>${item.value_name}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>`;
+            }
+
+            if (result['Skills'] && result['Skills'].length > 0) {
+                mapData += `
+                    <div class="divMap2" style="width:50%">
+                        <div class="mapTitle2">Skills</div>
+                        <div class="mapList2">
+                            <ul>
+                                ${result['Skills'].map(item => `<li>${item.value_name}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>`;
+            }
+
+            if (result['Knowledge'] && result['Knowledge'].length > 0) {
+                mapData += `
+                    <div class="divMap3" style="width:50%">
+                        <div class="mapTitle3">Knowledge</div>
+                        <div class="mapList3">
+                            <ul>
+                                ${result['Knowledge'].map(item => `<li>${item.value_name}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>`;
+            }
+
+            if (result['Interests'] && result['Interests'].length > 0) {
+                mapData += `
+                    <div class="divMap4" style="width:50%">
+                        <div class="mapTitle4">Interests</div>
+                        <div class="mapList4">
+                            <ul>
+                                ${result['Interests'].map(item => `<li>${item.value_name}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>`;
+            }
+
+            // Append the generated HTML to the container
+            $('.mapping_parts').append(mapData);
+        },
+        error: function(xhr, status, error) {
+            console.error("Error: " + error);
+        }
+    });
+}
+
 </script>
 
 @include('includes.footer')

@@ -110,6 +110,8 @@ Route::group(['prefix' => 'result', 'middleware' => ['session', 'menu', 'logRout
     // Route::GET('student_homework_submission_report_index', 'student\studentHomeworkSubmissionController@studentHomeworkSubmissionReportIndex')->name("student_homework_submission_report_index");
     
     Route::get('result_personalize_marks', [resultAPIController::class,'resultPersonalize'])->name('result_personalize_marks');
+    Route::get('getPalMarks', [resultAPIController::class,'getPalMarks'])->name('getPalMarks');
+    Route::get('getMapValue', [resultAPIController::class,'getMapValue'])->name('getMapValue');
 
     Route::get('current_result', [resultAPIController::class,'currentResult'])->name('current_result');   
     Route::get('getActivityLists', [resultActivityMasterController::class,'getActivityLists'])->name('getActivityLists'); 
