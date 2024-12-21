@@ -19,6 +19,7 @@ use function App\Helpers\countDays;
 use GenTux\Jwt\GetsJwtToken;
 use DB;
 use PDF;
+use Validator;
 
 class PayrollController extends Controller
 {
@@ -1637,6 +1638,7 @@ class PayrollController extends Controller
             $newData[$key]['monthlyData'] = DB::table('employee_monthly_salary_data')->where(['sub_institute_id'=>$sub_institute_id,'year'=>$year])->where('employee_id',$value['id'])->where('month',$month)->first();
             if(isset($newData[$key]['monthlyData']->total_day)){
                 $newData[$key]['totalDay'] = round($newData[$key]['monthlyData']->total_day,2);
+                $newData[$key]['json'] = '';
             }else{
                 $year = $year ?? Carbon::now()->year;
                 $month = $month ?? Carbon::now()->format('M');
@@ -1660,7 +1662,8 @@ class PayrollController extends Controller
 
                 // $emp_att = ($AttTotalDays - $AttTotalAb);
                 $emp_att = $this->getTotalDays($request2);
-                $newData[$key]['totalDay'] = round($emp_att,2);
+                $newData[$key]['totalDay'] = round($emp_att['totalDays'],2);
+                $newData[$key]['json'] = $emp_att['json'] ?? '';
             }
         }
                 // echo "<pre>";print_r($newData);
@@ -1829,54 +1832,62 @@ class PayrollController extends Controller
         // echo "<pre>";print_r($request->all());exit;
         // make json
         foreach ($payrollVal as $emp_id => $value) {
-            if($value['total_day']>0 && count(array_filter($value['payrollHead'])) > 0){
+            // Below IF condition hide by rajesh 17-12-2024 -> '0' also insert in table
+            //if($value['total_day']>0 && count(array_filter($value['payrollHead'])) > 0)
+            {
                 $jsonVal[$emp_id] = json_encode($value['payrollHead']);
-                } 
+            } 
         }
         // add update value;
         $i=0;
         foreach ($payrollVal as $emp_id => $value) {
-            if($value['total_day']>0  && count(array_filter($value['payrollHead'])) > 0){
-            $employeeSalaryData = EmployeeMonthlySalaryData::where('employee_id', $emp_id)->where('month',$request->month)->where('year',$request->year)->where(['sub_institute_id'=> $sub_institute_id])->first();
+         // Below IF condition hide by rajesh 17-12-2024 -> '0' also insert in table
+		// if($value['total_day'] > 0  && count(array_filter($value['payrollHead'])) > 0) 
+            {
+	            
+	            $employeeSalaryData = EmployeeMonthlySalaryData::where('employee_id', $emp_id)->where('month',$request->month)->where('year',$request->year)->where(['sub_institute_id'=> $sub_institute_id])->first();
 
-            $dataArr = [
-                'month' => $request->month,
-                'year' => $request->year,
-                'employee_id' => $emp_id,
-                'sub_institute_id' => $sub_institute_id,
-            ];
+	            $dataArr = [
+	                'month' => $request->month,
+	                'year' => $request->year,
+	                'employee_id' => $emp_id,
+	                'sub_institute_id' => $sub_institute_id,
+	            ];
 
-            $dataArr['total_deduction'] = $value['total_deduction'] ?? 0;
-            $dataArr['total_payment'] = $value['total_payment'] ?? 0;
-            $dataArr['received_by'] = $value['received_by'] ?? 0;
-            $dataArr['total_day'] = $value['total_day'] ?? 0;
-            $dataArr['employee_salary_data'] = $jsonVal[$emp_id];
+	            $dataArr['total_deduction'] = $value['total_deduction'] ?? 0;
+	            $dataArr['total_payment'] = $value['total_payment'] ?? 0;
+	            $dataArr['received_by'] = $value['received_by'] ?? 0;
+	            $dataArr['total_day'] = $value['total_day'] ?? 0;
+	            $dataArr['employee_salary_data'] = $jsonVal[$emp_id];
 
-            if(!empty($employeeSalaryData)){
-                $dataArr['updated_at'] = now();
-                $update = DB::table("employee_monthly_salary_data")->where('id',$employeeSalaryData->id)->update($dataArr);
-                $i++;
-            }else{
-                $dataArr['created_at'] = now();
-                $insert = DB::table("employee_monthly_salary_data")->insert($dataArr);
-                $i++;
-            }
-            // store pdf 29-10-2024
-            $pdfName = $this->monthlyPayrollPdf($request,$emp_id, $request->month, $request->year,'storeDoc');
+	            if(!empty($employeeSalaryData)){
+	                $dataArr['updated_at'] = now();
+	                // Update hide by rajesh 17-12-2024 for second time not update - Required only insert
+	                //$update = DB::table("employee_monthly_salary_data")->where('id',$employeeSalaryData->id)->update($dataArr);
+	                $i++;
+	            }else{
+	                $dataArr['created_at'] = now();
+	                $insert = DB::table("employee_monthly_salary_data")->insert($dataArr);
+	                $i++;
+	            }
+	            // store pdf 29-10-2024
+                if($dataArr['total_day']!=0){
+	            $pdfName = $this->monthlyPayrollPdf($request,$emp_id, $request->month, $request->year,'storeDoc');
 
-            if(isset($pdfName)){
-                $docTitle = 'Payslip '.$request->month.' '.$request->year;
-                $checkDoc = DB::table('staff_document')->where(['sub_institute_id'=>$sub_institute_id,'document_type_id'=>56,'user_id'=>$emp_id,'file_name'=>$pdfName])->get()->first();
+	            if(isset($pdfName)){
+	                $docTitle = 'Payslip '.$request->month.' '.$request->year;
+	                $checkDoc = DB::table('staff_document')->where(['sub_institute_id'=>$sub_institute_id,'document_type_id'=>56,'user_id'=>$emp_id,'file_name'=>$pdfName])->get()->first();
 
-                $pdfData = ['document_title'=>$docTitle,'sub_institute_id'=>$sub_institute_id,'document_type_id'=>56,'user_id'=>$emp_id,'file_name'=>$pdfName];
+	                $pdfData = ['document_title'=>$docTitle,'sub_institute_id'=>$sub_institute_id,'document_type_id'=>56,'user_id'=>$emp_id,'file_name'=>$pdfName];
 
-                if(empty($checkDoc)){
-                    $pdfData['created_at']=now();
-                    $insertDoc = DB::table('staff_document')->insert($pdfData);
-                }else{
-                    $pdfData['updated_at']=now();
-                    $updateDoc = DB::table('staff_document')->where(['sub_institute_id'=>$sub_institute_id,'document_type_id'=>56,'user_id'=>$emp_id,'file_name'=>$pdfName])->update($pdfData);
-                }
+	                if(empty($checkDoc)){
+	                    $pdfData['created_at']=now();
+	                    $insertDoc = DB::table('staff_document')->insert($pdfData);
+	                }else{
+	                    $pdfData['updated_at']=now();
+	                    $updateDoc = DB::table('staff_document')->where(['sub_institute_id'=>$sub_institute_id,'document_type_id'=>56,'user_id'=>$emp_id,'file_name'=>$pdfName])->update($pdfData);
+	                }
+	            }
             }
             }
          }
@@ -1892,6 +1903,68 @@ class PayrollController extends Controller
         return is_mobile($type,'monthly_payroll.index',$res);
     }
 
+    function deleteMonthlyPayrolls(Request $request){
+        $type= $request->type;
+        $sub_institute_id = session()->get('sub_institute_id');
+
+        if($type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->sub_institute_id;
+        }
+
+        $validator = Validator::make($request->all(), [
+            'month' => 'required',
+            'year' => 'required',
+            'deleteId' => 'required',
+        ]);
+    
+        if ($validator->fails()) {
+            $response['status'] = '0';
+            $response['message'] = $validator->messages();
+        } else {
+            $month = $request->month;
+            $year = $request->year;
+            $deleteId = $request->deleteId;
+
+            $i = 0;
+            foreach ($deleteId as $key => $value) {
+               $explodeIds = explode('###',$value);
+               $dataId =  isset($explodeIds[0]) ? $explodeIds[0] : 0;
+               $empId =  isset($explodeIds[1]) ? $explodeIds[1] : 0;
+               if($dataId !=0 && $empId !=0){
+                    $docTitle = 'Payslip '.$request->month.' '.$request->year;
+
+                    $checkInStaffDoc = DB::table('staff_document')->where(['user_id'=>$empId,'document_type_id'=>56,"document_title"=>$docTitle,'sub_institute_id'=>$sub_institute_id])->first();
+
+                    if(!empty($checkInStaffDoc)){
+                        $deleteDoc =  DB::table('staff_document')->where('id',$checkInStaffDoc->id)->delete();
+                    }
+
+                    $checkInMonthly = DB::table('employee_monthly_salary_data')->where('id',$dataId)->delete();
+               }
+               $i++;
+            }
+            if($i>0){
+                $response['status'] = '1';
+                $response['message'] = "Payroll Deleted Successfully";
+            }else{
+                $response['status'] = '0';
+                $response['message'] = "Failed to Delete Payroll";
+            }
+        }
+    
+        return $response;
+    }
     // 2024-08-20 getTotal Days
     public function getTotalDays(Request $request){
         $sub_institute_id=$request->sub_institute_id;
@@ -1940,7 +2013,7 @@ class PayrollController extends Controller
         $holidayDates = array_values(array_unique($holidayDates));
         
         // echo "<br>Holidays<br>";
-        // echo "<pre>";print_r($holidayDates);
+        //echo "<pre>";print_r($holidayDates);exit();
         // get users attandance
         $totalAtt = 0;
         $noAtt=$attArr=  [];
@@ -1976,10 +2049,11 @@ class PayrollController extends Controller
                     ->where('hel.status','!=','cancelled')
         //->whereRaw('(hel.from_date >= "'.$from_date->format('Y-m-d').'")
         ->get()->toArray();
-        // echo "<pre>";print_r($userLeaves);
+        //echo "<pre>";print_r($userLeaves);exit();
       
         $totDayPlaus = $totDayMinus = $noData = 0;
         $leaveDates=[];
+        $searchMonth = $from_date->format('Y-m');
         // check leave date in attandance and also aprroved_lwp
         foreach ($userLeaves as $key => $value) {
             $leaveFrom = Carbon::parse($value->from_date);
@@ -1988,15 +2062,22 @@ class PayrollController extends Controller
             for ($leavedate = $leaveFrom; $leavedate->lte($leaveTo); $leavedate->addDay()) {
                 $checkLeave = $leavedate->format('Y-m-d');
                 $checkMonth = $leavedate->format('Y-m');
-                $leaveMonth = $leaveTo->format('Y-m');
-                    if($checkMonth == $leaveMonth){
-                        // Leaves that are not in attandance.. 
+                $leaveMonth = Carbon::parse($checkLeave)->format('Y-m');
+                // $leaveMonth = $leaveTo->format('Y-m');
+                    if($checkMonth == $leaveMonth && $searchMonth==$leaveMonth){
+                        // Leaves that are not in attendance and not holidays
                         if(!in_array($checkLeave,$attArr) && !in_array($checkLeave,$holidayDates)){
+                        // if(!in_array($checkLeave,$attArr) && $value->status != "approved_lwp" ){
                             $totDayPlaus = ($totDayPlaus+$value->day_type);
-                        // echo $checkLeave.'<br>';
 
                         }
-                        // if date not found in attdance and leave is approved lwp then minus, count only full day leave because half day will be in attandance
+
+                        // Decrease $totDayPlaus if $checkLeave matches a holiday date
+					    if (in_array($checkLeave, $holidayDates)) {
+					        $totDayPlaus--;
+					    }
+
+                        // if date not found in attdance and leave is approved lwp then minus, count only full day leave because half day will be in attandance == If leave is approved LWP and half-day
                         if($value->status == "approved_lwp" && $value->day_type=="0.5" && !in_array($checkLeave,$holidayDates)){
                             $totalAtt = ($totalAtt - $value->day_type);
                         }
@@ -2004,10 +2085,13 @@ class PayrollController extends Controller
                         else if(!in_array($checkLeave,$holidayDates) && $value->status == "approved_lwp"){
                             $totDayMinus = ($totDayMinus+$value->day_type);
                         }
-                        // echo $leavedate->format('Y-m-d');
+                        
+                        // Adjust holiday count
                         if(in_array($checkLeave,$holidayDates) && $totDayMinus!=0){
                             $holiday--;
                         }
+
+                        // Adjust weekday off count
                         if(in_array($checkLeave,$weekDays)){
                             $weekday_off--;
                         }
@@ -2016,7 +2100,8 @@ class PayrollController extends Controller
                     }
                 }
         }
-        //echo "<br>Leaves<br>";
+        // exit;
+        // echo "<br>Leaves<br>";
         //echo "<pre>";print_r($leaveDates);
        // date not found in attandance and leave, no punch in and punch out and also no leave entry in database
         $noEnrty = 0;
@@ -2026,24 +2111,36 @@ class PayrollController extends Controller
                 // echo "<pre>";print_r($value);
             }
         }
-        // $arr = [
-        //     "att " =>$totalAtt,
-        //     "holidays" => $holiday,
-        //     "week" => $weekday_off,
-        //     "Leaves"=>$totDayPlaus,
-        //     "no Att"=>$noEnrty,
-        //     "leave lwp"=> $totDayMinus
-        // ];
-        // echo "<pre>";print_r($arr);exit;
+        $arr = [
+            "att" =>$totalAtt,
+            "holidays" => $holiday,
+            "weekoff" => $weekday_off,
+            "Leaves"=>$totDayPlaus,
+            "noAtt"=>$noEnrty,
+            "lwp"=> $totDayMinus
+        ];
+        // echo "<pre>";print_r($weekDays);
+        // echo "<pre>";print_r($holidayDates);
+        //echo "<pre>";print_r($arr);exit;
+        $json = json_encode($arr);
+        //echo $json;exit();
         $daysCount = $from_date->diffInDays($to_date);
        
-        $totalDays = ($totalAtt + $holiday + $weekday_off + $totDayPlaus + $noEnrty); // 31
+        $totalDays = ($totalAtt + $holiday + $weekday_off + $totDayPlaus + $totDayMinus + $noEnrty); // 31
+        // echo "<pre>";print_r($totalDays);exit;
         $totalDays = ($totalDays - $totDayMinus - $noEnrty); // 16
         $totalDays = ($totalDays>0) ? $totalDays : 0; // totDays should not be in minus
         // if no attendance,no leave applied and no lwp 2024-10-11
         if($totalAtt==0 && $totDayPlaus == 0 && $totDayMinus==0){
             $totalDays=0;
         }
-        return $totalDays;
+
+		// Include both $json and $totalDays in the return
+		$response = [
+		    "json" => $json,
+		    "totalDays" => $totalDays
+		];
+
+        return $response;
     }
 }
