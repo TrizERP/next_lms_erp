@@ -19,6 +19,7 @@ use function App\Helpers\countDays;
 use GenTux\Jwt\GetsJwtToken;
 use DB;
 use PDF;
+use Validator;
 
 class PayrollController extends Controller
 {
@@ -1902,6 +1903,68 @@ class PayrollController extends Controller
         return is_mobile($type,'monthly_payroll.index',$res);
     }
 
+    function deleteMonthlyPayrolls(Request $request){
+        $type= $request->type;
+        $sub_institute_id = session()->get('sub_institute_id');
+
+        if($type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->sub_institute_id;
+        }
+
+        $validator = Validator::make($request->all(), [
+            'month' => 'required',
+            'year' => 'required',
+            'deleteId' => 'required',
+        ]);
+    
+        if ($validator->fails()) {
+            $response['status'] = '0';
+            $response['message'] = $validator->messages();
+        } else {
+            $month = $request->month;
+            $year = $request->year;
+            $deleteId = $request->deleteId;
+
+            $i = 0;
+            foreach ($deleteId as $key => $value) {
+               $explodeIds = explode('###',$value);
+               $dataId =  isset($explodeIds[0]) ? $explodeIds[0] : 0;
+               $empId =  isset($explodeIds[1]) ? $explodeIds[1] : 0;
+               if($dataId !=0 && $empId !=0){
+                    $docTitle = 'Payslip '.$request->month.' '.$request->year;
+
+                    $checkInStaffDoc = DB::table('staff_document')->where(['user_id'=>$empId,'document_type_id'=>56,"document_title"=>$docTitle,'sub_institute_id'=>$sub_institute_id])->first();
+
+                    if(!empty($checkInStaffDoc)){
+                        $deleteDoc =  DB::table('staff_document')->where('id',$checkInStaffDoc->id)->delete();
+                    }
+
+                    $checkInMonthly = DB::table('employee_monthly_salary_data')->where('id',$dataId)->delete();
+               }
+               $i++;
+            }
+            if($i>0){
+                $response['status'] = '1';
+                $response['message'] = "Payroll Deleted Successfully";
+            }else{
+                $response['status'] = '0';
+                $response['message'] = "Failed to Delete Payroll";
+            }
+        }
+    
+        return $response;
+    }
     // 2024-08-20 getTotal Days
     public function getTotalDays(Request $request){
         $sub_institute_id=$request->sub_institute_id;

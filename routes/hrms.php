@@ -104,6 +104,8 @@ Route::group([ 'middleware' => ['session', 'menu', 'logRoute','check_permissions
     Route::get('/monthly-payroll/create', [PayrollController::class, 'monthlyPayrollCreate'])->name('monthly_payroll.create');
     Route::post('/monthly-payroll-store', [PayrollController::class, 'monthlyPayrollStore'])->name('monthly_payroll.store');
 
+    Route::post('/monthly-payroll-delete', [PayrollController::class, 'deleteMonthlyPayrolls'])->name('monthly_payroll.delete');
+
    // web.php
    Route::get('/getMonthlyData', [PayrollController::class, 'getEmpMonthlyData'])->name('getMonthlyData');
 });

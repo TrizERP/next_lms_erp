@@ -35,6 +35,7 @@
                 }
 
                 $profileArr = ["Admin","Super Admin","School Admin","Assistant Admin"];
+                $displayDelete='visibility:hidden';
 
                 $readonly= $hide='';
                 if(!in_array(session()->get('user_profile_name'),$profileArr)){
@@ -79,7 +80,8 @@
                 <table id="example" class="table table-striped">
                     <thead>
                         <tr>
-                            <th>SR No.</th>
+                            <th><input type="checkbox" id="deletePayrolls" class="deletePayrolls"> SR No. 
+                            </th>
                             <th>Emp No</th>
                             <th>Employee Name</th>
                             <th>Department</th>
@@ -93,7 +95,10 @@
                     <tbody>
                         @foreach($data['employeeDetails'] as $key => $value)
                         <tr>
-                            <td>{{$key+1}}</td>
+                            <td>{{$key+1}}
+                                 @if(isset($value['monthlyData']->total_day)) <input type="checkbox" name="deletePayroll[{{$value['id']}}]" id="deletePayroll" class="deletePayroll" value="{{$value['monthlyData']->id}}###{{$value['monthlyData']->employee_id}}">
+                                 @php $displayDelete='visibility:visible'; @endphp
+                                 @endif</td>
                             <td>{{$value['employee_no']}}</td>
                             <td>{{$value['full_name'] ?? '-' .'('.$value['user_profile'] ?? '-' .')'}}</td>
                             <td class="{{ $value['json'] }}">{{$value['department']}}</td>
@@ -159,6 +164,7 @@
             <div class="row" @if($hide!='') style="display:none" @endif>
                 <div class="col-m-12 form-group">
                     <input type="submit" class="btn btn-success" value="Save" name="Save">
+                    <a class="btn btn-danger" style="{{$displayDelete}}" onclick="deletePayrolls('{{$data['selMonth']}}',{{$data['selYear']}});">Delete</a>
                 </div>
             </div>
             </form>
@@ -311,5 +317,44 @@
     });
 });
 
+$(function () {
+        var $tblChkBox = $("input:checkbox");
+        $("#deletePayrolls").on("click", function () {
+            $($tblChkBox).prop('checked', $(this).prop('checked'));
+        });
+    });
+
+function deletePayrolls(month,year){
+    var checkboxes = document.querySelectorAll('input[class^="deletePayroll"]');
+    var checkedValues = [];
+
+    checkboxes.forEach(function (checkbox) {
+        if (checkbox.checked) {
+            checkedValues.push(checkbox.value);
+        }
+    });
+
+    // console.log(checkedValues);
+
+    if (checkedValues.length === 0) {
+        alert("Please select at least one checkbox");
+        return false; 
+    }else{
+        $.ajax({
+            url : "{{route('monthly_payroll.delete')}}",
+            data : {"month":month,"year":year,"deleteId":checkedValues,"_token": "{{ csrf_token() }}"},
+            type : "POST",
+            success : function(result){
+                // console.log(result);
+                alert(result.message);
+                if(result.status===1){
+                    location.reload();
+                }
+            }
+        });
+    }
+
+    return true;
+}
 </script>
 @include('includes.footer')
