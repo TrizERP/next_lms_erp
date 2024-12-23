@@ -112,11 +112,7 @@ class studentResultController extends Controller
         foreach ($data as $key => $value) {
             $html_content = $tData[0]['html_content'];
             $class = '';
-            if(in_array($sub_institute_id,[201,202,203,204,254])){
-                $class = 'class="report-card-bg2"';
-            }else{
-                $class = 'class="report-card-bg"';
-            }
+            $class = 'class="report-card-bg"';
             
             $new_html_content = '<div id="' . $value['id'] . '"><div ' . $class . ' style="page-break-before:avoid !important;page-break:always !important;">' . $this->create_html_content($syear, $sub_institute_id, $html_content, $value, $template, $result_trust, $format) . '</div></div>';
 
@@ -136,7 +132,7 @@ class studentResultController extends Controller
         $data['result_type'] = $result_type;
         $data['all_stud_html'] = $all_stud_html;
         $data['students_ids'] = $request->students;
-        // echo "<pre>";print_r($data);exit;
+
         return is_mobile($type, "result/new_result/student_results/result_view", $data, "view");
     }
 
@@ -862,7 +858,7 @@ class studentResultController extends Controller
         $next_std = DB::table('standard')->where('id', $curr_std->next_standard_id)->first();
 
         if (empty($failed)) {
-            $result = 'Passed & Promoted to Class : ' . $next_std->school_stream;
+            $result = 'Passed & Promoted to Class ' . $next_std->school_stream;
         } else {
             $result = "Failed";
         }
@@ -1143,7 +1139,7 @@ class studentResultController extends Controller
         $curr_std = DB::table('standard')->where('id', $standard_id)->first();
         $next_std = DB::table('standard')->where('id', $curr_std->next_standard_id)->first();
         if (empty($failed)) {
-            $result = 'Passed &amp; Promoted to Class : ' . $next_std->school_stream;
+            $result = 'Passed &amp; Promoted to Class ' . $next_std->school_stream;
         } else {
             $result = "Failed";
         }
@@ -5673,6 +5669,7 @@ private function buildDisciplineTable($decipline_data)
                                         if(isset($get_result_activity_mark[0]) && $get_result_activity_mark[0]->activity_id==$activity_master_id[$ak])
                                         {
                                             $table .= '&#10004';
+
                                         }else if(in_array($sub_institute_id,[202])){
                                             $table .= '-';
                                         }
@@ -6544,7 +6541,7 @@ private function buildDisciplineTable($decipline_data)
         $next_std = DB::table('standard')->where('id', $curr_std->next_standard_id)->first();
 
         if ($per!='-') {
-            $result = 'Passed & Promoted to Class : ' . $next_std->school_stream;
+            $result = 'Passed & Promoted to Class ' . $next_std->school_stream;
         } else {
             $result = "Failed";
         }
@@ -6592,7 +6589,7 @@ private function buildDisciplineTable($decipline_data)
                     $coScholaticTable.='<div style="display:flex;width:100%">';
                             foreach ($term_name as $key => $terms) {
                             $coScholaticTable.='<table class="aca-year" cellspacing="0" cellpadding="0" border="1" width="50%">';
-                            $coScholaticTable .= '<tr><th class="data_center" align="center" style="width:70%">'. $part1Head[$terms->term_id] . '</th><th align="center">' . $terms->title . '</th></tr>';
+                            $coScholaticTable .= '<tr><th class="data_center" align="center" style="width:70%"><b>'. strtoupper($part1Head[$terms->term_id]) . '</b></th><th class="data_center"><b>' . $terms->title . '</b></th></tr>';
                             foreach ($coData1[$terms->term_id] as $sub => $term_data) {
                                 $coScholaticTable .= '<tr><td align="center"  style="width:70%">' . $sub . '</td>';
                                 $coScholaticTable .= '<td align="center">' . $term_data . '</td>';
@@ -6607,7 +6604,7 @@ private function buildDisciplineTable($decipline_data)
                         $coScholaticTable.='<div style="display:flex;width:100%;margin-top:10px;">';
                             foreach ($term_name as $key => $terms) {
                             $coScholaticTable.='<table class="aca-year" cellspacing="0" cellpadding="0" border="1" width="50%">';
-                            $coScholaticTable .= '<tr><th align="center"  style="width:70%">'. $part2Head[$terms->term_id] . '</th><th align="center">' . $terms->title . '</th></tr>';
+                            $coScholaticTable .= '<tr><th class="data_center"  style="width:70%"><b>'. $part2Head[$terms->term_id] . '</b></th><th class="data_center"><b>' . $terms->title . '</b></th></tr>';
                             foreach ($coData2[$terms->term_id] as $sub => $term_data) {
                                 $coScholaticTable .= '<tr><td align="center"  style="width:70%">' . $sub . '</td>';
                                 $coScholaticTable .= '<td  align="center">' . $term_data . '</td>';
@@ -6633,7 +6630,7 @@ private function buildDisciplineTable($decipline_data)
                         $coScholaticTable.='<div style="display:flex;width:100%">';
                                 foreach ($term_name as $key => $terms) {
                                 $coScholaticTable.='<table class="aca-year" cellspacing="0" cellpadding="0" border="1" width="50%">';
-                                $coScholaticTable .= '<tr><th align="center" style="width:70%">'. $part3Head[$terms->term_id] . '</th><th align="center">' . $terms->title . '</th></tr>';
+                                $coScholaticTable .= '<tr><th class="data_center" style="width:70%"><b>'. strtoupper($part3Head[$terms->term_id]) . '</b></th><th class="data_center"><b>' . $terms->title . '</b></th></tr>';
                                 foreach ($coData3[$terms->term_id] as $sub => $term_data) {
                                     $coScholaticTable .= '<tr><td align="center" style="width:70%">' . $sub . '</td>';
                                     $coScholaticTable .= '<td align="center">' . $term_data . '</td>';
@@ -6657,11 +6654,11 @@ private function buildDisciplineTable($decipline_data)
                       
                     }
                     // echo "<pre>";print_r($coData2);exit;
-                    $coScholaticTable.='<div style="display:flex;">';
+                    $coScholaticTable.='<div style="display:flex;text-align:center">';
                     if(!empty($coData1)){
                             foreach ($term_name as $key => $terms) {
                             $coScholaticTable.='<table class="aca-year" cellspacing="0" cellpadding="0" border="1" width="50%">';
-                            $coScholaticTable .= '<tr><th align="center" style="width:70%">'. $part1Head[$terms->term_id] . '</th><th align="center">' . $terms->title . '</th></tr>';
+                            $coScholaticTable .= '<tr><th class="data_center" style="width:70%"><b>'. strtoupper($part1Head[$terms->term_id]) . '</b></th><th class="data_center"><b>' . $terms->title . '</b></th></tr>';
                             foreach ($coData1[$terms->term_id] as $sub => $term_data) {
                                 $coScholaticTable .= '<tr><td align="center" style="width:70%">' . $sub . '</td>';
                                 $coScholaticTable .= '<td align="center">' . $term_data . '</td>';
@@ -6677,12 +6674,12 @@ private function buildDisciplineTable($decipline_data)
         if($coScholaticTable!=''){
             $co_grade_range = DB::table('result_co_scholatic_range')->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->get()->toArray();
             //co grade range
-            if (!empty($co_grade_range)) {
+            if (!empty($co_grade_range) && $result_type=="playground") {
                 $coScholaticTableGrades .= '<table class="aca-year hills_co" style="width: 80%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" cellpadding="0" border="1">
                 <tr>
                 <th class="data_center"  style="width:312px"><b>MARKS RANGE</b></th>';
                 foreach ($co_grade_range as $key => $value) {
-                    $coScholaticTableGrades .= '<td class="data_center">' . $value->grade_max . '-' . $value->grade_min . '</td>';
+                    $coScholaticTableGrades .= '<td class="data_center">' . $value->grade_max . ' - ' . $value->grade_min . '</td>';
                 }
                 $coScholaticTableGrades .= '</tr>
                 <tr>
@@ -6729,7 +6726,9 @@ private function buildDisciplineTable($decipline_data)
         $exam_marks = $this->get_exam_marks($sub_institute_id,$student_id,'examWise',$syear);
         // make marks subject and termwise
         $markArr = $examTitle = [];
-        foreach ($exam_marks as $key => $value) {
+        //echo "<pre>";
+        //print_r($exam_marks);
+        /*foreach ($exam_marks as $key => $value) {
             if(!isset($markArr[$value->subject_id][$value->ExamTitle][$value->title]['OBT'])){
                 $markArr[$value->subject_id][$value->ExamTitle][$value->title]['OBT'] = 0;
             }
@@ -6743,8 +6742,32 @@ private function buildDisciplineTable($decipline_data)
             $markArr[$value->subject_id][$value->ExamTitle][$value->title]['MM'] += $value->total_points;
             $markArr[$value->subject_id][$value->ExamTitle][$value->title]['weightage'] += $value->weightage;
         }
+        */
+        foreach ($exam_marks as $key => $value) {
+            // Initialize the array structure if not already set
+            if (!isset($markArr[$value->subject_id][$value->ExamTitle][$value->title])) {
+                $markArr[$value->subject_id][$value->ExamTitle][$value->title] = [
+                    'OBT' => 0,
+                    'MM' => 0,
+                    'weightage' => 0,
+                ];
+            }
+
+            // If the student is absent, set OBT to 'AB'
+            if ($value->is_absent == 'AB') {
+                $markArr[$value->subject_id][$value->ExamTitle][$value->title]['OBT'] = 'AB';
+            } else {
+                // Add points and total points if not absent
+                $markArr[$value->subject_id][$value->ExamTitle][$value->title]['OBT'] += $value->points;
+            }
+
+            $markArr[$value->subject_id][$value->ExamTitle][$value->title]['MM'] += $value->total_points;
+            $markArr[$value->subject_id][$value->ExamTitle][$value->title]['weightage'] += $value->weightage;
+        }
+        //echo "<pre>";
+        //print_r($exam_marks);
         // make sort order to print headwise
-        $customOrder = ['Unit Test', 'Term - 1', 'Term - 2']; // Define the desired order
+        $customOrder = ['Unit Test', 'Term - 1','Half Yearly', 'Term - 2','FINAL EXAM']; // Define the desired order
 
         foreach ($markArr as $subject_id => $terms) {
             // Sort the terms based on custom order
@@ -6761,7 +6784,7 @@ private function buildDisciplineTable($decipline_data)
         // print table
         $scholaticTable = $scholaticTableGrades = '';
         $grade_arr = $this->getGradeScale($standard_id);
-        $all_mark = $total_mark = 0;
+        $all_mark = $total_mark =$per= 0;
         if(!empty($exam_marks)){
             // scholastic parts
             $scholaticTable .='<style>.data_center{text-align:center !important}</style><table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0"  border="1"><thead>';
@@ -6794,6 +6817,7 @@ private function buildDisciplineTable($decipline_data)
             <th class="data_center"><b>WEIGHTAGE <br>75%</b></th>
          </tr>';
             $scholaticTable.='</thead><tbody>';
+            $overAllMark = $overAllObt = $failed = 0;
             foreach ($get_subject as $sk => $sv) {
             $scholaticTable.='<tr>';
             $scholaticTable.='<td>'.$sv->subject_name.'</td>';
@@ -6801,77 +6825,140 @@ private function buildDisciplineTable($decipline_data)
                 if(isset($markArr[$sv->subject_id])){
                     if(isset($markArr[$sv->subject_id])){
                         foreach ($markArr[$sv->subject_id] as $examTitle => $markVal) {
+                            //echo "<pre>";
+                            //print_r($markVal);
+                            //exit();
                             $obt = $mm = $weightage = $obtFinal = $mmFinal= $convertMarks=$convertTP=0;
                            if($examTitle=="Unit Test"){
-                            $obt1 = isset($markVal['UNIT TEST -1']['OBT']) ? $markVal['UNIT TEST -1']['OBT'] : 0;
-                            $obt2 = isset($markVal['UNIT TEST -2']['OBT']) ? $markVal['UNIT TEST -2']['OBT'] : 0;
-                            $obt += number_format($obt1+$obt2,2);
-                            $mm1 = isset($markVal['UNIT TEST -1']['MM']) ? $markVal['UNIT TEST -1']['MM'] : 0;
-                            $mm2 = isset($markVal['UNIT TEST -2']['MM']) ? $markVal['UNIT TEST -2']['MM'] : 0;
-                            $mm += number_format($mm1+$mm2,2);
+                                $obt1 = isset($markVal['UNIT TEST -1']['OBT']) ? $markVal['UNIT TEST -1']['OBT'] : 0;
+                                $obt2 = isset($markVal['UNIT TEST -2']['OBT']) ? $markVal['UNIT TEST -2']['OBT'] : 0;
 
-                            $weightage = isset($markVal['UNIT TEST -2']['weightage']) && $markVal['UNIT TEST -2']['weightage'] 
-                            ? $markVal['UNIT TEST -2']['weightage'] 
-                            : (isset($markVal['UNIT TEST -1']['weightage']) && $markVal['UNIT TEST -1']['weightage'] 
-                                ? $markVal['UNIT TEST -1']['weightage'] 
-                                : 0);
-                                
-                            $convertMarks  = ($mm > 0) ? number_format(($obt * $weightage ) / $mm,2) : '0.00';
-                            $totMark += $weightage;
-                            $totObtMarks += $convertMarks;
+                                // Initialize $obt to handle 'AB' cases
+                                if ($obt1 === 'AB' && $obt2 === 'AB')
+                                    $obt = 'AB';
+                                elseif ($obt1 === 'AB')
+                                    $obt += $obt2;
+                                elseif($obt2 === 'AB')
+                                    $obt += $obt1;
+                                else
+                                    $obt += number_format($obt1 + $obt2, 2);
 
-                            $scholaticTable.='<td class="data_center">'.number_format($obt1,2).'</td>';
-                            $scholaticTable.='<td class="data_center">'.number_format($obt2,2).'</td>';
-                            $scholaticTable.='<td class="data_center"><b>'.$convertMarks.'</b></td>';
+                                // Process 'MM' values
+                                $mm1 = isset($markVal['UNIT TEST -1']['MM']) && is_numeric($markVal['UNIT TEST -1']['MM']) 
+                                    ? $markVal['UNIT TEST -1']['MM'] 
+                                    : 0;
+                                $mm2 = isset($markVal['UNIT TEST -2']['MM']) && is_numeric($markVal['UNIT TEST -2']['MM']) 
+                                    ? $markVal['UNIT TEST -2']['MM'] 
+                                    : 0;
+
+                                $mm += number_format($mm1 + $mm2, 2);
+
+                                // Determine weightage
+                                $weightage = isset($markVal['UNIT TEST -2']['weightage']) && $markVal['UNIT TEST -2']['weightage'] 
+                                    ? $markVal['UNIT TEST -2']['weightage'] 
+                                    : (isset($markVal['UNIT TEST -1']['weightage']) && $markVal['UNIT TEST -1']['weightage'] 
+                                        ? $markVal['UNIT TEST -1']['weightage'] 
+                                        : 0);
+
+                                // Calculate converted marks
+                                $convertMarks = ($mm > 0 && $obt !== 'AB') ? number_format(($obt * $weightage) / $mm, 2) : '0.00';
+
+                                // Update totals
+                                $totMark += $weightage;
+                                $totObtMarks += ($convertMarks !== 'AB') ? $convertMarks : 0;
+
+                                // Generate scholastic table rows
+                                $scholaticTable .= '<td class="data_center">' . (is_numeric($obt1) ? number_format($obt1, 2) : $obt1) . '</td>';
+                                $scholaticTable .= '<td class="data_center">' . (is_numeric($obt2) ? number_format($obt2, 2) : $obt2) . '</td>';
+                                $scholaticTable .= '<td class="data_center"><b>' . $convertMarks . '</b></td>';
                            }
-                           if($examTitle=="Term - 1"){
-                            $obt = isset($markVal['TERM -1']['OBT']) ? $markVal['TERM -1']['OBT'] : 0;
-                            $mm = isset($markVal['TERM -1']['MM']) ? $markVal['TERM -1']['MM'] : 0;
-                            $weightage = isset($markVal['TERM -1']['weightage']) ? $markVal['TERM -1']['weightage'] : 0;
+                           if($examTitle=="Term - 1" || $examTitle=="Half Yearly"){
+                                // Get obtained marks (OBT), maximum marks (MM), and weightage
+                                $obt = isset($markVal['TERM -1']['OBT']) ? $markVal['TERM -1']['OBT'] : 0;
+                                $mm = isset($markVal['TERM -1']['MM']) ? $markVal['TERM -1']['MM'] : 0;
+                                $weightage = isset($markVal['TERM -1']['weightage']) ? $markVal['TERM -1']['weightage'] : 0;
 
-                            $convertMarks  = ($mm > 0) ? number_format(($obt * $weightage ) / $mm,2) : '0.00';
-                            $totMark += $weightage;
-                            $totObtMarks += $convertMarks;
+                                // Handle the 'AB' case for obtained marks
+                                $formattedObt = ($obt === 'AB') ? 'AB' : number_format($obt, 2);
 
-                            $scholaticTable.='<td class="data_center">'.number_format($obt,2).'</td>';
-                            $scholaticTable.='<td class="data_center">'.number_format($mm,2).'</td>';
-                            $scholaticTable.='<td class="data_center"><b>'.$convertMarks.'</b></td>';
+                                // Calculate converted marks
+                                $convertMarks = ($mm > 0 && $obt !== 'AB') ? number_format(($obt * $weightage) / $mm, 2) : '0.00';
+                                //$formattedConvertMarks = ($convertMarks === '0.00' && $obt === 'AB') ? 'AB' : $convertMarks;
+                                $formattedConvertMarks = ($convertMarks === '0.00' && $obt === 'AB') ? 'AB' : $convertMarks;
+
+                                // Update totals
+                                $totMark += $weightage;
+                                $totObtMarks += ($convertMarks !== 'AB') ? $convertMarks : 0;
+
+                                // Generate scholastic table rows
+                                $scholaticTable .= '<td class="data_center">' . $formattedObt . '</td>';
+                                $scholaticTable .= '<td class="data_center">' . number_format($mm, 2) . '</td>';
+                                $scholaticTable .= '<td class="data_center"><b>' . $convertMarks . '</b></td>';
                            }
-                           if($examTitle=="Term - 2"){
+                           if($examTitle=="Term - 2" || $examTitle=="FINAL EXAM"){
                             if(isset($markVal['THEORY'])){
+                                // Get obtained marks (OBT), maximum marks (MM), and weightage
                                 $obt = isset($markVal['THEORY']['OBT']) ? $markVal['THEORY']['OBT'] : 0;
                                 $mm = isset($markVal['THEORY']['MM']) ? $markVal['THEORY']['MM'] : 0;
-                                $obtFinal +=$obt;
-                                $mmFinal += $mm;
                                 $weightage = isset($markVal['THEORY']['weightage']) ? $markVal['THEORY']['weightage'] : 0;
 
-                                $convertMarks  = ($mm > 0) ? number_format(($obt * $weightage ) / $mm,2) : '0.00';
-                                $scholaticTable.='<td class="data_center">'.number_format($obt,2).'</td>';
-                                $scholaticTable.='<td class="data_center">'.number_format($mm,2).'</td>';
+                                // Handle 'AB' case for obtained marks
+                                $formattedObt = ($obt === 'AB') ? 'AB' : number_format($obt, 2);
+
+                                // Update final obtained marks and maximum marks
+                                $obtFinal += ($obt === 'AB') ? 0 : $obt;  // Add 0 for 'AB' marks
+                                $mmFinal += $mm;  // MM is always added to mmFinal, since 'AB' doesn't affect it
+
+                                // Calculate converted marks
+                                $convertMarks = ($mm > 0 && $obt !== 'AB') ? number_format(($obt * $weightage) / $mm, 2) : '0.00';
+                                $formattedConvertMarks = ($convertMarks === '0.00' && $obt === 'AB') ? 'AB' : $convertMarks;
+
+                                // Generate scholastic table rows
+                                $scholaticTable .= '<td class="data_center">' . $formattedObt . '</td>';
+                                $scholaticTable .= '<td class="data_center">' . number_format($mm, 2) . '</td>';
                             }
                             if(isset($markVal['PRATICAL'])){
+                                // Get obtained marks (OBT), maximum marks (MM), and weightage
                                 $obt = isset($markVal['PRATICAL']['OBT']) ? $markVal['PRATICAL']['OBT'] : 0;
                                 $mm = isset($markVal['PRATICAL']['MM']) ? $markVal['PRATICAL']['MM'] : 0;
-                                $obtFinal +=$obt;
-                                $mmFinal += $mm;
                                 $weightage = isset($markVal['PRATICAL']['weightage']) ? $markVal['PRATICAL']['weightage'] : 0;
 
-                                $convertMarks  = ($mm > 0) ? number_format(($obt * $weightage ) / $mm,2) : '0.00';
-                                $scholaticTable.='<td class="data_center">'.number_format($obt,2).'</td>';
-                                $scholaticTable.='<td class="data_center">'.number_format($mm,2).'</td>';
+                                // Handle 'AB' case for obtained marks
+                                $formattedObt = ($obt === 'AB') ? 'AB' : number_format($obt, 2);
+
+                                // Update final obtained marks and maximum marks
+                                $obtFinal += ($obt === 'AB') ? 0 : $obt;  // Add 0 for 'AB' marks
+                                $mmFinal += $mm;  // MM is always added to mmFinal, since 'AB' doesn't affect it
+
+                                // Calculate converted marks
+                                $convertMarks = ($mm > 0 && $obt !== 'AB') ? number_format(($obt * $weightage) / $mm, 2) : '0.00';
+                                $formattedConvertMarks = ($convertMarks === '0.00' && $obt === 'AB') ? 'AB' : $convertMarks;
+
+                                // Generate scholastic table rows
+                                $scholaticTable .= '<td class="data_center">' . $formattedObt . '</td>';
+                                $scholaticTable .= '<td class="data_center">' . number_format($mm, 2) . '</td>';
                             }
                             $convertTp = ($mmFinal > 0) ? number_format(($obtFinal * $weightage ) / $mmFinal,2) : '0.00';
                             $totMark += $weightage;
                             $totObtMarks += $convertTp;
                             $scholaticTable.='<td class="data_center"><b>'.$convertTp.'</b></td>';
-
                            }
                         }
                     }
+                    $overAllMark +=$totMark;
+                    $overAllObt +=$totObtMarks;
+
+                    $sub_per = $this->getPer(round($totObtMarks), $totMark);
+                    if ($sub_per < 33)
+                        $failed++;
+
                     $scholaticTable.='<td class="data_center"><b>'.round($totObtMarks).'</b></td>';
                 }
             $scholaticTable.='</tr>';
+            
             }
+            $per = $this->getPer($overAllObt,$overAllMark);
+            $scholaticTable.='<tr><td colspan="12"><b>Percentage</b></td><td class="data_center"><b>'.$per.'%</b></td><tr>';
             $scholaticTable .='</tbody></table>';
             // Grade range table
             $gradeRange = $this->getGradeRange($standard_id);
@@ -6898,16 +6985,16 @@ private function buildDisciplineTable($decipline_data)
                     $scholaticTableGrades.='<td align="center">'.$value.'</td>';
                 }
             }
+
             $scholaticTableGrades .='<tr></table>';
         }
-        
-        $per = $this->getPer($all_mark, $total_mark);
+
 
         $curr_std = DB::table('standard')->where('id', $standard_id)->first();
         $next_std = DB::table('standard')->where('id', $curr_std->next_standard_id)->first();
 
-        if ($per!='-') {
-            $result = 'Passed & Promoted to Class : ' . $next_std->school_stream;
+        if (empty($failed)) {
+            $result = 'Passed & Promoted to Class ' . $next_std->school_stream;
         } else {
             $result = "Failed";
         }
