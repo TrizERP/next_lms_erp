@@ -36,7 +36,7 @@
             $pageBreakCount = $data['column'] * $data['row'];
             $j=1;
             @endphp
-            <div class="row">
+            <div class="card row">
                 <div class="white-box">
                     <div class="panel-body">
                     @foreach($student_data as $key => $value)
@@ -50,7 +50,7 @@
                         $str = str_replace(htmlspecialchars("<<address>>"), $value->address, $str);
                         @endphp
                         <div class="col-md-{{$bootstrapColumn}} form-group">
-                            {{$str}}
+                            {!!$str!!}
                         </div>
                         @if($j == $pageBreakCount) 
                             <div class="pagebreak"> </div>
