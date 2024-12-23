@@ -2824,7 +2824,7 @@ $overall_total = $overall_total / 2;
             if (!isset($last_breckoff)) {
                 $last_breckoff = "100";
             }
-            $responce_arr['mark_range']['SCHOLASTIC_MARKS_RANGE'][] = $arr['breakoff'] . "-" . $last_breckoff;
+            $responce_arr['mark_range']['SCHOLASTIC_MARKS_RANGE'][] = $arr['breakoff'] . " - " . $last_breckoff;
             $responce_arr['mark_range']['GRADE'][] = $arr['title'];
             $responce_arr['mark_range']['comment'][] = isset($arr['comment']) ? $arr['comment'] : '-';
             $last_breckoff = $arr['breakoff'] - 1;
