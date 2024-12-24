@@ -2824,7 +2824,7 @@ $overall_total = $overall_total / 2;
             if (!isset($last_breckoff)) {
                 $last_breckoff = "100";
             }
-            $responce_arr['mark_range']['SCHOLASTIC_MARKS_RANGE'][] = $arr['breakoff'] . "-" . $last_breckoff;
+            $responce_arr['mark_range']['SCHOLASTIC_MARKS_RANGE'][] = $arr['breakoff'] . " - " . $last_breckoff;
             $responce_arr['mark_range']['GRADE'][] = $arr['title'];
             $responce_arr['mark_range']['comment'][] = isset($arr['comment']) ? $arr['comment'] : '-';
             $last_breckoff = $arr['breakoff'] - 1;
@@ -6589,7 +6589,7 @@ private function buildDisciplineTable($decipline_data)
                     $coScholaticTable.='<div style="display:flex;width:100%">';
                             foreach ($term_name as $key => $terms) {
                             $coScholaticTable.='<table class="aca-year" cellspacing="0" cellpadding="0" border="1" width="50%">';
-                            $coScholaticTable .= '<tr><th class="data_center" align="center" style="width:70%">'. $part1Head[$terms->term_id] . '</th><th align="center">' . $terms->title . '</th></tr>';
+                            $coScholaticTable .= '<tr><th class="data_center" align="center" style="width:70%"><b>'. strtoupper($part1Head[$terms->term_id]) . '</b></th><th class="data_center"><b>' . $terms->title . '</b></th></tr>';
                             foreach ($coData1[$terms->term_id] as $sub => $term_data) {
                                 $coScholaticTable .= '<tr><td align="center"  style="width:70%">' . $sub . '</td>';
                                 $coScholaticTable .= '<td align="center">' . $term_data . '</td>';
@@ -6604,7 +6604,7 @@ private function buildDisciplineTable($decipline_data)
                         $coScholaticTable.='<div style="display:flex;width:100%;margin-top:10px;">';
                             foreach ($term_name as $key => $terms) {
                             $coScholaticTable.='<table class="aca-year" cellspacing="0" cellpadding="0" border="1" width="50%">';
-                            $coScholaticTable .= '<tr><th align="center"  style="width:70%">'. $part2Head[$terms->term_id] . '</th><th align="center">' . $terms->title . '</th></tr>';
+                            $coScholaticTable .= '<tr><th class="data_center"  style="width:70%"><b>'. $part2Head[$terms->term_id] . '</b></th><th class="data_center"><b>' . $terms->title . '</b></th></tr>';
                             foreach ($coData2[$terms->term_id] as $sub => $term_data) {
                                 $coScholaticTable .= '<tr><td align="center"  style="width:70%">' . $sub . '</td>';
                                 $coScholaticTable .= '<td  align="center">' . $term_data . '</td>';
@@ -6630,7 +6630,7 @@ private function buildDisciplineTable($decipline_data)
                         $coScholaticTable.='<div style="display:flex;width:100%">';
                                 foreach ($term_name as $key => $terms) {
                                 $coScholaticTable.='<table class="aca-year" cellspacing="0" cellpadding="0" border="1" width="50%">';
-                                $coScholaticTable .= '<tr><th align="center" style="width:70%">'. $part3Head[$terms->term_id] . '</th><th align="center">' . $terms->title . '</th></tr>';
+                                $coScholaticTable .= '<tr><th class="data_center" style="width:70%"><b>'. strtoupper($part3Head[$terms->term_id]) . '</b></th><th class="data_center"><b>' . $terms->title . '</b></th></tr>';
                                 foreach ($coData3[$terms->term_id] as $sub => $term_data) {
                                     $coScholaticTable .= '<tr><td align="center" style="width:70%">' . $sub . '</td>';
                                     $coScholaticTable .= '<td align="center">' . $term_data . '</td>';
@@ -6658,7 +6658,7 @@ private function buildDisciplineTable($decipline_data)
                     if(!empty($coData1)){
                             foreach ($term_name as $key => $terms) {
                             $coScholaticTable.='<table class="aca-year" cellspacing="0" cellpadding="0" border="1" width="50%">';
-                            $coScholaticTable .= '<tr><th align="center" style="width:70%"><b>'. $part1Head[$terms->term_id] . '</b></th><th align="center"><b>' . $terms->title . '</b></th></tr>';
+                            $coScholaticTable .= '<tr><th class="data_center" style="width:70%"><b>'. strtoupper($part1Head[$terms->term_id]) . '</b></th><th class="data_center"><b>' . $terms->title . '</b></th></tr>';
                             foreach ($coData1[$terms->term_id] as $sub => $term_data) {
                                 $coScholaticTable .= '<tr><td align="center" style="width:70%">' . $sub . '</td>';
                                 $coScholaticTable .= '<td align="center">' . $term_data . '</td>';
@@ -6679,7 +6679,7 @@ private function buildDisciplineTable($decipline_data)
                 <tr>
                 <th class="data_center"  style="width:312px"><b>MARKS RANGE</b></th>';
                 foreach ($co_grade_range as $key => $value) {
-                    $coScholaticTableGrades .= '<td class="data_center">' . $value->grade_max . '-' . $value->grade_min . '</td>';
+                    $coScholaticTableGrades .= '<td class="data_center">' . $value->grade_max . ' - ' . $value->grade_min . '</td>';
                 }
                 $coScholaticTableGrades .= '</tr>
                 <tr>

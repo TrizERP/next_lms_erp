@@ -54,6 +54,10 @@ class send_sms_report_controller extends Controller
                 's.staff_id'         => 'u.id',
                 's.sub_institute_id' => 'u.sub_institute_id',
             ];
+            $syear = "syear";
+            $sms_no = "sms_no";
+            $sms_text = "sms_text";
+            $module_name = "module_name";
         } else {
             $tbl = "sms_sent_parents as s";
             $join_tbl = "tblstudent as u";
@@ -61,6 +65,10 @@ class send_sms_report_controller extends Controller
                 's.student_id'       => 'u.id',
                 's.sub_institute_id' => 'u.sub_institute_id',
             ];
+            $syear = "SYEAR";
+            $sms_no = "SMS_NO";
+            $sms_text = "SMS_TEXT";
+            $module_name = "MODULE_NAME";
         }
 
         $type = $request->input('type');
@@ -82,10 +90,10 @@ class send_sms_report_controller extends Controller
         foreach ($data as $id => $arr) {
             $responce_arr[$id]['sr.no'] = $id + 1;
             $responce_arr[$id]['name'] = $arr['first_name'].' '.$arr['middle_name'].' '.$arr['last_name'];
-            $responce_arr[$id]['syear'] = $arr['syear'];
-            $responce_arr[$id]['sms_no'] = $arr['sms_no'];
-            $responce_arr[$id]['sms_text'] = $arr['sms_text'];
-            $responce_arr[$id]['module_name'] = $arr['module_name'];
+            $responce_arr[$id]['syear'] = $arr[$syear];
+            $responce_arr[$id]['sms_no'] = $arr[$sms_no];
+            $responce_arr[$id]['sms_text'] = $arr[$sms_text];
+            $responce_arr[$id]['module_name'] = $arr[$module_name];
         }
 
         return is_mobile($type, "easy_comm/send_sms_report/add", $responce_arr, "view");
