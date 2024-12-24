@@ -101,9 +101,13 @@
                                  @endif</td>
                             <td>{{$value['employee_no']}}</td>
                             <td>{{$value['full_name'] ?? '-' .'('.$value['user_profile'] ?? '-' .')'}}</td>
-                            <td>{{$value['department']}}</td>
+                            <td class="{{ $value['json'] }}">{{$value['department']}}</td>
                             <td>
+                            @if(isset($value['monthlyData']->total_day))
+                                <strong>{{round($value['monthlyData']->total_day,2)}}</strong>
+                            @else
                                 <input type="text" id="totalDay_{{$value['id']}}" name="payrollVal[{{$value['id']}}][total_day]" onkeyup="getData(this,{{$value['id']}})" class="form-control" value="{{ isset($value['monthlyData']->total_day) ? round($value['monthlyData']->total_day,2) : $value['totalDay'] }}" {{$readonly}}>
+                            @endif
                             </td>
                             @foreach($data['header'] as $hkey => $col)
                                 @if(!empty($value['monthlyData']))
