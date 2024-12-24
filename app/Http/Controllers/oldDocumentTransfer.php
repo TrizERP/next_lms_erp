@@ -165,8 +165,9 @@ class oldDocumentTransfer extends Controller
         //         $message = 'Blob Data not found!';
         //     }
         // }
-        // $filePath = 'old_to_new/doc_transfer/converted_json.json';
-        $filePath = $_SERVER['DOCUMENT_ROOT'].'converted_json.json';
+
+        $filePath = 'old_to_new/doc_transfer/converted_json.json';
+        // $filePath = $_SERVER['DOCUMENT_ROOT'].'converted_json.json';
 
         // Check if the file exists
           if (!file_exists($filePath)) {

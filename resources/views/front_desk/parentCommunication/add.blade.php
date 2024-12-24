@@ -54,7 +54,7 @@
                                 @php if(!empty($col_arr['reply'])){ @endphp
                                 <td>{{ $col_arr['reply'] }}</td>    
                                 @php }else{ @endphp
-                                <td><textarea class="form-control" name="reply[{{$col_arr['parent_communication_id']}}]" >{{ $col_arr['reply'] }}</textarea></td>
+                                <td><textarea class="form-control resizable" name="reply[{{$col_arr['parent_communication_id']}}]" >{{ $col_arr['reply'] }}</textarea></td>
                                 @php } @endphp
                                 <td>{{ $col_arr['reply_by'] }}</td>
                                 <td>{{ $col_arr['reply_on'] }}</td>
@@ -97,37 +97,47 @@
 //            $($tblChkBox).prop('checked', $(this).prop('checked'));
 //        });
 //    });
+$(document).ready(function () {
+        var table = $('#example').DataTable({
+            select: true,
+            lengthMenu: [
+                [100, 500, 1000, -1],
+                ['100', '500', '1000', 'Show All']
+            ],
+            dom: 'Bfrtip',
+            buttons: [
+                {
+                    extend: 'pdfHtml5',
+                    title: 'Parent Communication Report',
+                    orientation: 'landscape',
+                    pageSize: 'LEGAL',
+                    pageSize: 'A0',
+                    exportOptions: {
+                        columns: ':visible'
+                    },
+                },
+                {extend: 'csv', text: ' CSV', title: 'Parent Communication Report'},
+                {extend: 'excel', text: ' EXCEL', title: 'Parent Communication Report'},
+                {extend: 'print', text: ' PRINT', title: 'Parent Communication Report'},
+                'pageLength'
+            ],
+        });
 
-$(document).ready(function() {
-    // Setup - add a text input to each footer cell
-    $('#example thead tr').clone(true).appendTo( '#example thead' );
-    $('#example thead tr:eq(1) th').each( function (i) {
-        var title = $(this).text();
-        $(this).html( '<input type="text" size="4" style="color:black;" placeholder="Search '+title+'" />' );
- 
-        $( 'input', this ).on( 'keyup change', function () {
-            if ( table.column(i).search() !== this.value ) {
-                table
-                    .column(i)
-                    .search( this.value )
-                    .draw();
-            }
+        $('#example thead tr').clone(true).appendTo('#example thead');
+        $('#example thead tr:eq(1) th').each(function (i) {
+            var title = $(this).text();
+            $(this).html('<input type="text" placeholder="Search ' + title + '" />');
+
+            $('input', this).on('keyup change', function () {
+                if (table.column(i).search() !== this.value) {
+                    table
+                        .column(i)
+                        .search( this.value )
+                        .draw();
+                }
+            } );
         } );
     } );
- 
-    var table = $('#example').DataTable( {
-        orderCellsTop: true,
-        fixedHeader: true,
-        dom: 'Bfrtip',
-        buttons: [
-            'copyHtml5',
-            'excelHtml5',
-            'csvHtml5',
-            'pdfHtml5'
-        ]
-    } );
-} );
-
 </script>
 @include('includes.footer')
 @endsection
