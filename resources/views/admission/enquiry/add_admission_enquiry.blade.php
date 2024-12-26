@@ -53,7 +53,7 @@
                         {
                             $class="show";
                         }
-
+                        $unmandatoryFileds = ['category','previous_school_name','previous_standard','send_sms','remarks','source_of_enquiry','followup_date'];
                         @endphp
 
                         <div class="col-md-3 form-group">
@@ -114,7 +114,7 @@
                         <div class="col-md-3 form-group {{$class}} followup_dateDiv">
                             <label>Followup Date </label>
                             <input type="text" value="{{ date('Y-m-d') }}" id="followup_date" name="followup_date" class="form-control mydatepicker" autocomplete="off">
-                        
+
                             <span id="followup_date_span"></span>
                         </div>
                         <div class="col-md-3 form-group  {{$class}} remarksDiv">
@@ -161,7 +161,7 @@
                         
                         @if(isset($data['custom_fields']))
                         @foreach($data['custom_fields'] as $key => $value)
-                            @if(!in_array($value['field_name'],['category','previous_school_name','previous_standard','send_sms','remarks','source_of_enquiry','followup_date']))
+                            @if(!in_array($value['field_name'],$unmandatoryFileds))
                             <div class="col-md-3 form-group">
                                 <label>{{ $value['field_label'] }}</label>
                                 @if($value['field_type'] == 'file')
@@ -440,10 +440,12 @@
 
         @if(isset($data['custom_fields']))
         @foreach($data['custom_fields'] as $key => $value)
-            @if(in_array($value['field_name'],['category','previous_school_name','previous_standard','send_sms','remarks','source_of_enquiry','followup_date']))
+            @if(in_array($value['field_name'],$unmandatoryFileds))
                 var fieldName = "{{$value['field_name']}}";
+                var fieldLabel = "{{$value['field_label']}}";
+
                 $('.'+fieldName+'Div').removeClass('hide');
-                $('.'+fieldName+'Div').addClass('show');
+                $('.' + fieldName + 'Div').addClass('show').find('label').text(fieldLabel);
             @endif 
         @endforeach
         @endif
