@@ -104,7 +104,7 @@
                         
                         <div class="col-md-3 form-group">
                             <label>Followup Date </label>
-                            <input type="text" required id='followup_date' name="followup_date" class="form-control mydatepicker" autocomplete="off">
+                            <input type="text" value="{{now()->format('Y-d-m')}}" id='followup_date' name="followup_date" class="form-control mydatepicker" autocomplete="off">
                             <span id="followup_date_span"></span>
                         </div>
                         <div class="col-md-3 form-group">
@@ -129,7 +129,7 @@
                         <div class="col-md-3 form-group">
                             <label>Gender </label>
                             <div class="radio radio-success">
-                                <input type="radio" id='male' name="gender" value="M">
+                                <input type="radio" id='male' name="gender" value="M" checked>
                                 <label for="male"> Male </label>
                             </div>
                             <div class="radio radio-success">
@@ -338,20 +338,31 @@
 
     function calculate_age(dateString)
     {
-        value = dateString;
+        // value = dateString;
+        // today = new Date();
+        // dob = new Date(value.replace(/(\d{2})-(\d{2})-(\d{4})/, "$2/$1/$3"));
+        // age = today.getFullYear() - dob.getFullYear(); //This is the update
+        // document.getElementById('age').value = age;
+
+        value = dateString; // Input date in "dd-mm-yyyy" format
         today = new Date();
         dob = new Date(value.replace(/(\d{2})-(\d{2})-(\d{4})/, "$2/$1/$3"));
-        age = today.getFullYear() - dob.getFullYear(); //This is the update
+
+        age = today.getFullYear() - dob.getFullYear();
+
+        if (
+            today.getMonth() < dob.getMonth() || 
+            (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate())
+        ) {
+            age--;
+        }
+
+        if(age<0){
+            age=0;
+        }
+
         document.getElementById('age').value = age;
 
-        // var today = new Date();
-        // var birthDate = new Date(dateString);
-        // var age = today.getFullYear() - birthDate.getFullYear();
-        // var m = today.getMonth() - birthDate.getMonth();
-        //   if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-        //     age--;
-        //   }
-        // document.getElementById('age').value = age;
     }
 
     function showMessageBox(x)
