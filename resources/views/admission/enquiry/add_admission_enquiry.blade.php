@@ -46,7 +46,16 @@
                         }else{
                             $readonly = '';
                         }
+
+                        $class="hide";
+                        $oldAdmissionInstitutes = [47,48,49,62,69,72,195,201,202,203,204,233,254];
+                        if(in_array(Session::get('sub_institute_id'),$oldAdmissionInstitutes))
+                        {
+                            $class="show";
+                        }
+
                         @endphp
+
                         <div class="col-md-3 form-group">
                             <label>Enquiry Number </label>
                             <input type="text" id='enquiry_id'  id='enquiry_id' @if(isset($data['enquiry_no'])) value="{{$data['enquiry_no']}}" @endif name="enquiry_no" class="form-control" {{ $readonly}}>
@@ -88,11 +97,11 @@
                             <textarea id='address' name="address" class="form-control"></textarea>
                         </div>
                         @endif
-                        <div class="col-md-3 form-group">
+                        <div class="col-md-3 form-group {{$class}} previous_school_nameDiv">
                             <label>Previous School Name </label>
                             <input type="text" id='previous_school_name' name="previous_school_name" class="form-control">
                         </div>
-                        <div class="col-md-3 form-group">
+                        <div class="col-md-3 form-group {{$class}} previous_standardDiv">
                             <label>Previous Standard </label>
                             <select id='previous_standard' name="previous_standard" class="form-control">
                                 <option value=""> Select Standard </option>
@@ -102,20 +111,21 @@
                             </select>
                         </div>
                         
-                        <div class="col-md-3 form-group">
+                        <div class="col-md-3 form-group {{$class}} followup_dateDiv">
                             <label>Followup Date </label>
-                            <input type="text" value="{{now()->format('Y-d-m')}}" id='followup_date' name="followup_date" class="form-control mydatepicker" autocomplete="off">
+                            <input type="text" value="{{ date('Y-m-d') }}" id="followup_date" name="followup_date" class="form-control mydatepicker" autocomplete="off">
+                        
                             <span id="followup_date_span"></span>
                         </div>
-                        <div class="col-md-3 form-group">
+                        <div class="col-md-3 form-group  {{$class}} remarksDiv">
                             <label>Remarks </label>
                             <input type="text" id='remarks'  name="remarks" class="form-control">
                         </div>
-                        <div class="col-md-3 form-group">
+                        <div class="col-md-3 form-group  {{$class}} source_of_enquiryDiv">
                             <label>Source of enquiry </label>
                             <input type="text" id='source_of_enquiry'  name="source_of_enquiry" class="form-control">
                         </div>
-                        <div class="col-md-3 form-group">
+                        <div class="col-md-3 form-group  {{$class}} categoryDiv">
                             <label>Category </label>
                             <select id='category' name="category" class="form-control">
                             <option value=""> Select Category </option>
@@ -137,7 +147,7 @@
                                 <label for="female"> Female </label>
                             </div>
                         </div>
-                        <div class="col-md-3 form-group">
+                        <div class="col-md-3 form-group  {{$class}} send_smsDiv">
                             <label>Send Sms </label>
                             <select id='send_sms' name="send_sms" onchange="showMessageBox(this.value);" class="form-control">
                             <option value="0"> No </option>
@@ -148,52 +158,55 @@
                             <label>Sms </label>
                             <textarea type="text" id='sms_message' name="sms_message" class="form-control"></textarea>
                         </div>
+                        
                         @if(isset($data['custom_fields']))
                         @foreach($data['custom_fields'] as $key => $value)
-                        <div class="col-md-3 form-group">
-                            <label>{{ $value['field_label'] }}</label>
-                            @if($value['field_type'] == 'file')
-                            <input type="{{ $value['field_type'] }}" accept="image/*" id="input-file-now" @if($value['required'] == 1) required @endif name="{{ $value['field_name'] }}" class="dropify">
-                            @elseif($value['field_type'] == 'date')
-                            <input type="date" class="form-control mydatepicker" placeholder="dd/mm/yyyy" autocomplete="off" id="{{ $value['field_name'] }}" @if($value['required'] == 1) required @endif name="{{ $value['field_name'] }}" class="form-control">
-                            @elseif($value['field_type'] == 'time')
-                                <input type="time" autocomplete="off" id="{{ $value['field_name'] }}" @if($value['required'] == 1) required @endif name="{{ $value['field_name'] }}"  class="form-control">
-                            @elseif($value['field_type'] == 'checkbox')
-                            <div class="checkbox-list">
-                                @if(isset($data['data_fields'][$value['id']]))
-                                @foreach($data['data_fields'][$value['id']] as $keyData => $valueData )
-                                    <label class="checkbox-inline">
-                                        <div class="checkbox checkbox-success">
-                                            <input type="checkbox" name="{{ $value['field_name'] }}[]" value="{{ $valueData['display_value'] }}" id="{{ $valueData['display_value'] }}" @if($value['required'] == 1) required @endif>
-                                            <label for="{{ $valueData['display_value'] }}">{{ $valueData['display_text'] }}</label>
-                                        </div>
-                                    </label>
-                                    @endforeach
-                                @endif
-                            </div>
-                            @elseif($value['field_type'] == 'dropdown')
-                                    <select name="{{ $value['field_name'] }}" class="form-control" @if($value['required'] == 1) required @endif id="{{ $value['field_name'] }}">
-                                        <option value=""> SELECT {{ strtoupper($value['field_label']) }} </option>
+                            @if(!in_array($value['field_name'],['category','previous_school_name','previous_standard','send_sms','remarks','source_of_enquiry','followup_date']))
+                            <div class="col-md-3 form-group">
+                                <label>{{ $value['field_label'] }}</label>
+                                @if($value['field_type'] == 'file')
+                                <input type="{{ $value['field_type'] }}" accept="image/*" id="input-file-now" @if($value['required'] == 1) required @endif name="{{ $value['field_name'] }}" class="dropify">
+                                @elseif($value['field_type'] == 'date')
+                                <input type="date" class="form-control mydatepicker" placeholder="dd/mm/yyyy" autocomplete="off" id="{{ $value['field_name'] }}" @if($value['required'] == 1) required @endif name="{{ $value['field_name'] }}" class="form-control">
+                                @elseif($value['field_type'] == 'time')
+                                    <input type="time" autocomplete="off" id="{{ $value['field_name'] }}" @if($value['required'] == 1) required @endif name="{{ $value['field_name'] }}"  class="form-control">
+                                @elseif($value['field_type'] == 'checkbox')
+                                <div class="checkbox-list">
                                     @if(isset($data['data_fields'][$value['id']]))
-                                        @foreach($data['data_fields'][$value['id']] as $keyData => $valueData)
-                                        <option value="{{ $valueData['display_value'] }}"> {{ $valueData['display_text'] }} </option>
+                                    @foreach($data['data_fields'][$value['id']] as $keyData => $valueData )
+                                        <label class="checkbox-inline">
+                                            <div class="checkbox checkbox-success">
+                                                <input type="checkbox" name="{{ $value['field_name'] }}[]" value="{{ $valueData['display_value'] }}" id="{{ $valueData['display_value'] }}" @if($value['required'] == 1) required @endif>
+                                                <label for="{{ $valueData['display_value'] }}">{{ $valueData['display_text'] }}</label>
+                                            </div>
+                                        </label>
                                         @endforeach
                                     @endif
-                                    </select>
-                            @elseif($value['field_type'] == 'textarea')
-                                <textarea id="{{ $value['field_name'] }}" class="form-control" @if($value['required'] == 1) required @endif name="{{ $value['field_name'] }}" placeholder="{{ $value['field_message'] }}">
-                                </textarea>                                
-                            @else
-                                @if($value['field_name']=='siblings')
-                                    <input type="{{ $value['field_type'] }}"  list="studentList" id="{{ $value['field_name'] }}" placeholder="{{ $value['field_message'] }}" @if($value['required'] == 1) required @endif placeholder="Enter Siblings name" class="form-control">
-                                    <div id="SelectedStudents" class=""></div>
-                                    <input type="hidden" name="{{ $value['field_name'] }}" id="siblings_id">
-                                <datalist id="studentList"></datalist>
-                                @else 
-                                    <input type="{{ $value['field_type'] }}" id="{{ $value['field_name'] }}" placeholder="{{ $value['field_message'] }}" @if($value['required'] == 1) required @endif name="{{ $value['field_name'] }}" class="form-control">
+                                </div>
+                                @elseif($value['field_type'] == 'dropdown')
+                                        <select name="{{ $value['field_name'] }}" class="form-control" @if($value['required'] == 1) required @endif id="{{ $value['field_name'] }}">
+                                            <option value=""> SELECT {{ strtoupper($value['field_label']) }} </option>
+                                        @if(isset($data['data_fields'][$value['id']]))
+                                            @foreach($data['data_fields'][$value['id']] as $keyData => $valueData)
+                                            <option value="{{ $valueData['display_value'] }}"> {{ $valueData['display_text'] }} </option>
+                                            @endforeach
+                                        @endif
+                                        </select>
+                                @elseif($value['field_type'] == 'textarea')
+                                    <textarea id="{{ $value['field_name'] }}" class="form-control" @if($value['required'] == 1) required @endif name="{{ $value['field_name'] }}" placeholder="{{ $value['field_message'] }}">
+                                    </textarea>                                
+                                @else
+                                    @if($value['field_name']=='siblings')
+                                        <input type="{{ $value['field_type'] }}"  list="studentList" id="{{ $value['field_name'] }}" placeholder="{{ $value['field_message'] }}" @if($value['required'] == 1) required @endif placeholder="Enter Siblings name" class="form-control">
+                                        <div id="SelectedStudents" class=""></div>
+                                        <input type="hidden" name="{{ $value['field_name'] }}" id="siblings_id">
+                                    <datalist id="studentList"></datalist>
+                                    @else 
+                                        <input type="{{ $value['field_type'] }}" id="{{ $value['field_name'] }}" placeholder="{{ $value['field_message'] }}" @if($value['required'] == 1) required @endif name="{{ $value['field_name'] }}" class="form-control">
+                                    @endif
                                 @endif
+                            </div>
                             @endif
-                        </div>
                         @endforeach
                         @endif
                         @if (in_array(Session::get('sub_institute_id'), ['198','201','202','203','204','324','326','327']))
@@ -425,6 +438,15 @@
 
         });
 
+        @if(isset($data['custom_fields']))
+        @foreach($data['custom_fields'] as $key => $value)
+            @if(in_array($value['field_name'],['category','previous_school_name','previous_standard','send_sms','remarks','source_of_enquiry','followup_date']))
+                var fieldName = "{{$value['field_name']}}";
+                $('.'+fieldName+'Div').removeClass('hide');
+                $('.'+fieldName+'Div').addClass('show');
+            @endif 
+        @endforeach
+        @endif
 </script>
 @include('includes.footer')
 @endsection
