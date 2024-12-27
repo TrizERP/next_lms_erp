@@ -182,6 +182,7 @@ Route::get('/whatsapp-show-reply/{wid}', [WhatsappController::class, 'whatsappSh
     Route::resource('sqaa_master', sqaa_controller::class);
     Route::resource('sqaa_score_report', sqaaScoreReportController::class);
     Route::resource('sqaa_report_master', sqaaReportController::class);
+    Route::get('sqaa_document_report', [sqaaReportController::class,'sqaaDocReport'])->name('sqaa_document_report.index');
     Route::get('sqaa_report_master/{id}/edit', 'sqaaReportController@edit')->name('sqaa_report_master.edit');
     Route::put('sqaa_report_master/{id}', 'sqaaReportController@update')->name('sqaa_report_master.update');
     Route::get('setup-institute-details', [dashboardController::class, 'setup_details'])->name('setup-institute-details');

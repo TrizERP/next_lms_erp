@@ -168,4 +168,59 @@ class sqaaReportController extends Controller
         }
         return redirect()->route('sqaa_report_master.edit', ['id' => $id, 'document_id' => $request->document_id]);
     }
+
+    public function sqaaDocReport(Request $request){
+        $type = $request->type;
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+
+        if($type=="API"){
+            $sub_institute_id = $request->sub_institute_id;
+            $syear = $request->syear;
+        }
+
+        if($request->has('level_4_sel') && $request->input('level_4_sel')!=null){
+            $menu_id = $request->input('level_4_sel');
+        }else if($request->has('level_3_sel')  && $request->input('level_3_sel')!=null){
+            $menu_id = $request->input('level_3_sel');
+        }else if($request->has('level_2_sel') && $request->input('level_2_sel') !== null){
+            $menu_id = $request->input('level_2_sel');
+        }        
+        else if($request->has('level_1') && $request->input('level_1') !== null){
+            $menu_id = $request->input('level_1');
+        }
+        else{
+            $menu_id = 0;
+        }
+        $selAvail = $request->input('selAvail');
+        if($selAvail==''){
+            $selAvail = 'Yes';
+        }
+
+        $res['docData'] = DB::table('sqaa_documents as a')
+            ->selectRaw('a.*,c.title as menuTitle')
+            ->join('sqaa_documant_master as b','b.id','=','a.document_id')
+            ->join('sqaa_master as c','c.id','=','b.menu_id')
+            ->where('a.sub_institute_id',$sub_institute_id)
+            ->when($selAvail!='all',function($q) use($selAvail){
+                $q->where('availability',$selAvail);
+            })
+            ->when($menu_id!=0,function($q) use($menu_id){
+                $q->where('a.menu_id',$menu_id);
+            })
+            ->orderBy('c.sort_order')
+            ->get()->toArray();
+
+        $res['level_1'] = sqaa_master::where(['level'=>1])->get()->toArray();
+        $res['level_2_val']=sqaa_master::where(['level'=>2,'parent_id'=>$request->input('level_1')])->get()->toArray();
+        $res['level_3_val']=sqaa_master::where(['level'=>3,'parent_id'=>$request->input('level_2_sel')])->get()->toArray();
+        $res['level_4_val']=sqaa_master::where(['level'=>4,'parent_id'=>$request->input('level_3_sel')])->get()->toArray();
+
+        $res['selected_1']=$request->input('level_1');
+        $res['selected_2']=$request->input('level_2_sel');
+        $res['selected_3']=$request->input('level_3_sel');
+        $res['selected_4']=$request->input('level_4_sel');  
+        $res['selAvail']=$request->input('selAvail');  
+        return is_mobile($type, "sqaa/docReport", $res, "view"); 
+    }
 }
