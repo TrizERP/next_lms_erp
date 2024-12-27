@@ -24,7 +24,7 @@
                             <p>Template 1</p>
                             <br>
                             <br>
-                           {{ $string }}
+                           {!! $string !!}
                         </div>
                     </div>
 
