@@ -142,7 +142,7 @@ Route::group(['prefix' => 'student', 'middleware' => ['session', 'menu', 'logRou
     Route::post('teacher_icard/show_teacher', ['as' => 'teacher_icard.show_teacher', 'uses' => 'student\teacherIcardController@showTeacher']);
 
     Route::get('view_samples', [studentIcardController::class, 'viewSamples'])->name("view_samples");
-    Route::post('view_samples_user', [teacherIcardController::class, 'viewSamples'])->name("view_samples_user");
+    Route::get('view_samples_user', [teacherIcardController::class, 'viewSamples'])->name("view_samples_user");
 
     Route::post('student_icard/show_student_icard', [studentIcardController::class, 'showStudentIcard'])->name('show_student_icard');
     Route::post('teacher_icard/show_teacher_icard', [teacherIcardController::class, 'showTeacherIcard'])->name('show_teacher_icard');

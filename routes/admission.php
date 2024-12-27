@@ -7,6 +7,7 @@ use App\Http\Controllers\admission\admissionRegistrationController;
 use App\Http\Controllers\admission\admissionRegistrationHillController;
 use App\Http\Controllers\admission\admissionReportController;
 use App\Http\Controllers\admission\onlineAdmissionConfirmController;
+use App\Http\Controllers\admission\admissionMasterController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -17,6 +18,7 @@ Route::group(['prefix' => 'admission', 'middleware' => ['session', 'menu', 'logR
     Route::resource('admission_confirmation', admissionRegistrationController::class);
     Route::resource('admission_follow_up', admissionFollowUpController::class);
     Route::resource('online_admission_confirm', onlineAdmissionConfirmController::class);
+    Route::resource('admission_master', admissionMasterController::class); // 25-12-2024
 
     Route::get('admissionAI', [admissionEnquiryController::class,'admissionAI'])->name('admissionAI');
 

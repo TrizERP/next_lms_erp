@@ -9,6 +9,14 @@ $editData = array();
     {
         $student_data = $editData = $data['editData'];
     }
+    $class="hide";
+    $oldAdmissionInstitutes = [47,48,49,62,69,72,195,201,202,203,204,233,254];
+    if(in_array(Session::get('sub_institute_id'),$oldAdmissionInstitutes))
+    {
+        $class="show";
+    }
+
+    $unmandatoryFileds = ['category','previous_school_name','previous_standard','send_sms','remarks','source_of_enquiry','followup_date','stop_for_transport','counciler_name','last_exam_name','last_exam_percentage','annual_income','father_education_qualification','father_occupation','mother_education_qualification','mother_occupation','admission_form_fee','admission_docket_no','registration_no','payment_mode'];
 @endphp
 
 <div id="page-wrapper">
@@ -40,7 +48,7 @@ $editData = array();
                         </div>
                         {{--  For LancerArmy School --}}
                         @if (Session::get('sub_institute_id') == '74')
-                        <div class="col-md-3 form-group">
+                        <div class="col-md-3 form-group {{$class}} form_noDiv">
                             <label>Form No.</label>
                             <input type="hidden" readonly="readonly" id='form_no' @if(isset($data['form_no'])) value="{{$data['form_no']}}" @endif required name="form_no" class="form-control">
                             <input type="text" readonly="readonly" id='form_no' @if(isset($data['form_no'])) value="{{$data['form_no']}}" @endif required name="form_no" class="form-control">
@@ -81,54 +89,34 @@ $editData = array();
                             <label>Address </label>
                             <textarea id='address' name='address' class="form-control" required="required">@if(isset($editData['address'])){{$editData['address']}}@endif</textarea>
                         </div>
-                        <div class="col-md-3 form-group">
+                        <div class="col-md-3 form-group {{$class}} previous_school_nameDiv">
                             <label>Previous School Name </label>
-                            <input type="text" id='previous_school_name' name='previous_school_name' @if(isset($editData['previous_school_name'])) value="{{$editData['previous_school_name']}}" @endif required class="form-control">
+                            <input type="text" id='previous_school_name' name='previous_school_name' @if(isset($editData['previous_school_name'])) value="{{$editData['previous_school_name']}}" @endif class="form-control">
                         </div>
-                        <div class="col-md-3 form-group">
+                        <div class="col-md-3 form-group {{$class}} previous_standardDiv">
                             <label>Previous Standard </label>
                             <select id='previous_standard' name='previous_standard' disabled="disabled" class="form-control">
-                                {{--<option value=""> Select Standard </option>
-                                <option value="NURSERY" @if(isset($editData['previous_standard'])) @if($editData['previous_standard'] == 'NURSERY') selected="selected" @endif @endif> Nursery </option>
-                                <option value="JRKG" @if(isset($editData['previous_standard'])) @if($editData['previous_standard'] == 'JRKG') selected="selected" @endif @endif> Jrkg </option>
-                                <option value="SRKG" @if(isset($editData['previous_standard'])) @if($editData['previous_standard'] == 'SRKG') selected="selected" @endif @endif> Srkg </option>
-                                <option value="1" @if(isset($editData['previous_standard'])) @if($editData['previous_standard'] == '1') selected="selected" @endif @endif> 1 </option>
-                                <option value="2" @if(isset($editData['previous_standard'])) @if($editData['previous_standard'] == '2') selected="selected" @endif @endif> 2 </option>
-                                <option value="3" @if(isset($editData['previous_standard'])) @if($editData['previous_standard'] == '3') selected="selected" @endif @endif> 3 </option>
-                                <option value="4" @if(isset($editData['previous_standard'])) @if($editData['previous_standard'] == '4') selected="selected" @endif @endif> 4 </option>
-                                <option value="5" @if(isset($editData['previous_standard'])) @if($editData['previous_standard'] == '5') selected="selected" @endif @endif> 5 </option>
-                                <option value="6" @if(isset($editData['previous_standard'])) @if($editData['previous_standard'] == '6') selected="selected" @endif @endif> 6 </option>
-                                <option value="7" @if(isset($editData['previous_standard'])) @if($editData['previous_standard'] == '7') selected="selected" @endif @endif> 7 </option>
-                                <option value="8" @if(isset($editData['previous_standard'])) @if($editData['previous_standard'] == '8') selected="selected" @endif @endif> 8 </option>
-                                <option value="9" @if(isset($editData['previous_standard'])) @if($editData['previous_standard'] == '9') selected="selected" @endif @endif> 9 </option>
-                                <option value="10" @if(isset($editData['previous_standard'])) @if($editData['previous_standard'] == '10') selected="selected" @endif @endif> 10 </option>
-                                <option value="11COM" @if(isset($editData['previous_standard'])) @if($editData['previous_standard'] == '11COM') selected="selected" @endif @endif> 11 COM </option>
-                                <option value="11ART" @if(isset($editData['previous_standard'])) @if($editData['previous_standard'] == '11ART') selected="selected" @endif @endif> 11 ART </option>
-                                <option value="11SCI" @if(isset($editData['previous_standard'])) @if($editData['previous_standard'] == '11SCI') selected="selected" @endif @endif> 11 SCI </option>
-                                <option value="12COM" @if(isset($editData['previous_standard'])) @if($editData['previous_standard'] == '12COM') selected="selected" @endif @endif> 12 COM </option>
-                                <option value="12ART" @if(isset($editData['previous_standard'])) @if($editData['previous_standard'] == '12ART') selected="selected" @endif @endif> 12 ART </option>
-                                <option value="12SCI" @if(isset($editData['previous_standard'])) @if($editData['previous_standard'] == '12SCI') selected="selected" @endif @endif> 12 SCI </option>--}}
-
+                             
                                 @foreach($data['standard'] as $key=>$previous)
                                 <option value="{{$previous['id']}}" @if(isset($editData['previous_standard']) && $previous['id']==$editData['previous_standard']) Selected @endif> {{$previous['name']}}</option>
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-3 form-group">
+                        <div class="col-md-3 form-group  {{$class}} source_of_enquiryDiv">
                             <label>Source of enquiry </label>
                             <input type="text" id='source_of_enquiry' name='source_of_enquiry' @if(isset($editData['source_of_enquiry'])) value="{{$editData['source_of_enquiry']}}" @endif class="form-control">
                         </div>
-                        <div class="col-md-3 form-group">
+                        <div class="col-md-3 form-group {{$class}} remarksDiv">
                             <label>Remarks </label>
                             <input type="text" id='remarks' name='remarks' @if(isset($editData['remarks'])) value="{{$editData['remarks']}}" @endif  name="remarks" class="form-control">
                         </div>
-                        <div class="col-md-3 form-group">
+                        <div class="col-md-3 form-group {{$class}} followup_dateDiv">
                             <label>Followup Date </label>
                             <input type="text" id='followup_date' name='followup_date' @if(isset($editData['followup_date'])) value="{{$editData['followup_date']}}" @endif name="followup_date" class="form-control mydatepicker" autocomplete="off">
                         </div>
                         <div class="col-md-3 form-group">
                             <label>Status </label>
-                            <select id='status' name="status" class="form-control">
+                            <select id='status' name="status" class="form-control" required>
                                 <option value=""> Select Status </option>
                                 <option value="OPEN" @if(isset($editData['status'])) @if($editData['status'] == 'OPEN') selected="selected" @endif @endif> Open </option>
                                 <option value="CLOSE" @if(isset($editData['status'])) @if($editData['status'] == 'CLOSE') selected="selected" @endif @endif> Close </option>
@@ -143,57 +131,57 @@ $editData = array();
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-3 form-group">
+                        <div class="col-md-3 form-group {{$class}} stop_for_transportDiv">
                             <label>Stop For Transport </label>
                             <input type="text" id='stop_for_transport' @if(isset($editData['stop_for_transport'])) value="{{$editData['stop_for_transport']}}" @endif  name="stop_for_transport" class="form-control">
                         </div>
-                        <div class="col-md-3 form-group">
+                        <div class="col-md-3 form-group {{$class}} counciler_nameDiv">
                             <label>Counciler Name </label>
                             <input type="text" id='counciler_name' @if(isset($editData['counciler_name'])) value="{{$editData['counciler_name']}}" @endif  name="counciler_name" class="form-control">
                         </div>
-                        <div class="col-md-3 form-group">
+                        <div class="col-md-3 form-group {{$class}} last_exam_nameDiv">
                             <label>Last Exam Name </label>
                             <input type="text" id='last_exam_name' @if(isset($editData['last_exam_name'])) value="{{$editData['last_exam_name']}}" @endif  name="last_exam_name" class="form-control">
                         </div>
-                        <div class="col-md-3 form-group">
+                        <div class="col-md-3 form-group  {{$class}} last_exam_percentageDiv">
                             <label>Last Exam Percentage </label>
                             <input type="text" id='last_exam_percentage' @if(isset($editData['last_exam_percentage'])) value="{{$editData['last_exam_percentage']}}" @endif  name="last_exam_percentage" class="form-control">
                         </div>
                         {{--  For Maheshvari School --}}
                         @if (Session::get('sub_institute_id') != '198')
-                        <div class="col-md-3 form-group">
+                        <div class="col-md-3 form-group {{$class}} father_education_qualificationDiv">
                             <label>Father Education Qualification </label>
                             <input type="text" id='father_education_qualification' @if(isset($editData['father_education_qualification'])) value="{{$editData['father_education_qualification']}}" @endif  name="father_education_qualification" class="form-control">
                         </div>
                         @endif
-                        <div class="col-md-3 form-group">
+                        <div class="col-md-3 form-group {{$class}} father_occupationDiv">
                             <label>Father Occupation </label>
                             <input type="text" id='father_occupation' @if(isset($editData['father_occupation'])) value="{{$editData['father_occupation']}}" @endif  name="father_occupation" class="form-control">
                         </div>
                         {{--  For Maheshvari School --}}
                         @if (Session::get('sub_institute_id') != '198')
-                        <div class="col-md-3 form-group">
+                        <div class="col-md-3 form-group {{$class}} mother_education_qualificationDiv">
                             <label>Mother Education Qualification </label>
                             <input type="text" id='mother_education_qualification' @if(isset($editData['mother_education_qualification'])) value="{{$editData['mother_education_qualification']}}" @endif  name="mother_education_qualification" class="form-control">
                         </div>
                         @endif
-                        <div class="col-md-3 form-group">
+                        <div class="col-md-3 form-group {{$class}} mother_occupationDiv">
                             <label>Mother Occupation </label>
                             <input type="text" id='mother_occupation' @if(isset($editData['mother_occupation'])) value="{{$editData['mother_occupation']}}" @endif  name="mother_occupation" class="form-control">
                         </div>
-                        <div class="col-md-3 form-group">
+                        <div class="col-md-3 form-group {{$class}} annual_incomeDiv">
                             <label>Annual Income </label>
                             <input type="text" id='annual_income' @if(isset($editData['annual_income'])) value="{{$editData['annual_income']}}" @endif  name="annual_income" class="form-control">
                         </div>
-                        <div class="col-md-3 form-group">
+                        <div class="col-md-3 form-group {{$class}} admission_docket_noDiv">
                             <label>Admission Docket No.</label>
                             <input type="text" id='admission_docket_no' @if(isset($editData['admission_docket_no'])) value="{{$editData['admission_docket_no']}}" @endif  name="admission_docket_no" class="form-control">
                         </div>
-                        <div class="col-md-3 form-group">
+                        <div class="col-md-3 form-group  {{$class}} registration_noDiv">
                             <label>Registration No.</label>
                             <input type="text" id='registration_no' @if(isset($editData['registration_no'])) value="{{$editData['registration_no']}}" @endif  name="registration_no" class="form-control">
                         </div>
-						<div class="col-md-3 form-group">
+						<div class="col-md-3 form-group  {{$class}} send_smsDiv">
                             <label>Send Sms </label>
                             <select id='send_sms' name="send_sms" onchange="showMessageBox(this.value);" class="form-control">
                             <option value="0"> No </option>
@@ -204,60 +192,71 @@ $editData = array();
                             <label>Sms </label>
                             <textarea type="text" id='sms_message' name="sms_message" class="form-control"></textarea>
                         </div>
+                        <div class="col-md-3 form-group {{$class}} payment_modeDiv">
+                                <label>Payment Mode </label>
+                                <select id='payment_mode' name="payment_mode" onchange="displayBank(this.value);" class="form-control" >
+                                    <option value=""> Select Payment Mode </option>
+                                    <option value="cash" @if(isset($editData['payment_mode'])) @if($editData['payment_mode'] == 'cash') selected="selected" @endif @endif> Cash </option>
+                                    <option value="cheque" @if(isset($editData['payment_mode'])) @if($editData['payment_mode'] == 'cheque') selected="selected" @endif @endif> Cheque </option>
+                                    <option value="dd" @if(isset($editData['payment_mode'])) @if($editData['payment_mode'] == 'dd') selected="selected" @endif @endif> DD </option>
+                                </select>
+                            </div>
                         @if(isset($data['custom_fields']))
                             @foreach($data['custom_fields'] as $key => $value)
-                            <div class="col-md-4 form-group">
-                                <label>{{ $value['field_label'] }}</label>
-                                @if($value['field_type'] == 'file')
-                                <input type="{{ $value['field_type'] }}" id="input-file-now"  @if($value['required'] == 1) required @endif data-default-file="/storage/student/{{ $student_data[$value['field_name']] }}" name="{{ $value['field_name'] }}" class="dropify">
-                                <a href="/storage/student/{{ $student_data[$value['field_name']] }}" download="{{$student_data->username.'_'.$student_data[$value['field_name']]}}"><label>Download</label></a>
-                                @elseif($value['field_type'] == 'date')
-                                <div class="input-daterange input-group" >
-                                <input type="text" class="form-control mydatepicker" placeholder="dd/mm/yyyy" autocomplete="off" id="{{ $value['field_name'] }}" @if($value['required'] == 1) required @endif value="{{ $student_data[$value['field_name']] }}" name="{{ $value['field_name'] }}" class="form-control"><span class="input-group-addon"><i class="icon-calender"></i></span>
-                                </div>
-                                @elseif($value['field_type'] == 'checkbox')
-                                <div class="checkbox-list">
-                                    @if(isset($data['data_fields'][$value['id']]))
-                                    @foreach($data['data_fields'][$value['id']] as $keyData => $valueData )
-                                        <label class="checkbox-inline">
-                                            <div class="checkbox checkbox-success">
-                                                <input type="checkbox" @if($valueData['display_value'] == $student_data[$value['field_name']]) checked @endif name="{{ $value['field_name'] }}[]" value="{{ $valueData['display_value'] }}"  id="{{ $valueData['display_value'] }}" @if($value['required'] == 1) required @endif>
-                                                <label for="{{ $valueData['display_value'] }}">{{ $valueData['display_text'] }}</label>
-                                            </div>
-                                        </label>
-                                        @endforeach
-                                    @endif
-                                </div>
-                                @elseif($value['field_type'] == 'dropdown')
-
-                                        <!-- <div class="custom-select"> -->
-                                        <select name="{{ $value['field_name'] }}" class="form-control" @if($value['required'] == 1) required @endif id="{{ $value['field_name'] }}">
-                                            <option value=""> SELECT {{ strtoupper($value['field_label']) }} </option>
-
+                                @if(!in_array($value['field_name'],$unmandatoryFileds))
+                                <div class="col-md-4 form-group">
+                                    <label>{{ $value['field_label'] }}</label>
+                                    @if($value['field_type'] == 'file')
+                                    <input type="{{ $value['field_type'] }}" id="input-file-now"  @if($value['required'] == 1) required @endif data-default-file="/storage/student/{{ $student_data[$value['field_name']] }}" name="{{ $value['field_name'] }}" class="dropify">
+                                    <a href="/storage/student/{{ $student_data[$value['field_name']] }}" download="{{$student_data->username.'_'.$student_data[$value['field_name']]}}"><label>Download</label></a>
+                                    @elseif($value['field_type'] == 'date')
+                                    <div class="input-daterange input-group" >
+                                    <input type="text" class="form-control mydatepicker" placeholder="dd/mm/yyyy" autocomplete="off" id="{{ $value['field_name'] }}" @if($value['required'] == 1) required @endif value="{{ $student_data[$value['field_name']] }}" name="{{ $value['field_name'] }}" class="form-control"><span class="input-group-addon"><i class="icon-calender"></i></span>
+                                    </div>
+                                    @elseif($value['field_type'] == 'checkbox')
+                                    <div class="checkbox-list">
                                         @if(isset($data['data_fields'][$value['id']]))
-                                            @foreach($data['data_fields'][$value['id']] as $keyData => $valueData)
-                                            @php
-                                                $selected = '';
-                                            @endphp
-                                            @if($student_data[$value['field_name']]== $valueData['display_value'])
-                                                @php
-                                                    $selected = 'selected';
-                                                @endphp
-                                            @endif
-                                            <option value="{{ $valueData['display_value'] }}" {{$selected}} > {{ $valueData['display_text'] }} </option>
+                                        @foreach($data['data_fields'][$value['id']] as $keyData => $valueData )
+                                            <label class="checkbox-inline">
+                                                <div class="checkbox checkbox-success">
+                                                    <input type="checkbox" @if($valueData['display_value'] == $student_data[$value['field_name']]) checked @endif name="{{ $value['field_name'] }}[]" value="{{ $valueData['display_value'] }}"  id="{{ $valueData['display_value'] }}" @if($value['required'] == 1) required @endif>
+                                                    <label for="{{ $valueData['display_value'] }}">{{ $valueData['display_text'] }}</label>
+                                                </div>
+                                            </label>
                                             @endforeach
                                         @endif
-                                        </select>
-                                        <!-- </div> -->
+                                    </div>
+                                    @elseif($value['field_type'] == 'dropdown')
 
-                                @elseif($value['field_type'] == 'textarea')
-                                <textarea id="{{ $value['field_name'] }}" class="form-control" @if($value['required'] == 1) required @endif name="{{ $value['field_name'] }}">
-                                {{ $student_data[$value['field_name']] }}
-                                </textarea>
-                                @else
-                                <input type="{{ $value['field_type'] }}" id="{{ $value['field_name'] }}" placeholder="{{ $value['field_message'] }}" value="{{ $student_data[$value['field_name']] }}" @if($value['required'] == 1) required @endif name="{{ $value['field_name'] }}" class="form-control">
+                                            <!-- <div class="custom-select"> -->
+                                            <select name="{{ $value['field_name'] }}" class="form-control" @if($value['required'] == 1) required @endif id="{{ $value['field_name'] }}">
+                                                <option value=""> SELECT {{ strtoupper($value['field_label']) }} </option>
+
+                                            @if(isset($data['data_fields'][$value['id']]))
+                                                @foreach($data['data_fields'][$value['id']] as $keyData => $valueData)
+                                                @php
+                                                    $selected = '';
+                                                @endphp
+                                                @if($student_data[$value['field_name']]== $valueData['display_value'])
+                                                    @php
+                                                        $selected = 'selected';
+                                                    @endphp
+                                                @endif
+                                                <option value="{{ $valueData['display_value'] }}" {{$selected}} > {{ $valueData['display_text'] }} </option>
+                                                @endforeach
+                                            @endif
+                                            </select>
+                                            <!-- </div> -->
+
+                                    @elseif($value['field_type'] == 'textarea')
+                                    <textarea id="{{ $value['field_name'] }}" class="form-control" @if($value['required'] == 1) required @endif name="{{ $value['field_name'] }}">
+                                    {{ $student_data[$value['field_name']] }}
+                                    </textarea>
+                                    @else
+                                    <input type="{{ $value['field_type'] }}" id="{{ $value['field_name'] }}" placeholder="{{ $value['field_message'] }}" value="{{ $student_data[$value['field_name']] }}" @if($value['required'] == 1) required @endif name="{{ $value['field_name'] }}" class="form-control">
+                                    @endif
+                                </div>
                                 @endif
-                            </div>
                             @endforeach
                             @endif
 
@@ -310,6 +309,18 @@ $editData = array();
             document.getElementById("sms_message_box").required = false;
         }
     }
+
+    @if(isset($data['custom_fields']))
+        @foreach($data['custom_fields'] as $key => $value)
+            @if(in_array($value['field_name'],$unmandatoryFileds))
+                var fieldName = "{{$value['field_name']}}";
+                var fieldLabel = "{{$value['field_label']}}";
+
+                $('.'+fieldName+'Div').removeClass('hide');
+                $('.' + fieldName + 'Div').addClass('show').find('label').text(fieldLabel);
+            @endif 
+        @endforeach
+        @endif
 </script>
 @include('includes.footer')
 @endsection

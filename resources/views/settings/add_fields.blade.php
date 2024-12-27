@@ -63,20 +63,20 @@
                                                     <label>Module Name</label>
                                                     <select id='table_name' name="table_name" class="form-control">
                                                         <option value=""> Select Module Name </option>
-                                                        <option value="tblstudent">Student</option>
-                                                        <option value="tbluser">Staff</option>
-                                                        <option value="admission_enquiry">Admission Enquiry</option>
-                                                        <option value="admission_form">Admission Form</option>
-                                                        <option value="admission_registration">Admission Registration</option>
+                                                        <option value="tblstudent##ts">Student</option>
+                                                        <option value="tbluser##tu">Staff</option>
+                                                        <option value="admission_enquiry##ae">Admission Enquiry</option>
+                                                        <option value="admission_form##af">Admission Form</option>
+                                                        <option value="admission_registration##ar">Admission Registration</option>
                                                         <option value="visitor_master">Visitor Management</option>         
-                                                        <option value="inward">inward</option>
-                                                        <option value="outward">outward</option>   
-                                                        <option value="front_desk">front_desk</option>
-                                                        <option value="task">task</option> 
-                                                        <option value="complaint">complaint</option>
-                                                        <option value="petty_cash">petty_cash</option> 
-                                                        <option value="hostel_master">hostel_master</option>
-                                                        <option value="lms_teacher_resource">lms_teacher_resource</option>
+                                                        <option value="inward##inw">inward</option>
+                                                        <option value="outward##otw">outward</option>   
+                                                        <option value="front_desk##fd">front_desk</option>
+                                                        <option value="task##task">task</option> 
+                                                        <option value="complaint##comp">complaint</option>
+                                                        <option value="petty_cash##pc">petty_cash</option> 
+                                                        <option value="hostel_master##hm">hostel_master</option>
+                                                        <option value="lms_teacher_resource##ltr">lms_teacher_resource</option>
                                                         <!--  <option value="fees_collect">fees_collect</option>-->                  
                                                     </select>
                                                 </div>
