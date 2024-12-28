@@ -2621,4 +2621,24 @@ if (!function_exists('get_string')) {
         }
     }
     // end log management
+
+    // student Name sort order
+    if (!function_exists('sort_student_name')) {
+
+        function sort_student_name($first_name,$middle_name,$last_name,$sub_institute_id="")
+        {
+            if($sub_institute_id==''){
+                $sub_institute_id = session()->get('sub_institute_id');
+            }
+            $getGeneralData = DB::table('general_data')->where(['fieldname' => 'student_name', 'sub_institute_id' => $sub_institute_id])->first(); 
+
+            $stu_name = $first_name.' '.$middle_name.' '.$last_name;
+
+            if(isset($getGeneralData) && $getGeneralData->fieldvalue==1){
+                $stu_name = $last_name.' '.$first_name.' '.$middle_name;
+            }
+            
+            return $stu_name;
+        }
+    }
 }

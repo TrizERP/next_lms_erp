@@ -18,7 +18,8 @@
                     $timetable_ai = ["0"=>"Standard Wise","1"=>"Teacher wise"];
                     $sandwich_leave = $multi_login =$timeTableTeacher= ["Yes","No"];
                     $bulkDiscount = ["No","Yes"];
-                    $casual_leave = [0,1,2,3,4,5];                    
+                    $casual_leave = [0,1,2,3,4,5];  
+                    $studentNameFormat = [0=>"Student Name First",1=>"Last Name First"];                  
                 @endphp 
                 @if ($sessionData = Session::get('data'))
                     @if (isset($sessionData['status_code']))
@@ -171,6 +172,25 @@
                                     </div>
                                 </td>
                             </tr>
+                             <!-- Student Name Sort Order-->
+                             <tr>
+                                <th>Student Name display format</th>
+                                <td>
+                                    <div class="row">
+                                        <div class="col-md-4 form-group" style="margin-left: 0px !important">
+                                            <label for="" style="margin-left: 50px;">Select Discount</label>
+                                            <select id='studentName' name="studentName" class="form-control"  style="margin-left: 50px;">
+                                            @foreach($studentNameFormat as $key=>$value)
+                                                <option value="{{ $key }}" @if(isset($data['get_studentName']->fieldvalue) && $data['get_studentName']->fieldvalue == $key) selected @endif >
+                                                    {{ $value }}
+                                                </option>
+                                            @endforeach
+                                            </select>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+
                         </tbody>
                     </table>
                 </div>
