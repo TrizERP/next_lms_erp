@@ -203,7 +203,7 @@ class admissionMasterController extends Controller
             $j = 0;
             foreach ($request->fieldsId as $key => $value) {
                 $field_name = isset($request->fieldsLabels[$key]) ? $request->fieldsLabels[$key] : '';
-                $required = isset($request->is_required[$key]) ? $request->is_required[$key] : '';
+                $required = isset($request->is_required[$value]) ? $request->is_required[$value] : '';
 
                 $fieldData = [];
                 if($field_name!='' && $field_name!=''){

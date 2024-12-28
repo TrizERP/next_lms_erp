@@ -204,7 +204,7 @@
                                                         <input type="text" name="fieldsLabels[]" class="fieldSpans resizableHorizontal" value="{{$value['field_label']}}" style="border:1px solid #ddd !important">
                                                     </td>
                                                     <td class="text-left">
-                                                        <input type="checkbox" name="is_required[]" @if($value['required']==1) checked @endif> {{$value['field_label']}}
+                                                        <input type="checkbox" name="is_required[{{$value['id']}}]" @if($value['required']==1) checked @endif> {{$value['field_label']}}
                                                     </td>
                                                 </tr>
                                             @endforeach
