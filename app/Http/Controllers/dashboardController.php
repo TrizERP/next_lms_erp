@@ -121,7 +121,7 @@ class dashboardController extends Controller
 
                 $fees_collection = fees_collect::selectRaw('fees_collect.*,CONCAT_WS(" ",tblstudent.first_name,tblstudent.middle_name,tblstudent.last_name) as student_name,sum(amount) as total_fees')
                     ->join('tblstudent', 'tblstudent.id', '=', 'fees_collect.student_id')
-                    ->where(['fees_collect.sub_institute_id' => $sub_institute_id, 'fees_collect.is_deleted' => "N"])
+                    ->where(['fees_collect.sub_institute_id' => $sub_institute_id, 'fees_collect.syear' => $syear, 'fees_collect.is_deleted' => "N"])
                     ->whereRaw("date_format(fees_collect.receiptdate,'%Y-%m-%d') = '" . $date . "'")
                     ->groupBy('payment_mode')
                     ->take(10)->get()->toArray();
@@ -1608,7 +1608,7 @@ class dashboardController extends Controller
             $fees_collection = fees_collect::selectRaw('fees_collect.*,CONCAT_WS(" ",tblstudent.first_name,tblstudent.middle_name,
                 tblstudent.last_name) as student_name,sum(amount) as total_fees')
                 ->join('tblstudent', 'tblstudent.id', '=', 'fees_collect.student_id')
-                ->where(['fees_collect.sub_institute_id' => $sub_institute_id, 'fees_collect.is_deleted' => "N"])
+                ->where(['fees_collect.sub_institute_id' => $sub_institute_id, 'fees_collect.syear' => $syear, 'fees_collect.is_deleted' => "N"])
                 ->whereRaw("date_format(fees_collect.receiptdate,'%Y-%m-%d') = '" . $date . "'")
                 ->groupBy('payment_mode')
                 ->take(10)->get()->toArray();
