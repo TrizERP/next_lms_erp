@@ -319,6 +319,11 @@ $editData = array();
                 $('.'+fieldName+'Div').removeClass('hide');
                 $('.' + fieldName + 'Div').addClass('show').find('label').text(fieldLabel);
             @endif 
+
+            @if($value['required']==1)
+                $('#'+fieldName).prop('required',true);
+            @endif
+
         @endforeach
         @endif
 </script>

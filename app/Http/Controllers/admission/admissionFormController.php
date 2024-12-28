@@ -68,6 +68,12 @@ class admissionFormController extends Controller
             return (array) $value;
         }, $data);
 
+        $customFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "admission_form"])
+        ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1) and user_type="" ')
+        ->get();
+
+        $res['dataCustomFields']=$customFields;
+
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['data'] = $data;
