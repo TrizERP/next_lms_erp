@@ -127,46 +127,61 @@ class admissionMasterController extends Controller
             $times = ['activity_time'];
             if($table_name!='' && $table_alias!='' && !empty($fieldData)){
                 
-                $findData = tblcustomfieldsModel::whereRaw('table_name="'.$table_name.'" AND sub_institute_id="'.$sub_institute_id.'"')->first(); 
+                // $findData = tblcustomfieldsModel::whereRaw('table_name="'.$table_name.'" AND sub_institute_id="'.$sub_institute_id.'"')->first(); 
 
-                if(!empty($findData)){
-                    $delete = tblcustomfieldsModel::where('table_name',$table_name)->delete();
+                // if(!empty($findData)){
+                //     $delete = tblcustomfieldsModel::where('table_name',$table_name)->delete();
+                // }
+                $foundEntries = [];
+                foreach ($fieldData as $key => $value) {
+                    $field_name = str_replace(' ','_',lcfirst($value));
+                    $findData = tblcustomfieldsModel::whereRaw('table_name="'.$table_name.'" AND sub_institute_id="'.$sub_institute_id.'" and field_name="'.$field_name.'"')->first(); 
+                    if(!empty($findData)){
+                        $foundEntries[] = $findData->field_name;
+                    }
                 }
-
+            $deleteEntries =tblcustomfieldsModel::whereRaw('table_name="'.$table_name.'" AND sub_institute_id="'.$sub_institute_id.'"')
+                ->whereNotIn('field_name',$foundEntries)->delete();
+            // echo "<pre>";print_r($foundEntries);exit;
+            $foundFileds = [];
             foreach ($fieldData as $key => $value) {
                 $field_name = str_replace(' ','_',lcfirst($value));
-                $field_type = "textbox";
-                if(in_array($field_name,$dropdown)){
-                    $field_type = "dropdown";
-                }
-                if(in_array($field_name,$dates)){
-                    $field_type = "date";
-                }
-                if(in_array($field_name,$times)){
-                    $field_type = "time";
-                }
-                    $fields = [
-                        'table_name'       => $table_name,
-                        'table_alias'      => $table_alias,
-                        'tab_sort_order'   => 1,
-                        'field_name'       => $field_name,
-                        'column_header'    => '',
-                        'field_label'      => $value,
-                        'user_type'        => '',
-                        'field_type'       => $field_type,
-                        'field_message'    => '',
-                        'status'           => "1",
-                        'sort_order'       => ($key+1),
-                        'file_size_max'    => '',
-                        'sub_institute_id' => $sub_institute_id,
-                        'required'         => 0,
-                        'is_deleted'       => 'N',
-                        'common_to_all'    => 0,
-                    ];
+                if(!in_array($field_name,$foundEntries)){
+                    $field_type = "textbox";
+                    if(in_array($field_name,$dropdown)){
+                        $field_type = "dropdown";
+                    }
+                    if(in_array($field_name,$dates)){
+                        $field_type = "date";
+                    }
+                    if(in_array($field_name,$times)){
+                        $field_type = "time";
+                    }
+                        $fields = [
+                            'table_name'       => $table_name,
+                            'table_alias'      => $table_alias,
+                            'tab_sort_order'   => 1,
+                            'field_name'       => $field_name,
+                            'column_header'    => '',
+                            'field_label'      => $value,
+                            'user_type'        => '',
+                            'field_type'       => $field_type,
+                            'field_message'    => '',
+                            'status'           => "1",
+                            'sort_order'       => ($key+1),
+                            'file_size_max'    => '',
+                            'sub_institute_id' => $sub_institute_id,
+                            'required'         => 0,
+                            'is_deleted'       => 'N',
+                            'common_to_all'    => 0,
+                        ];
 
-                    $insert = tblcustomfieldsModel::insert($fields);
+                        $insert = tblcustomfieldsModel::insert($fields);
 
-                    if($insert){
+                            if($insert){
+                                $i++;
+                            }
+                    }else{
                         $i++;
                     }
                 }
@@ -184,13 +199,24 @@ class admissionMasterController extends Controller
             }
         }
         else{
+            // echo "<pre>";print_r($request->all());exit;
             $j = 0;
             foreach ($request->fieldsId as $key => $value) {
-                $field_name = $request->fieldsLabels[$key];
-                if(isset($field_name) && $field_name!=''){
-                    $update = tblcustomfieldsModel::where('id',$value)->update(['field_label'=>$field_name]);
-                    $j++;
+                $field_name = isset($request->fieldsLabels[$key]) ? $request->fieldsLabels[$key] : '';
+                $required = isset($request->is_required[$key]) ? $request->is_required[$key] : '';
+
+                $fieldData = [];
+                if($field_name!='' && $field_name!=''){
+                    $fieldData = ['field_label'=>$field_name];
                 }
+
+                $fieldData['required']=0;
+                if($required!='' && $required=="on"){
+                    $fieldData['required']=1;
+                }
+
+                $update = tblcustomfieldsModel::where('id',$value)->update($fieldData);
+                $j++;
             }
             if($j>0){
                 $res['status_code'] = 1;

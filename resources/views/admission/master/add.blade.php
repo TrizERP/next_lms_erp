@@ -181,7 +181,8 @@
                                             <tr>
                                                 <th>Sr No</th>
                                                 <th>Module Name</th>
-                                                <th class="text-left">Field Name</th>
+                                                <th>Field Name</th>
+                                                <th class="text-left">Field Required</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -198,9 +199,12 @@
                                                 <tr>
                                                     <td>{{$key+1}}</td>
                                                     <td>{{$moduleName}}</td>
-                                                    <td class="text-left">
+                                                    <td>
                                                         <input type="hidden" name="fieldsId[]" value="{{$value['id']}}">
                                                         <input type="text" name="fieldsLabels[]" class="fieldSpans resizableHorizontal" value="{{$value['field_label']}}" style="border:1px solid #ddd !important">
+                                                    </td>
+                                                    <td class="text-left">
+                                                        <input type="checkbox" name="is_required[]" @if($value['required']==1) checked @endif> {{$value['field_label']}}
                                                     </td>
                                                 </tr>
                                             @endforeach
