@@ -166,8 +166,8 @@ class oldDocumentTransfer extends Controller
         //     }
         // }
 
-        $filePath = 'old_to_new/doc_transfer/converted_json.json';
-        // $filePath = $_SERVER['DOCUMENT_ROOT'].'converted_json.json';
+        // $filePath = 'old_to_new/doc_transfer/converted_json.json';
+        $filePath = $_SERVER['DOCUMENT_ROOT'].'converted_json.json';
 
         // Check if the file exists
           if (!file_exists($filePath)) {
@@ -230,7 +230,7 @@ class oldDocumentTransfer extends Controller
                     $fileContents = @file_get_contents($value['mediumBlob']); // The '@' suppresses warnings
 
                     if ($fileContents !== false) {
-                        // Store the file in DigitalOcean Spaces
+                        // Store the file in DigitalOcean Spaces 20383
                        $disk=Storage::disk('digitalocean')->put($storagePath, $fileContents, 'public');
                     }
                 }
