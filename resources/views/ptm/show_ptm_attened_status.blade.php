@@ -84,7 +84,10 @@
                                 @foreach($student_data as $key => $data)
                                 <tr>
                                     <td><input id="{{$data->CHECKBOX}}" value="{{$data->CHECKBOX}}" name="students[]" type="checkbox"></td>
-                                    <td>{{$data->STUDENT}}</td>
+                                    <td>
+                                        {{-- $data->STUDENT --}}
+                                        {{App\Helpers\sortStudentName($data->STUDENT)}}
+                                    </td>
                                     <td>{{$data->std_div}}</td>
                                     <td>{{$data->mobile}}</td>
                                     <td>{{$data->title}}</td>

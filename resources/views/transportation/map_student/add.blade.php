@@ -50,8 +50,11 @@
                                 @endphp
                                 <tr>
                                     <td><input type="checkbox" name="@php echo 'values['.$col_arr['student_id'].'][ckbox]'; @endphp" class="ckbox1">  </td>
-                                    <td>@php echo $id+1; @endphp</td>
-                                    <td>@php echo $col_arr['name']; @endphp</td>
+                                    <td>{{ $id+1 }}</td>
+                                    <td>
+                                        {{-- $col_arr['name'] --}}
+                                        {{App\Helpers\sortStudentName($col_arr['name'])}}
+                                    </td>
                                     <td>{{$col_arr['std-div']}}</td>
                                     <td>{{$col_arr['enrollment_no']}}</td>
                                     <td class="{{ $col_arr['from_shift_id'] }}">@php echo $col_arr['mobile']; @endphp</td>

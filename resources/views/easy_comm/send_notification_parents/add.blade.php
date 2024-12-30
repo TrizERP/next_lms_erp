@@ -54,7 +54,10 @@
 
                                     <td><input type="checkbox" name="sendNotification[{{$col_arr['mobile']}}]" class="ckbox1">  </td>
                                     <td>{{$id+1}}</td>
-                                    <td>{{$col_arr['name']}}</td>
+                                    <td>
+                                        {{-- $col_arr['name']--}}
+                                        {{App\Helpers\sortStudentName($col_arr['name'])}}
+                                    </td>
                                     <td>{{$col_arr['enrollment_no']}}</td>
                                     <td>{{$col_arr['standard_name']}}</td>
                                     <td>{{$col_arr['division_name']}}</td>
