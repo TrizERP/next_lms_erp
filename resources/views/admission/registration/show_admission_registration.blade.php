@@ -60,7 +60,7 @@
 
                                       <!-- 2024-12-28  -->
                                       @foreach($data['dataCustomFields'] as $k => $v)
-                                        <th data-toggle="tooltip" title="Enquiry Status">{{$v['field_label']}}</th>
+                                        <th data-toggle="tooltip" title="{{$v['field_label']}}">{{$v['field_label']}}</th>
                                     @endforeach
                                     <!-- 2024-12-28  -->
 
