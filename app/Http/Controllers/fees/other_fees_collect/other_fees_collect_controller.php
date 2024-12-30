@@ -10,6 +10,7 @@ use App\Models\student\tblstudentModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
+use function App\Helpers\sortStudentName;
 
 class other_fees_collect_controller extends Controller
 {
@@ -355,7 +356,7 @@ class other_fees_collect_controller extends Controller
 
             $recHtml .= '<tr>';
             $recHtml .= '   <td colspan="3" align="left">';
-            $recHtml .= '       Name : <label><b>' . $stu_data[0]->stu_name . '</b></label>';
+            $recHtml .= '       Name : <label><b>' . sortStudentName('','','','',$stu_data[0]->stu_name,"") . '</b></label>';
             $recHtml .= '   </td>';
             $recHtml .= '   <td colspan="2" align="right">';
             $recHtml .= '       Mobile : <label><b>' . $stu_data[0]->mobile . '</b></label>';

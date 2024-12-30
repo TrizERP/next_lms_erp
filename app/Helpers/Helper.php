@@ -2623,21 +2623,52 @@ if (!function_exists('get_string')) {
     // end log management
 
     // student Name sort order
-    if (!function_exists('sort_student_name')) {
+    if (!function_exists('sortStudentName')) {
 
-        function sort_student_name($first_name,$middle_name,$last_name,$sub_institute_id="")
+        function sortStudentName($fullName='',$first_name='',$middle_name='',$last_name='',$noMiddleName='',$sub_institute_id="")
         {
             if($sub_institute_id==''){
                 $sub_institute_id = session()->get('sub_institute_id');
             }
+
             $getGeneralData = DB::table('general_data')->where(['fieldname' => 'student_name', 'sub_institute_id' => $sub_institute_id])->first(); 
+            $stu_name = '';
+            // when user have sepratly define name 
+            if($fullName=='' && $noMiddleName==''){
+                $stu_name = $first_name.' '.$middle_name.' '.$last_name;
 
-            $stu_name = $first_name.' '.$middle_name.' '.$last_name;
-
-            if(isset($getGeneralData) && $getGeneralData->fieldvalue==1){
-                $stu_name = $last_name.' '.$first_name.' '.$middle_name;
+                if(isset($getGeneralData) && $getGeneralData->fieldvalue==1){
+                    $stu_name = $last_name.' '.$first_name.' '.$middle_name;
+                }
             }
-            
+            // when user have concat full name 
+            else if($fullName!='' && $noMiddleName==''){
+                $stu_name = $fullName;
+                if(isset($getGeneralData) && $getGeneralData->fieldvalue==1){
+                    $stu_nameArr = explode(' ',$fullName);
+                    if(!empty($stu_nameArr)){
+                        $first_name = isset($stu_nameArr[0]) ? $stu_nameArr[0] : '';
+                        $middle_name = isset($stu_nameArr[1]) ? $stu_nameArr[1] : '';
+                        $last_name = isset($stu_nameArr[2]) ? $stu_nameArr[2] : '';
+
+                        $stu_name = $last_name.' '.$first_name.' '.$middle_name;
+                    }
+                }
+            }
+            // when user have concat full name but no middle name
+            else if($noMiddleName!=''){
+                $stu_name = $noMiddleName;
+                if(isset($getGeneralData) && $getGeneralData->fieldvalue==1){
+                    $stu_nameArr = explode(' ',$noMiddleName);
+                    if(!empty($stu_nameArr)){
+                        $first_name = isset($stu_nameArr[0]) ? $stu_nameArr[0] : '';
+                        $last_name = isset($stu_nameArr[1]) ? $stu_nameArr[1] : '';
+
+                        $stu_name = $last_name.' '.$first_name;
+                    }
+                }
+            }
+
             return $stu_name;
         }
     }

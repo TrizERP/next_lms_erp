@@ -27,6 +27,7 @@ use function App\Helpers\OtherBreackOff;
 use function App\Helpers\OtherBreackOffHead;
 use function App\Helpers\OtherBreackOfMonth;
 use function App\Helpers\OtherBreackOfMonthHead;
+use function App\Helpers\sortStudentName;
 use function Illuminate\Session\expired;
 use App\Models\fees\fees_breackoff\fees_breackoff;
 use App\Http\Controllers\easy_com\send_sms_parents\send_sms_parents_controller;
@@ -1467,7 +1468,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
 
             $html_content = str_replace(
                 htmlspecialchars("<<student_name_value>>"),
-                $_REQUEST['full_name'],
+                sortStudentName($_REQUEST['full_name']),
                 $html_content
             );
             // 2024-06-24 by uma

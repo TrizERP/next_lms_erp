@@ -90,7 +90,10 @@
                                         <tr>
                                             <td>{{$j}}</td>
                                             <td>{{$studata['student_id']}}</td>
-                                            <td>{{$studata['student_name']}}</td>
+                                            <td>
+                                                {{-- $studata['student_name'] --}}
+                                                {{App\Helpers\sortStudentName('','','','',$studata['student_name'],"")}}
+                                            </td>
                                             <td>{{$studata['enrollment_no']}}</td>
                                             <td>{{$studata['mobile']}}</td>
                                             <td>{{$studata['payment_method']}}</td>

@@ -15,6 +15,7 @@ use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use function App\Helpers\FeeMonthId;
 use function App\Helpers\is_mobile;
+use function App\Helpers\sortStudentName;
 
 class feesRefundController extends Controller
 {
@@ -499,7 +500,7 @@ class feesRefundController extends Controller
 
         $recHtml .= '<tr>';
         $recHtml .= '   <td colspan="3" align="left">';
-        $recHtml .= '       Name : <label><b>'.$stu_data[0]->stu_name.'</b></label>';
+        $recHtml .= '       Name : <label><b>'.sortStudentName('','','','',$stu_data[0]->stu_name,"").'</b></label>';
         $recHtml .= '   </td>';
         $recHtml .= '   <td colspan="2" align="right">';
         $recHtml .= '       Mobile : <label><b>'.$stu_data[0]->mobile.'</b></label>';
@@ -522,12 +523,13 @@ class feesRefundController extends Controller
 
         $total_refund_amt = 0;
         foreach ($fees_title as $fees_title_name => $fees_title_id) {
+            if(isset($refund_amount[$fees_title_id])){
             $recHtml .= '           <tr>';
             $recHtml .= '               <td align="left" colspan="3">'.$fees_title_name.'</td>';
             $recHtml .= '               <td align="right" >'.$refund_amount[$fees_title_id].'</td>';
             $recHtml .= '           </tr>';
             $total_refund_amt += $refund_amount[$fees_title_id];
-
+            }
         }
 
         $recHtml .= '           <tr>';
@@ -578,7 +580,9 @@ class feesRefundController extends Controller
         $feesRefundLog['remarks'] = $refund_remark;
 
         foreach ($fees_title as $fees_title_name => $fees_title_id) {
+            if(isset($refund_amount[$fees_title_id])){
             $feesRefundLog[$fees_title_id] = $refund_amount[$fees_title_id];
+            }
         }
 
         $feesRefundLog['amount'] = $total_refund_amt;
