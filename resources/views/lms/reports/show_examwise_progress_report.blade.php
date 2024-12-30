@@ -154,7 +154,7 @@
                                             @foreach($student_data as $key => $studata)
                                             <tr>
                                                 <td>{{$j}}</td>
-                                                <td>{{$studata['student_name']}}</td>
+                                                <td>{{App\Helpers\sortStudentName($studata['student_name'])}}</td>
                                                 <td>{{$studata['enrollment_no']}}</td>
                                                 <!-- al marks -->
                                                 @if (isset($all_marks[$studata['id']]))
