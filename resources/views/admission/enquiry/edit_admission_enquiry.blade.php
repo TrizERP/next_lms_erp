@@ -63,49 +63,43 @@ if(isset($data['editData']))
                             @endphp
                             <div class="col-md-3 form-group">
                                 <label>Enquiry Number </label>
-                                <input type="text" id='enquiry_no' @if(isset($editData['enquiry_no'])) value="{{$editData['enquiry_no']}}" @endif required name="enquiry_no" class="form-control" {{ $readonly }}>
+                                <input type="text" id='enquiry_no' @if(isset($editData['enquiry_no'])) value="{{$editData['enquiry_no']}}" @endif required name="enquiry_no" class="form-control" {{ $readonly }} required>
                             </div>
 
                             <div class="col-md-3 form-group">
                                 <label>Student Name </label>
-                                <input type="text" id='first_name' @if(isset($editData['first_name'])) value="{{$editData['first_name']}}" @endif required name="first_name" class="form-control">
+                                <input type="text" id='first_name' @if(isset($editData['first_name'])) value="{{$editData['first_name']}}" @endif required name="first_name" class="form-control" required>
                             </div>
                             @if (Session::get('sub_institute_id') != '198')
                             <div class="col-md-3 form-group">
                                 <label>Middle Name(Father Name)</label>
-                                <input type="text" id='middle_name' @if(isset($editData['middle_name'])) value="{{$editData['middle_name']}}" @endif required name="middle_name" class="form-control">
+                                <input type="text" id='middle_name' @if(isset($editData['middle_name'])) value="{{$editData['middle_name']}}" @endif required name="middle_name" class="form-control" required>
                             </div>
                             @endif
                             <div class="col-md-3 form-group">
                                 <label>Surname </label>
-                                <input type="text" id='last_name' @if(isset($editData['last_name'])) value="{{$editData['last_name']}}" @endif required name="last_name" class="form-control">
+                                <input type="text" id='last_name' @if(isset($editData['last_name'])) value="{{$editData['last_name']}}" @endif required name="last_name" class="form-control" required>
                             </div>
 
                             <div class="col-md-3 form-group">
                                 <label>Mobile </label>
-                                <input type="text" pattern="[1-9]{1}[0-9]{9}" id='mobile' @if(isset($editData['mobile'])) value="{{$editData['mobile']}}" @endif required name="mobile" class="form-control">
+                                <input type="text" pattern="[1-9]{1}[0-9]{9}" id='mobile' @if(isset($editData['mobile'])) value="{{$editData['mobile']}}" @endif required name="mobile" class="form-control" required>
                             </div>
-                            @php
-                            $required = 'required';
-                            if(in_array(Session::get('sub_institute_id'),['74',76]))
-                            {
-                                $required = '';
-                            }
-                            @endphp
+                           
                             <div class="col-md-3 form-group">
                                 <label>Email </label>
                                 <!-- pattern="/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/ -->
-                                <input type="email" id='email' @if(isset($editData['email'])) value="{{$editData['email']}}" @endif {{$required}} name="email" class="form-control">
+                                <input type="email" id='email' @if(isset($editData['email'])) value="{{$editData['email']}}" @endif required name="email" class="form-control" required>
                             </div>
 
                             <div class="col-md-3 form-group">
                                 <label>Date of Birth </label>
-                                <input type="text" @if(isset($editData['date_of_birth'])) value="{{$editData['date_of_birth']}}" @endif onchange="calculate_age(this.value);" id='date_of_birth' required name="date_of_birth" class="form-control mydatepicker">
+                                <input type="text" @if(isset($editData['date_of_birth'])) value="{{$editData['date_of_birth']}}" @endif onchange="calculate_age(this.value);" id='date_of_birth' required name="date_of_birth" class="form-control mydatepicker" required>
                             </div>
 
                             <div class="col-md-3 form-group">
                                 <label>Age </label>
-                                <input type="text" id='age' @if(isset($editData['age'])) value="{{$editData['age']}}" @endif required name="age" class="form-control">
+                                <input type="text" id='age' @if(isset($editData['age'])) value="{{$editData['age']}}" @endif required name="age" class="form-control" required>
                             </div>
                             @if (Session::get('sub_institute_id') != '198')
                             <div class="col-md-3 form-group">
@@ -168,7 +162,7 @@ if(isset($data['editData']))
 
                             <div class="col-md-3 form-group {{$class}} categoryDiv">
                                 <label>Category </label>
-                                <select id='category' {{$required}} name="category" class="form-control">
+                                <select id='category' name="category" class="form-control">
                                 <option value=""> Select Category </option>
                                     @if(isset($data['category']))
                                         @foreach($data['category'] as $key => $value)
@@ -412,6 +406,10 @@ if(isset($data['editData']))
                 $('.'+fieldName+'Div').removeClass('hide');
                 $('.'+fieldName+'Div').addClass('show');
             @endif 
+            @if($value['required']==1)
+                    $('#'+fieldName).prop('required',true);
+                @endif
+
         @endforeach
         @endif
 </script>

@@ -27,6 +27,11 @@
                     @endif
                 @endif
 
+                @php 
+                    $sub_institute_id =Session::get('sub_institute_id');
+                    $oldAdmissionInstitutes = [47,48,49,62,69,72,195,201,202,203,204,233,254];
+                @endphp
+
                 <div class="row">
                     <div class="col-lg-3 col-sm-3 col-xs-3">
                         <a href="{{ route('admission_enquiry.create') }}" class="btn btn-info add-new"><i class="fa fa-plus"></i> Add New Enquiry </a>
@@ -59,6 +64,7 @@
                                         <th data-toggle="tooltip" title="Email">Email</th>
                                         <th data-toggle="tooltip" title="Date of Birth">DOB</th>
                                         <th data-toggle="tooltip" title="Age">Age</th>
+                                    @if(in_array($sub_institute_id,$oldAdmissionInstitutes))
                                         <th data-toggle="tooltip" title="Previous School Name">Previous</th>
                                         <th data-toggle="tooltip" title="Previous Standard">Previous</th>
                                         <th data-toggle="tooltip" title="Admission Standard">Admission</th>
@@ -70,6 +76,7 @@
                                         @endif
                                         <th data-toggle="tooltip" title="Remarks">Remarks</th>
                                         <th data-toggle="tooltip" title="Enquiry Status">Enquiry</th>
+                                    @endif
                                         <!-- 2024-10-08 hills admission  -->
                                         @foreach($data['dataCustomFields'] as $k => $v)
                                         <th data-toggle="tooltip" title="Enquiry Status">{{$v['field_label']}}</th>
@@ -136,6 +143,7 @@
                                         <td>{{$data['email']}}</td>
                                         <td>{{date('d-m-Y', strtotime($data['date_of_birth']))}}</td>
                                         <td>{{$data['age']}}</td>
+                                    @if(in_array($sub_institute_id,$oldAdmissionInstitutes))
                                         <td>{{$data['previous_school_name']}}</td>
                                         <td>{{$data['previous_standard']}}</td>
                                         <td>{{$data['std_name']}}</td>
@@ -149,6 +157,7 @@
                                         @endif
                                         <td>{{$data['remarks']}}</td>
                                         <td>{{$data['display_enquiry_status']}}</td>
+                                    @endif
                                         <!-- 2024-10-08 hills admission  -->
                                         @foreach($dataCustomFields as $k => $v)
                                         @if($v['field_name'] == 'siblings' && !empty($data['siblings']))
@@ -169,7 +178,7 @@
                                                 @endforeach
                                             </td>
                                         @else 
-                                            <td>{{ $data[$v['field_name']] }}</td>
+                                            <td>{{ isset($data[$v['field_name']]) ? $data[$v['field_name']] : '' }}</td>
                                         @endif 
                                         <!-- 2024-10-08 hills admission  -->
                                     @endforeach
@@ -260,7 +269,16 @@
         }
 
         $(document).ready(function () {
-            $('#example').DataTable();
+            $('#example').DataTable({
+                select: true,
+                lengthMenu: [
+                    [100, 500, 1000, -1],
+                    ['100', '500', '1000', 'Show All']
+                ],
+                // columnDefs: [
+                //         { orderable: false, targets: '_all' } 
+                //     ],
+            });
         });
 </script>
 <script>

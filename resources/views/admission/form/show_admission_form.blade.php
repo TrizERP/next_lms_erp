@@ -18,6 +18,12 @@
             </div>
             @endif
 
+            @php 
+                $sub_institute_id =Session::get('sub_institute_id');
+                $oldAdmissionInstitutes = [47,48,49,62,69,72,195,201,202,203,204,233,254];
+                $dataCustomFields = $data['dataCustomFields'];
+            @endphp
+
             <div class="row">
                 <div class="col-lg-3 col-sm-3 col-xs-3">
                     <span class="d-inline-block mb-2" tabindex="0" data-toggle="tooltip" title="Once student is enrolled in System it cannot be edited & deleted. ">
@@ -54,13 +60,20 @@
                                     <th>Email</th>
                                     <th>Date of Birth</th>
                                     <th>Age</th>
-                                    <th>Previous School Name</th>
-                                    <th>Previous Standard</th>
-                                    <th>Admission Standard</th>
-                                    <th>Enquiry Remarks</th>
-                                    @if(session()->get('sub_institute_id')==254)
-                                    <th>Transport Fees</th>
+                                    @if(in_array($sub_institute_id,$oldAdmissionInstitutes))
+                                        <th>Previous School Name</th>
+                                        <th>Previous Standard</th>
+                                        <th>Admission Standard</th>
+                                        <th>Enquiry Remarks</th>
+                                        @if(session()->get('sub_institute_id')==254)
+                                        <th>Transport Fees</th>
+                                        @endif
                                     @endif
+                                    <!-- 2024-12-28  -->
+                                     @foreach($data['dataCustomFields'] as $k => $v)
+                                        <th data-toggle="tooltip" title="Enquiry Status">{{$v['field_label']}}</th>
+                                    @endforeach
+                                    <!-- 2024-12-28  -->
                                 </tr>
                             </thead>
                             <tbody>
@@ -111,13 +124,40 @@
                                     <td>{{$data['email']}}</td>
                                     <td>{{$data['date_of_birth']}}</td>
                                     <td>{{$data['age']}}</td>
-                                    <td>{{$data['previous_school_name']}}</td>
-                                    <td>{{$data['previous_standard']}}</td>
-                                    <td>{{$data['std_name']}}</td>
-                                    <td>{{$data['enquiry_remark']}}</td>
-                                    @if(session()->get('sub_institute_id')==254)
-                                    <td>{{$data['transport_fees']}}</td>
+                                    @if(in_array($sub_institute_id,$oldAdmissionInstitutes))
+                                        <td>{{$data['previous_school_name']}}</td>
+                                        <td>{{$data['previous_standard']}}</td>
+                                        <td>{{$data['std_name']}}</td>
+                                        <td>{{$data['enquiry_remark']}}</td>
+                                        @if(session()->get('sub_institute_id')==254)
+                                        <td>{{$data['transport_fees']}}</td>
+                                        @endif
                                     @endif
+
+                                       <!-- 2024-12-28 -->
+                                       @foreach($dataCustomFields as $k => $v)
+                                        @if($v['field_name'] == 'siblings' && !empty($data['siblings']))
+                                            @php 
+                                                $siblingsData = [];
+                                                // Explode the siblings_id from the data array
+                                                $siblings_id = explode(',', $data['siblings']);
+                                                if (!empty($siblings_id)) {
+                                                    foreach ($siblings_id as $sk => $sv) {
+                                                        $studentData = App\Helpers\SearchStudent("", "", "", "", "", "", "", "", "", "", $sv);
+                                                        $siblingsData[] = $studentData[0] ?? '';
+                                                    }
+                                                }
+                                            @endphp
+                                            <td>
+                                                @foreach($siblingsData as $skey=>$svalue)
+                                                {{$skey+1}}. {{$svalue['first_name'].' '.$svalue['middle_name'].' '.$svalue['last_name']}}<br>
+                                                @endforeach
+                                            </td>
+                                        @else 
+                                            <td>{{ isset($data[$v['field_name']]) ? $data[$v['field_name']] : '' }}</td>
+                                        @endif 
+                                    @endforeach
+                                    <!-- 2024-12-28  -->
                                 </tr>
                                 @php
                             $j++;
