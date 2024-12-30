@@ -57,8 +57,9 @@ class houseAutomationController extends Controller
         // ->where('tblstudent_enrollment.section_id', $sectionId)
         $data = $data->where('tblstudent_enrollment.standard_id', $standard_id)
         ->where('tblstudent_enrollment.sub_institute_id', $sub_institute_id)
-        ->whereNull('tblstudent_enrollment.end_date')        
+        ->whereNull('tblstudent_enrollment.end_date')
         ->where('tblstudent.gender', '=', $gender)
+        ->whereNotIn('tblstudent_enrollment.section_id', [1397]) // Exclude section_id 1397
         ->get();
         //update house
 
@@ -95,6 +96,7 @@ class houseAutomationController extends Controller
             $sectionArray = DB::table('std_div_map as sdm')->selectRaw('count(sdm.id) as total_div,GROUP_CONCAT(sdm.division_id) as section_id')
             ->where('sdm.standard_id', $standard_id)
             ->where('sdm.sub_institute_id', $sub_institute_id)
+            ->whereNotIn('sdm.division_id', [1397]) // Exclude section_id 1397
             ->groupBy('sdm.standard_id')
             ->get();
             // echo "<pre>";print($sectionArray[0]->section_id);exit;
@@ -196,6 +198,7 @@ class houseAutomationController extends Controller
                 ->where('s.sub_institute_id', $sub_institute_id)
                 ->where('se.standard_id', $standard_id)
                 ->whereNull('se.end_date')
+                ->whereNotIn('se.section_id', [1397]) // Exclude section_id 1397
                 ->where('s.gender', '=', 'M')->distinct()
                 ->get();
                 // dd(DB::getQueryLog($queryResultM));
@@ -215,6 +218,7 @@ class houseAutomationController extends Controller
                 ->where('s.sub_institute_id', $sub_institute_id)
                 ->where('se.standard_id', $standard_id)
                 ->whereNull('se.end_date') 
+                ->whereNotIn('se.section_id', [1397]) // Exclude section_id 1397
                 ->where('s.gender', '=', 'F')
                 ->distinct()
                 ->get();
@@ -354,6 +358,7 @@ class houseAutomationController extends Controller
             $sectionArray = DB::table('std_div_map')->selectRaw('count(id) as total_div,GROUP_CONCAT(division_id) as section_id')
             ->where('standard_id', $standard_id)
             ->where('sub_institute_id', $sub_institute_id)
+            ->whereNotIn('division_id', [1397]) // Exclude section_id 1397
             ->groupBy('standard_id')
             ->first();
             $res['total_div'] = $totalDiv =$sectionArray->total_div ?? 0;
