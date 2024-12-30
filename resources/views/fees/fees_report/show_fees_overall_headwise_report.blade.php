@@ -242,7 +242,7 @@
                         <tr>
                             <td>{{$j}}</td>
                             <td>{{$fees_value['enrollment']}}</td>
-                            <td>{{$fees_value['name']}}</td>
+                            <td>{{App\Helpers\sortStudentName($fees_value['name'])}}</td>
                             <td>{{$fees_value['stddiv']}}</td>
                             <td>{{$fees_value['stu_quota']}}</td>
                             <!--<td>@if($status != 0) In-Active @else Active @endif</td>-->

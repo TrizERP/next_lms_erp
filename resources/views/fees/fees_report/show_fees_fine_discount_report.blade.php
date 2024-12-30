@@ -87,7 +87,7 @@
                                 <tr>
                                     <td>{{$j}}</td>
                                     <td>{{$data['enrollment_no']}}</td>
-                                    <td>{{$data['STUDENT_NAME']}}</td>
+                                    <td>{{App\Helpers\sortStudentName($data['STUDENT_NAME'])}}</td>
                                     <td>{{$data['GENDER']}}</td>
                                     <td>{{$data['std']}}</td>
                                     <td>{{$data['div_name']}}</td>

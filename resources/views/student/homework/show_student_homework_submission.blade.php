@@ -92,7 +92,7 @@
                                     <tr>
                                         <td><input id="{{$data->CHECKBOX}}" value="{{$data->CHECKBOX}}" name="students[]" type="checkbox"></td>
                                         <td>{{$data->enrollment_no}}</td>
-                                        <td>{{$data->student_name}}</td>
+                                        <td>{{App\Helpers\sortStudentName($data->student_name)}}</td>
                                         <td>{{$data->standard}}</td>
                                         <td>{{$data->division}}</td>
                                         <td>{{$data->mobile}}</td>

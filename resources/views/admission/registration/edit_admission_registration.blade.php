@@ -316,11 +316,11 @@ $editData = array();
                                 <div class="col-md-4 form-group">
                                     <label>{{ $value['field_label'] }}</label>
                                     @if($value['field_type'] == 'file')
-                                    <input type="{{ $value['field_type'] }}" id="input-file-now"  @if($value[''] == 1)  @endif data-default-file="/storage/student/{{ $student_data[$value['field_name']] }}" name="{{ $value['field_name'] }}" class="dropify">
+                                    <input type="{{ $value['field_type'] }}" id="input-file-now"  @if($value['required'] == 1)  required @endif data-default-file="/storage/student/{{ $student_data[$value['field_name']] }}" name="{{ $value['field_name'] }}" class="dropify">
                                     <a href="/storage/student/{{ $student_data[$value['field_name']] }}" download="{{$student_data->username.'_'.$student_data[$value['field_name']]}}"><label>Download</label></a>
                                     @elseif($value['field_type'] == 'date')
                                     <div class="input-daterange input-group" >
-                                    <input type="text" class="form-control mydatepicker" placeholder="dd/mm/yyyy" autocomplete="off" id="{{ $value['field_name'] }}" @if($value[''] == 1)  @endif value="{{ $student_data[$value['field_name']] }}" name="{{ $value['field_name'] }}" class="form-control"><span class="input-group-addon"><i class="icon-calender"></i></span>
+                                    <input type="text" class="form-control mydatepicker" placeholder="dd/mm/yyyy" autocomplete="off" id="{{ $value['field_name'] }}" @if($value['required'] == 1)  required @endif value="{{ $student_data[$value['field_name']] }}" name="{{ $value['field_name'] }}" class="form-control"><span class="input-group-addon"><i class="icon-calender"></i></span>
                                     </div>
                                     @elseif($value['field_type'] == 'checkbox')
                                     <div class="checkbox-list">
@@ -328,7 +328,7 @@ $editData = array();
                                         @foreach($data['data_fields'][$value['id']] as $keyData => $valueData )
                                             <label class="checkbox-inline">
                                                 <div class="checkbox checkbox-success">
-                                                    <input type="checkbox" @if($valueData['display_value'] == $student_data[$value['field_name']]) checked @endif name="{{ $value['field_name'] }}[]" value="{{ $valueData['display_value'] }}"  id="{{ $valueData['display_value'] }}" @if($value[''] == 1)  @endif>
+                                                    <input type="checkbox" @if($valueData['display_value'] == $student_data[$value['field_name']]) checked @endif name="{{ $value['field_name'] }}[]" value="{{ $valueData['display_value'] }}"  id="{{ $valueData['display_value'] }}" @if($value['required'] == 1)  required @endif>
                                                     <label for="{{ $valueData['display_value'] }}">{{ $valueData['display_text'] }}</label>
                                                 </div>
                                             </label>
@@ -338,7 +338,7 @@ $editData = array();
                                     @elseif($value['field_type'] == 'dropdown')
 
                                             <!-- <div class="custom-select"> -->
-                                            <select name="{{ $value['field_name'] }}" class="form-control" @if($value[''] == 1)  @endif id="{{ $value['field_name'] }}">
+                                            <select name="{{ $value['field_name'] }}" class="form-control" @if($value['required'] == 1)  required @endif id="{{ $value['field_name'] }}">
                                                 <option value=""> SELECT {{ strtoupper($value['field_label']) }} </option>
 
                                             @if(isset($data['data_fields'][$value['id']]))
@@ -358,11 +358,11 @@ $editData = array();
                                             <!-- </div> -->
 
                                     @elseif($value['field_type'] == 'textarea')
-                                    <textarea id="{{ $value['field_name'] }}" class="form-control" @if($value[''] == 1)  @endif name="{{ $value['field_name'] }}">
+                                    <textarea id="{{ $value['field_name'] }}" class="form-control" @if($value['required'] == 1)  required @endif name="{{ $value['field_name'] }}">
                                     {{ $student_data[$value['field_name']] }}
                                     </textarea>
                                     @else
-                                    <input type="{{ $value['field_type'] }}" id="{{ $value['field_name'] }}" placeholder="{{ $value['field_message'] }}" value="{{ $student_data[$value['field_name']] }}" @if($value[''] == 1)  @endif name="{{ $value['field_name'] }}" class="form-control">
+                                    <input type="{{ $value['field_type'] }}" id="{{ $value['field_name'] }}" placeholder="{{ $value['field_message'] }}" value="{{ $student_data[$value['field_name']] }}" @if($value['required'] == 1)  required @endif name="{{ $value['field_name'] }}" class="form-control">
                                     @endif
                                 </div>
                                 @endif
@@ -528,11 +528,13 @@ $('document').ready(function(){
             @if(in_array($value['field_name'],$unmandatoryFileds))
                 var fieldName = "{{$value['field_name']}}";
                 var fieldLabel = "{{$value['field_label']}}";
+                alert($fieldName);
 
                 $('.'+fieldName+'Div').removeClass('hide');
                 $('.' + fieldName + 'Div').addClass('show').find('label').text(fieldLabel);
-                @if($value['']==1)
-                        $('#'+fieldName).prop('required',true);
+                @if($value['required']==1)
+                    $('#'+fieldName).prop('required',true);
+                    alert("{{$value['required']}}");
                 @endif
             @endif 
         @endforeach

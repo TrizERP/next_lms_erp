@@ -45,7 +45,10 @@
                             @foreach ($arr as $id=>$col_arr)                            
                             <tr>
                                 <td>{{ $id+1 }}</td>
-                                <td>{{ $col_arr['name'] }}</td>
+                                <td>
+                                    {{-- $col_arr['name'] --}}
+                                    {{App\Helpers\sortStudentName($col_arr['name'])}}
+                                </td>
                                 <td>{{ $col_arr['stddiv'] }}</td>
                                 <td>{{ $col_arr['mobile'] }}</td>
                                 <td>{{ $col_arr['date_'] }}</td>

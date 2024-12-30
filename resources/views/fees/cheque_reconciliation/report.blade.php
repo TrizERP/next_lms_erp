@@ -113,7 +113,7 @@
                             @foreach($data['details'] as $key => $val)
                                 <tr>
                                     <td>{{$j++}}</td>
-                                    <td>{{$val->student_name ?? ' '}}</td>
+                                    <td>{{App\Helpers\sortStudentName($val->student_name) ?? ' '}}</td>
                                     <td>{{$val->medium ?? ' '}}</td>
                                     <td>{{$val->enrollment_no ?? ' '}}</td>
                                     <td>{{$val->standard_name ?? ' '}}</td>

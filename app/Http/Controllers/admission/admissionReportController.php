@@ -155,9 +155,19 @@ class admissionReportController extends Controller
         } else {
             $dynamicFields = array_merge($dFields, $dynamicFields);
         }
-
-        foreach ($formFields as $key => $value) {
-            $reportFields[$value['Field']] = ucfirst(str_replace("_", " ", $value['Field']));
+        if(in_array($sub_institute_id, [201,202,203,204,324,326,327])){
+            foreach ($formFields as $key => $value) {
+                $reportFields[$value['Field']] = ucfirst(str_replace("_", " ", $value['Field']));
+            }
+        }
+        else
+        {
+            $customFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "admission_form"])
+            ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1) and user_type="" ')
+            ->get();
+            foreach ($customFields as $key => $value) {
+                $reportFields[$value['field_name']] = ucfirst(str_replace("_", " ", $value['field_name']));
+            }
         }
 
         if (isset($report)) {
@@ -197,7 +207,7 @@ class admissionReportController extends Controller
             if (count($data) > 0) {
 
                 $headers = $dynamicFields;
-                $res['headers'] = $headers;
+                $res['headers'] = $headers;  // echo "<pre>";print_r($headers);exit;
                 $res['data'] = $data;
                 $res['from_date'] = $from_date;
                 $res['to_date'] = $to_date;
@@ -220,11 +230,7 @@ class admissionReportController extends Controller
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['fields'] = $reportFields;
-        $customFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "admission_enquiry"])
-        ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1) and user_type="" ')
-        ->get();
-        $res['dataCustomFields']=$customFields;
-
+        
         return is_mobile($type, "admission.report.show_form_report", $res, 'view');
     }
 

@@ -114,7 +114,10 @@
                                 @foreach($student_data as $key => $data)
                                     <tr style="background-color:{{$data->inactive_colour}}">
                                         <td>{{$j}}</td>
-                                        <td>{{$data->first_name}} {{$data->middle_name}} {{$data->last_name}}</td>
+                                        <td>
+                                            {{-- {{$data->first_name}} {{$data->middle_name}} {{$data->last_name}} --}}
+                                            {{App\Helpers\sortStudentName("",$data->first_name,$data->middle_name,$data->last_name)}}
+                                        </td>
                                         <td>{{$data->enrollment_no}}</td>
                                         <td>{{$data->uniqueid}}</td>
                                         <td>{{$data->grade}}</td>

@@ -196,7 +196,10 @@
 									<input type="text" class="form-control" name="student_name" id="student_name" list="studentLists">
 									<datalist id="studentLists">
 										@foreach($data['studentData'] as $key=>$value)
-										<option>{{$value->student_name}}</option>
+										<option>
+											{{--$value->student_name--}}
+											{{ App\Helpers\sortStudentName($value->student_name) }}
+										</option>
 										@endforeach
 									</datalist>
 								</div>

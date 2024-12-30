@@ -113,7 +113,7 @@
                             <input type="hidden" name="values[{{ $col_arr['student_id'] }}][exam_id]" value="{{$data['exam']}}" />
                            
                             <td>{{$col_arr['roll_no']}}</td>
-                            <td>{{$col_arr['name']}}</td>
+                            <td>{{App\Helpers\sortStudentName($col_arr['name'])}}</td>
                             <td> 
                                 <input type="text" class="att" name="values[{{ $col_arr['student_id'] }}][points]" style="width: 100px;" value="{{ $col_arr['points'] }}" onchange="check_input(this,{{$col_arr['outof']}})" {{$disable}} />
                                 Out Of 

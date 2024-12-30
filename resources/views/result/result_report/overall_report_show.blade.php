@@ -192,7 +192,7 @@
                         @foreach($data['data'] as $studendId => $sdata)
                             <tr>
                                 <td style="color:#212529; font-weight: 500">{{ $sdata['roll_no'] }}</td>
-                                <td style="color:#212529; font-weight: 500">{{ $sdata['name'] }}</td>
+                                <td style="color:#212529; font-weight: 500">{{ App\Helpers\sortStudentName($sdata['name']) }}</td>
                                 @php
                                     $finalTotal = 0;
                                 @endphp

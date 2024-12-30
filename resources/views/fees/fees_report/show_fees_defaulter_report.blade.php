@@ -133,7 +133,7 @@
                                 <td>{{isset($fees_value['roll_no']) ? $fees_value['roll_no'] : ''}}</td>                                
                                 <!--<td>{{isset($fees_value['uniqueid']) ? $fees_value['uniqueid'] : ''}}</td>-->
                                 <td>{{isset($fees_value['enrollment']) ? $fees_value['enrollment'] : ''}}</td>
-                                <td>{{isset($fees_value['name']) ? $fees_value['name'] : ''}}</td>
+                                <td>{{isset($fees_value['name']) ? App\Helpers\sortStudentName($fees_value['name']) : ''}}</td>
                                 <td>{{isset($fees_value['stddiv']) ? $fees_value['stddiv'] : ''}}</td>
                                 <td>{{isset($fees_value['student_quota']) ? $fees_value['student_quota'] : ''}}</td>
                                 <td>{{isset($fees_value['mobile']) ? $fees_value['mobile'] : ''}}</td>

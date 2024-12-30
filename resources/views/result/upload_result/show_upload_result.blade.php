@@ -82,7 +82,7 @@
                                         <td>
                                             <input id="{{$data['CHECKBOX']}}" value="{{$data['CHECKBOX']}}" name="students[]" type="checkbox" onclick="required_file(this.value);">
                                         </td>
-                                        <td>{{$data['student_name']}}</td>
+                                        <td>{{App\Helpers\sortStudentName($data['student_name'])}}</td>
                                         <td>{{$data['enrollment_no']}}</td>
                                         <td>{{$data['standard_name']}} / {{$data['division_name']}}</td>
                                         <td>{{$data['mobile']}}</td>

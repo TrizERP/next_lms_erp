@@ -92,7 +92,7 @@
                                                         $headersChecked = array_keys($data['headers']);
                                                     }
                                                     $checked = '';
-                                                    if(in_array($key,$headersChecked)){
+                                                    if(in_array($key,$data['headers'])){
                                                         $checked = 'checked="checked"';
                                                     }
                                                 }
@@ -122,7 +122,7 @@
                             <thead>
                                 <tr>
                                     @foreach($data['headers'] as $hkey => $header)
-                                        <th> {{ucfirst(str_replace("_", " ", $header))}} </th>
+                                        <th class="text-left"> {{ucfirst(str_replace("_", " ", $header))}} </th>
                                     @endforeach
                                 </tr>
                             </thead>

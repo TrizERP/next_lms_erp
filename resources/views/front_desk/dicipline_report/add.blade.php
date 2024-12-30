@@ -102,7 +102,7 @@
                                     @foreach ($data['data'] as $id=>$col_arr)
                                     <tr>
                                         <td>{{ $id+1 }}</td>
-                                        <td>{{ $col_arr['first_name'].' '.$col_arr['middle_name'].' '.$col_arr['last_name'] }}</td>
+                                        <td>{{ App\Helpers\sortStudentName("",$col_arr['first_name'],$col_arr['middle_name'],$col_arr['last_name']) }}</td>
                                         <td>{{ $col_arr['standard_name'] }}</td>
                                         <td>{{ $col_arr['division_name'] }}</td>
                                         <td>{{ $col_arr['mobile'] }}</td>

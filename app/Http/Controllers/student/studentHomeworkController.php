@@ -351,7 +351,7 @@ class studentHomeworkController extends Controller
             })->join('subject as ss', function ($join) {
                 $join->whereRaw('ss.id = h.subject_id AND ss.sub_institute_id = h.sub_institute_id');
             })->selectRaw("h.*,s.name as standard_name,d.name as division_name,ss.subject_name,
-                CONCAT_WS(' ',ts.first_name,ts.last_name) as student_name, ts.id as student_id")
+                CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name) as student_name, ts.id as student_id")
             ->where('h.sub_institute_id', $sub_institute_id)
             ->where('h.syear', $syear);
 
