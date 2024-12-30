@@ -128,7 +128,10 @@
                                             @endif
 
                                             <td>{{$value['enrollment_no']}}</td>
-                                            <td>{{$value['student_name']}}</td>
+                                            <td>
+                                                {{-- $value['student_name'] --}}
+                                                {{App\Helpers\sortStudentName($value['student_name'])}}
+                                            </td>
                                             <td>{{$value['standard_name']}}</td>
                                             <td>{{$value['division_name']}}</td>
                                             <td>

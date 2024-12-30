@@ -108,24 +108,24 @@
                         </thead>
                         <tbody>
                             @foreach($data['details'] as $key => $val)
-                            <tr>
-                              <td>{{$j++}}</td>
-                                <td>{{$val->student_name ?? ' '}}</td>
-                                <td>{{$val->medium ?? ' '}}</td>
-                                <td>{{$val->enrollment_no ?? ' '}}</td>
-                                <td>{{$val->standard_name ?? ' '}}</td>
-                                <td>{{$val->divison_name ?? ' '}}</td>
-                                <td>{{$val->mobile ?? ' '}}</td>
-                                <td>{{$val->term_name ?? ' '}}</td>
-                                <td>{{$val->amountpaid ?? ' '}}</td>
-                                <td>{{$val->cheque_bank_name ?? ' '}}</td>
-                                <td>{{$val->bank_branch ?? ' '}}</td>
-                                <td>{{$val->cheque_no ?? ' '}}</td>
-                                <td>{{$val->cheque_date ?? ' '}}</td>
-                                <td>{{$val->cancel_type ?? ' '}}</td>
-                                <td>{{$val->cancel_date ?? ' '}}</td>
-                                <td>{{$val->cancel_remark ?? ' '}}</td>
-                            </tr>
+                                <tr>
+                                    <td>{{$j++}}</td>
+                                    <td>{{App\Helpers\sortStudentName($val->student_name) ?? ' '}}</td>
+                                    <td>{{$val->medium ?? ' '}}</td>
+                                    <td>{{$val->enrollment_no ?? ' '}}</td>
+                                    <td>{{$val->standard_name ?? ' '}}</td>
+                                    <td>{{$val->divison_name ?? ' '}}</td>
+                                    <td>{{$val->mobile ?? ' '}}</td>
+                                    <td>{{$val->term_name ?? ' '}}</td>
+                                    <td>{{$val->amountpaid ?? ' '}}</td>
+                                    <td>{{$val->cheque_bank_name ?? ' '}}</td>
+                                    <td>{{$val->bank_branch ?? ' '}}</td>
+                                    <td>{{$val->cheque_no ?? ' '}}</td>
+                                    <td>{{$val->cheque_date ?? ' '}}</td>
+                                    <td>{{$val->cancel_type ?? ' '}}</td>
+                                    <td>{{$val->cancel_date ?? ' '}}</td>
+                                    <td>{{$val->cancel_remark ?? ' '}}</td>
+                                </tr>
                             @endforeach
                         </tbody>
                     </table>

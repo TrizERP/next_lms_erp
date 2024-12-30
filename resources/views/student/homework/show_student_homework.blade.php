@@ -101,7 +101,7 @@
                                             @foreach($student_data as $key => $data)
                                             <tr>
                                                 <td><input id="{{$data['id']}}" value="{{$data['id']}}" name="students[]" type="checkbox"></td>
-                                                <td>{{$data['first_name']}} {{$data['middle_name']}} {{$data['last_name']}}</td>
+                                                <td>{{App\Helpers\sortStudentName("",$data['first_name'],$data['middle_name'],$data['last_name'])}}</td>
                                                 <td>{{$data['enrollment_no']}}</td>
                                                 <td>{{$data['standard_name']}}</td>
                                                 <td>{{$data['division_name']}}</td>

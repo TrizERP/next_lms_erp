@@ -120,19 +120,21 @@ class admissionFormController extends Controller
         if ($sub_institute_id == 198)//for MAHESHWARI school
         {
             $data = DB::table('admission_enquiry as ae')
-                ->leftJoin('admission_form as af', function ($join) {
-                    $join->whereRaw('ae.id = af.enquiry_id');
+                ->leftJoin('admission_form as af', function ($join) use($sub_institute_id){
+                    $join->on('ae.id', '=', 'af.enquiry_id')->on('ae.enquiry_no','=','af.enquiry_no')->where('af.sub_institute_id',$sub_institute_id);
                 })
                 ->selectRaw("*,ae.id as id,ae.enquiry_no,CONCAT_WS(',',ae.house_no,ae.`building_name_appratment_name_society_name`,
                 ae.district_name,ae.pin_code,ae.state) AS address,ae.father_occupation,ae.mother_occupation,ae.annual_income,af.form_no")
-                ->where('ae.id', $id)->get()->toArray();
+                ->where('ae.id', $id)
+                ->where('ae.sub_institute_id',$sub_institute_id)->get()->toArray();
         } else {
             $data = DB::table('admission_enquiry as ae')
-                ->leftJoin('admission_form as af', function ($join) {
-                    $join->whereRaw('ae.id = af.enquiry_id');
+                ->leftJoin('admission_form as af', function ($join) use($sub_institute_id){
+                    $join->on('ae.id', '=', 'af.enquiry_id')->on('ae.enquiry_no','=','af.enquiry_no')->where('af.sub_institute_id',$sub_institute_id);
                 })
                 ->selectRaw("*,ae.id as id,ae.enquiry_no,ae.admission_standard,af.form_no ".$extra_fileds)
-                ->where('ae.id', $id)->get()->toArray();
+                ->where('ae.id', $id)
+                ->where('ae.sub_institute_id',$sub_institute_id)->get()->toArray();
         }
 
         $data = array_map(function ($value) {

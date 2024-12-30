@@ -55,7 +55,10 @@
                                     @foreach($data['data'] as $pkey => $pvalue)
                                     <tr>
                                         <td>{{$j}}</td>
-                                        <td>{{$pvalue['student_name']}}</td>
+                                        <td>
+                                            {{-- $pvalue['student_name'] --}}
+                                            {{App\Helpers\sortStudentName($pvalue['student_name'])}}
+                                        </td>
                                         <td>{{$pvalue['medical_case_no']}}</td>
                                         <td>{{$pvalue['doctor_name']}}</td>
                                         <td>{{$pvalue['doctor_contact']}}</td>

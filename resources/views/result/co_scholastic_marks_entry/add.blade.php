@@ -114,7 +114,7 @@
                             <input type="hidden" name="values[{{ $col_arr['student_id'] }}][division_id]" value="{{$data['division']}}" />
                             <input type="hidden" name="values[{{ $col_arr['student_id'] }}][co_scholastic]" value="{{$data['co_scholastic']}}" />
                             <td>{{ $id+1 }}</td>
-                            <td>{{ $col_arr['name'] }}</td>
+                            <td>{{App\Helpers\sortStudentName($col_arr['name'])}}</td>
                             @php
                             $disable = "";
                             $name = "values[".$col_arr['student_id']."][grade]";                            

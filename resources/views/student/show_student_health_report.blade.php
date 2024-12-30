@@ -113,7 +113,13 @@
                                     @foreach($health_data as $key => $value)
                                     <tr>
                                         @foreach($data['headers'] as $hkey => $header)
-                                            <td> {{$value->$hkey}} </td>
+                                        <td> 
+                                            @if($hkey=='student_name')
+                                            {{App\Helpers\sortStudentName($value->$hkey)}}
+                                            @else
+                                            {{$value->$hkey}} 
+                                            @endif
+                                        </td>
                                         @endforeach
                                      </tr>
                                     @endforeach

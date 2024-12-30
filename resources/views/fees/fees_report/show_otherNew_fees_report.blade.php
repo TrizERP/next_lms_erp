@@ -134,7 +134,7 @@
                         @php $student_total = 0; @endphp
                         <tr>
                             <td>{{$j}}</td>
-                            <td>{{$fees_value['student_name']}}</td>
+                            <td>{{App\Helpers\sortStudentName($fees_value['student_name'])}}</td>
                             <td>{{$fees_value['enrollment_no']}}</td>
                             <td>{{$fees_value['roll_no']}}</td>
                             <td>{{$fees_value['standard_name'].'-'.$fees_value['division_name']}}</td>

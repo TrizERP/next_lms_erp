@@ -105,7 +105,7 @@
                                     <td>{{$j}}</td>
                                     <td>{{$data['reciept_id']}}</td>
                                     <td>{{$data['enrollment_no']}}</td>
-                                    <td>{{$data['student_name']}}</td>
+                                    <td>{{App\Helpers\sortStudentName($data['student_name'])}}</td>
                                     <td>{{$data['admission_year']}}</td>
                                     <td>{{$data['student_quota_name']}}</td>
                                     <td>{{$data['std_name']}}</td>

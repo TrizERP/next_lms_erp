@@ -52,7 +52,10 @@
                                     <td>{{$j}}</td>
                                     <td>{{$value->TITLE}}</td>
                                     <td>{{$value->DESCRIPTION}}</td>
-                                    <td>{{$value->student_name}}</td>
+                                    <td>
+                                        {{-- $value->student_name--}}
+                                        {{App\Helpers\sortStudentName($value->student_name)}}
+                                    </td>
                                     <td>{{$value->VISITOR_TYPE}}</td>
                                     <td>{{$value->user_name}}</td>
                                     <td>{{date('d-m-Y',strtotime($value->DATE))." ".$value->IN_TIME}}</td>                                     

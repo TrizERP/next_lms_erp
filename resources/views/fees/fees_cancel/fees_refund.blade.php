@@ -121,7 +121,8 @@
                                                 <td>{{$j}}</td>
                                                 <td>
                                                     <a href="{{ route('fees_refund.edit',$value['student_id'])}}">
-                                                        {{$value['student_name']}}
+                                                        {{-- {{$value['student_name']}} --}}
+                                                        {{App\Helpers\sortStudentName($value['student_name'])}}
                                                     </a>
                                                 </td>
                                                 <td>{{$value['enrollment_no']}}</td>

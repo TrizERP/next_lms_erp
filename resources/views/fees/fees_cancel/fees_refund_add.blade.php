@@ -40,7 +40,10 @@
                                                 </tr>
                                                 <tr>
                                                     <td>{{ App\Helpers\get_string('studentname','request')}}</td>
-                                                    <td>{{$data['stu_data']['name']}}</td>
+                                                    <td>
+                                                        {{-- {{$data['stu_data']['name']}} --}}
+                                                        {{App\Helpers\sortStudentName($data['stu_data']['name'])}}
+                                                    </td>
                                                 </tr>
                                                 <tr>
                                                     <td>Admission Year</td>

@@ -79,7 +79,10 @@
                                 <tr>
                                     <td> <input type="checkbox" class="student_request" value="{{$value['id']}}" name="student_request[]"> </td>
                                     <td> {{$value['enrollment_no']}} </td>
-                                    <td> {{$value['first_name']." ".$value['last_name']}} </td>
+                                    <td>
+                                        {{--$value['first_name']." ".$value['last_name']--}}
+                                        {{App\Helpers\sortStudentName("",$value['first_name'],"",$value['last_name'])}}
+                                     </td>
                                     <td> 
                                         <select class="form-control" name="CHANGE_REQUEST_IDS[{{$value['id']}}]">
                                             <option value="">Select Request Type</option>

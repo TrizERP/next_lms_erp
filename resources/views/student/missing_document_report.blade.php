@@ -87,7 +87,7 @@
                                 @if(isset($data['user_type']) && $data['user_type']=='student')
                                 <td> {{$stud_data->enrollment_no}} </td>
                                 @endif
-                                <td> {{$stud_data->student_name}} </td>
+                                <td> {{App\Helpers\sortStudentName($stud_data->student_name)}} </td>
                                 @if(isset($data['user_type']) && $data['user_type']=='student')
                                 <td> {{$stud_data->standard_name}} </td>
                                 <td> {{$stud_data->division_name}} </td>

@@ -105,7 +105,10 @@
                                     <tr>
                                         <td><input id="{{$value['stu_data']['student_id']}}" value="{{$value['stu_data']['student_id']}}" name="students[]" type="checkbox"></td>
                                         <td>{{$value['stu_data']['enrollment']}}</td>
-                                            <td>{{$value['stu_data']['name']}}</td>
+                                            <td>
+                                                {{--{{$value['stu_data']['name']}}--}}
+                                                {{App\Helpers\sortStudentName($value['stu_data']['name'])}}
+                                            </td>
                                             <td>{{$value['stu_data']['stddiv']}}</td>
                                             @if (in_array(Session::get('sub_institute_id'), ['201','202','203','204','324','326','327']))
                                         <td>@foreach($value['total_fees'] as $i=>$val)

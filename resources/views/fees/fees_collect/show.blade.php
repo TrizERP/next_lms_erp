@@ -105,8 +105,9 @@
                         @foreach ($data['stu_data'] as $id => $arr) 
                             <tr>
                                 <td>{{$id + 1 }}</td>
-                                <td>{{$arr->first_name . ' ' . $arr->middle_name . ' ' . $arr->last_name }}</td>
-                                <td>{{$arr->enrollment_no }}</td>            
+                                {{-- <td>{{$arr->first_name . ' ' . $arr->middle_name . ' ' . $arr->last_name }}</td> --}} 
+                                <td>{{App\Helpers\sortStudentName("",$arr->first_name,$arr->middle_name,$arr->last_name,"")}}</td>
+                                <td>{{$arr->enrollment_no }}</td>
                                 <td>{{$arr->standard_name }}</td>
                                 <td>{{$arr->division_name }}</td>                                 
                                 <td>{{$arr->stu_quota }}</td>                                 

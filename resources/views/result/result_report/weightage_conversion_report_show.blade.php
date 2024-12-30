@@ -59,7 +59,7 @@
                                     <tr>
                                         <td>{{$all_data['standard_name']}} - {{$all_data['division_name']}}</td>
                                         <td>{{$all_data['roll_no']}}</td>    
-                                        <td>{{$all_data['first_name']}} {{$all_data['middle_name']}} {{$all_data['last_name']}}</td>
+                                        <td>{{App\Helpers\sortStudentName("",$all_data['first_name'],$all_data['middle_name'],$all_data['last_name'])}}</td>
                                         @php
                                             $total = 0;
                                         @endphp

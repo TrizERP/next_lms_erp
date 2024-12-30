@@ -212,7 +212,10 @@
 
                                             <input id="students" value="{{$data['student_id']}}" name="students[]" type="checkbox" onclick="required_amount(this.value)" {{$disabled}}></td>
                                         <td>{{$j}}</td>
-                                        <td>{{$data['student_name']}}</td>
+                                        <td>
+                                            {{-- $data['student_name'] --}}
+                                            {{App\Helpers\sortStudentName($data['student_name'])}}
+                                        </td>
                                         <td>{{$data['enrollment_no']}}</td>
                                         <td>{{$data['standard_name']}}</td>
                                         <td>{{$data['division_name']}}</td>
