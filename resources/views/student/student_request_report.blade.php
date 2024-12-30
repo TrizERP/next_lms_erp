@@ -70,7 +70,9 @@
                             <tr>
                                 <td>{{$j++}}</td>
                                 <td> {{$value->enrollment_no}} </td>
-                                <td> {{$value->student_name}} </td>
+                                <td> {{--$value->student_name--}} 
+                                    {{App\Helpers\sortStudentName($value->student_name)}}
+                                </td>
                                 <td> {{$value->standard}} </td>
                                 <td> {{$value->division}} </td>
                                 <td> {{$value->REQUEST}} </td>

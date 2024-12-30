@@ -150,7 +150,7 @@
                                             </td>
 		                                    <td> {{$j}} </td>
 		                                    <td>{{$value['enrollment_no']}}</td>
-		                                    <td>{{$value['student_name']}}</td>
+		                                    <td>{{App\Helpers\sortStudentName($value['student_name'])}}</td>
 		                                    <td>{{$value['standard_name']}}</td>
 		                                    <td>{{$value['division_name']}}</td>
 

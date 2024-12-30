@@ -53,7 +53,7 @@ class missingDocumentReportController extends Controller
                     $join->whereRaw('d.id = se.section_id');
                 })->leftJoin('tblstudent_document as sd', function ($join) {
                     $join->whereRaw('sd.student_id = se.student_id');
-                })->selectRaw("s.enrollment_no, CONCAT_WS(' ',s.first_name,s.last_name) AS student_name,
+                })->selectRaw("s.enrollment_no, CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name,
                     st.name as standard_name,d.name as division_name,GROUP_CONCAT(sd.document_type_id) as document_list")
                 ->where('se.syear', $syear)
                 ->where('s.sub_institute_id', $sub_institute_id);

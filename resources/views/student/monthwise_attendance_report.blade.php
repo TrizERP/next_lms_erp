@@ -122,7 +122,7 @@
                                             <td>{{ $month_name[$data['month']] .'/'. $data['year']; }}</td>
                                             <td>{{ $value['standard_name'] . ' / ' . $value['division_name'] }}</td>
                                             <td>{{$value['enrollment_no']}}</td>
-                                            <td>{{$value['first_name']." ".$value['middle_name']." ".$value['last_name']}}</td>
+                                            <td>{{App\Helpers\sortStudentName("",$value['first_name'],$value['middle_name'],$value['last_name'])}}</td>
                                             @if(isset($data['batch_id']) && !empty($data['batchs']))
                                             <td>{{$value['batch_title']}}</td>
                                             @endif

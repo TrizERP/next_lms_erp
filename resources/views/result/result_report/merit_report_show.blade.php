@@ -41,7 +41,7 @@
                                 @foreach($students_data as $key => $data)
                                 <tr>    
                                     <td>{{$data['rank']}}</td>
-                                    <td>{{$data['student_name']}}</td>
+                                    <td>{{App\Helpers\sortStudentName($data['student_name'])}}</td>
                                     <td>{{number_format($data['percentage'],2)}}</td>                                  
                                 </tr>
                                 @endforeach
