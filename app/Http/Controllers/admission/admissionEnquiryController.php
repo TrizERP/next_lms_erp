@@ -56,12 +56,15 @@ class admissionEnquiryController extends Controller
         
         // echo "<pre>";print_r($columns);exit;
         $data = DB::table('admission_enquiry')
-            ->leftJoin('admission_form as af', 'af.enquiry_id', '=', 'admission_enquiry.id')
-            //->leftJoin('tblstudent', 'tblstudent.admission_id', '=', 'admission_enquiry.id') //Hide by 02-01-2024 rajesh loading issue
+            ->leftJoin('admission_form as af',function($q) use($sub_institute_id){
+                $q->on('af.enquiry_id', '=', 'admission_enquiry.id')->where('af.sub_institute_id',$sub_institute_id);
+            })
+            // ->leftJoin('tblstudent', 'tblstudent.admission_id', '=', 'admission_enquiry.id') //Hide by 02-01-2024 rajesh loading issue
             ->Join('standard', 'standard.id', '=', 'admission_enquiry.admission_standard')
             ->leftJoin('follow_up as fu', function ($join) {
                 $join->on('fu.id', '=', DB::raw('(SELECT id FROM follow_up AS fu1 WHERE fu1.enquiry_id = admission_enquiry.id ORDER BY fu1.id DESC LIMIT 1)'));
             })
+            // COUNT(af.enquiry_id) AS total_student_count,
             ->selectRaw('admission_enquiry.*, 
                 CASE 
                     WHEN admission_enquiry.followup_date = CURDATE() THEN "#f5f777"

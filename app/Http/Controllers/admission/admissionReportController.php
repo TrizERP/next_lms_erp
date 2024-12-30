@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
+use App\Models\settings\tblcustomfieldsModel;
 use GenTux\Jwt\GetsJwtToken;
 
 class admissionReportController extends Controller
@@ -44,6 +45,27 @@ class admissionReportController extends Controller
             { // for re-print fees_circular (hillshigh school)
                 $extra = ",ai.id,ai.fees_circular_form_no as Form_No,ai.admission_fees,ai.fees_amount,ai.fees_remark,ai.fees_circular_html as fees_circular";
             }
+            // 2024-12-28 start 
+            $customFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "admission_enquiry"])
+            ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1) and user_type="" ')
+            ->selectRaw('GROUP_CONCAT("ai.",field_name) as fileds')
+            ->first();
+            $customField = '1=1';
+            if(isset($customFields->fileds) && $customFields->fileds!=''){
+                $customField = $customFields->fileds;
+            }
+            // echo "<pre>";print_r($customFields);exit;
+
+            if(in_array($sub_institute_id,[47,48,49,62,69,72,195,201,202,203,204,233,254])){
+              $select = "ai.enquiry_no, DATE_FORMAT(ai.created_on, '%d-%m-%Y %h:%i:%s') as created_on, DATE_FORMAT(ai.followup_date, '%d-%m-%Y') as followup_date, ai.first_name, ai.middle_name, ai.last_name,
+                ai.gender, ai.mobile, ai.email, ai.address, DATE_FORMAT(ai.date_of_birth, '%d-%m-%Y') as date_of_birth, ai.age, ai.syear, ai.previous_school_name,s_previous.name as previous_standard,
+                s.name as admission_standard, ai.remarks,fu.status as enquiry_status, ai.source_of_enquiry, ai.created_by,
+                ai.counciler_name, ai.father_name,CONCAT_WS(' ',ts.first_name,ts.last_name) AS created_by, cs.caste_name $extra";
+            }else{
+                $select = "ai.enquiry_no, DATE_FORMAT(ai.created_on, '%d-%m-%Y %h:%i:%s') as created_on, DATE_FORMAT(ai.followup_date, '%d-%m-%Y') as followup_date, ai.first_name, ai.middle_name, ai.last_name,
+                ai.gender, ai.mobile, ai.email, ai.address, DATE_FORMAT(ai.date_of_birth, '%d-%m-%Y') as date_of_birth, ai.age,$customField, ai.syear,CONCAT_WS(' ',ts.first_name,ts.last_name) AS created_by";
+            }
+            // 2024-12-28 end 
             
             $getQuery = DB::table('admission_enquiry as ai')
                 ->join('tbluser as ts', function ($join) {
@@ -58,10 +80,7 @@ class admissionReportController extends Controller
                 ->LeftJoin('standard as s_previous', function ($join) {
                     $join->whereRaw('s_previous.id = ai.previous_standard AND s_previous.sub_institute_id = ai.sub_institute_id');
                 })
-                ->selectRaw("ai.enquiry_no, DATE_FORMAT(ai.created_on, '%d-%m-%Y %h:%i:%s') as created_on, DATE_FORMAT(ai.followup_date, '%d-%m-%Y') as followup_date, ai.first_name, ai.middle_name, ai.last_name,
-                    ai.gender, ai.mobile, ai.email, ai.address, DATE_FORMAT(ai.date_of_birth, '%d-%m-%Y') as date_of_birth, ai.age, ai.syear, ai.previous_school_name,s_previous.name as previous_standard,
-                    s.name as admission_standard, ai.remarks,fu.status as enquiry_status, ai.source_of_enquiry, ai.created_by,
-                    ai.counciler_name, ai.father_name,CONCAT_WS(' ',ts.first_name,ts.last_name) AS created_by, cs.caste_name $extra")
+                ->selectRaw($select) // 2024-12-28 removed query and added variable
                 ->whereRaw("(DATE_FORMAT(ai.created_on, '%Y-%m-%d') BETWEEN '" . $from_date . "' AND '" . $to_date . "')
                     AND ai.sub_institute_id = '" . $sub_institute_id . "' AND ai.syear = '" . $syear . "'");
 
@@ -201,7 +220,10 @@ class admissionReportController extends Controller
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['fields'] = $reportFields;
-
+        $customFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "admission_enquiry"])
+        ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1) and user_type="" ')
+        ->get();
+        $res['dataCustomFields']=$customFields;
 
         return is_mobile($type, "admission.report.show_form_report", $res, 'view');
     }
@@ -287,7 +309,10 @@ class admissionReportController extends Controller
             }
 
         }
-
+        $customFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "admission_enquiry"])
+        ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1) and user_type="" ')
+        ->get();
+        $res['dataCustomFields']=$customFields;
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['fields'] = $reportFields;
@@ -347,7 +372,32 @@ class admissionReportController extends Controller
         }
 
         if (isset($report)) {
+            // 2024-12-28 start 
+            $customFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "admission_registration"])
+            ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1) and user_type="" ')
+            ->selectRaw('GROUP_CONCAT("ar.",field_name) as fileds')
+            ->first();
+            $customField = '1=1';
+            if(isset($customFields->fileds) && $customFields->fileds!=''){
+                $customField = $customFields->fileds;
+            }
+            // echo "<pre>";print_r($customFields);exit;
 
+            if(in_array($sub_institute_id,[47,48,49,62,69,72,195,201,202,203,204,233,254])){
+                $select = "ai.enquiry_no,ai.first_name, ai.middle_name, ai.last_name, ai.gender,
+                ai.mobile, ai.email,s.name AS admission_standard,d.name AS div_name,sq.title AS stu_quota,
+                ar.place_of_birth,ar.enrollment_no,ar.payment_mode,ar.bank_name,ar.bank_branch,ar.cheque_no,
+                ar.cheque_date,bg.bloodgroup,ar.aadhar_number,ar.mother_name,ar.mother_mobile_number,
+                ar.admission_date,ar.admission_division,ar.remarks,ar.followup_date,ar.`status`,
+                ar.admission_status,ar.date_of_payment,
+                ai.created_on,ai.address, ai.date_of_birth, ai.age, ai.syear, ai.previous_school_name,
+                ai.previous_standard,ai.source_of_enquiry,ai.father_name, CONCAT_WS(' ',ts.first_name,ts.last_name) AS created_by";
+            }else{
+                $select = "ai.enquiry_no,ai.first_name, ai.middle_name, ai.last_name, ai.gender,
+                ai.mobile, ai.email,s.name AS admission_standard,d.name AS div_name,sq.title AS stu_quota,
+                $customField, CONCAT_WS(' ',ts.first_name,ts.last_name) AS created_by";
+            }
+            // 2024-12-28 end 
             $getQuery = DB::table('admission_registration as ar')
                 ->join('admission_enquiry as ai', function ($join) {
                     $join->whereRaw('ar.enquiry_id = ai.id');
@@ -367,14 +417,7 @@ class admissionReportController extends Controller
                 })->leftJoin('blood_group as bg', function ($join) {
                     $join->whereRaw('bg.id = ar.blood_group');
                 })
-                ->selectRaw("ai.enquiry_no,ai.first_name, ai.middle_name, ai.last_name, ai.gender,
-						ai.mobile, ai.email,s.name AS admission_standard,d.name AS div_name,sq.title AS stu_quota,
-						ar.place_of_birth,ar.enrollment_no,ar.payment_mode,ar.bank_name,ar.bank_branch,ar.cheque_no,
-						ar.cheque_date,bg.bloodgroup,ar.aadhar_number,ar.mother_name,ar.mother_mobile_number,
-						ar.admission_date,ar.admission_division,ar.remarks,ar.followup_date,ar.`status`,
-						ar.admission_status,ar.date_of_payment,
-						ai.created_on,ai.address, ai.date_of_birth, ai.age, ai.syear, ai.previous_school_name,
-						ai.previous_standard,ai.source_of_enquiry,ai.father_name, CONCAT_WS(' ',ts.first_name,ts.last_name) AS created_by")
+                ->selectRaw($select)
                 ->where('ai.sub_institute_id', $sub_institute_id)
                 ->where('ai.syear', $syear);
 
@@ -418,7 +461,10 @@ class admissionReportController extends Controller
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['fields'] = $reportFields;
-
+        $customFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "admission_enquiry"])
+        ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1) and user_type="" ')
+        ->get();
+        $res['dataCustomFields']=$customFields;
         return is_mobile($type, "admission.report.show_con_report", $res, 'view');
     }
 
