@@ -1465,7 +1465,7 @@ if (!function_exists('getStudents')) {
             $student_data[$value->id]['student_first_name'] = $value->first_name;
             $student_data[$value->id]['student_middle_name'] = $value->middle_name;
             $student_data[$value->id]['student_last_name'] = $value->last_name;
-            $student_data[$value->id]['student_full_name'] = $value->first_name . " " . $value->middle_name . " " . $value->last_name;
+            $student_data[$value->id]['student_full_name'] = sortStudentName("",$value->first_name ,$value->middle_name , $value->last_name);
             $student_data[$value->id]['gender'] = $value->gender;
             $student_data[$value->id]['mobile'] = $value->mobile;
             $student_data[$value->id]['adharnumber'] = $value->adharnumber;

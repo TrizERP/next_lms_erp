@@ -185,7 +185,7 @@
                     $birthDate =  \Carbon\Carbon::parse($value['dob'])->format('d-m-Y');
 
                     // echo $value['student_name'];exit;
-                    $str = str_replace(htmlspecialchars("<<student_name>>"), $value['student_name'], $string);
+                    $str = str_replace(htmlspecialchars("<<student_name>>"), App\Helpers\sortStudentName($value['student_name']), $string);
                     $str = str_replace(htmlspecialchars("<<short_student_name>>"), strtoupper($value['short_student_name']), $str);
                     $str = str_replace(htmlspecialchars("<<enrollment_no>>"), $value['enrollment_no'], $str);
                     $str = str_replace(htmlspecialchars("<<standard_name>>"), $value['standard_name'], $str);

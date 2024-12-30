@@ -153,7 +153,7 @@
                                 <tr>
                                     @foreach($data['headers'] as $hkey => $header)
                                         @if($hkey == "student_name")
-                                        <td>{{$value->$hkey}}</td>
+                                        <td>{{ App\Helpers\sortStudentName($value->$hkey)}}</td>
                                         @else
                                             @if($header['type'] == "textbox")
                                                 @if($hkey == "mobile" || $hkey == "mother_mobile")
