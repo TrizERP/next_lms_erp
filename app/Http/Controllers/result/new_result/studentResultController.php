@@ -197,7 +197,7 @@ class studentResultController extends Controller
             $html_content = str_replace(htmlspecialchars("<<result_line_4>>"), $result_trust->line4, $html_content);
         }
         $standard_id = $value['standard_id'];
-        $reopen_date = '';
+        $reopen_date =$reopen_full_date= '';
 
         $teacher_name = DB::table('class_teacher as ct')->join('tbluser as us', 'ct.teacher_id', '=', 'us.id')->selectRaw('ct.standard_id,ct.division_id,ct.teacher_id,concat_ws(" ",us.first_name,us.last_name) as teacher_name,us.last_name')->where(['ct.syear' => $syear, 'ct.sub_institute_id' => $sub_institute_id, 'ct.standard_id' => $value['standard_id'], 'ct.division_id' => $value['section_id']])->first();
            // for teachers signature standard_wise
@@ -513,7 +513,24 @@ class studentResultController extends Controller
         //$html_content = str_replace(htmlspecialchars("<<result>>"), strtoupper($main_result['result']), $html_content);
             $html_content = str_replace(htmlspecialchars("<<result>>"), $main_result['result'], $html_content);
         }
-        $html_content = str_replace(htmlspecialchars("<<school_open_date>>"),                                                                                          $reopen_date, $html_content);
+        $html_content = str_replace(htmlspecialchars("<<school_open_date>>"),$reopen_date, $html_content);
+        // 31-12-2024 start
+        if($reopen_date!=''){
+            $convertedDate = Carbon::createFromFormat('d-m-Y', $reopen_date)
+            ->subYear();
+
+            $day = $convertedDate->format('j');
+            $ordinal = match ($day % 10) {
+                1 => ($day % 100 == 11 ? 'th' : 'st'),
+                2 => ($day % 100 == 12 ? 'th' : 'nd'),
+                3 => ($day % 100 == 13 ? 'th' : 'rd'),
+                default => 'th',
+            };
+
+            $reopen_full_date = $day . '<sup>' . $ordinal . '</sup> ' . $convertedDate->format('F, Y');
+        }
+        // 31-12-2024 end 
+        $html_content = str_replace(htmlspecialchars("<<school_open_full_date>>"),$reopen_full_date, $html_content);
 
         if (strpos($html_content, htmlspecialchars('<<activity_tag_marks>>')) !== false) {
             $main_result = $this->get_activity_marks($standard_id, $value['id'], $format, "no_zero");
@@ -2789,7 +2806,7 @@ $overall_total = $overall_total / 2;
             <tr>
             <th class="data_center"  style="width:312px"><b>'.$head_co_scholastic.' MARKS RANGE</b></th>';
             foreach ($co_grade_range as $key => $value) {
-                $co_table .= '<td class="data_center">' . $value->grade_max . '-' . $value->grade_min . '</td>';
+                $co_table .= '<td class="data_center">' . $value->grade_max . ' - ' . $value->grade_min . '</td>';
             }
             $co_table .= '</tr>
             <tr>
@@ -5102,11 +5119,19 @@ private function buildDisciplineTable($decipline_data)
                 $dis_data[] = $item;
             }
         }
+        $coHead ='';
+        if($standard_id<106 && $sub_institute_id==47){
+            $coHead = '[on a 3-point (A-C) Grading Scale]';
+        }elseif($sub_institute_id==47){
+            $coHead = '[on a 5-point (A-E) Grading Scale]';
+        }
+        $co_scholastic = '';
+    if (!empty($co_data)) {
         $co_scholastic = '<div style="display:block !important"><div style="width:100%">
             <table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" cellpadding="0" border="1">
                 <thead>
                     <tr>
-                        <th style="width:80%"><b>Co-Scholastic Areas:</b></th>';// [on a 3-point (A-C) Grading Scale]
+                        <th style="width:80%"><b>Co-Scholastic Areas: '.$coHead.'</b></th>';// [on a 3-point (A-C) Grading Scale]
                         if(count($term_name) > 1){
                             foreach ($term_name as $keys => $terms) {
                                 $co_scholastic .= '<th class="data_center '.$terms->term_id.'"><b>' . $terms->title . '</b></th>';
@@ -5120,7 +5145,6 @@ private function buildDisciplineTable($decipline_data)
                 <tbody>';
         $counter = 0;
         
-    if (!empty($co_data)) {
             $groupedData = [];
             foreach ($co_data as $key => $value) {
                 $groupedData[$value->child_title][$value->term_id] = $value->obtain_grade;
@@ -5147,7 +5171,7 @@ private function buildDisciplineTable($decipline_data)
             <table class="aca-year" style="width:100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" cellpadding="0" border="1">
                 <thead>
                     <tr>
-                        <th style="width:80%"><b>Discipline:</b></th>';// [on a 3-point (A-C) Grading Scale]
+                        <th style="width:80%"><b>Discipline: '.$coHead.'</b></th>';// [on a 3-point (A-C) Grading Scale]
                         if(count($term_name) > 1){
                             foreach ($term_name as $keys => $terms) {
                                 $disciplineTable .= '<th class="data_center '.$terms->term_id.'"><b>' . $terms->title . '</b></th>';
@@ -5213,75 +5237,78 @@ private function buildDisciplineTable($decipline_data)
     ->get();
 
             // echo "<pre>";print_r($check_optional_subject_with_student);exit;
-        $scho_table = '<table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" cellpadding="0" border="1">
-        <thead>
-        <tr>
-        <th colspan="3" width="15%" style="text-align: left;">
-            <b>Part 1-B-Scholastic Areas:</b></th>
-    </tr><tr>  <th width="50%" style="text-center: left;"><b>Optional
-    Subject</b></th>';
+        $scho_table ='';
+        if(count($check_optional_subject_with_student)>0){
+            $scho_table = '<table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" cellpadding="0" border="1">
+            <thead>
+            <tr>
+            <th colspan="3" width="15%" style="text-align: left;">
+                <b>Part 1-B-Scholastic Areas:</b></th>
+        </tr><tr>  <th width="50%" style="text-center: left;"><b>Optional
+        Subject</b></th>';
 
-            $grade_arr_mmis = $this->getGradeScale($standard_id, '');
+                $grade_arr_mmis = $this->getGradeScale($standard_id, '');
 
-        $col = 1;
-        $total_term_marks = [];
-        $total_sub_marks = [];
-        $term_ids = [];
-        foreach ($term_name as $keys => $terms) {
-            $scho_table .= '<th style="text-align:center"><b>' . $terms->title . '</b></th>';
-            $term_ids[] = $terms->term_id;
-        }
-        $scho_table .= '</tr>';
+            $col = 1;
+            $total_term_marks = [];
+            $total_sub_marks = [];
+            $term_ids = [];
+            foreach ($term_name as $keys => $terms) {
+                $scho_table .= '<th style="text-align:center"><b>' . $terms->title . '</b></th>';
+                $term_ids[] = $terms->term_id;
+            }
+            $scho_table .= '</tr>';
 
-        $scho_table .= '</tr></thead><tbody>';
-        if (!empty($check_optional_subject_with_student)) {
+            $scho_table .= '</tr></thead><tbody>';
+            if (!empty($check_optional_subject_with_student)) {
 
-            foreach ($check_optional_subject_with_student as $record) {
-                $subjectName = $record->display_name;
-                $termId = $record->term_id;
-                $points = $record->points;
-                $weigthage = $record->weightage;
-                $r_point = $record->r_point;
-                $is_absent = $record->is_absent;
+                foreach ($check_optional_subject_with_student as $record) {
+                    $subjectName = $record->display_name;
+                    $termId = $record->term_id;
+                    $points = $record->points;
+                    $weigthage = $record->weightage;
+                    $r_point = $record->r_point;
+                    $is_absent = $record->is_absent;
 
-                if (!isset($subjectRows[$subjectName])) {
-                    $subjectRows[$subjectName] = [];
-                }
-                if (in_array($termId, $term_ids)) {
-                    if($is_absent!=''){
-                        $subjectRows[$subjectName][$termId] = [$is_absent, $weigthage,$r_point];
-                    }else{
-                        $subjectRows[$subjectName][$termId] = [$points, $weigthage,$r_point];
+                    if (!isset($subjectRows[$subjectName])) {
+                        $subjectRows[$subjectName] = [];
+                    }
+                    if (in_array($termId, $term_ids)) {
+                        if($is_absent!=''){
+                            $subjectRows[$subjectName][$termId] = [$is_absent, $weigthage,$r_point];
+                        }else{
+                            $subjectRows[$subjectName][$termId] = [$points, $weigthage,$r_point];
+                        }
                     }
                 }
-            }
-                    // echo "<pre>";print_r($get_grade);
-            if(isset($subjectRows)){
-                    // echo "<pre>";print_r($subjectRows);exit;
+                        // echo "<pre>";print_r($get_grade);
+                if(isset($subjectRows)){
+                        // echo "<pre>";print_r($subjectRows);exit;
 
-            foreach ($subjectRows as $subjectName => $termPoints) {
-                    // echo "<pre>";print_r($termPoints);
+                foreach ($subjectRows as $subjectName => $termPoints) {
+                        // echo "<pre>";print_r($termPoints);
 
-                $scho_table .= '<tr>';
-                $scho_table .= '<td>' . $subjectName . '</td>';
-                foreach ($term_ids as $term) {
-                    $obt_points = isset($termPoints[$term][0]) ? $termPoints[$term][0] : 0;
-                    if(in_array($obt_points,["N.A.","EX","AB"])){
-                        $obt_grade = $obt_points;
-                    }else{
-                        $tot_mark = isset($termPoints[$term][2]) ? $termPoints[$term][2] : 0;
-                        // echo "<pre>";print_r($obt_grade);
+                    $scho_table .= '<tr>';
+                    $scho_table .= '<td>' . $subjectName . '</td>';
+                    foreach ($term_ids as $term) {
+                        $obt_points = isset($termPoints[$term][0]) ? $termPoints[$term][0] : 0;
+                        if(in_array($obt_points,["N.A.","EX","AB"])){
+                            $obt_grade = $obt_points;
+                        }else{
+                            $tot_mark = isset($termPoints[$term][2]) ? $termPoints[$term][2] : 0;
+                            // echo "<pre>";print_r($obt_grade);
 
-                        $max_weightage = isset($termPoints[$term][1]) ? $termPoints[$term][1] : 0; 
-                        $obt_grade = $this->getGrade($grade_arr_mmis, $tot_mark,$obt_points);
+                            $max_weightage = isset($termPoints[$term][1]) ? $termPoints[$term][1] : 0; 
+                            $obt_grade = $this->getGrade($grade_arr_mmis, $tot_mark,$obt_points);
+                        }
+                        $scho_table .= '<td class="data_center">' . $obt_grade . '</td>';
                     }
-                    $scho_table .= '<td class="data_center">' . $obt_grade . '</td>';
+                    $scho_table .= '</tr>';
                 }
-                $scho_table .= '</tr>';
             }
+            }
+            $scho_table .= '</tbody></table>';
         }
-        }
-        $scho_table .= '</tbody></table>';
     }
 
         $res['co_scholastic'] = $co_scholastic ?? '';
