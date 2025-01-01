@@ -149,6 +149,18 @@
 	    $('.panel-click').on('click', function(event) {
         	$(this).parents('.tab-content').removeClass('active');
     	});	
-    	
+    	 // if do not have delete permission hide delete button 01-01-2025
+		@if(!empty(session()->get('menu_permissions'))) 
+			var permissions = {!! json_encode(session()->get('menu_permissions')) !!};
+
+			if(permissions.can_delete == 0){
+				$('.btn-danger').hide();
+				$('.btn-outline-danger').hide();
+			} else if(permissions.can_delete == 1){
+				$('.btn-danger').show();
+				$('.btn-outline-danger').show();
+			}
+		@endif		
+		// end 01-01-2025
 	</script>
 </html>

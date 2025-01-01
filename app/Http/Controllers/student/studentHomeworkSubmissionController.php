@@ -227,7 +227,12 @@ class studentHomeworkSubmissionController extends Controller
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['subjects'] = $subjects;
-
+        // for student 01-01-2024
+        if(session()->get('user_profile_name')=="Student"){
+            $res['grade_id'] = session()->get('stu_grade');
+            $res['standard_id'] = session()->get('stu_std');
+            $res['division_id'] = session()->get('stu_div');
+        }
         return is_mobile($type, "student/homework/show_student_homework_submission_report", $res, "view");
     }
 
@@ -268,7 +273,11 @@ class studentHomeworkSubmissionController extends Controller
                 CONCAT_WS(' ',tu.first_name,tu.last_name) AS submission_taken_by")
             ->where('se.syear', $syear)
             ->where('ah.sub_institute_id', $sub_institute_id)
-            ->where('ah.syear', $syear);
+            ->where('ah.syear', $syear)
+            // for student 01-01-2025
+            ->when($user_profile=="Student",function($q) use($user_id){
+                $q->where('h.student_id',$user_id);
+            });
 
         if ($standard != '') {
             $result = $result->where('ah.standard_id', $standard);

@@ -16,7 +16,11 @@ class tblfields_dataModel extends Model
         'status',
         'created_by',
         'created_at',
-        'updated_at'
+        'updated_at',
+        'field_id',
+        'display_text',
+        'display_value',
+        'created_on'
     ];
 
     public $timestamps = false;

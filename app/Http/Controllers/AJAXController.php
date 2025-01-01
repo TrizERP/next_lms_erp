@@ -217,7 +217,11 @@ class AJAXController extends Controller
             $menu_ids=[];
 
         }
-
+        $studentData = DB::table('tblstudent as s')->join('tblstudent_enrollment as se','se.student_id','=','s.id')
+        ->where('s.sub_institute_id',session()->get('sub_institute_id'))
+        ->where('se.syear',session()->get('syear'))
+        ->where('s.id',session()->get('user_id'))
+        ->first();
         $getClass=DB::table('class_teacher')->whereRaw('sub_institute_id='.session()->get('sub_institute_id').' and teacher_id ='.session()->get('user_id').' and syear="'.session()->get('syear').'"')->first();
         if (count($explode) > 1) {
             $query = DB::table('standard');
@@ -250,7 +254,12 @@ class AJAXController extends Controller
                 }
             }
             //END Check for subject teacher assigned
-
+               // for student 01-01-2025 start
+              
+                if(session()->get('user_profile_name')=="Student"){
+                    $query->where('id', [$studentData->standard_id ?? 0 ]);
+                }
+                // for student 01-01-2025 end
             $standard = $query->pluck("name", "id");
 
         } else {
@@ -282,6 +291,13 @@ class AJAXController extends Controller
                 $query->whereIn('id', $subjectTeacherStdArr);
                 }
             }
+
+            // for student 01-01-2025 start
+              
+            if(session()->get('user_profile_name')=="Student"){
+                $query->where('id', [$studentData->standard_id ?? 0 ]);
+            }
+            // for student 01-01-2025 end
             //END Check for subject teacher assigned
             $standard = $query->pluck("name", "id");
         }
@@ -342,7 +358,11 @@ class AJAXController extends Controller
             $menu_ids=[];
 
         }
-
+        $studentData = DB::table('tblstudent as s')->join('tblstudent_enrollment as se','se.student_id','=','s.id')
+        ->where('s.sub_institute_id',session()->get('sub_institute_id'))
+        ->where('se.syear',session()->get('syear'))
+        ->where('s.id',session()->get('user_id'))
+        ->first();
         $getClass=DB::table('class_teacher')->whereRaw('sub_institute_id='.session()->get('sub_institute_id').' and teacher_id ='.session()->get('user_id').' and syear="'.session()->get('syear').'"')->first();
 
         $standard_id = $request->standard_id;
@@ -371,6 +391,12 @@ class AJAXController extends Controller
                 $query->orwhereIn('division.id', $subjectTeacherDivArr);
             }
             //END Check for subject teacher assigned
+              // for student 01-01-2025 start
+              
+            if(session()->get('user_profile_name')=="Student"){
+                $query->where('division.id', [$studentData->section_id ?? 0 ]);
+            }
+                // for student 01-01-2025 end
 
             $std_div_map = $query->pluck('division.name', 'division.id');
 
@@ -407,7 +433,12 @@ class AJAXController extends Controller
                 }
             }
             //END Check for class teacher assigned standards
-
+            // for student 01-01-2025 start
+                    
+            if(session()->get('user_profile_name')=="Student"){
+                $query->where('division.id', [$studentData->section_id ?? 0 ]);
+            }
+        // for student 01-01-2025 end
             $std_div_map = $query->pluck('division.name', 'division.id');
         }
 

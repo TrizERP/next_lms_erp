@@ -78,7 +78,7 @@
                                 <form action="{{ route('delete_selected_students') }}" method="POST" id="delete-form">
                                 @csrf
                                 <input type="hidden" name="selected_students" value="">
-                                <button type="submit" name="delete_action" class="btn btn-danger" id="delete-button">Delete</button>
+                                <input type="submit" name="submit" class="btn btn-danger" id="delete-button" value="Delete">
 
                                 <thead>
                                 <tr>
