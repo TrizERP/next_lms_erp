@@ -101,7 +101,7 @@
                                 <tr>
                                     <td><input id="{{$data['id']}}" value="{{$data['id']}}" name="students[]" type="checkbox"></td>
                                     <td>{{$j}}</td>
-                                    <td>{{$data['student_name']}}</td>
+                                    <td>{{App\Helpers\sortStudentName($data['student_name'])}}</td>
                                     <td>{{$data['title']}}</td>
                                     <td>{{$data['description']}}</td>
                                     <td>@if($data['image']!=null && $data['image']!=='')<a target="blank" href="/storage/student/{{$data['image']}}">view</a>@else - @endif</td>

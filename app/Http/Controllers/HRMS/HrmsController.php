@@ -493,6 +493,8 @@ class HrmsController extends Controller
 
         $get_bulkDiscount = DB::table('general_data')->where(['fieldname' => 'fees_bulk_discount', 'sub_institute_id' => $sub_institute_id])->first();
 
+        $get_studentName = DB::table('general_data')->where(['fieldname' => 'student_name', 'sub_institute_id' => $sub_institute_id])->first();
+
         $res['get_sandwich_leave_data'] = $get_sandwich_leave_data;
         $res['get_casual_leave_data'] = $get_casual_leave_data;
         $res['get_earned_leave_data'] = $get_earned_leave_data;
@@ -501,6 +503,7 @@ class HrmsController extends Controller
         $res['get_timetable_teacher']=$get_timetable_teacher;
         $res['get_timetable_ai']=$get_timetable_ai;
         $res['get_bulkDiscount']=$get_bulkDiscount;
+        $res['get_studentName']=$get_studentName;
          
         // echo "<pre>";print_r($res);exit;  
 
@@ -530,6 +533,8 @@ class HrmsController extends Controller
         $bulkDiscount = $request->input('bulkDiscount');    
         $bulkDiscountAmt = isset($request->bulkDiscountAmt) ? $request->bulkDiscountAmt : 0;                     
         
+        $studentName = $request->input('studentName');    
+
         if ($sandwich_leave !== null) {
             // Check if a record with fieldname 'sandwich_leave' and sub_institute_id exists
             $existingSandwichLeave = general_dataModel::where('fieldname', 'sandwich_leave')
@@ -692,6 +697,26 @@ class HrmsController extends Controller
              $general_data->save();        
          }
 
+          // Student Name
+          $existingTimetableTeacher = general_dataModel::where('fieldname', 'student_name')
+          ->where('sub_institute_id', $subInstituteId)
+          ->first();
+          $general_data = new general_dataModel();
+          
+          if($existingTimetableTeacher){
+              $existingTimetableTeacher->fieldvalue = $studentName;
+              $existingTimetableTeacher->extra_field1 = null;
+              $existingTimetableTeacher->save();
+          }else{
+              $general_data->fieldname = 'student_name';
+              $general_data->fieldvalue = $studentName;
+              $general_data->extra_field1 = null;
+              $general_data->sub_institute_id = $subInstituteId;
+              $general_data->client_id = $clientId;
+              $general_data->type = 'hrms';
+              $general_data->save();        
+          }
+ 
         $res['status_code']=1;
         $res['message']="General setting information add/updated successfully";
         

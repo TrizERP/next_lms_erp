@@ -132,6 +132,8 @@
                      <td> {{ (isset($value->$hkey)) ? date('d-m-Y', strtotime($value->$hkey)) : '-'}} </td>
                      @elseif($hkey == 'dise_uid')
                      <td>{{$value->$hkey}}</td>
+                     @elseif($hkey=='student_name')
+                     <td>{{App\Helpers\sortStudentName($value->$hkey)}}</td>
                      @else
                      <td> {{$value->$hkey ?? '-'}} </td>
                      @endif

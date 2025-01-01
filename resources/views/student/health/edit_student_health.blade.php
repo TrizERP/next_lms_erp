@@ -32,7 +32,7 @@
                         <div class="row">
                             <div class="col-md-4 form-group">
                                 <label>Student </label>
-                                <input type="text" id='student' value="@if(isset($data['student_name'])){{ $data['student_name'] . ' - '. $data['student_id'] }}@endif" list="studentSearchList" name="student_id" onkeyup="getStudents(this.value);" required="required" class="form-control">
+                                <input type="text" id='student' value="@if(isset($data['student_name'])){{ App\Helpers\sortStudentName($data['student_name']) . ' - '. $data['student_id'] }}@endif" list="studentSearchList" name="student_id" onkeyup="getStudents(this.value);" required="required" class="form-control">
                                 <datalist id="studentSearchList">
                                 </datalist>
                             </div>

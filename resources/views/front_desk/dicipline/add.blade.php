@@ -49,7 +49,10 @@
 
                                 <td><input type="checkbox" name="{{ 'values[stud_id]['.$col_arr['student_id'].']'}}" class="ckbox1">  </td>
                                 <td>{{ $id+1}}</td>
-                                <td>{{ $col_arr['name']}}</td>
+                                <td>
+                                    {{-- $col_arr['name'] --}}
+                                    {{App\Helpers\sortStudentName($col_arr['name'])}}
+                                </td>
                                 <td>{{ $col_arr['standard_name']}}</td>
                                 <td>{{ $col_arr['division_name']}}</td>
                                 <td>{{ $col_arr['mobile']}}</td>

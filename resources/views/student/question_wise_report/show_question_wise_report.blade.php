@@ -161,7 +161,7 @@
                                 <tr>
                                   
                                     <td>{{ $student[0]->roll_no }}</td>
-                                    <td>{{ $student[0]->student_name }}</td>
+                                    <td>{{ App\Helpers\sortStudentName($student[0]->student_name) }}</td>
                                     @foreach( $student as $key => $value )
                                     @php
                                             // echo "<pre>"; print_r($value); exit;

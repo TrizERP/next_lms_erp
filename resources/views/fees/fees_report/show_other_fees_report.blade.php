@@ -92,7 +92,7 @@
                             <td>{{$fees_value['reciept_id']}}</td>
                             <td>{{date('d-m-Y', strtotime($fees_value['receiptdate']))}}</td>
                             <td>{{$fees_value['enrollment_no']}}</td>
-                            <td>{{$fees_value['student_name']}}</td>
+                            <td>{{App\Helpers\sortStudentName($fees_value['student_name'])}}</td>
                             <td>{{$fees_value['standard_name']}}</td>
                             <td>{{$fees_value['division_name']}}</td>
                             <td>{{$fees_value['mobile']}}</td>

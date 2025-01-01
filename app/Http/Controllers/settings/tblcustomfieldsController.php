@@ -68,49 +68,64 @@ class tblcustomfieldsController extends Controller
         }
 
         $field_name = strtolower(str_replace(" ", "_", $request->get('field_name')));
-        $table_name = $request->get('table_name');
+        $table_nameArr = explode('##',$request->get('table_name'));
+        $table_name =$table_nameArr[0] ?? null;
+        $table_alias =$table_nameArr[1] ?? null;
+
         // echo $field_name;
         // exit;
         $required = $request->get('required') != '' ? $request->get('required') : '0';
         $common_to_all = $request->get('common_to_all') != '' ? $request->get('common_to_all') : '0';
 
-        $fields = new tblcustomfieldsModel([
-            'table_name'       => $table_name,
-            'field_name'       => $field_name,
-            'field_label'      => $request->get('field_label'),
-            'field_type'       => $request->get('field_type'),
-            'display_name'     => $request->get('display_name'),
-            'f_value'          => $request->get('f_value'),
-            'field_message'    => $field_message,
-            'status'           => "1",
-            'sort_order'       => "1",
-            'file_size_max'    => $request->get('file_size_max'),
-            'sub_institute_id' => $sub_institute_id,
-            'required'         => $required,
-            'common_to_all'    => $common_to_all,
-        ]);
-
-        $fields->save();
-        $fieldsId = $fields->id;
-        foreach ($newRequest['display_name'] as $key => $value) {
-            $fieldsData = new tblfields_dataModel([
-                'field_id'      => $fieldsId,
-                'display_text'  => $value,
-                'display_value' => $newRequest['f_value'][$key],
-                'created_on'    => date('Y-m-d H:i:s'),
+        if(($table_name!=null && $table_name!='') && ($field_name!=null && $field_name!='')){
+            $fields = new tblcustomfieldsModel([
+                'table_name'       => $table_name,
+                'table_alias'      => $table_alias,
+                'tab_sort_order'   => 1,
+                'field_name'       => $field_name,
+                'column_header'    => '',
+                'field_label'      => $request->get('field_label'),
+                'user_type'        => '',
+                'field_type'       => $request->get('field_type'),
+                'display_name'     => $request->get('display_name'),
+                'f_value'          => $request->get('f_value'),
+                'field_message'    => $field_message,
+                'status'           => "1",
+                'sort_order'       => "1",
+                'file_size_max'    => $request->get('file_size_max'),
+                'sub_institute_id' => $sub_institute_id,
+                'required'         => $required,
+                'is_deleted'       => 'N',
+                'common_to_all'    => $common_to_all,
             ]);
-            $fieldsData->save();
-        }
-        if (Schema::hasColumn($table_name, $field_name)) {
 
-        } else {
-            Schema::table($table_name, function ($table) use ($field_name) {
-                $table->string($field_name)->nullable();
-            });
-        }
+            $fields->save();
+            $fieldsId = $fields->id;
+            foreach ($newRequest['display_name'] as $key => $value) {
+                $fieldsData = new tblfields_dataModel([
+                    'field_id'      => $fieldsId,
+                    'display_text'  => $value,
+                    'display_value' => $newRequest['f_value'][$key],
+                    'created_on'    => date('Y-m-d H:i:s'),
+                ]);
+                $fieldsData->save();
+            }
 
-        $res['status_code'] = "1";
-        $res['message'] = "Field added successfully";
+            if (Schema::hasColumn($table_name, $field_name)) {
+
+            } else {
+                Schema::table($table_name, function ($table) use ($field_name) {
+                    $table->string($field_name)->nullable();
+                });
+            } 
+
+            $res['status_code'] = "1";
+            $res['message'] = "Field added successfully";
+
+        }else{
+            $res['status_code'] = "0";
+            $res['message'] = "Failed to Add Field";
+        }
 
         $type = $request->input('type');
 

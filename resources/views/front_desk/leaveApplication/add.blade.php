@@ -53,7 +53,10 @@
                                     <tr>
                                         <!--<td><input type="checkbox" name="@php echo 'sendsms['.$col_arr['mobile'].']'; @endphp" class="ckbox1">  </td>-->
                                         <td>{{ $id+1 }}</td>
-                                        <td>{{ $col_arr['name'] }}</td>
+                                        <td>
+                                            {{-- $col_arr['name'] --}}
+                                            {{App\Helpers\sortStudentName($col_arr['name'])}}
+                                        </td>
                                         <td>{{ $col_arr['stddiv'] }}</td>
                                         <td>{{ $col_arr['mobile'] }}</td>
                                         <td>{{ $col_arr['apply_date'] }}</td>

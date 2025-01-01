@@ -57,6 +57,7 @@ use App\Http\Controllers\result\result_activity_marks\resultActivityMarksControl
 use App\Http\Controllers\result\result_activity_marks\resultActivityMarksV1Controller;
 use App\Http\Controllers\lms\pal\resultPersonalizeMarksController;
 use App\Http\Controllers\result\new_result\allResultController;
+use App\Http\Controllers\result\classwiseGradeReportController;
 
 Route::group(['prefix' => 'result', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
     Route::resource('exam_type_master', ExamTypeMasterController::class);
@@ -89,6 +90,7 @@ Route::group(['prefix' => 'result', 'middleware' => ['session', 'menu', 'logRout
     Route::resource('result_activity_marks', resultActivityMarksController::class);
     Route::resource('result_activity_marks_V1', resultActivityMarksV1Controller::class);
     Route::resource('all_results', allResultController::class);    
+    Route::resource('classwise_grade_report', classwiseGradeReportController::class);    
 
     Route::post('cbse_1t5_result/show_result', ['as' => 'cbse_1t5_result.show_result', 'uses' => 'result\cbse_result\cbse_1t5_result_controller@show_result']);
     Route::post('cbse_1t5_t2_result/show_result', ['as' => 'cbse_1t5_t2_result.show_result', 'uses' => 'result\cbse_result\cbse_1t5_t2_result_controller@show_result']);
@@ -110,6 +112,8 @@ Route::group(['prefix' => 'result', 'middleware' => ['session', 'menu', 'logRout
     // Route::GET('student_homework_submission_report_index', 'student\studentHomeworkSubmissionController@studentHomeworkSubmissionReportIndex')->name("student_homework_submission_report_index");
     
     Route::get('result_personalize_marks', [resultAPIController::class,'resultPersonalize'])->name('result_personalize_marks');
+    Route::get('getPalMarks', [resultAPIController::class,'getPalMarks'])->name('getPalMarks');
+    Route::get('getMapValue', [resultAPIController::class,'getMapValue'])->name('getMapValue');
 
     Route::get('current_result', [resultAPIController::class,'currentResult'])->name('current_result');   
     Route::get('getActivityLists', [resultActivityMasterController::class,'getActivityLists'])->name('getActivityLists'); 
@@ -223,4 +227,5 @@ Route::get('cbse_1t5_result/download_overall_report', [result_report_controller:
 Route::get('result_personal_marks_api', [resultPersonalizeMarksController::class, 'resultPersonalMarksApi']);
 Route::get('question_lists_api', [resultPersonalizeMarksController::class, 'questionListsAPI']);
 Route::resource('result_personalize_marks', resultPersonalizeMarksController::class);
+Route::get('get-exam-create-name',[classwiseGradeReportController::class,'getCreateExamName'])->name('getCreateExamName');
 //Route::resource('result-template', result_TemplateController::class);

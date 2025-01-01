@@ -53,7 +53,7 @@
                                     <tr>
                                         <td>{{$all_data['standard_name']}} - {{$all_data['division_name']}}</td>
                                         <td>{{$all_data['roll_no']}}</td>    
-                                        <td>{{$all_data['first_name']}} {{$all_data['middle_name']}} {{$all_data['last_name']}}</td>
+                                        <td>{{App\Helpers\sortStudentName("",$all_data['first_name'],$all_data['middle_name'],$all_data['last_name'])}}</td>
                                         @if(isset($data['date_arr']))
                                         @foreach($data['date_arr'] as $k => $date_point)
                                             @if(isset($data['WRT_data'][$student_id][$k]) && count($data['WRT_data'][$student_id][$k]) > 0)

@@ -128,7 +128,7 @@ class bulkStudentController extends Controller
         $tblcustoms = tblcustomfieldsModel::select(['field_name', 'field_label', 'field_type'])
             ->where(["status" => "1", "table_name" => "tblstudent"])
             ->whereRaw('(sub_institute_id = ' . $sub_institute_id . ' OR common_to_all = 1)')
-            ->where('user_type',"")
+            ->where('user_type',"bulk_update")
             ->get()
             ->toArray();
         $customfieldArray = [];

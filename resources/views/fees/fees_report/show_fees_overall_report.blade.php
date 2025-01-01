@@ -139,7 +139,7 @@
                         <tr>
                             <td>{{$j}}</td>
                             <td>{{$fees_value['enrollment']}}</td>
-                            <td>{{$fees_value['name']}}</td>
+                            <td>{{App\Helpers\sortStudentName($fees_value['name'])}}</td>
                             <td>{{$fees_value['stddiv']}}</td>
                             <td>{{$fees_value['mobile']}}</td>
                             <td>{{$fees_value['uniqueid']}}</td>

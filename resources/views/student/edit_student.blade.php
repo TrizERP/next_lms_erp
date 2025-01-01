@@ -840,7 +840,10 @@ datalist {
                                                 <tr>
                                                     <td>{{$j}}</td>                                                            
                                                     <td>{{$pvalue['enrollment_no']}}</td>
-                                                    <td>{{$pvalue['student_name']}}</td>
+                                                    <td>
+                                                        {{-- $pvalue['student_name'] --}}
+                                                        {{App\Helpers\sortStudentName($pvalue['student_name'])}}
+                                                    </td>
                                                     <td>{{$pvalue['std_name']}}</td>
                                                     <td>{{$pvalue['div_name']}}</td>
                                                     <td>{{$pvalue['mobile']}}</td>
@@ -1490,7 +1493,7 @@ datalist {
                                                         <tr>
                                                             <td>{{$j}}</td>
                                                             <td>{{isset($value['enrollment_no']) ? $value['enrollment_no'] : ''}}</td>
-                                                            <td>{{isset($value['student_name']) ? $value['student_name'] : ''}}</td>
+                                                            <td>{{isset($value['student_name']) ? App\Helpers\sortStudentName($value['student_name']) : ''}}</td>
                                                             <td>{{isset($value['standard_name']) && isset($value['division_name']) ? $value['standard_name'] . ' - ' . $value['division_name'] : ''}}</td>
                                                             <td>{{isset($value['uniqueid']) ? $value['uniqueid'] : ''}}</td>
                                                             <td>{{$month_names_string}}</td>

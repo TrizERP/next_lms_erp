@@ -160,7 +160,10 @@
                                     <tr>
                                         <td><input id="students" value="{{$data['id']}}" name="students[]" type="checkbox"></td>
                                         <td>{{$j}}</td>
-                                        <td>{{$data['stu_name']}}</td>
+                                        <td>
+                                            {{-- $data['stu_name'] --}}
+                                            {{App\Helpers\sortStudentName($data['stu_name'])}}
+                                        </td>
                                         <td>{{$data['enrollment_no']}}</td>
                                         <td>{{$data['std_name']}}</td>
                                         <td>{{$data['div_name']}}</td>

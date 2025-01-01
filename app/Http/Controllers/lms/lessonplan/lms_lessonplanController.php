@@ -81,50 +81,55 @@ class lms_lessonplanController extends Controller
 
     public function create(Request $request)
     {
-        $sub_institute_id = session()->get('sub_institute_id');
-        $type = $request->input('type');
-        $id = $request->id;
+        // $sub_institute_id = session()->get('sub_institute_id');
+        // $type = $request->input('type');
+        // $id = $request->id;
 
-        $formData = $this->getFormData($request);
+        // $formData = $this->getFormData($request);
 
-        $lessonData = LmsLessonPlan::when($id, function ($q) use ($id) {
-            $q->whereId($id);
-        })
-            ->when(is_null($id), function ($q) use ($request) {
-                $q->where('standard_id', $request->standard_id);
-                $q->where('subject_id', $request->subject_id);
-                $q->where('chapter_id', $request->chapter_id);
-            })
-            ->withCount('lessonDays')
-            ->first() ?? new LmsLessonPlan();
-        $lessonData->standard_id = $lessonData->standard_id ?? $request->standard_id;
-        $lessonData->subject_id = $lessonData->subject_id ?? $request->subject_id;
-        $lessonData->chapter_id = $lessonData->chapter_id ?? $request->chapter_id;
-        $standards = standardModel::select('id as value', 'name as label')
-            ->where('sub_institute_id', $sub_institute_id)
-            ->get();
-        $subjects = subjectModel::select('id as value', 'subject_name as label')
-            ->where('sub_institute_id', $sub_institute_id)
-            ->get();
-        $chapters = chapterModel::select('id as value', 'chapter_name as label')
-            ->where('sub_institute_id', $sub_institute_id)
-            ->where('standard_id', $lessonData->standard_id)
-            ->where('subject_id', $lessonData->subject_id)
-            ->get();
-        $topics = topicModel::select('id as value', 'name as label')
-            ->where('sub_institute_id', $sub_institute_id)
-            ->where('chapter_id', $lessonData->chapter_id)
-            ->get();
-        // echo "<pre>";print_r($lessonData);exit;
-        $res['status_code'] = 1;
-        $res['message'] = "SUCCESS";
-        $res['lessonplan_data'] = $lessonData;
-        $res['form_data'] = $formData;
-        $res['topics'] = $topics;
-        $res['chapters'] = $chapters;
-        $res['subjects'] = $subjects;
-        $res['standards'] = $standards;
-        return is_mobile($type, 'lms/lessonplan/create', $res, "view");
+        // $lessonData = LmsLessonPlan::when($id, function ($q) use ($id) {
+        //     $q->whereId($id);
+        // })
+        //     ->when(is_null($id), function ($q) use ($request) {
+        //         $q->where('standard_id', $request->standard_id);
+        //         $q->where('subject_id', $request->subject_id);
+        //         $q->where('chapter_id', $request->chapter_id);
+        //     })
+        //     ->withCount('lessonDays')
+        //     ->first() ?? new LmsLessonPlan();
+        // $lessonData->standard_id = $lessonData->standard_id ?? $request->standard_id;
+        // $lessonData->subject_id = $lessonData->subject_id ?? $request->subject_id;
+        // $lessonData->chapter_id = $lessonData->chapter_id ?? $request->chapter_id;
+        // $standards = standardModel::select('id as value', 'name as label')
+        //     ->where('sub_institute_id', $sub_institute_id)
+        //     ->get();
+        // $subjects = subjectModel::select('id as value', 'subject_name as label')
+        //     ->where('sub_institute_id', $sub_institute_id)
+        //     ->get();
+        // $chapters = chapterModel::select('id as value', 'chapter_name as label')
+        //     ->where('sub_institute_id', $sub_institute_id)
+        //     ->where('standard_id', $lessonData->standard_id)
+        //     ->where('subject_id', $lessonData->subject_id)
+        //     ->get();
+        // $topics = topicModel::select('id as value', 'name as label')
+        //     ->where('sub_institute_id', $sub_institute_id)
+        //     ->where('chapter_id', $lessonData->chapter_id)
+        //     ->get();
+        // // echo "<pre>";print_r($lessonData);exit;
+        // $res['status_code'] = 1;
+        // $res['message'] = "SUCCESS";
+        // $res['lessonplan_data'] = $lessonData;
+        // $res['form_data'] = $formData;
+        // $res['topics'] = $topics;
+        // $res['chapters'] = $chapters;
+        // $res['subjects'] = $subjects;
+        // $res['standards'] = $standards;
+        // return is_mobile($type, 'lms/lessonplan/create', $res, "view");
+        $standard_id = $request->standard;
+        $subject_id = $request->subject;
+        $chapter_id = $request->chapter_id;
+
+        return redirect('/lms/lms_lessonplan?standard_id='.$standard_id.'&subject_id='.$subject_id.'&chapter_id='.$chapter_id);
     }
 
     public function ajax_DayWiseData(Request $request)

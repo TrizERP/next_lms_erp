@@ -187,9 +187,9 @@
                                             <input type="text" id="item_code_value" id="radioItem" class="form-control"  readonly>
                                         </div>
                                     </div>
-                                    <div class="col-md-4">
+                                    <div class="col-md-4" id="mmisItemCOde">
                                     <label class="control-label">Item Code<span style="color: red;"></span></label>
-                                        <div class="radio-list" id="mmisItemCOde">
+                                        <div class="radio-list">
                                             <label class="radio-inline p-0">
                                                 <div class="radio radio-success">
                                                     <input type="radio" name="item_code_value" id="radioItem1" class="purchase">

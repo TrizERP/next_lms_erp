@@ -130,7 +130,8 @@
 										<tr>
 											<td>{{ App\Helpers\get_string('studentname')}}</td>
 											<td>
-												{{ $data['stu_data']['name']; }}
+												{{App\Helpers\sortStudentName($data['stu_data']['name'])}}
+												{{-- {{ $data['stu_data']['name']; }} --}}
 											</td>
 										</tr>
 										<tr>

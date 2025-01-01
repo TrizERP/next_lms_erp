@@ -127,7 +127,7 @@
                                             @endphp
                                             <td style="text-align:center">{{$j++}}</td>
                                             <td style="text-align:center">{{$value['enrollment_no']}}</td>
-                                            <td class="px-6">{{$value['first_name']." ".$value['middle_name']." ".$value['last_name']}}</td>
+                                            <td class="px-6">{{App\Helpers\sortStudentName("",$value['first_name'],$value['middle_name'],$value['last_name'])}}</td>
                                             @foreach($data['month'] as $kkk=>$ii)
                                                 <td style="text-align:center">
                                                     @if(isset($data['attendance_data'][$value['id']][$ii]))

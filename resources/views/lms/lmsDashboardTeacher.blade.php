@@ -14,6 +14,8 @@
                 $standard_id = $data['standard'];
                 $division_id = $data['division'];
             }
+            $currentStandard = $data['currentStandard'] ?? 0;
+            $currentStudentId = $data['currentStudentId'] ?? 0;
         @endphp
         <div class="card">
             <div class="col-md-12">
@@ -160,9 +162,11 @@ $(document).ready(function() {
             if ($firstRow.length) {
                 $firstRow.addClass('activeChapter');
                 var ch = $firstRow.data('val');
+                var chapter = $firstRow.data('ch');
                 
                 // Show or hide sections based on row data
                 toggleSections(divId, ch);
+                getMapValue(divId, chapter, 'regular');
             } else {
                 hideSections();
             }
@@ -172,6 +176,7 @@ $(document).ready(function() {
         $('.circle').on('click', function() {
             hideSections();
         });
+        $('.showPal').hide();
     });
 
     function toggleSections(divId, ch) {
@@ -187,43 +192,43 @@ $(document).ready(function() {
         var Enterprising= $('#input_Enterprising_' + divId + '_' + ch).val();
         var Conventional= $('#input_Conventional_' + divId + '_' + ch).val();
         $('#recommendationDiv_'+ divId + '_' + ch).empty();
-        $.ajax({
-            url: 'https://erp.triz.co.in/intrestEnterScore',
-            data: {
-                Realistic: Realistic,
-                Investigative: Investigative,
-                Artistic: Artistic,
-                Social: Social,
-                Enterprising: Enterprising,
-                Conventional: Conventional
-            },
-            type: 'GET',
-            success: function(response) {
-                console.log(response);
+        // $.ajax({
+        //     url: 'https://erp.triz.co.in/intrestEnterScore',
+        //     data: {
+        //         Realistic: Realistic,
+        //         Investigative: Investigative,
+        //         Artistic: Artistic,
+        //         Social: Social,
+        //         Enterprising: Enterprising,
+        //         Conventional: Conventional
+        //     },
+        //     type: 'GET',
+        //     success: function(response) {
+        //         console.log(response);
 
-                if (response.career && response.career.length > 0) {
-                    // Loop through each career item in the response
-                console.log(response.career);
+        //         if (response.career && response.career.length > 0) {
+        //             // Loop through each career item in the response
+        //         console.log(response.career);
 
-                    response.career.forEach(function(rval) {
-                        // Create the HTML structure for each career recommendation
-                        const careerHtml = `<a href="${rval.href}" class="d-flex" target="_blank">
-                                    <div style="width:90%">${rval.title}</div>
-                                    <div style="width:10%">
-                                        <span class="mdi mdi-arrow-right-drop-circle-outline"></span>
-                                    </div>
-                                </a>`;
-                        // Append to the container
-                        $('#recommendationDiv_'+ divId + '_' + ch).append(careerHtml);
-                    });
-                } else {
-                    $('#recommendationDiv_'+ divId + '_' + ch).html('<p>No career recommendations found.</p>');
-                }
-            },
-            error: function() {
-                $('#recommendationDiv_'+ divId + '_' + ch).html('<p>Failed to load recommendations. Please try again.</p>');
-            }
-        });
+        //             response.career.forEach(function(rval) {
+        //                 // Create the HTML structure for each career recommendation
+        //                 const careerHtml = `<a href="${rval.href}" class="d-flex" target="_blank">
+        //                             <div style="width:90%">${rval.title}</div>
+        //                             <div style="width:10%">
+        //                                 <span class="mdi mdi-arrow-right-drop-circle-outline"></span>
+        //                             </div>
+        //                         </a>`;
+        //                 // Append to the container
+        //                 $('#recommendationDiv_'+ divId + '_' + ch).append(careerHtml);
+        //             });
+        //         } else {
+        //             $('#recommendationDiv_'+ divId + '_' + ch).html('<p>No career recommendations found.</p>');
+        //         }
+        //     },
+        //     error: function() {
+        //         $('#recommendationDiv_'+ divId + '_' + ch).html('<p>Failed to load recommendations. Please try again.</p>');
+        //     }
+        // });
 
         $('#recommendation_' + divId + '_' + ch).show();
 
@@ -293,12 +298,146 @@ $(document).ready(function() {
       }
    }
 
-    function activeTr(trsub, ch_id, sub_id) {
+   function activeTr(trsub, ch_id, sub_id,chapterId) {
         $('.trsub').removeClass('activeChapter');
         $('#tr' + ch_id + '_' + sub_id).toggleClass('activeChapter');
         
         toggleSections(sub_id, ch_id);
+        getMapValue(sub_id,chapterId,'regular');
     }
+    function activeTrPal(trsub, ch_id, sub_id,chapterId) {
+
+        $('.trsubPal').removeClass('activeChapter');
+        $('.trsubPal'+ch_id+'_'+sub_id).toggleClass('activeChapter');
+       
+        toggleSections(sub_id, ch_id);
+        getMapValue(sub_id,chapterId,'pal');
+    }
+
+   function displayRegular(){
+      $('.showPal').hide();
+      $('.hideForPal').show();
+      $('.hideOnPal').show();
+   }
+
+   function displayPal(subject_id, standard_id, student_id) {
+    $('.hideOnPal').hide();
+    $('.hideForPal').hide();
+    $('.showPal').empty();
+    $.ajax({
+        url: "{{route('getPalMarks')}}",
+        type: 'GET',
+        data: {
+            subject_id: subject_id,
+            standard_id: standard_id,
+            student_id: student_id
+        },
+        success: function(result) {
+         $(".showPal").show();
+            $.each(result, function(index, data) {
+                // Calculate percentage
+                let totalMarks = parseFloat(data.total_marks);
+                let obtainMarks = parseFloat(data.obtain_marks);
+                let percentage = (totalMarks > 0) ? (obtainMarks / totalMarks * 100) : 0;
+
+                // Append the row to the table
+                var active = '';
+                if(index==0){
+                  var active = 'activeChapter';
+                }
+                let row = `
+                    <tr class="trsubPal ${active} trsubPal${data.chapter_id}_${subject_id}" onclick="activeTrPal('trPal${data.chapter_id}',${data.chapter_id},${subject_id},${data.chapter_id})" id="trPal${data.chapter_id}_${subject_id}" data-val="${data.chapter_id}">
+                        <td style="width:70%">${data.chapter_name ?? '-'}</td>
+                        <td style="width:10%">${totalMarks}</td>
+                        <td style="width:10%">${obtainMarks}</td>
+                        <td style="width:10%">${percentage}</td>
+                    </tr>
+                `;
+                $(".showPal").append(row);
+            });
+         },
+         error: function(xhr, status, error) {
+               console.error("Error: " + error);
+         }
+      });
+   }
+
+   function getMapValue(sub_id, chapterId, examType) {
+    var standard = "{{$currentStandard}}";
+    var student = "{{$currentStudentId}}";
+    $('.mapping_parts').empty(); // Clear the container before appending new data
+
+    $.ajax({
+        url: "{{route('getMapValue')}}",
+        type: 'GET',
+        data: {
+            standard_id: standard,
+            student_id: student,
+            subject_id: sub_id,
+            chapter_id: chapterId,
+            exam_type: examType
+        },
+        success: function(result) {
+         $('.mapping_parts').empty();
+            let mapData = ``;
+
+            // Check and append for each key
+            if (result['Abilities'] && result['Abilities'].length > 0) {
+                mapData += `
+                    <div class="divMap1" style="width:50%">
+                        <div class="mapTitle1">Abilities</div>
+                        <div class="mapList1">
+                            <ul>
+                                ${result['Abilities'].map(item => `<li>${item.value_name}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>`;
+            }
+
+            if (result['Skills'] && result['Skills'].length > 0) {
+                mapData += `
+                    <div class="divMap2" style="width:50%">
+                        <div class="mapTitle2">Skills</div>
+                        <div class="mapList2">
+                            <ul>
+                                ${result['Skills'].map(item => `<li>${item.value_name}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>`;
+            }
+
+            if (result['Knowledge'] && result['Knowledge'].length > 0) {
+                mapData += `
+                    <div class="divMap3" style="width:50%">
+                        <div class="mapTitle3">Knowledge</div>
+                        <div class="mapList3">
+                            <ul>
+                                ${result['Knowledge'].map(item => `<li>${item.value_name}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>`;
+            }
+
+            if (result['Interests'] && result['Interests'].length > 0) {
+                mapData += `
+                    <div class="divMap4" style="width:50%">
+                        <div class="mapTitle4">Interests</div>
+                        <div class="mapList4">
+                            <ul>
+                                ${result['Interests'].map(item => `<li>${item.value_name}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>`;
+            }
+
+            // Append the generated HTML to the container
+            $('.mapping_parts').append(mapData);
+        },
+        error: function(xhr, status, error) {
+            console.error("Error: " + error);
+        }
+    });
+}
 </script>
 @include('includes.footer')
 @endsection

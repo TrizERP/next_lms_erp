@@ -21,9 +21,36 @@
                         <strong>{{ $data['message'] }}</strong>
                     </div>
         @endif
+        <form action="{{route('lms_lessonplan.create')}}">                    
                     <!-- row -->
-                <div class="row">
-                    {{-- <div class="col-md-3">
+            @php 
+               $grade=$standard=$subject='';
+               if(isset($data['grade_id'])){
+                $grade = $data['grade_id'];
+               }
+               if(isset($data['standard_id'])){
+                $standard = $data['standard_id'];
+               }
+               if(isset($data['subject_id'])){
+                $subject = $data['subject_id'];
+               }
+            @endphp
+               {{ App\Helpers\SearchChainSubject('4','single','grade,std,sub',$grade,$standard,$subject) }}
+               <div class="col-md-4">
+                <label for="">Select Chapter</label>
+                <select name="chapter_id" id="postchapter" class="form-control" required>
+                    <option value="">Select Chapter</option>
+                </select>
+               </div>
+               <div class="col-md-12">
+                  <center>
+                     <input type="submit" value="Search" class="btn btn-primary">
+                  </center>
+               </div>
+</form>
+<!-- commented on 2024-12-28  -->
+{{--   <div class="row">
+                 <div class="col-md-3">
                         <div class="white-box">
                              <h3 class="box-title">Drag and drop your event</h3>
                             <div class="row">
@@ -47,7 +74,7 @@
                                 </div>
                             </div>
                         </div>
-                    </div> --}}
+                    </div>
                     <div class="col-md-12">
                         <div class="white-box">
                             <div id="calendar"></div>
@@ -116,7 +143,7 @@
                             </div>
                         </div>
                     </div>
-                </div>
+                </div> --}}
             <!-- END MODAL -->
 
         </div>
@@ -124,7 +151,39 @@
 </div>
 
 @include('includes.footerJs')
+<!-- 2024-12-28 start  -->
+<script>
+    $(document).ready(function(){
+        $('#subject').on('change', function () {
+        var subjectID = $(this).val();
+        var standardID = $('#standardS').val();
+        if (subjectID) {
+            $.ajax({
+                type: "GET",
+                url: "/api/get-chapter-list?subject_id=" + subjectID + "&standard_id=" + standardID,
+                success: function (res) {
+                    if (res) {
+                        $("#postchapter").empty();
+                        $("#postchapter").append('<option value="">Select Chapter</option>');
+                        $.each(res, function (key, value) {                           
+                            $("#postchapter").append('<option value="' + key + '">' + value + '</option>');
+                        });
 
+                    } else {
+                        $("#postchapter").empty();
+                        $("#postchapter").append('<option value="">Select Chapter</option>');
+                    }
+                }
+            });
+        } else {
+            $("#postchapter").empty();
+            $("#postchapter").append('<option value="">Select Chapter</option>');
+        }
+
+    });
+    })
+</script>
+<!-- 2024-12-28 end  -->
  <!-- Calendar JavaScript -->
 <script src="/plugins/bower_components/calendar/jquery-ui.min.js"></script>
 <script src="/plugins/bower_components/moment/moment.js"></script>

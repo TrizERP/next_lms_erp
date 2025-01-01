@@ -41,7 +41,7 @@
                                     <select name="teacher_type" id="teacher_type" class="form-control">
                                         <option value="">Select</option>
                                         @foreach ($data['teacher_type'] as $item=>$val)
-                                        <option value="{{ $item }}">{{ $val }}</option>
+                                        <option value="{{ $item }}" @if(isset($data['teacher_type_selected']) && $data['teacher_type_selected']==$item) selected @endif>{{ $val }}</option>
                                         @endforeach
                                     </select>
                                     {{-- <input type="text" id="mobile" name="mobile" class="form-control"> --}}
@@ -98,7 +98,7 @@
                                                 <th><input id="checkall" onchange="checkAll(this);" type="checkbox">
                                                 </th>
                                                 <th>SR No.</th>
-                                                <th>Name</th>
+                                                <th class="text-left">Name</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -113,7 +113,7 @@
                                                 <td><input id="{{$key}}" value="{{$key}}" name="students[]"
                                                         type="checkbox"></td>
                                                 <td>
-                                                    {{ $i }}
+                                                    {{ $j }}
                                                 </td>
                                                 {{-- <td>{{$value['enrollment_no']}}</td> --}}
                                                 <td>{{$value}}</td>

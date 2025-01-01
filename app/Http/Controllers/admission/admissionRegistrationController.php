@@ -71,6 +71,12 @@ class admissionRegistrationController extends Controller
             return (array) $value;
         }, $data);
 
+        $customFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "admission_registration"])
+        ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1) and user_type="" ')
+        ->get();
+        
+        $res['dataCustomFields']=$customFields;
+
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['data'] = $data;
@@ -113,7 +119,9 @@ class admissionRegistrationController extends Controller
                 ->selectRaw("ae.*,ar.*,ae.id as id,ae.enquiry_no as enquiry_no,CONCAT_WS(',',ae.house_no,
                     ae.`building_name_appratment_name_society_name`,ae.district_name,ae.pin_code,ae.state) AS address,
 			        ae.previous_standard,ae.mother_name,ae.mobile_number_mother ,ae.place_of_birth,ar.enquiry_id as registration_enquiry_id")
-                ->where('ae.id', $id)->get()->toArray();
+                ->where('ae.id', $id)
+                ->where('ae.sub_institute_id', $sub_institute_id)
+                ->get()->toArray();
         } else {
             $data = DB::table('admission_enquiry as ae')
                 ->join('admission_form as af', function ($join) use($sub_institute_id) {
@@ -122,7 +130,9 @@ class admissionRegistrationController extends Controller
                     $join->on('ae.id', '=', 'ar.enquiry_id')->where('ar.sub_institute_id',$sub_institute_id);
                 })
                 ->selectRaw("ae.*,ar.*,ae.id as id,ae.enquiry_no as enquiry_no,ar.enquiry_id as registration_enquiry_id")
-                ->where('ae.id', $id)->get()->toArray();
+                ->where('ae.id', $id)
+                ->where('ae.sub_institute_id', $sub_institute_id)
+                ->get()->toArray();
         }
 
         $data = array_map(function ($value) {
