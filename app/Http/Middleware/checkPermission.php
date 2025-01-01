@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Auth\Access\AuthorizationException;
 use DB;
+use Illuminate\Support\Str;
 
 class checkPermission
 {
@@ -32,8 +33,11 @@ class checkPermission
             // if (!empty($menu)) {
             //     $menu_id = $menu->id;
             // }
-            // echo "<pre>";print_r($menu_id);exit;
+            // echo "<pre>";print_r($request->all());exit;
+            $currentRouteName = $request->route()->getName();
+
             if($menu_id!=''){
+              
                 $individual = DB::table('tblindividual_rights')->where('menu_id', $menu_id)
                     ->where('profile_id', $userProfileId)
                     ->where('user_id', $user_id)
@@ -56,23 +60,44 @@ class checkPermission
                 $can_edit = $permissions->can_edit ?? 0;
                 $can_delete = $permissions->can_delete ?? 0;
 
+                session()->put('menu_permissions',$permissions);
                 // check methods 
                 
                 // if (empty($permissions)) {
                 //     throw new AuthorizationException('You do not have the necessary permissions to access this resource.');
                 // }
-
-                if ($request->get('_method')=="PUT" && $can_edit != 1) {
-                    throw new AuthorizationException('You do not have permission to edit this resource.');
-                } elseif ($request->get('_method')=="POST" && $can_add != 1) {
-                    throw new AuthorizationException('You do not have permission to add this resource.');
-                } elseif ($request->get('_method')=="DELETE" && $can_delete != 1) {
-                    throw new AuthorizationException('You do not have permission to delete this resource.');
-                } 
-                else {
-                    // if ($can_view != 1) {
-                    //     throw new AuthorizationException('You do not have permission to view this resource.');
-                    // }
+                // echo "<pre>";print_r($permissions);exit;
+                    
+                if (!Str::contains($request->submit, 'Search')) {
+                    // for route not with resource
+                    if ((str_contains(request()->path(), 'delete') || str_contains(request()->path(), 'destroy'))  && $can_delete != 1 && !in_array($menu_id,[200])) 
+                    {
+                        throw new AuthorizationException('You do not have permission to delete this resource.');
+                    }
+                    elseif ((str_contains(request()->path(), 'update'))  && $can_edit != 1 && !in_array($menu_id,[31,82,386]))
+                    {
+                        throw new AuthorizationException('You do not have permission to edit this resource.');
+                    }
+                    elseif ((str_contains(request()->path(), 'store') || str_contains(request()->path(), 'add') || str_contains(request()->path(), 'save')) && request()->method()=="POST" && $can_add != 1 ) 
+                    {
+                        throw new AuthorizationException('You do not have permission to add this resource.');
+                    } 
+                    // for route with resource
+                    elseif (request()->method()=="PUT" && $can_edit != 1)
+                    {
+                        throw new AuthorizationException('You do not have permission to edit this resource.');
+                    } 
+                    elseif (request()->method()=="POST" && $can_add != 1)
+                    {
+                        throw new AuthorizationException('You do not have permission to add this resource.');
+                    } 
+                    elseif (request()->method()=="DELETE" && $can_delete != 1) 
+                    {
+                        throw new AuthorizationException('You do not have permission to delete this resource.');
+                    } 
+                    else {
+                        
+                    }
                 }
             }
         }

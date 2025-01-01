@@ -167,7 +167,8 @@ class admissionRegistrationController extends Controller
         if (isset($editData[0]['enrollment_no']) && $editData[0]['enrollment_no'] != '') {
             $res['new_enrollment_no'] = $editData[0]['enrollment_no'];
         } else {
-            $res['new_enrollment_no'] = $this->max_enrollment_no($sub_institute_id, $editData[0]['admission_standard']);
+            $enroll = $this->max_enrollment_no($sub_institute_id, $editData[0]['admission_standard']);
+            $res['new_enrollment_no'] = isset($enroll) ? $enroll : 0;
         }
         // if enrollment no already exists then get new enrollment and make add button hidden 
         $checkGrnoExist = tblstudentModel::where('enrollment_no',$res['new_enrollment_no'])->where('sub_institute_id',$sub_institute_id)->get()->toArray();

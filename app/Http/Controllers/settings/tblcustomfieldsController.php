@@ -50,7 +50,7 @@ class tblcustomfieldsController extends Controller
 
         $newRequest['display_name'] = array_filter($newRequest['display_name']);
         $newRequest['f_value'] = array_filter($newRequest['f_value']);
-
+        // echo "<pre>";print_r($newRequest['display_name']);exit;
         $validator = Validator::make($newRequest, $required_fields);
 
         if ($validator->fails()) {
