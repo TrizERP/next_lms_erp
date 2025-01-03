@@ -642,12 +642,13 @@ br {
                                 <label>Sunday Out Date</label>
                                 <input type="time" id='sunday_out_date'  value="{{ $data['sunday_out_date'] ? date('H:i',strtotime($data['sunday_out_date'])) : '' }}" name="sunday_out_date" class="form-control">
                             </div> -->
-
+                            @if(in_array(session()->get('user_profile_name'),["Admin","Super Admin"]))              
                             <div class="col-md-12 form-group mt-2">
                                 <center>
                                     <input type="submit" name="submit" value="Update" class="btn btn-success" >
                                 </center>
                             </div>
+                            @endif
                         </div>
                     </form>
                     </div>

@@ -25,11 +25,15 @@ class tbluserController extends Controller
     public function index(Request $request)
     {
         $sub_institute_id = $request->session()->get('sub_institute_id');
+        $user_profile = $request->session()->get('user_profile_name');
 
         $user_data = tbluserModel::select('tbluser.*', 'tbluserprofilemaster.name as profile_name',
             DB::raw('if(tbluser.status = 1,"Active","Inactive") as status'))
             ->join('tbluserprofilemaster', 'tbluser.user_profile_id', '=', 'tbluserprofilemaster.id')
             ->where(['tbluser.sub_institute_id' => $sub_institute_id]) //, 'tbluser.status' => "1"
+            ->when(!in_array($user_profile,["Admin","Super Admin"]),function($q){
+                $q->where('tbluser.id',session()->get('user_id'));
+            })
             ->get();
 
         $res['status_code'] = 1;
