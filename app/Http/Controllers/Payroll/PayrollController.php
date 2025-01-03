@@ -2051,7 +2051,7 @@ class PayrollController extends Controller
         ->get()->toArray();
         //echo "<pre>";print_r($userLeaves);exit();
       
-        $totDayPlaus = $totDayMinus = $noData = 0;
+        $totLeaveDay = $tot_lwp_leave = $noData = 0;
         $leaveDates=[];
         $searchMonth = $from_date->format('Y-m');
         // check leave date in attandance and also aprroved_lwp
@@ -2068,13 +2068,13 @@ class PayrollController extends Controller
                         // Leaves that are not in attendance and not holidays
                         if(!in_array($checkLeave,$attArr) && !in_array($checkLeave,$holidayDates)){
                         // if(!in_array($checkLeave,$attArr) && $value->status != "approved_lwp" ){
-                            $totDayPlaus = ($totDayPlaus+$value->day_type);
+                            $totLeaveDay = ($totLeaveDay+$value->day_type);
 
                         }
 
-                        // Decrease $totDayPlaus if $checkLeave matches a holiday date
+                        // Decrease $totLeaveDay if $checkLeave matches a holiday date
 					    if (in_array($checkLeave, $holidayDates)) {
-					        $totDayPlaus--;
+					        $totLeaveDay--;
 					    }
 
                         // if date not found in attdance and leave is approved lwp then minus, count only full day leave because half day will be in attandance == If leave is approved LWP and half-day
@@ -2083,11 +2083,11 @@ class PayrollController extends Controller
                         }
                         // !in_array($checkLeave,$attArr) &&  removed on 07-10-2024 for jojo if have lwp then do not count att
                         else if(!in_array($checkLeave,$holidayDates) && $value->status == "approved_lwp"){
-                            $totDayMinus = ($totDayMinus+$value->day_type);
+                            $tot_lwp_leave = ($tot_lwp_leave+$value->day_type);
                         }
                         
                         // Adjust holiday count
-                        if(in_array($checkLeave,$holidayDates) && $totDayMinus!=0){
+                        if(in_array($checkLeave,$holidayDates) && $tot_lwp_leave!=0){
                             $holiday--;
                         }
 
@@ -2112,12 +2112,12 @@ class PayrollController extends Controller
             }
         }
         $arr = [
-            "att" =>$totalAtt,
-            "holidays" => $holiday,
-            "weekoff" => $weekday_off,
-            "Leaves"=>$totDayPlaus,
-            "noAtt"=>$noEnrty,
-            "lwp"=> $totDayMinus
+            "att_+" =>$totalAtt,
+            "holidays_+" => $holiday,
+            "weekoff_+" => $weekday_off,
+            "tot_leave_+"=>$totLeaveDay,
+            "noAtt_-"=>$noEnrty,
+            "lwp_-"=> $tot_lwp_leave
         ];
         // echo "<pre>";print_r($weekDays);
         // echo "<pre>";print_r($holidayDates);
@@ -2126,12 +2126,12 @@ class PayrollController extends Controller
         //echo $json;exit();
         $daysCount = $from_date->diffInDays($to_date);
        
-        $totalDays = ($totalAtt + $holiday + $weekday_off + $totDayPlaus + $totDayMinus + $noEnrty); // 31
+        $totalDays = ($totalAtt + $holiday + $weekday_off + $totLeaveDay + $noEnrty); // 31 //+ $tot_lwp_leave by Rajesh 02-01-2025
         // echo "<pre>";print_r($totalDays);exit;
-        $totalDays = ($totalDays - $totDayMinus - $noEnrty); // 16
+        $totalDays = ($totalDays - $tot_lwp_leave - $noEnrty); // 16
         $totalDays = ($totalDays>0) ? $totalDays : 0; // totDays should not be in minus
         // if no attendance,no leave applied and no lwp 2024-10-11
-        if($totalAtt==0 && $totDayPlaus == 0 && $totDayMinus==0){
+        if($totalAtt==0 && $totLeaveDay == 0 && $tot_lwp_leave==0){
             $totalDays=0;
         }
 
