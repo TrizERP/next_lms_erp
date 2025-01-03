@@ -26,15 +26,14 @@ class checkPermission
             $userProfileId = session()->get('user_profile_id');
             $sub_institute_id = session()->get('sub_institute_id');
             $user_id = session()->get('user_id');
-            $menu_id = session()->get('right_menu_id');
+            // $menu_id = session()->get('right_menu_id');
             $permissions = [];
             
-            // $menu = DB::table('tblmenumaster')->where('link', $current_url)->first();
-            // if (!empty($menu)) {
-            //     $menu_id = $menu->id;
-            // }
-            // echo "<pre>";print_r($request->all());exit;
             $currentRouteName = $request->route()->getName();
+            // 02-01-2025 check menu_id by url
+            $menu_id = DB::table('tblmenumaster')->where('link',$currentRouteName)->value('id');
+            // echo "<pre>";print_r($currentRouteName);exit;
+            // 02-01-2025 end
 
             if($menu_id!=''){
               
@@ -95,8 +94,8 @@ class checkPermission
                     {
                         throw new AuthorizationException('You do not have permission to delete this resource.');
                     } 
-                    else {
-                        
+                    elseif($can_view==0) {
+                        throw new AuthorizationException('You do not have permission to view this resource.');
                     }
                 }
             }
