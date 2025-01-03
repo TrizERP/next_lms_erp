@@ -12,7 +12,7 @@ use App\Http\Controllers\user\tblmobileAppMenuRightsController;
 use Illuminate\Support\Facades\Route;
 
 // all persmissions
-Route::group(['prefix' => 'user', 'middleware' => ['session', 'menu', 'logRoute']], function () {
+Route::group(['prefix' => 'user', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
     Route::resource('add_groupwise_rights', tblgroupwise_rightsController::class);
     Route::resource('add_mobileapp_menu_rights', mobileapp_menu_rightsController::class);
     Route::resource('add_user_past_education', tbluserPastEducationController::class);
