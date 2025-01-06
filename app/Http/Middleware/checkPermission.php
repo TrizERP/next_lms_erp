@@ -101,6 +101,36 @@ class checkPermission
             }
         }
 
+        // 06-01-2025 add for erpTour start
+        $erpTourRoute = ["fees_collect.store","fees_title.store","fees_breackoff.store","student_quota.store","fees_map.store"];
+
+        $erpTourFeild = ["fees_collect.store"=>"fees_collect","fees_title.store"=>"fees_title","fees_breackoff.store"=>"fees_structure","student_quota.store"=>"student_quota","fees_map.store"=>"fees_map"];
+
+        if(in_array($currentRouteName,$erpTourRoute) && isset($erpTourFeild[$menu_id]) && request()->method()=="POST"){
+            $checkData = tourModel::where(['user_id' => $user_id, 'sub_institute_id' => $sub_institute_id])->first();
+            $addData = [
+                'user_id'=>$user_id,
+                'sub_institute_id'=>$sub_institute_id,
+                $erpTourFeild[$currentRouteName]=>1,
+            ];
+
+            if(!empty($checkData)){
+                tourModel::where('id',$checkData->id)->update($addData);
+            }else{
+                $addData['user_id'] = $user_id;
+                $addData['sub_institute_id'] = $sub_institute_id;
+                tourModel::insert($addData);
+            }
+
+            $checkUserTour = tourModel::where(['user_id'=> $user_id, 'sub_institute_id' => $sub_institute_id,
+            ])->get()->toArray();
+            $inTour = $checkUserTour[0];
+    
+            $request->session()->put('erpTour', $inTour);
+        }
+    
+        // 06-01-2025 add for erpTour end 
+
         return $next($request);
     }
 }
