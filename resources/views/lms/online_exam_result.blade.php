@@ -17,7 +17,11 @@
             </nav>
         </div>   
         <div class="col-md-6" align="right">
-          <a href="{{route('pal.index')}}" class="btn btn-primary">Back To PAL</a>
+            @if(isset($data['exam_type']) && $data['exam_type']=="PAL")
+            <a href="{{route('pal.index')}}" class="btn btn-primary">Back To PAL</a>
+            @else
+            <a href="{{route('question_paper.index')}}" class="btn btn-primary">Back To Exams</a>
+            @endif
         </div>        
     </div>
 

@@ -132,6 +132,20 @@ html {
 
 @include('includes.lmsfooterJs')
 <script type="text/javascript">
+// added on 06-01-2025 for back restrictions
+$(document).ready(function() {
+// alert('hello');
+    function disableBack() {
+        window.history.forward()
+    }
+    window.onload = disableBack();
+    window.onpageshow = function(e) {
+        if (e.persisted)
+            disableBack();
+    }
+});
+// added on 06-01-2025 for back restrictions
+
 $(document).ready(function(){
     $('[data-toggle="tooltip"]').tooltip();   
 });
