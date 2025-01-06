@@ -325,9 +325,9 @@ class rollOverController extends Controller
 
                         if (count($check_transport_map_student) == 0) {
                             DB::INSERT(" INSERT INTO transport_map_student (syear,student_id,from_shift_id,from_bus_id,from_stop,
-                                to_shift_id,to_bus_id,to_stop,sub_institute_id,created_at)
+                                to_shift_id,to_bus_id,to_stop,sub_institute_id,created_at,distance,amount)
                                 SELECT '".$to_next_syear."',student_id,from_shift_id,from_bus_id,from_stop,to_shift_id,to_bus_id,
-                                to_stop,sub_institute_id,Now()
+                                to_stop,sub_institute_id,Now(),distance,amount
                                     FROM transport_map_student 
                              WHERE syear = '".$from_current_syear."' AND sub_institute_id = '".$sub_institute_id."' ");
                           
