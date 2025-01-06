@@ -154,7 +154,7 @@ class rollOverController extends Controller
      */
     public function create(Request $request)
     {
-        // print_r($request);
+        // echo "<pre>";print_r($request->all());exit;
         $sub_institute_id = session()->get('sub_institute_id');
         $to_next_syear = (session()->get('syear') + 1);
         $from_sub_institute_id = session()->get('sub_institute_id');
@@ -288,13 +288,30 @@ class rollOverController extends Controller
                         $check_student_optional_subject = DB::table('student_optional_subject')
                             ->where('sub_institute_id', $sub_institute_id)
                             ->where('syear', $to_next_syear)->get()->toArray();
+                        // 06-01-2025 for only mapped subject
+                        $getStudentOptionalSubject = DB::table('student_optional_subject as sos')
+                        ->join('tblstudent_enrollment as se','se.student_id','=','sos.student_id')
+                        ->join('standard as std','std.id','=','se.standard_id')
+                        ->join('sub_std_map as ssm',function($q){
+                            $q->on('ssm.subject_id','=','sos.subject_id')->on('ssm.standard_id','=','std.next_standard_id');
+                        })
+                        ->selectRaw('sos.*')
+                        ->where('sos.syear',$from_current_syear)
+                        ->where('sos.sub_institute_id',$sub_institute_id)
+                        // ->groupBy('ssm.standard_id')
+                        ->get()->toArray();
 
-                        if (count($check_student_optional_subject) == 0) {
-                            DB::INSERT("INSERT INTO student_optional_subject (syear,sub_institute_id,subject_id,student_id)
-                                SELECT '".$to_next_syear."',sub_institute_id,subject_id,student_id
-                                FROM student_optional_subject 
-                                WHERE syear = '".$from_current_syear."' AND sub_institute_id = '".$sub_institute_id."' ");
-                         
+                        $opt_level = null;
+                        if($sub_institute_id==254){
+                            $opt_level = 4;
+                        }
+                        // 06-01-2025 for only mapped subject
+
+                        if (count($check_student_optional_subject) == 0 && !empty($getStudentOptionalSubject)) {
+                            foreach ($getStudentOptionalSubject as $key => $value) {
+                                DB::INSERT("INSERT INTO student_optional_subject (syear,sub_institute_id,subject_id,student_id,level)
+                                values($to_next_syear,$sub_institute_id,$value->subject_id,$value->student_id,$opt_level)");
+                            }
                         }
                         break;
                     case 'timetable':
