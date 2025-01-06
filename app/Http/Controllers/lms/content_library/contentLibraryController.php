@@ -62,6 +62,7 @@ class contentLibraryController extends Controller
             $res['searchedContent'] = $getData;
             $res['searchedTitle'] = $request->title;
         }
+
         $starredContent = userActivityModel::Join('contents as c','c.id','=','user_activities.content_id')
         ->selectRaw('c.*,user_activities.*,c.id as id,group_concat(DISTINCT user_activities.action) as all_actions')
         ->where('user_activities.action','starred')
@@ -69,6 +70,7 @@ class contentLibraryController extends Controller
         ->where('user_activities.user_id',$user_id)
         ->whereNull('user_activities.deleted_at')
         ->whereNull('c.deleted_at')
+        ->groupBy('c.id')
         ->get()->toArray();
 
         $downloadContent = userActivityModel::Join('contents as c','c.id','=','user_activities.content_id')
@@ -122,7 +124,7 @@ class contentLibraryController extends Controller
         $getMapVal = $this->getMapVals();
         $res['mapType'] = $getMapVal['mapType'];
         $res['mapValue'] = $getMapVal['mapValue'];
-        // echo "<pre>";print_r($ownContent);exit;
+        // echo "<pre>";print_r($res);exit;
         return is_mobile($type, 'lms/content_library/index', $res, 'view');
     }
 

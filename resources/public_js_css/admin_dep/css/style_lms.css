@@ -73,7 +73,7 @@ div:blank                               { display: none; }
 .tab-content.sub-menu-block.active .sub-drop-body,
 .tab-content.sub-menu-block.active .sub-drop-nav{ display: none !important; }
 .tab-content.sub-menu-block.active .drop-icn{ display: none; }
-.right-sidebar .right-sub-sidebar       { width: 140px;position: absolute;background: var(--primary);padding: 7px 20px;color: #fff;border-radius: 3px 3px 0 0;top: 100px;transform: rotate(-90deg);left: calc(0px - 87px);white-space: pre;z-index: 999; }
+.right-sidebar .right-sub-sidebar       { width: 140px;position: absolute;background: var(--primary);padding: 7px 20px;color: #fff;border-radius: 3px 3px 0 0;top: 175px;transform: rotate(-90deg);left: calc(0px - 87px);white-space: pre;z-index: 999; }
 aside.right-sidebar.active              { min-width: 280px;max-width: 280px; }
 aside.right-sidebar.active .right-sub-sidebar{ background: var(--secondary); }
 .right-sidebar .nav-tabs .nav-link.active:after { content: "";display: block;width: 10px;height: 10px;background: var(--primary);position: absolute;left: 50%;transform: translateX(-50%) rotate(45deg);bottom: -5px; }
