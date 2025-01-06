@@ -31,7 +31,7 @@ class checkPermission
             
             $currentRouteName = $request->route()->getName();
             // 02-01-2025 check menu_id by url
-            $menu_id = DB::table('tblmenumaster')->where('link',$currentRouteName)->value('id');
+            $menu_id = DB::table('tblmenumaster')->where('status',1)->where('link',$currentRouteName)->value('id');
             // echo "<pre>";print_r($currentRouteName);exit;
             // 02-01-2025 end
 
