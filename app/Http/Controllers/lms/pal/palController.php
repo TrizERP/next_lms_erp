@@ -390,6 +390,7 @@ class palController extends Controller
         $data['status_code'] = 1;
         $data['message'] = "SUCCESS";
         $data['rightInterest'] = $request->rightInterest;
+        $data['exam_type'] = 'PAL';
         // echo "<pre>";print_r($data);exit;
         return is_mobile($type, 'lms/online_exam_result', $data, "view");
     }

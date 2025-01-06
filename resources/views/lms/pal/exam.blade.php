@@ -96,7 +96,7 @@ html {
                                                     <ul>
                                                         @php
                                                             $btnclass = "square";
-                                                            $type = "checkbox";
+                                                            $type = "radio";
                                                             $name = "answer_multiple[".$quesarr['question_id']."][]";//[".$ansarr['id']."]";
                                                         @endphp
                                                         <li>
@@ -194,7 +194,19 @@ function onloadData(questionId){
 
 
 <script>
-
+// added on 06-01-2025 for back restrictions
+$(document).ready(function() {
+// alert('hello');
+    function disableBack() {
+        window.history.forward()
+    }
+    window.onload = disableBack();
+    window.onpageshow = function(e) {
+        if (e.persisted)
+            disableBack();
+    }
+});
+// added on 06-01-2025 for back restrictions
 
 //Set the date we're counting down to
 //var countDownDate = new Date("Jan 7, 2021 15:57:25").getTime();
