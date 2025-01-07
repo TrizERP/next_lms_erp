@@ -56,6 +56,7 @@ use App\Http\Controllers\fees\fees_report\studentBreakoffReportController;
 use App\Http\Controllers\fees\fees_reconciliation\fees_reconciliation_upload_sheet_controller;
 use App\Http\Controllers\fees\feesAIController;
 use App\Http\Controllers\fees\fees_report\monthwiseReceiptPdfController;
+use App\Http\Controllers\fees\fees_report\feesModificationController;
 use Illuminate\Support\Facades\Route;
 
 Route::group(['prefix' => 'fees', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
@@ -77,6 +78,7 @@ Route::group(['prefix' => 'fees', 'middleware' => ['session', 'menu', 'logRoute'
     Route::resource('monthly_breakoff', monthlyBreakoffController::class);    
     Route::resource('fees_month_header', feesMonthHeadercontroller::class);    
     Route::resource('student_breakoff_report', studentBreakoffReportController::class);    
+    Route::resource('fees_modification', feesModificationController::class);
 
     Route::get('ajax_ledgerData', [otherNewfeesReportController::class, 'ajax_ledgerData'])->name('ajax_ledgerData');
 
