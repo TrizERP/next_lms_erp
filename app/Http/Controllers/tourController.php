@@ -38,7 +38,7 @@ class tourController extends Controller
 
         $request->session()->forget('erpTour');
 
-        $checkUserTour = tourModel::where(['user_id'          => $user_id, 'sub_institute_id' => $sub_institute_id,
+        $checkUserTour = tourModel::where(['user_id'=> $user_id, 'sub_institute_id' => $sub_institute_id,
         ])->get()->toArray();
         $inTour = $checkUserTour[0];
 

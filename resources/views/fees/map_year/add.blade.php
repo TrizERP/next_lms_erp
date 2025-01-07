@@ -7,7 +7,6 @@
 {{--@include('../includes.header')
 @include('../includes.sideNavigation')--}}
 
-
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row bg-title">
@@ -66,7 +65,7 @@
 
 @include('includes.footerJs')
 
-@if(Session::get('erpTour')['fees_map']==0)
+@if(Session::get('erpTour')['fees_map']!=1)
 <script src="../../../tooltip/bower_components/todomvc-common/base.js"></script>
         <!-- <script src="../../../tooltip/bower_components/jquery/jquery.js"></script> -->
         <script src="../../../tooltip/bower_components/underscore/underscore.js"></script>
@@ -85,6 +84,19 @@
     <script>
       localStorage.clear();
       var enjoyhint_script_data = [
+        {
+            onBeforeStart: function(){
+            $('#fee_type').change(function(e){
+
+                enjoyhint_instance.trigger('new_todo');
+
+            });
+          },
+          selector:'#fee_type',
+          event:'new_todo',
+          event_type:'custom',
+          description:'Select Fees Type here.'
+        },
         {
             onBeforeStart: function(){
             $('#start_month').change(function(e){
