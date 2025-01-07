@@ -12,11 +12,15 @@
         </div>
         <div class="card">
             @if ($sessionData = Session::get('data'))
-            <div class="alert alert-success alert-block">
-                <button type="button" class="close" data-dismiss="alert">×</button>
-                <strong>{{ $sessionData['message'] }}</strong>
-            </div>
-            @endif
+                @if(isset($sessionData['status_code']) && $sessionData['status_code']==0)
+                <div class="alert alert-danger alert-block">
+                @else 
+                <div class="alert alert-success alert-block">
+                @endif
+                    <button type="button" class="close" data-dismiss="alert">×</button>
+                    <strong>{{ $sessionData['message'] }}</strong>
+                </div>
+                @endif
             <div class="row">
                 <div class="col-lg-3 col-sm-3 col-xs-3 mb-20">
                     <a href="{{ route('fees_breackoff.create') }}?implementation=1" class="btn btn-info add-new">

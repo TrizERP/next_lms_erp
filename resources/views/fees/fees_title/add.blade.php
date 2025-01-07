@@ -70,7 +70,7 @@
 </script>
 @endif
 
-@if(Session::get('erpTour')['fees_title']==0)
+@if(Session::get('erpTour')['fees_title']!=1)
 <script src="../../../tooltip/bower_components/todomvc-common/base.js"></script>
         <!-- <script src="../../../tooltip/bower_components/jquery/jquery.js"></script> -->
         <script src="../../../tooltip/bower_components/underscore/underscore.js"></script>
@@ -114,6 +114,46 @@
           event:'new_todo',
           event_type:'custom',
           description:'Enter display name of title.'
+        },
+        {
+            onBeforeStart: function(){
+            $('#cumulative_name').change(function(e){
+
+                enjoyhint_instance.trigger('new_todo');
+
+            });
+          },
+          selector:'#cumulative_name',
+          event:'new_todo',
+          event_type:'custom',
+          description:'Enter cumulative name of title if required else click on skip button.'
+        },
+        {
+            onBeforeStart: function(){
+            $('#append_name').change(function(e){
+
+                enjoyhint_instance.trigger('new_todo');
+
+            });
+          },
+          selector:'#append_name',
+          event:'new_todo',
+          event_type:'custom',
+          description:'Enter append name of title if required else click on skip button.'
+        },
+
+        {
+            onBeforeStart: function(){
+            $('#sort_order').change(function(e){
+
+                enjoyhint_instance.trigger('new_todo');
+
+            });
+          },
+          selector:'#sort_order',
+          event:'new_todo',
+          event_type:'custom',
+          description:'Enter sort Order of title.'
         },
         {
           selector:'#mandatory',

@@ -91,13 +91,21 @@ class fees_breackoff_controller extends Controller
             'sub_institute_id' => session()->get('sub_institute_id'),
             'syear'            => session()->get('syear'),
         ])->get()->toArray();
+        
+        // added on 06-01-2025 to solve error of undefine array key 0 $data[0]
+        if(empty($data)){
+            $res['status_code'] = 0;
+            $res['message'] = "Please Map Fees Year First !!";
+            return is_mobile($type, 'fees_breackoff.index', $res);
+        }
+        // added on 06-01-2025
 
         $start_month = $data[0]['from_month'];
         $end_month = $data[0]['to_month'];
 
-if($start_month==6){
-    $plus_month=3;
-}
+        if($start_month==6){
+            $plus_month=3;
+        }
         $months = [
             1  => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'May', 6 => 'Jun', 7 => 'Jul', 8 => 'Aug', 9 => 'Sep',
             10 => 'Oct', 11 => 'Nov', 12 => 'Dec',
