@@ -20,7 +20,7 @@
             @php 
                 $sub_institute_id =Session::get('sub_institute_id');
                 $oldAdmissionInstitutes = [47,48,49,62,69,72,195,201,202,203,204,233,254];
-                $dataCustomFields = $data['dataCustomFields'];
+                $custom_fields = $data['custom_fields'];
             @endphp
 
             <div class="row">
@@ -59,7 +59,7 @@
                                     @endif
 
                                       <!-- 2024-12-28  -->
-                                      @foreach($data['dataCustomFields'] as $k => $v)
+                                      @foreach($data['custom_fields'] as $k => $v)
                                         <th data-toggle="tooltip" title="Enquiry Status">{{$v['field_label']}}</th>
                                     @endforeach
                                     <!-- 2024-12-28  -->
@@ -107,7 +107,7 @@
                                     @endif
 
                                     <!-- 2024-12-28 -->
-                                    @foreach($dataCustomFields as $k => $v)
+                                    @foreach($custom_fields as $k => $v)
                                         @if($v['field_name'] == 'siblings' && !empty($data['siblings']))
                                             @php 
                                                 $siblingsData = [];
