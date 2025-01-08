@@ -1227,7 +1227,25 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             }
             foreach ($fees_arr as $sort_order_id => $arr) {
                 $order_id = explode('_', $sort_order_id);
-                if ($order_id[1] == $sort_order) {
+                if ($order_id[1] == $sort_order && $sub_institute_id==76) {
+                    // $fees_arr[$sort_order_id]['Fine'] = $total_fine;
+                    // $fees_arr[$sort_order_id][get_string('discount', 'request',$sub_institute_id)] = $total_discount;
+                     // start 08-01-2025 by uma for ssmission
+                    if(isset($fees_arr[$sort_order_id]['TUITION FEE'])){
+                        $title_name='TUITION FEE';
+                    }elseif($fees_arr[$sort_order_id]['FOOD TRANSPORT ETC']){
+                        $title_name='FOOD TRANSPORT ETC';
+                    }
+                    elseif($fees_arr[$sort_order_id]['HOSTEL FEE']){
+                        $title_name='HOSTEL FEE';
+                    }
+                    if(isset($fees_arr[$sort_order_id][$title_name])){
+                        $fees_arr[$sort_order_id][$title_name]+=$total_fine;
+                        $fees_arr[$sort_order_id][$title_name]+=$total_discount;
+                    }
+                      // end 08-01-2025 by uma for ssmission
+                }
+                elseif ($order_id[1] == $sort_order) {
                     $fees_arr[$sort_order_id]['Fine'] = $total_fine;
                     $fees_arr[$sort_order_id][get_string('discount', 'request',$sub_institute_id)] = $total_discount;
                 }
@@ -1338,6 +1356,19 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                   <td style="background-color:lightgray;white-space:nowrap;"><b>Amount (Rs.)</b></td>
                </tr>';
 
+            // start 08-01-2025 by uma for ssmission
+            // $noDiscountCount = [76];
+            // if(in_array($sub_institute_id,$noDiscountCount)){
+            //     foreach ($arr as $disKey => $desVal) {
+            //         if($disKey=="Discount" || $disKey=="discount"){
+            //             $arr['TUITION FEE']+=$desVal;
+            //         }else{
+            //             $arr[$disKey]=$desVal;
+            //         }
+            //     }
+            // }
+            // start 08-01-2025 by uma for ssmission end
+
             // 31/03/2021 START for Cumulative Fees Receipt
             if (count($cumulative_arr) > 0) {
                 $arrnew = $appendnew = [];
@@ -1359,7 +1390,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                 }
                 $arr = $arrnew;
             }
-
+             
             // 31/03/2021 END for Cumulative Fees Receipt
             foreach ($arr as $pkey => $pval) {
                 //  31/03/2021 - Start For Cumulative name
@@ -1465,6 +1496,12 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                 date("d-m-Y", strtotime($_REQUEST['receiptdate'])),
                 $html_content
             );
+            // start 08-01-2025 by uma for ssmission
+            $reciept_date = date("d-m-Y", strtotime($_REQUEST['receiptdate']));
+            $slash_date = Carbon::createFromFormat('d-m-Y', $reciept_date)->format('d/M/Y');;
+            $html_content = str_replace(htmlspecialchars("<<receipt_date_slash_value>>"),$slash_date,$html_content);
+            // start 08-01-2025 by uma for ssmission end
+    
 
             $html_content = str_replace(
                 htmlspecialchars("<<student_name_value>>"),
@@ -1943,6 +1980,27 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             $year_arr = FeeMonthId($syear,$sub_institute_id);            
             $month_arr2 = FeeMonthId($last_syear,$sub_institute_id);            
         }
+
+        // start 08-01-2025 by uma for ssmission fees heads
+        $changeMonthHead = [76];
+        if(in_array($sub_institute_id,$changeMonthHead)){
+            $getMonthHeaders = DB::table('fees_month_header')->where('sub_institute_id',$sub_institute_id)->get()->toArray();
+            if(!empty($getMonthHeaders)){
+                foreach ($getMonthHeaders as $key => $value) {
+                    if(isset($month_arr[$value->month_id])){
+                        $month_arr[$value->month_id] = $value->header;
+                    }
+
+                    if(isset($month_arr2[$value->month_id])){
+                        $month_arr2[$value->month_id] = $value->header;
+                    }
+                    if(isset($year_arr[$value->month_id])){
+                        $year_arr[$value->month_id] = $value->header;
+                    }
+                }
+            }
+        }
+        // end 08-01-2025 by uma for ssmission
         $currunt_month = date('m');
         $currunt_year = date('Y');
         $currunt_month_id = $currunt_month . $currunt_year;
@@ -2382,6 +2440,20 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
         die; */
         $full_bk["Total"] = ($total > 0 ) ? $total : 0;
         $full_bk_new["Total"] = ($total > 0 ) ? $total : 0;
+       
+        // // start 08-01-2025 by uma for ssmission fees heads
+        // $changeMonthHead = [76];
+        // if(in_array($sub_institute_id,$changeMonthHead)){
+        //     $getMonthHeaders = DB::table('fees_month_header')->where('sub_institute_id',$sub_institute_id)->get()->toArray();
+        //     if(!empty($getMonthHeaders)){
+        //         foreach ($getMonthHeaders as $key => $value) {
+        //             if(isset($new_month_arr[$value->month_id])){
+        //                 $new_month_arr[$value->month_id] = $value->header;
+        //             }
+        //         }
+        //     }
+        // }
+        // // end 08-01-2025 by uma for ssmission
 
         $type = "web";
         $res['total_fees'] = $left_bk_table ?? [];
@@ -2415,7 +2487,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             $receipt_css = $fees_config[0]->css;
             $paper_size = 'A5';
         }
-// echo "<pre>";print_r($left_bk_table);exit;
+// echo "<pre>";print_r($res);exit;
         $res['receipt_css_data'] = $receipt_css;
         $res['paper_size'] = $paper_size;
         return $res;
