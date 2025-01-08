@@ -536,3 +536,26 @@ Route::get('/dashboardnew', function () {
     return view('dashboardNeo4j');
 })->name('dashboardNeo4j');
 Route::get('/sync-neo4j', [Neo4jSyncController::class, 'sync']);
+
+
+Route::get('/ChartDashboard', function () {
+    return view('reportsnew.welcome');
+});
+
+Route::view('bar-chart', 'reportsnew.charts.bar-chart');
+Route::view('bubble-chart', 'reportsnew.charts.Bubble-Chart');
+Route::view('/doughnut-chart', 'reportsnew.charts.Doughnut-Chart');
+Route::view('horizontal-bar-chart', 'reportsnew.charts.horizontalBar-Chart');
+Route::view('polar-area-chart', 'reportsnew.charts.PolarArea-Chart');
+Route::view('real-time-chart', 'reportsnew.charts.realTime-Chart');
+Route::view('scatter-line-chart', 'reportsnew.charts.scatterLineChart');
+
+use App\Http\Controllers\FeesReportController;
+Route::get('/fees-report', [FeesReportController::class, 'showReport']);
+Route::get('/fees-collect-data-hb', [FeesReportController::class, 'gethorizontalBarChartData']);
+Route::get('/fees-collect-data-b', [FeesReportController::class, 'getBarChartData']);
+Route::get('/fees-collect-vs-breackoff', [FeesReportController::class, 'getBubbleChartData']);
+Route::get('/doughnut-chart-data', [FeesReportController::class, 'getDoughnutChartData']);
+Route::get('/real-time-chart-data', [FeesReportController::class, 'getRealTimeChartData']);
+Route::get('/scatter-line-chart-data', [FeesReportController::class, 'getScatterChartData']);
+Route::get('/polar-area-chart-data', [FeesReportController::class, 'getPolarAreaChartData']);
