@@ -32,7 +32,7 @@ class questionmasterController extends Controller
         $res['message'] = "SUCCESS";
         $res['data'] = $data['questionmaster_data'];
         $res['breadcrum_data'] = $data['breadcrum_data'];
-        // echo "<pre>";print_r($data['questionmaster_data']);exit;
+        // echo "<pre>";print_r($data);exit;
         return is_mobile($type, 'lms/show_questionmaster', $res, "view");
     }
 
@@ -53,7 +53,7 @@ class questionmasterController extends Controller
 
         $where_condition['lms_question_master.sub_institute_id'] = $sub_institute_id;
 
-        $data['questionmaster_data'] = lmsQuestionMasterModel::select('lms_question_master.*','standard.name as standard_name','academic_section.title as grade_name', 'subject_name', 'chapter_name', 'question_type',DB::raw('group_concat(distinct t1.name) as type_name'),DB::raw('IFNULL(loea.question_id,"0") as attempt_question')
+        $data['questionmaster_data'] = lmsQuestionMasterModel::select('lms_question_master.*','standard.name as standard_name','academic_section.title as grade_name', 'subject_name', 'chapter_name', 'question_type',DB::raw('group_concat(distinct t1.name SEPARATOR "||") as type_name'),DB::raw('IFNULL(loea.question_id,"0") as attempt_question')
         )
         ->join('standard', 'standard.id', '=', 'lms_question_master.standard_id')
         ->join('academic_section', 'academic_section.id', '=', 'lms_question_master.grade_id')
@@ -147,8 +147,8 @@ class questionmasterController extends Controller
 
         $data['questionmaster_data'] = lmsQuestionMasterModel::select('lms_question_master.*',
             'standard.name as standard_name',
-            'academic_section.title as grade_name', 'subject_name', 'chapter_name', 'question_type'
-            ,DB::raw('group_concat(t1.name) as type_name'),
+            'academic_section.title as grade_name', 'subject_name', 'chapter_name', 'question_type',
+            DB::raw('group_concat(DISTINCT t1.name SEPARATOR "||") as type_name'),
             DB::raw('IFNULL(loea.question_id,"0") as attempt_question')
             // , 't.id as type_id'
             // , 't1.name as value_name', 't1.id as value_id'
