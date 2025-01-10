@@ -18,9 +18,13 @@ class lmsCurriculumController extends Controller
     {
         $type = $request->input('type');
         $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+
         if($type=='API'){
             $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');
         }
+
         $getData = DB::table('lms_curriculum as lc')
         ->join('standard as s','s.id','=','lc.standard_id')
         ->join('sub_std_map as ssm','ssm.subject_id','=','lc.subject_id')
@@ -29,11 +33,19 @@ class lmsCurriculumController extends Controller
         ->groupBy('lc.id')
         ->get()->toArray();
        
-        // $newData = [];
-        // foreach ($getData as $key => $value) {
-        //     $newData[$key] = $value;
-        //     $newData[$key]->subject_curricula_name = DB::table('sub_std_map')->where('standard_id',$value->standard_id)->whereRaw('subject_id IN ('.$value->subject_curricula.')')->select('display_name')->get()->toArray();
-        // }
+        $newData = [];
+        foreach ($getData as $key => $value) {
+            // $newData[$key] = $value;
+            // $newData[$key]->subject_curricula_name = DB::table('sub_std_map')->where('standard_id',$value->standard_id)->whereRaw('subject_id IN ('.$value->subject_curricula.')')->select('display_name')->get()->toArray();
+            $getTotalLessons = DB::table('lessonplan')->where(['standard_id'=>$value->standard_id,'subject_id'=>$value->subject_id,'sub_institute_id'=>$sub_institute_id,'syear'=>$syear])->count();
+
+            $getCompletedLessons = DB::table('lessonplan')->where(['standard_id'=>$value->standard_id,'subject_id'=>$value->subject_id,'sub_institute_id'=>$sub_institute_id,'syear'=>$syear,'completion_status'=>'Yes'])->count();
+            // $newData[$key][$value->standard_id][$value->subject_id]['lesson'] = $getTotalLessons;
+            // $newData[$key][$value->standard_id][$value->subject_id]['complete'] = $getCompletedLessons;
+            $value->total_lesson = $getTotalLessons;
+            $value->completed_status = $getCompletedLessons;
+            $newData[$key] = $value;
+        }
         // echo "<pre>";print_r($newData);exit;
         $res['status_code'] = 1;
         $res['message'] = "SUCCESS";
