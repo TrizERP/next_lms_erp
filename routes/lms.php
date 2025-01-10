@@ -49,6 +49,7 @@ use App\Http\Controllers\lms\lmsDashboardController;
 use App\Http\Controllers\lms\lmsCurriculumController;
 use App\Http\Controllers\lms\lmsSyllabusController;
 use App\Http\Controllers\lms\content_library\contentLibraryController;
+use App\Http\Controllers\lms\curriculum\curriculumLessonplanController;
 use Illuminate\Support\Facades\Route;
 
 Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
@@ -209,6 +210,7 @@ Route::post('show_question_wise_report',
     Route::resource('lms_curriculum', lmsCurriculumController::class);
     Route::resource('lms_syllabus', lmsSyllabusController::class);
     Route::resource('content_library', contentLibraryController::class);
+    Route::resource('curriculum_lessonplan', curriculumLessonplanController::class);
     //Route::get('questionReport', 'student\questionWiseReportController@index')->name('question_wise_report');
     //Route::post('show_question_wise_report', 'student\questionWiseReportController@show_question_wise_report')->name('show_question_wise_report');
 
