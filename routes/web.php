@@ -535,6 +535,12 @@ Route::get('/welcome', function () {
 Route::get('/dashboardnew', function () {
     return view('dashboardNeo4j');
 })->name('dashboardNeo4j');
+Route::get('/new', function () {
+    return view('newD3visuals');
+});
+Route::get('/dashboard_new', function () {
+    return view('newD3recommend');
+});
 Route::get('/sync-neo4j', [Neo4jSyncController::class, 'sync']);
 
 
