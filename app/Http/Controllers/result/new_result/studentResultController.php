@@ -111,8 +111,10 @@ class studentResultController extends Controller
         $all_stud_html = array();
         foreach ($data as $key => $value) {
             $html_content = $tData[0]['html_content'];
-            $class = '';
             $class = 'class="report-card-bg"';
+            if($sub_institute_id==254){
+                $class = 'class="report-card-bg2"';
+            }
             
             $new_html_content = '<div id="' . $value['id'] . '"><div ' . $class . ' style="page-break-before:avoid !important;page-break:always !important;">' . $this->create_html_content($syear, $sub_institute_id, $html_content, $value, $template, $result_trust, $format) . '</div></div>';
 
@@ -253,6 +255,9 @@ class studentResultController extends Controller
         $term_name = '';
         if($format != 'yearly'){
             $term_name = DB::table('academic_year')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear])->where('term_id',$format)->value('title');
+            if($term_name!=''){
+                $term_name = '('.$term_name.')';
+            }
         }
         //Start Bonafide certificate Tags
         $html_content = str_replace(htmlspecialchars("<<class_teacher_name>>"), isset($teacher_name->teacher_name) ? $teacher_name->teacher_name : ' ', $html_content);
