@@ -83,9 +83,12 @@
                         if(in_array('shared',$all_action)){
                         $class_shared='clickedIcon';
                         }
-                        if(in_array('copy',$all_action)){
-                        $class_copy='clickedIcon';
-                    }
+                        if(session()->get('sub_institute_id')==$value['sub_institute_id']){
+                            $class_copy='hide';
+                        }
+                        elseif(in_array('copy',$all_action)){
+                            $class_copy='clickedIcon';
+                        }
                     if(in_array('starred',$all_action)){
                         $class_starred='clickedIcon';
                     }

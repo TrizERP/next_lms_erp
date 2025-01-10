@@ -39,7 +39,7 @@
 
                         </div>  
                         <div class="col-md-8">
-                            <h4 class="headTitle"><strong>{{$value['title']}}</strong></h4>
+                            <h4 class="headTitle"><strong>{{$value['title']}}</strong>&nbsp;&nbsp;<span class="statusLabel">{{$value['status']}}</span></h4>
                         </div>
                     </div>
                     <hr>
