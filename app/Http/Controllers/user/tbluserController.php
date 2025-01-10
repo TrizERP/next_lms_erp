@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\File;
 use function App\Helpers\is_mobile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use  App\Models\school_setup\standardModel;
 
 class tbluserController extends Controller
 {
@@ -363,7 +364,10 @@ class tbluserController extends Controller
         $res['user_profiles'] = $data;
         $res['new_emp_code'] = $new_emp_code;
         $res['data'] = $editData;
-        // echo "<pre>";print_r($res['salary_deposit']);exit;
+        // 10-01-2025 start supervisor rights
+        $res['standardLists'] = standardModel::where('sub_institute_id',$sub_institute_id)->orderBy('sort_order')->get()->toArray();
+        // 10-01-2025 end supervisor rights
+        // echo "<pre>";print_r($res['standardLists']);exit;
         return is_mobile($type, "user/edit_user", $res, "view");
     }
 
