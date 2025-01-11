@@ -1,5 +1,6 @@
 @extends('layout')
 @section('container')
+
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row bg-title">
@@ -34,6 +35,7 @@
                             <th>Subject</th>
                             <th>Board</th>
                             <th>Curriculum Name</th>
+                            <th>Progress</th>
                             <th>Curriculum Alignment</th>
                             <th>Holistic Curriculum</th>
                             <!-- <th>Subject Curricula</th> -->
@@ -53,6 +55,25 @@
                                 <td>{{$value->subject_name}}</td>
                                 <td>{{$data['boards'][$value->board_id]}}</td>
                                 <td>{{$value->curriculum_name}}</td>
+                                <td>
+                                    @php 
+                                        $totalLesson =$value->total_lesson;
+                                        $comleted = $value->completed_status;
+                                        $progress = $minusProgress = 0;
+                                        $color = 'e0e0e0';
+                                        if($totalLesson>0){
+                                            $progress= ($comleted*100) / $totalLesson;
+                                            $minusProgress = (100-$progress);
+                                            $color = '60e6a8';
+                                        }
+                                    @endphp 
+                                   
+                                    <svg viewBox="0 0 100 100">
+                                    <circle cx="50" cy="50" r="45" fill="transparent" stroke="#e0e0e0" stroke-width="10px"/>
+                                    <circle cx="50" cy="50" r="45" fill="transparent" stroke="#{{$color}}" stroke-width="10px" pathLength="100" stroke-dasharray="{{$progress}} {{$minusProgress}}" stroke-dashoffset="-75"/>
+                                    <text x="50%" y="50%" text-anchor="middle" alignment-baseline="middle">{{$progress}}%</text>
+                                    </svg>
+                                </td>   
                                 <td>{{substr($value->curriculum_alignment,0,100)}}.....</td>
                                 <td>{{substr($value->holistic_curriculum,0,100)}}.....</td>
                                 {{-- <td>
