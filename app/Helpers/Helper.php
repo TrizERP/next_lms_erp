@@ -221,6 +221,31 @@ if (!function_exists('SearchChain')) {
         }
         // END 07/09/2021 code for getting standard , grade , division according to timetable wise for homework module
 
+        // 10-01-2025 start supervisor rights
+        else if (!in_array(session()->get('user_profile_name'),['Super Admin','Admin','Teacher','LMS Teacher','Student']))
+        {
+            $getUserData =tbluserModel::where('id',session()->get('user_id'))->first();
+            if(!empty($getUserData)){
+                $getAllocatedStandard = DB::table('standard')->whereRaw('id IN ('.$getUserData->allocated_standards.')')
+                ->get()->toArray();
+            
+                $subjectTeacherGrdArr = $subjectTeacherStdArr = array();
+                if (count($getAllocatedStandard) > 0) {
+                    foreach ($getAllocatedStandard as $k => $v) {
+                        if(!in_array($v->grade_id,$subjectTeacherGrdArr)){
+                            $subjectTeacherGrdArr[] = $v->grade_id;
+                        }
+                        if(!in_array($v->id,$subjectTeacherStdArr)){
+                            $subjectTeacherStdArr[] = $v->id;
+                        }
+                    }
+                }
+                Session::put('subjectTeacherGrdArr', $subjectTeacherGrdArr);
+                Session::put('subjectTeacherStdArr', $subjectTeacherStdArr);
+            }
+        }
+        // 10-01-2025 end supervisor rights
+
         $explod_list = explode(',', $listed_drop);
         $grade_name = 'grade';
         $std_name = 'standard';
@@ -432,7 +457,9 @@ if (!function_exists('SearchChain')) {
                 if ($subjectTeacherDivArr != "" && ($classTeacherDivArr == "" || in_array($module_name, $module_array))) {
                     if(in_array(session()->get('right_menu_id'),$menu_ids) && session()->get('user_profile_name')=="Teacher"){
                         $query->where('division.id',$getClass->division_id);
-                    }else{
+                    }
+                    // else { commented on 10-0-2025 for hills suprevisor rights and added elseif
+                    elseif(!empty($subjectTeacherDivArr)){
                         $query->whereIn('division.id', function ($sub_query) use ($subjectTeacherDivArr,$std_val) {
                             $sub_query->select('division_id')
                                 ->from('timetable')

@@ -78,6 +78,7 @@ br {
                     $job_titles = $data['job_titles'];
                     $user_profiles = $data['user_profiles'];
                     $subject_data = $data['subject_data'];
+                    $standardLists = $data['standardLists'];
                     $subject_data_selected_arr = $data['subject_data_selected_arr'];
                     $custom_fields = $data['custom_fields'];
                     $data_fields = $data['data_fields'];
@@ -143,6 +144,22 @@ br {
                                     @endif
                                 </select>
                             </div>
+                            <!-- // 10-01-2025 start supervisor rights -->
+                            <div class="col-md-4" class="form-group">
+                                <label for="allocate_standard">Allocate Standard</label>
+                                <select name="allocated_standards[]" id="allocated_standards" class="form-control resizableVertical" multiple>
+                                    @php 
+                                        $allocatedStd = (isset($data['allocated_standards']) && $data['allocated_standards']!='') ? explode(',',$data['allocated_standards']) : [];
+                                    @endphp
+
+                                    @if(!empty($standardLists))
+                                    @foreach($standardLists as $sk => $sv)
+                                       <option value="{{$sv['id']}}" @if(in_array($sv['id'],$allocatedStd)) selected @endif>{{$sv['name']}}</option>
+                                    @endforeach
+                                    @endif
+                                </select>
+                            </div>
+                            <!-- // 10-01-2025 end supervisor rights -->
                             <div class="col-md-4 form-group">
                                 <label class="control-label">Gender</label>
                                 <div class="radio-list">
