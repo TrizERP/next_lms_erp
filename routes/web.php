@@ -506,3 +506,60 @@ Route::match(['get', 'post'], '/botman', 'App\Http\Controllers\BotManController@
 // 03-06-24
 Route::resource('requirements', reuirementController::class);
 Route::get('customers_requirement', [reuirementController::class, 'ReportData'])->name('customers_requirement');
+Route::post('/paraphrase',[LmsChapterController::class,'paraphraseContentAjax'])->name('paraphrase.ajax');
+Route::post('/paraphrase-file', [LmsChapterController::class, 'paraphraseFile'])->name('paraphrase.file');
+Route::post('/flush-session', function () {
+    Session::forget('state'); 
+    return response()->json(['success' => true]);
+});
+
+use App\Http\Controllers\Neo4jSyncController;
+use App\Http\Controllers\GraphController;
+use App\Http\Controllers\RecommendationController;
+use App\Http\Controllers\GraphControllerNew;
+
+
+Route::get('/get-students', [GraphControllerNew::class, 'getStudents']);
+Route::get('/get-related-data/{nodeId}', [GraphControllerNew::class, 'getRelatedData']);
+Route::get('/get-chapters-for-subject/{subjectId}', [GraphControllerNew::class, 'getChaptersForSubject']);
+Route::get('/get-questions-for-chapter/{chapterId}', [GraphControllerNew::class, 'getQuestionsForChapter']);
+Route::get('/get-personalized-learning-path/{studentId}', [GraphControllerNew::class, 'getPersonalizedLearningPath']);
+Route::get('/recommendations', [RecommendationController::class, 'getRecommendations']);
+Route::get('/graph-data', [GraphController::class, 'getGraphData']);
+Route::get('/graph-data-learning-path', [GraphController::class, 'getLearningPath']);
+Route::get('/welcome', function () {
+    return view('welcomenew');
+});
+Route::get('/dashboardnew', function () {
+    return view('dashboardNeo4j');
+})->name('dashboardNeo4j');
+Route::get('/new', function () {
+    return view('newD3visuals');
+});
+Route::get('/dashboard_new', function () {
+    return view('newD3recommend');
+});
+Route::get('/sync-neo4j', [Neo4jSyncController::class, 'sync']);
+
+
+Route::get('/ChartDashboard', function () {
+    return view('reportsnew.welcome');
+});
+
+Route::view('bar-chart', 'reportsnew.charts.bar-chart');
+Route::view('bubble-chart', 'reportsnew.charts.Bubble-Chart');
+Route::view('/doughnut-chart', 'reportsnew.charts.Doughnut-Chart');
+Route::view('horizontal-bar-chart', 'reportsnew.charts.horizontalBar-Chart');
+Route::view('polar-area-chart', 'reportsnew.charts.PolarArea-Chart');
+Route::view('real-time-chart', 'reportsnew.charts.realTime-Chart');
+Route::view('scatter-line-chart', 'reportsnew.charts.scatterLineChart');
+
+use App\Http\Controllers\FeesReportController;
+Route::get('/fees-report', [FeesReportController::class, 'showReport']);
+Route::get('/fees-collect-data-hb', [FeesReportController::class, 'gethorizontalBarChartData']);
+Route::get('/fees-collect-data-b', [FeesReportController::class, 'getBarChartData']);
+Route::get('/fees-collect-vs-breackoff', [FeesReportController::class, 'getBubbleChartData']);
+Route::get('/doughnut-chart-data', [FeesReportController::class, 'getDoughnutChartData']);
+Route::get('/real-time-chart-data', [FeesReportController::class, 'getRealTimeChartData']);
+Route::get('/scatter-line-chart-data', [FeesReportController::class, 'getScatterChartData']);
+Route::get('/polar-area-chart-data', [FeesReportController::class, 'getPolarAreaChartData']);
