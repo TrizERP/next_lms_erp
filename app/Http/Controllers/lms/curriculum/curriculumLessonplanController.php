@@ -176,11 +176,11 @@ class curriculumLessonplanController extends Controller
         ->when($teacher_id!='',function($q) use($teacher_id){
             $q->where('lp.teacher_id',$teacher_id);
         })
-        ->when($completion_status=='Yes',function($q) use($completion_status){
+        ->when($completion_status!="",function($q) use($completion_status){
             $q->where('lp.completion_status',$completion_status);
         })
-        ->when($from_date!='' && $to_date,function($q) use($to_date){
-            $q->where('lp.completion_status',$completion_status);
+        ->when($from_date!='' && $to_date!='',function($q) use($from_date,$to_date){
+            $q->whereBetween('lp.school_date',[$from_date,$to_date]);
         })
         ->groupBy('lp.id')
         ->get()->toArray();
