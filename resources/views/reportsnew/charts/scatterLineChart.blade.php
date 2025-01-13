@@ -1,8 +1,8 @@
 @extends('reportsnew.layout.layout')
 @section('content')
     <div class="container">
-        <x-filters :showContries='true' />
-        <div class="card">
+<x-filters :showContries='true' />
+              <div class="card">
             <div class="card-body">
                 <canvas id="scatter-line-chart" width="800" height="400"></canvas>
             </div>

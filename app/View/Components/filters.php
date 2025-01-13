@@ -2,7 +2,7 @@
 
 namespace App\View\Components;
 
-use App\Models\fees_new\fees\fees_collect\FeesCollect;
+use App\Models\FeesCollect;
 use App\Models\ReportDynamic;
 use Illuminate\View\Component;
 
