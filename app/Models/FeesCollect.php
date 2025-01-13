@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Models\fees_new\fees\fees_collect;
+namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
 class FeesCollect extends Model
 {
-    public $table = "fees_collect";
+    protected $table = "fees_collect";
 
     public $timestamps = false;
 
