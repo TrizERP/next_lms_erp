@@ -39,13 +39,21 @@
                            
                             <div class="col-md-12 form-group">
                             <!-- Below function will get grade,standard,division name and id from helper.php  -->
-                                {{ App\Helpers\SearchChainSubject('4','single','grade,std,sub',$data['grade'],$data['standard_id'],$data['subject_id']) }}
+                                {{ App\Helpers\SearchChainSubject('3','single','grade,std,sub',$data['grade'],$data['standard_id'],$data['subject_id']) }}
                             </div>
                         
                             <input type="hidden" value="{{$data['con_point']}}" name="con_point">
                             <input type="hidden" value="{{$data['app_disp_status']}}" name="app_disp_status">
 
-                                <div class="col-md-12 form-group">
+                            <div class="col-md-3 form-grou">
+                                <label for="report_card_status">Report Card Status</label>
+                                <select name="report_card_status" id="report_card_status" class="form-control">
+                                    @foreach($data['report_card_status_arr'] as $key=>$value)
+                                    <option value="{{$key}}" @if(isset($data['report_card_status']) && $data['report_card_status']==$key) Selected @endif>{{$value}}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                                <div class="col-md-12 form-group mt-2">
                                 <table id="myTable" class="table table-striped table-bordered">
                                 <thead>
                                     <tr>
@@ -64,7 +72,7 @@
                                             <input type="text" name="points" value="{{ $data['points'] }}" class="form-control" />
                                         </td>
                                         
-                                        <input type="hidden" value="{{$data['report_card_status']}}" name="report_card_status">
+                                        {{-- <input type="hidden" value="{{$data['report_card_status']}}" name="report_card_status"> --}}
                                         <input type="hidden" value="{{$data['marks_type']}}" name="marks_type">
                                         
                                         <td>

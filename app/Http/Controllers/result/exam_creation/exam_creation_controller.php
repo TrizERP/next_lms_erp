@@ -228,6 +228,7 @@ class exam_creation_controller extends Controller
             ->where("term_id", $data['term_id'])
             ->pluck("ExamTitle", "Id")->toArray();
         $data['exams'] = $exams;
+        $data['report_card_status_arr']=["Y"=>"Yes","N"=>"No"];
 
         return is_mobile($type, "result/exam_creation/edit_exam", $data, "view");
     }
@@ -302,7 +303,7 @@ class exam_creation_controller extends Controller
                 'report_card_status' => $request->get('report_card_status'),
                 'sort_order'         => $request->get('sort_order'),
                 'exam_date'          => date("Y-m-d", strtotime($request->get('exam_date'))),
-
+                'updated_at'          => now(),
             ];
 
 
