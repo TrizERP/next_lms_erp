@@ -12,7 +12,6 @@ class FeesReportController extends Controller
 {
     public function gethorizontalBarChartData(Request $request)
     {
-        // Extract filters from the request
         $subInstituteId = $request->input('sub_institute_id');
         $fromDate = $request->input('from');
         $toDate = $request->input('to');
@@ -226,8 +225,6 @@ public function getBubbleChartData(Request $request)
     // Get all fees break-off data (similar logic to fees_collect)
     $feesBreackoffData = $feesBreackoffQuery->select('created_at', 'amount')->get();
 
-    // Combine fees_collect and fees_breackoff data into a common structure, e.g., dates and corresponding amounts
-    // You could use something like grouping the data by dates if you wish to compare on a daily basis
     $combinedData = [];
 
     // Group fees_collect by receiptdate and fees_breackoff by created_at
@@ -409,24 +406,6 @@ public function getRealTimeChartData(Request $request)
         'fees_collect' => $feesCollectSum->values(),  // Total fees collected per date
     ]);
 }
-// public function addData()
-//     {
-//         $date = Carbon::now()->startOfDay();
-
-//         for ($i = 1; $i <= 20; $i++) {
-//             $item = new FeesCollect();
-//             $item->country_id = 29;
-//             $item->date = $date->toDateString();
-//             $item->Confirmed = rand(0, 200);
-//             $item->Deaths = rand(0, 100);
-//             $item->Recovered = rand(0, 100);
-//             $item->Active = rand(0, 100);
-//             $item->save();
-//             $date->addDay();
-//             event(new addedDataEvent('India', $item->date, $item->Confirmed));
-//             sleep(2);
-//         }
-//     }
 public function getScatterChartData(Request $request)
 {
 // Extract the filters from the request

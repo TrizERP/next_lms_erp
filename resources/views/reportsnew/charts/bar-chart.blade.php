@@ -21,38 +21,38 @@
         $(".bar_Menu").addClass('active');
         let chart;
         
-        // Function to fetch data from the server (for Notification Types and Counts)
+        
         function getData() {
             $.ajax({
-                url: '/fees-collect-data-b',  // Update the API endpoint
+                url: '/fees-collect-data-b',  
                 method: 'GET',
                 dataType: 'json',
                 data: {
-                    'sub_institute_id': $("#sub_institute_id").val(), // Get the selected institute
-                    'from': $("#from").val(),  // Get the start date (YYYY-MM-DD)
-                    'to': $("#to").val(),  // Get the end date (YYYY-MM-DD)
+                    'sub_institute_id': $("#sub_institute_id").val(), 
+                    'from': $("#from").val(),  
+                    'to': $("#to").val(), 
                     'field': $("#field").val()
                 },
                 success: function(data) {
                     console.log(data);
-                    const labels = data.map(item => item.notification_type);  // Notification Types as X-axis labels
-                    const counts = data.map(item => item.count);  // Notification Counts as Y-axis data
+                    const labels = data.map(item => item.notification_type);  
+                    const counts = data.map(item => item.count);  
 
-                    // Destroy the previous chart if it exists
+                    
                     const ctx = document.getElementById('barChart').getContext('2d');
                     if (chart) {
                         chart.destroy();
                     }
 
-                    // Create a new bar chart with the notification data
+                   
                     chart = new Chart(ctx, {
                         type: 'bar',
                         data: {
-                            labels: labels,  // Notification Types
+                            labels: labels,  
                             datasets: [{
                                 label: 'Notification Count',
-                                data: counts,  // Notification Counts
-                                backgroundColor: 'rgba(54, 162, 235, 1)',  // Blue
+                                data: counts, 
+                                backgroundColor: 'rgba(54, 162, 235, 1)',
                                 borderColor: 'rgb(54, 162, 235)',
                                 borderWidth: 1
                             }]
@@ -74,13 +74,13 @@
             });
         }
 
-        // Download Report Functionality
+     
         function downloadReport() {
             const imgData = chart.toBase64Image();
 
-            const country = $("#sub_institute_id option:selected").text();  // Get selected institute name
-            const fromDate = $("#from").val();  // Get "From" date
-            const toDate = $("#to").val();  // Get "To" date
+            const country = $("#sub_institute_id option:selected").text();
+            const fromDate = $("#from").val();
+            const toDate = $("#to").val();
 
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
@@ -91,15 +91,15 @@
             doc.text(`Institute: ${country}`, 10, 20);
             doc.text(`Date Range: ${fromDate} to ${toDate}`, 10, 30);
 
-            // Add the chart image to the PDF
+          
             doc.addImage(imgData, 'PNG', 10, 40, 180, 100);
 
             doc.save('notification-chart-report.pdf');
         }
 
-        // Fetch data on page load
+       
         $(function() {
-            getData();  // Fetch data when the page is loaded
+            getData(); 
         });
     </script>
 @endsection

@@ -31,20 +31,20 @@
             success: function(data) {
                 const ctx = document.getElementById('doughnutChart').getContext('2d');
                 
-                // Destroy any existing chart
+               
                 if (chart) {
                     chart.destroy();
                 }
 
-                // Extract data for labels and values
+             
                 const labels = data.map(item => item.notification_type);
                 const chartData = data.map(item => item.count);
 
-                // Create a new doughnut chart
+            
                 chart = new Chart(ctx, {
                     type: 'doughnut',
                     data: {
-                        labels: labels,  // notification types
+                        labels: labels, 
                         datasets: [{
                             data: chartData, 
                             backgroundColor: [
@@ -67,7 +67,7 @@
                             tooltip: {
                                 callbacks: {
                                     label: function(tooltipItem) {
-                                        return tooltipItem.label + ': ' + tooltipItem.raw.toLocaleString();  // Format tooltip
+                                        return tooltipItem.label + ': ' + tooltipItem.raw.toLocaleString();  
                                     }
                                 }
                             }
@@ -82,7 +82,7 @@
     }
 
     $(document).ready(function() {
-        getData();  // Fetch data on page load
+        getData();  
     });
 
     function downloadReport() {
@@ -101,7 +101,6 @@
         doc.text(`Institute: ${country}`, 10, 20);
         doc.text(`Date Range: ${fromDate} to ${toDate}`, 10, 30);
 
-        // Add the chart image to the PDF
         doc.addImage(imgData, 'PNG', 10, 40, 180, 100);
 
         doc.save('doughnut-chart-report.pdf');
