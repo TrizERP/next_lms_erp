@@ -39,7 +39,7 @@
                                     <th>Edition</th>
                                     <th>Tags</th>
                                     <th>No. of Items</th>
-                                    <th>Author Name</th>
+                                    <th>Author/Editor Name</th>
                                     <th>ISBN/ISSN</th>
                                     <th>Classification</th>
                                     <th>Publisher Name</th>
