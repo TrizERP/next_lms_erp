@@ -60,7 +60,7 @@
       <div class="card">
          <div class="col-lg-12 col-sm-12 col-xs-12">
             <div class="table-responsive">
-               <table class="table table-striped">
+               <table id="example"class="table table-striped">
                   <thead>
                      <tr>
                         <th>ROLL NO.</th>
@@ -81,11 +81,15 @@
                   <tbody>
                     @php 
                         $rollNo = $name = [];
+                        if (in_array($grade,[148,149])) {
+                            $passMarks = 33;
+                        } else {
+                            $passMarks = 35;
+                        }
                     @endphp
                     @foreach($data['studentData'] as $k => $all_data)
                         @php 
-                            $passMarks = 35;
-                            $Failed=$rank = 0;
+                            $Failed=$rank = $failed_rank = 0;
                         @endphp
                         @foreach($all_data['exams'] as $et => $ev)
                         @php 
@@ -148,52 +152,37 @@
                                     $examTotal += $all_data['examData']['Average'][$value->subject_name];
                                 }
                                
-                                if(isset($all_data['examData'][$ev]['rank'])){
-                                    $rank = $all_data['examData'][$ev]['rank'];
+                                if(isset($all_data['examData'][$ev]['rank']['rank'])){
+                                    $rank = $all_data['examData'][$ev]['rank']['rank'];
                                 }
 
                                 if(isset($all_data['examData'][$ev][$value->subject_name]->elective_subject) && $all_data['examData'][$ev][$value->subject_name]->elective_subject=='Yes'){
                                     $obt_mark = '<b>'.$obt_mark.'</b>';
                                 }
+
                                 @endphp
                                 {!! $obt_mark !!}
                             </td>
                             @endforeach
+                            @php
+                                $att = $all_data['attendance'];
+                                $per = ($examTotal != 0) ? (($examObt * 100) / $examTotal) : 0;
+                                $percentage = number_format($per,2);
+                                $conduct = "Good";
+                                
+                                $appText = (isset($all_data['examData'][$ev]['applied'])) ? $all_data['examData'][$ev]['applied'] : '-';
+                                $remarksText = (isset($all_data['examData'][$ev]['remark'])) ? $all_data['examData'][$ev]['remark'] : '-';
+                                
+                                if($ev=='Grand Total'){
+                                    $appText = $remarksText = $conduct= $percentage = $att= $rank='';
+                                }
+                                if($ev=='Average'){
+                                    $rank='';
+                                }
+                            @endphp
                             <td>{{$examObt}}</td>
                             <td>{{$rank}}</td>
                             <td>
-                                @php
-                                    $att = $all_data['attendance'];
-                                    $per = ($examTotal != 0) ? (($examObt * 100) / $examTotal) : 0;
-                                    $percentage = number_format($per,2);
-                                    if($passMarks>$percentage){
-                                        $Failed++;
-                                    }
-                                    $appText = "Good";
-                                    $remarksText = "Can do better";
-                                    $conduct = "Good";
-                                    if (isset($Failed)) {
-                                        if ($Failed == 1) {
-                                            $appText = "Fair";
-                                            $remarksText = 'Work Hard in Failed Subject';
-                                        } else if ($Failed == 2) {
-                                            $appText = "Satisfaction";
-                                            $remarksText = 'Work Hard in Failed Subjects';
-                                        } else if ($Failed >= 3) {
-                                            $appText = "Not Satisfaction";
-                                            $remarksText = 'Work Hard in Failed Subjects';
-                                        } else {
-                                            $appText = "Good";
-                                            $remarksText = 'Work Hard in Failed Subjects';
-                                        }
-                                    }
-                                    if($ev=='Grand Total'){
-                                        $appText = $remarksText = $conduct= $percentage = $att= $rank='';
-                                    }
-                                    if($ev=='Average'){
-                                        $rank='';
-                                    }
-                                @endphp
                                 {{$percentage}}
                             </td>
                             <td>{{$att}}</td>
@@ -261,13 +250,11 @@ $(document).ready(function() {
 
     // Initialize DataTable
     var table = $('#example').DataTable({
+        ordering: false, // Disable sorting for the entire table
         select: true,
         lengthMenu: [ 
-            [100, 500, 1000, -1], 
-            ['100', '500', '1000', 'Show All'] 
-        ],
-        columnDefs: [
-            { orderable: false, targets: '_all' } 
+            [-1, 100, 500, 1000], 
+            ['Show All', '100', '500', '1000'] 
         ],
         dom: 'Bfrtip',
         buttons: [
