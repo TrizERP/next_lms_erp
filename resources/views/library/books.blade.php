@@ -264,7 +264,7 @@
                                     <div class="col-md-4">
                                         <div class="form-group">
                                             <label for="">Call Number</label>
-                                            <input type="number" type="any" name="call_number" id="call_number"
+                                            <input type="text" type="any" name="call_number" id="call_number"
                                                 class="form-control" placeholder="Enter Call Number">
                                         </div>
                                     </div>
