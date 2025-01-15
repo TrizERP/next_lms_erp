@@ -4635,8 +4635,6 @@ while ($current_date <= $post_end_date) {
                                             $obtained_marks[$title->exam_id][] = $ab_ex_na;
                                         } else {
                                             $ob_mark = $marks->points;
-                                            // $ob_mark = ($ob_mark != 0) ? (($ob_mark / $title->points) * $title->weightage) : 0;
-                                            // store marks in array to get best of 2 
 
                                             // convert marks according to weightage
                                             $ob_mark = ($ob_mark != 0) ? (($ob_mark / $title->points) * $title->weightage) : $ob_mark;
@@ -4669,7 +4667,7 @@ while ($current_date <= $post_end_date) {
                                 $underline = ($pt_per < 33 && $academic_type == "upper") ? 'style="text-decoration: underline red 2px;"' : '';
                                 if(count($obtained_mark_arr)>1){
                                     $total_marks = $w_m;                                    
-                                    $table .= '<td class="data_center" ' . $underline . ' ' . $exam_id . '-'.$val->subject_id.'-'.$standard_id.'>' . number_format($convert_mark, 2) . '</td>';
+                                    $table .= '<td class="data_center" ' . $underline . ' ' . $exam_id . '-'.$val->subject_id.'-'.$standard_id.' *** '.$obtained_mark_sum.' % '.$t_m.'*'.$w_m.'>'. number_format($convert_mark, 2) . '</td>';
                                     $ob_main_mark += ($t_m !== 0) ? (($obtained_mark_sum / $t_m) * $w_m) : 0;
                                 }else{
                                     if($obtained_mark_arr[0]!='N.A.' || $obtained_mark_arr[0]!='EX'){

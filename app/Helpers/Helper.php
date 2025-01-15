@@ -225,7 +225,7 @@ if (!function_exists('SearchChain')) {
         else if (!in_array(session()->get('user_profile_name'),['Super Admin','Admin','Teacher','LMS Teacher','Student']))
         {
             $getUserData =tbluserModel::where('id',session()->get('user_id'))->first();
-            if(!empty($getUserData)){
+            if(!empty($getUserData) && isset($getUserData->allocated_standards) && $getUserData->allocated_standards!=''){
                 $getAllocatedStandard = DB::table('standard')->whereRaw('id IN ('.$getUserData->allocated_standards.')')
                 ->get()->toArray();
             
