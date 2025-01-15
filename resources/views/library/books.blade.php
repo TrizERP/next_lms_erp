@@ -206,7 +206,7 @@
                                     </div>
                                     <div class="col-md-4">
                                         <div class="form-group">
-                                            <label for="">Author Name</label>
+                                            <label for="">Author/Editor Name</label>
                                             <input type="text" name="author_name" id="author_name"
                                                 class="form-control" placeholder="Enter Author Name">
                                         </div>

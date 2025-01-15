@@ -46,7 +46,7 @@
                         </div>
 
                         <div class="col-md-4 form-group" id="for_author">
-                            <label for="">Author</label>
+                            <label for="">Author/Editor</label>
                             <select id="author" class="form-control" name="author">
                                 <option value="">All</option>
                                 @foreach ($data['get_author_name'] as $key => $value)
@@ -130,7 +130,7 @@
                                     <th>Edition</th>
                                     <th>Tags</th>
                                     <th>No. of Items</th>
-                                    <th>Author Name</th>
+                                    <th>Author/Editor Name</th>
                                     <th>ISBN/ISSN</th>
                                     <th>Classification</th>
                                     <th>Publisher Name</th>
