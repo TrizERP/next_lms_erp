@@ -178,7 +178,7 @@
                                     <div class="col-md-4">
                                         <div class="form-group">
                                             <label for="">No Of Items</label>
-                                            <input type="number" name="no_of_items" id="no_of_items" class="form-control" placeholder="Enter No Of Items" value="1">
+                                            <input type="number" name="no_of_items" id="no_of_items" class="form-control">
                                         </div>
                                     </div>
                                    <div class="col-md-4"  id="otherItemCOde">
@@ -192,13 +192,13 @@
                                         <div class="radio-list">
                                             <label class="radio-inline p-0">
                                                 <div class="radio radio-success">
-                                                    <input type="radio" name="item_code_value" id="radioItem1" class="purchase">
+                                                    <input type="radio" name="item_code_value" id="radioItem1" class="purchase item_code_value">
                                                     <label for="male">Purchase <br><span id="purchase"></span></label>
                                                 </div>
                                             </label>
                                             <label class="radio-inline">
                                                 <div class="radio radio-success">
-                                                    <input type="radio" name="item_code_value"  id="radioItem2" class="donate">
+                                                    <input type="radio" name="item_code_value"  id="radioItem2" class="donate item_code_value">
                                                     <label for="female">Donate <br><span id="donate"></span></label>
                                                 </div>
                                             </label>
@@ -561,22 +561,27 @@
             // Empty all input fields
             $('input[type="text"]').val('');
             $('input[type="number"]').val('');   
-            $('#no_span').remove();       
+            $('#no_span').remove();      
+            $('#no_of_items').val(1);       
             $('#no_of_items').prop('readonly',false);
             $('#item_code_value').val('{{$nextItemCode}}');
             @if(session()->get('sub_institute_id')!=47)
-            $('#mmisItemCOde').hide();
-            $('#otherItemCOde').show();
+                $('#mmisItemCOde').hide();
+                $('#otherItemCOde').show();
+                // added on 15-01-2025
+                $('#title,#item_code_value,#no_of_items,#author_name,#isbn_issn,#classification,#publisher_name,#publish_year,#publish_place,#pages,#series_title,#call_number,#language,#source,#subject,#price,#price_currency,#notes,#review, #edition, #tags, #no_of_items').prop('required', true);
             @else
-            $('#otherItemCOde').hide();
-            $('#mmisItemCOde').show();
+                $('#otherItemCOde').hide();
+                $('#mmisItemCOde').show();
+                // added on 15-01-2025
+                $('#title,#no_of_items,input[name="item_code_value"]').prop('required', true);
             @endif
             $('#purchase').text('{{$nextItemCode}}');
             $('#donate').text('{{$DonateCode}}');
             $('.purchase').val('{{$nextItemCode}}');
             $('.donate').val('{{$DonateCode}}');
 
-           $('#title,#sub_title,#material_resource_type,#no_of_items,#author_name,#isbn_issn,#classification,#publisher_name,#publish_year,#publish_place,#pages,#series_title,#call_number,#language,#source,#subject,#price,#price_currency,#notes,#review, #edition, #tags, #no_of_items').prop('required', true);     
+        //    $('#title,#item_code_value,#no_of_items,#author_name,#isbn_issn,#classification,#publisher_name,#publish_year,#publish_place,#pages,#series_title,#call_number,#language,#source,#subject,#price,#price_currency,#notes,#review, #edition, #tags, #no_of_items').prop('required', true);     // commented on 15-01-2025
                      
         })
         $(document).on("click", ".btn-edit", function(e) {
