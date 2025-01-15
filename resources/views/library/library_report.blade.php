@@ -46,7 +46,7 @@
                         </div>
 
                         <div class="col-md-4 form-group" id="for_author">
-                            <label for="">Author</label>
+                            <label for="">Author/Editor</label>
                             <select id="author" class="form-control" name="author">
                                 <option value="">All</option>
                                 @foreach ($data['get_author_name'] as $key => $value)
@@ -130,7 +130,7 @@
                                     <th>Edition</th>
                                     <th>Tags</th>
                                     <th>No. of Items</th>
-                                    <th>Author Name</th>
+                                    <th>Author/Editor Name</th>
                                     <th>ISBN/ISSN</th>
                                     <th>Classification</th>
                                     <th>Publisher Name</th>
@@ -233,6 +233,47 @@
             }
         });
     }
+    
+    $(document).ready(function () {
+        var table = $('#example').DataTable({
+            select: true,
+            lengthMenu: [
+                [100, 500, 1000, -1],
+                ['100', '500', '1000', 'Show All']
+            ],
+            dom: 'Bfrtip',
+            buttons: [
+                {
+                    extend: 'pdfHtml5',
+                    title: 'Fees Monthly Report',
+                    orientation: 'landscape',
+                    pageSize: 'LEGAL',
+                    pageSize: 'A0',
+                    exportOptions: {
+                        columns: ':visible'
+                    },
+                },
+                {extend: 'csv', text: ' CSV', title: 'Fees Monthly Report'},
+                {extend: 'excel', text: ' EXCEL', title: 'Fees Monthly Report'},
+                {extend: 'print', text: ' PRINT', title: 'Fees Monthly Report'},
+                'pageLength'
+            ],
+        });
 
+        $('#example thead tr').clone(true).appendTo('#example thead');
+        $('#example thead tr:eq(1) th').each(function (i) {
+            var title = $(this).text();
+            $(this).html('<input type="text" placeholder="Search ' + title + '" />');
+
+            $('input', this).on('keyup change', function () {
+                if (table.column(i).search() !== this.value) {
+                    table
+                        .column(i)
+                        .search( this.value )
+                        .draw();
+                }
+            } );
+        } );
+    } );
 </script>
 @include('includes.footer')

@@ -81,7 +81,7 @@ class classwiseGradeReportController extends Controller
                 $join->whereRaw("s.subject_id = e.subject_id AND s.sub_institute_id = e.sub_institute_id AND s.standard_id = e.standard_id");
             })
             ->leftJoin('result_marks as rm', function ($join) {
-                $join->whereRaw("rm.sub_institute_id = e.sub_institute_id AND rm.exam_id = e.id");
+                $join->on("rm.exam_id","=" ,"e.id")->on("rm.sub_institute_id", "=", "e.sub_institute_id");
             })
             ->selectRaw("e.id,e.title AS ExamTitle, sum(e.points) AS total_points, e.subject_id,s.display_name AS subject_name,rm.student_id,round(SUM(rm.points),0) AS obtained_points,rm.is_absent,s.elective_subject")
             ->where("e.term_id", "=", $term_id)
@@ -97,7 +97,7 @@ class classwiseGradeReportController extends Controller
             }
       
 
-        $result = $result->groupByRaw('rm.student_id,e.id')
+        $result = $result->groupByRaw('rm.student_id,rm.id')
             ->orderBy('rm.student_id')->get()->toArray();
 
         $grade_arr = \App\Helpers\getGradeScale($standard_id, $type);
@@ -146,7 +146,11 @@ class classwiseGradeReportController extends Controller
         if(!empty($examNames) && $exam_create==''){
             array_push($examNames,'Grand Total','Average');
         }
-
+        if (in_array($grade_id,[148,149])) {
+            $passing_ratio = 33;
+        } else {
+            $passing_ratio = 35;
+        }
         $studentMarks = [];
         foreach ($all_student as $id => $arr) {
             $studentMarks[$id] = $arr;
@@ -159,8 +163,46 @@ class classwiseGradeReportController extends Controller
                     $studentMarks[$id]['examData']['Average'] = isset($studentResults[$arr['id']]['Average']) ? $studentResults[$arr['id']]['Average'] : [];
                 }
                 
-                $rank = $this->getRank($standard_id, $division_id, $passing_ratio = 35, $type,$value->title);
-                $studentMarks[$id]['examData'][$value->title]['rank'] = isset($rank[$id]['rank']) ? $rank[$id]['rank'] : 0;
+                $rank = $this->getRank($standard_id, $division_id, $passing_ratio, $type,$term_id,$value->title);
+                // echo "<pre>";print_r($rank);
+                $studentMarks[$id]['examData'][$value->title]['rank'] = isset($rank[$arr['id']][$value->title]) ? $rank[$arr['id']][$value->title] : [];
+
+                $studentRank =  isset($rank[$arr['id']][$value->title]['rank']) ? $rank[$arr['id']][$value->title]['rank'] : 0;
+                $studentFailed = isset($rank[$arr['id']][$value->title]['failed']) ? $rank[$arr['id']][$value->title]['failed'] : 0;
+
+                $appText = "Good";
+                $remarksText = "Can do better";
+                if ($studentRank >= 1 && $studentRank <= 3) {
+                    $appText = "Excellent";
+                    $remarksText = "Keep it up";
+                    if ($studentRank == 1) {
+                        $remarksText = "Keep it up";
+                    } else {
+                        $remarksText = "Aim higher";
+                    }
+                } else if ($studentRank >= 4 && $studentRank <= 10) {
+                    $appText = "V. Good";
+                    $remarksText = "Aim higher";
+                } else {
+                    $appText = "Good";
+                    $remarksText = "Can do better";
+                }
+
+                if (isset($studentFailed) && $studentFailed>0) {
+                    if ($studentFailed == 1) {
+                        $appText = "Fair";
+                        $remarksText = 'Work Hard in Failed Subject';
+                    } else if ($studentFailed == 2) {
+                        $appText = "Satisfaction";
+                        $remarksText = 'Work Hard in Failed Subjects';
+                    } else if ($studentFailed >= 3) {
+                        $appText = "Not Satisfaction";
+                        $remarksText = 'Work Hard in Failed Subjects';
+                    }
+                }
+
+                $studentMarks[$id]['examData'][$value->title]['applied'] = $appText; // .'//'.$studentRank.'//'.$studentFailed;
+                $studentMarks[$id]['examData'][$value->title]['remark'] = $remarksText; 
             }
 
             $getTermDates = DB::table('academic_year')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear,'term_id'=>$term_id])->first();
@@ -170,12 +212,16 @@ class classwiseGradeReportController extends Controller
             ->count();
             $studentMarks[$id]['attendance'] = $att;
         }
-        // echo "<pre>";print_r($studentMarks);exit;
+        // echo "<pre>";print_r($studentMarks);
+        // exit;
 
         $examSubject = DB::table('result_create_exam as rce')
         ->join('sub_std_map as s', function ($join) {
             $join->on("s.subject_id", "=", "rce.subject_id")->on("s.standard_id", "=", "rce.standard_id");
         })
+        // ->join('result_marks as rm', function ($join) {
+        //     $join->on("rm.exam_id","=" ,"rce.id")->on("rm.sub_institute_id", "=", "rce.sub_institute_id");
+        // }) // uncomment if only attempted exam to be display
         ->selectRaw('rce.id,rce.title,s.display_name as subject_name,s.id as subject_id')
         ->where("rce.term_id", "=", $term_id)
         ->where("rce.sub_institute_id", "=", $sub_institute_id)
@@ -223,7 +269,7 @@ class classwiseGradeReportController extends Controller
         return $examName;
     }
 
-    public static function getRank($standard_id,$division_id,$passing_ratio,$type,$exam_title) {
+    public function getRank($standard_id,$division_id,$passing_ratio,$type,$term_id,$exam_title='') {
         if ($type == 'API') {
             $syear = $_REQUEST['syear'];
             $sub_institute_id = $_REQUEST['sub_institute_id'];
@@ -231,7 +277,6 @@ class classwiseGradeReportController extends Controller
         } else {
             $syear = session()->get('syear');
             $sub_institute_id = session()->get('sub_institute_id');
-            $term_id = session()->get('term_id');
         }
 
         $rank_data = DB::table("tblstudent as s")
@@ -253,7 +298,9 @@ class classwiseGradeReportController extends Controller
             ->where("se.standard_id", "=", $standard_id)
             ->where("se.section_id", "=", $division_id)
             ->where("rc.report_card_status", "=", 'Y')
-            ->where("rc.title",$exam_title)
+            ->when($exam_title!='',function($q) use($exam_title){
+                $q->where("rc.title",$exam_title);
+            })
             ->whereNull("se.end_date")
             ->where('s.sub_institute_id', $sub_institute_id);
 
@@ -272,9 +319,18 @@ class classwiseGradeReportController extends Controller
             }
         }
         $rankArr = [];
-        foreach ($rank_data as $key => $val) {
-            $rankArr[$val['student_id']][$subject_id] = $val;
-            $rankArr[$val['student_id']][$subject_id]['rank'] = $percentageArr[$val['percentage']];
+        if($exam_title!=''){
+            foreach ($rank_data as $key => $val) {
+                $rankArr[$val['student_id']][$exam_title] = $val;
+                $rankArr[$val['student_id']][$exam_title]['rank'] = $percentageArr[$val['percentage']];
+                $rankArr[$val['student_id']][$exam_title]['failed'] = $val['failed'];
+            }
+        }else{
+            foreach ($rank_data as $key => $val) {
+                $rankArr[$val['student_id']] = $val;
+                $rankArr[$val['student_id']]['rank'] = $percentageArr[$val['percentage']];
+                $rankArr[$val['student_id']]['failed'] = $val['failed'];
+            }
         }
 
         return $rankArr;

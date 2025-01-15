@@ -16,7 +16,7 @@
     <div class="container-fluid">
         <div class="row bg-title">
             <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
-                <h4 class="page-title">Author Report</h4> 
+                <h4 class="page-title">Author/Editor Report</h4> 
             </div>
         </div>        
         @if(isset($data['author_names']))
@@ -39,7 +39,7 @@
                                     <th>Edition</th>
                                     <th>Tags</th>
                                     <th>No. of Items</th>
-                                    <th>Author Name</th>
+                                    <th>Author/Editor Name</th>
                                     <th>ISBN/ISSN</th>
                                     <th>Classification</th>
                                     <th>Publisher Name</th>

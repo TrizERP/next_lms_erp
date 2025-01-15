@@ -22,7 +22,7 @@
                     <li class="nav-item" role="presentation" data-toggle="tooltip" data-placement="top"
                         title="Author List">
                         <a class="nav-link" data-toggle="tab" href="#right-tab-2" role="tab"
-                            aria-controls="right-tab-2" aria-selected="true">Author List</a>
+                            aria-controls="right-tab-2" aria-selected="true">Author/Editor List</a>
                     </li>
                 </ul>
             </div>
