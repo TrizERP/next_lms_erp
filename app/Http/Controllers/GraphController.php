@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Services\Neo4jService;
 use Illuminate\Http\JsonResponse;
-
+use Illuminate\Support\Facades\Log;
 class GraphController extends Controller
 {
     protected $neo4jService;
@@ -153,9 +153,9 @@ class GraphController extends Controller
             $subjectProperties = $subject->getProperties();
             $chapterProperties = $chapter->getProperties();
             $prerequisiteProperties = ($prerequisite) ? $prerequisite->getProperties() : null;
-
             // Use Neo4j internal IDs for unique identification
             $studentId = $student->getId();
+            Log::Info($studentId);
             $standardId = $standard->getId();
             $subjectId = $subject->getId();
             $chapterId = $chapter->getId();

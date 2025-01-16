@@ -10,7 +10,6 @@
                     @endforeach
                 </select>
             </div>
-
             <div class="me-3" style="flex: 1;">
                 <label for="from">From</label>
                 <input type="date" id="from" name="from" class="form-control" style="width: 100%;" />

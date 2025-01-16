@@ -267,14 +267,13 @@ public function getDoughnutChartData(Request $request)
     $fromDate = $request->input('from');
     $toDate = $request->input('to');
     $fields = $request->input('field');
-    // Validate the input dates and parse them correctly
     try {
         if ($fromDate) {
-            $fromDate = Carbon::parse($fromDate)->format('Y-m-d'); // Ensure date format is 'YYYY-MM-DD'
+            $fromDate = Carbon::parse($fromDate)->format('Y-m-d');
         }
 
         if ($toDate) {
-            $toDate = Carbon::parse($toDate)->format('Y-m-d'); // Ensure date format is 'YYYY-MM-DD'
+            $toDate = Carbon::parse($toDate)->format('Y-m-d'); 
         }
     } catch (\Exception $e) {
         // Handle date parsing error
@@ -447,7 +446,6 @@ Log::info('Generated API Request URL:', ['url' => $url]);
 try {
     $response = Http::timeout(60)->get($url);
 
-    // Check if the request was successful
     if ($response->successful()) {
         $responseData = $response->json();
         if (isset($responseData['data']) && is_array($responseData['data'])) {
@@ -455,7 +453,6 @@ try {
 
             $notificationCounts = [];
             $labels = []; 
-            // Process each notification and count occurrences by type
             foreach ($notifications as $notification) {
                 if (isset($notification[$fields])) {
                     $notificationType = $notification[$fields];
@@ -546,13 +543,12 @@ public function getPolarAreaChartData(Request $request)
 
     // Sum the amounts for each grouped date
     $feesCollectSum = $feesCollectGrouped->map(function ($item) {
-        return $item->sum('amount');  // Sum the amounts for each group (date)
+        return $item->sum('amount');  
     });
 
-    // Return the data as a JSON response
     return response()->json([
-        'labels' => $feesCollectSum->keys(),    // Date labels
-        'fees_collect' => $feesCollectSum->values(),  // Total fees collected per date
+        'labels' => $feesCollectSum->keys(), 
+        'fees_collect' => $feesCollectSum->values(), 
     ]);
 }
 
