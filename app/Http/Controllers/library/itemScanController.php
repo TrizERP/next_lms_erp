@@ -243,4 +243,119 @@ class itemScanController extends Controller
         }
         return is_mobile($type, "scan_books_remarks.index", $res);    
     }
+
+    public function verifiedReport(Request $request){
+        $type = $request->type;
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+
+        if($type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 200);
+                }
+    
+                $syear = $request->get('syear');
+                $syear = $request->get('syear');
+
+                $validator = Validator::make($request->all(), [
+                    'sub_institute_id' => 'required|numeric',
+                    'syear' => 'required|numeric',
+                ]);
+    
+                if ($validator->fails()) {
+                    $response['status'] = '0';
+                    $response['message'] = $validator->messages();
+                    return response()->json($response, 200);
+                }
+    
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+                return response()->json($response, 200);
+            }
+        }
+
+        $res['searchedItem'] = $request->item_code;
+        $res['searchedYear'] = $request->year;
+        $res['all_year'] = session()->get('academicYears');
+
+        $res['bookData'] = itemScanDetail::join('library_items as li',function($join){
+            $join->on('li.item_code','=','item_scan_details.item_code')->on('item_scan_details.sub_institute_id','=','li.sub_institute_id');
+        })
+        ->join('library_books as lb',function($join){
+            $join->on('li.book_id','=','lb.id')->on('item_scan_details.sub_institute_id','=','lb.sub_institute_id');
+        })
+        ->selectRaw('item_scan_details.*,lb.title as book_title,lb.material_resource_type as collection_type')
+        ->where(['item_scan_details.sub_institute_id'=>$sub_institute_id])
+        ->when($request->item_code!='',function($q) use($request){
+            $q->where('item_scan_details.item_code',$request->item_code);
+        })
+        ->when($request->year!='',function($q) use($request){
+            $q->where('item_scan_details.syear',$request->year);
+        })
+        ->whereNull('item_scan_details.deleted_at')
+        ->get()
+        ->toArray(); 
+        // echo "<pre>";print_r(session()->all());exit;
+        return is_mobile($type, "library/bookVarification/varifedReports", $res, "view");    
+    }
+
+    public function verifyPendingReport(Request $request){
+        $type = $request->type;
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+
+        if($type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 200);
+                }
+    
+                $syear = $request->get('syear');
+                $syear = $request->get('syear');
+
+                $validator = Validator::make($request->all(), [
+                    'sub_institute_id' => 'required|numeric',
+                    'syear' => 'required|numeric',
+                ]);
+    
+                if ($validator->fails()) {
+                    $response['status'] = '0';
+                    $response['message'] = $validator->messages();
+                    return response()->json($response, 200);
+                }
+    
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+                return response()->json($response, 200);
+            }
+        }
+        $res['searchedItem'] = $request->item_code;
+        $res['searchedYear'] = $request->year;
+        $res['all_year'] = session()->get('academicYears');
+
+        $res['bookData'] = DB::table('library_items as li')
+        ->join('library_books as lb', function ($join) {
+            $join->on('li.book_id', '=', 'lb.id')
+                 ->on('li.sub_institute_id', '=', 'lb.sub_institute_id');
+        })
+        ->leftJoin('item_scan_details as isd', 'li.item_code', '=', 'isd.item_code')
+        ->selectRaw('isd.item_code as not_found,isd.syear,li.item_code,lb.title as book_title,lb.material_resource_type as collection_type')
+        ->where('li.sub_institute_id', $sub_institute_id)
+        ->when($request->item_code != '', function ($q) use ($request) {
+            $q->where('li.item_code', $request->item_code);
+        })
+        ->when($request->year!='',function($q) use($request){
+            $q->where('isd.syear',$request->year);
+        })
+        ->whereNull('isd.item_code')
+        ->get();
+    
+
+        return is_mobile($type, "library/bookVarification/varifyPending", $res, "view");    
+    }
 }
