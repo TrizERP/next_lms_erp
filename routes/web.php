@@ -70,7 +70,8 @@ use App\Http\Controllers\BotManController;
 use App\Http\Controllers\reuirementController;
 use App\Http\Controllers\ChatbotController;
 use App\Http\Controllers\lms\chapterController as LmsChapterController;
-
+use App\Http\Controllers\library\itemVerificationController;
+use App\Http\Controllers\library\itemScanController;
 
 /*
 |--------------------------------------------------------------------------
@@ -454,6 +455,13 @@ Route::group(['middleware' => ['session', 'menu', 'logRoute','check_permissions'
     Route::get('leave-list', [LeaveSummaryReportController::class,'leaveLists'])->name('leavelist');
 
     Route::resource('books', BookController::class);
+    Route::resource('item_verification_status', itemVerificationController::class); 
+    Route::resource('scan_books', itemScanController::class); 
+    Route::get('scan_books_remarks', [itemScanController::class,'remarksIndex'])->name('scan_books_remarks.index');
+    Route::post('scan_books_remarks/store', [itemScanController::class,'remarksStore'])->name('scan_books_remarks.store');
+    Route::get('verified_book_report', [itemScanController::class,'verifiedReport'])->name('verified_report.index');
+    Route::get('verified_book_report_pending', [itemScanController::class,'verifyPendingReport'])->name('verifiyPending_report.index');
+
     Route::get('books/{id}/barcode', [BookController::class,'generateBarcode'])->name('books.barcode');
     Route::get('books/{id}/reutrn', [BookController::class,'returnBook'])->name('books.return');
     Route::post('books/issue', [BookController::class,'issueBook'])->name('books.issue');
