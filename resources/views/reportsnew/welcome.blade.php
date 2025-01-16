@@ -1,0 +1,1 @@
+@extends('reportsnew.layout.layout')
