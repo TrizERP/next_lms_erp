@@ -192,7 +192,7 @@ $editData = array();
                             <label>Sms </label>
                             <textarea type="text" id='sms_message' name="sms_message" class="form-control"></textarea>
                         </div>
-                        <div class="col-md-3 form-group {{$class}} payment_modeDiv">
+                       {{--<div class="col-md-3 form-group {{$class}} payment_modeDiv">
                                 <label>Payment Mode </label>
                                 <select id='payment_mode' name="payment_mode" onchange="displayBank(this.value);" class="form-control" >
                                     <option value=""> Select Payment Mode </option>
@@ -200,7 +200,7 @@ $editData = array();
                                     <option value="cheque" @if(isset($editData['payment_mode'])) @if($editData['payment_mode'] == 'cheque') selected="selected" @endif @endif> Cheque </option>
                                     <option value="dd" @if(isset($editData['payment_mode'])) @if($editData['payment_mode'] == 'dd') selected="selected" @endif @endif> DD </option>
                                 </select>
-                            </div>
+                            </div>--}}
                         @if(isset($data['custom_fields']))
                             @foreach($data['custom_fields'] as $key => $value)
                                 @if(!in_array($value['field_name'],$unmandatoryFileds))

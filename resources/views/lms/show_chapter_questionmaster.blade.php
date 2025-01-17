@@ -63,8 +63,7 @@
                                             @php $i = 1;@endphp
                                             @foreach ($data['data'] as $key => $quesdata)
                                             @php
-                                                $map_type = explode(',', $quesdata->type_name);
-                                                $map_value= explode(',', $quesdata->value_name);
+                                                $map_type = explode('||', $quesdata->type_name);
                                                 $j =1;
                                             @endphp
                                                 <tr>
@@ -79,16 +78,13 @@
                                                     <td>{!! $quesdata->question_title !!}</td>
                                                     <td>{{ ucwords($quesdata->question_type) }}</td>
                                                     <td>
-                                                    <ul>
-                                                        @foreach($map_value as $index => $value)
-                                                            @if(!empty($value))
-                                                                {{$j++.")".$value."-"}}
-                                                                @if(isset($map_type[$index]))
-                                                                    {{$map_type[$index]}}<li> </li>
-                                                                @endif
-                                                            @endif
+                                                        <ul>
+                                                        @foreach($map_type as $map)
+                                                        @if(!empty($map))
+                                                           <li>{{ $j++.") ".$map }}</li>
+                                                        @endif
                                                         @endforeach
-                                                    </ul>
+                                                        </ul>
                                                     </td>
                                                     <td>
                                                         @if ($quesdata->multiple_answer == 1)

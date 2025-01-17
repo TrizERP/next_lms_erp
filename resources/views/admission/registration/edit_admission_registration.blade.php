@@ -528,7 +528,7 @@ $('document').ready(function(){
             @if(in_array($value['field_name'],$unmandatoryFileds))
                 var fieldName = "{{$value['field_name']}}";
                 var fieldLabel = "{{$value['field_label']}}";
-                alert($fieldName);
+                // alert($fieldName);
 
                 $('.'+fieldName+'Div').removeClass('hide');
                 $('.' + fieldName + 'Div').addClass('show').find('label').text(fieldLabel);

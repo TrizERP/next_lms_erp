@@ -309,7 +309,12 @@ class studentHomeworkController extends Controller
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['subjects'] = $subjects;
-
+          // for student 01-01-2024
+        if(session()->get('user_profile_name')=="Student"){
+            $res['grade_id'] = session()->get('stu_grade');
+            $res['standard_id'] = session()->get('stu_std');
+            $res['division_id'] = session()->get('stu_div');
+        }
         return is_mobile($type, "student/homework/show_student_homework_report", $res, "view");
     }
 
@@ -353,7 +358,11 @@ class studentHomeworkController extends Controller
             })->selectRaw("h.*,s.name as standard_name,d.name as division_name,ss.subject_name,
                 CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name) as student_name, ts.id as student_id")
             ->where('h.sub_institute_id', $sub_institute_id)
-            ->where('h.syear', $syear);
+            ->where('h.syear', $syear)
+            // for student 01-01-2025
+            ->when($user_profile=="Student",function($q) use($user_id){
+                $q->where('h.student_id',$user_id);
+            });
 
         if ($standard != '') {
             $result = $result->where('h.standard_id', $standard);

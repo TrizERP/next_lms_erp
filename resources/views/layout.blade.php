@@ -75,7 +75,11 @@
          left: 50%;
          transform: translate(-50%, -50%);
          }
-      </style>
+         .enjoyhint_skip_btn{
+            bottom: 650px !important;
+            background:#fff !important;
+         }
+   </style>
       <!-- Global site tag (gtag.js) - Google Analytics -->
       <script async src="https://www.googletagmanager.com/gtag/js?id=UA-153077517-1"></script>
       <script>
@@ -253,6 +257,7 @@
                      <!-- <a class="dropdown-item" href="#">Profile</a> -->
                      <a class="dropdown-item" href="{{route('change_password.index')}}"><i
                         class="mdi mdi-settings"></i> Change Password</a>
+                  @if(session()->get('user_profile_name')!='Student')
                      <a class="dropdown-item" href="{{route('dashboard_setting.index')}}"><i
                         class="mdi mdi-vector-triangle"></i> Dashboard Setting</a>
                      <a class="dropdown-item" href="{{route('device_check')}}"><i
@@ -281,6 +286,7 @@
                      <a class="dropdown-item" href="{{route('manage_institute.index')}}"><i
                         class="mdi mdi-home-city"></i> Manage Institute</a>
                      @endif
+                  @endif
                      <!-- <a class="dropdown-item" target="_blank" href="{{route('onlineEnquiryFirst', ['id' => Session::get('sub_institute_id'), 'title' => Session::get('school_name')])}}"><i class="ti-book"></i>Admission Form</a> -->
                      @if(isset($loginpage_link) && $loginpage_link != '')
                      <a class="dropdown-item" href="{{$loginpage_link}}"><i class="mdi mdi-power"></i> Logout</a>

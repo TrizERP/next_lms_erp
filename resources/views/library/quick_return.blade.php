@@ -56,7 +56,7 @@
                     <th>Due Date</th>  
 					<th>Return Date</th>                    
                     <th>Publisher Name</th>                    
-                    <th class="text-left">Author Name</th>
+                    <th class="text-left">Author/Editor Name</th>
                 </thead>
 
                 <tbody>

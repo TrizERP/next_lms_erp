@@ -37,6 +37,10 @@
         white-space: nowrap;
         z-index: 1;
     }
+    .enjoyhint_skip_btn{
+        bottom: 650px !important;
+        background:#fff !important;
+    }
 </style>
 
 <body class="fix-header">

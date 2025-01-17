@@ -17,7 +17,11 @@
             </nav>
         </div>   
         <div class="col-md-6" align="right">
-          <a href="{{route('pal.index')}}" class="btn btn-primary">Back To PAL</a>
+            @if(isset($data['exam_type']) && $data['exam_type']=="PAL")
+            <a href="{{route('pal.index')}}" class="btn btn-primary">Back To PAL</a>
+            @else
+            <a href="{{route('question_paper.index')}}" class="btn btn-primary">Back To Exams</a>
+            @endif
         </div>        
     </div>
 
@@ -223,9 +227,9 @@
                                             @if(isset($data['mapping_arr'][$quesarr['id']]))   
                                                 <ul class="result"> 
                                                 @php 
-                                                $licolor = array("010101","7460EE","7ACE4C","FFBB44","41B3F9","F32F54");
-                                                $k=0;
-                                                @endphp;                                                                    
+                                                    $licolor = array("010101","7460EE","7ACE4C","FFBB44","41B3F9","F32F54","010101","7460EE","7ACE4C","FFBB44","41B3F9","F32F54","010101","7460EE","7ACE4C","FFBB44","41B3F9","F32F54");
+                                                    $k=0;
+                                                @endphp
                                                 @foreach($data['mapping_arr'][$quesarr['id']] as $mapping_type => $mapping_value)                                                    
                                                     <li style="width:30% !important;background:#{{$licolor[$k]}}">
                                                         {{$mapping_type}}
@@ -235,7 +239,7 @@
                                                     </li>
                                                 @php                                                 
                                                 $k++;
-                                                @endphp;                                                                         
+                                                @endphp                                                                        
                                                 @endforeach
                                                 </ul>
                                             @endif

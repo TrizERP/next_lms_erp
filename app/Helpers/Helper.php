@@ -177,7 +177,18 @@ if (!function_exists('SearchChain')) {
             // $menu_ids = [80,102,156];
             $menu_ids=[];
         }
+        // for student 01-01-2025 start
+        $studentData = DB::table('tblstudent as s')->join('tblstudent_enrollment as se','se.student_id','=','s.id')
+        ->where('s.sub_institute_id',session()->get('sub_institute_id'))
+        ->where('se.syear',session()->get('syear'))
+        ->where('s.id',session()->get('user_id'))
+        ->first();
 
+        session()->put('stu_grade',$studentData->grade_id ?? '');
+        session()->put('stu_std',$studentData->standard_id ?? '');
+        session()->put('stu_div',$studentData->section_id ?? '');
+        // for student 01-01-2025 end
+        
         $getClass=DB::table('class_teacher')->whereRaw('sub_institute_id='.session()->get('sub_institute_id').' and teacher_id ='.session()->get('user_id').' and syear="'.session()->get('syear').'"')->groupBy('teacher_id')->first();
 
         // START 07/09/2021 code for getting standard , grade , division according to timetable wise for homework module
@@ -209,6 +220,31 @@ if (!function_exists('SearchChain')) {
             Session::put('subjectTeacherDivArr', $subjectTeacherDivArr);
         }
         // END 07/09/2021 code for getting standard , grade , division according to timetable wise for homework module
+
+        // 10-01-2025 start supervisor rights
+        else if (!in_array(session()->get('user_profile_name'),['Super Admin','Admin','Teacher','LMS Teacher','Student']))
+        {
+            $getUserData =tbluserModel::where('id',session()->get('user_id'))->first();
+            if(!empty($getUserData) && isset($getUserData->allocated_standards) && $getUserData->allocated_standards!=''){
+                $getAllocatedStandard = DB::table('standard')->whereRaw('id IN ('.$getUserData->allocated_standards.')')
+                ->get()->toArray();
+            
+                $subjectTeacherGrdArr = $subjectTeacherStdArr = array();
+                if (count($getAllocatedStandard) > 0) {
+                    foreach ($getAllocatedStandard as $k => $v) {
+                        if(!in_array($v->grade_id,$subjectTeacherGrdArr)){
+                            $subjectTeacherGrdArr[] = $v->grade_id;
+                        }
+                        if(!in_array($v->id,$subjectTeacherStdArr)){
+                            $subjectTeacherStdArr[] = $v->id;
+                        }
+                    }
+                }
+                Session::put('subjectTeacherGrdArr', $subjectTeacherGrdArr);
+                Session::put('subjectTeacherStdArr', $subjectTeacherStdArr);
+            }
+        }
+        // 10-01-2025 end supervisor rights
 
         $explod_list = explode(',', $listed_drop);
         $grade_name = 'grade';
@@ -248,7 +284,13 @@ if (!function_exists('SearchChain')) {
         // added on 17-04-24 by uma, when menu where class teacher can see only their class students
         if(in_array(session()->get('right_menu_id'),$menu_ids) && session()->get('user_profile_name') == 'Teacher'){
             $query->whereIn('id', [$getClass->grade_id ?? 0 ]);
-        }else{
+        }
+        // for students 01-01-2025 start 
+        elseif(session()->get('user_profile_name')=="Student"){
+            $query->where('id', [$studentData->grade_id ?? 0 ]);
+        }
+        // for students 01-01-2025 end 
+        else{
         //START Check for subject teacher assigned
             $subjectTeacherGrdArr = session()->get('subjectTeacherGrdArr');
             if (isset($subjectTeacherGrdArr) && (!isset($classTeacherGrdArr) || in_array($module_name, $module_array))) {
@@ -309,6 +351,11 @@ if (!function_exists('SearchChain')) {
                         $query->oRwhere('id', null);
                     }
                 }
+                  // for students 01-01-2025 start 
+                  if(session()->get('user_profile_name')=="Student"){
+                    $query->where('id', [$studentData->standard_id ?? 0 ]);
+                }
+                // for students 01-01-2025 end 
                 $standard = $query->pluck("name", "id");
 
             } else {
@@ -338,7 +385,11 @@ if (!function_exists('SearchChain')) {
                     }
                 }
                 //END Check for subject teacher assigned
-
+                // for students 01-01-2025 start 
+                if(session()->get('user_profile_name')=="Student"){
+                    $query->where('id', [$studentData->standard_id ?? 0 ]);
+                }
+                // for students 01-01-2025 end 
                 $standard = $query->pluck("name", "id");
             }
 
@@ -381,7 +432,9 @@ if (!function_exists('SearchChain')) {
                     }
                 }
                 //END Check for subject teacher assigned
-
+                if(session()->get('user_profile_name')=="Student"){
+                    $query->where('division.id', [$studentData->section_id ?? 0 ]);
+                }
                 $division = $query->pluck('division.name', 'division.id');
 
             } else {
@@ -404,7 +457,9 @@ if (!function_exists('SearchChain')) {
                 if ($subjectTeacherDivArr != "" && ($classTeacherDivArr == "" || in_array($module_name, $module_array))) {
                     if(in_array(session()->get('right_menu_id'),$menu_ids) && session()->get('user_profile_name')=="Teacher"){
                         $query->where('division.id',$getClass->division_id);
-                    }else{
+                    }
+                    // else { commented on 10-0-2025 for hills suprevisor rights and added elseif
+                    elseif(!empty($subjectTeacherDivArr)){
                         $query->whereIn('division.id', function ($sub_query) use ($subjectTeacherDivArr,$std_val) {
                             $sub_query->select('division_id')
                                 ->from('timetable')
@@ -416,7 +471,11 @@ if (!function_exists('SearchChain')) {
                     }
                 }
                 //END Check for subject teacher assigned
-
+                // for students 01-01-2025 start 
+                if(session()->get('user_profile_name')=="Student"){
+                    $query->where('division.id', [$studentData->section_id ?? 0 ]);
+                }
+                // for students 01-01-2025 end 
                 $division = $query->pluck('division.name', 'division.id');
             }
 

@@ -70,7 +70,8 @@ use App\Http\Controllers\BotManController;
 use App\Http\Controllers\reuirementController;
 use App\Http\Controllers\ChatbotController;
 use App\Http\Controllers\lms\chapterController as LmsChapterController;
-
+use App\Http\Controllers\library\itemVerificationController;
+use App\Http\Controllers\library\itemScanController;
 
 /*
 |--------------------------------------------------------------------------
@@ -454,6 +455,13 @@ Route::group(['middleware' => ['session', 'menu', 'logRoute','check_permissions'
     Route::get('leave-list', [LeaveSummaryReportController::class,'leaveLists'])->name('leavelist');
 
     Route::resource('books', BookController::class);
+    Route::resource('item_verification_status', itemVerificationController::class); 
+    Route::resource('scan_books', itemScanController::class); 
+    Route::get('scan_books_remarks', [itemScanController::class,'remarksIndex'])->name('scan_books_remarks.index');
+    Route::post('scan_books_remarks/store', [itemScanController::class,'remarksStore'])->name('scan_books_remarks.store');
+    Route::get('verified_book_report', [itemScanController::class,'verifiedReport'])->name('verified_report.index');
+    Route::get('verified_book_report_pending', [itemScanController::class,'verifyPendingReport'])->name('verifiyPending_report.index');
+
     Route::get('books/{id}/barcode', [BookController::class,'generateBarcode'])->name('books.barcode');
     Route::get('books/{id}/reutrn', [BookController::class,'returnBook'])->name('books.return');
     Route::post('books/issue', [BookController::class,'issueBook'])->name('books.issue');
@@ -535,4 +543,33 @@ Route::get('/welcome', function () {
 Route::get('/dashboardnew', function () {
     return view('dashboardNeo4j');
 })->name('dashboardNeo4j');
+Route::get('/new', function () {
+    return view('newD3visuals');
+});
+Route::get('/dashboard_new', function () {
+    return view('newD3recommend');
+});
 Route::get('/sync-neo4j', [Neo4jSyncController::class, 'sync']);
+
+
+Route::get('/ChartDashboard', function () {
+    return view('reportsnew.welcome');
+});
+
+Route::view('bar-chart', 'reportsnew.charts.bar-chart');
+Route::view('bubble-chart', 'reportsnew.charts.Bubble-Chart');
+Route::view('/doughnut-chart', 'reportsnew.charts.Doughnut-Chart');
+Route::view('horizontal-bar-chart', 'reportsnew.charts.horizontalBar-Chart');
+Route::view('polar-area-chart', 'reportsnew.charts.PolarArea-Chart');
+Route::view('real-time-chart', 'reportsnew.charts.realTime-Chart');
+Route::view('scatter-line-chart', 'reportsnew.charts.scatterLineChart');
+
+use App\Http\Controllers\FeesReportController;
+Route::get('/fees-report', [FeesReportController::class, 'showReport']);
+Route::get('/fees-collect-data-hb', [FeesReportController::class, 'gethorizontalBarChartData']);
+Route::get('/fees-collect-data-b', [FeesReportController::class, 'getBarChartData']);
+Route::get('/fees-collect-vs-breackoff', [FeesReportController::class, 'getBubbleChartData']);
+Route::get('/doughnut-chart-data', [FeesReportController::class, 'getDoughnutChartData']);
+Route::get('/real-time-chart-data', [FeesReportController::class, 'getRealTimeChartData']);
+Route::get('/scatter-line-chart-data', [FeesReportController::class, 'getScatterChartData']);
+Route::get('/polar-area-chart-data', [FeesReportController::class, 'getPolarAreaChartData']);
