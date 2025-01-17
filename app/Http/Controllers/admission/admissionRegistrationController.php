@@ -265,7 +265,7 @@ class admissionRegistrationController extends Controller
 
         $data = $request->except([
             '_method', '_token','token','syear','sub_institute_id','user_id', 'submit', 'type', 'first_name', 'middle_name', 'last_name', 'mobile', 'email',
-            'date_of_birth', 'age', 'address', 'previous_school_name', 'previous_standard', 'source_of_enquiry',
+            'date_of_birth', 'age', 'address', 'previous_school_name', 'previous_standard', 'source_of_enquiry','gender',
             'admission_standard'
         ]); //,'remarks','followup_date'
 
