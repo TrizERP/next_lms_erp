@@ -2557,7 +2557,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             "std_id" => isset($studentDetailsArr[0]['standard_id']) ? $studentDetailsArr[0]['standard_id'] : '',
             "grade_id" => isset($studentDetailsArr[0]['grade_id']) ? $studentDetailsArr[0]['grade_id'] : '',
             "div_id" => isset($studentDetailsArr[0]['section_id']) ? $studentDetailsArr[0]['section_id'] : '',
-            "student_quota" => isset($studentDetailsArr[0]['student_quota']) ? $studentDetailsArr[0]['student_quota'] : '',
+            "student_quota" => isset($studentDetailsArr[0]['quota_name']) ? $studentDetailsArr[0]['quota_name'] : '',
             'student_batch' => isset($studentDetailsArr[0]['batch_title']) ? $studentDetailsArr[0]['batch_title'] : '',
             "previous_year_imprest_balance" => $previous_year_imprest_balance,
         ];
