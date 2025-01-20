@@ -474,6 +474,60 @@
         }
         else
         {
+            // $.ajax({
+            //     url: '/getHolidays',
+            //     type: 'GET',
+            //     data: {
+            //         fromDate: fromDateValue,
+            //         toDate: toDateValue
+            //     },
+            //     success: function(response) {
+            //         var holidays = response; // Use the response directly
+            //         var holidaysCount = holidays.length;
+
+            //         // Subtract Saturdays and Sundays
+            //         var saturdaysSundaysCount = 0;
+            //         // Subtract Sundays
+            //         var SundaysCount = 0;
+            //         for (var date = new Date(fromDateValue); date <= toDateValue; date.setDate(date.getDate() + 1)) {
+            //             var dayOfWeek = date.getDay();
+            //             // Subtract Saturdays and Sundays
+            //             if (dayOfWeek === 0 || dayOfWeek === 6) // 0 is Sunday, 6 is Saturday
+            //             { 
+            //                 saturdaysSundaysCount++;
+            //             }
+            //             // Subtract Sundays
+            //             if (dayOfWeek === 0) // 0 is Sunday
+            //             { 
+            //                 SundaysCount++;
+            //             }
+            //         }
+            //         diffDays -= (holidaysCount + saturdaysSundaysCount);
+            //         SundayDiffDays -= (holidaysCount); // Subtract Sundays
+            //         // console.log(SundayDiffDays);
+            //         $('#without_sandwich_total_appear_days').empty();
+            //         $('#without_sandwich_criteria_validation').empty();
+            //         console.log('fromDate='+fromDateValue+'==toDate='+toDateValue);
+
+            //         console.log('diffDays='+diffDays);
+            //         console.log('saturdaysSundaysCount='+saturdaysSundaysCount);
+            //         console.log('SundayDiffDays='+SundayDiffDays);
+            //         console.log('earnedLeaves='+earnedLeaves.fieldvalue);
+            //         if(leaveType === '9' && earnedLeaves.fieldvalue && earnedLeaves.fieldvalue!=='' && SundayDiffDays > earnedLeaves.fieldvalue){
+            //             $('#without_sandwich_criteria_validation').removeClass('success');
+            //             $('#without_sandwich_criteria_validation').addClass("error").text('The system will not allow more than the ' + earnedLeaves.fieldvalue + ' criteria set by the institute.');
+            //         }else{
+            //             $('#without_sandwich_criteria_validation').removeClass('error');
+            //             $('#without_sandwich_total_appear_days').addClass("success").text('Appear leave - ' + SundayDiffDays + ' days');
+            //             $('#total_days').val(SundayDiffDays);
+            //         }                    
+            //     },
+            //     error: function(xhr, status, error) {
+            //         console.error(error);
+            //     }
+            // });
+            
+            // 17-01-2025 added for minimum days earned leave
             $.ajax({
                 url: '/getHolidays',
                 type: 'GET',
@@ -482,45 +536,71 @@
                     toDate: toDateValue
                 },
                 success: function(response) {
-                    var holidays = response; // Use the response directly
+                    var holidays = response;
                     var holidaysCount = holidays.length;
+                    // added code for getting proper day count as per day
+                    var startDate = new Date(fromDateValue);
+                    var endDate = new Date(toDateValue);
+                    var diffTime = Math.abs(endDate - startDate);
+                    var diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; 
 
-                    // Subtract Saturdays and Sundays
                     var saturdaysSundaysCount = 0;
-                    // Subtract Sundays
-                    var SundaysCount = 0;
-                    for (var date = new Date(fromDate); date <= toDate; date.setDate(date.getDate() + 1)) {
+                    var SundayDiffDays = diffDays;
+                    var nosaturdaysSundays = 0;
+                    for (var date = new Date(fromDateValue); date <= endDate; date.setDate(date.getDate() + 1)) {
                         var dayOfWeek = date.getDay();
-                        // Subtract Saturdays and Sundays
-                        if (dayOfWeek === 0 || dayOfWeek === 6) // 0 is Sunday, 6 is Saturday
-                        { 
+                        // Count Saturdays and Sundays
+                        if (dayOfWeek === 0 || dayOfWeek === 6) { 
                             saturdaysSundaysCount++;
                         }
                         // Subtract Sundays
-                        if (dayOfWeek === 0) // 0 is Sunday
-                        { 
-                            SundaysCount++;
+                        if (dayOfWeek === 0) { // 0 is Sunday
+                            SundayDiffDays--;
                         }
+                        nosaturdaysSundays++;
                     }
+
+                    // Adjust diffDays based on holidays and weekends
                     diffDays -= (holidaysCount + saturdaysSundaysCount);
-                    SundayDiffDays -= (holidaysCount); // Subtract Sundays
-                    // console.log(SundayDiffDays);
+                    SundayDiffDays -= holidaysCount;
+
+                    // Update UI
                     $('#without_sandwich_total_appear_days').empty();
                     $('#without_sandwich_criteria_validation').empty();
+                    console.log('fromDate=' + fromDateValue + '==toDate=' + toDateValue);
 
-                    if(leaveType === '9' && earnedLeaves.fieldvalue && earnedLeaves.fieldvalue!=='' && SundayDiffDays > earnedLeaves.fieldvalue){
+                    console.log('diffDays=' + diffDays);
+                    console.log('saturdaysSundaysCount=' + saturdaysSundaysCount);
+                    console.log('SundayDiffDays=' + SundayDiffDays);
+                    console.log('earnedLeaves=' + earnedLeaves.fieldvalue);
+                    console.log('nosaturdaysSundays=' + nosaturdaysSundays);
+
+                    // Validate leave type and display appropriate messages for sandwish leave no saturdays Sundays off
+                    if (leaveType === '9' && earnedLeaves.fieldvalue && earnedLeaves.fieldvalue !== '' && nosaturdaysSundays < earnedLeaves.fieldvalue && sandwhichLeaves.fieldvalue == 'Yes') {
                         $('#without_sandwich_criteria_validation').removeClass('success');
-                        $('#without_sandwich_criteria_validation').addClass("error").text('The system will not allow more than the ' + earnedLeaves.fieldvalue + ' criteria set by the institute.');
-                    }else{
+                        $('#without_sandwich_criteria_validation').addClass("error").text('Minimun Leave set by institute' + earnedLeaves.fieldvalue + '. The system will not allow less than the ' + earnedLeaves.fieldvalue + ' criteria set by the institute.');
+                    }
+                    // Validate leave type and display appropriate messages for No sandwish leave
+                    else if (leaveType === '9' && earnedLeaves.fieldvalue && earnedLeaves.fieldvalue !== '' && SundayDiffDays < earnedLeaves.fieldvalue  && sandwhichLeaves.fieldvalue == 'No') {
+                        $('#without_sandwich_criteria_validation').removeClass('success');
+                        $('#without_sandwich_criteria_validation').addClass("error").text('Minimun Leave set by institute' + earnedLeaves.fieldvalue + '. The system will not allow less than the ' + earnedLeaves.fieldvalue + ' criteria set by the institute.');
+                    }
+                    else if(sandwhichLeaves.fieldvalue == 'Yes'){
+                        $('#without_sandwich_criteria_validation').removeClass('error');
+                        $('#without_sandwich_total_appear_days').addClass("success").text('Appear leave - ' + nosaturdaysSundays + ' days');
+                        $('#total_days').val(nosaturdaysSundays);
+                    } 
+                     else {
                         $('#without_sandwich_criteria_validation').removeClass('error');
                         $('#without_sandwich_total_appear_days').addClass("success").text('Appear leave - ' + SundayDiffDays + ' days');
                         $('#total_days').val(SundayDiffDays);
-                    }                    
+                    }
                 },
                 error: function(xhr, status, error) {
                     console.error(error);
                 }
             });
+
         }
         
     });

@@ -57,7 +57,7 @@ class bank_master_controller extends Controller
     {
 
         $content = [
-            'bank_name' => $request->get('bank_name'),
+            'bank_name' => strtoupper($request->get('bank_name')),
         ];
 
         bankmasterModel::insert($content);

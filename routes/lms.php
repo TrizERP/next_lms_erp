@@ -50,6 +50,7 @@ use App\Http\Controllers\lms\lmsCurriculumController;
 use App\Http\Controllers\lms\lmsSyllabusController;
 use App\Http\Controllers\lms\content_library\contentLibraryController;
 use App\Http\Controllers\lms\curriculum\curriculumLessonplanController;
+use App\Http\Controllers\lms\library\skillLibraryController;
 use Illuminate\Support\Facades\Route;
 
 Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
@@ -91,6 +92,7 @@ Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute',
 
     Route::resource('lo_category', locategoryController::class);
 
+    Route::resource('skill_library',skillLibraryController::class);
     // multi delete questions
     Route::get('multi_delete_questions', [questionmasterController::class, 'ajax_multiDeleteQuestion'])->name('multi_delete_questions');
 
