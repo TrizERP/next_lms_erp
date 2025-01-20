@@ -253,7 +253,23 @@
 
                                                 $monthDate = $year . '-' . date('m', strtotime($month)) . '-01';
                                                 $date_now = time();
-                                                if (in_array($id, $data['search_ids']) && $date_now >= strtotime($monthDate)) {
+												// added on 18-01-2025 ssmission
+                                                if(session()->get('sub_institute_id')==76){
+													foreach($data['header_month'] as $mapId=>$mapMonth){
+														$valueStr1 = (string)$mapMonth;
+														$year1 = substr($valueStr1, -4);
+														$month1 = substr($valueStr1, 0, strlen($valueStr1) - 4);
+														if($month1 <= date('n') && date('Y')>=$year1 && $month == $month1){
+															$slected = "checked";
+														}
+													}
+													if($slected=='' && isset($data['header_month'][0]) && $data['header_month'][0]==$id){
+														$slected = "checked ".date('n');
+													}
+												}
+												// added on 18-01-2025 ssmission
+
+												elseif (in_array($id, $data['search_ids']) && $date_now >= strtotime($monthDate)) {
                                                     $slected = "checked";
                                                 }
 

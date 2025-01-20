@@ -2557,7 +2557,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             "std_id" => isset($studentDetailsArr[0]['standard_id']) ? $studentDetailsArr[0]['standard_id'] : '',
             "grade_id" => isset($studentDetailsArr[0]['grade_id']) ? $studentDetailsArr[0]['grade_id'] : '',
             "div_id" => isset($studentDetailsArr[0]['section_id']) ? $studentDetailsArr[0]['section_id'] : '',
-            "student_quota" => isset($studentDetailsArr[0]['student_quota']) ? $studentDetailsArr[0]['student_quota'] : '',
+            "student_quota" => isset($studentDetailsArr[0]['quota_name']) ? $studentDetailsArr[0]['quota_name'] : '',
             'student_batch' => isset($studentDetailsArr[0]['batch_title']) ? $studentDetailsArr[0]['batch_title'] : '',
             "previous_year_imprest_balance" => $previous_year_imprest_balance,
         ];
@@ -2820,7 +2820,14 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
         $res = $this->getBk($request, $id);
         // echo "<pre>";print_r($res);exit;
         $res['bank_data'] = bankmasterModel::get()->toArray();
-        
+        // 18-01-2025 start get term 1 selected
+        $res['header_month'] = DB::table('fees_month_header')
+        ->where('sub_institute_id', $sub_institute_id)
+        ->get()
+        ->pluck('month_id');
+        // echo "<pre>";print_r($res['map_month']);exit;
+        // 18-01-2025 end
+
         $config = tblfeesConfigModel::where([
             'sub_institute_id' => $sub_institute_id, 'syear' => $syear,
         ])->first();
