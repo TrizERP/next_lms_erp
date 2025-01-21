@@ -1769,7 +1769,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                 
                 $panCardTag .=  '<tr>
                 <td class="left-space">&nbsp;</td>
-                <td align="left" colspan="2">nbsp</td>
+                <td align="left" colspan="2">&nbsp;</td>
                 <td align="right" colspan="2">PAN : <label><b>'.$panNo.'</b></label></td>
                 </tr>';
 
