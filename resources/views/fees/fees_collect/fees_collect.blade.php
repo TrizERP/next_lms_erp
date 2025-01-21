@@ -232,6 +232,8 @@
 							<input type="hidden" name="mother_name" value="{{ $data['stu_data']['mother_name']; }}">
 							<!-- // 2024-06-24 by uma -->
 							<input type="hidden" name="student_batch" value="{{ $data['stu_data']['student_batch']; }}">
+							<!-- // 2025-01-20 by uma -->
+							<input type="hidden" name="pan_card" value="{{ $data['stu_data']['pan_card']; }}">
 
 							<div class="table-responsive col-md-12" style="border-top: 2px solid black;">
 								<table class="table table-stripped">

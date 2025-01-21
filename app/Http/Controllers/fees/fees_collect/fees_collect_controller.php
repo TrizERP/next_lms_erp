@@ -1784,6 +1784,9 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             // 2024-06-24 by uma
             $html_content = str_replace(htmlspecialchars("<<student_batch>>"), isset($_REQUEST['student_batch']) ? $_REQUEST['student_batch'] : '-', $html_content);
 
+             // 2025-01-20 by uma
+             $html_content = str_replace(htmlspecialchars("<<parent_pan_card>>"), isset($_REQUEST['pan_card']) ? $_REQUEST['pan_card'] : '-', $html_content);
+
             $html_content = str_replace(htmlspecialchars("<<student_enrollment_value>>"), $enrollment, $html_content);
             $html_content = str_replace(htmlspecialchars("<<student_roll_value>>"), $roll_no, $html_content);
             $html_content = str_replace(htmlspecialchars("<<student_father_name>>"), $father_name, $html_content);
@@ -2559,6 +2562,8 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             "div_id" => isset($studentDetailsArr[0]['section_id']) ? $studentDetailsArr[0]['section_id'] : '',
             "student_quota" => isset($studentDetailsArr[0]['quota_name']) ? $studentDetailsArr[0]['quota_name'] : '',
             'student_batch' => isset($studentDetailsArr[0]['batch_title']) ? $studentDetailsArr[0]['batch_title'] : '',
+            // 2025-01-20 by uma
+            'pan_card' => isset($studentDetailsArr[0]['pan_card']) ? $studentDetailsArr[0]['pan_card'] : '-',
             "previous_year_imprest_balance" => $previous_year_imprest_balance,
         ];
         // echo "<pre>";print_r($stu_detail);exit;
