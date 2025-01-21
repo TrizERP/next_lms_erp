@@ -1767,21 +1767,14 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             if($receipt_book_arr->receipt_id==2 && $sub_institute_id==76){
                 $panNo = isset($_REQUEST['pan_card']) ? $_REQUEST['pan_card'] : '-';
                 
-                $panCardTag .=  '<tr>
-                <td class="left-space">&nbsp;</td>
-                <td align="left" colspan="2">&nbsp;</td>
-                <td align="right" colspan="2">PAN : <label><b>'.$panNo.'</b></label></td>
-                </tr>';
+                $panCardTag .=  'PAN : <label><b>'.$panNo.'</tr><tr>';
 
                 $ssmission_note = 'Income Tax Exemtion U/S 80G(5) No.SRT/CIT-III/Tech/80G(5)/(05/1)
                 2008-09.<br>Dt.04-06-2008 Valid from 01/04/2008 to 31/03/2011 to and onwards';
 
-                $thankFull .=  '<tr>
-                <td class="left-space">&nbsp;</td>
-                <td colspan="4" class="padding">Has been Thanksfully Received by '.$schoolHead.'</td>
-                </tr>';
+                $thankFull .=  'Has been Thanksfully Received by '.$schoolHead;
             }
-            $html_content = str_replace(htmlspecialchars("<<parent_pan_card_tr>>"), $panCardTag, $html_content);
+            $html_content = str_replace(htmlspecialchars("<<parent_pan_card>>"), $panCardTag, $html_content);
             $html_content = str_replace(htmlspecialchars("<<ssmission_note>>"), $ssmission_note, $html_content);
             $html_content = str_replace(htmlspecialchars("<<ssmission_thank_full>>"), $thankFull, $html_content);
 
