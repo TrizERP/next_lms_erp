@@ -1587,7 +1587,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             ->where('standard_id', $_REQUEST['standard_id'])
             ->where('syear', $syear)
             ->where('sub_institute_id',$sub_institute_id)
-            ->groupByRaw('receipt_line_1,receipt_line_2,receipt_line_3,receipt_line_4,receipt_prefix,receipt_logo,last_receipt_number')
+            ->groupByRaw('receipt_line_1,receipt_line_2,receipt_line_3,receipt_line_4,receipt_prefix,receipt_logo,last_receipt_number,receipt_id')
             ->get()->toArray();
 
         // create fees receipt html to display and insert into fees_collect or fee_paid_other table
@@ -1731,7 +1731,9 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             $html_content = $tData[0]['html_content'];
 
             $html_content = str_replace(htmlspecialchars("<<receipt_logo>>"), $image_path, $html_content);
+            $schoolHead = '';
             if ($receipt_book_arr->receipt_line_1 != '') {
+            $schoolHead =  $receipt_book_arr->receipt_line_1;
                 $html_content = str_replace(
                     htmlspecialchars("<<receipt_line_1>>"),
                     $receipt_book_arr->receipt_line_1,
@@ -1759,6 +1761,32 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                     $html_content
                 );
             }
+
+            // 2025-01-20 by uma
+            $panCardTag = $ssmission_note = $thankFull = '';
+            if($receipt_book_arr->receipt_id==2 && $sub_institute_id==76){
+                $panNo = isset($_REQUEST['pan_card']) ? $_REQUEST['pan_card'] : '-';
+                
+                $panCardTag .=  '<tr>
+                <td class="left-space">&nbsp;</td>
+                <td align="left" colspan="2">nbsp</td>
+                <td align="right" colspan="2">PAN : <label><b>'.$panNo.'</b></label></td>
+                </tr>';
+
+                $ssmission_note = 'Income Tax Exemtion U/S 80G(5) No.SRT/CIT-III/Tech/80G(5)/(05/1)
+                2008-09.<br>Dt.04-06-2008 Valid from 01/04/2008 to 31/03/2011 to and onwards';
+
+                $thankFull .=  '<tr>
+                <td class="left-space">&nbsp;</td>
+                <td colspan="4" class="padding">Has been Thanksfully Received by '.$schoolHead.'</td>
+                </tr>';
+            }
+            $html_content = str_replace(htmlspecialchars("<<parent_pan_card_tr>>"), $panCardTag, $html_content);
+            $html_content = str_replace(htmlspecialchars("<<ssmission_note>>"), $ssmission_note, $html_content);
+            $html_content = str_replace(htmlspecialchars("<<ssmission_thank_full>>"), $thankFull, $html_content);
+
+            // 2025-01-20 by uma end
+            
             $html_content = str_replace(htmlspecialchars("<<student_board_value>>"), $medium, $html_content);
             $html_content = str_replace(htmlspecialchars("<<admission_number_value>>"), $uniqueid, $html_content);
             $html_content = str_replace(htmlspecialchars("<<receipt_year_value>>"), $edu_year, $html_content);
