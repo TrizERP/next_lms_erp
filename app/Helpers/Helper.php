@@ -767,6 +767,12 @@ if (!function_exists('SearchStudent')) {
             'b.sub_institute_id' => 'se.sub_institute_id',
         );
 
+        // 17-01-2025  to get student quota in fees_collect
+        $quota_join = array(
+            'sq.id' => 'se.student_quota',
+            'sq.sub_institute_id' => 'se.sub_institute_id',
+        );
+        // 17-01-2025  to get student quota in fees_collect
 
         $select_fields = "ts.*,se.syear,se.student_id,se.grade_id,se.roll_no,
                 se.standard_id,se.section_id,se.student_quota,se.start_date,
@@ -821,6 +827,7 @@ if (!function_exists('SearchStudent')) {
         $columns[] = "s.medium as medium";
         $columns[] = "d.name as division_name";
         $columns[] = "b.title as batch_title";
+        $columns[] = "sq.title as quota_name"; // 17-01-2025 for student quota in fees_collect
 
         $query->join('tblstudent_enrollment as se', $enrollment_join);
         $query->where($where);
@@ -840,7 +847,11 @@ if (!function_exists('SearchStudent')) {
             $query->WhereIn('d.id', $div_arr);
         }
         $query->leftJoin('batch as b', $batch_join);
-  
+        
+        // 17-01-2025  to get student quota in fees_collect
+        $query->join('student_quota as sq', $quota_join);
+        // 17-01-2025  to get student quota in fees_collect
+
         //START Check for class teacher assigned standards
         $extraRaw = " 1 = 1 ";
 

@@ -186,9 +186,9 @@
                                 {{$percentage}}
                             </td>
                             <td>{{$att}}</td>
-                            <td>{{$appText}}</td>
+                            <td>{{$remarksText}}</td> <!-- app as remarks changed on 21-01-2025 by as per frangelo instruction -->
                             <td>{{$conduct}}</td>
-                            <td>{{$remarksText}}</td>
+                            <td>{{$appText}}</td> <!-- remarks as app changed on 21-01-2025 by as per frangelo instruction -->
                         </tr>
                         @endforeach
                     @endforeach

@@ -180,25 +180,57 @@ class classwiseGradeReportController extends Controller
                     } else {
                         $remarksText = "Aim higher";
                     }
+                    
+                    if (isset($studentFailed) && $studentFailed>0) {
+                        if ($studentFailed == 1) {
+                            $appText = "Fair";
+                            $remarksText = 'Work Hard in Failed Subject';
+                        } else if ($studentFailed == 2) {
+                            $appText = "Satisfaction";
+                            $remarksText = 'Work Hard in Failed Subjects';
+                        } else if ($studentFailed >= 3) {
+                            $appText = "Not Satisfaction";
+                            $remarksText = 'Work Hard in Failed Subjects';
+                        }
+                    }
                 } else if ($studentRank >= 4 && $studentRank <= 10) {
                     $appText = "V. Good";
                     $remarksText = "Aim higher";
+                    
+                    if (isset($studentFailed) && $studentFailed>0) {
+                        if ($studentFailed == 1) {
+                            $appText = "Fair";
+                            $remarksText = 'Work Hard in Failed Subject';
+                        } else if ($studentFailed == 2) {
+                            $appText = "Satisfaction";
+                            $remarksText = 'Work Hard in Failed Subjects';
+                        } else if ($studentFailed >= 3) {
+                            $appText = "Not Satisfaction";
+                            $remarksText = 'Work Hard in Failed Subjects';
+                        }else{
+                            $appText = "V. Good";
+                            $remarksText = 'Work Hard in Failed Subjects';
+                        }
+                    }   
                 } else {
                     $appText = "Good";
                     $remarksText = "Can do better";
-                }
-
-                if (isset($studentFailed) && $studentFailed>0) {
-                    if ($studentFailed == 1) {
-                        $appText = "Fair";
-                        $remarksText = 'Work Hard in Failed Subject';
-                    } else if ($studentFailed == 2) {
-                        $appText = "Satisfaction";
-                        $remarksText = 'Work Hard in Failed Subjects';
-                    } else if ($studentFailed >= 3) {
-                        $appText = "Not Satisfaction";
-                        $remarksText = 'Work Hard in Failed Subjects';
-                    }
+                    
+                    if (isset($studentFailed) && $studentFailed>0) {
+                        if ($studentFailed == 1) {
+                            $appText = "Fair";
+                            $remarksText = 'Work Hard in Failed Subject';
+                        } else if ($studentFailed == 2) {
+                            $appText = "Satisfaction";
+                            $remarksText = 'Work Hard in Failed Subjects';
+                        } else if ($studentFailed >= 3) {
+                            $appText = "Not Satisfaction";
+                            $remarksText = 'Work Hard in Failed Subjects';
+                        }else{
+                            $appText = "Good";
+                            $remarksText = 'Work Hard in Failed Subjects';
+                        }
+                    }   
                 }
 
                 $studentMarks[$id]['examData'][$value->title]['applied'] = $appText; // .'//'.$studentRank.'//'.$studentFailed;

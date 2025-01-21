@@ -9,7 +9,11 @@ $editData = array();
     {
         $student_data = $editData = $data['editData'];
     }
-
+    $divisionRequired = $genderRequired = '';
+    if(session()->get('sub_institute_id')==254){
+        $divisionRequired = 'required';
+        $genderRequired = 'required';
+    }
 @endphp
 <style type="text/css">
 .division_error {
@@ -82,16 +86,17 @@ $editData = array();
                                 <input type="text" id='last_name' required name='last_name' @if(isset($editData['last_name'])) value="{{$editData['last_name']}}" @endif  class="form-control">
                             </div>
                             <div class="col-md-3 form-group">
-                                <label>Gender </label>
+                                <label>Gender <span style="color: red;">*</span></label>
                                 <div class="radio radio-success">
-                                    <input type="radio" id='male' @if(isset($editData['gender'])) @if($editData['gender'] == 'M') checked="checked" @endif @endif value="M" >
+                                    <input type="radio" id="male" name="gender" @if(isset($editData['gender']) && $editData['gender'] == 'M') checked="checked" @endif value="M" {{$genderRequired}}>
                                     <label for="male"> Male </label>
                                 </div>
                                 <div class="radio radio-success">
-                                    <input type="radio" id='female' @if(isset($editData['gender'])) @if($editData['gender'] == 'F') checked="checked" @endif @endif value="F" >
+                                    <input type="radio" id="female" name="gender" @if(isset($editData['gender']) && $editData['gender'] == 'F') checked="checked" @endif value="F" {{$genderRequired}}>
                                     <label for="female"> Female </label>
                                 </div>
                             </div>
+
                             <div class="col-md-3 form-group">
                                 <label>Mobile </label>
                                 <input type="text" id='mobile' name='mobile' @if(isset($editData['mobile'])) value="{{$editData['mobile']}}" @endif   class="form-control" required>
@@ -201,7 +206,7 @@ $editData = array();
                             </div>
                             <div class="col-md-3 form-group">
                                 <label>Division </label>
-                                <select id='admission_division' ="" name="admission_division" class="form-control">
+                                <select id='admission_division' name="admission_division" class="form-control" {{$divisionRequired}}>
                                 <!-- <option value=""> Select Division </option> -->
                                     @if(isset($data['division']))
                                         @foreach($data['division'] as $key => $value)
