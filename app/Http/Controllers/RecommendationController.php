@@ -23,13 +23,10 @@ class RecommendationController extends Controller
 
         // Cypher query to fetch the next chapters for the student
         $query = '
-            MATCH (student:Student {id: $studentId})-[:HAS_COMPLETED]->(completed:Chapter)
-            MATCH (next:Chapter)-[:REQUIRES]->(completed)
-            WHERE NOT (student)-[:HAS_COMPLETED]->(next)
-            RETURN next
-            ORDER BY next.difficulty ASC, next.popularity DESC
-            LIMIT 5
-        ';
+            MATCH (next:Chapter)
+RETURN next
+ORDER BY next.difficulty ASC, next.popularity DESC
+LIMIT 5        ';
 
         // Run the query and pass the studentId as a parameter
         $result = $this->neo4jService->getClient()->run($query, ['studentId' => $studentId]);
