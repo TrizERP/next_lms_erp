@@ -72,6 +72,7 @@ use App\Http\Controllers\ChatbotController;
 use App\Http\Controllers\lms\chapterController as LmsChapterController;
 use App\Http\Controllers\library\itemVerificationController;
 use App\Http\Controllers\library\itemScanController;
+use App\Http\Controllers\DataMigrationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -574,3 +575,4 @@ Route::get('/doughnut-chart-data', [FeesReportController::class, 'getDoughnutCha
 Route::get('/real-time-chart-data', [FeesReportController::class, 'getRealTimeChartData']);
 Route::get('/scatter-line-chart-data', [FeesReportController::class, 'getScatterChartData']);
 Route::get('/polar-area-chart-data', [FeesReportController::class, 'getPolarAreaChartData']);
+Route::get('/migrate-data', [DataMigrationController::class, 'migrateDataToNeo4j']);
