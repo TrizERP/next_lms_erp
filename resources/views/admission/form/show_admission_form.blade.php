@@ -60,10 +60,10 @@
                                     <th>Email</th>
                                     <th>Date of Birth</th>
                                     <th>Age</th>
+                                    <th>Admission Standard</th>
                                     @if(in_array($sub_institute_id,$oldAdmissionInstitutes))
                                         <th>Previous School Name</th>
                                         <th>Previous Standard</th>
-                                        <th>Admission Standard</th>
                                         <th>Enquiry Remarks</th>
                                         @if(session()->get('sub_institute_id')==254)
                                         <th>Transport Fees</th>
@@ -71,7 +71,7 @@
                                     @endif
                                     <!-- 2024-12-28  -->
                                      @foreach($data['dataCustomFields'] as $k => $v)
-                                        <th data-toggle="tooltip" title="Enquiry Status">{{$v['field_label']}}</th>
+                                        <th data-toggle="tooltip" title="{{$v['field_label']}}">{{$v['field_label']}}</th>
                                     @endforeach
                                     <!-- 2024-12-28  -->
                                 </tr>
@@ -124,10 +124,10 @@
                                     <td>{{$data['email']}}</td>
                                     <td>{{$data['date_of_birth']}}</td>
                                     <td>{{$data['age']}}</td>
+                                    <td>{{$data['std_name']}}</td>
                                     @if(in_array($sub_institute_id,$oldAdmissionInstitutes))
                                         <td>{{$data['previous_school_name']}}</td>
                                         <td>{{$data['previous_standard']}}</td>
-                                        <td>{{$data['std_name']}}</td>
                                         <td>{{$data['enquiry_remark']}}</td>
                                         @if(session()->get('sub_institute_id')==254)
                                         <td>{{$data['transport_fees']}}</td>
