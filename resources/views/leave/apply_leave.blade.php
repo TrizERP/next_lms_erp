@@ -420,10 +420,12 @@
                     $('#criteria_validation').empty();
                     $('#total_appear_days').addClass("success").text('Appear leave - ' + diffDays + ' days');
                     $('#total_days').val(diffDays); // Set the value of the hidden input field to diffDays
+                    $('.btn-primary').show();  // hide and display save button
                 } 
                 else if (diffDays >= casualLeaves.fieldvalue) {
                     $('#total_appear_days').empty();
                     $('#criteria_validation').addClass("error").text('The system will not allow more than the ' + casualLeaves.fieldvalue + ' criteria set by the institute.');
+                    $('.btn-primary').hide();  // hide and display save button
                 }
             }
            else if (sandwhichLeaves.fieldvalue == 'No' && casualLeaves.fieldvalue == '2') 
@@ -456,10 +458,12 @@
                             $('#without_sandwich_criteria_validation').empty();
                             $('#without_sandwich_total_appear_days').addClass("success").text('Appear leave - ' + diffDays + ' days');
                             $('#total_days').val(diffDays); // Set the value of the hidden input field to diffDays
+                            $('.btn-primary').show();  // hide and display save button
                         } 
                         else if (diffDays >= casualLeaves.fieldvalue) {
                             $('#without_sandwich_total_appear_days').empty();
                             $('#without_sandwich_criteria_validation').addClass("error").text('The system will not allow more than the ' + casualLeaves.fieldvalue + ' criteria set by the institute.');
+                            $('.btn-primary').hide();  // hide and display save button
                         }
                     },
                     error: function(xhr, status, error) {
@@ -471,6 +475,7 @@
             {
                 $('#without_sandwich_total_appear_days').addClass("success").text('Appear leave - ' + diffDays + ' days');
                 $('#total_days').val(diffDays); // Set the value of the hidden input field to diffDays
+                $('.btn-primary').show();  // hide and display save button
             }
         }
         else
@@ -580,21 +585,25 @@
                     if (leaveType === '9' && earnedLeaves.fieldvalue && earnedLeaves.fieldvalue !== '' && nosaturdaysSundays < earnedLeaves.fieldvalue && sandwhichLeaves.fieldvalue == 'Yes') {
                         $('#without_sandwich_criteria_validation').removeClass('success');
                         $('#without_sandwich_criteria_validation').addClass("error").text('Minimun Leave set by institute' + earnedLeaves.fieldvalue + '. The system will not allow less than the ' + earnedLeaves.fieldvalue + ' criteria set by the institute.');
+                        $('.btn-primary').hide(); // hide and display save button
                     }
                     // Validate leave type and display appropriate messages for No sandwish leave
                     else if (leaveType === '9' && earnedLeaves.fieldvalue && earnedLeaves.fieldvalue !== '' && SundayDiffDays < earnedLeaves.fieldvalue  && sandwhichLeaves.fieldvalue == 'No') {
                         $('#without_sandwich_criteria_validation').removeClass('success');
                         $('#without_sandwich_criteria_validation').addClass("error").text('Minimun Leave set by institute' + earnedLeaves.fieldvalue + '. The system will not allow less than the ' + earnedLeaves.fieldvalue + ' criteria set by the institute.');
+                        $('.btn-primary').hide(); // hide and display save button
                     }
                     else if(sandwhichLeaves.fieldvalue == 'Yes'){
                         $('#without_sandwich_criteria_validation').removeClass('error');
                         $('#without_sandwich_total_appear_days').addClass("success").text('Appear leave - ' + nosaturdaysSundays + ' days');
                         $('#total_days').val(nosaturdaysSundays);
+                        $('.btn-primary').show(); // hide and display save button
                     } 
                      else {
                         $('#without_sandwich_criteria_validation').removeClass('error');
                         $('#without_sandwich_total_appear_days').addClass("success").text('Appear leave - ' + SundayDiffDays + ' days');
                         $('#total_days').val(SundayDiffDays);
+                        $('.btn-primary').show(); // hide and display save button
                     }
                 },
                 error: function(xhr, status, error) {
