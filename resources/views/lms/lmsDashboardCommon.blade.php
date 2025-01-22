@@ -365,7 +365,7 @@ if(isset($data['lmsData'])){
        <!-- card 4 end  -->
 
        <!-- card 5 -->
-       <div class="lmscard hideForPal" style="width:65%">
+       <div class="lmscard hideForPal" style="width:100%">
          <div class="card border-radius-2" style="height:370px">
           <!-- make 2 divs -->
             <div class="chDiv d-flex" style="width:100%">
