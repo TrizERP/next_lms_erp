@@ -151,7 +151,7 @@
                         @foreach($fees_data as $key => $fees_value)
                         @php
                             $total_paid = 0;
-                            $paymentModes = ['Cash','Cheque','DD','Online','NACH','UPI','Swipe1','Swipe2','Swipe3'];
+                            $paymentModes = ['Cash','Cheque','DD','Online','NACH','UPI','Swipe1','Swipe2','Swipe3','POS'];
                         @endphp
                         <tr>
                             <td><input type="checkbox" name="checkedFees[{{$fees_value['id']}}]" id="checkedFees" class="checkedFees" value="{{$fees_value['student_id']}}">&nbsp;{{$j}}</td>
