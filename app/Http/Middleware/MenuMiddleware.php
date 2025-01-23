@@ -31,7 +31,7 @@ class MenuMiddleware
 
         $type = $request->input('type');
 
-        if ($type == "API") {
+        if ($type == "API"  ||  $request->get('type') == "JSON") {
             return $next($request);
         }
 
@@ -125,7 +125,7 @@ class MenuMiddleware
                     }
                 }
 
-                if ($type != "API") {
+                if ($type != "API"  &&  $type != "JSON") {
                     if ($sub_institute_id == 0 && $is_admin == 1) {
                         $data = tblmenumasterModel::where([
                             'parent_menu_id' => "0", 'level' => "1",
@@ -207,7 +207,7 @@ class MenuMiddleware
             }
         }
 
-        if ($type != "API") {
+        if ($type != "API"  &&  $type != "JSON") {
             if ($sub_institute_id == 0 && $is_admin == 1) {
                 $data = tblmenumasterModel::where(['parent_menu_id' => "0", 'level' => "1"])
                     ->whereRaw("find_in_set('$client_id',client_id) and status = 1 and id in (" . $rightsMenusIds . ")

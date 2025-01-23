@@ -32,6 +32,14 @@ if (!function_exists('is_mobile')) {
             }
 
             return json_encode($data);
+        }
+        else if ($type == "JSON") {
+            if (isset($data["status_code"])) {
+                $data["status"] = strtoupper($data["status_code"]);
+                unset($data["status_code"]);
+            }
+
+            return response()->json($data);
         } else {
             if ($redirect_type == 'redirect') {
 
