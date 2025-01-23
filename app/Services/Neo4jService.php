@@ -1,8 +1,15 @@
 <?php
 
 namespace App\Services;
-
+use Illuminate\Support\Facades\Log;
 use Laudis\Neo4j\ClientBuilder;
+$client = ClientBuilder::create()
+->withDriver('bolt', 'bolt://' . env('NEO4J_USER') . ':' . env('NEO4J_PASSWORD') . '@' . env('NEO4J_HOST') . ':' . env('NEO4J_PORT'))
+->build();
+
+$databaseName = $client->run('SHOW DATABASES')->toArray();
+
+Log::info('Connected to Neo4j Database: ', ['database' => $databaseName]);
 
 class Neo4jService
 {
@@ -22,6 +29,7 @@ class Neo4jService
     public function createNode($data)
     {
         // Created a node with selected fields from the model
+
         $query = 'CREATE (n:Content {institute_name: $institute_name, acedemic_section: $acedemic_section, 
                   standard: $standard, subject: $subject, chapter: $chapter, source: $source, 
                   title: $title, filepath: $filepath}) RETURN n';
