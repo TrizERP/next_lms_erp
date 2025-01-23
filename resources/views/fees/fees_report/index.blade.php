@@ -89,6 +89,8 @@
                                                     @endif value="Swipe2">Swipe2</option>
 							<option @if($payment_mode == 'Swipe3') selected="selected"
                                                     @endif value="Swipe3">Swipe3</option>
+							<option @if($payment_mode == 'POS') selected="selected"
+                                                    @endif value="POS">POS</option>
 						</select>
 					</div>
 					@php

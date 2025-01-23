@@ -92,7 +92,7 @@ class Neo4jService
     //       MERGE (a)-[$alias:$relationshipType]->(b)";
 
     $query = "MATCH (a {".$keyStart.": '".$startNode."'}), (b {".$keyEnd.": '".$endNode."'}) 
-          CREATE (a)-[".$alias.":".$relationshipType."]->(b)";
+              MERGE (a)-[".$alias.":".$relationshipType."]->(b)";
          // MATCH (a {acedemic_section: 'PRIMARY'}), (b {standard: '1'}) CREATE (a)-[r1:OFFERS]->(b)
          // MATCH (a {standard: '2'}), (b {subject: 'Social Awareness'}) CREATE (a)-[r2:OFFERS]->(b)
       Log::Info("Relationship In process");

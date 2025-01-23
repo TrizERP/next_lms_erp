@@ -31,6 +31,7 @@ use function App\Helpers\sortStudentName;
 use function Illuminate\Session\expired;
 use App\Models\fees\fees_breackoff\fees_breackoff;
 use function App\Helpers\SearchStudent;
+use function App\Helpers\getStudents;
 use App\Http\Controllers\easy_com\send_sms_parents\send_sms_parents_controller;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Crypt;
@@ -1587,7 +1588,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             ->where('standard_id', $_REQUEST['standard_id'])
             ->where('syear', $syear)
             ->where('sub_institute_id',$sub_institute_id)
-            ->groupByRaw('receipt_line_1,receipt_line_2,receipt_line_3,receipt_line_4,receipt_prefix,receipt_logo,last_receipt_number')
+            ->groupByRaw('receipt_line_1,receipt_line_2,receipt_line_3,receipt_line_4,receipt_prefix,receipt_logo,last_receipt_number,receipt_id')
             ->get()->toArray();
 
         // create fees receipt html to display and insert into fees_collect or fee_paid_other table
@@ -1694,8 +1695,9 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             $total_amount_in_words = ucwords($this->convert_number_to_words($recTotal));
             if ($total_amount_in_words != "") {
                 $total_amount_in_words_str = "Rupees " . $total_amount_in_words . " Only";
+                $total_amount_in_words_only = $total_amount_in_words . " Only";
             } else {
-                $total_amount_in_words_str = "";
+                $total_amount_in_words_str =$total_amount_in_words_only= "";
             }
 
             $payMethod = $_REQUEST['PAYMENT_MODE'];
@@ -1731,34 +1733,67 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             $html_content = $tData[0]['html_content'];
 
             $html_content = str_replace(htmlspecialchars("<<receipt_logo>>"), $image_path, $html_content);
+            // 22-01-2025 start
+            $receipt_line_1 = $receipt_line_2 = $receipt_line_3 = $receipt_line_3 ='&nbsp;' ;
+
             if ($receipt_book_arr->receipt_line_1 != '') {
-                $html_content = str_replace(
-                    htmlspecialchars("<<receipt_line_1>>"),
-                    $receipt_book_arr->receipt_line_1,
-                    $html_content
-                );
+                $receipt_line_1 =  $receipt_book_arr->receipt_line_1;
             }
-            if ($receipt_book_arr->receipt_line_2 != '') {
-                $html_content = str_replace(
-                    htmlspecialchars("<<receipt_line_2>>"),
-                    $receipt_book_arr->receipt_line_2,
-                    $html_content
-                );
+            if ($receipt_book_arr->receipt_line_2 != '') { 
+                $receipt_line_2 =  $receipt_book_arr->receipt_line_2;
             }
             if ($receipt_book_arr->receipt_line_3 != '') {
-                $html_content = str_replace(
-                    htmlspecialchars("<<receipt_line_3>>"),
-                    $receipt_book_arr->receipt_line_3,
-                    $html_content
-                );
+                $receipt_line_3 =  $receipt_book_arr->receipt_line_3;
             }
             if ($receipt_book_arr->receipt_line_4 != '') {
-                $html_content = str_replace(
-                    htmlspecialchars("<<receipt_line_4>>"),
-                    $receipt_book_arr->receipt_line_4,
-                    $html_content
-                );
+                $receipt_line_4 =  $receipt_book_arr->receipt_line_4;
             }
+            $html_content = str_replace(htmlspecialchars("<<receipt_line_1>>"),$receipt_line_1,$html_content);
+            $html_content = str_replace(htmlspecialchars("<<receipt_line_2>>"),$receipt_line_2,$html_content);
+            $html_content = str_replace(htmlspecialchars("<<receipt_line_3>>"),$receipt_line_3,$html_content);
+            $html_content = str_replace(htmlspecialchars("<<receipt_line_4>>"),$receipt_line_4,$html_content);
+            
+            $payment_modes = isset($_REQUEST['PAYMENT_MODE']) ? $_REQUEST['PAYMENT_MODE'] : '';
+            $bank_name = isset($_REQUEST['bank_name']) ? $_REQUEST['bank_name'] : '';
+            $cheque_no = isset($_REQUEST['cheque_no']) ? $_REQUEST['cheque_no'] : '';
+            $cheque_date = isset($_REQUEST['cheque_date']) ? $_REQUEST['cheque_date'] : '';
+            $bank_branch = isset($_REQUEST['bank_branch']) ? $_REQUEST['bank_branch'] : '';
+            $html_content = str_replace(htmlspecialchars("<<bank_name>>"),$bank_name,$html_content);
+            $html_content = str_replace(htmlspecialchars("<<cheque_no>>"),$cheque_no,$html_content);
+            $html_content = str_replace(htmlspecialchars("<<cheque_date>>"),$cheque_date,$html_content);
+            $html_content = str_replace(htmlspecialchars("<<bank_branch>>"),$bank_branch,$html_content);
+            $html_content = str_replace(htmlspecialchars("<<payment_mode_type>>"),$payment_modes,$html_content);
+
+            // $studentDetailsArr = SearchStudent("", "", "", $sub_institute_id, $syear , "",  "", "", "", "", $_REQUEST['student_id'] , "",""); 
+            $studentArr[]=$_REQUEST['student_id'];
+            $studentDetailsArr = getStudents($studentArr);
+            // echo "<pre>";print_r($studentDetailsArr);exit;
+            $short_std_name = isset($studentDetailsArr[$_REQUEST['student_id']]['short_standard_name']) ? strtoupper($studentDetailsArr[$_REQUEST['student_id']]['short_standard_name']) : '';
+            $div_name = isset($studentDetailsArr[$_REQUEST['student_id']]['division_name']) ? strtoupper($studentDetailsArr[$_REQUEST['student_id']]['division_name']) : '';
+
+            $html_content = str_replace(htmlspecialchars("<<short_standard_name_value>>"), $short_std_name, $html_content);
+            $html_content = str_replace(htmlspecialchars("<<student_division_value>>"), $div_name, $html_content);
+
+            // 22-01-2025 end
+
+            // 2025-01-20 by uma
+            $panCardTag = $ssmission_note = $thankFull = '';
+            if($receipt_book_arr->receipt_id==2 && $sub_institute_id==76){
+                $panNo = isset($_REQUEST['pan_card']) ? $_REQUEST['pan_card'] : '-';
+                
+                $panCardTag .=  'PAN : <label><b>'.$panNo.'</tr><tr>';
+
+                $ssmission_note = 'Income Tax Exemtion U/S 80G(5) No.SRT/CIT-III/Tech/80G(5)/(05/1)
+                2008-09.<br>Dt.04-06-2008 Valid from 01/04/2008 to 31/03/2011 to and onwards';
+
+                $thankFull .=  'Has been Thanksfully Received by '.$receipt_line_1;
+            }
+            $html_content = str_replace(htmlspecialchars("<<parent_pan_card>>"), $panCardTag, $html_content);
+            $html_content = str_replace(htmlspecialchars("<<ssmission_note>>"), $ssmission_note, $html_content);
+            $html_content = str_replace(htmlspecialchars("<<ssmission_thank_full>>"), $thankFull, $html_content);
+
+            // 2025-01-20 by uma end
+            
             $html_content = str_replace(htmlspecialchars("<<student_board_value>>"), $medium, $html_content);
             $html_content = str_replace(htmlspecialchars("<<admission_number_value>>"), $uniqueid, $html_content);
             $html_content = str_replace(htmlspecialchars("<<receipt_year_value>>"), $edu_year, $html_content);
@@ -1812,6 +1847,11 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             $html_content = str_replace(
                 htmlspecialchars("<<total_amount_in_words>>"),
                 $total_amount_in_words_str,
+                $html_content
+            );
+            $html_content = str_replace(
+                htmlspecialchars("<<total_amount_in_words_only>>"),
+                $total_amount_in_words_only,
                 $html_content
             );
             $html_content = str_replace(htmlspecialchars("<<payment_mode>>"), $payment_mode, $html_content);
