@@ -73,7 +73,7 @@
                                 <select name="leave_type" id="leave_type" class="form-control">
                                     <option value="">Select Leave Type</option>
                                     @foreach ($data['leave_types'] as $key => $row)
-                                        <option value="{{ $row->id }}">{{ $row->leave_type }}</option>
+                                        <option value="{{ $row->id }}" data-leaveTypeId="{{ $row->leave_type_id }}">{{ $row->leave_type }}</option>
                                     @endforeach
                                 </select>
                             </div>
@@ -384,38 +384,57 @@
     {
         var fromDateValue = $('#from_date').val();
         var toDateValue = $(this).val();
-        var leaveType = $('#leave_type').val();
-        // Manually parse the date strings into a format compatible with the Date constructor
-        var fromParts = fromDateValue.split('-');
-        var fromDate = new Date(fromParts[2], fromParts[1] - 1, fromParts[0]); // Year, Month (0-indexed), Day
-
-        var toParts = toDateValue.split('-');
-        var toDate = new Date(toParts[2], toParts[1] - 1, toParts[0]); // Year, Month (0-indexed), Day
-
-        $('#criteria_validation').empty();
-        $('#without_sandwich_criteria_validation').empty();
-        $('#without_sandwich_total_appear_days').empty();
+        var leaveType = $('#leave_type').val(); // 22-01-2025
+        var leaveTypeId = $('#leave_type option:selected').attr('data-leaveTypeId');
         $('#total_appear_days').empty();
+        $('#without_sandwich_total_appear_days').empty();
+        $('#without_sandwich_criteria_validation').empty();
+        $('#criteria_validation').empty();
 
-        if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
-            alert("Invalid date format, Please select from date first !");
-            $('#to_date').val('');
-            return;
-        }
 
-        // Calculate the difference in days, including both start and end dates
-        var timeDiff = toDate.getTime() - fromDate.getTime();
-        var diffDays = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
-        var SundayDiffDays = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
+        // // alert('LeaveTypeId-' + leaveType);
+        // // Manually parse the date strings into a format compatible with the Date constructor
+        // var fromParts = fromDateValue.split('-');
+        // var fromDate = new Date(fromParts[2], fromParts[1] - 1, fromParts[0]); // Year, Month (0-indexed), Day
+
+        // var toParts = toDateValue.split('-');
+        // var toDate = new Date(toParts[2], toParts[1] - 1, toParts[0]); // Year, Month (0-indexed), Day
+
+        // $('#criteria_validation').empty();
+        // $('#without_sandwich_criteria_validation').empty();
+        // $('#without_sandwich_total_appear_days').empty();
+        // $('#total_appear_days').empty();
+
+        // if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
+        //     alert("Invalid date format, Please select from date first !");
+        //     $('#to_date').val('');
+        //     return;
+        // }
+
+        // // Calculate the difference in days, including both start and end dates
+        // var timeDiff = toDate.getTime() - fromDate.getTime();
+        // var diffDays = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
+        // var SundayDiffDays = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
+
+        let fromDate = new Date(fromDateValue);
+        let toDate = new Date(toDateValue);
+
+        // Calculate the difference in milliseconds
+        let diffInTime = toDate.getTime() - fromDate.getTime();
+
+        // Convert milliseconds to days
+        let diffDays = diffInTime / (1000 * 3600 * 24) + 1;
+        var SundayDiffDays = Math.ceil(diffInTime / (1000 * 3600 * 24)) + 1;
 
         var sandwhichLeaves = {!! json_encode($sandwhichLeaves) !!};
         var casualLeaves = {!! json_encode($casualLeaves) !!};
         var earnedLeaves = {!! json_encode($earnedLeaves) !!};
         
-        if(leaveType === '1')
+        if(leaveTypeId === 'LTY001')
         {
             if (sandwhichLeaves.fieldvalue == 'Yes' && casualLeaves.fieldvalue == '2') 
             {
+
                 if (diffDays <= casualLeaves.fieldvalue) {
                     $('#criteria_validation').empty();
                     $('#total_appear_days').addClass("success").text('Appear leave - ' + diffDays + ' days');
@@ -564,15 +583,15 @@
                     var holidays = response;
                     var holidaysCount = holidays.length;
                     // added code for getting proper day count as per day
-                    var startDate = new Date(formattedFromDate);
-                    var endDate = new Date(formattedToDate);
-                    var diffTime = Math.abs(endDate - startDate);
-                    var diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; 
+
+                    var startDate = new Date(fromDate);
+                    var endDate = new Date(toDate);
 
                     var saturdaysSundaysCount = 0;
                     var SundayDiffDays = diffDays;
                     var nosaturdaysSundays = 0;
-                    for (var date = new Date(formattedFromDate); date <= endDate; date.setDate(date.getDate() + 1)) {
+
+                    for (var date = new Date(fromDate); date <= endDate; date.setDate(date.getDate() + 1)) {
                         var dayOfWeek = date.getDay();
                         // Count Saturdays and Sundays
                         if (dayOfWeek === 0 || dayOfWeek === 6) { 
@@ -594,7 +613,7 @@
                     $('#without_sandwich_criteria_validation').empty();
                     // console.log('fromDate=' + fromDateValue + '==toDate=' + toDateValue);
 
-                    // console.log('diffDays=' + diffDays);
+                    console.log('diffDays=' + diffDays);
                     // console.log('saturdaysSundaysCount=' + saturdaysSundaysCount);
                     // console.log('SundayDiffDays=' + SundayDiffDays);
                     // console.log('earnedLeaves=' + earnedLeaves.fieldvalue);
