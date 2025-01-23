@@ -94,7 +94,7 @@
 
     .tree summary::before {
     z-index: 1;
-    background: #696 url('expand-collapse.svg') 0 0;
+    background: #aaa url('expand-collapse.svg') 0 0;
     }
 
     .tree summary span{
@@ -102,18 +102,18 @@
         border-radius: 5px;
         padding: 4px;
     }
-    .treeSpan{
+    /* .treeSpan{
         background : #06457c;
         color:#fff;
-    }
-    .parentSpan{
+    } */
+    /* .parentSpan{
         background : #0262b7;
         color:#fff;
-    }
-    .catSpan{
+    } */
+    /* .catSpan{
         background : #2484d9;
         color:#fff;
-    }
+    } */
     .tree li.open > ul {
         display: block;
     }
@@ -127,6 +127,8 @@
     .toggleBtn .btn{
         width: 133px;
     }
+    .hidden { display: none; }
+        .highlight { background-color: yellow; }
 </style>
 <div id="page-wrapper">
 	<div class="container-fluid">
@@ -190,65 +192,65 @@
 
 @include('includes.lmsfooterJs')
 <script>
-$(document).ready(function(){
-    $('.tableContainer').hide();
-    $('.subCat').hide();
+    $(document).ready(function(){
+        $('.tableContainer').hide();
+        $('.subCat').hide();
+        openAll();
 
-    var table = $('#example').DataTable({
-        select: true,
-        lengthMenu: [
-            [100, 500, 1000, -1],
-            ['100', '500', '1000', 'Show All']
-        ],
-        dom: 'Bfrtip',
-        buttons: [
-            {
-                extend: 'pdfHtml5',
-                title: 'LMS Curriculum Report',
-                orientation: 'landscape',
-                pageSize: 'LEGAL',
-                pageSize: 'A0',
-                exportOptions: {
-                    columns: ':visible'
+        var table = $('#example').DataTable({
+            select: true,
+            lengthMenu: [
+                [100, 500, 1000, -1],
+                ['100', '500', '1000', 'Show All']
+            ],
+            dom: 'Bfrtip',
+            buttons: [
+                {
+                    extend: 'pdfHtml5',
+                    title: 'LMS Curriculum Report',
+                    orientation: 'landscape',
+                    pageSize: 'LEGAL',
+                    pageSize: 'A0',
+                    exportOptions: {
+                        columns: ':visible'
+                    },
                 },
-            },
-            {extend: 'csv', text: ' CSV', title: 'LMS Curriculum Report'},
-            {extend: 'excel', text: ' EXCEL', title: 'LMS Curriculum Report'},
-            {
-                extend: 'print',
-                text: ' PRINT',
-                title: 'LMS Curriculum Report',
-            },
-            'pageLength'
-        ],
-    });
+                {extend: 'csv', text: ' CSV', title: 'LMS Curriculum Report'},
+                {extend: 'excel', text: ' EXCEL', title: 'LMS Curriculum Report'},
+                {
+                    extend: 'print',
+                    text: ' PRINT',
+                    title: 'LMS Curriculum Report',
+                },
+                'pageLength'
+            ],
+        });
 
-    $('#example thead tr').clone(true).appendTo('#example thead');
-    $('#example thead tr:eq(1) th').each(function (i) {
-        var title = $(this).text();
-        $(this).html('<input type="text" placeholder="Search ' + title + '" />');
+        $('#example thead tr').clone(true).appendTo('#example thead');
+        $('#example thead tr:eq(1) th').each(function (i) {
+            var title = $(this).text();
+            $(this).html('<input type="text" placeholder="Search ' + title + '" />');
 
-        $('input', this).on('keyup change', function () {
-            if (table.column(i).search() !== this.value) {
-                table
-                    .column(i)
-                    .search( this.value )
-                    .draw();
-            }
+            $('input', this).on('keyup change', function () {
+                if (table.column(i).search() !== this.value) {
+                    table
+                        .column(i)
+                        .search( this.value )
+                        .draw();
+                }
+            } );
         } );
-    } );
-})
 
-function containerView(tabname){
-    $('.btn').removeClass('activeTab');
-    $('.'+tabname+'View').toggleClass('activeTab');
+    })
 
-    $('.ContentDiv').hide();
-    $('.'+tabname+'Container').show();
-}
+    function containerView(tabname){
+        $('.btn').removeClass('activeTab');
+        $('.'+tabname+'View').toggleClass('activeTab');
 
-</script>
-<script>
+        $('.ContentDiv').hide();
+        $('.'+tabname+'Container').show();
+    }
+
     // Function to open all tree nodes
     function openAll() {
       $('.parent li').show();
@@ -274,36 +276,81 @@ function containerView(tabname){
     }
 
     $(document).ready(function () {
-    // Attach click event to all <li> elements
-    $('ul.tree').on('click', 'li', function (event) {
-        // Prevent the event from bubbling to parent elements
-        event.stopPropagation();
-
-        // Check if the clicked <li> has the class 'lastNode'
-        if ($(this).hasClass('lastNode')) {
-            // Get the data-id attribute of the clicked <li>
-            let dataId = $(this).data('id');
+        $('a.viewTree').css({"pointer-events": "none"});
+        $('a.editTree').css({"pointer-events": "none"});
+        $('a.deleteTree').css({"pointer-events": "none"});
+        // Attach click event to all <li> elements
+        $('ul.tree').on('click', 'li', function (event) {
             
-            if (dataId) {
-                // Update the href attribute of the anchor tag
-                let editHref = `skill_library/${dataId}/edit`;
-                let showHref = `skill_library/${dataId}/show`;
-                let deleteHref = `skill_library/${dataId}`;
+            $('a.viewTree').css({"pointer-events": "none"});
+            $('a.editTree').css({"pointer-events": "none"});
+            $('a.deleteTree').css({"pointer-events": "none"});
+            // Prevent the event from bubbling to parent elements pointer-events: none;
+            event.stopPropagation();
 
-                $('a.viewTree').attr('href', showHref);
-                $('a.editTree').attr('href', editHref);
-                $('a.deleteTree').attr('href', deleteHref);
+            // Check if the clicked <li> has the class 'lastNode'
+            if ($(this).hasClass('lastNode')) {
+                // Get the data-id attribute of the clicked <li>
+                let dataId = $(this).data('id');
                 
-                console.log(`Updated href to: ${newHref}`); // For debugging
+                if (dataId) {
+                    // Update the href attribute of the anchor tag
+                    let editHref = `skill_library/${dataId}/edit`;
+                    let showHref = `skill_library/${dataId}/show`;
+                    let deleteHref = `skill_library/${dataId}/delete`;
+
+                    $('a.viewTree').attr('href', showHref);
+                    $('a.editTree').attr('href', editHref);
+                    $('a.deleteTree').attr('href', deleteHref);
+                    
+                    // console.log(`Updated href to: ${newHref}`); // For debugging
+                    $('a.viewTree').css({"pointer-events": "all"});
+                    $('a.editTree').css({"pointer-events": "all"});
+                    $('a.deleteTree').css({"pointer-events": "all"});
+                }
+            }else{
+                $('a.viewTree').attr('href', '');
+                $('a.editTree').attr('href', '');
+                $('a.deleteTree').attr('href', '');
             }
-        }else{
-            $('a.viewTree').attr('href', '');
-            $('a.editTree').attr('href', '');
-            $('a.deleteTree').attr('href', '');
-        }
+        });
     });
-});
 
   </script>
+  <script>
+
+        $(document).ready(function () {
+            $('#searchInput').on('keyup', function () {
+                let searchTerm = $(this).val().toLowerCase();
+
+                if (searchTerm) {
+                    // Traverse all `li` elements inside the tree
+                    $('.tree li').each(function () {
+                        let text = $(this).text().toLowerCase();
+
+                        if (text.includes(searchTerm)) {
+                            $(this).removeClass('hidden'); // Show matching elements
+                            $(this).parents('ul').removeClass('hidden'); // Show parent `<ul>` elements
+                            $(this).parents('li').removeClass('hidden'); // Show parent `<li>` elements
+                        } else {
+                            $(this).addClass('hidden'); // Hide non-matching elements
+                        }
+                    });
+
+                    // Ensure only direct children of visible elements remain hidden or shown properly
+                    $('.tree ul').each(function () {
+                        if ($(this).find('li:not(.hidden)').length === 0) {
+                            $(this).addClass('hidden'); // Hide `<ul>` with no visible children
+                        }
+                    });
+                } else {
+                    // If search box is empty, reset the tree
+                    $('.tree li').removeClass('hidden');
+                    $('.tree ul').removeClass('hidden');
+                }
+            });
+        });
+
+    </script>
 @include('includes.footer')
 @endsection

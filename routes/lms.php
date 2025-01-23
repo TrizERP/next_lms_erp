@@ -93,6 +93,9 @@ Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute',
     Route::resource('lo_category', locategoryController::class);
 
     Route::resource('skill_library',skillLibraryController::class);
+    Route::get('skill_library/{id}/delete', [skillLibraryController::class, 'destroy']);
+    Route::get('skill_library/{id}/show', [skillLibraryController::class, 'show']);
+
     // multi delete questions
     Route::get('multi_delete_questions', [questionmasterController::class, 'ajax_multiDeleteQuestion'])->name('multi_delete_questions');
 
