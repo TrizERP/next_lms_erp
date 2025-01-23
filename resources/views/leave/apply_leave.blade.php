@@ -534,26 +534,45 @@
             // });
             
             // 17-01-2025 added for minimum days earned leave
+            // Function to convert DD-MM-YYYY to YYYY-MM-DD
+            var formatDate = date => {
+                var parts = date.split('-'); // Split the date string into [DD, MM, YYYY]
+                if (parts.length === 3) {
+                    return `${parts[2]}-${parts[1]}-${parts[0]}`; // Rearrange to YYYY-MM-DD
+                } else {
+                    console.error("Invalid date:", date);
+                    return null;
+                }
+            };
+
+            var formattedFromDate = formatDate(fromDateValue);
+            var formattedToDate = formatDate(toDateValue);
+
+            if (formattedFromDate && formattedToDate) {
+                console.log(formattedFromDate); // Outputs in Y-m-d format, e.g., "2025-01-23"
+                console.log(formattedToDate);   // Outputs in Y-m-d format, e.g., "2025-01-24"
+            }
+
             $.ajax({
                 url: '/getHolidays',
                 type: 'GET',
                 data: {
-                    fromDate: fromDateValue,
-                    toDate: toDateValue
+                    fromDate: formattedFromDate,
+                    toDate: formattedToDate
                 },
                 success: function(response) {
                     var holidays = response;
                     var holidaysCount = holidays.length;
                     // added code for getting proper day count as per day
-                    var startDate = new Date(fromDateValue);
-                    var endDate = new Date(toDateValue);
+                    var startDate = new Date(formattedFromDate);
+                    var endDate = new Date(formattedToDate);
                     var diffTime = Math.abs(endDate - startDate);
                     var diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; 
 
                     var saturdaysSundaysCount = 0;
                     var SundayDiffDays = diffDays;
                     var nosaturdaysSundays = 0;
-                    for (var date = new Date(fromDateValue); date <= endDate; date.setDate(date.getDate() + 1)) {
+                    for (var date = new Date(formattedFromDate); date <= endDate; date.setDate(date.getDate() + 1)) {
                         var dayOfWeek = date.getDay();
                         // Count Saturdays and Sundays
                         if (dayOfWeek === 0 || dayOfWeek === 6) { 
@@ -573,18 +592,18 @@
                     // Update UI
                     $('#without_sandwich_total_appear_days').empty();
                     $('#without_sandwich_criteria_validation').empty();
-                    console.log('fromDate=' + fromDateValue + '==toDate=' + toDateValue);
+                    // console.log('fromDate=' + fromDateValue + '==toDate=' + toDateValue);
 
-                    console.log('diffDays=' + diffDays);
-                    console.log('saturdaysSundaysCount=' + saturdaysSundaysCount);
-                    console.log('SundayDiffDays=' + SundayDiffDays);
-                    console.log('earnedLeaves=' + earnedLeaves.fieldvalue);
-                    console.log('nosaturdaysSundays=' + nosaturdaysSundays);
+                    // console.log('diffDays=' + diffDays);
+                    // console.log('saturdaysSundaysCount=' + saturdaysSundaysCount);
+                    // console.log('SundayDiffDays=' + SundayDiffDays);
+                    // console.log('earnedLeaves=' + earnedLeaves.fieldvalue);
+                    // console.log('nosaturdaysSundays=' + nosaturdaysSundays);
 
                     // Validate leave type and display appropriate messages for sandwish leave no saturdays Sundays off
                     if (leaveType === '9' && earnedLeaves.fieldvalue && earnedLeaves.fieldvalue !== '' && nosaturdaysSundays < earnedLeaves.fieldvalue && sandwhichLeaves.fieldvalue == 'Yes') {
                         $('#without_sandwich_criteria_validation').removeClass('success');
-                        $('#without_sandwich_criteria_validation').addClass("error").text('Minimun Leave set by institute' + earnedLeaves.fieldvalue + '. The system will not allow less than the ' + earnedLeaves.fieldvalue + ' criteria set by the institute.');
+                        $('#without_sandwich_criteria_validation').addClass("error").text('Minimun Leave set by institute is ' + earnedLeaves.fieldvalue + '. The system will not allow less than the ' + earnedLeaves.fieldvalue + ' criteria set by the institute.');
                         $('.btn-primary').hide(); // hide and display save button
                     }
                     // Validate leave type and display appropriate messages for No sandwish leave
