@@ -647,7 +647,7 @@ $route = ['dashboard'];
     <input type="text" id="user_input" placeholder="Type a message..." style="width: calc(100% - 20px); margin: 10px; padding: 10px; border: 1px solid #ccc; border-radius: 5px;">
     <button id="send_button" style="width: calc(100% - 20px); margin: 10px; padding: 10px; background-color: #007bff; color: white; border: none; border-radius: 5px;">Send</button>
 </div>
-<button id="open-chatbot" style="position: fixed; bottom: 50px; right: 20px;color: white; border: none; border-radius: 5px; padding: 10px;">
+<button id="open-chatbot" style="position: fixed; bottom: 0px; right: 20px;color: white; border: none; border-radius: 5px; padding: 10px;">
 <span class="tooltip">Hey! I am Scholar Clone</span>
 </button>
 
@@ -956,8 +956,8 @@ function attendanceState(){
   #open-chatbot {
     background: url('/Images/293633-middle-removebg.png') no-repeat center center; 
     background-size: contain;
-    width: 100px; 
-    height: 100px; 
+    width: 80px; 
+    height: 80px; 
     border: none;
     cursor: pointer;
 }
