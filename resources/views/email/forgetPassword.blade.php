@@ -25,7 +25,7 @@
                     <tr>
                         <td style="text-align:center;">
                           <a href="https://erp.triz.co.in" title="logo" target="_blank">
-                            <img src="https://erp.triz.co.in/admin_dep/images/triz.png" title="logo" alt="logo">
+                            <img src="https://erp.triz.co.in/admin_dep/images/scholar_clone.png" title="logo" alt="logo">
                           </a>
                         </td>
                     </tr>
