@@ -57,7 +57,7 @@ class MasterSetupMenuMiddleware
             }
         }
 
-        if ($type != "API") {
+        if ($type != "API"  &&  $type != "JSON") {
             $sub_institute_id = $request->session()->get('sub_institute_id');
             $data = tblmenumasterModel::where(['parent_menu_id' => "0", 'level' => "1"])
                 ->whereRaw("find_in_set('$sub_institute_id',sub_institute_id) and menu_type = 'MASTER' 

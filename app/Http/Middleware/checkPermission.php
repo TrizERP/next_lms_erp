@@ -22,7 +22,7 @@ class checkPermission
      */
     public function handle(Request $request, Closure $next)
     {
-        if ($request->get('type') != "API") {
+        if ($request->get('type') != "API" && $request->get('type') != "JSON") {
             $current_url = Route::currentRouteName();
             $userProfileId = session()->get('user_profile_id');
             $sub_institute_id = session()->get('sub_institute_id');

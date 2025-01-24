@@ -312,4 +312,44 @@ class skillLibraryController extends Controller
 
         return is_mobile($type, "skill_library.index", $res);    
     }
+
+    public function show(Request $request,$id){
+        $type = $request->type;
+        $sub_institute_id = session()->get('sub_institute_id');
+        $user_id = session()->get('user_id');
+
+        if($type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 200);
+                }
+    
+                $sub_institute_id = $request->get('sub_institute_id');
+                $validator = Validator::make($request->all(), [
+                    'sub_institute_id' => 'required|numeric',
+                ]);
+    
+                if ($validator->fails()) {
+                    $response['status'] = '0';
+                    $response['message'] = $validator->messages();
+                    return response()->json($response, 200);
+                }
+    
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+                return response()->json($response, 200);
+            }
+        }
+
+        $skillData = masterSkill::find($id);
+
+        $res['status'] = 1;
+        $res['message'] = "success";
+        $res['user_id'] = $user_id;
+        $res['editData'] = $skillData;
+        
+        return is_mobile($type, "lms/library/skill_library/show", $res, "view");   
+    }
 }

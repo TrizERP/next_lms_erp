@@ -227,6 +227,7 @@ class studentHealthController extends Controller
         $student_id = $request->input("student_id");
         $sub_institute_id = $request->input("sub_institute_id");
         $syear = $request->input("syear");
+        $type = $request->input("type");
 
         if ($student_id != "" && $sub_institute_id != "" && $syear != "") {
             // $data = DB::select("SELECT doctor_name,doctor_contact,DATE_FORMAT(date,'%d-%m-%Y') AS date, if(file = '','',concat('https://".$_SERVER['SERVER_NAME']."/storage/frontdesk/',file)) as file
@@ -253,6 +254,10 @@ class studentHealthController extends Controller
         }
 
         //return is_mobile($type, "implementation", $res);
-        return json_encode($res);
+        if($type=="JSON"){
+            return response()->json($res);
+        }else{
+            return json_encode($res);
+        }
     }
 }

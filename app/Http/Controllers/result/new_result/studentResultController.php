@@ -3405,7 +3405,8 @@ while ($current_date <= $post_end_date) {
                         $pass_or_fail ='Passed & Promoted to class : '.$next_std;
                     }
 
-                $res['pass_or_fail'] = ($format != "yearly") ? '' : $pass_or_fail;
+                // $res['pass_or_fail'] = ($format != "yearly") ? $$pass_or_fail : $pass_or_fail; // commented on 23-01-2025
+                $res['pass_or_fail'] = $pass_or_fail;
  
         return $res;
     }
