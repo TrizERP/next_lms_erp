@@ -216,7 +216,6 @@ $route = ['dashboard'];
 <script src="{{ asset("/plugins/bower_components/jquery.easy-pie-chart/easy-pie-chart.init.js") }}" defer></script>
 <script src="{{ asset("/plugins/bower_components/bootstrap-datepicker/bootstrap-datepicker.min.js") }}"></script>
 
-
 <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
 <script src="{{ asset("/admin_dep/js/jquery-ui.js") }}" defer></script>
 
@@ -319,7 +318,6 @@ $route = ['dashboard'];
         });
     });
 </script>
-
 
 <script src="{{ asset("/plugins/bower_components/clockpicker/dist/jquery-clockpicker.min.js") }}" defer></script>
 
