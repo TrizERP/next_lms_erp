@@ -93,7 +93,7 @@ class PayrollController extends Controller
         $employee_id= ($request->emp_id!=0) ? implode(',',$request->emp_id) : '';
         $department_id= ($request->department_id!=0) ? implode(',',$request->department_id) : '';
 
-        if($type=="API"){
+        if (in_array($type,['API','JSON'])) {
             try {
                 if (!$this->jwtToken()->validate()) {
                     $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
@@ -144,7 +144,7 @@ class PayrollController extends Controller
         $year = session()->get('syear');
         $sub_institute_id =$request->session()->get('sub_institute_id');
         $type=$request->input('type');
-        if($type=="API"){
+        if (in_array($type,['API','JSON'])){
             try {
                 if (!$this->jwtToken()->validate()) {
                     $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
@@ -362,7 +362,7 @@ class PayrollController extends Controller
         $type = $request->input('type');
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
-        if($type=="API"){
+        if (in_array($type,['API','JSON'])){
             try {
                 if (!$this->jwtToken()->validate()) {
                     $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
@@ -408,7 +408,7 @@ class PayrollController extends Controller
     {
         // echo "<pre>";print_r($request->all());exit;
         $type = $request->input('type');
-        if ($type == 'API') {
+        if (in_array($type,['API','JSON'])) {
             $sub_institute_id = $request->input('sub_institute_id');
             $syear = $request->input('syear');
         } else {
@@ -509,7 +509,7 @@ class PayrollController extends Controller
     {
         // echo "<pre>";print_r($request->all());exit;
         $type = $request->input('type');
-        if ($type == 'API') {
+        if (in_array($type,['API','JSON'])){
             $sub_institute_id = $request->input('sub_institute_id');
         } else {
             $sub_institute_id = $request->session()->get('sub_institute_id');
@@ -934,7 +934,7 @@ class PayrollController extends Controller
         $type= $request->type;
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $user_profile = $request->session()->get('user_profile_name');
-        if($type=="API"){
+        if (in_array($type,['API','JSON'])){
             $sub_institute_id = $request->sub_institute_id;
             $user_profile = $request->user_profile_name;
         }
@@ -1305,7 +1305,7 @@ class PayrollController extends Controller
     {
         $type= $request->type;
         $sub_institute_id = $request->session()->get('sub_institute_id');
-        if($type=="API"){
+        if (in_array($type,['API','JSON'])){
             try {
                 if (!$this->jwtToken()->validate()) {
                     $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
@@ -1475,7 +1475,7 @@ class PayrollController extends Controller
         //return $request->all();
         $type = $request->type;
         $sub_institute_id = $request->session()->get('sub_institute_id');
-        if($type=="API"){
+        if (in_array($type,['API','JSON'])){
             $sub_institute_id = $request->get('sub_institute_id');
         }
         $employeeLists = employeeDetails($sub_institute_id);
@@ -1592,7 +1592,7 @@ class PayrollController extends Controller
         $type=$request->type;
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
-        if($type=="API"){
+        if (in_array($type,['API','JSON'])){
             $sub_institute_id = $request->sub_institute_id;
             $syear = $request->syear;
         }
@@ -1618,7 +1618,7 @@ class PayrollController extends Controller
         $res['selYear'] = $year = $request->year;
         $res['selMonth'] = $month = $request->month;
 
-        if($type=="API"){
+        if (in_array($type,['API','JSON'])){
             $sub_institute_id = $request->sub_institute_id;
             $syear = $request->syear;
             $userProfile = $request->user_profile_name;
@@ -1907,7 +1907,7 @@ class PayrollController extends Controller
         $type= $request->type;
         $sub_institute_id = session()->get('sub_institute_id');
 
-        if($type=="API"){
+        if (in_array($type,['API','JSON'])){
             try {
                 if (!$this->jwtToken()->validate()) {
                     $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
