@@ -534,7 +534,7 @@ class cheque_cash_controller extends Controller
         $responce_html .= "     </td>";
         $responce_html .= " </tr>";
         $responce_html .= "</table></center>";
-
+    
 
         $responce_arr['stu_data'] = $responce_html;
 
