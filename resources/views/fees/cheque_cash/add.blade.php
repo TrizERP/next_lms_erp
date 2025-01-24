@@ -39,7 +39,7 @@
                 @endif
                 <div class="row">
                     <div class="col-lg-12 col-sm-12 col-xs-12">
-                            {{$data['stu_data']}}
+                            {!! $data['stu_data'] !!}
                     </div>
                 </div>
                 @if (count($errors) > 0)
