@@ -134,6 +134,12 @@ h2,h3,h4,h5,h6,p{
     border-bottom-right-radius:20px;
     /* border-bottom-left-radius:20px; */
 }
+.statusLabel{
+    padding: 4px 10px;
+    background: #ef8da0;
+    color: #fff;
+    border-radius: 20px;
+}
 </style>
 <div id="page-wrapper">
    <div class="container-fluid">
@@ -294,12 +300,21 @@ h2,h3,h4,h5,h6,p{
             data : {insert_type:'activity',content_id:content_id,action:type,_token: '{{ csrf_token() }}'},
             type : 'POST',
             success : function(result){
-                if(type=="starred" || type=="copy"){
+                if(type=="starred")
+                {
+                    alert(result.message);
+                }
+
+                if(type=="copy"){
                     alert(result.message);
                 }
 
                 if(result.status_code==2){
                     $('.'+type+'_'+content_id).removeClass('clickedIcon');
+                }
+
+                if(result.status_code==1){
+                    location.reload();
                 }
             }
         })

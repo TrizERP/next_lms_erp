@@ -66,7 +66,7 @@ class templateMasterController extends Controller
         <li><b><< student_mobile_value >></b> : Student Mobile Number</li>
         <li><b><< fees_head_content >></b> : Fees Head-wise Content with amount and head type</li>
         <li><b><< total_amount_in_words >></b> : Total Amount in words</li>
-        <li><b><< payment_mode >></b> : Payment Mode</li>
+        <li><b><< payment_mode >></b> : Payment Mode with cash or cheque details</li>
         <li><b><< admin_user >></b> : Logged User</li>
         <li><b><< student_image_value >></b> : Student Image</li>
         <li><b><< student_division_value >></b> : Student division</li>
@@ -127,6 +127,14 @@ class templateMasterController extends Controller
         <li><b><< date_of_application_for_certificate_value >></b> : Date on which pupil's name was struck off the rolls of the school</li>
         <li><b><< date_of_issue_of_certificate_new_value >></b> : Date of issue of certificate</li>
         <li><b><< activity_tag_marks >></b> : Student Activity Report Marks</li>
+
+        <li><b><< bank_name >></b> : Bank Name in fees receipt</li>
+        <li><b><< cheque_no >></b> : Cheque Number in fees receipt</li>
+        <li><b><< cheque_date >></b> : Cheque Date in fees receipt</li>
+        <li><b><< bank_branch >></b> : Bank Branch in fees receipt</li>
+        <li><b><< payment_mode_type >></b> : Payment Mode in fees receipt</li>
+        <li><b><< parent_pan_card >></b> : Parent Pan Card No in fees receipt</li>
+
         </ul>";
 
         return is_mobile($type, 'settings/view_all_tag', $data, "view");

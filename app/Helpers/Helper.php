@@ -32,6 +32,14 @@ if (!function_exists('is_mobile')) {
             }
 
             return json_encode($data);
+        }
+        else if ($type == "JSON") {
+            if (isset($data["status_code"])) {
+                $data["status"] = strtoupper($data["status_code"]);
+                unset($data["status_code"]);
+            }
+
+            return response()->json($data);
         } else {
             if ($redirect_type == 'redirect') {
 
@@ -220,6 +228,31 @@ if (!function_exists('SearchChain')) {
             Session::put('subjectTeacherDivArr', $subjectTeacherDivArr);
         }
         // END 07/09/2021 code for getting standard , grade , division according to timetable wise for homework module
+
+        // 10-01-2025 start supervisor rights
+        else if (!in_array(session()->get('user_profile_name'),['Super Admin','Admin','Teacher','LMS Teacher','Student']))
+        {
+            $getUserData =tbluserModel::where('id',session()->get('user_id'))->first();
+            if(!empty($getUserData) && isset($getUserData->allocated_standards) && $getUserData->allocated_standards!=''){
+                $getAllocatedStandard = DB::table('standard')->whereRaw('id IN ('.$getUserData->allocated_standards.')')
+                ->get()->toArray();
+            
+                $subjectTeacherGrdArr = $subjectTeacherStdArr = array();
+                if (count($getAllocatedStandard) > 0) {
+                    foreach ($getAllocatedStandard as $k => $v) {
+                        if(!in_array($v->grade_id,$subjectTeacherGrdArr)){
+                            $subjectTeacherGrdArr[] = $v->grade_id;
+                        }
+                        if(!in_array($v->id,$subjectTeacherStdArr)){
+                            $subjectTeacherStdArr[] = $v->id;
+                        }
+                    }
+                }
+                Session::put('subjectTeacherGrdArr', $subjectTeacherGrdArr);
+                Session::put('subjectTeacherStdArr', $subjectTeacherStdArr);
+            }
+        }
+        // 10-01-2025 end supervisor rights
 
         $explod_list = explode(',', $listed_drop);
         $grade_name = 'grade';
@@ -432,7 +465,9 @@ if (!function_exists('SearchChain')) {
                 if ($subjectTeacherDivArr != "" && ($classTeacherDivArr == "" || in_array($module_name, $module_array))) {
                     if(in_array(session()->get('right_menu_id'),$menu_ids) && session()->get('user_profile_name')=="Teacher"){
                         $query->where('division.id',$getClass->division_id);
-                    }else{
+                    }
+                    // else { commented on 10-0-2025 for hills suprevisor rights and added elseif
+                    elseif(!empty($subjectTeacherDivArr)){
                         $query->whereIn('division.id', function ($sub_query) use ($subjectTeacherDivArr,$std_val) {
                             $sub_query->select('division_id')
                                 ->from('timetable')
@@ -740,6 +775,12 @@ if (!function_exists('SearchStudent')) {
             'b.sub_institute_id' => 'se.sub_institute_id',
         );
 
+        // 17-01-2025  to get student quota in fees_collect
+        $quota_join = array(
+            'sq.id' => 'se.student_quota',
+            'sq.sub_institute_id' => 'se.sub_institute_id',
+        );
+        // 17-01-2025  to get student quota in fees_collect
 
         $select_fields = "ts.*,se.syear,se.student_id,se.grade_id,se.roll_no,
                 se.standard_id,se.section_id,se.student_quota,se.start_date,
@@ -794,6 +835,7 @@ if (!function_exists('SearchStudent')) {
         $columns[] = "s.medium as medium";
         $columns[] = "d.name as division_name";
         $columns[] = "b.title as batch_title";
+        $columns[] = "sq.title as quota_name"; // 17-01-2025 for student quota in fees_collect
 
         $query->join('tblstudent_enrollment as se', $enrollment_join);
         $query->where($where);
@@ -813,7 +855,11 @@ if (!function_exists('SearchStudent')) {
             $query->WhereIn('d.id', $div_arr);
         }
         $query->leftJoin('batch as b', $batch_join);
-  
+        
+        // 17-01-2025  to get student quota in fees_collect
+        $query->join('student_quota as sq', $quota_join);
+        // 17-01-2025  to get student quota in fees_collect
+
         //START Check for class teacher assigned standards
         $extraRaw = " 1 = 1 ";
 

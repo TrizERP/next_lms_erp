@@ -49,13 +49,44 @@
             <strong>{{ $sessionData['message'] }}</strong>
         </div>
       @endif
-
+      @php 
+        $grade=$standard=$subject='';
+        if(isset($data['contentData']->grade_id)){
+        $grade = $data['contentData']->grade_id;
+        }
+        if(isset($data['contentData']->standard_id)){
+        $standard = $data['contentData']->standard_id;
+        }
+        if(isset($data['contentData']->subject_id)){
+        $subject = $data['contentData']->subject_id;
+        }
+        @endphp
          <div class="panel-body">
                 <form action="{{route('content_library.update',[$data['editData']->id])}}" method="POST" enctype="multipart/form-data">
                 {{ method_field("PUT") }}
                     @csrf
                     <input type="hidden" name="insert_type" value="content_insert">
+                    
                     <div class="card">
+                    {{ App\Helpers\SearchChainSubject('4','single','grade,std,sub',$grade,$standard,$subject) }}
+                      <div class="row">
+                        <div class="col-md-4">
+                          <label for="">Select Chapter</label>
+                          <select name="chapter_id" id="postchapter" class="form-control" required>
+                              <option value="">Select Chapter</option>
+                          </select>
+                        </div>
+                        <div class="col-md-3 form-group">
+                          <label for="">Select Topic</label>
+                            <select name="topic_id" id="search_topic" class="form-control mb-0">
+                              
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                          <label for="">Display Status</label>
+                          <br><input type="checkbox" id="show_hide" name="show_hide" value="1" checked>
+                        </div>
+                      </div>
                       <div class="row">
                         <div class="col-md-4 form-group">
                           <label for="Title">Title</label>
@@ -143,6 +174,90 @@
             }
         })
     });
+</script>
+<script>
+    $(document).ready(function(){
+
+     @if(isset($data['contentData']->chapter_id))
+      var subjectID = "{{$data['contentData']->subject_id}}";
+      var standardID = "{{$data['contentData']->standard_id}}";
+      var chapter_id = "{{$data['contentData']->chapter_id}}";
+      getChapter(subjectID,standardID,chapter_id);
+     @endif
+
+     @if(isset($data['contentData']->topic_id))
+      var chapter_id = "{{$data['contentData']->chapter_id}}";
+      var topic_id = "{{$data['contentData']->topic_id}}";
+      getTopic(chapter_id,topic_id);
+     @endif
+
+      $('#subject').on('change', function () {
+          var subjectID = $(this).val();
+          var standardID = $('#standardS').val();
+          getChapter(subjectID,standardID);
+      });
+
+      $("#postchapter").change(function(){
+          var chapter_id = $("#postchapter").val();
+          getTopic(chapter_id);
+      })
+
+    })
+
+    function getChapter(subjectID,standardID,chapter_id=''){
+      if (subjectID) {
+            $.ajax({
+                type: "GET",
+                url: "/api/get-chapter-list?subject_id=" + subjectID + "&standard_id=" + standardID,
+                success: function (res) {
+                    if (res) {
+                        $("#postchapter").empty();
+                        $("#postchapter").append('<option value="">Select Chapter</option>');
+                        $.each(res, function (key, value) {      
+                        var selected='';
+                          if(chapter_id!='' && chapter_id==key){
+                            var selected='selected';
+                          }                     
+                            $("#postchapter").append('<option value="' + key + '" '+selected+'>' + value + '</option>');
+                        });
+
+                    } else {
+                        $("#postchapter").empty();
+                        $("#postchapter").append('<option value="">Select Chapter</option>');
+                    }
+                }
+            });
+        } else {
+            $("#postchapter").empty();
+            $("#postchapter").append('<option value="">Select Chapter</option>');
+        }
+    }
+
+    function getTopic(chapter_id,topic_id=''){
+      var path = "{{ route('ajax_LMS_ChapterwiseTopic') }}";
+
+      $('#search_topic').find('option').remove().end().append('<option value="">Search By Topic</option>').val('');
+
+      $.ajax({
+          url: path,
+          data:'chapter_id='+chapter_id,
+          success: function(result) {
+            $("#search_topic").empty(); 
+            for (var i = 0; i < result.length; i++) {
+                var selected = '';
+                if (topic_id !== '' && topic_id == result[i]['id']) {
+                    selected = 'selected';
+                }
+                $("#search_topic").append(
+                    $("<option></option>")
+                        .val(result[i]['id'])
+                        .html(result[i]['name'])
+                        .attr("selected", selected)
+                );
+            }
+        }
+      });
+    }
 </script>
 @include('includes.footer')
 @endsection

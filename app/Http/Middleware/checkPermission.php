@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Auth\Access\AuthorizationException;
 use DB;
 use Illuminate\Support\Str;
+use App\Models\tourModel;
 
 class checkPermission
 {
@@ -21,7 +22,7 @@ class checkPermission
      */
     public function handle(Request $request, Closure $next)
     {
-        if ($request->get('type') != "API") {
+        if ($request->get('type') != "API" && $request->get('type') != "JSON") {
             $current_url = Route::currentRouteName();
             $userProfileId = session()->get('user_profile_id');
             $sub_institute_id = session()->get('sub_institute_id');
@@ -99,6 +100,38 @@ class checkPermission
                     }
                 }
             }
+            
+            // 06-01-2025 add for erpTour start
+            $erpTourRoute = ["fees_collect.store","fees_title.store","fees_breackoff.store","student_quota.store","map_year.store"];
+
+            $erpTourFeild = ["fees_collect.store"=>"fees_collect","fees_title.store"=>"fees_title","fees_breackoff.store"=>"fees_structure","student_quota.store"=>"student_quota","map_year.store"=>"fees_map"];
+            // echo "<pre>";print_r($currentRouteName);exit;
+            if(in_array($currentRouteName,$erpTourRoute) && isset($erpTourFeild[$currentRouteName]) && request()->method()=="POST"){
+
+                $checkData = tourModel::where(['user_id' => $user_id, 'sub_institute_id' => $sub_institute_id])->first();
+
+                $addData = [
+                    'user_id'=>$user_id,
+                    'sub_institute_id'=>$sub_institute_id,
+                    $erpTourFeild[$currentRouteName]=>1,
+                ];
+
+                if(!empty($checkData)){
+                    tourModel::where('id',$checkData->id)->update($addData);
+                }else{
+                    $addData['user_id'] = $user_id;
+                    $addData['sub_institute_id'] = $sub_institute_id;
+                    tourModel::insert($addData);
+                }
+
+            }
+            
+            $checkUserTour = tourModel::where(['user_id'=> $user_id, 'sub_institute_id' => $sub_institute_id,
+            ])->get()->toArray();
+            $inTour = $checkUserTour[0];
+
+            $request->session()->put('erpTour', $inTour);
+            // 06-01-2025 add for erpTour end 
         }
 
         return $next($request);

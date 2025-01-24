@@ -59,7 +59,7 @@
                                     <td>{{$col_arr['enrollment_no']}}</td>
                                     <td class="{{ $col_arr['from_shift_id'] }}">@php echo $col_arr['mobile']; @endphp</td>
                                     <td>
-                                        <select name="values[{{$col_arr['student_id']}}][from_shift]" disabled="true" id="from_shift" data-from_shift="$col_arr['from_shift_id']" class="form-control from_shift" required>
+                                        <select name="values[{{$col_arr['student_id']}}][from_shift]" disabled="true" id="from_shift" data-from_shift="{{$col_arr['from_shift_id']}}" class="form-control from_shift from_shift_{{$col_arr['student_id']}}" required>
                                             <option value="">--Select--</option>
                                             @foreach ($col_arr['ddShift'] as $id => $arr) 
                                                 <option @if($arr->id == $col_arr['from_shift_id']) selected @endif value='{{$arr->id}}' data-fromshiftkm="{{$arr->km_amount}}" data-fromshiftrate="{{$arr->shift_rate}}" data-stud="{{$col_arr['student_id']}}">{{$arr->shift_title}}</option>
@@ -343,15 +343,21 @@
     });
 
     function updateAmount(stuId) {
+        var shiftVal = $('.from_shift_'+stuId).val();
+        if(shiftVal!=''){ // added if condition on 07-01-2025
             const distance = parseFloat($('#distance_'+stuId).val());
             const shiftRate = parseFloat($("#shift_rate_"+stuId).val());
             const kmAmount = parseFloat($("#km_amount_"+stuId).val());
-            
+
             // Check if distance is zero
             const totalAmt = (distance === 0) ? 0 : shiftRate + (distance * kmAmount);
 
             $('#distance_amount_'+stuId).val(totalAmt.toFixed(2));
+        }else{
+            alert("Please select from shift first");
         }
+        // added on 07-01-2025
+    }
 
     $('#myTable').on('change', '.to_shift', function () {
         var selectedValue = $(this).val();
@@ -450,16 +456,21 @@
     //     $('#distance_amount\\[' + stu_id + '\\]').val(distance_amt);
     // })
     $('#myTable').on('change', '.from_shift', function () {
-    console.log('change event called');
+    // console.log('change event called');
     
     var selectedOption = $(this).find(':selected');
     
     var km_amount = selectedOption.data("fromshiftkm");
     var shift_rate = selectedOption.data("fromshiftrate");
     var stu_id = selectedOption.data("stud");
+    // added on 07-01-2025
+    var shiftRate = $('#shift_rate_' + stu_id).val(shift_rate);
+    var kmAmount = $('#km_amount_' + stu_id).val(km_amount);
+    // added on 07-01-2025
     
     var shifts = selectedOption.val();
     var distance = $('#distance_' + stu_id).val();
+    // alert(shifts);
     
     var distance_amt = (shift_rate + (distance * km_amount));
     console.log(distance_amt);

@@ -421,7 +421,9 @@ class AJAXController extends Controller
             if ($subjectTeacherDivArr != "" && ($classTeacherDivArr == "" || in_array($module_name, $module_array))) {
                 if(in_array(session()->get('right_menu_id'),$menu_ids) && session()->get('user_profile_name')=="Teacher"){
                     $query->where('division.id',$getClass->division_id);
-                }else{
+                }
+                // else { commented on 10-0-2025 for hills suprevisor rights and added elseif
+                elseif(!empty($subjectTeacherDivArr)){
                 $query->whereIn('division.id', function ($sub_query) use ($subjectTeacherDivArr,$standard_id) {
                     $sub_query->select('division_id')
                         ->from('timetable')

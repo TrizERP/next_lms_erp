@@ -291,8 +291,9 @@ $(document).ready(function() {
       if ($firstRow.length) {
          var ch = $firstRow.data('val');
          var sub_id = sub;
+         var chapter = $firstRow.data('ch');
          $firstRow.addClass('activeChapter');
-         activeTr($firstRow.attr('id'), ch, sub_id);
+         activeTr($firstRow.attr('id'), ch, sub_id,chapter);
       } else {
          hideSections();
       }
@@ -304,6 +305,8 @@ $(document).ready(function() {
         
         toggleSections(sub_id, ch_id);
         getMapValue(sub_id,chapterId,'regular');
+        // console.log('sub_id='+sub_id);
+        // console.log('chapterId='+chapterId);
     }
     function activeTrPal(trsub, ch_id, sub_id,chapterId) {
 

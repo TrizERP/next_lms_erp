@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class FeesCollect extends Model
 {
-    protected $table = "fees_collect";
+    public $table = "fees_collect";
 
     public $timestamps = false;
 

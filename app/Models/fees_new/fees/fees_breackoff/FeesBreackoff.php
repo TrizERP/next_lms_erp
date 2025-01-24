@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Models\fees\fees_breackoff;
+namespace App\Models\fees_new\fees\fees_breackoff;
 
 use Illuminate\Database\Eloquent\Model;
 

@@ -20,7 +20,7 @@ class LogRouteMiddleware
      */
     public function handle($request, Closure $next)
     {
-        if ($request->get('type') != "API") {
+        if ($request->get('type') != "API" &&  $request->get('type') != "JSON") {
 //            Log::info($request->fullUrl());
 
             $sub_institute_id = $request->session()->get('sub_institute_id');

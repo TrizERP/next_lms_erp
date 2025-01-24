@@ -112,6 +112,15 @@
 						</div>
 					</div>
 
+					<!-- 08-01-2025 -->
+					@php 
+					$class="";
+					if(session()->get('sub_institute_id')==76){
+						$class = "hide";
+					}
+					@endphp
+					<!-- 08-01-2025 -->
+
 					<div class="col-md-8 col-lg-8 col-sm-8 col-xs-8">
 						<div class="box-title">
 							<label>Fees Collection</label>
@@ -120,13 +129,13 @@
 							<div class="col-md-6">
 								<div class="table-responsive">
 									<table class="table table-stripped">
-										<tr>
+										<tr class="{{$class}}">
 											<td>{{ App\Helpers\get_string('uniqueid')}}</td>
 											<td>
 												{{ $data['stu_data']['uniqueid']; }}
 											</td>
 										</tr>
-										<tr>
+										
 										<tr>
 											<td>{{ App\Helpers\get_string('studentname')}}</td>
 											<td>
@@ -223,6 +232,8 @@
 							<input type="hidden" name="mother_name" value="{{ $data['stu_data']['mother_name']; }}">
 							<!-- // 2024-06-24 by uma -->
 							<input type="hidden" name="student_batch" value="{{ $data['stu_data']['student_batch']; }}">
+							<!-- // 2025-01-20 by uma -->
+							<input type="hidden" name="pan_card" value="{{ $data['stu_data']['pan_card']; }}">
 
 							<div class="table-responsive col-md-12" style="border-top: 2px solid black;">
 								<table class="table table-stripped">
@@ -234,10 +245,33 @@
                                                     echo "<tr>";
                                                 }
                                                 $slected = "";
-                                                list($month, $year) = explode('/', $val);
+												// list($month, $year) = explode('/', $val); // commented on 08-01-2025
+
+												// added on 08-01-2025 get year and month from $id
+												$valueStr = (string)$id;
+												$year = substr($valueStr, -4);
+												$month = substr($valueStr, 0, strlen($valueStr) - 4);
+												// added on 08-01-2025
+
                                                 $monthDate = $year . '-' . date('m', strtotime($month)) . '-01';
                                                 $date_now = time();
-                                                if (in_array($id, $data['search_ids']) && $date_now >= strtotime($monthDate)) {
+												// added on 18-01-2025 ssmission
+                                                if(session()->get('sub_institute_id')==76){
+													foreach($data['header_month'] as $mapId=>$mapMonth){
+														$valueStr1 = (string)$mapMonth;
+														$year1 = substr($valueStr1, -4);
+														$month1 = substr($valueStr1, 0, strlen($valueStr1) - 4);
+														if($month1 <= date('n') && date('Y')>=$year1 && $month == $month1){
+															$slected = "checked";
+														}
+													}
+													if($slected=='' && isset($data['header_month'][0]) && $data['header_month'][0]==$id){
+														$slected = "checked ".date('n');
+													}
+												}
+												// added on 18-01-2025 ssmission
+
+												elseif (in_array($id, $data['search_ids']) && $date_now >= strtotime($monthDate)) {
                                                     $slected = "checked";
                                                 }
 
@@ -374,7 +408,7 @@
 										}
 										$sub_institute_id=[257]; 
 									@endphp
-									<tr>
+									<tr  class="{{$class}}">
 										<td></td>
 										<td>Fine(Include Cheque return charges)</td>
 										<td></td>
@@ -427,6 +461,7 @@
 												<option value="Swipe1">Swipe1</option>
 												<option value="Swipe2">Swipe2</option>
 												<option value="Swipe3">Swipe3</option>
+												<option value="POS">POS</option>
 											</select>
 										</td>
 										<td>Receipt Date</td>
@@ -435,8 +470,8 @@
 										</td>
 									</tr>
 									<tr class="bnakDetail">
-										<td>Cheque/DD Date</td>
-										<td>
+										<td class="{{$class}}">Cheque/DD Date</td>
+										<td  class="{{$class}}">
 											<input type="text" name="cheque_date" id="cheque_date" class="form-control mydatepicker" autocomplete="off" value="{{date('Y-m-d'); }}">
 										</td>
 										<td>Cheque/DD No/Transaction No</td>
@@ -455,8 +490,8 @@
 												@endforeach @endif
 											</select>
 										</td>
-										<td>Bank Branch</td>
-										<td>
+										<td class="{{$class}}">Bank Branch</td>
+										<td class="{{$class}}">
 											<input type="text" name="bank_branch" id="bank_branch" class="form-control" value="N/A">
 										</td>
 									</tr>

@@ -49,6 +49,8 @@ use App\Http\Controllers\lms\lmsDashboardController;
 use App\Http\Controllers\lms\lmsCurriculumController;
 use App\Http\Controllers\lms\lmsSyllabusController;
 use App\Http\Controllers\lms\content_library\contentLibraryController;
+use App\Http\Controllers\lms\curriculum\curriculumLessonplanController;
+use App\Http\Controllers\lms\library\skillLibraryController;
 use Illuminate\Support\Facades\Route;
 
 Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
@@ -89,6 +91,10 @@ Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute',
     Route::resource('lo_indicator', loindicatorController::class);
 
     Route::resource('lo_category', locategoryController::class);
+
+    Route::resource('skill_library',skillLibraryController::class);
+    Route::get('skill_library/{id}/delete', [skillLibraryController::class, 'destroy']);
+    Route::get('skill_library/{id}/show', [skillLibraryController::class, 'show']);
 
     // multi delete questions
     Route::get('multi_delete_questions', [questionmasterController::class, 'ajax_multiDeleteQuestion'])->name('multi_delete_questions');
@@ -209,6 +215,7 @@ Route::post('show_question_wise_report',
     Route::resource('lms_curriculum', lmsCurriculumController::class);
     Route::resource('lms_syllabus', lmsSyllabusController::class);
     Route::resource('content_library', contentLibraryController::class);
+    Route::resource('curriculum_lessonplan', curriculumLessonplanController::class);
     //Route::get('questionReport', 'student\questionWiseReportController@index')->name('question_wise_report');
     //Route::post('show_question_wise_report', 'student\questionWiseReportController@show_question_wise_report')->name('show_question_wise_report');
 

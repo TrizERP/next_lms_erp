@@ -75,7 +75,11 @@
          left: 50%;
          transform: translate(-50%, -50%);
          }
-      </style>
+         .enjoyhint_skip_btn{
+            bottom: 650px !important;
+            background:#fff !important;
+         }
+   </style>
       <!-- Global site tag (gtag.js) - Google Analytics -->
       <script async src="https://www.googletagmanager.com/gtag/js?id=UA-153077517-1"></script>
       <script>

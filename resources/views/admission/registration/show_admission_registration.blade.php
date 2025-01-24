@@ -20,7 +20,7 @@
             @php 
                 $sub_institute_id =Session::get('sub_institute_id');
                 $oldAdmissionInstitutes = [47,48,49,62,69,72,195,201,202,203,204,233,254];
-                $dataCustomFields = $data['dataCustomFields'];
+                $custom_fields = $data['custom_fields'];
             @endphp
 
             <div class="row">
@@ -48,10 +48,10 @@
                                     <th>Email</th>
                                     <th>Date of Birth</th>
                                     <th>Age</th>
+                                    <th>Admission Standard</th>
                                     @if(in_array($sub_institute_id,$oldAdmissionInstitutes))
                                         <th>Previous School Name</th>
                                         <th>Previous Standard</th>
-                                        <th>Admission Standard</th>
                                         <th>Enquiry Remarks</th>
                                         @if(session()->get('sub_institute_id')==254)
                                         <th class="text-left">Transport Fees</th>
@@ -59,8 +59,8 @@
                                     @endif
 
                                       <!-- 2024-12-28  -->
-                                      @foreach($data['dataCustomFields'] as $k => $v)
-                                        <th data-toggle="tooltip" title="{{$v['field_label']}}">{{$v['field_label']}}</th>
+                                      @foreach($data['custom_fields'] as $k => $v)
+                                        <th data-toggle="tooltip" title="Enquiry Status">{{$v['field_label']}}</th>
                                     @endforeach
                                     <!-- 2024-12-28  -->
 
@@ -96,10 +96,10 @@
                                     <td>{{$data['email']}}</td>
                                     <td>{{$data['date_of_birth']}}</td>
                                     <td>{{$data['age']}}</td>
+                                    <td>{{$data['std_name']}}</td>
                                     @if(in_array($sub_institute_id,$oldAdmissionInstitutes))
                                         <td>{{$data['previous_school_name']}}</td>
                                         <td>{{$data['previous_standard']}}</td>
-                                        <td>{{$data['std_name']}}</td>
                                         <td>{{$data['enquiry_remark']}}</td>
                                         @if(session()->get('sub_institute_id')==254)
                                         <td>{{$data['transport_fees']}}</td>
@@ -107,7 +107,7 @@
                                     @endif
 
                                     <!-- 2024-12-28 -->
-                                    @foreach($dataCustomFields as $k => $v)
+                                    @foreach($custom_fields as $k => $v)
                                         @if($v['field_name'] == 'siblings' && !empty($data['siblings']))
                                             @php 
                                                 $siblingsData = [];

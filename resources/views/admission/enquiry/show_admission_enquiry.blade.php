@@ -64,10 +64,10 @@
                                         <th data-toggle="tooltip" title="Email">Email</th>
                                         <th data-toggle="tooltip" title="Date of Birth">DOB</th>
                                         <th data-toggle="tooltip" title="Age">Age</th>
+                                        <th data-toggle="tooltip" title="Admission Standard">Admission standard</th>
                                     @if(in_array($sub_institute_id,$oldAdmissionInstitutes))
                                         <th data-toggle="tooltip" title="Previous School Name">Previous</th>
                                         <th data-toggle="tooltip" title="Previous Standard">Previous</th>
-                                        <th data-toggle="tooltip" title="Admission Standard">Admission</th>
                                         @if (in_array(Session::get('sub_institute_id'), ['198','201','202','203','204','324','326','327']))
                                             <th data-toggle="tooltip" title="Admission Form Charges">Admission</th>
                                             <th data-toggle="tooltip" title="Fees Circular Form No.">Fees</th>
@@ -143,10 +143,10 @@
                                         <td>{{$data['email']}}</td>
                                         <td>{{date('d-m-Y', strtotime($data['date_of_birth']))}}</td>
                                         <td>{{$data['age']}}</td>
+                                        <td>{{$data['std_name']}}</td>
                                     @if(in_array($sub_institute_id,$oldAdmissionInstitutes))
                                         <td>{{$data['previous_school_name']}}</td>
                                         <td>{{$data['previous_standard']}}</td>
-                                        <td>{{$data['std_name']}}</td>
                                         @if (Session::get('sub_institute_id') == '198')
                                             <td>{{$data['admission_fees']}}</td>
                                         @endif

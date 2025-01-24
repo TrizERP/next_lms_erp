@@ -39,13 +39,21 @@
                            
                             <div class="col-md-12 form-group">
                             <!-- Below function will get grade,standard,division name and id from helper.php  -->
-                                {{ App\Helpers\SearchChainSubject('4','single','grade,std,sub',$data['grade'],$data['standard_id'],$data['subject_id']) }}
+                                {{ App\Helpers\SearchChainSubject('3','single','grade,std,sub',$data['grade'],$data['standard_id'],$data['subject_id']) }}
                             </div>
                         
                             <input type="hidden" value="{{$data['con_point']}}" name="con_point">
                             <input type="hidden" value="{{$data['app_disp_status']}}" name="app_disp_status">
 
-                                <div class="col-md-12 form-group">
+                            <div class="col-md-3 form-grou">
+                                <label for="report_card_status">Report Card Status</label>
+                                <select name="report_card_status" id="report_card_status" class="form-control">
+                                    @foreach($data['report_card_status_arr'] as $key=>$value)
+                                    <option value="{{$key}}" @if(isset($data['report_card_status']) && $data['report_card_status']==$key) Selected @endif>{{$value}}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                                <div class="col-md-12 form-group mt-2">
                                 <table id="myTable" class="table table-striped table-bordered">
                                 <thead>
                                     <tr>
@@ -64,7 +72,7 @@
                                             <input type="text" name="points" value="{{ $data['points'] }}" class="form-control" />
                                         </td>
                                         
-                                        <input type="hidden" value="{{$data['report_card_status']}}" name="report_card_status">
+                                        {{-- <input type="hidden" value="{{$data['report_card_status']}}" name="report_card_status"> --}}
                                         <input type="hidden" value="{{$data['marks_type']}}" name="marks_type">
                                         
                                         <td>
@@ -108,42 +116,87 @@
 
 
 @include('includes.footerJs')
-<script src="../../../plugins/bower_components/dropify/dist/js/dropify.min.js"></script>
 <script>
-$(document).ready(function () {
-    // Basic
-    $('.dropify').dropify();
-    // Translated
-    $('.dropify-fr').dropify({
-        messages: {
-            default: 'Glissez-déposez un fichier ici ou cliquez',
-            replace: 'Glissez-déposez un fichier ou cliquez pour remplacer',
-            remove: 'Supprimer',
-            error: 'Désolé, le fichier trop volumineux'
-        }
+    $("#gradeS").prop('required', true);
+    $("#standardS").prop('required', true);
+    $("#subject").prop('required', true);
+    $("#term").prop('required', true);
+    $("#exam").prop('required', true);
+    $('#term').change(function () {
+        $("#grade").val("");
+        $("#standard").empty();
+        $("#standard").append('<option value="">Select</option>');
+        $("#division").empty();
+        $("#division").append('<option value="">Select</option>');
+        $("#subject").empty();
+        $("#subject").append('<option value="">Select</option>');
+        $("#exam").empty();
+        $("#exam").append('<option value="">Select</option>');
     });
-    // Used events
-    var drEvent = $('#input-file-events').dropify();
-    drEvent.on('dropify.beforeClear', function (event, element) {
-        return confirm("Do you really want to delete \"" + element.file.name + "\" ?");
+    $('#grade').change(function () {
+        $("#subject").empty();
+        $("#subject").append('<option value="">Select</option>');
+        $("#exam").empty();
+        $("#exam").append('<option value="">Select</option>');
     });
-    drEvent.on('dropify.afterClear', function (event, element) {
-        alert('File deleted');
-    });
-    drEvent.on('dropify.errors', function (event, element) {
-        console.log('Has Errors');
-    });
-    var drDestroy = $('#input-file-to-destroy').dropify();
-    drDestroy = drDestroy.data('dropify')
-    $('#toggleDropify').on('click', function (e) {
-        e.preventDefault();
-        if (drDestroy.isDropified()) {
-            drDestroy.destroy();
+    $('#standard').change(function () {
+        $("#exam").empty();
+        $("#exam").append('<option value="">Select</option>');
+        var standardID = $("#standard").val();
+        var divisionID = $("#division").val();
+        if (standardID) {
+            $.ajax({
+                type: "GET",
+                url: "/api/get-subject-list?standard_id=" + standardID,
+                success: function (res) {
+                    if (res) {
+                        $("#subject").empty();
+                        $("#subject").append('<option value="">Select</option>');
+                        $.each(res, function (key, value) {
+                            $("#subject").append('<option value="' + key + '">' + value + '</option>');
+                        });
+
+                    } else {
+                        $("#subject").empty();
+                    }
+                }
+            });
         } else {
-            drDestroy.init();
+            $("#subject").empty();
         }
-    })
-});
+
+    });
+    $('#standard').on('change', function () {
+        var standardID = $("#standard").val();
+        var termID = $("#term").val();
+
+        if (standardID && termID) {
+            $.ajax({
+                type: "GET",
+                url: "/api/get-exam-master-list?standard_id=" + standardID +
+                        "&term_id=" + termID,
+                success: function (res) {
+                    if (res) {
+                        $("#exam").empty();
+                        $("#exam").append('<option value="">Select</option>');
+                        $.each(res, function (key, value) {
+                            $("#exam").append('<option value="' + key + '">' + value + '</option>');
+                        });
+
+                    } else {
+                        $("#exam").empty();
+                    }
+                }
+            });
+        } else {
+            $("#exam").empty();
+            $("#exam").append('<option value="">Select</option>');
+            if (termID == "") {
+                alert("Please Select Term.");
+            }
+        }
+
+    });
 </script>
 
 @include('includes.footer')

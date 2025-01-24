@@ -75,7 +75,7 @@ class admissionRegistrationController extends Controller
         ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1) and user_type="" ')
         ->get();
         
-        $res['dataCustomFields']=$customFields;
+        $res['custom_fields']=$customFields;
 
         $res['status_code'] = 1;
         $res['message'] = "Success";
@@ -154,7 +154,7 @@ class admissionRegistrationController extends Controller
             $i++;
         }
 
-        // echo "<pre>";print_r($checkStudent);exit;
+        // echo "<pre>";print_r($dataCustomFields);exit;
 
         if (count($checkStudent) > 0) {
             $res['display_save_student'] = '0';
@@ -265,7 +265,7 @@ class admissionRegistrationController extends Controller
 
         $data = $request->except([
             '_method', '_token','token','syear','sub_institute_id','user_id', 'submit', 'type', 'first_name', 'middle_name', 'last_name', 'mobile', 'email',
-            'date_of_birth', 'age', 'address', 'previous_school_name', 'previous_standard', 'source_of_enquiry',
+            'date_of_birth', 'age', 'address', 'previous_school_name', 'previous_standard', 'source_of_enquiry','gender',
             'admission_standard'
         ]); //,'remarks','followup_date'
 
