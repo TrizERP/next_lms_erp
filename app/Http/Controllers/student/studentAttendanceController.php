@@ -390,7 +390,7 @@ class studentAttendanceController extends Controller
         $taken = $request->input('taken');
         $syear = $request->session()->get('syear');
         $sub_institute_id = $request->session()->get('sub_institute_id');
-        if($type=="API"){
+        if(in_array($type,["API","JSON"])){
             $sub_institute_id=$request->sub_institute_id;
             $syear = $request->syear;
         }
