@@ -206,7 +206,6 @@ $route = ['dashboard'];
 <script src="{{ asset("/admin_dep/js/custom.js") }}" ></script>
 <script src="https://cdn.jsdelivr.net/npm/apexcharts" defer></script>
 
-
 <script src="{{ asset("/plugins/bower_components/chartist-js/dist/chartist.min.js") }}" defer></script>
 <script src="{{ asset("/plugins/bower_components/chartist-plugin-tooltip-master/dist/chartist-plugin-tooltip.min.js") }}" defer></script>
 <!-- Sparkline chart JavaScript -->
