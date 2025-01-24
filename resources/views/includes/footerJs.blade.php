@@ -241,9 +241,9 @@ $route = ['dashboard'];
 <!-- <script src="{{ asset("/plugins/bower_components/styleswitcher/jQuery.style.switcher.js") }}"></script> -->
 
 <script src="{{ asset("/plugins/bower_components/jquery.easy-pie-chart/dist/jquery.easypiechart.min.js") }}"></script>
-<script src="{{ asset("plugins/bower_components/jquery.easy-pie-chart/easy-pie-chart.init.js") }}"></script>
+<script src="{{ asset("/plugins/bower_components/jquery.easy-pie-chart/easy-pie-chart.init.js") }}"></script>
 <!-- <script src="{{ asset("plugins/bower_components/toast-master/js/jquery.toast.js") }}"></script> -->
-<script src="{{ asset("plugins/bower_components/bootstrap-datepicker/bootstrap-datepicker.min.js") }}"></script>
+<script src="{{ asset("/plugins/bower_components/bootstrap-datepicker/bootstrap-datepicker.min.js") }}"></script>
 
 <!--<script src="{{ asset("/admin_dep/js/sweetalert.min.js") }}"></script>-->
 
@@ -281,7 +281,7 @@ $route = ['dashboard'];
 </script>
 
 <!-- Clock Plugin JavaScript -->
-<script src="{{ asset("plugins/bower_components/clockpicker/dist/jquery-clockpicker.min.js") }}"></script>
+<script src="{{ asset("/plugins/bower_components/clockpicker/dist/jquery-clockpicker.min.js") }}"></script>
 
 <script>
   // Clock pickers

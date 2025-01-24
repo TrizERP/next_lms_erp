@@ -13,7 +13,7 @@ class DataMigrationController extends Controller
             $neo4jService = new Neo4jService();
 
             // Fetch data from MySQL
-            $mysqlData = DB::table('lms_data_content_neo4j')->limit(100)->get();
+            $mysqlData = DB::table('lms_data_content_neo4j')->limit(1000)->get();
             // echo "<pre>";print_r($mysqlData);exit;
             $count=100;
             foreach ($mysqlData as $key=>$data) {
@@ -37,7 +37,7 @@ class DataMigrationController extends Controller
                 $chapterNode = $neo4jService->createOrGetNode('Chapter', 'chapter', $data->chapter  ?? '-');
 //  echo "<pre>";print_r($sectionNode['acedemic_section'] );exit;
                 
-                $r1 = $neo4jService->createRelationship($sectionNode['acedemic_section'], $standardNode['standard'],'r1', 'OFFERS','acedemic_section','standard');
+                //$r1 = $neo4jService->createRelationship($sectionNode['acedemic_section'], $standardNode['standard'],'r1', 'OFFERS','acedemic_section','standard');
                 // echo "<pre>";print_r($relation);exit;
                 $r2 =$neo4jService->createRelationship($standardNode['standard'], $subjectNode['subject'],'r2', 'OFFERS','standard','subject');
                 //echo "<pre>";print_r($relation);
