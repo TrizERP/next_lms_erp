@@ -18,7 +18,7 @@ class SessionMiddleware
     {
         $type = $request->input("type");
 
-        if($type !== "API"){
+        if($type !== "API"  &&  $type != "JSON"){
          
             $user_id = $request->session()->get('user_id');
             if(empty($user_id)){

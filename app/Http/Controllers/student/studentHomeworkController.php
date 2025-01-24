@@ -321,7 +321,7 @@ class studentHomeworkController extends Controller
     public function studentHomeworkReport(Request $request)
     {
         $type = $request->input('type');
-        if($type=='API'){
+        if(in_array($type,["API","JSON"])){
             $sub_institute_id = $request->get('sub_institute_id');
             $syear = $request->get('syear');
             $user_id = $request->user_id;

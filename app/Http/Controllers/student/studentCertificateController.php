@@ -222,6 +222,7 @@ class studentCertificateController extends Controller
         $student_id = $request->input("student_id");
         $sub_institute_id = $request->input("sub_institute_id");
         $syear = $request->input("syear");
+        $type = $request->input("type");
 
         if ($student_id != "" && $sub_institute_id != "" && $syear != "") {
             $data = DB::table('certificate_history')
@@ -236,8 +237,11 @@ class studentCertificateController extends Controller
             $res['status_code'] = 0;
             $res['message'] = "Parameter Missing";
         }
-
-        return json_encode($res);
+        if($type=="JSON"){
+            return response()->json($res);
+        }else{
+            return json_encode($res);
+        }
     }
 
     public function create_html_content($syear,$sub_institute_id,$html_content,$value,$receipt_book_arr,$template,$certificate_no,$certificate_reason) {
