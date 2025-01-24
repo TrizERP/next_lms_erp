@@ -15,11 +15,7 @@ $route = ['dashboard'];
         <button class="dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown"
                 aria-haspopup="true" aria-expanded="false">
         </button>
-        <!--  <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-           <a class="dropdown-item" href="#">Action</a>
-           <a class="dropdown-item" href="#">Another action</a>
-           <a class="dropdown-item" href="#">Something else here</a>
-         </div> -->
+       
     </div>
       <div class="help-arraw">
           <i class="mdi mdi-chevron-down"></i>
@@ -33,7 +29,30 @@ $route = ['dashboard'];
                         <a id="pdf_link" target="_blank" class="nav-link pb-0">
                             <span class="menu-main-icon"><i class="mdi mdi-file-pdf md-36"></i></span> PDF
                         </a>
-                        <!-- @php 
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="help-box">
+                        <a id="youtube_link" target="_blank" class="nav-link pb-0">
+              <span class="menu-main-icon"><i class="mdi mdi-youtube md-36"></i></span> Youtube
+            </a>
+          </div>
+        </div>
+    
+        <div class="col-6 col-md-6">
+          <div class="help-box">
+            <a href="#" class="nav-link pb-0" data-toggle="modal" data-target="#emailModal">
+              <span class="menu-main-icon"><i class="mdi mdi-email-outline md-36"></i></span> Email
+            </a>
+          </div>
+        </div>
+                <div class="col-6 col-md-6">
+                    <div class="help-box">
+                        <!-- <a href="http://crm.triz.co.in/index.php?module=Users&action=Login&password=admin&username=kalpesh@triz.co.in" class="nav-link pb-0" target="_blank">
+                            <span class="menu-main-icon"><i class="mdi mdi-clipboard-account md-36"></i></span> TTMS
+                        </a> -->
+                        
+                        @php 
                             $user_details = DB::table('tbluser')
                                 ->where('sub_institute_id', session()->get('sub_institute_id'))
                                 ->where('portal_user', 1)
@@ -46,44 +65,9 @@ $route = ['dashboard'];
                                 $userPassword = $user_details->password;
                             } 
                         @endphp
-                         <a href='http://crm.triz.co.in/customerportal/index.php?api=Login&module=Portal&q={"password":"{{ $userPassword }}","username":"{{ $userEmail }}","language":"en_us"}&type=API' class="nav-link pb-0" target="_blank" rel="noopener noreferrer"> 
-                        <span class="menu-main-icon" onclick="openTTMS()"><i class="mdi mdi-clipboard-account md-36"></i></span> TTMS
-                        </a> -->
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="help-box">
-                        <a id="youtube_link" target="_blank" class="nav-link pb-0">
-              <span class="menu-main-icon"><i class="mdi mdi-youtube md-36"></i></span> Youtube
-            </a>
-          </div>
-        </div>
-       <!--  <div class="col-md-4">
-          <div class="help-box">
-            <a href="#" class="nav-link pb-0">
-              <span class="menu-main-icon"><i class="mdi mdi-information-variant md-36"></i></span> FAQs
-            </a>
-          </div>
-        </div> -->
-        <!-- <div class="col-md-4">
-          <div class="help-box">
-            <a href="#" class="nav-link pb-0" data-toggle="modal" data-target="#chatModal">
-              <span class="menu-main-icon"><i class="mdi mdi-chat-outline md-36"></i></span> Quick Chat
-            </a>
-          </div>
-        </div> -->
-        <div class="col-6 col-md-6">
-          <div class="help-box">
-            <a href="#" class="nav-link pb-0" data-toggle="modal" data-target="#emailModal">
-              <span class="menu-main-icon"><i class="mdi mdi-email-outline md-36"></i></span> Email
-            </a>
-          </div>
-        </div>
-                <div class="col-6 col-md-6">
-                    <div class="help-box">
-                        <a href="http://apps.triz.co.in/crm/" class="nav-link pb-0" target="_blank">
-                            <span class="menu-main-icon"><i class="mdi mdi-clipboard-account md-36"></i></span> TTMS
-                        </a>
+                        <!-- <a href='http://crm.triz.co.in/customerportal/index.php?api=Login&module=Portal&q={"password":"{{ $userPassword }}","username":"{{ $userEmail }}","language":"en_us"}&type=API' class="nav-link pb-0" target="_blank" rel="noopener noreferrer"> -->
+                            <span class="menu-main-icon" onclick="openTTMS()"><i class="mdi mdi-clipboard-account md-36"></i></span> TTMS
+                        <!-- </a> -->
                     </div>
                 </div>
             </div>
@@ -182,7 +166,7 @@ $route = ['dashboard'];
                                       </div>
                                       <div class="col-3 m-0 p-1">
                                           <button class="btn btn-outline-secondary rounded border w-100 mb-0 h-100"
-                                                  title="G�nder!"><i class="fa fa-paper-plane" aria-hidden="true"></i>
+                                                  title="Gönder!"><i class="fa fa-paper-plane" aria-hidden="true"></i>
                                           </button>
                                       </div>
                                   </div>
@@ -196,66 +180,96 @@ $route = ['dashboard'];
       </div>
   </div>
 </div>
-<div id="loading-overlay" style="display:none;">
-<center>
-  <img src="/admin_dep/images/loader-man.gif" id="loading-gif" alt="loading-gif" >
-  </center>
-    </div>
-<script>
-        window.addEventListener('beforeunload', function() {
-            $('#loading-overlay').show();
-            setTimeout(() => {
-                $('#loading-overlay').hide();
-            },3000)
-     ���});
-</script>
-<!-- /#wrapper -->
-<!-- jQuery -->
-<script src="{{ asset("/admin_dep/js/jquery-3.5.1.min.js") }}"></script>
-<script src="{{ asset("/admin_dep/js/popper.min.js") }}"></script>
-<script src="{{ asset("/admin_dep/js/bootstrap.min.js") }}"></script>
-<script src="{{ asset("/admin_dep/js/bootstrap-select.min.js") }}"></script>
-<script src="{{ asset("/admin_dep/js/lms-custom.js") }}"></script>
-<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
 
-<!-- <script src="{{ asset("/plugins/bower_components/jquery/dist/jquery.min.js") }}"></script> -->
-<!-- Bootstrap Core JavaScript -->
-<!-- <script src="{{ asset("/admin_dep/bootstrap/dist/js/bootstrap.min.js") }}"></script> -->
-<!-- Menu Plugin JavaScript -->
-<!-- <script src="{{ asset("/plugins/bower_components/sidebar-nav/dist/sidebar-nav.min.js") }}"></script> -->
-<!--slimscroll JavaScript -->
-<!-- <script src="{{ asset("/admin_dep/js/jquery.slimscroll.js") }}"></script> -->
-<!--Wave Effects -->
-<!-- <script src="{{ asset("/admin_dep/js/waves.js") }}"></script> -->
-<!-- chartist chart -->
-<script src="{{ asset("/plugins/bower_components/chartist-js/dist/chartist.min.js") }}"></script>
-<script src="{{ asset("/plugins/bower_components/chartist-plugin-tooltip-master/dist/chartist-plugin-tooltip.min.js") }}"></script>
+<script src="{{ asset("/admin_dep/js/popper.min.js") }}" defer></script>
+<script src="{{ asset("/admin_dep/js/custom.js") }}" ></script>
+<script src="https://cdn.jsdelivr.net/npm/apexcharts" defer></script>
+
+
+<script src="{{ asset("/plugins/bower_components/chartist-js/dist/chartist.min.js") }}" defer></script>
+<script src="{{ asset("/plugins/bower_components/chartist-plugin-tooltip-master/dist/chartist-plugin-tooltip.min.js") }}" defer></script>
 <!-- Sparkline chart JavaScript -->
-<script src="{{ asset("/plugins/bower_components/jquery-sparkline/jquery.sparkline.min.js") }}"></script>
-<!-- Custom Theme JavaScript -->
-<!-- <script src="{{ asset("/admin_dep/js/custom.min.js") }}"></script> -->
-<!-- <script src="{{ asset("/admin_dep/js/dashboard1.js") }}"></script> -->
+<script src="{{ asset("/plugins/bower_components/jquery-sparkline/jquery.sparkline.min.js") }}" defer></script>
 
-<!--Style Switcher -->
-<!-- <script src="{{ asset("/plugins/bower_components/styleswitcher/jQuery.style.switcher.js") }}"></script> -->
+<script src="{{ asset("/plugins/bower_components/jquery.easy-pie-chart/dist/jquery.easypiechart.min.js") }}" defer></script>
+<script src="{{ asset("/plugins/bower_components/jquery.easy-pie-chart/easy-pie-chart.init.js") }}" defer></script>
+<script src="{{ asset("/plugins/bower_components/bootstrap-datepicker/bootstrap-datepicker.min.js") }}"></script>
 
-<script src="{{ asset("/plugins/bower_components/jquery.easy-pie-chart/dist/jquery.easypiechart.min.js") }}"></script>
-<script src="{{ asset("plugins/bower_components/jquery.easy-pie-chart/easy-pie-chart.init.js") }}"></script>
-<!-- <script src="{{ asset("plugins/bower_components/toast-master/js/jquery.toast.js") }}"></script> -->
-<script src="{{ asset("plugins/bower_components/bootstrap-datepicker/bootstrap-datepicker.min.js") }}"></script>
 
-<!--<script src="{{ asset("/admin_dep/js/sweetalert.min.js") }}"></script>-->
+<script src="https://code.jquery.com/jquery-1.10.2.js"></script>
+<script src="{{ asset("/admin_dep/js/jquery-ui.js") }}" defer></script>
+
+<script src="{{ asset("/admin_dep/js/bootstrap.min.js") }}" defer></script>
+<script src="{{ asset("/admin_dep/js/generativeAI.js") }}" defer></script>
+<script src="{{ asset("/admin_dep/js/bootstrap-select.min.js") }}" defer></script>
 
 <script>
-  //Google Analytics
-  setInterval(function() {
-    // var path = "{{ route('google-analytics-summary') }}";
-    // $.ajax({url: path, success: function(result){
-    //     var  nresult = result+" Users online";
-    //     $('#google_analytics').html(nresult);
-    // }
-    // });
+   
+    // AI 
+//     var i = 1;
+// var isFirstCharTyped = false;
+
+// $(document).on('keydown', '.note-editable', function(e) {
+//     if (e.key === 'Enter') {
+//         $('.textInput').remove();
+//         $('.note-editable').append('<input class="textInput form-control" id="textInput_'+i+'" placeholder="Press ‘space’ for AI, ‘/’ for commands'+i+'" >');
+//         $('#textInput_'+i).focus();
+//         i++;
+//         isFirstCharTyped = false; // Reset for a new input
+//     }
+// });
+
+// $(document).on('keydown', '.textInput', function(e) {    
+//     const inputValue = $('.textInput').val();
+//      // Use this.id to get the current input 
+//      if(!isFirstCharTyped){
+//         if (e.key === '/') {
+//             $('.textInput').after(`
+//             <ul class="list-group lists_text" id="lists_text" style="width:50%">
+//             <li class="list-group-item" id="first_one"><a onclick="aiChat(1)">An item</a></li>
+//             <li class="list-group-item">A second item</li>
+//             <li class="list-group-item">A third item</li>
+//             <li class="list-group-item">A fourth item</li>
+//             <li class="list-group-item">And a fifth one</li>
+//             </ul>`);
+//             $('.lists_text li:first-child').focus();
+
+//             $('.textInput').val("");
+//         } else if (e.key === 'Space') {
+//             $('.textInput').val("space entered");
+//         }
+//         else if (e.key === ' ') {
+//             $('.textInput').val("space entered");
+//         }
+
+//         isFirstCharTyped = true;
+//     }
+// });
+
+    $(document).ready(function () {
+        $.ajaxSetup({
+            headers:
+                {'X-CSRF-TOKEN': "{{ csrf_token() }}"}
+        });
+
+        $('.mydatepicker').each(function () {
+            // alert("inside onload");
+            $(this).attr("placeholder", "dd-mm-yyyy");
+            var selected_date = $(this).val();
+            // alert(selected_date);
+            if (selected_date != "" && selected_date != "0000-00-00") {
+                // alert(selected_date);
+                var soni = new Date(selected_date);
+                // alert(soni);
+                formatted_date = ("0" + (soni.getDate())).slice(-2) + "-" + ("0" + (soni.getMonth() + 1)).slice(-2) + "-" + soni.getFullYear();
+                // alert(formatted_date);
+                $(this).val(formatted_date);
+            }
+        });
+
+        //Google Analytics
+        setInterval(function () {
 
     // var  nresult = result+" Users online";
     var nresult = "1 Users online";
@@ -264,24 +278,30 @@ $route = ['dashboard'];
 
   // Date Picker
   jQuery('.mydatepicker, #datepicker').datepicker({
+    changeMonth: true,
+    changeYear: true,
+    yearRange: "-74:+10",
+    inline: true,
     autoclose: true,
-    format: 'yyyy-mm-dd',
-    orientation: 'bottom'
+    format: 'dd-mm-yyyy',
+    orientation: 'bottom',
+    forceParse: false
   });
-  jQuery('#datepicker-autoclose').datepicker({
-    autoclose: true,
-    todayHighlight: true
-  });
-  jQuery('#date-range').datepicker({
-    toggleActive: true
-  });
-  jQuery('#datepicker-inline').datepicker({
-    todayHighlight: true
-  });
+        jQuery('#datepicker-autoclose').datepicker({
+            autoclose: true,
+            todayHighlight: true
+        });
+        jQuery('#date-range').datepicker({
+            toggleActive: true
+        });
+        jQuery('#datepicker-inline').datepicker({
+            todayHighlight: true
+        });
+    });
 </script>
 
-<!-- Clock Plugin JavaScript -->
-<script src="{{ asset("plugins/bower_components/clockpicker/dist/jquery-clockpicker.min.js") }}"></script>
+
+<script src="{{ asset("/plugins/bower_components/clockpicker/dist/jquery-clockpicker.min.js") }}" defer></script>
 
 <script>
   // Clock pickers
@@ -328,13 +348,7 @@ $route = ['dashboard'];
   }
 
   function sessionMenu(x) {
-      // if (typeof(Storage) !== "undefined") {
-      //   // Store
-      //   // alert(x);
-      //   localStorage.setItem("right_menu_id", x);
-      //   // alert(x);
-      //   // Retrieve
-      // }
+   
       var xhttp = new XMLHttpRequest();
       xhttp.onreadystatechange = function () {
           if (this.readyState == 4 && this.status == 200) {
@@ -343,35 +357,35 @@ $route = ['dashboard'];
     };
     xhttp.open("GET", "{{route('ajaxMenuSession')}}?type=API&menu_id="+x, true);
     xhttp.send();
-    // $('.list-unstyled  > li').click(function(){
-    //   // alert('s');
-    //   // alert(this);
-    //   var menu_main_id = $(this).parents('.tab-pane').attr("id");
-    //   // alert(menu_main_id);
-      //  $(this).parents('.tab-pane').addClass('active');
-      //   // $(this).parent("[aria-controls='menu-1']").addClass('active');
-      // // alert('.nav-link').attr('href','#'+menu_main_id);
-      // $('.nav-link').attr('href','#'+menu_main_id).addClass('active');
-      //   // $('.nav-link[href="#' + menu_main_id + '"]').addClass('active');
-
-      // });
+   
   }
+  window.addEventListener("beforeunload", function () {
+  // This code will be executed just before the page is unloaded (refreshed or navigated away)
+  var current_id = 1; // Replace this with the appropriate value for 'menu_id'
+  var xhttp = new XMLHttpRequest();
+  xhttp.open("GET", "{{ route('check_access') }}?type=API&menu_id=" + current_id, true);
+  xhttp.send();
+});
 
-  function redirect_pages_soni(x, menu_id, main_menu_id) {
+  function redirect_pages_soni(x, menu_id, main_menu_id,current_id) {
+      
       localStorage.setItem('menu_id', menu_id);
       localStorage.setItem('main_menu_id', main_menu_id);
+      localStorage.setItem('current_id', current_id);   
+    
       window.location.replace(x);
+   
   }
 
-  function load_rightside_menu(x, main_menu_id) {
+  function load_rightside_menu(menu_id, main_menu_id) {
       $('.right-sidebar').show();
       var path = "{{ route('ajax_load_rightSideMenu') }}";
 
       $.ajax({
           url: path,
-          data: 'menu_id=' + x,
+          data: 'menu_id=' + menu_id + '&main_menu_id=' + main_menu_id,
           dataType: 'html',
-          async: false,
+          defer: false,
           success: function (result) {
               // console.log(result);
               res = result.split("####");
@@ -384,9 +398,9 @@ $route = ['dashboard'];
 
       $.ajax({
           url: path1,
-          data: 'menu_id=' + x,
+          data: 'menu_id=' + menu_id,
           dataType: 'html',
-          async: false,
+          defer: false,
           success: function (links) {
               // console.log(links);
               if (links != "0") {
@@ -403,54 +417,9 @@ $route = ['dashboard'];
       //var tab_pane_id = $('.main-menu-block').find('.active').attr("aria-controls");
   }
 
-  // function hideRightsideMenu(){
-  //   $('.right-sidebar').show();
-  // }
-  // function load_rightside_menu(x)
-  // {
-  //   var path = "{{ route('ajax_load_rightSideMenu') }}";
-  //   $.ajax({
-  //     url : path,
-  //     data:'menu_id='+x,
-  //     success:function(result){
-  //         console.log(result);
-  //         var main_arr = result['Main'];
-  //         var child_arr = result['Child'];
-
-  //         $("#loadRightSideMenu").html('');
-  //         $("#loadSubMenu").html('');
-
-
-  //         for(var i=0,j=1;i < main_arr.length;i++,j++){
-  //             inner_arr = child_arr[main_arr[i].id];
-  //             var childmenus = '';
-  //             // alert("<?php echo "asdasda";?>");
-  //             for(var k=0;k < inner_arr.length;k++){
-  //               var php_route ="<?php echo "{{ route('";?>"+inner_arr[k].link+"<?php echo "') }}";?>";
-  //               console.log(php_route);
-  //               childmenus = childmenus + '<li class="d-flex align-items-center"><em class="fa fa-angle-right"></em><a href="'+php_route+'" onclick="sessionMenu('+inner_arr[k].tblmenu_master_id+');" >'+inner_arr[k].name+'</a></li>';
-  //             }
-
-  //             if(i == 0){
-  //               $("#loadRightSideMenu").append('<li class="nav-item" role="presentation" data-toggle="tooltip" data-placement="top" title="'+main_arr[i].name+'"><a class="nav-link active" data-toggle="tab" href="#right-tab-'+j+'" role="tab" aria-controls="right-tab-'+j+'" aria-selected="false"><img class="icon-nrml" src="http://{{$_SERVER['HTTP_HOST']}}/admin_dep/images/side-'+main_arr[i].icon+'.png" alt=""><img class="icon-hvr" src="http://{{$_SERVER['HTTP_HOST']}}/admin_dep/images/side-'+main_arr[i].icon+'-white.png" alt=""></a></li>');
-  //               $("#loadSubMenu").append('<div class="tab-pane show active" id="right-tab-'+j+'" role="tabpanel"><div class="acc-panel"><div class="acc-header d-flex align-items-center"><span><em class="fa fa-angle-down"></em></span><h4 class="m-0">'+main_arr[i].name+'</h4></div><div class="acc-body" style="display: block;"><ul class="list-unstyled activity-checks">'+childmenus+'</ul><div class="activity-accordian"></div></div></div></div>');
-  //             }else{
-  //               $("#loadRightSideMenu").append('<li class="nav-item" role="presentation" data-toggle="tooltip" data-placement="top" title="'+main_arr[i].name+'"><a class="nav-link" data-toggle="tab" href="#right-tab-'+j+'" role="tab" aria-controls="right-tab-'+j+'" aria-selected="false"><img class="icon-nrml" src="http://{{$_SERVER['HTTP_HOST']}}/admin_dep/images/side-'+main_arr[i].icon+'.png" alt=""><img class="icon-hvr" src="http://{{$_SERVER['HTTP_HOST']}}/admin_dep/images/side-'+main_arr[i].icon+'-white.png" alt=""></a></li>');
-  //               $("#loadSubMenu").append('<div class="tab-pane show" id="right-tab-'+j+'" role="tabpanel"><div class="acc-panel"><div class="acc-header d-flex align-items-center"><span><em class="fa fa-angle-down"></em></span><h4 class="m-0">'+main_arr[i].name+'</h4></div><div class="acc-body" style="display: block;"><ul class="list-unstyled activity-checks">'+childmenus+'</ul><div class="activity-accordian"></div></div></div></div>');
-  //             }
-  //          }
-  //     }
-  //   });
-
-  // }
 </script>
 
-<script type="text/javascript">
-    // function updateTour(module) {
 
-    // //   alert('asd');
-
-</script>
 <script type="text/javascript">
     var options = {
         series: [{
@@ -537,7 +506,7 @@ $route = ['dashboard'];
     </script>
 
     <script type="text/javascript">
-    	var options = {
+      var options = {
           series: [{
           name: 'series1',
           data: [31, 40, 28, 51, 42, 109, 100]
@@ -569,20 +538,21 @@ $route = ['dashboard'];
         var chart = new ApexCharts(document.querySelector("#splineChart"), options);
         chart.render();
     </script>
-<script src="{{ asset("/admin_dep/js/ajax.js") }}"></script>
+<script src="{{ asset("/admin_dep/js/ajax.js") }}" defer></script>
 
 
-<script src="{{ asset("/plugins/bower_components/datatables/datatables.min.js") }}"></script>
+<script src="{{ asset("/plugins/bower_components/datatables/datatables.min.js") }}" defer></script>
 <!-- start - This is for export functionality only -->
-<script src="https://cdn.datatables.net/buttons/1.2.2/js/dataTables.buttons.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/1.2.2/js/buttons.flash.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/2.5.0/jszip.min.js"></script>
-<script src="https://cdn.rawgit.com/bpampuch/pdfmake/0.1.18/build/pdfmake.min.js"></script>
-<script src="https://cdn.rawgit.com/bpampuch/pdfmake/0.1.18/build/vfs_fonts.js"></script>
-<script src="https://cdn.datatables.net/buttons/1.2.2/js/buttons.html5.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/1.2.2/js/buttons.print.min.js"></script>
 
-
+@if(!in_array($url,$route))
+<script src="https://cdn.datatables.net/buttons/1.2.2/js/dataTables.buttons.min.js" defer></script>
+<script src="https://cdn.datatables.net/buttons/1.2.2/js/buttons.flash.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/2.5.0/jszip.min.js" defer></script>
+<script src="https://cdn.rawgit.com/bpampuch/pdfmake/0.1.18/build/pdfmake.min.js" defer></script>
+<script src="https://cdn.rawgit.com/bpampuch/pdfmake/0.1.18/build/vfs_fonts.js" defer></script>
+<script src="https://cdn.datatables.net/buttons/1.2.2/js/buttons.html5.min.js" defer></script>
+<script src="https://cdn.datatables.net/buttons/1.2.2/js/buttons.print.min.js" defer></script>
+@endif
 <script>
     $(document).ready(function () {
 
@@ -603,29 +573,26 @@ $route = ['dashboard'];
             },
         });
 
-        // $('.sub-drop-panel a').click(function(){
-        //   var tab_pane_id = $('.main-menu-block').find('.active').attr("aria-controls");
-        //   alert(tab_pane_id);
-        //   $("#"+tab_pane_id).addClass('active');
-        // });
 
     });
-    // function openTTMS(){
-    //    var username = '{{$userEmail}}';
-    //    var password = '{{$userPassword}}';
-    //    var url = 'https://crm.triz.co.in/customerportal/index.php?api=Login&module=Portal&q=' +
-    //     encodeURIComponent(JSON.stringify({
-    //         "password": "{{$userPassword}}",
-    //         "username": "{{$userEmail}}",
-    //         "language": "en_us"
-    //     })) +
-    //     '&type=API';
+    function openTTMS(){
+       var username = '{{$userEmail}}';
+       var password = '{{$userPassword}}';
+       var url = 'https://crm.triz.co.in/customerportal/index.php?api=Login&module=Portal&q=' +
+        encodeURIComponent(JSON.stringify({
+            "password": "{{$userPassword}}",
+            "username": "{{$userEmail}}",
+            "language": "en_us"
+        })) +
+        '&type=API';
 
-    // // Open the URL in a new tab
-    // window.open(url, '_blank');
-    // }
+    // Open the URL in a new tab
+    window.open(url, '_blank');
+    }
+
 
 </script>
+
 <!-- Chatbot HTML -->
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <div id="chatbot-container" style="position: fixed; bottom: 70px; right: 20px; width: 300px; border: 1px solid #ccc; border-radius: 10px; background-color: white; display: none;">
