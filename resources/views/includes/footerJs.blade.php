@@ -180,24 +180,12 @@ $route = ['dashboard'];
       </div>
   </div>
 </div>
-<div id="loading-overlay" style="display:none;">
-<center>
-  <img src="/admin_dep/images/loader-man.gif" id="loading-gif" alt="loading-gif" >
-  </center>
-    </div>
-<script>
-        window.addEventListener('beforeunload', function() {
-            $('#loading-overlay').show();
-            setTimeout(() => {
-                $('#loading-overlay').hide();
-            },3000)
-        });
-</script>
-<!-- /#wrapper -->
-<!-- jQuery -->
+
+
 <script src="{{ asset("/admin_dep/js/popper.min.js") }}" defer></script>
 <script src="{{ asset("/admin_dep/js/custom.js") }}" ></script>
 <script src="https://cdn.jsdelivr.net/npm/apexcharts" defer></script>
+
 
 <script src="{{ asset("/plugins/bower_components/chartist-js/dist/chartist.min.js") }}" defer></script>
 <script src="{{ asset("/plugins/bower_components/chartist-plugin-tooltip-master/dist/chartist-plugin-tooltip.min.js") }}" defer></script>
@@ -207,6 +195,7 @@ $route = ['dashboard'];
 <script src="{{ asset("/plugins/bower_components/jquery.easy-pie-chart/dist/jquery.easypiechart.min.js") }}" defer></script>
 <script src="{{ asset("/plugins/bower_components/jquery.easy-pie-chart/easy-pie-chart.init.js") }}" defer></script>
 <script src="{{ asset("/plugins/bower_components/bootstrap-datepicker/bootstrap-datepicker.min.js") }}"></script>
+<script src="{{ asset("/admin_dep/js/jquery-3.5.1.min.js") }}"></script>
 
 <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
 <script src="{{ asset("/admin_dep/js/jquery-ui.js") }}" defer></script>
@@ -216,7 +205,13 @@ $route = ['dashboard'];
 <script src="{{ asset("/admin_dep/js/bootstrap-select.min.js") }}" defer></script>
 
 <script>
-   
+// Help Guide
+$('.help-body').hide(100);
+$('.guide-title').on('click', function(event) {
+    $('.help-guide').toggleClass('active', 100);
+    $('.help-body').slideToggle(100);
+});
+
     // AI 
 //     var i = 1;
 // var isFirstCharTyped = false;
@@ -310,6 +305,7 @@ $route = ['dashboard'];
         });
     });
 </script>
+
 
 <script src="{{ asset("/plugins/bower_components/clockpicker/dist/jquery-clockpicker.min.js") }}" defer></script>
 
@@ -428,6 +424,7 @@ $route = ['dashboard'];
   }
 
 </script>
+
 
 <script type="text/javascript">
     var options = {
@@ -623,7 +620,7 @@ $route = ['dashboard'];
     <input type="text" id="user_input" placeholder="Type a message..." style="width: calc(100% - 20px); margin: 10px; padding: 10px; border: 1px solid #ccc; border-radius: 5px;">
     <button id="send_button" style="width: calc(100% - 20px); margin: 10px; padding: 10px; background-color: #007bff; color: white; border: none; border-radius: 5px;">Send</button>
 </div>
-<button id="open-chatbot" style="position: fixed; bottom: 0px; right: 20px;color: white; border: none; border-radius: 5px; padding: 10px;z-index:9999;">
+<button id="open-chatbot" style="position: fixed; bottom: 50px; right: 20px;color: white; border: none; border-radius: 5px; padding: 10px;">
 <span class="tooltip">Hey! I am Scholar Clone</span>
 </button>
 
@@ -932,8 +929,8 @@ function attendanceState(){
   #open-chatbot {
     background: url('/Images/293633-middle-removebg.png') no-repeat center center; 
     background-size: contain;
-    width: 80px; 
-    height: 70px; 
+    width: 100px; 
+    height: 100px; 
     border: none;
     cursor: pointer;
 }
