@@ -195,13 +195,6 @@ $route = ['dashboard'];
 </script>
 <!-- /#wrapper -->
 <!-- jQuery -->
-<script src="{{ asset("/admin_dep/js/jquery-3.5.1.min.js") }}"></script>
-<script src="{{ asset("/admin_dep/js/popper.min.js") }}"></script>
-<script src="{{ asset("/admin_dep/js/bootstrap.min.js") }}"></script>
-<script src="{{ asset("/admin_dep/js/bootstrap-select.min.js") }}"></script>
-<script src="{{ asset("/admin_dep/js/lms-custom.js") }}"></script>
-<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
-
 <script src="{{ asset("/admin_dep/js/popper.min.js") }}" defer></script>
 <script src="{{ asset("/admin_dep/js/custom.js") }}" ></script>
 <script src="https://cdn.jsdelivr.net/npm/apexcharts" defer></script>
@@ -621,18 +614,18 @@ $route = ['dashboard'];
     <div id="messages" style="height: 300px; overflow-y: auto" class="clearfix"></div>
     <div id="loading" style="display: none; float: left; clear: both">
     <span class="dots">
-        <span class="dot" style="font-size: 10px;">●</span>
-        <span class="dot" style="font-size: 10px;">●</span>
-        <span class="dot" style="font-size: 10px;">●</span>
+        <span class="dot" style="font-size: 10px;">&#9679</span>
+        <span class="dot" style="font-size: 10px;">&#9679</span>
+        <span class="dot" style="font-size: 10px;">&#9679</span>
     </span>
     <span style="font-size: 10px;">Scholar clone is typing...</span>
 </div>
     <input type="text" id="user_input" placeholder="Type a message..." style="width: calc(100% - 20px); margin: 10px; padding: 10px; border: 1px solid #ccc; border-radius: 5px;">
     <button id="send_button" style="width: calc(100% - 20px); margin: 10px; padding: 10px; background-color: #007bff; color: white; border: none; border-radius: 5px;">Send</button>
 </div>
-<!--<button id="open-chatbot" style="position: fixed; bottom: 50px; right: 20px;color: white; border: none; border-radius: 5px; padding: 10px;">
+<button id="open-chatbot" style="position: fixed; bottom: 0px; right: 20px;color: white; border: none; border-radius: 5px; padding: 10px;z-index:9999;">
 <span class="tooltip">Hey! I am Scholar Clone</span>
-</button>-->
+</button>
 
 
 <!-- Chatbot JavaScript -->
@@ -640,7 +633,7 @@ $route = ['dashboard'];
     document.getElementById('open-chatbot').onclick = function() {
     document.getElementById('chatbot-container').style.display = 'block';
     this.style.display = 'none'; // Hide the "Chat with us" button
-
+  
     document.getElementById('messages').innerHTML += `
         <div style="display: inline-block; max-width: 80%; text-align: left; background-color: #f1f1f1; padding: 10px; border-radius: 5px; margin: 5px 0; float: left; clear: both;">
             Hello! I am Scholar clone, How can I assist you today?
@@ -652,7 +645,7 @@ $route = ['dashboard'];
     <h6 style="margin-bottom: 10px; color: #333;">Some popular FAQ's</h6>
     <div style="display: flex; flex-direction: column; gap: 10px;">
         <button class="faq-button-fees" data-message="Fees" style="width: 100%; padding: 2px 0;border-radius: 5px; background-color: #4CAF50; color: white; border: none; cursor: pointer; font-size: 12px;">Fees</button>
-        <button class="faq-button" data-message="Attendance" style="width: 100%; padding: 2px 0; border-radius: 5px;background-color: #2196F3; color: white; border: none; cursor: pointer; font-size: 12px;">Attendance</button>
+        <button class="faq-button-attendance" data-message="Attendance" style="width: 100%; padding: 2px 0; border-radius: 5px;background-color: #2196F3; color: white; border: none; cursor: pointer; font-size: 12px;">Attendance</button>
         <button class="faq-button" data-message="Grades" style="width: 100%; padding: 2px 0; border-radius: 5px;background-color: #f44336; color: white; border: none; cursor: pointer; font-size: 12px;">Grades</button>
     </div>
 </div>`;
@@ -679,8 +672,6 @@ document.getElementById('user_input').addEventListener('keypress', function(even
                         </div>
                     </div>`;
             });
-            
-            // Use event delegation for dynamically added buttons
             document.getElementById('messages').addEventListener('click', function(event) {
                 var message=''; 
                 if (event.target.classList.contains('fees-button')) {
@@ -688,6 +679,25 @@ document.getElementById('user_input').addEventListener('keypress', function(even
                     sendMessage(message);
                 }
             });
+
+            document.querySelector('.faq-button-attendance').addEventListener('click', function() {
+    document.getElementById('messages').innerHTML += `
+        <div style="display: inline-block; max-width: 80%; text-align: left; background-color: #f1f1f1; padding: 10px; border-radius: 5px; margin: 5px 0; float: left; clear: both;">
+            <p style="margin-bottom: 5px; color: #333;">Attendance Options:</p>
+            <div style="display: flex; flex-direction: column; gap: 1px;">
+                <button class="attendance-button" data-message="Monthly Attendance" style="width: 100%; padding: 0px; border-radius: 5px; background-color: #4cb04f; color: white; border: none; cursor: pointer; font-size: 12px;">Monthly Attendance</button>
+                <button class="attendance-button" data-message="Yearly Attendance" style="width: 100%;margin-top:5px; padding: 0px; border-radius: 5px; background-color: #2196F3; color: white; border: none; cursor: pointer; font-size: 12px;">Yearly Attendance</button>
+            </div>
+        </div>`;
+});
+
+// Use event delegation for dynamically added attendance buttons
+document.getElementById('messages').addEventListener('click', function(event) {
+    if (event.target.classList.contains('attendance-button')) {
+        var message = event.target.getAttribute('data-message');
+        sendMessage(message);
+    }
+});
 };
 
 // Function to send messages
@@ -771,7 +781,7 @@ document.getElementById('close-chatbot').onclick = function() {
 };
 
 document.getElementById('refresh-chatbot').onclick = function() {
-  fetch('/flush-session', {
+    fetch('/flush-session', {
         method: 'POST',
         headers: {
             'X-CSRF-TOKEN': '{{ csrf_token() }}', // Include CSRF token for security
@@ -784,49 +794,83 @@ document.getElementById('refresh-chatbot').onclick = function() {
             // Clear the messages
             document.getElementById('messages').innerHTML = ''; 
             document.getElementById('messages').innerHTML += `
-                <div style="display: inline-block; max-width: 80%; text-align: left; background-color: #f1f1f1; padding: 10px; border-radius: 5px; margin: 5px 0;float: left; clear: both;">
+                <div style="display: inline-block; max-width: 80%; text-align: left; background-color: #f1f1f1; padding: 10px; border-radius: 5px; margin: 5px 0; float: left; clear: both;">
                     Hello! I am Scholar clone, How can I assist you today?
                 </div>`;
-                document.getElementById('messages').innerHTML += `
+
+            document.getElementById('messages').innerHTML += `
                 <div style="display: inline-block; max-width: 80%; text-align: left; background-color: #f1f1f1; padding: 10px; border-radius: 5px; margin: 5px 0; float: left; clear: both;">
                     <h6 style="margin-bottom: 10px; color: #333;">Some popular FAQ's</h6>
                     <div style="display: flex; flex-direction: column; gap: 10px;">
-                        <button class="faq-button-fees" data-message="Fees" style="width: 100%; padding: 2px 0;border-radius: 5px; background-color: #4CAF50; color: white; border: none; cursor: pointer; font-size: 12px;">Fees</button>
-                        <button class="faq-button" data-message="Attendance" style="width: 100%; padding: 2px 0; border-radius: 5px;background-color: #2196F3; color: white; border: none; cursor: pointer; font-size: 12px;">Attendance</button>
-                        <button class="faq-button" data-message="Grades" style="width: 100%; padding: 2px 0; border-radius: 5px;background-color: #f44336; color: white; border: none; cursor: pointer; font-size: 12px;">Grades</button>
+                        <button class="faq-button-fees" data-message="Fees" style="width: 100%; padding: 2px 0; border-radius: 5px; background-color: #4CAF50; color: white; border: none; cursor: pointer; font-size: 12px;">Fees</button>
+                        <button class="faq-button-attendance" data-message="Attendance" style="width: 100%; padding: 2px 0; border-radius: 5px; background-color: #2196F3; color: white; border: none; cursor: pointer; font-size: 12px;">Attendance</button>
+                        <button class="faq-button" data-message="Grades" style="width: 100%; padding: 2px 0; border-radius: 5px; background-color: #f44336; color: white; border: none; cursor: pointer; font-size: 12px;">Grades</button>
                     </div>
                 </div>`;
-    document.querySelectorAll('.faq-button').forEach(button => {
+                document.querySelectorAll('.faq-button').forEach(button => {
         button.addEventListener('click', function() {
             var message = this.getAttribute('data-message');
-            sendMessage(message); // Use the same sendMessage function to handle button clicks
+            sendMessage(message); 
         });
     });
-    document.querySelector('.faq-button-fees').addEventListener('click', function() {
-                document.getElementById('messages').innerHTML += `
-                    <div style="display: inline-block; max-width: 80%; text-align: left; background-color: #f1f1f1; padding: 10px; border-radius: 5px; margin: 5px 0; float: left; clear: both;">
-                        <p style="margin-bottom: 5px; color: #333;">Fees FAQ's:</p> <!-- Reduced margin-bottom -->
-                        <div style="display: flex; flex-direction: column; gap: 1px;"> <!-- Reduced gap -->
-                            <button class="fees-button" data-message="Pending Fees" style="width: 100%; padding: 0px; border-radius: 5px; background-color: #4CAF50; color: white; border: none; cursor: pointer; font-size: 12px;">Pending Fees</button>
-                        </div>
-                    </div>`;
-            });
-            
-            // Use event delegation for dynamically added buttons
-            document.getElementById('.fees-button').addEventListener('click', function(event) {
-                var message=''; 
-                if (event.target.classList.contains('fees-button')) {
-                    var message = event.target.getAttribute('data-message');
-                    sendMessage(message);
+      document.getElementById('messages').addEventListener('click', function(event) {
+                if (event.target.classList.contains('faq-button-fees')) {
+                    if (!document.querySelector('.fees-button')) {
+                        feesState();
+                    }
                 }
+
+                if (event.target.classList.contains('faq-button-attendance')) {
+                  if (!document.querySelector('.attendance-button')) {
+                    attendanceState();
+                }
+              }
             });
-}
+
+        }
     })
     .catch(error => {
         console.error('Error:', error);
     });
 };
 
+function feesState(){
+  document.getElementById('messages').innerHTML += `
+                            <div style="display: inline-block; max-width: 80%; text-align: left; background-color: #f1f1f1; padding: 10px; border-radius: 5px; margin: 5px 0; float: left; clear: both;">
+                                <p style="margin-bottom: 5px; color: #333;">Fees FAQ's:</p>
+                                <div style="display: flex; flex-direction: column; gap: 1px;">
+                                    <button class="fees-button" data-message="Pending Fees" style="width: 100%; padding: 0px; border-radius: 5px; background-color: #4CAF50; color: white; border: none; cursor: pointer; font-size: 12px;">Pending Fees</button>
+                                </div>
+                            </div>`;
+
+                document.getElementById('.fees-button').addEventListener('click', function(event) {
+                            var message = '';
+                if (event.target.classList.contains('fees-button')) {
+                message = event.target.getAttribute('data-message');  
+                sendMessage(message);  
+                  }
+              });
+}
+function attendanceState(){
+  document.getElementById('messages').innerHTML += `
+                                <div style="display: inline-block; max-width: 80%; text-align: left; background-color: #f1f1f1; padding: 10px; border-radius: 5px; margin: 5px 0; float: left; clear: both;">
+                                    <p style="margin-bottom: 5px; color: #333;">Attendance Options:</p>
+                                    <div style="display: flex; flex-direction: column; gap: 1px;">
+                                        <button class="attendance-button" data-message="Monthly Attendance" style="width: 100%; padding: 0px; border-radius: 5px; background-color: #4cb04f; color: white; border: none; cursor: pointer; font-size: 12px;">Monthly Attendance</button>
+                                        <button class="attendance-button" data-message="Yearly Attendance" style="width: 100%;margin-top:5px; padding: 0px; border-radius: 5px; background-color: #2196F3; color: white; border: none; cursor: pointer; font-size: 12px;">Yearly Attendance</button>
+                                        </div>
+                                    </div>`;
+
+                            // Use event delegation for dynamically added attendance buttons
+                            document.getElementById('.attendance-button').addEventListener('click', function(event) {
+                                var message = ''; 
+                                // Check if the clicked element has the class 'attendance-button'
+                                if (event.target.classList.contains('attendance-button')) {
+                                    message = event.target.getAttribute('data-message');
+                                    sendMessage(message);
+                                }
+                              });
+}
     document.getElementById('send_button').onclick = function() {
         var userInput = document.getElementById('user_input').value;
         if (userInput.trim() === '') return; // Prevent sending empty messages
@@ -888,8 +932,8 @@ document.getElementById('refresh-chatbot').onclick = function() {
   #open-chatbot {
     background: url('/Images/293633-middle-removebg.png') no-repeat center center; 
     background-size: contain;
-    width: 100px; 
-    height: 100px; 
+    width: 80px; 
+    height: 70px; 
     border: none;
     cursor: pointer;
 }
@@ -925,10 +969,10 @@ document.getElementById('refresh-chatbot').onclick = function() {
   }
   button#close-chatbot {
         transition: color 0.3s; 
-    }
+  }
   button#close-chatbot:hover {
         color: red; 
-    }
+  }
   #chatbot-header {
     display: flex;
     justify-content: space-between;
@@ -938,15 +982,14 @@ document.getElementById('refresh-chatbot').onclick = function() {
     padding: 10px;
     border-top-left-radius: 10px;
     border-top-right-radius: 10px;
-}
-
+} 
 #chatbot-header button {
     background: none;
     border: none;
     color: white;
     cursor: pointer;
     margin-left: 5 px;
-}
+} 
 
 #chatbot-header button:hover {
     background-color: #0056b3;

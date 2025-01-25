@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Storage;
 use Intervention\Image\ImageManagerStatic as Image;
 use Illuminate\Support\Facades\Session; 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 use App\Http\Controllers\fees\fees_collect\fees_collect_controller;
 use OpenAI;
 
@@ -27,10 +28,10 @@ class OpenAIService
         $this->apiKey = env('OPENAI_API_KEY');
     }
 
-    public function generateTitleAndDescription($topicName, $chapterName, $subjectName)
+    public function generateTitleAndDescription($topicName, $chapterName, $subjectName,$standard_name)
     {   
-        $prompt = "Generate a title and description for a topic named '{$topicName}' in the chapter '{$chapterName}' of the subject '{$subjectName}'.";
-
+        $prompt = "Generate a title and description for a topic named '{$topicName}' in the chapter '{$chapterName}' of the subject '{$subjectName}' in standard '{$standard_name}'. \n";
+        
         try {
             $response = $this->client->post('https://api.openai.com/v1/chat/completions', [
                 'verify' => false,
@@ -92,8 +93,12 @@ class OpenAIService
     //     return $text; // Return original text if summarization fails
     // }
     // }
-    public function generateLessonPlan($topicName, $chapterName, $subjectName, $contentCategory, $contentType, $booklistData) {   
+    public function generateLessonPlan($topicName, $chapterName, $subjectName, $contentCategory, $contentType, $booklistData,$curriculum_alignment,$holistic_curriculum,$objective,$assessment_tool,$objective_one,$learning_outcomes,$suggested_materials,$assessment_plan,$standard_name) {   
+    if($booklistData){
     $linksString = implode("\n", $booklistData);
+    } else{
+        $linksString = " ";
+    }
     $pdfFilePathNew = storage_path('app/public/pdfs/iess401.pdf'); 
     if(file_exists($pdfFilePathNew)){
         $pdfContent = file_get_contents($pdfFilePathNew);
@@ -104,28 +109,64 @@ class OpenAIService
     
     // Prepare the prompt based on category
     if($contentCategory == 'Worksheet' && $topicName != '1. VIDEOS'){
-        $prompt = "Create a detailed worksheet for the topic '{$topicName}' in the chapter '{$chapterName}' of the subject '{$subjectName}'.\n" .
-                  "Please refer to the following resources for more information:\n{$linksString}\n" .
+        $prompt = "Create a detailed '{$contentCategory}' for the topic '{$topicName}' in the chapter '{$chapterName}' of the subject '{$subjectName}' in standard '{$standard_name}'.\n" .
+                 "<strong>Curriculum Alignment:</strong>\n {$curriculum_alignment}\n" .
+                "<strong>Holistic Curriculum:</strong>\n {$holistic_curriculum}\n" .
+                "<strong>Objective:</strong>\n {$objective}\n" .
+                "<strong>Assessment Tool:</strong>\n {$assessment_tool}\n".  
+                "<strong>Syllabus:</strong>\n\n".
+                "<strong>Objectives:</strong>\n {$objective_one}\n".
+                "<strong>Learning Outcomes:</strong>\n {$learning_outcomes}\n".
+                "<strong>Suggested Materials:</strong>\n {$suggested_materials}\n".
+                "<strong>Assessment Plan:</strong>\n {$assessment_plan}\n".
+                 "Please refer to the following resources for more information:\n{$linksString}\n" .
                   "The response should be detailed enough and no. of questions should be minimum 50, focusing on all genres of questions like long, short, fill in the blanks, and MCQs with answers. Please include examples, explanations, and any relevant information.\n" .
                   "Strictly avoid any personal replies or apologies. Only provide the main content.";
         Log::info('Prompt: ' . $prompt);    
     } else if($topicName == '1. VIDEOS' && $contentCategory != 'Worksheet'){
-        $prompt = "Create a detailed '{$contentCategory}' for the chapter '{$chapterName}' of the subject '{$subjectName}'.\n" .
+        $prompt = "Create a detailed '{$contentCategory}' for the topic '{$topicName}' in the chapter '{$chapterName}' of the subject '{$subjectName}' in standard '{$standard_name}'.\n" .
+                "<strong>Curriculum Alignment:</strong>\n {$curriculum_alignment}\n" .
+                "<strong>Holistic Curriculum:</strong>\n {$holistic_curriculum}\n" .
+                "<strong>Objective:</strong>\n {$objective}\n" .
+                "<strong>Assessment Tool:</strong>\n {$assessment_tool}\n".
+                "<strong>Syllabus:</strong>\n\n".
+                "<strong>Objectives:</strong>\n {$objective_one}\n".
+                "<strong>Learning Outcomes:</strong>\n {$learning_outcomes}\n".
+                "<strong>Suggested Materials:</strong>\n {$suggested_materials}\n".
+                "<strong>Assessment Plan:</strong>\n {$assessment_plan}\n".
                    "Please refer to the following resources for more information:\n{$linksString}\n" .
                    "The response should be detailed enough to generate a PDF of at least 5 pages, focusing strictly on the basis of NCERT curriculum of '{$chapterName}' and structured '{$contentCategory}'. Minimum words should be 1000. Please include examples, explanations, and any relevant information.\n" .
                    "Strictly avoid any personal replies or apologies. Only provide the main content.";
         Log::info('Prompt: ' . $prompt);  
     } else if($contentCategory == 'Worksheet' && $topicName == '1. VIDEOS'){
-        $prompt = "Create a detailed worksheet for the chapter '{$chapterName}' of the subject '{$subjectName}'.\n" .
+        $prompt = "Create a detailed '{$contentCategory}' for the topic '{$topicName}' in the chapter '{$chapterName}' of the subject '{$subjectName}' in standard '{$standard_name}'.\n" .
+                  "<strong>Curriculum Alignment:</strong>\n {$curriculum_alignment}\n" .
+                "<strong>Holistic Curriculum:</strong>\n {$holistic_curriculum}\n" .
+                "<strong>Objective:\n {$objective}</strong>\n" .
+                "<strong>Assessment Tool:</strong>\n {$assessment_tool}\n".
+                  "<strong>Syllabus:</strong>\n\n".
+                "<strong>Objectives:</strong>\n {$objective_one}\n".
+                "<strong>Learning Outcomes:</strong>\n {$learning_outcomes}\n".
+                "<strong>Suggested Materials:</strong>\n {$suggested_materials}\n".
+                "<strong>Assessment Plan:</strong>\n {$assessment_plan}\n".
                   "Please refer to the following resources for more information:\n{$linksString}\n" .
                   "The response should be detailed enough and no. of questions should be minimum 50, focusing on all genres of questions like long, short, fill in the blanks, and MCQs with answers. Please include examples, explanations, and any relevant information.\n" .
                   "Strictly avoid any personal replies or apologies. Only provide the main content.";    
         Log::info('Prompt: ' . $prompt); 
     } else {
-        $prompt = "Create a detailed '{$contentCategory}' for the topic '{$topicName}' in the chapter '{$chapterName}' of the subject '{$subjectName}'.\n" .
-                  "Please refer to the following resources for more information:\n{$linksString}\n" .
-                  "The response should be detailed enough to generate a PDF of at least 5 pages, focusing strictly on the NCERT curriculum of '{$chapterName}' and structured '{$contentCategory}'. Minimum words should be 1000. Please include examples, explanations, and any relevant information.\n" .
-                  "Strictly avoid any personal replies or apologies. Only provide the main content.\n";
+        $prompt = "Create a detailed '{$contentCategory}' for the topic '{$topicName}' in the chapter '{$chapterName}' of the subject '{$subjectName}' in standard '{$standard_name}'.\n" .
+                "<strong>Curriculum Alignment:</strong>\n {$curriculum_alignment}\n" .
+                "<strong>Holistic Curriculum:</strong>\n {$holistic_curriculum}\n" .
+                "<strong>Objective:</strong>\n {$objective}\n" .
+                "<strong>Assessment Tool:</strong>\n {$assessment_tool}\n".
+                "<strong>Syllabus:</strong>\n\n".
+                "<strong>Objectives:</strong>\n {$objective_one}\n".
+                "<strong>Learning Outcomes:</strong>\n {$learning_outcomes}\n".
+                "<strong>Suggested Materials:</strong>\n {$suggested_materials}\n".
+                "<strong>Assessment Plan:</strong>\n {$assessment_plan}\n".
+                "Please refer to the following resources for more information:<br>{$linksString}\n" .
+                "The response should be detailed enough to generate a PDF of at least 5 pages, focusing strictly on the NCERT curriculum of '{$chapterName}' and structured '{$contentCategory}'. Minimum words should be 1000. Please include examples, explanations, and any relevant information.\n" .
+                "Strictly avoid any personal replies or apologies. Only provide the main content." ;
         Log::info('Prompt: ' . $prompt);    
     }
 
@@ -165,7 +206,7 @@ class OpenAIService
                     Log::info("Image in GLP: $url");
                 }
             } else {
-                Log::warning("No images generated for iteration $i.");
+                // Log::warning("No images generated for iteration $i.");
             }
         }
         
@@ -238,7 +279,11 @@ class OpenAIService
 
     public function generateLessonPlanNew($topicName, $chapterName, $subjectName, $contentCategory, $contentType, $booklistData, $prompt) {   
                 Log::info('Updated Prompt: ' . $prompt);    
-                $linksString = implode("\n", $booklistData);
+                if($booklistData){
+                    $linksString = implode("\n", $booklistData);
+                    } else{
+                        $linksString = " ";
+                    }
     
         try {
             // Call GPT-3.5 API to generate text
@@ -277,7 +322,7 @@ class OpenAIService
                         Log::info("Image in GLP: $url");
                     }
                 } else {
-                    Log::warning("No images generated for iteration $i.");
+                    // Log::warning("No images generated for iteration $i.");
                 }
             }
             
@@ -306,7 +351,11 @@ class OpenAIService
     }
     public function generateImage($topicName, $chapterName, $subjectName, $contentCategory, $contentType, $booklistData)
 {
-    $linksString = implode("\n", $booklistData);
+    if($booklistData){
+        $linksString = implode("\n", $booklistData);
+        } else{
+            $linksString = " ";
+        }
     $prompt =     "Generate a image in a very realistic approach for the topic '{$topicName}' in the chapter '{$chapterName}' of the subject '{$subjectName}'.\n" .
                   "Please refer to the following resources for more information:\n{$linksString}\n" .
                   "Strictly avoid any personal replies or apologies; and content should be on strictly Indian context with proper english and avoid incorrect spellings or ununderstood text ;Only provide the main content.\n";
@@ -389,7 +438,7 @@ class OpenAIService
             $formattedText = nl2br($generatedText);
 
             if ($contentType === 'pdf') {
-                $filePath = $this->createPDF($formattedText);
+                $filePath = $this->createPDFNEW($formattedText);
             } elseif ($contentType === 'jpg') {
                 $filePath = $this->createJPG($formattedText);
             } else {
@@ -442,8 +491,6 @@ class OpenAIService
     // Add the initial content only once
     $htmlContent .= "<div>{$content}</div><hr>";
 
-    Log::info('Image Paths: ' . print_r($imagePaths, true));
-
     // Add images to the PDF with generated content on each page
     foreach ($imagePaths as $imagePath) {
         $htmlContent .= "<div>";
@@ -467,6 +514,54 @@ class OpenAIService
 
         $htmlContent .= "</div>"; // Close the page div
     }
+
+    $htmlContent .= "
+            </body>
+        </html>
+    ";
+
+    $dompdf->loadHtml($htmlContent);
+    $dompdf->setPaper('A4', 'portrait');
+    $dompdf->render();
+    $fileName = time() . '.pdf';
+    $pdfFilePath = storage_path('app/public/pdfs/' . $fileName);
+    Log::info('PDF File Path: ' . $pdfFilePath);
+    file_put_contents($pdfFilePath, $dompdf->output());
+    return $pdfFilePath;
+}
+protected function createPDFNEW($content)
+{
+    set_time_limit(200);
+    $options = new Options();
+    $options->set('defaultFont', 'Comic Sans MS'); 
+    $dompdf = new Dompdf($options);
+    $fontPath = storage_path('fonts/Comic Sans MS.ttf');
+    if (!file_exists($fontPath)) {
+        throw new \Exception('Font file not found: ' . $fontPath);
+    }
+    $dompdf->getOptions()->set('isHtml5ParserEnabled', true);
+    $dompdf->getOptions()->set('isFontSubsettingEnabled', true);
+    $dompdf->getOptions()->set('isRemoteEnabled', true);
+
+    // Start the HTML content
+    $htmlContent = "
+        <html>
+            <head>
+                <style>
+                @font-face {
+                    font-family: 'Comic Sans MS';
+                    src: url('{$fontPath}') format('truetype');
+                }
+                body {
+                    font-family: 'Comic Sans MS', sans-serif;
+                }
+                </style>
+            </head>
+            <body>
+    ";
+
+    // Add the initial content only once
+    $htmlContent .= "<div>{$content}</div><hr>";
 
     $htmlContent .= "
             </body>
@@ -550,16 +645,22 @@ protected function generateMore($topicName, $chapterName, $subjectName, $content
     }
     public function handleUserInput($input)
 {
+
+    $qaResponse = $this->checkQnAFile($input);
+    if ($qaResponse) {
+        $this->logConversation($input, $qaResponse);
+        return $qaResponse;
+    }
+
     $state = Session::get('state', 'initial');
 
-    // Track the key issues based on user input
+    
     $this->trackKeyIssues($input);
-    // If in feedback state, handle feedback
+    
     if ($state === 'feedback') {
         return $this->handleFeedback($input);
     }
     
-    // Handle the conversation based on the current state
     switch ($state) {
         case 'initial':
             if (stripos($input, 'fees') !== false) {
@@ -567,7 +668,7 @@ protected function generateMore($topicName, $chapterName, $subjectName, $content
                 return $this->handleFeesState($input);
             } elseif (stripos($input, 'attendance') !== false) {
                 Session::put('state', 'attendance');
-                return "Please provide your unique student ID to display attendance.";
+                return $this->handleAttendanceState($input);
             } elseif (stripos($input, 'grades') !== false) {
                 Session::put('state', 'grades');
                 return "Please provide your unique student ID to fetch your grades.";
@@ -585,6 +686,14 @@ protected function generateMore($topicName, $chapterName, $subjectName, $content
         case 'attendance':
             $botResponse = $this->handleAttendanceState($input);
             break;
+        case 'monthly_attendance':
+            $grno = trim($input);
+            $botResponse = $this->getAttendance($grno);
+            break;
+        case 'yearly_attendance':
+            $grno = trim($input);
+            $botResponse = $this->getYearlyAttendance($grno);
+            break;    
         case 'grades':
             $botResponse = $this->handleGradesState($input);
             break;
@@ -614,28 +723,57 @@ protected function generateMore($topicName, $chapterName, $subjectName, $content
             break;
     }
 
-    // Log the conversation (user input and bot response)
+    
     $this->logConversation($input, $botResponse);
-    // Ask for feedback after delivering the final output
-    if (in_array($state, ['pending_fees_grno', 'attendance', 'grades','AI'])) {
-        Session::put('state', 'feedback'); // Switch to feedback state
+    
+    if (in_array($state, ['pending_fees_grno', 'attendance', 'grades','AI','monthly_attendance','yearly_attendance'])) {
+        Session::put('state', 'feedback'); 
         return $botResponse . "<br><br> \n\nAre you satisfied with the response? (Yes/No)";
     }
 
     return $botResponse;
 }
 
-// New method to handle user feedback (Yes/No)
+protected function checkQnAFile($input)
+{
+    $filePath = storage_path('app/QnA Database/qnadata.json');
+    if (!file_exists($filePath)) {
+        return null; 
+    }
+
+    $qaData = json_decode(file_get_contents($filePath), true);
+    $matches = []; 
+
+    foreach ($qaData as $qaPair) {
+        $similarity = 0;
+        similar_text($input, $qaPair['Chat Question'], $similarity);
+        if ($similarity >= 90) {
+            $matches[] = $qaPair['Answer']; 
+        }
+    }
+    if (count($matches) > 1) {
+        $listItems = array_map(function($answer) {
+            return "<li>" . htmlspecialchars($answer) . "</li>"; 
+        }, $matches);
+        
+        return "I found multiple answers:<br /><ul>" . implode('', $listItems) . "</ul>"; 
+    } elseif (count($matches) === 1) {
+        return $matches[0]; 
+    }
+
+    return null;
+}
+
 public function handleFeedback($input)
 {
     if (stripos($input, 'yes') !== false) {
-        Session::put('state', 'initial'); // Reset state to initial
+        Session::put('state', 'initial'); 
         return "Thank you for your feedback! feel free to ask further questions!";
     } elseif (stripos($input, 'no') !== false) {
-        Session::put('state', 'initial'); // Reset state to initial
+        Session::put('state', 'initial'); 
         return "Sorry to hear that. How can I further assist you?";
     } else {
-        // If the input is not "Yes" or "No", ask again
+
         return "Please respond with 'Yes' or 'No'. Are you satisfied with the response?";
     }
 }
@@ -658,7 +796,6 @@ public function handleFeedback($input)
         }
     }
 
-    // Handle fees-related queries
     protected function handleFeesState($input)
     {
         if (stripos($input, 'pending') !== false) {
@@ -674,15 +811,17 @@ public function handleFeedback($input)
     // Handle attendance-related queries
     protected function handleAttendanceState($input)
     {
-        if (is_numeric($input)) {
-            // Query the database for attendance
-            $attendance = $this->getAttendance($input);
+        if (stripos($input, 'Monthly') !== false) {
+            // Fetch pending fees from the database (example)
+            Session::put('state', 'monthly_attendance');
+        return "Please provide your GR No. to check the Attendance.";
+        }if (stripos($input, 'Yearly') !== false) {
+            // Fetch pending fees from the database (example)
+            Session::put('state', 'yearly_attendance');
+        return "Please provide your GR No. to check the Attendance.";
+        }  else {
             Session::put('state', 'initial');
-            return $attendance;
-        } else {
-            // If the input is not a valid student ID, prompt the user again
-            Session::put('state', 'initial');
-            return "Please enter a valid numeric student ID for attendance.";
+            return "I'm sorry, I didn't understand that. Please specify if you need help with pending fees.";
         }
     }
 
@@ -734,13 +873,51 @@ public function handleFeedback($input)
     protected function getAttendance($studentId)
 {
     try {
-        $pendingFees = DB::table('fees')
-                        ->where('student_id', $studentId)
-                        ->value('pendingFees');
+        $url = "https://erp.triz.co.in/student/studentAttendanceChatAPI?type=API&sub_institute_id=254&syear=2024&enrollment_no={$studentId}&token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdHVkZW50X2lkIjo5NzM4Miwic3ViX2luc3RpdHV0ZV9pZCI6MX0.gvRa2kggWK5F1J-qYxZdFWhdRx8ZIqzlzT7pwmlWDAM";
+        $response = Http::get($url);
         
-        return $pendingFees ? $pendingFees . 'Rs' : 'Fees record not found.';
-    } catch (\Illuminate\Database\QueryException $e) {
-        Log::error('Database error: ' . $e->getMessage());
+        
+        $data = json_decode($response->getBody(), true);
+
+        if ($data['status'] === 1) {
+            $htmlResponse = "<p><strong>Monthly Attendance:</strong></p>";
+            $htmlResponse .= "<ul>";
+            $htmlResponse .= "<li>Working Days: {$data['monthly']['workingDays']}</li>";
+            $htmlResponse .= "<li>Present Days: {$data['monthly']['presentDays']}</li>";
+            $htmlResponse .= "<li>Absent Days: {$data['monthly']['absentDays']}</li>";
+            $htmlResponse .= "</ul>";
+            return $htmlResponse;
+        } else {
+            return "No attendance data found for the provided student ID.";
+        }
+    } catch (\Exception $e) {
+        Log::error('API Error: ' . $e->getMessage());
+        return 'Sorry for the inconvenience, please contact site admin.';
+    }
+}
+protected function getYearlyAttendance($studentId)
+{
+    try {
+        $url = "https://erp.triz.co.in/student/studentAttendanceChatAPI?type=API&sub_institute_id=254&syear=2024&enrollment_no={$studentId}&token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdHVkZW50X2lkIjo5NzM4Miwic3ViX2luc3RpdHV0ZV9pZCI6MX0.gvRa2kggWK5F1J-qYxZdFWhdRx8ZIqzlzT7pwmlWDAM";
+        $response = Http::get($url);
+        
+        
+        $data = json_decode($response->getBody(), true);
+
+        if ($data['status'] === 1) {
+            $htmlResponse = "<p><strong>Yearly Attendance:</strong></p>";
+            $htmlResponse .= "<ul>";
+            $htmlResponse .= "<li>Working Days: {$data['yearly']['workingDays']}</li>";
+            $htmlResponse .= "<li>Present Days: {$data['yearly']['presentDays']}</li>";
+            $htmlResponse .= "<li>Absent Days: {$data['yearly']['absentDays']}</li>";
+            $htmlResponse .= "</ul>";
+
+            return $htmlResponse;
+        } else {
+            return "No attendance data found for the provided student ID.";
+        }
+    } catch (\Exception $e) {
+        Log::error('API Error: ' . $e->getMessage());
         return 'Sorry for the inconvenience, please contact site admin.';
     }
 }
@@ -749,10 +926,8 @@ protected function getPendingFees($studentId)
 {
     try {
         $grno = $studentId;
-            // make request to send in fees controller
             $sub_institute_id = session()->get('sub_institute_id');
             $syear = session()->get('syear');
-
             $reqArr = [
                 'type' => "API",
                 'grno' => $grno,
@@ -785,16 +960,13 @@ protected function getGrades($studentId)
         $grades = DB::table('grades')
                     ->where('student_id', $studentId)
                     ->pluck('grade', 'subject');
-
         if ($grades->isEmpty()) {
             return 'No grades found for this student ID.';
         }
-
         $gradeList = '';
         foreach ($grades as $subject => $grade) {
             $gradeList .= "$subject: $grade\n";
         }
-
         return $gradeList;
     } catch (\Illuminate\Database\QueryException $e) {
         Log::error('Database error: ' . $e->getMessage());
@@ -849,6 +1021,5 @@ public function trackKeyIssues($input)
     }
     Storage::put('key_issues.json', json_encode($issueCounts, JSON_PRETTY_PRINT));
 }
-
 }    
 
