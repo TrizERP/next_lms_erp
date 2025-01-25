@@ -180,12 +180,24 @@ $route = ['dashboard'];
       </div>
   </div>
 </div>
-
-
+<div id="loading-overlay" style="display:none;">
+<center>
+  <img src="/admin_dep/images/loader-man.gif" id="loading-gif" alt="loading-gif" >
+  </center>
+    </div>
+<script>
+        window.addEventListener('beforeunload', function() {
+            $('#loading-overlay').show();
+            setTimeout(() => {
+                $('#loading-overlay').hide();
+            },3000)
+        });
+</script>
+<!-- /#wrapper -->
+<!-- jQuery -->
 <script src="{{ asset("/admin_dep/js/popper.min.js") }}" defer></script>
 <script src="{{ asset("/admin_dep/js/custom.js") }}" ></script>
 <script src="https://cdn.jsdelivr.net/npm/apexcharts" defer></script>
-
 
 <script src="{{ asset("/plugins/bower_components/chartist-js/dist/chartist.min.js") }}" defer></script>
 <script src="{{ asset("/plugins/bower_components/chartist-plugin-tooltip-master/dist/chartist-plugin-tooltip.min.js") }}" defer></script>
@@ -417,7 +429,6 @@ $route = ['dashboard'];
 
 </script>
 
-
 <script type="text/javascript">
     var options = {
         series: [{
@@ -612,9 +623,9 @@ $route = ['dashboard'];
     <input type="text" id="user_input" placeholder="Type a message..." style="width: calc(100% - 20px); margin: 10px; padding: 10px; border: 1px solid #ccc; border-radius: 5px;">
     <button id="send_button" style="width: calc(100% - 20px); margin: 10px; padding: 10px; background-color: #007bff; color: white; border: none; border-radius: 5px;">Send</button>
 </div>
-<!--<button id="open-chatbot" style="position: fixed; bottom: 50px; right: 20px;color: white; border: none; border-radius: 5px; padding: 10px;">
+<button id="open-chatbot" style="position: fixed; bottom: 0px; right: 20px;color: white; border: none; border-radius: 5px; padding: 10px;z-index:9999;">
 <span class="tooltip">Hey! I am Scholar Clone</span>
-</button>-->
+</button>
 
 
 <!-- Chatbot JavaScript -->
@@ -921,8 +932,8 @@ function attendanceState(){
   #open-chatbot {
     background: url('/Images/293633-middle-removebg.png') no-repeat center center; 
     background-size: contain;
-    width: 100px; 
-    height: 100px; 
+    width: 80px; 
+    height: 70px; 
     border: none;
     cursor: pointer;
 }
