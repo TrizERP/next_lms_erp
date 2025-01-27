@@ -36,7 +36,7 @@ class yearly_attendance_controller extends Controller
         $syear = session()->get('syear');
         $sub_institute_id = session()->get('sub_institute_id');
 
-        if($type=="API"){
+        if(in_array($type,["API","JSON"])){
             $syear = $request->get('syear');
             $sub_institute_id = $request->get('sub_institute_id');
         }

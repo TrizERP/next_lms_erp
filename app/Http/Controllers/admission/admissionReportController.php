@@ -18,7 +18,7 @@ class admissionReportController extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
         $type = $request->input('type');
-        if($type=="API"){
+        if(in_array($type,["API","JSON"])){
             $sub_institute_id=$request->sub_institute_id;
             $syear=$request->syear;
         }
@@ -331,7 +331,7 @@ class admissionReportController extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
         $type = $request->input('type');
-        if($type=="API"){
+        if(in_array($type,["API","JSON"])){
             try {
                 if (!$this->jwtToken()->validate()) {
                     $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];

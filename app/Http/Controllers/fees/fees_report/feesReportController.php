@@ -84,7 +84,8 @@ class feesReportController extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $client_id = $request->session()->get('client_id');
         $marking_period_id = session()->get('term_id');
-        if($type=="API"){
+        
+        if(in_array($type,["API","JSON"])){
             try {
                 if (!$this->jwtToken()->validate()) {
                     $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];

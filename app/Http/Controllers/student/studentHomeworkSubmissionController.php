@@ -249,6 +249,15 @@ class studentHomeworkSubmissionController extends Controller
         $to_date = $request->input('to_date');
         $submission_status = $request->input('status');
         $marking_period_id = session()->get('marking_period_id');
+        $user_id = session()->get('user_id');
+        $user_profile = session()->get('user_profile_name');
+
+        if(in_array($type,["API","JSON"])){
+            $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');
+            $user_id = $request->user_id;
+            $user_profile = $request->get('user_profile_name');
+        }
 
         $subjects = subjectModel::select('id',
             'subject_name')->where(['sub_institute_id' => $sub_institute_id])->get()->toArray();

@@ -44,6 +44,11 @@ class studentReportController extends Controller
     {
         $sub_institute_id = $request->session()->get('sub_institute_id');
 
+        $type= $request->type;
+        if(in_array($type,["API","JSON"])){
+            $sub_institute_id = $request->sub_institute_id;
+        }
+
         $tblcustoms = DB::table("tblcustom_fields")
         ->whereRaw("status=1 AND (common_to_all= 1 or sub_institute_id=$sub_institute_id) AND is_deleted != 'Y'")
         ->where('user_type','student')
@@ -73,6 +78,11 @@ class studentReportController extends Controller
         $syear = $request->session()->get('syear');
         $marking_period_id=session()->get('term_id');
 
+        if(in_array($type,["API","JSON"])){
+            $sub_institute_id = $request->sub_institute_id;
+                $syear = $request->syear;
+        }
+
        // Define default values and mappings
         $extraSearchArray = [
             'tblstudent_enrollment.sub_institute_id' => $sub_institute_id,
@@ -90,7 +100,7 @@ class studentReportController extends Controller
         // Map dynamic fields and headers
         $res['dynamicFields'] = $dynamicFields = $request->input('dynamicFields') ?? [];
         $searchArr1 = ['first_name', 'last_name', 'place_of_birth', 'student_mobile','optional_subjects','admission_year'];
-        $replaceArr1 = ['First Name', 'Surname', get_string('birthplace','request'), get_string('studentmobile','request'),'Optional Subjects','Fees Year'];
+        $replaceArr1 = ['First Name', 'Surname', get_string('birthplace','request',$sub_institute_id), get_string('studentmobile','request',$sub_institute_id),'Optional Subjects','Fees Year'];
 
         $array = [
             'tblstudent.enrollment_no as enrollment_no',
@@ -100,10 +110,10 @@ class studentReportController extends Controller
             'division.name as division',
         ];
         $header = [
-            'enrollment_no' => get_string('grno', 'request'),
+            'enrollment_no' => get_string('grno', 'request',$sub_institute_id),
             'student_name' => 'Student Name',
-            'standard' => get_string('standard', 'request'),
-            'division' => get_string('division', 'request'),
+            'standard' => get_string('standard', 'request',$sub_institute_id),
+            'division' => get_string('division', 'request',$sub_institute_id),
         ];
 
         foreach ($dynamicFields as $field) {
@@ -187,9 +197,9 @@ class studentReportController extends Controller
                 $join->on('transport_vehicle.id', '=', 'transport_map_student.from_bus_id')
                     ->where('transport_vehicle.sub_institute_id', '=', $sub_institute_id);
             })
-            ->leftJoin('student_optional_subject', function($join){
+            ->leftJoin('student_optional_subject', function($join) use($syear){
                 $join->on('student_optional_subject.student_id', '=', 'tblstudent.id')
-                    ->where('student_optional_subject.syear', session()->get('syear'));
+                    ->where('student_optional_subject.syear', $syear);
             })
             ->leftJoin('subject', 'student_optional_subject.subject_id', '=', 'subject.id')
             ->leftJoin('transport_school_shift', 'transport_vehicle.school_shift', '=', 'transport_school_shift.id')
@@ -218,7 +228,7 @@ class studentReportController extends Controller
                         foreach ($explodeSub as $keys => $subName) {
                             $getLevel = DB::table('subject as s')
                                 ->join('student_optional_subject as sos', 'sos.subject_id', '=', 's.id')
-                                ->where('sos.syear', session()->get('syear'))
+                                ->where('sos.syear',$syear)
                                 ->where('sos.student_id', $value->id)
                                 ->where('s.subject_name', $subName)
                                 ->first();
