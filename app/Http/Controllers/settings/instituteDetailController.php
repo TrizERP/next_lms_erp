@@ -37,7 +37,7 @@ class instituteDetailController extends Controller
 
             $sub_institute_id = $request->get('sub_institute_id');
             $syear = $request->get('syear');
-            $syear = $request->get('user_id');
+            $user_id = $request->get('user_id');
 
             if ($validator->fails()) {
                 $response['status'] = '0';
