@@ -372,97 +372,109 @@ class admissionRegistrationController extends Controller
         $studentArray['religion'] = $data['con_religion'];
         $studentArray['cast'] = $data['con_cast'];
         // end 2024-08-27
+        $i=0;
         if (isset($data['enrollment_no']) && $data['enrollment_no'] != '') {
             $enrollment_no_sql_new = $data['enrollment_no'];
-            DB::table('tblstudent')
-                ->insert([
-                    'admission_id'        => $studentArray['admission_id'],
-                    'first_name'          => $studentArray['first_name'],
-                    'middle_name'         => $studentArray['middle_name'],
-                    'last_name'           => $studentArray['last_name'],
-                    'gender'              => $studentArray['gender'],
-                    'mobile'              => $studentArray['mobile'],
-                    'email'               => $studentArray['email'],
-                    'address'             => $studentArray['address'],
-                    'username'            => $studentArray['username'],
-                    'user_profile_id'     => $studentArray['user_profile_id'],
-                    'admission_year'      => $studentArray['admission_year'],
-                    'since_when'          => $studentArray['since_when'],
-                    'admission_date'      => $studentArray['admission_date'],
-                    'sub_institute_id'    => $studentArray['sub_institute_id'],
-                    'status'              => $studentArray['status'],
-                    'place_of_birth'      => $studentArray['place_of_birth'],
-                    'adharnumber'         => $studentArray['adharnumber'],
-                    'mother_name'         => $studentArray['mother_name'],
-                    'mother_mobile'       => $studentArray['mother_mobile'],
-                    'father_name'         => $studentArray['father_name'],
-                    'dob'                 => $studentArray['dob'],
-                    'anuualincome'        => $studentArray['anuualincome'],
-                    'bloodgroup'          => $studentArray['bloodgroup'],
-                    'admission_docket_no' => $studentArray['admission_docket_no'],
-                    'registration_no'     => $studentArray['registration_no'],
-                    'enrollment_no'       => $enrollment_no_sql_new,
-                    // 2024-08-27 add
-                    'religion'            => $studentArray['religion'],
-                    'cast'                => $studentArray['cast'],
-                    // end 2024-08-27 
-                ]);
 
-            $student_id = DB::getPdo()->lastInsertId();
+            $checkStudent = DB::table('tblstudent')->where(['sub_institute_id'=>$studentArray['sub_institute_id'],'admission_id'=>$studentArray['admission_id'],'enrollment_no'=>$enrollment_no_sql_new])->first();
+            if(empty($checkStudent)){
+                DB::table('tblstudent')
+                    ->insert([
+                        'admission_id'        => $studentArray['admission_id'],
+                        'first_name'          => $studentArray['first_name'],
+                        'middle_name'         => $studentArray['middle_name'],
+                        'last_name'           => $studentArray['last_name'],
+                        'gender'              => $studentArray['gender'],
+                        'mobile'              => $studentArray['mobile'],
+                        'email'               => $studentArray['email'],
+                        'address'             => $studentArray['address'],
+                        'username'            => $studentArray['username'],
+                        'user_profile_id'     => $studentArray['user_profile_id'],
+                        'admission_year'      => $studentArray['admission_year'],
+                        'since_when'          => $studentArray['since_when'],
+                        'admission_date'      => $studentArray['admission_date'],
+                        'sub_institute_id'    => $studentArray['sub_institute_id'],
+                        'status'              => $studentArray['status'],
+                        'place_of_birth'      => $studentArray['place_of_birth'],
+                        'adharnumber'         => $studentArray['adharnumber'],
+                        'mother_name'         => $studentArray['mother_name'],
+                        'mother_mobile'       => $studentArray['mother_mobile'],
+                        'father_name'         => $studentArray['father_name'],
+                        'dob'                 => $studentArray['dob'],
+                        'anuualincome'        => $studentArray['anuualincome'],
+                        'bloodgroup'          => $studentArray['bloodgroup'],
+                        'admission_docket_no' => $studentArray['admission_docket_no'],
+                        'registration_no'     => $studentArray['registration_no'],
+                        'enrollment_no'       => $enrollment_no_sql_new,
+                        // 2024-08-27 add
+                        'religion'            => $studentArray['religion'],
+                        'cast'                => $studentArray['cast'],
+                        // end 2024-08-27 
+                    ]);
+
+                $student_id = DB::getPdo()->lastInsertId();
+                $i=1;
+            }
 
         } else {
             $enrollment_no_sql_new = $this->max_enrollment_no_new($sub_institute_id, $data['admission_standard']);
 
-            DB::table('tblstudent')
-                ->insert([
-                    'admission_id'        => $studentArray['admission_id'],
-                    'first_name'          => $studentArray['first_name'],
-                    'middle_name'         => $studentArray['middle_name'],
-                    'last_name'           => $studentArray['last_name'],
-                    'gender'              => $studentArray['gender'],
-                    'mobile'              => $studentArray['mobile'],
-                    'email'               => $studentArray['email'],
-                    'address'             => $studentArray['address'],
-                    'username'            => $studentArray['username'],
-                    'user_profile_id'     => $studentArray['user_profile_id'],
-                    'admission_year'      => $studentArray['admission_year'],
-                    'since_when'          => $studentArray['since_when'],
-                    'admission_date'      => $studentArray['admission_date'],
-                    'sub_institute_id'    => $studentArray['sub_institute_id'],
-                    'status'              => $studentArray['status'],
-                    'place_of_birth'      => $studentArray['place_of_birth'],
-                    'adharnumber'         => $studentArray['adharnumber'],
-                    'mother_name'         => $studentArray['mother_name'],
-                    'mother_mobile'       => $studentArray['mother_mobile'],
-                    'father_name'         => $studentArray['father_name'],
-                    'dob'                 => $studentArray['dob'],
-                    'anuualincome'        => $studentArray['anuualincome'],
-                    'bloodgroup'          => $studentArray['bloodgroup'],
-                    'admission_docket_no' => $studentArray['admission_docket_no'],
-                    'registration_no'     => $studentArray['registration_no'],
-                    'enrollment_no'       => $enrollment_no_sql_new,
-                    // 2024-08-27 add
-                    'religion'            => $studentArray['religion'],
-                    'cast'                => $studentArray['cast'],
-                    // 2024-08-27 end
-                ]);
+            $checkStudent = DB::table('tblstudent')->where(['sub_institute_id'=>$studentArray['sub_institute_id'],'admission_id'=>$studentArray['admission_id'],'enrollment_no'=>$enrollment_no_sql_new])->first();
+            if(empty($checkStudent)){
+                DB::table('tblstudent')
+                    ->insert([
+                        'admission_id'        => $studentArray['admission_id'],
+                        'first_name'          => $studentArray['first_name'],
+                        'middle_name'         => $studentArray['middle_name'],
+                        'last_name'           => $studentArray['last_name'],
+                        'gender'              => $studentArray['gender'],
+                        'mobile'              => $studentArray['mobile'],
+                        'email'               => $studentArray['email'],
+                        'address'             => $studentArray['address'],
+                        'username'            => $studentArray['username'],
+                        'user_profile_id'     => $studentArray['user_profile_id'],
+                        'admission_year'      => $studentArray['admission_year'],
+                        'since_when'          => $studentArray['since_when'],
+                        'admission_date'      => $studentArray['admission_date'],
+                        'sub_institute_id'    => $studentArray['sub_institute_id'],
+                        'status'              => $studentArray['status'],
+                        'place_of_birth'      => $studentArray['place_of_birth'],
+                        'adharnumber'         => $studentArray['adharnumber'],
+                        'mother_name'         => $studentArray['mother_name'],
+                        'mother_mobile'       => $studentArray['mother_mobile'],
+                        'father_name'         => $studentArray['father_name'],
+                        'dob'                 => $studentArray['dob'],
+                        'anuualincome'        => $studentArray['anuualincome'],
+                        'bloodgroup'          => $studentArray['bloodgroup'],
+                        'admission_docket_no' => $studentArray['admission_docket_no'],
+                        'registration_no'     => $studentArray['registration_no'],
+                        'enrollment_no'       => $enrollment_no_sql_new,
+                        // 2024-08-27 add
+                        'religion'            => $studentArray['religion'],
+                        'cast'                => $studentArray['cast'],
+                        // 2024-08-27 end
+                    ]);
 
-            $student_id = DB::getPdo()->lastInsertId();
+                $student_id = DB::getPdo()->lastInsertId();
+                $i=1;
+                }
         }
-
-        $studentEnrollmentArray['syear'] = $syear;
-        $studentEnrollmentArray['student_id'] = $student_id;
-        $studentEnrollmentArray['grade_id'] = $grade_id;
-        $studentEnrollmentArray['standard_id'] = $data['admission_standard'];
-        $studentEnrollmentArray['section_id'] = $data['admission_division'];
-        $studentEnrollmentArray['student_quota'] = $data['student_quota'];
-        $studentEnrollmentArray['start_date'] = date('Y-m-d');
-        $studentEnrollmentArray['enrollment_code'] = "1";
-        $studentEnrollmentArray['term_id'] = $term_id;
-        $studentEnrollmentArray['admission_fees'] = $data['amount'];
-        $studentEnrollmentArray['sub_institute_id'] = $sub_institute_id;
-
-        tblstudentEnrollmentModel::insert($studentEnrollmentArray);
+        
+        if($i==1){
+            $studentEnrollmentArray['syear'] = $syear;
+            $studentEnrollmentArray['student_id'] = $student_id;
+            $studentEnrollmentArray['grade_id'] = $grade_id;
+            $studentEnrollmentArray['standard_id'] = $data['admission_standard'];
+            $studentEnrollmentArray['section_id'] = $data['admission_division'];
+            $studentEnrollmentArray['student_quota'] = $data['student_quota'];
+            $studentEnrollmentArray['start_date'] = date('Y-m-d');
+            $studentEnrollmentArray['enrollment_code'] = "1";
+            $studentEnrollmentArray['term_id'] = $term_id;
+            $studentEnrollmentArray['admission_fees'] = $data['amount'];
+            $studentEnrollmentArray['sub_institute_id'] = $sub_institute_id;
+    
+            tblstudentEnrollmentModel::insert($studentEnrollmentArray);   
+        }
 
         $res['status_code'] = 1;
         $res['message'] = "Student added successfully";//with Enrollment Number - ".$studentArray['enrollment_no'];

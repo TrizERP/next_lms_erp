@@ -29,9 +29,9 @@
             <ul class="nav nav-tabs tab-title mb-4 inst-nav">
                 <li class="nav-item"><a href="#section-linemove-1" class="nav-link section-linemove-1 active" aria-selected="true" data-toggle="tab"><span>Institute Details</span></a></li>
                 <li class="nav-item"><a href="#section-linemove-2" class="nav-link section-linemove-2" aria-selected="false" data-toggle="tab"><span>Add Departments</span></a></li>
-                <li class="nav-item"><a href="#section-linemove-5" class="nav-link section-linemove-5" aria-selected="false" data-toggle="tab"><span>School Handbook</span></a></li>
+                <li class="nav-item"><a href="#section-linemove-3" class="nav-link section-linemove-3" aria-selected="false" data-toggle="tab"><span>School Handbook</span></a></li>
                 <li class="nav-item"><a href="#section-linemove-4" class="nav-link section-linemove-4" aria-selected="false" data-toggle="tab"><span>Organization Chart</span></a></li>
-                <li class="nav-item"><a href="#section-linemove-3" class="nav-link section-linemove-3" aria-selected="false" data-toggle="tab"><span>My Skills & Certification</span></a></li>
+                <li class="nav-item"><a href="#section-linemove-5" class="nav-link section-linemove-5" aria-selected="false" data-toggle="tab"><span>Compliance Library</span></a></li>
             </ul> 
         </center>
 
@@ -159,6 +159,11 @@
                    @include('HRMS.department.tabDepartment')
                 </div>
                 <!-- tab 2 ends  -->
+                 <!-- tab 5 start  -->
+                 <div class="tab-pane p-3" id="section-linemove-5" role="tabpanel">    
+                   @include('settings.compliance_library')
+                </div>
+                <!-- tab 5 ends  -->
             </div >
             <!-- end tabs  -->
         </div>
@@ -185,5 +190,48 @@
 });
 </script>
 @endif
+<script>
+	 $(document).ready(function () {
+        var table = $('#complainceTable').DataTable({
+            select: true,
+            lengthMenu: [
+                [100, 500, 1000, -1],
+                ['100', '500', '1000', 'Show All']
+            ],
+            dom: 'Bfrtip',
+            buttons: [
+                {
+                    extend: 'pdfHtml5',
+                    title: 'Complaince Report',
+                    orientation: 'landscape',
+                    pageSize: 'LEGAL',
+                    pageSize: 'A0',
+                    exportOptions: {
+                        columns: ':visible'
+                    },
+                },
+                {extend: 'csv', text: ' CSV', title: 'Complaince Report'},
+                {extend: 'excel', text: ' EXCEL', title: 'Complaince Report'},
+                {extend: 'print', text: ' PRINT', title: 'Complaince Report'},
+                'pageLength'
+            ],
+        });
+
+        $('#complainceTable thead tr').clone(true).appendTo('#complainceTable thead');
+        $('#complainceTable thead tr:eq(1) th').each(function (i) {
+            var title = $(this).text();
+            $(this).html('<input type="text" placeholder="Search ' + title + '" />');
+
+            $('input', this).on('keyup change', function () {
+                if (table.column(i).search() !== this.value) {
+                    table
+                        .column(i)
+                        .search( this.value )
+                        .draw();
+                }
+            } );
+        } );
+    } );
+</script>
 @include('includes.footer')
 @endsection
