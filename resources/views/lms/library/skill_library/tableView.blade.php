@@ -24,18 +24,14 @@
                     <td>{{$value['sub_category']}}</td>
                     <td>{{$value['title']}}</td>
                     <td>
-                        @if($data['user_id'] == $value['created_by'])
-                            <div class="d-inline">
-                                <a href="{{ route('skill_library.edit',$value['id'])}}" class="btn btn-info btn-outline"><i class="ti-pencil-alt"></i></a>
-                            </div>
-                            <form class="d-inline" action="{{ route('skill_library.destroy', $value['id'])}}" method="post">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" onclick="return confirmDelete();" class="btn btn-info btn-outline-danger"><i class="ti-trash"></i></button>
-                            </form>
-                        @else 
-                            -
-                        @endif
+                        <div class="d-inline">
+                            <a href="{{ route('skill_library.edit',$value['id'])}}" class="btn btn-info btn-outline"><i class="ti-pencil-alt"></i></a>
+                        </div>
+                        <form class="d-inline" action="{{ route('skill_library.destroy', $value['id'])}}" method="post">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" onclick="return confirmDelete();" class="btn btn-info btn-outline-danger"><i class="ti-trash"></i></button>
+                        </form>
                     </td>
                 </tr>
                 @endforeach
