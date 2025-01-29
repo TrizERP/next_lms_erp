@@ -66,7 +66,9 @@
                 {{ method_field("PUT") }}
                     @csrf
                     <input type="hidden" name="insert_type" value="content_insert">
-                    
+                    <div class="col-md-12">
+                      <label for="head"><b>Map With Your Content :</b></label>
+                    </div>
                     <div class="card">
                     {{ App\Helpers\SearchChainSubject('4','single','grade,std,sub',$grade,$standard,$subject) }}
                       <div class="row">
@@ -88,6 +90,9 @@
                         </div>
                       </div>
                       <div class="row">
+                        <div class="col-md-12">
+                          <label for="title"><b>Content Data :</b></label>
+                        </div>
                         <div class="col-md-4 form-group">
                           <label for="Title">Title</label>
                           <input type="text" class="form-control" name="title" required @if(isset($data['editData']->title)) value="{{$data['editData']->title}}" @endif>
@@ -108,10 +113,10 @@
                             $decodeJson = json_decode($data['editData']->keywords,true);
                         @endphp
 
-                        @foreach($data['mapType'] as $key=>$value)
+                        {{--@foreach($data['mapType'] as $key=>$value)
                           @if(isset($data['mapValue'][$value->name]) && !empty($data['mapValue'][$value->name]))
                           <div class="col-md-4 form-group">
-                            <label for="{{$value->name}}">{{$value->name}}</label>
+                            <label for="{{$value->name}}">Select  {{$value->name}}</label>
                             <select name="keywords[{{$value->name}}]" id="select_{{$key}}" class="form-control">
                               <option value="">Select any one</option>
                               @foreach($data['mapValue'][$value->name] as $k=>$val)
@@ -120,6 +125,100 @@
                             </select>
                           </div>
                           @endif
+                        @endforeach --}}
+
+                        @foreach($data['boards']['mapType'] as $key=>$value)
+                        @php 
+                            $board_name = str_replace(' ','_',$value->name);
+                        @endphp 
+                          @if(isset($data['boards']['mapValue'][$board_name]) && !empty($data['boards']['mapValue'][$board_name]))
+                          <div class="col-md-4 form-group">
+                            <label for="{{$board_name}}">Select {{$value->name}}</label>
+                            <select name="keywords[{{$board_name}}]" id="select_{{$key}}" class="form-control">
+                              <option value="">Select any one</option>
+                              @foreach($data['boards']['mapValue'][$board_name] as $k=>$val)
+                              <option value="{{$val->name}}" @if(isset($decodeJson[$board_name]) && $decodeJson[$board_name]==$val->name) selected @endif>{{$val->name}}</option>
+                              @endforeach
+                            </select>
+                          </div>
+                          @endif
+                        @endforeach
+
+                        @foreach($data['standards']['mapType'] as $key=>$value)
+                        @php 
+                            $std_name = str_replace(' ','_',$value->name);
+                        @endphp 
+                          @if(isset($data['standards']['mapValue'][$std_name]) && !empty($data['standards']['mapValue'][$std_name]))
+                          <div class="col-md-4 form-group">
+                            <label for="{{$std_name}}">Select {{$value->name}}</label>
+                            <select name="keywords[{{$std_name}}]" id="select_{{$key}}" class="form-control">
+                              <option value="">Select any one</option>
+                              @foreach($data['standards']['mapValue'][$std_name] as $k=>$val)
+                              <option value="{{$val->name}}" @if(isset($decodeJson[$std_name]) && $decodeJson[$std_name]==$val->name) selected @endif>{{$val->name}}</option>
+                              @endforeach
+                            </select>
+                          </div>
+                          @endif
+                        @endforeach
+
+                        @foreach($data['courses']['mapType'] as $key=>$value)
+                        @php 
+                            $course_name = str_replace(' ','_',$value->name);
+                        @endphp 
+                          @if(isset($data['courses']['mapValue'][$course_name]) && !empty($data['courses']['mapValue'][$course_name]))
+                          <div class="col-md-4 form-group">
+                            <label for="{{$course_name}}">Select {{$value->name}}</label>
+                            <select name="keywords[{{$course_name}}]" id="select_{{$key}}" class="form-control" onchange="getContents(this,'subject');">
+                              <option value="">Select any one</option>
+                              @foreach($data['courses']['mapValue'][$course_name] as $k=>$val)
+                              <option value="{{$val->name}}" data-parentId="{{$val->id}}" @if(isset($decodeJson[$course_name]) && $decodeJson[$course_name]==$val->name) selected @endif>{{$val->name}}</option>
+                              @endforeach
+                            </select>
+                          </div>
+                          @endif
+                        @endforeach
+
+                        @if(!empty($data['courses']['mapValue']))
+                        <div class="col-md-4">
+                          <label for="subject">Select Subjects</label>
+                          <select name="keywords[subject]" id="subject" class="form-control">
+                            <option value="">Select Subject</option>
+                          </select>
+                        </div>
+                        @endif
+
+                        @foreach($data['content_type']['mapType'] as $key=>$value)
+                        @php 
+                            $type_name = str_replace(' ','_',$value->name);
+                        @endphp 
+                          @if(isset($data['content_type']['mapValue'][$type_name]) && !empty($data['content_type']['mapValue'][$type_name]))
+                          <div class="col-md-4 form-group">
+                            <label for="{{$type_name}}">Select  {{$value->name}}</label>
+                            <select name="keywords[{{$type_name}}]" id="select_{{$key}}" class="form-control">
+                              <option value="">Select any one</option>
+                              @foreach($data['content_type']['mapValue'][$type_name] as $k=>$val)
+                              <option value="{{$val->name}}"  @if(isset($decodeJson[$type_name]) && $decodeJson[$type_name]==$val->name) selected @endif>{{$val->name}}</option>
+                              @endforeach
+                            </select>
+                          </div>
+                          @endif
+                        @endforeach
+
+                        @foreach($data['otherMaps']['mapType'] as $key=>$value)
+                        @php 
+                            $otherMap = str_replace(' ','_',$value->name);
+                        @endphp 
+                            @if(isset($data['otherMaps']['mapValue'][$otherMap]) && !empty($data['otherMaps']['mapValue'][$otherMap]))
+                            <div class="col-md-4 form-group">
+                            <label for="{{$otherMap}}">Select {{$value->name}}</label>
+                            <select name="keywords[{{$otherMap}}]" id="select_{{$key}}" class="form-control optionSelect" onchange="sendKeywords();">
+                                <option value="">Select any {{$value->name}}</option>
+                                @foreach($data['otherMaps']['mapValue'][$otherMap] as $k=>$val)
+                                <option value="{{$val->name}}">{{$val->name}}</option>
+                                @endforeach
+                            </select>
+                            </div>
+                            @endif
                         @endforeach
 
                         <div class="col-md-12">
@@ -258,6 +357,33 @@
         }
       });
     }
+
+    
+    function getContents(event, content_type) {
+        var selectedOption = $(event).find(':selected');
+        var value = selectedOption.val();
+        var parentId = selectedOption.data('parentid');
+
+        $('#'+content_type).empty();
+
+        $.ajax({
+          url: "{{route('getMapVals')}}",
+          data : {parent_id:parentId},
+          type : 'GET',
+          success : function(result){
+            console.log(result);
+            $('#'+content_type).find('option').remove().end().append('<option value="">Select '+content_type+'</option>').val('');
+            if(result.length>0){
+              result.forEach(function(item) {
+                  $("#"+content_type).append(
+                      $("<option></option>").val(item['name']).html(item['name'])
+                  );
+              });
+            }
+          }
+        })
+    }
+
 </script>
 @include('includes.footer')
 @endsection
