@@ -118,7 +118,7 @@
 
             <div class="col-md-12 form-group">
             <label for="roles_responsibility">Aims & Objectives</label>
-            <textarea name="roles_responsibility" id="roles_responsibility" class="form-control" style="height:10vh">{{$value->roles_responsibility}}</textarea>
+            <textarea name="roles_responsibility" id="roles_responsibility_{{$value->id}}" class="form-control" style="height:10vh">{{$value->roles_responsibility}}</textarea>
             </div>
 
             <div class="col-md-12">
