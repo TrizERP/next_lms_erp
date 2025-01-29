@@ -1,4 +1,5 @@
 <script src="{{ asset("/ckeditor_wiris/ckeditor4/ckeditor.js") }}"></script>
+@include('HRMS.department.tabModel')
 <style>
    .activeTrue{
    background : #dfdddd !important;
