@@ -135,7 +135,7 @@
                     $course_name = str_replace(' ','_',$value->name);
                 @endphp 
                     @if(isset($data['courses']['mapValue'][$course_name]) && !empty($data['courses']['mapValue'][$course_name]))
-                    <div class="col-md-4 form-group">
+                    <div class="col-md-3 form-group">
                     <select name="keywords[{{$course_name}}]" id="select_{{$key}}" class="form-control optionSelect" onchange="getContents(this,'subject');" onchange="getSearchedContents('contentDiv','');">
                         <option value="">Select {{$value->name}}</option>
                         @foreach($data['courses']['mapValue'][$course_name] as $k=>$val)
@@ -147,9 +147,15 @@
                 @endforeach
 
                 @if(!empty($data['courses']['mapValue']))
-                <div class="col-md-4">
-                    <select name="keywords[subject]" id="subject" class="form-control optionSelect" onchange="getSearchedContents('contentDiv','');">
+                <div class="col-md-3">
+                    <select name="keywords[subject]" id="subject" class="form-control optionSelect" onchange="getContents(this,'chapter');" onchange="getSearchedContents('contentDiv','');">
                     <option value="">Select Subject</option>
+                    </select>
+                </div>
+               
+                <div class="col-md-3">
+                    <select name="keywords[chapter]" id="chapter" class="form-control optionSelect" onchange="getSearchedContents('contentDiv','');"> 
+                    <option value="">Select Chapter</option>
                     </select>
                 </div>
                 @endif
@@ -158,7 +164,7 @@
                     $type_name = str_replace(' ','_',$value->name);
                 @endphp 
                     @if(isset($data['content_type']['mapValue'][$type_name]) && !empty($data['content_type']['mapValue'][$type_name]))
-                    <div class="col-md-4 form-group">
+                    <div class="col-md-3 form-group">
                     <select name="keywords[{{$type_name}}]" id="select_{{$key}}" class="form-control optionSelect" onchange="getSearchedContents('contentDiv','');">
                         <option value="">Select {{$value->name}}</option>
                         @foreach($data['content_type']['mapValue'][$type_name] as $k=>$val)
@@ -174,7 +180,7 @@
                     $otherMap = str_replace(' ','_',$value->name);
                 @endphp 
                     @if(isset($data['otherMaps']['mapValue'][$otherMap]) && !empty($data['otherMaps']['mapValue'][$otherMap]))
-                    <div class="col-md-4 form-group">
+                    <div class="col-md-3 form-group">
                     <select name="keywords[{{$otherMap}}]" id="select_{{$key}}" class="form-control optionSelect" onchange="getSearchedContents('contentDiv','');">
                         <option value="">Select any {{$value->name}}</option>
                         @foreach($data['otherMaps']['mapValue'][$otherMap] as $k=>$val)
@@ -231,6 +237,7 @@
             $(this).addClass('activeBoard');
             let buttonText = $(this).text().trim();
             $('#board').val(buttonText);
+            getSearchedContents('contentDiv','');
         })
 
         $('.stdBtn').on('click',function(){
@@ -238,7 +245,8 @@
             $(this).addClass('activeStd');
             let buttonText = $(this).text().trim();
             $('#standard').val(buttonText);
-        })
+            getSearchedContents('contentDiv','');
+        }) 
     })
 
   
@@ -279,9 +287,11 @@
             $('#'+content_type).find('option').remove().end().append('<option value="">Select '+content_type+'</option>').val('');
             if(result.length>0){
               result.forEach(function(item) {
-                  $("#"+content_type).append(
-                      $("<option></option>").val(item['name']).html(item['name'])
-                  );
+                //   $("#"+content_type).append(
+                //       $("<option></option>").val(item['name']).html(item['name'])
+                //   );
+                $("#" + content_type).append(`<option value="${item['name']}" data-parentid="${item['id']}">${item['name']}</option>`); 
+
               });
             }
           }
@@ -383,8 +393,10 @@
     function getCard(result, appendDiv) {
         const extensionDocArr = ["docx", "doc", "dotx", "dot", "rtf"];
         const extensionXlArr = ["xlsx", "xls", "xlsm", "xlsb", "csv"];
+        const extensionPptArr = ["pptx", "ppt", "potx", "pot","ppsx","pps"];
         const extensionImgArr = ["png", "jpeg", "jpg", "webp"];
         const extensionVidArr = ["mp4", "webm", "ogg"];
+        
 
         // Check if result has values
         if (!result || result.length === 0) {
@@ -434,9 +446,13 @@
                     extensionIcons = "mdi mdi-image";
                 } else if (extensionVidArr.includes(extension)) {
                     extensionIcons = "mdi mdi-video-box";
+                }
+                else if (extensionPptArr.includes(extension)) {
+                    extensionIcons = "mdi mdi-file-powerpoint-outline";
                 } else if (extension === "pdf") {
                     extensionIcons = "mdi mdi-file-pdf-box";
                 }
+                
                 fileurl = 'https://s3-triz.fra1.cdn.digitaloceanspaces.com/public/content_library/' + item.attachment;
                 var encodedUrl = encodeURIComponent(fileurl);
                 // Sharing URLs

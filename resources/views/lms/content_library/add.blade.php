@@ -124,8 +124,14 @@
                         @if(!empty($data['courses']['mapValue']))
                         <div class="col-md-4">
                           <label for="subject">Select Subjects</label>
-                          <select name="keywords[subject]" id="subject" class="form-control">
+                          <select name="keywords[subject]" id="subject" class="form-control" onchange="getContents(this,'chapter');">
                             <option value="">Select Subject</option>
+                          </select>
+                        </div>
+                        <div class="col-md-4">
+                          <label for="chapter">Select Chapters</label>
+                          <select name="keywords[chapter]" id="chapter" class="form-control">
+                            <option value="">Select Chapter</option>
                           </select>
                         </div>
                         @endif
@@ -231,13 +237,12 @@
           success : function(result){
             console.log(result);
             $('#'+content_type).find('option').remove().end().append('<option value="">Select '+content_type+'</option>').val('');
-            if(result.length>0){
-              result.forEach(function(item) {
-                  $("#"+content_type).append(
-                      $("<option></option>").val(item['name']).html(item['name'])
-                  );
-              });
+            if (result.length > 0) {
+                result.forEach(function(item) {
+                    $("#" + content_type).append(`<option value="${item['name']}" data-parentid="${item['id']}">${item['name']}</option>`); // Closing bracket correctly placed
+                });
             }
+
           }
         })
     }
