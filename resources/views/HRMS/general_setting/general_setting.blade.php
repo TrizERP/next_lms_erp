@@ -16,7 +16,7 @@
                     $field = Session::get('data');
                     $parent_communication = ['N'=>"Subject Wise","Y"=>"Class Teacher wise"];
                     $timetable_ai = ["0"=>"Standard Wise","1"=>"Teacher wise"];
-                    $sandwich_leave = $multi_login =$timeTableTeacher= ["Yes","No"];
+                    $sandwich_leave = $multi_login = $timeTableTeacher = $previousAdmission = ['Y'=>"Yes",'N'=>"No"];
                     $bulkDiscount = ["No","Yes"];
                     $casual_leave = [0,1,2,3,4,5];  
                     $studentNameFormat = [0=>"Student Name First",1=>"Last Name First"];                  
@@ -190,7 +190,25 @@
                                     </div>
                                 </td>
                             </tr>
-
+                             <!-- Previous year admission -->
+                             <tr>
+                                <th>Allow Previous Year Admission</th>
+                                <td>
+                                    <div class="row">
+                                        <div class="col-md-4 form-group" style="margin-left: 0px !important">
+                                            <label for="" style="margin-left: 50px;">Select Discount</label>
+                                            <select id='previousAdmission' name="previousAdmission" class="form-control"  style="margin-left: 50px;">
+                                            @foreach($previousAdmission as $key=>$value)
+                                                <option value="{{ $key }}" @if(isset($data['get_previousAdmission']->fieldvalue) && $data['get_previousAdmission']->fieldvalue == $key) selected @endif >
+                                                    {{ $value }}
+                                                </option>
+                                            @endforeach
+                                            </select>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            
                         </tbody>
                     </table>
                 </div>
