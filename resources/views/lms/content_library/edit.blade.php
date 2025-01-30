@@ -168,10 +168,10 @@
                           @if(isset($data['courses']['mapValue'][$course_name]) && !empty($data['courses']['mapValue'][$course_name]))
                           <div class="col-md-4 form-group">
                             <label for="{{$course_name}}">Select {{$value->name}}</label>
-                            <select name="keywords[{{$course_name}}]" id="select_{{$key}}" class="form-control" onchange="getContents(this,'subject');">
+                            <select name="keywords[{{$course_name}}]" id="Courses" class="form-control" onchange="getContents(this,'Subjects');">
                               <option value="">Select any one</option>
                               @foreach($data['courses']['mapValue'][$course_name] as $k=>$val)
-                              <option value="{{$val->name}}" data-parentId="{{$val->id}}" @if(isset($decodeJson[$course_name]) && $decodeJson[$course_name]==$val->name) selected @endif>{{$val->name}}</option>
+                              <option value="{{$val->name}}" data-parentid="{{$val->id}}" @if(isset($decodeJson[$course_name]) && $decodeJson[$course_name]==$val->name) selected @endif>{{$val->name}}</option>
                               @endforeach
                             </select>
                           </div>
@@ -181,8 +181,14 @@
                         @if(!empty($data['courses']['mapValue']))
                         <div class="col-md-4">
                           <label for="subject">Select Subjects</label>
-                          <select name="keywords[subject]" id="subject" class="form-control">
+                          <select name="keywords[subject]" id="Subjects" class="form-control" onchange="getContents(this,'Chapters');">
                             <option value="">Select Subject</option>
+                          </select>
+                        </div>
+                        <div class="col-md-4">
+                          <label for="chapter">Select Chapters</label>
+                          <select name="keywords[chapter]" id="Chapters" class="form-control">
+                            <option value="">Select Chapter</option>
                           </select>
                         </div>
                         @endif
@@ -214,7 +220,7 @@
                             <select name="keywords[{{$otherMap}}]" id="select_{{$key}}" class="form-control optionSelect" onchange="sendKeywords();">
                                 <option value="">Select any {{$value->name}}</option>
                                 @foreach($data['otherMaps']['mapValue'][$otherMap] as $k=>$val)
-                                <option value="{{$val->name}}">{{$val->name}}</option>
+                                <option value="{{$val->name}}"  @if(isset($decodeJson[$type_name]) && $decodeJson[$type_name]==$val->name) selected @endif>{{$val->name}}</option>
                                 @endforeach
                             </select>
                             </div>
@@ -240,6 +246,19 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/js/select2.min.js"></script>
 <script>
    $(document).ready(function() {
+      // onload in value are in keywords
+      @if(isset($decodeJson['Courses']) && isset($decodeJson['subject']) && $decodeJson['subject']!='')
+        getContents('', 'Subjects',"{{$decodeJson['subject']}}","{{$decodeJson['Courses']}}");
+      @elseif(isset($decodeJson['Courses']))
+        getContents('', 'Subjects',"","{{$decodeJson['Courses']}}");
+      @endif
+      // onload in value are in keywords
+      @if(isset($decodeJson['subject']) && isset($decodeJson['chapter']) && $decodeJson['chapter']!='')
+        getContents('', 'Chapters',"{{$decodeJson['chapter']}}","{{$decodeJson['subject']}}");
+      @elseif(isset($decodeJson['subject']))
+        getContents('', 'Chapters',"","{{$decodeJson['subject']}}");
+      @endif
+
         // Basic
         $('.dropify').dropify();
         // Translated
@@ -359,25 +378,30 @@
     }
 
     
-    function getContents(event, content_type) {
+    function getContents(event='', content_type,selVal='',parentName='') {
+      var parentId = '';
+      if(event!=''){
         var selectedOption = $(event).find(':selected');
         var value = selectedOption.val();
-        var parentId = selectedOption.data('parentid');
+         parentId = selectedOption.data('parentid');
+      }
 
         $('#'+content_type).empty();
 
         $.ajax({
           url: "{{route('getMapVals')}}",
-          data : {parent_id:parentId},
+          data : {parent_id:parentId,parentName:parentName},
           type : 'GET',
           success : function(result){
-            console.log(result);
+            // console.log(result);
             $('#'+content_type).find('option').remove().end().append('<option value="">Select '+content_type+'</option>').val('');
             if(result.length>0){
               result.forEach(function(item) {
-                  $("#"+content_type).append(
-                      $("<option></option>").val(item['name']).html(item['name'])
-                  );
+                var selected = '';
+                if(selVal!='' && item['name'] == selVal){
+                  selected = 'selected';
+                }
+                $("#" + content_type).append(`<option value="${item['name']}" data-parentid="${item['id']}" ${selected}>${item['name']}</option>`); 
               });
             }
           }

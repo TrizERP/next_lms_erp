@@ -429,8 +429,16 @@ class contentLibraryController extends Controller
     }
 
     public function getMapVals(Request $request,$values=""){
-        if($request->has('parent_id')){
+        if($request->has('parent_id') && $request->get('parent_id') !=''){
             return DB::table('lms_mapping_type')->where(['parent_id'=>$request->parent_id,'status'=>1])->get()->toArray();
+        }
+        elseif($request->has('parentName') && $request->get('parentName') !=''){
+            $getParentName = DB::table('lms_mapping_type')->where(['name'=>$request->parentName,'status'=>1])->first();
+            if(isset($getParentName->id)){
+                return DB::table('lms_mapping_type')->where(['parent_id'=>$getParentName->id,'status'=>1])->get()->toArray();
+            }else{
+                return [];
+            }
         }else{
             $getMapType = DB::table('lms_mapping_type')->where(['parent_id'=>0,'status'=>1,'type'=>$values])->get()->toArray();
             $mappedVals = [];

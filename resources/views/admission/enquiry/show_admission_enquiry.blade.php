@@ -34,7 +34,7 @@
 
                 <div class="row">
                     <div class="col-lg-3 col-sm-3 col-xs-3">
-                        <a href="{{ route('admission_enquiry.create') }}" class="btn btn-info add-new"><i class="fa fa-plus"></i> Add New Enquiry </a>
+                        <a href="{{ route('admission_enquiry.create') }}" class="btn btn-info add-new" style="{{$data['enquiryBtn']}}"><i class="fa fa-plus"></i> Add New Enquiry </a>
                         <span class="d-inline-block mb-2" tabindex="0" data-toggle="tooltip" title="1) Yellow color indicates today's follow up & today's next follow up records. &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2) Pink color indicates close enquiry status records. &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 3) Once student is enrolled in System it cannot be edited & deleted. ">
                           <button class="btn btn-danger" style="pointer-events: none;" type="button" disabled="">Note</button>
                         </span>
