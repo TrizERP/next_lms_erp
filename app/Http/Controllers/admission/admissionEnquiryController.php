@@ -85,11 +85,22 @@ class admissionEnquiryController extends Controller
             ->get()->toArray();//COUNT(tblstudent.id) AS total_student_count, by rajesh update 'af.'
 
         $data = json_decode(json_encode($data), true);
+        // get general data
+        $get_previousAdmission = DB::table('general_data')->where(['fieldname' => 'previous_year_admission', 'sub_institute_id' => $sub_institute_id])->first();
+        // echo "<pre>";print_r($get_previousAdmission->fieldvalue);exit;
+        $btnDisplay = "";
+        if(isset($get_previousAdmission->fieldvalue) && $get_previousAdmission->fieldvalue == "N"){
+            $getCurrentYear = DB::table('academic_year')->where('sub_institute_id',$sub_institute_id)->having('post_end_date','>=',date('Y-m-d'))->latest()->first();
+            if(isset($getCurrentYear->syear) && $syear != $getCurrentYear->syear){
+                $btnDisplay = "display:none;";
+            }
+        }
 
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['data'] = $data;
         $res['dataCustomFields']=$customFields;
+        $res['enquiryBtn'] = $btnDisplay;
 
         return is_mobile($type, 'admission/enquiry/show_admission_enquiry', $res, 'view');
     }
