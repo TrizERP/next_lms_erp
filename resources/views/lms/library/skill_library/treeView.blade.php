@@ -71,7 +71,7 @@
                                                         @foreach($val as $k => $v)
                                                             <li class="lastNode" data-id="{{$v['id']}}">
                                                                 <summary>
-                                                                    <span><i class="mdi mdi-star-outline"></i> {{$v['title']}}</span>
+                                                                    <span ondblclick="dbclickLi({{$v['id']}})"><i class="mdi mdi-star-outline"></i> {{$v['title']}}</span>
                                                                 </summary>
                                                             </li>
                                                         @endforeach
@@ -81,7 +81,7 @@
                                                 @foreach($val as $k => $v)
                                                     <li class="lastNode" data-id="{{$v['id']}}">
                                                         <summary>
-                                                            <span><i class="mdi mdi-star-outline"></i> {{$v['title']}}</span>
+                                                            <span ondblclick="dbclickLi({{$v['id']}})"><i class="mdi mdi-star-outline"></i> {{$v['title']}}</span>
                                                         </summary>
                                                     </li>
                                                 @endforeach

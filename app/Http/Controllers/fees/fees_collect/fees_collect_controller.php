@@ -1507,12 +1507,13 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                      // start 08-01-2025 by uma for ssmission
                     if(isset($fees_arr[$sort_order_id]['TUITION FEE'])){
                         $title_name='TUITION FEE';
-                    }elseif($fees_arr[$sort_order_id]['FOOD TRANSPORT ETC']){
+                    }elseif(isset($fees_arr[$sort_order_id]['FOOD TRANSPORT ETC']) && $fees_arr[$sort_order_id]['FOOD TRANSPORT ETC']){
                         $title_name='FOOD TRANSPORT ETC';
                     }
-                    elseif($fees_arr[$sort_order_id]['HOSTEL FEE']){
+                    elseif(isset($fees_arr[$sort_order_id]['HOSTEL FEE']) && $fees_arr[$sort_order_id]['HOSTEL FEE']){
                         $title_name='HOSTEL FEE';
                     }
+                    
                     if(isset($fees_arr[$sort_order_id][$title_name])){
                         $fees_arr[$sort_order_id][$title_name]+=$total_fine;
                         $fees_arr[$sort_order_id][$title_name]+=$total_discount;

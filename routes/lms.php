@@ -216,6 +216,8 @@ Route::post('show_question_wise_report',
     Route::resource('lms_syllabus', lmsSyllabusController::class);
     Route::resource('content_library', contentLibraryController::class);
     Route::resource('curriculum_lessonplan', curriculumLessonplanController::class);
+    Route::get('getMapVals', [contentLibraryController::class,'getMapVals'])->name('getMapVals');
+    Route::get('searchContent', [contentLibraryController::class,'getSearchedContent'])->name('searchContent');
     //Route::get('questionReport', 'student\questionWiseReportController@index')->name('question_wise_report');
     //Route::post('show_question_wise_report', 'student\questionWiseReportController@show_question_wise_report')->name('show_question_wise_report');
 

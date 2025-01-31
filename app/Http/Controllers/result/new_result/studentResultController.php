@@ -3138,7 +3138,11 @@ while ($current_date <= $post_end_date) {
     $sub_institute_id = session()->get('sub_institute_id');
     $extra_term  = $extra_exam = "1=1";
     $att_term="atd.term_id = 2";
-    if ($format != "yearly"){
+    if ($format != '1' && $academic_type=="upper"){
+        $extra_term = "term_id = 2";
+        $extra_exam = "rce.term_id = 2";
+        $att_term = "atd.term_id = 2";
+    }elseif ($format != "yearly"){
         $extra_term = "term_id = " . $format;
         $extra_exam = "rce.term_id = " . $format;
         $att_term = "atd.term_id = " . $format;

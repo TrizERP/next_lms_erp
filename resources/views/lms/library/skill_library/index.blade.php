@@ -128,7 +128,13 @@
         width: 133px;
     }
     .hidden { display: none; }
-        .highlight { background-color: yellow; }
+    .highlight { background-color: yellow; }
+    table tr th, table tr td{
+        color : black;
+    }
+    .activeSummary, .tree summary:hover{
+        color:#25bdea;
+    }
 </style>
 <div id="page-wrapper">
 	<div class="container-fluid">
@@ -253,12 +259,12 @@
 
     // Function to open all tree nodes
     function openAll() {
-      $('.parent li').show();
+        $('.tree ul').addClass('open').show();
     }
 
     // Function to close all tree nodes
     function closeAll() {
-        $('.parent li').hide();
+        $('.tree ul').removeClass('open').hide();
     }
 
     // Add click event to toggle individual nodes
@@ -281,6 +287,8 @@
         $('a.deleteTree').css({"pointer-events": "none"});
         // Attach click event to all <li> elements
         $('ul.tree').on('click', 'li', function (event) {
+
+            $(".tree li span").removeClass("activeSummary");
             
             $('a.viewTree').css({"pointer-events": "none"});
             $('a.editTree').css({"pointer-events": "none"});
@@ -290,6 +298,7 @@
 
             // Check if the clicked <li> has the class 'lastNode'
             if ($(this).hasClass('lastNode')) {
+                $(this).find("summary span").first().addClass("activeSummary");
                 // Get the data-id attribute of the clicked <li>
                 let dataId = $(this).data('id');
                 
@@ -324,32 +333,28 @@
                 let searchTerm = $(this).val().toLowerCase();
 
                 if (searchTerm) {
+
                     // Traverse all `li` elements inside the tree
                     $('.tree li').each(function () {
                         let text = $(this).text().toLowerCase();
-
+                        // console.log(text);
+                        $(this).hide();
                         if (text.includes(searchTerm)) {
-                            $(this).removeClass('hidden'); // Show matching elements
-                            $(this).parents('ul').removeClass('hidden'); // Show parent `<ul>` elements
-                            $(this).parents('li').removeClass('hidden'); // Show parent `<li>` elements
-                        } else {
-                            $(this).addClass('hidden'); // Hide non-matching elements
-                        }
-                    });
-
-                    // Ensure only direct children of visible elements remain hidden or shown properly
-                    $('.tree ul').each(function () {
-                        if ($(this).find('li:not(.hidden)').length === 0) {
-                            $(this).addClass('hidden'); // Hide `<ul>` with no visible children
-                        }
+                            $(this).show();
+                        } 
                     });
                 } else {
                     // If search box is empty, reset the tree
-                    $('.tree li').removeClass('hidden');
-                    $('.tree ul').removeClass('hidden');
+                    $('.tree li').show();
+                    $('.tree ul').show();
                 }
             });
         });
+        
+        function dbclickLi(skillId) {
+            var url = "/lms/skill_library/" + skillId + "/show";
+            window.open(url, "_blank"); // Open the URL in a new tab
+        }
 
     </script>
 @include('includes.footer')
