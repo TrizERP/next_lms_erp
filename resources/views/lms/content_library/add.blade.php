@@ -93,9 +93,9 @@
                         @endphp 
                           @if(isset($data['standards']['mapValue'][$std_name]) && !empty($data['standards']['mapValue'][$std_name]))
                           <div class="col-md-4 form-group">
-                            <label for="{{$std_name}}">Select {{$value->name}}</label>
+                            <label for="{{$std_name}}">Select {{$value->name}} Rajesh</label>
                             <select name="keywords[{{$std_name}}]" id="select_{{$key}}" class="form-control">
-                              <option value="">Select any one</option>
+                              <option value="">Select any one Rajesh</option>
                               @foreach($data['standards']['mapValue'][$std_name] as $k=>$val)
                               <option value="{{$val->name}}">{{$val->name}}</option>
                               @endforeach
