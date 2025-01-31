@@ -165,6 +165,7 @@ class co_scholastic_marks_entry_controller extends Controller
             }
 
             $responce_arr['stu_data'][$id]['sr.no'] = $id + 1;
+            $responce_arr['stu_data'][$id]['roll_no'] = $arr['roll_no'];
             $responce_arr['stu_data'][$id]['name'] = $arr['first_name'].' '.$arr['middle_name'].' '.$arr['last_name'];
 
             if (count($temp_arr) > 0) {
