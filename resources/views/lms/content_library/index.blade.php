@@ -122,7 +122,7 @@
                         <label for="standard">Select Standard</label><br>
                         <input type="hidden" name="keywords[Standards]" id="standard">
                         @foreach($data['standards']['mapValue']['Standards'] as $key=>$value)
-                            <a class="btn btn-success stdBtn" onclick="getSearchedContents('contentDiv','');">{{$value->name}}</a>
+                            <a class="btn btn-success stdBtn" data-type="{{$value->type}}" onclick="getSearchedContents('contentDiv','');">{{$value->name}}</a>
                         @endforeach
                     </div>
                 @endif
@@ -136,7 +136,7 @@
                 @endphp 
                     @if(isset($data['courses']['mapValue'][$course_name]) && !empty($data['courses']['mapValue'][$course_name]))
                     <div class="col-md-3 form-group">
-                    <select name="keywords[{{$course_name}}]" id="select_{{$key}}" class="form-control optionSelect" onchange="getContents(this,'subject');" onchange="getSearchedContents('contentDiv','');">
+                    <select name="keywords[{{$course_name}}]" id="Courses" class="form-control optionSelect" onchange="getContents(this,'subject');" onchange="getSearchedContents('contentDiv','');">
                         <option value="">Select {{$value->name}}</option>
                         @foreach($data['courses']['mapValue'][$course_name] as $k=>$val)
                         <option value="{{$val->name}}" data-parentId="{{$val->id}}">{{$val->name}}</option>
@@ -148,7 +148,7 @@
 
                 @if(!empty($data['courses']['mapValue']))
                 <div class="col-md-3">
-                    <select name="keywords[subject]" id="subject" class="form-control optionSelect" onchange="getContents(this,'chapter');" onchange="getSearchedContents('contentDiv','');">
+                    <select name="keywords[subject]" id="subject" class="form-control optionSelect" onchange="getSearchedContents('contentDiv','');">
                     <option value="">Select Subject</option>
                     </select>
                 </div>
@@ -246,7 +246,14 @@
             let buttonText = $(this).text().trim();
             $('#standard').val(buttonText);
             getSearchedContents('contentDiv','');
-        }) 
+            $('#Courses').val('');
+            $('#subject').find('option').remove().end().append('<option value="">Select subject</option>').val('');
+            $('#chapter').find('option').remove().end().append('<option value="">Select chapter</option>').val('');
+        })
+        
+        $('#subject').on('change',function(){
+            getMappedChapter();
+        })
     })
 
   
@@ -290,7 +297,7 @@
                 //   $("#"+content_type).append(
                 //       $("<option></option>").val(item['name']).html(item['name'])
                 //   );
-                $("#" + content_type).append(`<option value="${item['name']}" data-parentid="${item['id']}">${item['name']}</option>`); 
+                $("#" + content_type).append(`<option value="${item['name']}" data-parentid="${item['id']}" data-type="${item['type']}">${item['name']}</option>`); 
 
               });
             }
@@ -483,7 +490,7 @@
             const card = $(`
                 <div class="col-md-3 mb-3">
                     <div class="card contentCard">
-                        <div class="card-body" title="${cardTitle}">
+                        <div class="card-body" title="${cardTitle}" style="height:280px">
                             <div class="d-flex flex-wrap">
                                 <a class="rounded-circle-icon" style="background-color: ${cardColor};">
                                     <span class="${extensionIcons}"></span>
@@ -561,6 +568,39 @@ const deleteContent = (id) => {
         });
     }
 };
+function getMappedChapter(){
+      var subjectID = $('#subject option:selected').attr('data-type');
+      var standardID = $('.activeStd').attr('data-type');
+      if(!standardID){
+        alert('please select standard to get chapter');
+      }
+      if(!subjectID){
+        alert('please select subject to get chapter');
+      }
+      console.log(standardID+'-'+subjectID);
+      if (subjectID && standardID) {
+            $.ajax({
+                type: "GET",
+                url: "/api/get-chapter-list?subject_id=" + subjectID + "&standard_id=" + standardID,
+                success: function (res) {
+                    if (res) {
+                        $("#chapter").empty();
+                        $("#chapter").append('<option value="">Select Chapter</option>');
+                        $.each(res, function (key, value) {      
+                            $("#chapter").append('<option value="' + value + '" >' + value + '</option>');
+                        });
+
+                    } else {
+                        $("#chapter").empty();
+                        $("#chapter").append('<option value="">Select Chapter</option>');
+                    }
+                }
+            });
+        } else {
+            $("#chapter").empty();
+            $("#chapter").append('<option value="">Select Chapter</option>');
+        }
+    }
 
 </script>
 @include('includes.footer')

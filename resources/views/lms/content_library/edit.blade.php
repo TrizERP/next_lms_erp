@@ -151,10 +151,10 @@
                           @if(isset($data['standards']['mapValue'][$std_name]) && !empty($data['standards']['mapValue'][$std_name]))
                           <div class="col-md-4 form-group">
                             <label for="{{$std_name}}">Select {{$value->name}}</label>
-                            <select name="keywords[{{$std_name}}]" id="select_{{$key}}" class="form-control">
+                            <select name="keywords[{{$std_name}}]" id="Standards" class="form-control">
                               <option value="">Select any one</option>
                               @foreach($data['standards']['mapValue'][$std_name] as $k=>$val)
-                              <option value="{{$val->name}}" @if(isset($decodeJson[$std_name]) && $decodeJson[$std_name]==$val->name) selected @endif>{{$val->name}}</option>
+                              <option value="{{$val->name}}" data-type="{{$val->type}}" @if(isset($decodeJson[$std_name]) && $decodeJson[$std_name]==$val->name) selected @endif>{{$val->name}}</option>
                               @endforeach
                             </select>
                           </div>
@@ -181,7 +181,7 @@
                         @if(!empty($data['courses']['mapValue']))
                         <div class="col-md-4">
                           <label for="subject">Select Subjects</label>
-                          <select name="keywords[subject]" id="Subjects" class="form-control" onchange="getContents(this,'Chapters');">
+                          <select name="keywords[subject]" id="Subjects" class="form-control" onchange="getMappedChapter();">
                             <option value="">Select Subject</option>
                           </select>
                         </div>
@@ -220,7 +220,7 @@
                             <select name="keywords[{{$otherMap}}]" id="select_{{$key}}" class="form-control optionSelect" onchange="sendKeywords();">
                                 <option value="">Select any {{$value->name}}</option>
                                 @foreach($data['otherMaps']['mapValue'][$otherMap] as $k=>$val)
-                                <option value="{{$val->name}}"  @if(isset($decodeJson[$type_name]) && $decodeJson[$type_name]==$val->name) selected @endif>{{$val->name}}</option>
+                                <option value="{{$val->name}}"  @if(isset($decodeJson[$otherMap]) && $decodeJson[$otherMap]==$val->name) selected @endif>{{$val->name}}</option>
                                 @endforeach
                             </select>
                             </div>
@@ -252,13 +252,7 @@
       @elseif(isset($decodeJson['Courses']))
         getContents('', 'Subjects',"","{{$decodeJson['Courses']}}");
       @endif
-      // onload in value are in keywords
-      @if(isset($decodeJson['subject']) && isset($decodeJson['chapter']) && $decodeJson['chapter']!='')
-        getContents('', 'Chapters',"{{$decodeJson['chapter']}}","{{$decodeJson['subject']}}");
-      @elseif(isset($decodeJson['subject']))
-        getContents('', 'Chapters',"","{{$decodeJson['subject']}}");
-      @endif
-
+    
         // Basic
         $('.dropify').dropify();
         // Translated
@@ -401,13 +395,50 @@
                 if(selVal!='' && item['name'] == selVal){
                   selected = 'selected';
                 }
-                $("#" + content_type).append(`<option value="${item['name']}" data-parentid="${item['id']}" ${selected}>${item['name']}</option>`); 
+                $("#" + content_type).append(`<option value="${item['name']}" data-parentid="${item['id']}" data-type="${item['type']}" ${selected}>${item['name']}</option>`); 
               });
             }
+              // onload in value are in keywords
+              @if(isset($decodeJson['subject']) && isset($decodeJson['chapter']) && $decodeJson['chapter']!='')
+                getMappedChapter("{{$decodeJson['chapter']}}");
+              @elseif(isset($decodeJson['subject']))
+                getMappedChapter();
+              @endif
           }
         })
     }
 
+    function getMappedChapter(chapter_id=''){
+      var subjectID = $('#Subjects option:selected').attr('data-type');
+      var standardID = $('#Standards option:selected').attr('data-type');
+      console.log(standardID+'-'+subjectID);
+      if (subjectID && standardID) {
+            $.ajax({
+                type: "GET",
+                url: "/api/get-chapter-list?subject_id=" + subjectID + "&standard_id=" + standardID,
+                success: function (res) {
+                    if (res) {
+                        $("#Chapters").empty();
+                        $("#Chapters").append('<option value="">Select Chapter</option>');
+                        $.each(res, function (key, value) {      
+                        var selected='';
+                          if(chapter_id!='' && chapter_id==value){
+                            var selected='selected';
+                          }                     
+                            $("#Chapters").append('<option value="' + value + '" '+selected+'>' + value + '</option>');
+                        });
+
+                    } else {
+                        $("#Chapters").empty();
+                        $("#Chapters").append('<option value="">Select Chapter</option>');
+                    }
+                }
+            });
+        } else {
+            $("#postchapter").empty();
+            $("#postchapter").append('<option value="">Select Chapter</option>');
+        }
+    }
 </script>
 @include('includes.footer')
 @endsection
