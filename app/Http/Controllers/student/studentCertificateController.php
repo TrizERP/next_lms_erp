@@ -481,7 +481,11 @@ LIMIT 1");
             $html_content);
         $html_content = str_replace(htmlspecialchars("<<religion_name_value>>"), strtoupper($value['religion_name']),
             $html_content);
-        $html_content = str_replace(htmlspecialchars("<<caste_name_value>>"), strtoupper($value['caste_name']),
+            $caste_name = $value['caste_name'];
+            if($sub_institute_id==47 && isset($value['caste_name']) && $value['caste_name']!=''){
+                $caste_name = "(".$value['caste_name'].")";
+            }
+        $html_content = str_replace(htmlspecialchars("<<caste_name_value>>"), strtoupper($caste_name),
             $html_content);
         $html_content = str_replace(htmlspecialchars("<<subcast_value>>"), strtoupper($value['subcast']),
             $html_content);
