@@ -94,10 +94,10 @@
                           @if(isset($data['standards']['mapValue'][$std_name]) && !empty($data['standards']['mapValue'][$std_name]))
                           <div class="col-md-4 form-group">
                             <label for="{{$std_name}}">Select {{$value->name}}</label>
-                            <select name="keywords[{{$std_name}}]" id="select_{{$key}}" class="form-control">
+                            <select name="keywords[{{$std_name}}]" id="Standards" class="form-control">
                               <option value="">Select any one</option>
                               @foreach($data['standards']['mapValue'][$std_name] as $k=>$val)
-                              <option value="{{$val->name}}">{{$val->name}}</option>
+                              <option value="{{$val->name}}" data-type="{{$val->type}}">{{$val->name}}</option>
                               @endforeach
                             </select>
                           </div>
@@ -124,7 +124,7 @@
                         @if(!empty($data['courses']['mapValue']))
                         <div class="col-md-4">
                           <label for="subject">Select Subjects</label>
-                          <select name="keywords[subject]" id="subject" class="form-control" onchange="getContents(this,'chapter');">
+                          <select name="keywords[subject]" id="subject" class="form-control" onchange="getMappedChapter();">
                             <option value="">Select Subject</option>
                           </select>
                         </div>
@@ -239,12 +239,40 @@
             $('#'+content_type).find('option').remove().end().append('<option value="">Select '+content_type+'</option>').val('');
             if (result.length > 0) {
                 result.forEach(function(item) {
-                    $("#" + content_type).append(`<option value="${item['name']}" data-parentid="${item['id']}">${item['name']}</option>`); // Closing bracket correctly placed
+                    $("#" + content_type).append(`<option value="${item['name']}" data-parentid="${item['id']}"  data-type="${item['type']}">${item['name']}</option>`); // Closing bracket correctly placed
                 });
             }
 
           }
         })
+    }
+
+    function getMappedChapter(){
+      var subjectID = $('#subject option:selected').attr('data-type');
+      var standardID = $('#Standards option:selected').attr('data-type');
+      console.log(standardID+'-'+subjectID);
+      if (subjectID && standardID) {
+            $.ajax({
+                type: "GET",
+                url: "/api/get-chapter-list?subject_id=" + subjectID + "&standard_id=" + standardID,
+                success: function (res) {
+                    if (res) {
+                        $("#chapter").empty();
+                        $("#chapter").append('<option value="">Select Chapter</option>');
+                        $.each(res, function (key, value) {      
+                            $("#chapter").append('<option value="' + value + '" >' + value + '</option>');
+                        });
+
+                    } else {
+                        $("#chapter").empty();
+                        $("#chapter").append('<option value="">Select Chapter</option>');
+                    }
+                }
+            });
+        } else {
+            $("#chapter").empty();
+            $("#chapter").append('<option value="">Select Chapter</option>');
+        }
     }
 
 </script>
