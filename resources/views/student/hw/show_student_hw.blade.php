@@ -32,8 +32,8 @@
                                 <tr>
                                     <th>Id</th>
                                     <th>Student Name</th>
-                                    <th>Doctor Name</th>
-                                    <th>Doctor Contact</th>
+                                    <th>{{App\Helpers\get_string('doctorname_hw')}}</th>
+                                    <th>{{App\Helpers\get_string('doctorcontact_hw')}}</th>
                                     <th>Date</th>
                                     <th>Height</th>
                                     <th>Weight</th>

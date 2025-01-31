@@ -16,6 +16,7 @@ use Illuminate\Validation\ValidationException;
 use function App\Helpers\is_mobile;
 use function App\Helpers\send_FCM_Notification;
 use function App\Helpers\sendNotification;
+use function App\Helpers\get_string;
 
 class studentInfirmaryController extends Controller
 {
@@ -317,8 +318,8 @@ class studentInfirmaryController extends Controller
         }
         if ($req['health_type'] == 'student_height_weight') {
             $headers['student_name'] = "Student Name";
-            $headers['doctor_name'] = "Doctor Name";
-            $headers['doctor_contact'] = "Doctor Contact";
+            $headers['doctor_name'] = get_string('doctorname_hw');
+            $headers['doctor_contact'] = get_string('doctorcontact_hw');
             $headers['height'] = "Height";
             $headers['weight'] = "Weight";
         }

@@ -94,7 +94,7 @@
                         <div class="table-responsive">
                         <table class="table-bordered table" id="myTable">
                             <tr>
-                                <th>No</th>
+                                <th>Roll No.</th>
                                 <th>Student Name</th>
                                 @if($data['mark_type'] == 'GRADE')
                                 <th>Grade</th>
@@ -113,7 +113,7 @@
                             <input type="hidden" name="values[{{ $col_arr['student_id'] }}][standard_id]" value="{{$data['standard']}}" />
                             <input type="hidden" name="values[{{ $col_arr['student_id'] }}][division_id]" value="{{$data['division']}}" />
                             <input type="hidden" name="values[{{ $col_arr['student_id'] }}][co_scholastic]" value="{{$data['co_scholastic']}}" />
-                            <td>{{ $id+1 }}</td>
+                            <td>{{ $col_arr['roll_no'] }}</td>
                             <td>{{App\Helpers\sortStudentName($col_arr['name'])}}</td>
                             @php
                             $disable = "";
