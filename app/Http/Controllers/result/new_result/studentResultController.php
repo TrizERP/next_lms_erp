@@ -3249,7 +3249,7 @@ while ($current_date <= $post_end_date) {
                                             // if ($marks->is_absent == '') {
                                             //     $ab_ex_na = 0;
                                             // }
-                                            $obtained_marks[$title->exam_id][] = $ab_ex_na;
+                                            $obtained_marks[$title->exam_id][] = $marks->points ?? 0;
 
                                             if($ab_ex_na=="AB"){
                                                 $to_marks[$title->exam_id][] = $title->points;
