@@ -123,7 +123,7 @@
                         $totalSum = 0;
                         $toSum = $regularTotal= $rgBusTotal =$transTotal = 0;
                         $feesTotal = [];
-                        $displayNamesToExclude = ['Transport Fees', '2017-2018', '2018-2019', '2019-2020', '2020-2021', '2021-2022', '2022-2023'];
+                        $displayNamesToExclude = ['Transport Fees', '2017-2018', '2018-2019', '2019-2020', '2020-2021', '2021-2022', '2022-2023', '2023-2024'];
                         @endphp
 
                         @if(isset($data['fees_data']))
@@ -140,7 +140,7 @@
                                 <td style="background-color:#7befef;">{{ $fees_value['final_fee']['Transport Fees'] ?? 0 }}</td>
                                 @php
                                     $regBk = $fees_value['-']['bk'] ?? 0;
-                                    $excFees = ['Transport Fees', '2017-2018', '2018-2019', '2019-2020', '2020-2021', '2021-2022', '2022-2023'];
+                                    $excFees = ['Transport Fees', '2017-2018', '2018-2019', '2019-2020', '2020-2021', '2021-2022', '2022-2023', '2023-2024'];
                                     $excSum = 0;
 
                                     foreach ($excFees as $excFee) 
@@ -185,7 +185,7 @@
 
                                 @php
                                     $regularBk = $fees_value['-']['bk'] ?? 0;
-                                    $excludeFees = ['Transport Fees', '2017-2018', '2018-2019', '2019-2020', '2020-2021', '2021-2022', '2022-2023'];
+                                    $excludeFees = ['Transport Fees', '2017-2018', '2018-2019', '2019-2020', '2020-2021', '2021-2022', '2022-2023', '2023-2024'];
                                     $excludeSum = 0;
 
                                     foreach ($excludeFees as $excludeFee) 
