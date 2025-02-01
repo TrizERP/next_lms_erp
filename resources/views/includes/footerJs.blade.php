@@ -584,15 +584,16 @@ $('.guide-title').on('click', function(event) {
     function openTTMS(){
        var username = '{{$userEmail}}';
        var password = '{{$userPassword}}';
-       var url = 'https://crm.triz.co.in/customerportal/index.php?api=Login&module=Portal&q=' +
+       /*var url = 'https://crm.triz.co.in/customerportal/index.php?api=Login&module=Portal&q=' +
         encodeURIComponent(JSON.stringify({
             "password": "{{$userPassword}}",
             "username": "{{$userEmail}}",
             "language": "en_us"
         })) +
         '&type=API';
-
-    // Open the URL in a new tab
+      */
+      var url = 'https://crm.triz.co.in/customerportal/index.php';
+      // Open the URL in a new tab
     window.open(url, '_blank');
     }
 
