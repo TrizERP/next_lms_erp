@@ -3138,7 +3138,11 @@ while ($current_date <= $post_end_date) {
     $sub_institute_id = session()->get('sub_institute_id');
     $extra_term  = $extra_exam = "1=1";
     $att_term="atd.term_id = 2";
-    if ($format != "yearly"){
+    if ($format != '1' && $academic_type=="upper"){
+        $extra_term = "term_id = 2";
+        $extra_exam = "rce.term_id = 2";
+        $att_term = "atd.term_id = 2";
+    }elseif ($format != "yearly"){
         $extra_term = "term_id = " . $format;
         $extra_exam = "rce.term_id = " . $format;
         $att_term = "atd.term_id = " . $format;
@@ -3245,7 +3249,7 @@ while ($current_date <= $post_end_date) {
                                             // if ($marks->is_absent == '') {
                                             //     $ab_ex_na = 0;
                                             // }
-                                            $obtained_marks[$title->exam_id][] = $ab_ex_na;
+                                            $obtained_marks[$title->exam_id][] = $marks->points ?? 0;
 
                                             if($ab_ex_na=="AB"){
                                                 $to_marks[$title->exam_id][] = $title->points;
@@ -3405,8 +3409,7 @@ while ($current_date <= $post_end_date) {
                         $pass_or_fail ='Passed & Promoted to class : '.$next_std;
                     }
 
-                // $res['pass_or_fail'] = ($format != "yearly") ? $$pass_or_fail : $pass_or_fail; // commented on 23-01-2025
-                $res['pass_or_fail'] = $pass_or_fail;
+                $res['pass_or_fail'] = ($format == 1) ? '' : $pass_or_fail; // commented on 23-01-2025
  
         return $res;
     }
