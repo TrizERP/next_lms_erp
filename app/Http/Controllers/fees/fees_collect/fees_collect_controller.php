@@ -1821,7 +1821,13 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             $html_content = str_replace(htmlspecialchars("<<student_batch>>"), isset($_REQUEST['student_batch']) ? $_REQUEST['student_batch'] : '-', $html_content);
 
              // 2025-01-20 by uma
-             $html_content = str_replace(htmlspecialchars("<<parent_pan_card>>"), isset($_REQUEST['pan_card']) ? $_REQUEST['pan_card'] : '-', $html_content);
+             $checkPanNo = DB::table('tblstudent')->where('id',$_REQUEST['student_id'])->first();
+             $pan_no = $_REQUEST['pan_card'];
+             if(!empty($checkPanNo) && $checkPanNo->pan_card=='' && $pan_no!='' && $sub_institute_id==76){
+                DB::table('tblstudent')->where('id',$_REQUEST['student_id'])->update(['pan_card'=>$_REQUEST['pan_card']]);
+             }
+            
+             $html_content = str_replace(htmlspecialchars("<<parent_pan_card>>"), $pan_no, $html_content);
 
             $html_content = str_replace(htmlspecialchars("<<student_enrollment_value>>"), $enrollment, $html_content);
             $html_content = str_replace(htmlspecialchars("<<student_roll_value>>"), $roll_no, $html_content);

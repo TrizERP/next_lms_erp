@@ -161,6 +161,17 @@
 												{{ $data['stu_data']['student_quota']; }}
 											</td>
 										</tr>
+										<!-- ssmission pan card  -->
+										@if(session()->get('sub_institute_id')==76)
+										<tr>
+											<td>Pan Card No</td>
+											<td>
+											<input type="text" class="form-control" name="pan_card" id="inputPan" @if(isset($data['stu_data']['pan_card'])) value="{{ $data['stu_data']['pan_card']; }}" @endif onkeyup="addInputPan()";> 
+											</td>
+										</tr>
+										@else
+										<input type="hidden" id="inputPan" value="{{ $data['stu_data']['pan_card']; }}" >
+										@endif
 									</table>
 								</div>
 							</div>
@@ -232,9 +243,8 @@
 							<input type="hidden" name="mother_name" value="{{ $data['stu_data']['mother_name']; }}">
 							<!-- // 2024-06-24 by uma -->
 							<input type="hidden" name="student_batch" value="{{ $data['stu_data']['student_batch']; }}">
-							<!-- // 2025-01-20 by uma -->
-							<input type="hidden" name="pan_card" value="{{ $data['stu_data']['pan_card']; }}">
-
+							<input type="hidden" name="pan_card" id="pan_card">
+							
 							<div class="table-responsive col-md-12" style="border-top: 2px solid black;">
 								<table class="table table-stripped">
 									<tr>
@@ -601,8 +611,16 @@
 				});
 			}
 
-
+			// 01-02-2025
+			function addInputPan(){
+				var panNo = $('#inputPan').val();
+				$('#pan_card').val(panNo);
+			}
+			// 01-02-2025 end
 			$(document).ready(function() {
+				// 01-02-2025
+				addInputPan();
+				// 01-02-2025 end
 				monthCheck();
 				$('#cancelTableDiv').hide();
 					var sub = 0;
