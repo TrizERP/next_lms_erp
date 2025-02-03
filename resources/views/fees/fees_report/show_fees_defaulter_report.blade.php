@@ -113,17 +113,18 @@
                             @endforeach
                             <th style="background-color:#7befef;">Total</th>
                             <th style="background-color:#7befef;">Total Paid</th> 
+                            <th style="background-color:#7befef;">Discount</th> 
                             <th style="background-color:#7befef;">Total Unpaid</th>
                         </tr>
                     </thead>
                     <tbody>
                         @php
                         $j=1;
-                        $total_breakoff = $total_paid = $total_unpaid = 0;
+                        $total_breakoff = $total_paid = $total_unpaid = $total_discount = 0;
                         $totalSum = 0;
                         $toSum = $regularTotal= $rgBusTotal =$transTotal = 0;
                         $feesTotal = [];
-                        $displayNamesToExclude = ['Transport Fees', '2017-2018', '2018-2019', '2019-2020', '2020-2021', '2021-2022', '2022-2023', '2023-2024'];
+                        $displayNamesToExclude = !empty($data['other_fees_titles']) ? $data['other_fees_titles'] : [];
                         @endphp
 
                         @if(isset($data['fees_data']))
@@ -140,7 +141,7 @@
                                 <td style="background-color:#7befef;">{{ $fees_value['final_fee']['Transport Fees'] ?? 0 }}</td>
                                 @php
                                     $regBk = $fees_value['-']['bk'] ?? 0;
-                                    $excFees = ['Transport Fees', '2017-2018', '2018-2019', '2019-2020', '2020-2021', '2021-2022', '2022-2023', '2023-2024'];
+                                    $excFees = !empty($data['other_fees_titles']) ? $data['other_fees_titles'] : [];
                                     $excSum = 0;
 
                                     foreach ($excFees as $excFee) 
@@ -185,7 +186,7 @@
 
                                 @php
                                     $regularBk = $fees_value['-']['bk'] ?? 0;
-                                    $excludeFees = ['Transport Fees', '2017-2018', '2018-2019', '2019-2020', '2020-2021', '2021-2022', '2022-2023', '2023-2024'];
+                                    $excludeFees = !empty($data['other_fees_titles']) ? $data['other_fees_titles'] : [];
                                     $excludeSum = 0;
 
                                     foreach ($excludeFees as $excludeFee) 
@@ -200,12 +201,14 @@
 
                                 <td style="background-color:#7befef;">{{$fees_value['-']['bk'] ?? 0 }}</td>
                                 <td style="background-color:#7befef;">{{$fees_value['-']['paid'] ?? 0 }}</td> 
+                                <td style="background-color:#7befef;">{{$fees_value['-']['discount'] ?? 0 }}</td> 
                                 <td style="background-color:#7befef;">{{$fees_value['-']['remain'] ?? 0 }}</td>
                             </tr>
                             @php
                             $j++;
                             $total_breakoff += $fees_value['-']['bk'] ?? 0;
                             $total_paid += $fees_value['-']['paid'] ?? 0;
+                            $total_discount += $fees_value['-']['discount'] ?? 0;
                             $total_unpaid += $fees_value['-']['remain'] ?? 0;
                             @endphp
                             @endforeach
@@ -227,6 +230,7 @@
                                @endforeach
                                 <td>{{$total_breakoff}}</td>
                                 <td>{{$total_paid}}</td>
+                                <td>{{$total_discount}}</td>
                                 <td>{{$total_unpaid}}</td>
                             </tr>
                         @endif
