@@ -42,6 +42,7 @@ class feesModificationController extends Controller
         $last_name = $request->input('last_name');
         $mobile_no = $request->input('mobile_no');
         $from_date = $request->input('from_date');
+        $receipt_no = $request->input('receipt_no');
         $to_date = $request->input('to_date');
         $syear = $request->session()->get('syear');
         $sub_institute_id = $request->session()->get('sub_institute_id');
@@ -110,6 +111,12 @@ class feesModificationController extends Controller
         if ($to_date != '') {
             $extraSearchArrayRaw .= "  AND fc.receiptdate <= '" . $to_date . "'";
             $extraSearchArrayRawfp .= "  AND fp.receiptdate <= '" . $to_date . "'";            
+        }
+
+        
+        if ($receipt_no != '') {
+            $extraSearchArrayRaw .= "  AND fc.receipt_no = '" . $receipt_no . "'";
+            $extraSearchArrayRawfp .= "  AND fp.reciept_id = '" . $receipt_no . "'";            
         }
 // echo "<pre>";print_r($extraSearchArrayRawfp);exit;
         $fees_heads = DB::table('fees_title as FT')
@@ -231,6 +238,7 @@ class feesModificationController extends Controller
         $res['mobile_no'] = $mobile_no;
         $res['from_date'] = $from_date;
         $res['to_date'] = $to_date;
+        $res['receipt_no'] = $receipt_no;
         // return $fees_data;exit;
         return is_mobile($type, "fees/fees_report/feesModification", $res, "view");
     }

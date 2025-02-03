@@ -47,6 +47,9 @@
             {
                 $admission_year = $data['admission_year'];
             }
+            if(isset($data['receipt_no'])){
+                $receipt_no = $data['receipt_no'];
+            }
         @endphp
         <div class="card">
             @if ($sessionData = Session::get('data'))
@@ -72,6 +75,10 @@
                     <div class="col-md-4 form-group">
                         <label>Enrollment No</label>
                         <input type="text" id="enrollment_no" name="enrollment_no" value="{{$enrollment_no}}" class="form-control">
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label>Receipt No</label>
+                        <input type="text" id="receipt_no" name="receipt_no" value="{{$receipt_no}}" class="form-control">
                     </div>
                     <div class="col-md-4 form-group">
                         <label>Mobile No.</label>
