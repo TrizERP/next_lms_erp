@@ -573,3 +573,8 @@ Route::get('/doughnut-chart-data', [FeesReportController::class, 'getDoughnutCha
 Route::get('/real-time-chart-data', [FeesReportController::class, 'getRealTimeChartData']);
 Route::get('/scatter-line-chart-data', [FeesReportController::class, 'getScatterChartData']);
 Route::get('/polar-area-chart-data', [FeesReportController::class, 'getPolarAreaChartData']);
+
+
+use App\Http\Controllers\DataMigrationController;
+
+Route::get('/migrate-data', [DataMigrationController::class, 'migrateDataToNeo4j']);

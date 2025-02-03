@@ -195,7 +195,7 @@ $route = ['dashboard'];
 <script src="{{ asset("/plugins/bower_components/jquery.easy-pie-chart/dist/jquery.easypiechart.min.js") }}" defer></script>
 <script src="{{ asset("/plugins/bower_components/jquery.easy-pie-chart/easy-pie-chart.init.js") }}" defer></script>
 <script src="{{ asset("/plugins/bower_components/bootstrap-datepicker/bootstrap-datepicker.min.js") }}"></script>
-
+<script src="{{ asset("/admin_dep/js/jquery-3.5.1.min.js") }}"></script>
 
 <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
 <script src="{{ asset("/admin_dep/js/jquery-ui.js") }}" defer></script>
@@ -205,7 +205,13 @@ $route = ['dashboard'];
 <script src="{{ asset("/admin_dep/js/bootstrap-select.min.js") }}" defer></script>
 
 <script>
-   
+// Help Guide
+$('.help-body').hide(100);
+$('.guide-title').on('click', function(event) {
+    $('.help-guide').toggleClass('active', 100);
+    $('.help-body').slideToggle(100);
+});
+
     // AI 
 //     var i = 1;
 // var isFirstCharTyped = false;
@@ -578,15 +584,16 @@ $route = ['dashboard'];
     function openTTMS(){
        var username = '{{$userEmail}}';
        var password = '{{$userPassword}}';
-       var url = 'https://crm.triz.co.in/customerportal/index.php?api=Login&module=Portal&q=' +
+       /*var url = 'https://crm.triz.co.in/customerportal/index.php?api=Login&module=Portal&q=' +
         encodeURIComponent(JSON.stringify({
             "password": "{{$userPassword}}",
             "username": "{{$userEmail}}",
             "language": "en_us"
         })) +
         '&type=API';
-
-    // Open the URL in a new tab
+      */
+      var url = 'https://crm.triz.co.in/customerportal/index.php';
+      // Open the URL in a new tab
     window.open(url, '_blank');
     }
 
@@ -614,7 +621,7 @@ $route = ['dashboard'];
     <input type="text" id="user_input" placeholder="Type a message..." style="width: calc(100% - 20px); margin: 10px; padding: 10px; border: 1px solid #ccc; border-radius: 5px;">
     <button id="send_button" style="width: calc(100% - 20px); margin: 10px; padding: 10px; background-color: #007bff; color: white; border: none; border-radius: 5px;">Send</button>
 </div>
-<button id="open-chatbot" style="position: fixed; bottom: 50px; right: 20px;color: white; border: none; border-radius: 5px; padding: 10px;">
+<button id="open-chatbot" style="position: fixed; bottom: 0px; right: 20px;color: white; border: none; border-radius: 5px; padding: 10px;z-index:9999;">
 <span class="tooltip">Hey! I am Scholar Clone</span>
 </button>
 
@@ -923,8 +930,8 @@ function attendanceState(){
   #open-chatbot {
     background: url('/Images/293633-middle-removebg.png') no-repeat center center; 
     background-size: contain;
-    width: 100px; 
-    height: 100px; 
+    width: 80px; 
+    height: 70px; 
     border: none;
     cursor: pointer;
 }

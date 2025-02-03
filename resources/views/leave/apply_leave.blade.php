@@ -416,15 +416,21 @@
         // var diffDays = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
         // var SundayDiffDays = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
 
-        let fromDate = new Date(fromDateValue);
-        let toDate = new Date(toDateValue);
+    // Convert DD-MM-YYYY to YYYY-MM-DD
+        function parseDate(dateString) {
+            const [day, month, year] = dateString.split('-');
+            return new Date(`${year}-${month}-${day}`);
+        }
+
+        let fromDate = parseDate(fromDateValue);
+        let toDate = parseDate(toDateValue);
 
         // Calculate the difference in milliseconds
         let diffInTime = toDate.getTime() - fromDate.getTime();
 
         // Convert milliseconds to days
         let diffDays = diffInTime / (1000 * 3600 * 24) + 1;
-        var SundayDiffDays = Math.ceil(diffInTime / (1000 * 3600 * 24)) + 1;
+        let SundayDiffDays = Math.ceil(diffInTime / (1000 * 3600 * 24)) + 1;
 
         var sandwhichLeaves = {!! json_encode($sandwhichLeaves) !!};
         var casualLeaves = {!! json_encode($casualLeaves) !!};

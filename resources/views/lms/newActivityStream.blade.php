@@ -1006,10 +1006,15 @@
                 @endif
                 @if(isset($data['recent']['taskAssigned']) && !empty($data['recent']['taskAssigned']))
                   @foreach($data['recent']['taskAssigned'] as $key=>$value)
-                  @php 
-                      $startTime =($value->created_on) ? \Carbon\Carbon::parse($value->CREATED_ON)->format('H:i A') : '-';
-                      $startDate =\Carbon\Carbon::parse($value->TASK_DATE)->format('d-m-Y');
-                    @endphp
+                  @php
+				    $startTime = (isset($value->created_on) && $value->created_on) 
+				                 ? \Carbon\Carbon::parse($value->created_on)->format('H:i A') 
+				                 : '-';
+
+				    $startDate = (isset($value->task_date) && $value->task_date) 
+				                 ? \Carbon\Carbon::parse($value->task_date)->format('d-m-Y') 
+				                 : '-';
+				@endphp
                   <div class="dropdown-itemm">
                   <div class="d-flex flex-column">
                     <span class="time">{{$startDate}}</span>

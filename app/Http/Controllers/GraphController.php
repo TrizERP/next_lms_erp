@@ -21,10 +21,9 @@ class GraphController extends Controller
         $query = '
             MATCH (section:AcademicSection)-[r1:OFFERS]->(standard:Standard)-[r2:OFFERS]->(subject:Subject)-[r3:OFFERS]->(chapter:Chapter)
             RETURN section, r1, standard, r2, subject, r3, chapter
-            LIMIT 50';
+            LIMIT 5000';
         
         $result = $this->neo4jService->getClient()->run($query);
-
         // Initialize arrays for nodes and edges
         $nodes = [];
         $edges = [];
@@ -126,12 +125,13 @@ class GraphController extends Controller
 
         // Cypher query to fetch the student's learning path
         $query = '
-            MATCH (student:Student {id: $studentId})-[:ENROLLED_IN]->(standard:Standard)
-            MATCH (standard)-[:OFFERS]->(subject:Subject)-[:OFFERS]->(chapter:Chapter)
-            OPTIONAL MATCH (student)-[:HAS_COMPLETED]->(chapter)
-            OPTIONAL MATCH (chapter)-[:REQUIRES]->(prerequisite:Chapter)
-            RETURN student, standard, subject, chapter, prerequisite
-        ';
+    MATCH (standard:Standard)-[:OFFERS]->(subject:Subject)-[:OFFERS]->(chapter:Chapter)
+    WHERE standard.standard = "8"
+    OPTIONAL MATCH (student)-[:HAS_COMPLETED]->(chapter)
+    OPTIONAL MATCH (chapter)-[:REQUIRES]->(prerequisite:Chapter)
+    RETURN standard, subject, chapter, prerequisite
+    LIMIT 50
+';
 
         $result = $this->neo4jService->getClient()->run($query, ['studentId' => $studentId]);
 
@@ -141,21 +141,21 @@ class GraphController extends Controller
         $nodeIds = [];
 
         foreach ($result as $record) {
-            $student = $record->get('student');
+            //$student = $record->get('student');
             $standard = $record->get('standard');
             $subject = $record->get('subject');
             $chapter = $record->get('chapter');
             $prerequisite = $record->get('prerequisite');
 
             // Get the properties of each node
-            $studentProperties = $student->getProperties();
+            //$studentProperties = $student->getProperties();
             $standardProperties = $standard->getProperties();
             $subjectProperties = $subject->getProperties();
             $chapterProperties = $chapter->getProperties();
             $prerequisiteProperties = ($prerequisite) ? $prerequisite->getProperties() : null;
 
             // Use Neo4j internal IDs for unique identification
-            $studentId = $student->getId();
+            $studentId = '0';
             $standardId = $standard->getId();
             $subjectId = $subject->getId();
             $chapterId = $chapter->getId();
@@ -163,7 +163,7 @@ class GraphController extends Controller
 
             // Add Student node
             if (!in_array($studentId, $nodeIds)) {
-                $studentName = $studentProperties['name'] ?? 'Unknown Student';
+                $studentName = 'Alice';
                 $nodes[] = [
                     'id' => $studentId,
                     'label' => $studentName,
@@ -197,7 +197,7 @@ class GraphController extends Controller
             // Add Chapter node (different color if completed)
             if (!in_array($chapterId, $nodeIds)) {
                 $chapterName = $chapterProperties['chapter'] ?? 'Unknown Chapter';
-                $color = ($student) ? '#00FF00' : '#FF0000';  // Green if completed, Red if not completed
+                $color =  '#00FF00';  // Green if completed, Red if not completed
                 $nodes[] = [
                     'id' => $chapterId,
                     'label' => $chapterName,
