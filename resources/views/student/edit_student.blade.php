@@ -340,6 +340,14 @@ datalist {
                                             <label for="input-file-now">User Image</label>
                                             <input type="file" data-default-file="/storage/student/{{ $student_data->image }}" accept="image/png, image/jpg, image/jpeg" name="student_image" id="input-file-now" class="dropify" />
                                         </div>  
+                                        <div class="col-md-4">
+                                            <label for="input-file-now2">Father Image</label>
+                                            <input type="file" data-default-file="https://s3-triz.fra1.cdn.digitaloceanspaces.com/public/parents_image/{{ $student_data->father_image }}" accept="image/png, image/jpg, image/jpeg" name="father_image" id="input-file-now2" class="dropify" />
+                                        </div>  
+                                        <div class="col-md-4">
+                                            <label for="input-file-now3">Mother Image</label>
+                                            <input type="file" data-default-file="https://s3-triz.fra1.cdn.digitaloceanspaces.com/public/parents_image/{{ $student_data->mother_image }}" accept="image/png, image/jpg, image/jpeg" name="mother_image" id="input-file-now3" class="dropify" />
+                                        </div>  
                                         @if(session()->get('sub_institute_id')==254)
                                         <div class="col-md-4 form-group">
                                             <label>Optional Subject 4</label>
