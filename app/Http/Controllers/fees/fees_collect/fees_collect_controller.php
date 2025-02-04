@@ -1823,7 +1823,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
 
              // 2025-01-20 by uma
              $checkPanNo = DB::table('tblstudent')->where('id',$_REQUEST['student_id'])->first();
-             $pan_no = $_REQUEST['pan_card'];
+             $pan_no = isset($_REQUEST['pan_card']) ? $_REQUEST['pan_card'] : '';
              if(!empty($checkPanNo) && $checkPanNo->pan_card=='' && $pan_no!='' && $sub_institute_id==76){
                 DB::table('tblstudent')->where('id',$_REQUEST['student_id'])->update(['pan_card'=>$_REQUEST['pan_card']]);
              }
