@@ -492,6 +492,14 @@ class studentResultController extends Controller
     
     $termAtten = $this->getTermAttendance($standard_id, $value['id'], $format,'');
     $html_content = str_replace(htmlspecialchars("<<term_attendance>>"), $termAtten, $html_content);
+    // for attendance in percentage in hills
+    $explodeTermAtten = explode('/',$termAtten);
+    $perTermAtt = 0;
+    if(isset($explodeTermAtten[0]) && is_numeric($explodeTermAtten[0]) && isset($explodeTermAtten[1]) && is_numeric($explodeTermAtten[1])){
+        $getPer = ($explodeTermAtten[0] / $explodeTermAtten[1]) * 100;
+        $perTermAtt = number_format($getPer, 2);
+    }
+    $html_content = str_replace(htmlspecialchars("<<term_attendance_per>>"), $perTermAtt, $html_content);
     
         if (strpos($html_content, htmlspecialchars('<<total_attendance_manual>>')) !== false) {
             $atten = $this->get_attendance($standard_id, $value['id'], $format, "total_attendance_manual");
@@ -3249,7 +3257,7 @@ while ($current_date <= $post_end_date) {
                                             // if ($marks->is_absent == '') {
                                             //     $ab_ex_na = 0;
                                             // }
-                                            $obtained_marks[$title->exam_id][] = $marks->points ?? 0;
+                                            $obtained_marks[$title->exam_id][] = $ab_ex_na ?? 0;
 
                                             if($ab_ex_na=="AB"){
                                                 $to_marks[$title->exam_id][] = $title->points;
@@ -3282,8 +3290,9 @@ while ($current_date <= $post_end_date) {
                                 // // get best 2 from array
                                 // $best_two = array_slice($obtained_mark_arr, 0, 2);
                                 // $obtained_mark_sum = array_sum($best_two);
-                                $obtained_mark_sum = array_sum($obtained_mark_arr);
+                                $numeric_marks = array_filter($obtained_mark_arr, 'is_numeric');
 
+                                $obtained_mark_sum = array_sum($numeric_marks);
                                 // get mark for total mark 
                                 $ob_main_mark += ($t_m !== 0) ? (($obtained_mark_sum / $t_m) * $w_m) : 0;
                                 // convert marks if best of 2
@@ -3554,7 +3563,9 @@ while ($current_date <= $post_end_date) {
                                     $w_m = $to_weight[$exam_id] ?? 0; // Check if the key exists
                                     $t_m = array_sum(array_intersect_key($to_marks[$exam_id] ?? [], $marksArray));
                                     $obtained_mark_arr = $obtained_marks[$exam_id] ?? [];
-                                    $obtained_mark_sum = array_sum($obtained_mark_arr);
+                                    $numeric_marks = array_filter($obtained_mark_arr, 'is_numeric');
+
+                                    $obtained_mark_sum = array_sum($numeric_marks);
                                     
                                     // get mark for total mark 
                                     $ob_main_mark += ($t_m !== 0) ? (($obtained_mark_sum / $t_m) * $w_m) : 0;
@@ -4661,7 +4672,9 @@ while ($current_date <= $post_end_date) {
                                 $t_m = array_sum($to_marks[$exam_id] ?? []);
                                 $obtained_mark_arr = $obtained_marks[$exam_id] ?? [];
                                 
-                                $obtained_mark_sum = array_sum($obtained_mark_arr);
+                                $numeric_marks = array_filter($obtained_mark_arr, 'is_numeric');
+
+                                $obtained_mark_sum = array_sum($numeric_marks);
                                 
                                 // convert marks if best of 2
                                 $convert_mark = ($obtained_mark_sum != 0) ? (($obtained_mark_sum / $t_m) * $w_m) : 0;
