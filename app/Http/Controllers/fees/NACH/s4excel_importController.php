@@ -394,12 +394,12 @@ class s4excel_importController extends Controller {
 					            );
 
 								$_REQUEST = $send_arr;
-								//echo "<pre>";
-								//print_r($_REQUEST);
+								echo "<pre>";
+								print_r($_REQUEST);
 								//die();exit();
  								$paid_fees =  $controller->pay_fees($request);
-								// echo '<pre>';
-								// print_r($paid_fees);
+								echo '<pre>';
+								print_r($paid_fees);
 							if (!empty($fees_bk_data) || $fees_bk_data !== "") {
 									$successCnt++;
 									$upSql = "UPDATE tblstudent_bank_detail SET is_registered = 'Y' WHERE student_id = '".$STUDENT_ID."'";
