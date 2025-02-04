@@ -35,6 +35,7 @@ use function App\Helpers\getStudents;
 use App\Http\Controllers\easy_com\send_sms_parents\send_sms_parents_controller;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Crypt;
+use Carbon\CarbonPeriod;
 
 class fees_collect_controller extends Controller
 {
@@ -2843,18 +2844,84 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             ->where('fc.syear', $syear)->get()->toArray();
 
             $late_fees_amount = $fees_config[0]->late_fees_amount ?? '';
+        
+        $config_late_fine = 0;
         if (count($fees_config) > 0) {
             $receipt_css = $fees_config[0]->css;
             $paper_size = $fees_config[0]->fees_receipt_template;
+
+            // fees late master implement finr_type wise start 03-02-2025 not foe institutes altius,hills high and CN sports
+            if(isset($stu_detail['std_id']) && isset($fees_config[0]->late_fees_amount) && !in_array($sub_institute_id,[195,254,257])){
+                // get added late fees details 
+                $getFineType = DB::table('fees_late_master')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear,'standard_id'=>$stu_detail['std_id'],'status'=>1])->first();
+
+                // get added late fees details 
+                if(!empty($getFineType) && isset($getFineType->fine_type)){
+                    $fineType= $getFineType->fine_type;
+                    //check fees details of student
+                    if(!empty($left_bk_table)){
+                        $remainMonth =$remainYear= $fineMonth= $fineDays = $fineWeeks = 0;
+                        $datesArray=[];
+                        $currentMonth = date('n');
+                        $currentYear = date('Y');
+                        $currentDate = Carbon::now();
+
+                        //check fees details remain or not
+                        foreach($left_bk_table as $key=>$val){
+                              // remain fees count month and days in it
+                              $remainMonthId = substr($val['month_id'], 0,-4);
+                              $remainYear = substr($val['month_id'],-4);
+                            // if remain fees is greater than  0 get fine according to mont,week,day 
+                            if($val['remain'] > 0 && $remainYear <= $currentYear){
+                              
+                                $fineMonth += ($remainMonth+1);
+
+                                $day_date = Carbon::createFromFormat('d-n-Y', $getFineType->late_date.'-'.$remainMonthId.'-'.$remainYear); 
+                                
+                                // Get the weeks in the month
+                                $startOfMonth = $day_date->copy(); 
+                                $endOfMonth = $day_date->copy()->endOfMonth();
+
+                                $fineDays += $startOfMonth->diffInDays($endOfMonth) + 1; 
+
+                                $fineWeeks += CarbonPeriod::create($startOfMonth, '1 week', $endOfMonth)->count();
+
+                                $datesArray[] = collect(CarbonPeriod::create($startOfMonth, $endOfMonth)->toArray())
+                                ->map(fn($date) => $date->format('Y-m-d'))
+                                ->toArray();
+                                            
+                            }
+                        }
+
+                        // count fine typewise fines 
+                        if($fineType=="Monthly" && isset($getFineType->late_date) && $currentDate>=$getFineType->late_date){
+                            $config_late_fine = ($fineMonth*$fees_config[0]->late_fees_amount);
+                        }
+                        elseif($fineType=="Weekly" && isset($getFineType->late_date) && $currentDate>=$getFineType->late_date){
+                            $config_late_fine = ($fineWeeks*$fees_config[0]->late_fees_amount);
+                        }
+                        elseif($fineType=="Daily" && isset($getFineType->late_date) && $currentDate>=$getFineType->late_date){
+                            $config_late_fine = ($fineDays*$fees_config[0]->late_fees_amount);
+                        }
+                    }
+                }
+                // echo $fineMonth."<br>";
+                // echo $fineWeeks."<br>";
+                // echo $fineDays."<br>";
+                // echo "<pre>";print_r($datesArray);
+            }
+            // exit;
+            // fees late master implement finr_type wise end 04-02-2025
         } else {
             $fees_config = DB::table('fees_receipt_css')->select('css')
                 ->where('receipt_id', 'A5')->get()->toArray();
             $receipt_css = $fees_config[0]->css;
             $paper_size = 'A5';
         }
-// echo "<pre>";print_r($res);exit;
+        // echo "<pre>";print_r($res);exit;
         $res['receipt_css_data'] = $receipt_css;
         $res['paper_size'] = $paper_size;
+        $res['config_late_fine'] = $config_late_fine;
         return $res;
     }
 
