@@ -114,7 +114,7 @@ datalist {
                 <h4 class="page-title">Edit Student Details</h4> 
             </div>
             <div class="col-lg-9 col-md-4 col-sm-4 col-xs-12 text-right">
-                <a class="btn btn-outline-secondary" data-toggle="modal" data-target="#quickView">Quick View</a> 
+                <a class="btn btn-warning" data-toggle="modal" data-target="#quickView">Quick View</a> 
             </div>
         </div>
 

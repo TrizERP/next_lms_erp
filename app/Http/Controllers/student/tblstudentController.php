@@ -1072,6 +1072,7 @@ die; */
                 'destinations' => $studentAddress,
                 'key' => $apiKey,
             ],
+            'verify' => false,  // Disable SSL verification
         ]);
 
         $data = json_decode($response->getBody(), true);
