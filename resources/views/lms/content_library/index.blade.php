@@ -31,13 +31,40 @@
         border : none;
         margin : 0px 10px 0px 0px;
     }
+
+    .ContentTypeBtn{
+        background : #26dad2;
+        border : none;
+        margin : 0px 10px 0px 0px;
+    }
+    .TypeBtn{
+        background : #8f9ce9;
+        border : none;
+        margin : 0px 10px 0px 0px;
+    }
+
     .stdBtn:hover{
         background : #2374c7;
+     }
+     .ContentTypeBtn:hover{
+        background : #29b5af;
+     }
+     .TypeBtn:hover{
+        background : #25337e;
      }
     .activeStd{
         margin : 0px 10px 10px 10px;
         box-shadow: 3px 5px #2374c7;
     }
+    .activeContentType{
+        margin : 0px 10px 10px 10px;
+        box-shadow: 3px 5px #29b5af;
+    }
+    .activeType{
+        margin : 0px 10px 10px 10px;
+        box-shadow: 3px 5px #25337e;
+    }
+
     hr{
         border-top: 3px solid #ebebf3;
         width: 100%;
@@ -62,8 +89,8 @@
         display: inline-flex;
         align-items: center; 
         justify-content: center;
-        width: 40px;
-        height: 40px;
+        width: 30px;
+        height: 30px;
         border-radius: 50%;
         text-decoration: none;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
@@ -75,6 +102,15 @@
     }
     .shadow-sm{
         padding : 40px 60px;
+    }
+    .card-title{
+        font-size:14px;
+    }
+    .card-text{
+        font-size:12px;
+    }
+    .middleCard{
+        height: 166px;
     }
 </style>
 <div id="page-wrapper">
@@ -135,7 +171,7 @@
                     $course_name = str_replace(' ','_',$value->name);
                 @endphp 
                     @if(isset($data['courses']['mapValue'][$course_name]) && !empty($data['courses']['mapValue'][$course_name]))
-                    <div class="col-md-3 form-group">
+                    <div class="col-md-4 form-group">
                     <select name="keywords[{{$course_name}}]" id="Courses" class="form-control optionSelect" onchange="getContents(this,'subject');" onchange="getSearchedContents('contentDiv','');">
                         <option value="">Select {{$value->name}}</option>
                         @foreach($data['courses']['mapValue'][$course_name] as $k=>$val)
@@ -147,13 +183,13 @@
                 @endforeach
 
                 @if(!empty($data['courses']['mapValue']))
-                <div class="col-md-3">
+                <div class="col-md-4">
                     <select name="keywords[subject]" id="subject" class="form-control optionSelect" onchange="getSearchedContents('contentDiv','');">
                     <option value="">Select Subject</option>
                     </select>
                 </div>
                
-                <div class="col-md-3">
+                <div class="col-md-4">
                     <select name="keywords[chapter]" id="chapter" class="form-control optionSelect" onchange="getSearchedContents('contentDiv','');"> 
                     <option value="">Select Chapter</option>
                     </select>
@@ -164,15 +200,23 @@
                     $type_name = str_replace(' ','_',$value->name);
                 @endphp 
                     @if(isset($data['content_type']['mapValue'][$type_name]) && !empty($data['content_type']['mapValue'][$type_name]))
-                    <div class="col-md-3 form-group">
+                    {{-- <div class="col-md-3 form-group">
                     <select name="keywords[{{$type_name}}]" id="select_{{$key}}" class="form-control optionSelect" onchange="getSearchedContents('contentDiv','');">
                         <option value="">Select {{$value->name}}</option>
                         @foreach($data['content_type']['mapValue'][$type_name] as $k=>$val)
                         <option value="{{$val->name}}">{{$val->name}}</option>
                         @endforeach
                     </select>
-                    </div>
+                    </div> --}}
+
+                    <div class="col-md-12" style="padding: 10px 14px;text-align:left">
+                    <label for="contentType">Select Content Type</label><br>
+                    @foreach($data['content_type']['mapValue'][$type_name] as $k=>$value)
+                    <input type="hidden" name="keywords[{{$type_name}}]" id="contentType">
+                    <a class="btn btn-success ContentTypeBtn" data-type="{{$value->type}}" onclick="getSearchedContents('contentDiv','');">{{$value->name}}</a>
+                    @endforeach
                     @endif
+                    </div>
                 @endforeach
 
                 @foreach($data['otherMaps']['mapType'] as $key=>$value)
@@ -180,13 +224,21 @@
                     $otherMap = str_replace(' ','_',$value->name);
                 @endphp 
                     @if(isset($data['otherMaps']['mapValue'][$otherMap]) && !empty($data['otherMaps']['mapValue'][$otherMap]))
-                    <div class="col-md-3 form-group">
+                    {{-- <div class="col-md-3 form-group">
                     <select name="keywords[{{$otherMap}}]" id="select_{{$key}}" class="form-control optionSelect" onchange="getSearchedContents('contentDiv','');">
                         <option value="">Select any {{$value->name}}</option>
                         @foreach($data['otherMaps']['mapValue'][$otherMap] as $k=>$val)
                         <option value="{{$val->name}}">{{$val->name}}</option>
                         @endforeach
                     </select>
+                    </div> --}}
+
+                    <div class="col-md-12" style="padding: 10px 14px;text-align:left">
+                    <label for="Types">Select Types</label><br>
+                    @foreach($data['otherMaps']['mapValue'][$otherMap] as $k=>$value)
+                    <input type="hidden" name="keywords[{{$otherMap}}]" id="Type">
+                    <a class="btn btn-success TypeBtn" data-type="{{$value->type}}" onclick="getSearchedContents('contentDiv','');">{{$value->name}}</a>
+                    @endforeach
                     </div>
                     @endif
                 @endforeach
@@ -249,6 +301,22 @@
             $('#Courses').val('');
             $('#subject').find('option').remove().end().append('<option value="">Select subject</option>').val('');
             $('#chapter').find('option').remove().end().append('<option value="">Select chapter</option>').val('');
+        })
+
+        $('.ContentTypeBtn').on('click',function(){
+            $('.ContentTypeBtn').removeClass('activeContentType');
+            $(this).addClass('activeContentType');
+            let buttonText = $(this).text().trim();
+            $('#contentType').val(buttonText);
+            getSearchedContents('contentDiv','');
+        })
+
+        $('.TypeBtn').on('click',function(){
+            $('.TypeBtn').removeClass('activeType');
+            $(this).addClass('activeType');
+            let buttonText = $(this).text().trim();
+            $('#Type').val(buttonText);
+            getSearchedContents('contentDiv','');
         })
         
         $('#subject').on('change',function(){
@@ -432,6 +500,10 @@
                 ? item.description.substring(0, 150) + "..."
                 : item.description;
 
+            const truncatedTitle = item.title.length > 100
+                ? item.title.substring(0, 100) + "..."
+                : item.title;
+
             let extension = "no_file";
             let extensionIcons = '';
             // Sharing URLs
@@ -496,8 +568,10 @@
                                     <span class="${extensionIcons}"></span>
                                 </a>
                             </div>
-                            <h5 class="card-title" style="margin-top:10px">${item.title}</h5>
+                            <div class="middleCard">
+                            <h5 class="card-title" style="margin-top:10px">${truncatedTitle}</h5>
                             <p class="card-text">${truncatedDescription}</p>
+                            </div>
                             <div class="action-btn text-center">
                                 <a class="rounded-circle-icon" style="background-color: black" href="/lms/content_library/${item.id}"><span class="mdi mdi-eye-outline"></span></a>
                                 <a class="rounded-circle-icon" style="background-color: black" onclick="addActivity(${item.id},'copy');"><span class="mdi mdi-content-copy"></span></a>
