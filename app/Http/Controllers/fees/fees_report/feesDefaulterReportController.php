@@ -142,6 +142,7 @@ class feesDefaulterReportController extends Controller
                     foreach ($total_fees_array[0] as $key => $month_data) {
                         if (isset($month_data['month_id'])) {
                             $final_array[$value['id']][$month_data['month_id']]['paid'] = $month_data['paid'];
+                            $final_array[$value['id']][$month_data['month_id']]['discount'] = isset($month_data['discount']) ? $month_data['discount'] : 0;
                             $final_array[$value['id']][$month_data['month_id']]['remain'] = $month_data['remain'];
                             $final_array[$value['id']][$month_data['month_id']]['bk'] = $month_data['bk'];
                         }
@@ -159,14 +160,16 @@ class feesDefaulterReportController extends Controller
 
             if (isset($final_array[$value['id']])) {
                 $student_data = $final_array[$value['id']];
-                $total_paid_student =  $total_remain_student =  $total_bk_student = 0;
+                $total_paid_student =  $total_remain_student =  $total_bk_student = $totak_discount = 0;
 
                 foreach ($student_data as $key => $data) {
                     if ($key !== 'total_bk' && is_array($data) && isset($data['bk']) ||  isset($data['paid']) ||  isset($data['remain']) ) {
                         $total_paid_student += $data['paid'];
+                        $totak_discount += isset($data['discount']) ? $data['discount'] : 0;
                         $total_remain_student += $data['remain'];
                         $total_bk_student += $data['bk'];            
                         $final_array[$value['id']]['-']['paid'] = $total_paid_student;
+                        $final_array[$value['id']]['-']['discount'] = $totak_discount;
                         $final_array[$value['id']]['-']['remain'] = $total_remain_student; 
                         $final_array[$value['id']]['-']['bk'] = $total_bk_student; 
                     }
@@ -182,6 +185,14 @@ class feesDefaulterReportController extends Controller
             ->orderBy('other_fee_id')
             ->get()->toArray();
 
+        // dynamic fees titles
+        $get_other_fees_titles = DB::table('fees_title')
+            ->where('sub_institute_id', session()->get('sub_institute_id'))
+            ->where('syear', session()->get('syear'))
+            ->where('fees_title_id', 1)
+            ->orderBy('sort_order')
+            ->pluck('display_name')->toArray();
+
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['fees_data'] = $final_array;
@@ -195,7 +206,9 @@ class feesDefaulterReportController extends Controller
         $res['mobile_no'] = $mobile_no;
         $res['uniqueid'] = $uniqueid;
         $res['fees_titles'] = $get_fees_titles;
-        //  echo "<pre>";print_r($final_array);exit;
+        $res['other_fees_titles'] = $get_other_fees_titles;
+
+        //  echo "<pre>";print_r($get_other_fees_titles);exit;
         return is_mobile($type, "fees/fees_report/show_fees_defaulter_report", $res, "view");
     }
 }

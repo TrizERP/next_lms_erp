@@ -345,11 +345,11 @@
 													</td>
 													@php
                                                         $auto_head_counting = $data['fees_config_data']['auto_head_counting'];
-
+														$total_disable =  $individual_enable = "";
                                                         if ($auto_head_counting == 1) {
                                                             $individual_enable = "readonly";
                                                             $total_disable = "";
-                                                        } else {
+                                                        } elseif ($auto_head_counting == 0) {
                                                             $individual_enable = "";
                                                             $total_disable = "readonly";
                                                         }
@@ -404,6 +404,14 @@
 											<input type="text" class="form-control" name="remarks" id="remarks" autocomplete="off">
 										</td>
 									</tr>
+									<tr>
+										<td></td>
+										<td>{{ App\Helpers\get_string('discount')}}</td>
+										<td></td>
+										<td>
+											<input type='text' id='totalDis' name='totalDis' value='0' class='form-control directdiscount'>
+										</td>
+									</tr>
 									@php 
 										if(session()->get('sub_institute_id')==254 && !empty($data['hillsFine'])){
 											$cheque_return_charges0 = $data['hillsFine']['total'];
@@ -429,9 +437,17 @@
 												<input type="hidden" name="hidden_cheque_return_charges" id="hidden_cheque_return_charges" class="form-control cheque_return_charges1" value="{{$data['fees_config_data']['late_fees_amount']}}"> 
 
 												<input type="hidden" name="for_cn_only" id="hidden_cheque_return_charges2" value="{{$data['fees_config_data']['late_fees_amount']}}"> 
+										 <!-- fees late master implement finr_type wise start 04-02-2025 -->
+											@elseif(isset($data['config_late_fine']) && $data['config_late_fine']>0)
+												<input type="text" name="fees_data[fine]" id="cheque_return_charges1" class="form-control cheque_return_charges0" value="{{$data['config_late_fine']}}" >
+											
+												<input type="hidden" name="hidden_cheque_return_charges" id="hidden_cheque_return_charges" class="form-control cheque_return_charges0" value="{{$data['config_late_fine']}}"> 
+
+												<input type="hidden" name="for_cn_only" id="cheque_return_charges0" value="{{$data['config_late_fine']}}"> 
+										 <!-- fees late master implement finr_type wise end 04-02-2025 -->
+
 											@else
-												<input type="text" name="fees_data[fine]" id="{{$inputId}}" class="form-control hillsFine" value="@php if(isset($cheque_return_charges0)) echo $cheque_return_charges0; @endphp"
-												{{$readable}}>
+												<input type="text" name="fees_data[fine]" id="{{$inputId}}" class="form-control hillsFine" value="@php if(isset($cheque_return_charges0)) echo $cheque_return_charges0; @endphp">
 												<input type="hidden" name="hidden_cheque_return_charges" id="hidden_cheque_return_charges" class="form-control" value="@if(isset($cheque_return_charges0)){{$cheque_return_charges0}}@endif">
 											@endif
 										</td>
@@ -897,15 +913,14 @@ function checkForm() {
 						$("#fees_head").empty();
 						$("#fees_head").html(data);
 
-						var auto_head_counting = {{ (($auto_head_counting == '1') ? ($auto_head_counting) : ('0')); }} ;
-						if (auto_head_counting == 1) {
+						var auto_head_counting = "{{ (isset($auto_head_counting) && $auto_head_counting!='') ? $auto_head_counting : '-' }}";
+						if (auto_head_counting == "1") {
 							$('.allField1').attr('readonly', true);
 							$('#totalVal').attr('readonly', false);
-						} else {
+						} else if (auto_head_counting == "0") {
 							$('.allField1').attr('readonly', false);
 							$('#totalVal').attr('readonly', true);
 							$('#previous_fees').attr('readonly', true);
-
 						}
 
 						tot = $("#totalVal").val();

@@ -21,7 +21,7 @@ class GraphController extends Controller
         $query = '
             MATCH (section:AcademicSection)-[r1:OFFERS]->(standard:Standard)-[r2:OFFERS]->(subject:Subject)-[r3:OFFERS]->(chapter:Chapter)
             RETURN section, r1, standard, r2, subject, r3, chapter
-            LIMIT 5000';
+            LIMIT 50';
         
         $result = $this->neo4jService->getClient()->run($query);
         // Initialize arrays for nodes and edges

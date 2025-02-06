@@ -544,10 +544,10 @@ Route::get('/dashboardnew', function () {
     return view('dashboardNeo4j');
 })->name('dashboardNeo4j');
 Route::get('/new', function () {
-    return view('newD3visuals');
+    return view('newD3visualsnew');
 });
 Route::get('/dashboard_new', function () {
-    return view('newD3recommend');
+    return view('newD3recommendnew');
 });
 Route::get('/sync-neo4j', [Neo4jSyncController::class, 'sync']);
 
