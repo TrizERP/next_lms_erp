@@ -87,8 +87,13 @@
 	                            <input type="text" id='cms_client_code' required name="cms_client_code" class="form-control">
 	                        </div>
 	                        <div class="col-md-4 form-group">
-	                            <label>Auto Head Counting </label>	                                                     
-	                            <input type="checkbox" id='auto_head_counting' value="1" name="auto_head_counting">
+	                            <label>Auto Head Counting </label>
+	                            <!-- <input type="checkbox" id='auto_head_counting' value="1" name="auto_head_counting"> -->
+								<select name="auto_head_counting" id="auto_head_counting" class="form-control">
+	                                <option value=""> Select Head Count </option>
+	                                <option value="1"> Yes </option>
+	                                <option value="0"> No </option>
+	                            </select>
 	                        </div>
 							<div class="col-md-4 form-group">
 	                            <label>Month Beside Fees Heading </label>                           

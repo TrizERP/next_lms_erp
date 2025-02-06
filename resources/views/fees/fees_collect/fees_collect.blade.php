@@ -345,11 +345,11 @@
 													</td>
 													@php
                                                         $auto_head_counting = $data['fees_config_data']['auto_head_counting'];
-
+														$total_disable =  $individual_enable = "";
                                                         if ($auto_head_counting == 1) {
                                                             $individual_enable = "readonly";
                                                             $total_disable = "";
-                                                        } else {
+                                                        } elseif ($auto_head_counting == 0) {
                                                             $individual_enable = "";
                                                             $total_disable = "readonly";
                                                         }
@@ -913,15 +913,14 @@ function checkForm() {
 						$("#fees_head").empty();
 						$("#fees_head").html(data);
 
-						var auto_head_counting = {{ (($auto_head_counting == '1') ? ($auto_head_counting) : ('0')); }} ;
-						if (auto_head_counting == 1) {
+						var auto_head_counting = "{{ (isset($auto_head_counting) && $auto_head_counting!='') ? $auto_head_counting : '-' }}";
+						if (auto_head_counting == "1") {
 							$('.allField1').attr('readonly', true);
 							$('#totalVal').attr('readonly', false);
-						} else {
+						} else if (auto_head_counting == "0") {
 							$('.allField1').attr('readonly', false);
 							$('#totalVal').attr('readonly', true);
 							$('#previous_fees').attr('readonly', true);
-
 						}
 
 						tot = $("#totalVal").val();
