@@ -861,7 +861,7 @@ class AJAXController extends Controller
                 $response .= "<td style='width: 20%;display:none'><input type='number'  min=0 value=0 name='fine_data[" . $final_bk_name[$id] . "]' class='form-control allFinField' style='min-width:150px;'></td>";
             } else {
                 $response .= "<td style='width: 25%'><input type='text' id='totalVal' name='total' value='" . $total . "' class='form-control'></td>";
-                $response .= "<td style='width: 25%;display:none'><input type='text' id='totalDis' name='totalDis' value='0' class='form-control directdiscount'></td>";
+                $response .= "<td style='width: 25%;display:none'><input type='text'  value='0' class='form-control directdiscount'></td>"; // id='totalDis' name='totalDis'
                 $response .= "<td style='width: 25%;display:none'><input id='totalFin' type='text' name='totalFin' value='0' class='form-control directfine'></td>";
             }
             $response .= "</tr>"; // hide discount and fine columns 04-02-2025

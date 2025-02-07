@@ -388,10 +388,12 @@ datalist {
                                         <div class="col-md-4">
                                             <label for="input-file-now2">Father Image</label>
                                             <input type="file" data-default-file="https://s3-triz.fra1.cdn.digitaloceanspaces.com/public/parents_image/{{ $student_data->father_image }}" accept="image/png, image/jpg, image/jpeg" name="father_image" id="input-file-now2" class="dropify" />
+                                            <input type="hidden" name="oldFatherImage" value="{{ $student_data->father_image }}">
                                         </div>  
                                         <div class="col-md-4">
                                             <label for="input-file-now3">Mother Image</label>
                                             <input type="file" data-default-file="https://s3-triz.fra1.cdn.digitaloceanspaces.com/public/parents_image/{{ $student_data->mother_image }}" accept="image/png, image/jpg, image/jpeg" name="mother_image" id="input-file-now3" class="dropify" />
+                                            <input type="hidden" name="oldMotherImage" value="{{ $student_data->mother_image }}">
                                         </div>  
                                         @if(session()->get('sub_institute_id')==254)
                                         <div class="col-md-4 form-group">
