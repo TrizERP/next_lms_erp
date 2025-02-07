@@ -20,9 +20,9 @@
                     <strong>{{ $sessionData['message'] }}</strong>
                 </div>
             @endif
-            <div class="row">                
+            <div class="row">
                 <div class="col-lg-12 col-sm-12 col-xs-12">
-                    <form action="{{ route('fees_late_master.store') }}" enctype="multipart/form-data" method="post">    
+                    <form action="{{ route('fees_late_master.store') }}" enctype="multipart/form-data" method="post">
                     {{ method_field("POST") }}
                     @csrf
                         <div class="row">
@@ -60,18 +60,19 @@
                             </div>
                             <input type="hidden" name="term_id" value="0">
                             <div class="col-md-12 form-group">
-                                <center>                                    
+                                <center>
                                     <input type="submit" name="submit" value="Save" class="btn btn-success" >
                                 </center>
                             </div>
                         </div>
                     </form>
                 </div>
-            </div>    
+            </div>
         </div>
-    </div>    
+    </div>
 </div>
 
 @include('includes.footerJs')
 <script src="../../../plugins/bower_components/dropify/dist/js/dropify.min.js"></script>
 @include('includes.footer')
+@endsection
