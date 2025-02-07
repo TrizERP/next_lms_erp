@@ -31,7 +31,9 @@ class van_wise_students_detail_report_controller extends Controller
                 $join->whereRaw("tms.from_shift_id = tss.id");
                 $join->whereRaw("tms.from_bus_id = tv.id");
             })
-            ->join('tblstudent_enrollment as se', 'se.student_id', '=', 'tms.student_id')
+            ->join('tblstudent_enrollment as se',function($q){
+                $q->on('se.student_id', '=', 'tms.student_id')->where('se.standard_id', '!=', 0);
+            })
             ->select('tv.id as transport_vehicle_id', 'tss.id as transport_school_shift_id', 'tv.title as bus_name', 'tss.shift_title', DB::raw('count(tms.student_id) as student_count'))
             ->where('tv.sub_institute_id', $sub_institute_id)
             ->where('tms.syear', $syear)
