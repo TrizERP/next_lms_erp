@@ -392,7 +392,7 @@ class rollOverController extends Controller
                                     FROM tblstudent_enrollment se
                                     INNER JOIN standard st ON st.id = se.standard_id AND st.sub_institute_id = se.sub_institute_id
                                     WHERE se.student_id = '".$student_id."' AND se.syear = '".$from_current_syear."' 
-                                    AND se.sub_institute_id = '".$sub_institute_id."' ");
+                                    AND se.sub_institute_id = '".$sub_institute_id."' and st.next_grade_id is not null ");
                         // END UPDATE in tblstudent 
                     }
                     // END Check student is already exist in next year 
@@ -586,7 +586,7 @@ class rollOverController extends Controller
                                 FROM tblstudent_enrollment se
                                 INNER JOIN standard st ON st.id = se.standard_id AND st.sub_institute_id = se.sub_institute_id
                                 WHERE se.student_id = '".$student_id."' AND se.syear = '".$from_current_syear."' 
-                                AND se.sub_institute_id = '".$sub_institute_id."' ");
+                                AND se.sub_institute_id = '".$sub_institute_id."' and st.next_grade_id is not null");
                   
                     // END UPDATE in tblstudent 
                 }
