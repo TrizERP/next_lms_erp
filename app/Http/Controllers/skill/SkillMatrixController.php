@@ -53,7 +53,95 @@ class SkillMatrixController extends Controller
             DB::raw('FLOOR(RAND() * 4) + 9 AS Tasks')
         )
         ->where('career_id', 8)
-        ->get();
+        ->get()
+        ->map(function ($skill) {
+            $skill->SkillData = '<div class="card info-card p-4">
+                <span class="badge bg-primary">➤ Technical</span>
+                <ul>
+                    <li>➤ CAD Software Proficiency</li>
+                    <li>➤ Biomaterials & Tissue Engineering</li>
+                    <li>➤ Medical Device Manufacturing</li>
+                    <li>➤ Electronics & Signal Processing</li>
+                    <li>➤ Cell Culture Techniques</li>
+                </ul>
+                <span class="badge bg-primary">➤ Analytical</span>
+                <ul>
+                    <li>➤ Data Analysis & Interpretation</li>
+                    <li>➤ Mathematical Modeling of Biological Systems</li>
+                    <li>➤ Critical Thinking & Problem-Solving</li>
+                </ul>
+                <span class="badge bg-primary">➤ Communication</span>
+                <ul>
+                    <li>➤ Technical Writing</li>
+                    <li>➤ Team Collaboration</li>
+                    <li>➤ Presentation Skills</li>
+                </ul>
+                <div class="progress mt-2">
+                    <div class="progress-bar bg-primary" style="width: 60%"></div>
+                </div>
+            </div>';
+            return $skill;
+        })
+        ->map(function ($tasks) {
+            $tasks->TasksData = '<div class="card info-card p-4">
+                <span class="badge bg-danger">➤ Research & Development</span>
+                <ul>
+                    <li>➤ Design & prototype medical devices</li>
+                    <li>➤ Conduct lab experiments & analyze results</li>
+                    <li>➤ Develop testing protocols</li>
+                </ul>
+                <span class="badge bg-danger">➤ Clinical Translation</span>
+                <ul>
+                    <li>➤ Collaborate with clinicians</li>
+                    <li>➤ Conduct clinical trials</li>
+                    <li>➤ Obtain regulatory approvals</li>
+                </ul>
+                <span class="badge bg-danger">➤ Technical Leadership</span>
+                <ul>
+                    <li>➤ Lead project teams</li>
+                    <li>➤ Manage project timelines & budgets</li>
+                    <li>➤ Mentor junior engineers</li>
+                </ul>
+                <div class="progress mt-2">
+                    <div class="progress-bar bg-danger" style="width: 65%"></div>
+                </div>
+            </div>';
+            return $tasks;
+        })
+        ->map(function ($knowledge) {
+            $knowledge->KnowledgeData = '<div class="card info-card p-4">
+                <span class="badge bg-success">➤ Biological Sciences</span>
+                <ul>
+                    <li>➤ Cellular Biology & Genetics</li>
+                    <li>➤ Microbiology & Pathology</li>
+                    <li>➤ Physiology</li>
+                </ul>
+                <span class="badge bg-success">➤ Engineering Principles</span>
+                <ul>
+                    <li>➤ Fluid Mechanics & Thermodynamics</li>
+                    <li>➤ Mechanics of Materials</li>
+                    <li>➤ Signal Processing & Control Systems</li>
+                </ul>
+                <div class="progress mt-2">
+                    <div class="progress-bar bg-success" style="width: 80%"></div>
+                </div>
+            </div>';
+            return $knowledge;
+        })
+        ->map(function ($ability) {
+            $ability->AbilityData = '<div class="card info-card p-4">
+                <ul>
+                    <li>➤ Creativity – Conceptualizing novel designs</li>
+                    <li>➤ Adaptability – Keeping up with evolving technologies</li>
+                    <li>➤ Attention to Detail – Ensuring design accuracy</li>
+                    <li>➤ Teamwork – Collaborating on projects</li>
+                </ul>
+                <div class="progress mt-2">
+                    <div class="progress-bar bg-warning progress-bar-striped" style="width: 50%"></div>
+                </div>
+            </div>';
+            return $ability;
+        });
 
         return view('skill.jobrole.index', compact('skills'));
     }

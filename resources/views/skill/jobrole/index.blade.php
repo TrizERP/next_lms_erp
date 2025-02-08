@@ -44,10 +44,10 @@
                         <tr>
                             <td>{{ $skill->CareerPath }}</td>
                             <td><a href="{{ route('jobrole.jobdescription',['code' => $skill->JobCode])}}" target="_blank" rel="noopener noreferrer">{{ $skill->JobRole }}</a></td>
-                            <td class="center"><a href="#" class="open-modal" data-toggle="modal" data-target="#dynamicModal" data-title="Required Skill" data-content="{{ $skill->Skill }}">{{ $skill->Skill }}</a></td>
-                            <td class="center"><a href="#" class="open-modal" data-toggle="modal" data-target="#dynamicModal" data-title="Required Knowledge" data-content="{{ $skill->Knowledge }}">{{ $skill->Knowledge }}</a></td>
-                            <td class="center"><a href="#" class="open-modal" data-toggle="modal" data-target="#dynamicModal" data-title="Required Ability" data-content="{{ $skill->Ability }}">{{ $skill->Ability }}</a></td>
-                            <td class="center"><a href="#" class="open-modal" data-toggle="modal" data-target="#dynamicModal" data-title="Perform Tasks" data-content="{{ $skill->Tasks }}">{{ $skill->Tasks }}</a></td>
+                            <td class="center"><a href="#" class="open-modal" data-toggle="modal" data-target="#dynamicModal" data-title="Required Skill" data-content="{{ $skill->SkillData }}"><u>{{ $skill->Skill }}</u></a></td>
+                            <td class="center"><a href="#" class="open-modal" data-toggle="modal" data-target="#dynamicModal" data-title="Required Knowledge" data-content="{{ $skill->KnowledgeData }}"><u>{{ $skill->Knowledge }}</u></a></td>
+                            <td class="center"><a href="#" class="open-modal" data-toggle="modal" data-target="#dynamicModal" data-title="Required Ability" data-content="{{ $skill->AbilityData }}"><u>{{ $skill->Ability }}</u></a></td>
+                            <td class="center"><a href="#" class="open-modal" data-toggle="modal" data-target="#dynamicModal" data-title="Perform Tasks" data-content="{{ $skill->TasksData }}"><u>{{ $skill->Tasks }}</u></a></td>
                         </tr>
                         @endforeach
                         </tbody>
@@ -80,7 +80,7 @@
             var content = $(this).data('content'); // Get content from the clicked link
 
             $('#modalTitle').text(title);       // Update modal title
-            $('#modalContent').text(content);   // Update modal content
+            $('#modalContent').html(content);   // Update modal content
         });
     });
 </script>
