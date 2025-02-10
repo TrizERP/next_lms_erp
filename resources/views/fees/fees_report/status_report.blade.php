@@ -172,9 +172,10 @@
 		                            </tbody>
 		                        </table>
 		                    </div>
-                            <div class="col-md-12 form-group">
+                            <div class="col-md-12 form-group mt-4">
                                 <center>
                                     <a href="javascript:void(0)" id="remain_fees_sms" class="btn btn-success">Sent SMS</a>
+                                    <a href="javascript:void(0)" id="remain_fees_notification" class="btn btn-success">Sent Notification</a>
                                 </center>
                             </div>
 	                    </div>
@@ -264,6 +265,7 @@
     // SEND SMS
     $(document).ready(function(){
         $('#remain_fees_sms').on('click', function(){
+            
             // get checked sudend ids
             var studentsData = [];
             $('.remain_fees:checked').each(function() {
@@ -275,11 +277,50 @@
                     student_id: student_id,
                     student_mobile: student_mobile,
                     student_remain_fees: student_remain_fees,
-                    student_name: student_name
+                    student_name: student_name,
+                    sendType:'sms',
                 };
                 studentsData.push(studentinfo);
             });
+            if(studentsData.length===0){
+                alert('Please select atleast one checkbox!');
+            }
+            // send sms using ajax
+            var path = "{{ route('remainFeesNotification') }}";
+            console.warn('ajax path', path);
+            $.ajax({
+                url: path,
+                type: 'POST',
+                data: { studentsData: studentsData},
+                dataType: 'json',
+                success: function ( response ) {
+                    if ( response.status == 200 ) {
+                        window.location.href="{{ route('fees_status_report.index') }}";
+                    }
+                }
+            });
+        });
 
+        $('#remain_fees_notification').on('click', function(){
+            // get checked sudend ids
+            var studentsData = [];
+            $('.remain_fees:checked').each(function() {
+                var student_id = $(this).data('id');
+                var student_name = $(this).data('name');
+                var student_mobile = $(this).data('mobile');
+                var student_remain_fees = $(this).data('remain_fees');
+                var studentinfo = {
+                    student_id: student_id,
+                    student_mobile: student_mobile,
+                    student_remain_fees: student_remain_fees,
+                    student_name: student_name,
+                    sendType:'notification',
+                };
+                studentsData.push(studentinfo);
+            });
+            if(studentsData.length===0){
+                alert('Please select atleast one checkbox!');
+            }
             // send sms using ajax
             var path = "{{ route('remainFeesNotification') }}";
             console.warn('ajax path', path);
