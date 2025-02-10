@@ -18,6 +18,9 @@ use function App\Helpers\FeeBreakoffHeadWise;
 use function App\Helpers\FeeMonthId;
 use function App\Helpers\is_mobile;
 use function App\Helpers\SearchStudent;
+use function App\Helpers\send_FCM_Notification;
+use function App\Helpers\sendNotification;
+use App\Models\school_setup\SchoolModel;
 
 class feesStatusController extends Controller
 {
@@ -163,9 +166,12 @@ class feesStatusController extends Controller
         // return $request;exit;
         if ($request->ajax()) {
             $studentsData = $request->studentsData;
-            // echo "<pre>";print_r($studentsData);exit;
+            // echo "<pre>";print_r($request->all());exit;  
             $sub_institute_id = session()->get('sub_institute_id');
+            $syear = session()->get('syear');
+
             $message_sent = [];
+            $i=0;
             foreach ($studentsData as $student) {
 
                 $id = $student['student_id'];
@@ -175,25 +181,81 @@ class feesStatusController extends Controller
 
                 $message = "Dear $name, Your pending fees is Rs.$remain_fees, So paid it.....";
 
-                $responce = $this->sendSMS($mobile, $message, $sub_institute_id);
-                if ($responce['error'] == 1) {
-                    $response = ['status' => 400, 'msg' => 'SMS sent failed.'];
-                    break;
-                } else {
-                    array_push($message_sent, $id);
-                    $response = ['status' => 200, 'msg' => 'SMS sent successfull.'];
-                    // $student_id = 0;
-                    // foreach ($student_data as $id => $arr) {
-                    // 	if ($arr['mobile'] == $number) {
-                    // 		$student_id = $arr['student_id'];
-                    // 	}
-                    // }
-                    // $this->saveParentLog($student_id, $text, $number,$sub_institute_id,$syear);
+                if($student['sendType']=="notification"){
+                    $schoolData = SchoolModel::where(['id' => $sub_institute_id])->get()->toArray();
+                    $schoolName = $schoolData[0]['SchoolName'];
+                    $schoolLogo = $_SERVER['APP_URL'].'/admin_dep/images/'.$schoolData[0]['Logo'];
+
+                    $app_notification_content = [
+                        'NOTIFICATION_TYPE'        => 'Fees_status',
+                        'NOTIFICATION_DATE'        => now(),
+                        'STUDENT_ID'               => $id,
+                        'NOTIFICATION_DESCRIPTION' => $message,
+                        'STATUS'                   => 0,
+                        'SUB_INSTITUTE_ID'         => $sub_institute_id,
+                        'SYEAR'                    => $syear,
+                        'SCREEN_NAME'              => 'general',
+                        'CREATED_BY'               => session()->get('user_id'),
+                        'CREATED_IP'               => $_SERVER['REMOTE_ADDR'],
+                    ];
+
+                    $gcm_data = DB::table('gcm_users')->where('mobile_no', $mobile)
+                        ->where('sub_institute_id', $sub_institute_id)->get()->toArray();
+
+                    $gcmRegIds = [];
+                    if (count($gcm_data) > 0) {
+                        foreach ($gcm_data as $key1 => $val1) {
+                            $gcmRegIds[] = $val1->gcm_regid;
+                        }
+                    }
+
+                    $pushMessage = $message;
+
+                    $bunch_arr = array_chunk($gcmRegIds, 1000);
+                    sendNotification($app_notification_content);
+                    
+                    if (! empty($bunch_arr)) {
+                        $i++;
+                        foreach ($bunch_arr as $val) {
+                            if (isset($val, $pushMessage)) {
+                                $type1 = 'Notification';
+                                $message = [
+                                    'body'  => $pushMessage, 'TYPE' => $type1, 'USER_ID' => $id,
+                                    'title' => $schoolName, 'image' => $schoolLogo,
+                                ];
+                                $pushStatus = send_FCM_Notification($val, $message, $sub_institute_id);
+                                // sendNotification($app_notification_content);
+                            }
+                        }
+                      
+                    }
+                    $response = ['status' => 200, 'msg' => 'Notification sent successfull.'];
+
+                }else{
+                    $responce = $this->sendSMS($mobile, $message, $sub_institute_id);
+                    if ($responce['error'] == 1) {
+                        $response = ['status' => 400, 'msg' => 'SMS sent failed.'];
+                        break;
+                    } else {
+                        array_push($message_sent, $id);
+                        $response = ['status' => 200, 'msg' => 'SMS sent successfull.'];
+                        // $student_id = 0;
+                        // foreach ($student_data as $id => $arr) {
+                        // 	if ($arr['mobile'] == $number) {
+                        // 		$student_id = $arr['student_id'];
+                        // 	}
+                        // }
+                        // $this->saveParentLog($student_id, $text, $number,$sub_institute_id,$syear);
+                    }
                 }
+               
             }
+
             if ($response['status'] == 200) {
                 // Session::put('success', 'SMS sent');
                 Session::flash('success', 'SMS sent');
+            }else if($i>0){
+                Session::flash('success', 'Notification sent');
             }
             echo json_encode($response);
         }
