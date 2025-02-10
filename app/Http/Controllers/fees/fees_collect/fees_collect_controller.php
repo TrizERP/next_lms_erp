@@ -1780,6 +1780,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
 
             // 2025-01-20 by uma
             $panCardTag = $ssmission_note = $thankFull = '';
+            $receiptType=null;  // differentiate ssmission reciepts 10-02-2025
             if($receipt_book_arr->receipt_id==2 && $sub_institute_id==76){
                 $panNo = isset($_REQUEST['pan_card']) ? $_REQUEST['pan_card'] : '-';
                 
@@ -1789,7 +1790,13 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                 2008-09.<br>Dt.04-06-2008 Valid from 01/04/2008 to 31/03/2011 to and onwards';
 
                 $thankFull .=  'Has been Thanksfully Received by '.$receipt_line_1;
+                $receiptType = "MISSION";
             }
+            // differentiate ssmission reciepts 10-02-2025
+            else if($sub_institute_id==76){
+                $receiptType = "SCHOOL";
+            }
+            
             $html_content = str_replace(htmlspecialchars("<<parent_pan_card>>"), $panCardTag, $html_content);
             $html_content = str_replace(htmlspecialchars("<<ssmission_note>>"), $ssmission_note, $html_content);
             $html_content = str_replace(htmlspecialchars("<<ssmission_thank_full>>"), $thankFull, $html_content);
@@ -1885,6 +1892,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                                 ->whereIn('id', $vals)
                                 ->update([
                                     'fees_html' => str_replace($sArr, $rArr, $recHtml),
+                                    'bank_name' => $receiptType,  // differentiate ssmission reciepts 10-02-2025
                                 ]);
                         }
                     }
