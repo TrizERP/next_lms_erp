@@ -4818,7 +4818,7 @@ public function get_co_scholastic_hills($standard_id, $student_id, $format, $aca
     if (count($ret_mark_grade) > 0) {
         $ret_data = DB::table('result_co_scholastic_marks_entries as comark')
             ->selectRaw(
-                'comark.student_id, comark.co_scholastic_id, comark.term_id, cop.id as parent_id, cop.title as parent_title, co.title as child_title, co.id as coid,
+                'comark.student_id, comark.co_scholastic_id, comark.term_id, cop.id as parent_id, cop.title as parent_title, co.title as child_title, co.id as coid,co.mark_type,
                 IF(comark.grade = 0, comark.points, cograde.title) as obtain_grade, co.max_mark'
             )
             ->leftJoin('result_co_scholastic_grades as cograde', 'cograde.id', '=', 'comark.grade')
@@ -4856,7 +4856,11 @@ public function get_co_scholastic_hills($standard_id, $student_id, $format, $aca
                     $criteria_data[] = $value;
                     break;
                 case "DISCIPLINE":
-                    $grade = (!empty($get_grade) && $per != 0 && $per != '') ? $this->getGrade($get_grade, $value->max_mark, $per, "co_scholastic") : '-';
+                    if($value->mark_type=="GRADE"){
+                        $grade = (isset($value->obtain_grade)) ? $value->obtain_grade: '-';
+                    }else{
+                        $grade = (!empty($get_grade) && $per != 0 && $per != '') ? $this->getGrade($get_grade, $value->max_mark, $per, "co_scholastic") : '-';
+                    }
                     $value->obtain_grade = $grade;
                     $decipline_data[] = $value;
                     break;
@@ -5068,7 +5072,8 @@ private function buildDisciplineTable($decipline_data,$both_term)
         $discipline_table .= '<tr><td><b>' . $title . '</b></td>';
         if(!empty($both_term)){
             foreach ($both_term as $tk => $tv) {
-                $discipline_table .= '<td class="data_center">'.$cv[$tv->term_id].'</td>';
+                $grade = isset($cv[$tv->term_id]) ? $cv[$tv->term_id] : '-';
+                $discipline_table .= '<td class="data_center">'.$grade.'</td>';
             }
           }
         $discipline_table .='</tr>';
