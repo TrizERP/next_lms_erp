@@ -39,14 +39,14 @@ class Kernel extends HttpKernel
             \Illuminate\View\Middleware\ShareErrorsFromSession::class,
             \App\Http\Middleware\VerifyCsrfToken::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
-            \Inspector\Laravel\Middleware\WebRequestMonitoring::class,
+            // \Inspector\Laravel\Middleware\WebRequestMonitoring::class,
         ],
 
         'api' => [
             // \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
              'throttle:1000,1',
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
-            \Inspector\Laravel\Middleware\WebRequestMonitoring::class,
+            // \Inspector\Laravel\Middleware\WebRequestMonitoring::class,
         ],
     ];
 
