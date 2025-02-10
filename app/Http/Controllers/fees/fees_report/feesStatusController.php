@@ -187,7 +187,7 @@ class feesStatusController extends Controller
                     $schoolLogo = $_SERVER['APP_URL'].'/admin_dep/images/'.$schoolData[0]['Logo'];
 
                     $app_notification_content = [
-                        'NOTIFICATION_TYPE'        => 'Fees_status',
+                        'NOTIFICATION_TYPE'        => 'FeesStatus',
                         'NOTIFICATION_DATE'        => now(),
                         'STUDENT_ID'               => $id,
                         'NOTIFICATION_DESCRIPTION' => $message,
