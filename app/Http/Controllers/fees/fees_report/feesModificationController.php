@@ -283,7 +283,7 @@ class feesModificationController extends Controller
             $updateData = [
                 'payment_mode'=>$payment_mode,
                 'bank_branch'=>$bank_branch,
-                'bank_name'=>$bank_name,
+                // 'bank_name'=>$bank_name,
                 'cheque_bank_name'=>$bank_name,
                 'cheque_no'=>$cheque_no,
                 'cheque_date'=>$cheque_date
