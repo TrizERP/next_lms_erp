@@ -1474,7 +1474,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                 $fees_arr[$arr['rid'] . "_" . $sort_order][$diplay_name] = $total;
             }
         }
-
+        // echo "<pre>";print_r($fees_arr);exit;
         //adding discount in array
         foreach ($insert_html_ids as $sort_order => $arr) {
             $total_discount = 0;
@@ -1505,7 +1505,10 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                 if ($order_id[1] == $sort_order && $sub_institute_id==76) {
                     // $fees_arr[$sort_order_id]['Fine'] = $total_fine;
                     // $fees_arr[$sort_order_id][get_string('discount', 'request',$sub_institute_id)] = $total_discount;
+
                      // start 08-01-2025 by uma for ssmission
+                    //  $title_name='';
+                    $title_name='';
                     if(isset($fees_arr[$sort_order_id]['TUITION FEE'])){
                         $title_name='TUITION FEE';
                     }elseif(isset($fees_arr[$sort_order_id]['FOOD TRANSPORT ETC']) && $fees_arr[$sort_order_id]['FOOD TRANSPORT ETC']){
@@ -1513,8 +1516,13 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                     }
                     elseif(isset($fees_arr[$sort_order_id]['HOSTEL FEE']) && $fees_arr[$sort_order_id]['HOSTEL FEE']){
                         $title_name='HOSTEL FEE';
+                    }else{
+                        // 10-02-2025 solve error on undefine $title_name
+                        foreach ($arr as $headName => $amount) {
+                            $title_name = $headName;
+                        }
                     }
-                    
+
                     if(isset($fees_arr[$sort_order_id][$title_name])){
                         $fees_arr[$sort_order_id][$title_name]+=$total_fine;
                         $fees_arr[$sort_order_id][$title_name]+=$total_discount;
@@ -1780,6 +1788,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
 
             // 2025-01-20 by uma
             $panCardTag = $ssmission_note = $thankFull = '';
+            $receiptType=null;  // differentiate ssmission reciepts 10-02-2025
             if($receipt_book_arr->receipt_id==2 && $sub_institute_id==76){
                 $panNo = isset($_REQUEST['pan_card']) ? $_REQUEST['pan_card'] : '-';
                 
@@ -1788,8 +1797,14 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                 $ssmission_note = 'Income Tax Exemtion U/S 80G(5) No.SRT/CIT-III/Tech/80G(5)/(05/1)
                 2008-09.<br>Dt.04-06-2008 Valid from 01/04/2008 to 31/03/2011 to and onwards';
 
-                $thankFull .=  'Has been Thanksfully Received by '.$receipt_line_1;
+                $thankFull .=  'Has been Thanksfully Received by Shri Swaminarayan Mission';
+                $receiptType = "MISSION";
             }
+            // differentiate ssmission reciepts 10-02-2025
+            else if($sub_institute_id==76){
+                $receiptType = "SCHOOL";
+            }
+
             $html_content = str_replace(htmlspecialchars("<<parent_pan_card>>"), $panCardTag, $html_content);
             $html_content = str_replace(htmlspecialchars("<<ssmission_note>>"), $ssmission_note, $html_content);
             $html_content = str_replace(htmlspecialchars("<<ssmission_thank_full>>"), $thankFull, $html_content);
@@ -1885,6 +1900,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                                 ->whereIn('id', $vals)
                                 ->update([
                                     'fees_html' => str_replace($sArr, $rArr, $recHtml),
+                                    'bank_name' => $receiptType,  // differentiate ssmission reciepts 10-02-2025
                                 ]);
                         }
                     }
