@@ -248,7 +248,7 @@ class cbse_1t5_result_controller extends Controller {
     }
 
     public function getAllExam($standard_id,$sub_id='') {
-        $str = 'SELECT em.ExamTitle, IF((e.con_point IS NULL) OR (e.con_point = ""), e.points, e.con_point) AS points, em.Id
+        $str = 'SELECT em.ExamTitle, IF((e.con_point IS NULL) OR (e.con_point = ""), e.points, e.con_point) AS co_points,sum(DISTINCT e.points) as points, em.Id
         FROM result_create_exam e
         INNER JOIN result_exam_master em ON em.Id = e.exam_id
         WHERE e.term_id = ' . session()->get('term_id') . ' 
