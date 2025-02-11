@@ -2177,7 +2177,7 @@ datalist {
                     <span>Father</span>
                 </div>
                 @endif
-                if(isset($student_data->mother_image) && $student_data->mother_image!='')
+                @if(isset($student_data->mother_image) && $student_data->mother_image!='')
                 <div class="member">
                     <img src="{{$mother_image}}" alt="Mother Image" class="profile-img">
                     <span>Mother</span>
