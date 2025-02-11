@@ -210,7 +210,7 @@
                                             $mainTerm1Total += $exam['mark'];
                                             $term1Total += (float) ($value[$exam['exam']] ?? 00);
                                         @endphp
-                                        <td>{{ $value[$exam['exam']] ?? 0 }}</td>
+                                        <td class="term1Marks">{{ $value[$exam['exam']] ?? 0 }}</td>
                                     @endforeach
                                     <td class="fw-bold">{{ $term1Total }}</td>
                                     <td class="fw-bold">{{ \App\Helpers\getGrade($gradeScale, $mainTerm1Total, $term1Total) }}</td>
@@ -223,7 +223,7 @@
                                             $mainTerm2Total += $exam['mark'];
                                             $term2Total += (float) ($data['term_2_data'][$studendId]['mark'][$subject][$exam['exam']] ?? 0);
                                         @endphp
-                                        <td>{{ $data['term_2_data'][$studendId]['mark'][$subject][$exam['exam']] ?? 0}}</td>
+                                        <td class="term2Marks">{{ $data['term_2_data'][$studendId]['mark'][$subject][$exam['exam']] ?? 0}}</td>
                                     @endforeach
                                     <td class="fw-bold">{{ $term2Total }}</td>
                                     <td class="fw-bold">{{ \App\Helpers\getGrade($gradeScale, $mainTerm2Total, $term2Total) }}</td>
@@ -238,7 +238,7 @@
                                             $mainTerm3Total += $exam['mark'];
                                             $term3Total += (float) ($data['term_3_data'][$studendId]['mark'][$subject][$exam['exam']] ?? 0);
                                         @endphp
-                                        <td>{{ $data['term_3_data'][$studendId]['mark'][$subject][$exam['exam']] ?? 0}}</td>
+                                        <td class="term3Marks">{{ $data['term_3_data'][$studendId]['mark'][$subject][$exam['exam']] ?? 0}}</td>
                                     @endforeach
                                     <td class="fw-bold">{{ $term3Total ?? 0 }}</td>
                                     <td class="fw-bold">{{ \App\Helpers\getGrade($gradeScale, $mainTerm3Total, $term3Total) }}</td>  
@@ -254,7 +254,7 @@
                                             $mainTerm4Total += $exam['mark'];
                                             $term4Total += (float) ($data['term_4_data'][$studendId]['mark'][$subject][$exam['exam']] ?? 0);
                                         @endphp
-                                        <td>{{ $data['term_4_data'][$studendId]['mark'][$subject][$exam['exam']] ?? 0}}</td>
+                                        <td class="term4Marks">{{ $data['term_4_data'][$studendId]['mark'][$subject][$exam['exam']] ?? 0}}</td>
                                     @endforeach
                                     <td class="fw-bold">{{ $term4Total ?? 0 }}</td>
                                     <td class="fw-bold">{{ \App\Helpers\getGrade($gradeScale, $mainTerm4Total ?? 0, $term4Total ) }}</td>
@@ -306,3 +306,4 @@
 </script>
 
 @include('includes.footer')
+  

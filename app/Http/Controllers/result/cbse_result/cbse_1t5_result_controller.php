@@ -351,8 +351,8 @@ if(session()->get('sub_institute_id') == 61)
     $decimal = 0;
 else
     $decimal = 2;
-
-        $str = 'SELECT ex.id,rm.student_id,s.subject_id,s.display_name,s.elective_subject,SUM(ex.points) total_points,ex.con_point,SUM(rm.points) points,exm.Id exam_id,rm.is_absent
+        // use weightage instead of con_point for overall_report 11-02-2025 by uma
+        $str = 'SELECT ex.id,rm.student_id,s.subject_id,s.display_name,s.elective_subject,SUM(ex.points) total_points,ex.points as con_point,SUM(rm.points) points,exm.Id exam_id,rm.is_absent
         FROM result_marks rm
         INNER JOIN result_create_exam ex ON ex.id = rm.exam_id
         INNER JOIN result_exam_master exm ON exm.Id = ex.exam_id
