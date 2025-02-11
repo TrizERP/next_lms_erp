@@ -382,7 +382,7 @@ datalist {
                                             </div>
                                         </div>
                                         <div class="col-md-4">
-                                            <label for="input-file-now">User Image</label>
+                                            <label for="input-file-now">Student Image</label>
                                             <input type="file" data-default-file="/storage/student/{{ $student_data->image }}" accept="image/png, image/jpg, image/jpeg" name="student_image" id="input-file-now" class="dropify" />
                                         </div>  
                                         <div class="col-md-4">
@@ -2165,18 +2165,24 @@ datalist {
                 $enrollment_no = isset($getStudentData['enrollment_no']) ? $getStudentData['enrollment_no'] : '-';
             @endphp
             <div class="profile-section">
+                @if(isset($student_data->image) && $student_data->image!='')
                 <div class="member">
                     <img src="{{$student_image}}" alt="Student Image" class="profile-img">
                     <span>Student</span>
                 </div>
+                @endif
+                @if(isset($student_data->father_image) && $student_data->father_image!='')
                 <div class="member">
                     <img src="{{$father_image}}" alt="Father Image" class="profile-img">
                     <span>Father</span>
                 </div>
+                @endif
+                if(isset($student_data->mother_image) && $student_data->mother_image!='')
                 <div class="member">
                     <img src="{{$mother_image}}" alt="Mother Image" class="profile-img">
                     <span>Mother</span>
                 </div>
+                @endif
             </div>
             <hr>
             <table class="table table-striped">

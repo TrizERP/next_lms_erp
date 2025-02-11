@@ -287,7 +287,7 @@
                                 </div>
                             </div>                                        
                             <div class="col-md-4">        
-                                <label for="input-file-now">User Image</label>
+                                <label for="input-file-now">Student Image</label>
                                 <input type="file" accept="image/png, image/jpg, image/jpeg" name="student_image" id="input-file-now" class="dropify" /> 
                             </div>
                             @if(session()->get('sub_institute_id')!=257)

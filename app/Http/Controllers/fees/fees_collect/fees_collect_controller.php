@@ -3244,7 +3244,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                 . DB::raw("CONCAT_WS(' ', t.first_name, t.middle_name, t.last_name) as student_name") . ', g.title as grade, s.name as standard_name, d.name as division_name, fp.created_date, '
                 . DB::raw('CONCAT_WS(" ", u.first_name, u.last_name) AS user_name, fp.term_id, fp.receiptdate, fp.receipt_no, fp.payment_mode, '
                 . 'fp.cheque_bank_name, fp.bank_branch, fp.cheque_no, fp.cheque_date, b.title as batch, sq.title as quota, '
-                . 'IFNULL(fp.amount, 0) AS actual_amountpaid,IFNULL(fp.fees_discount, 0) as discount,fp.remarks'))
+                . 'IFNULL(fp.amount, 0) AS actual_amountpaid,IFNULL(fp.fees_discount, 0) as discount,fp.remarks,IFNULL(fp.bank_name,"") as bank_name'))
                 ->from('tblstudent as t')
                 ->join('tblstudent_enrollment as te', function ($join) use($syear){
                     $join->on('te.student_id', '=', 't.id')->where('te.syear',$syear);
@@ -3270,7 +3270,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                         . DB::raw("CONCAT_WS(' ', t.first_name, t.middle_name, t.last_name) as student_name") . ', g.title as grade, s.name as standard_name, d.name as division_name, NULL AS created_date, '
                         . DB::raw('CONCAT_WS(" ", u.first_name, u.last_name) AS user_name, fo.month_id AS term_id, fo.receiptdate AS receiptdate, fo.reciept_id AS receipt_no, fo.payment_mode AS payment_mode, '
                         . 'fo.bank_name as cheque_bank_name, fo.bank_branch, fo.cheque_dd_no as cheque_no, fo.cheque_dd_date AS cheque_date, b.title as batch, sq.title as quota, '
-                        . 'IFNULL(fo.actual_amountpaid, 0) AS actual_amountpaid,IFNULL(fo.fees_discount, 0) as discount,fo.remarks'))
+                        . 'IFNULL(fo.actual_amountpaid, 0) AS actual_amountpaid,IFNULL(fo.fees_discount, 0) as discount,fo.remarks').'," " as bank_name')
                         ->from('tblstudent as t')
                         ->join('tblstudent_enrollment as te', function ($join) use($syear){
                             $join->on('te.student_id', '=', 't.id')->where('te.syear',$syear);
@@ -3292,7 +3292,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                         ->whereRaw("1=1 " . $extra_fo);
                 });
         })
-            ->selectRaw('student_id, enrollment_no, roll_no, IFNULL(uniqueid,"-") as uniqueid, place_of_birth, student_name, grade,standard_name, division_name,created_date, user_name, GROUP_CONCAT(term_id) AS term_ids, receiptdate, receipt_no,  payment_mode, cheque_bank_name, bank_branch, cheque_no, cheque_date, batch,  quota,   SUM(IFNULL(actual_amountpaid, 0)) AS actual_amountpaid,SUM(IFNULL(discount, 0)) as discount,remarks')
+            ->selectRaw('student_id, enrollment_no, roll_no, IFNULL(uniqueid,"-") as uniqueid, place_of_birth, student_name, grade,standard_name, division_name,created_date, user_name, GROUP_CONCAT(term_id) AS term_ids, receiptdate, receipt_no,  payment_mode, cheque_bank_name, bank_branch, cheque_no, cheque_date, batch,  quota,   SUM(IFNULL(actual_amountpaid, 0)) AS actual_amountpaid,SUM(IFNULL(discount, 0)) as discount,remarks,bank_name')
             ->groupBy('receipt_no');
 
         $data = $data->get()->toArray();
