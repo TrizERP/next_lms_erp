@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\skill\skill;
 use App\Models\skill\matrix;
+use App\Models\skill\AssessmentLibrary;
 use App\Models\lms\counselling\OnetCareerCluster;
 use Illuminate\Support\Facades\Auth;
 use GenTux\Jwt\GetsJwtToken;
@@ -156,5 +157,12 @@ class SkillMatrixController extends Controller
 
         // Pass the career data to the view
         return view('skill.jobrole.jobdescription', compact('career'));
+    }
+
+    public function AssessmentLibrary()
+    {
+        $assessments = AssessmentLibrary::all();
+        //$assessments = AssessmentLibrary::inRandomOrder()->get();
+        return view('skill.assessment.assessment_library', compact('assessments'));
     }
 }
