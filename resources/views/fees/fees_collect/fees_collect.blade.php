@@ -231,7 +231,7 @@
 							<input type="hidden" name="grade_id" value="{{ $data['stu_data']['grade_id']; }}">
 							<input type="hidden" name="standard_id" value="{{ $data['stu_data']['std_id']; }}">
 							<input type="hidden" name="div_id" value="{{ $data['stu_data']['div_id']; }}">
-							<input type="hidden" name="student_id" value="{{ $data['stu_data']['student_id']; }}">
+							<input type="hidden" name="student_id" id="student_id" value="{{ $data['stu_data']['student_id']; }}">
 							<input type="hidden" name="std_div" value="{{ $data['stu_data']['stddiv']; }}">
 							<input type="hidden" name="full_name" value="{{ $data['stu_data']['name']; }}">
 							<input type="hidden" name="mobile" value="{{ $data['stu_data']['mobile']; }}">
@@ -572,7 +572,8 @@
 												<th>Payment Mode</th>
 												<th>Bank Details</th>
 												<th>Receipt Date</th>
-												<th>Collected By</th>
+												<th>{{App\Helpers\get_string('feesBankName')}}</th>
+												<th>Receipt Type</th>
 												<th>Remark</th>
 												<th>Discount</th>
 												<th>Amount</th>
@@ -1084,11 +1085,12 @@ function checkForm() {
 									<td>${value['cheque_no']} ${value['cheque_bank_name']} ${value['bank_branch']}</td>
 									<td>${value['receiptdate']}</td>
 									<td>${value['user_name']}</td>
+									<td>${value['bank_name']}</td>
 									<td>${value['remarks']}</td>
 									<td>${value['discount']}</td>
 									<td id='total_amt'>${value['actual_amountpaid']}</td>
 									<td style="display:flex;">	
-										<a class='btn btn btn-outline-warning mr-2' id='ajax_PDF' href='${hrefReciept}' target='_blank'><span class='mdi mdi-printer'></span></a>
+										<a class='btn btn btn-outline-warning mr-2' onclick="downloadReceipt('${value['receipt_no']}','${paperSize}');" target='_blank'><span class='mdi mdi-printer'></span></a>
 										<a class='btn btn-outline-info' style='${hideEdit}' href="/fees/fees_modification/create?enrollment_no=${value['enrollment_no']}&receipt_no=${value['receipt_no']}" target="_blank"><span class='mdi mdi-pencil'></span></a>
 									</td>
 								</tr>`);
@@ -1103,7 +1105,7 @@ function checkForm() {
 								}
 								// console.log(total);
 							});
-							$('#table_data').append("<tr><td colspan=13>Total</td><td colspan='2'>" + total + "</td></tr>");
+							$('#table_data').append("<tr><td colspan=14>Total</td><td colspan='2'>" + total + "</td></tr>");
 
 							// cancell data start
 							var cancelData = data.cancelData;
@@ -1157,4 +1159,20 @@ function checkForm() {
 					});
 				});
 			}
-		</script>
+
+	function downloadReceipt(receiptId,paperSize){
+		var action = "fees_re_receipt";
+		var student_id = $("#student_id").val();
+	
+		$.ajax({
+				url: "/ajax_PDF_FeesReceipt?action="+action+"&student_id="+student_id+"&receipt_id_html="+receiptId+"&paper_size="+paperSize,                
+				success: function(result){ 
+					window.open(result, '_blank');
+					$("#overlay").css("display","none");
+				},
+				error:function(xhr, status, error) {
+					alert('Failed to get RecieptData');
+				}
+		});
+	}
+</script>
