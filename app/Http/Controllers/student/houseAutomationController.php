@@ -240,7 +240,7 @@ class houseAutomationController extends Controller
                 $subject_id = $subject->subject_id;
 
                 $sectionResult = DB::table('subject_elective as se')
-                ->select('division_id')
+                ->select('division_id','subject_id')
                 ->distinct()
                 ->where('se.syear', $syear)                                
                 ->where('se.standard_id', $standard_id)
@@ -254,21 +254,24 @@ class houseAutomationController extends Controller
                 // echo "<pre>";print_r($sectionArray);exit;
                
                 $studentResultM = DB::table('student_optional_subject as SJOS')
-                ->select('HSS.id as student_id', 'CE.subject_id', 'SE.section_id','SE.house_id')
+                ->select('HSS.id as student_id', 'CE.subject_id as elec_sub','SJOS.subject_id', 'SE.section_id','SE.house_id')
                 ->distinct()
                 ->join('tblstudent as HSS', function ($join) {
                     $join->on('HSS.id', '=', 'SJOS.student_id');
                 })
-                ->join('tblstudent_enrollment as SE', 'HSS.id', '=', 'SE.student_id')
+                ->join('tblstudent_enrollment as SE',function($join){
+                    $join->on('SJOS.student_id', '=', 'SE.student_id')->on('SJOS.syear', '=', 'SE.syear'); // added syear 12-02-2025
+                })
                 ->join('subject_elective as CE',function($join) {
                     $join->on('CE.subject_id', '=', 'SJOS.subject_id')->on('SJOS.syear','=','CE.syear');
                 })
-                ->where('SE.syear', '=', $syear)
+                ->where('SJOS.syear', '=', $syear) // added syear 12-02-2025
                 ->where('SE.standard_id', '=', $standard_id)
                 ->where('SJOS.subject_id', '=', $subject_id)
                 ->where('SJOS.sub_institute_id',$sub_institute_id)
                 ->where('HSS.gender', '=', 'M')
                 ->orderBy('SJOS.student_id')
+                ->groupBy('SJOS.student_id')
                 ->get();
                 // echo "male";
 
@@ -276,33 +279,41 @@ class houseAutomationController extends Controller
                 $studAllMCount = $studentResultM->count();
                 
                     $ct=1;
-                    $sc=array();
+                    $sc=$msub=array();
                     for($j=1;$j<=count($sectionResult);$j++){
                         $section_id = $sectionResult[($j-1)]->division_id;
+                        $subject = $sectionResult[($j-1)]->subject_id;
                         //display_array($section_id);
                         $sc[$j] = $section_id;
-                            
+                        $msub[$j] = $subject;
                     }   
                     
                     //display_array($sc);
-                    $s_id=[];
+                    $s_id=$mDiv=[];
                     for($s=1;$s<=count($studentResultM);$s++){
                          $student_id = $studentResultM[($s-1)]->student_id;
+                         $subject_id = $studentResultM[($s-1)]->subject_id;
                          if($ct==count($sc)+1){
                                 $ct=1;
                             }                            
                             $section_id=$sc[$ct];
-                            $updateQuery = DB::table('tblstudent_enrollment')
-                            ->where('syear',$syear)
-                            ->where('student_id', $student_id)
-                            ->where('sub_institute_id', $sub_institute_id)                    
-                            ->update([
-                                'section_id' => $section_id,
-                                ]);
-                            $s_id[] = $student_id;
-                            $ct++;
+                            $sub_id=$msub[$ct];
+                            if($sub_id===$subject_id){ // added condition 12-02-2025
+                                // echo 'student_id='.$student_id.' elective_sub='.$sub_id.' student_sub='.$subject_id.' DIv='.$section_id.'<br>';
+                                $updateQuery = DB::table('tblstudent_enrollment')
+                                ->where('syear',$syear)
+                                ->where('student_id', $student_id)
+                                ->where('sub_institute_id', $sub_institute_id)                    
+                                ->update([
+                                    'section_id' => $section_id,
+                                    ]);
+                                $s_id[] = $student_id;
+                                $mDiv[$section_id][$sub_id][] = $student_id;
+                                $ct++;
+                            }
                         }
-                        // echo "<pre>";print_r($s_id);exit;
+                        // echo "male-<pre>";print_r($mDiv);
+
     
                 $studentResultF = DB::table('student_optional_subject as SJOS')
                 ->select('HSS.id as student_id', 'CE.subject_id', 'SE.section_id','SE.house_id')
@@ -310,11 +321,13 @@ class houseAutomationController extends Controller
                 ->join('tblstudent as HSS', function ($join) {
                     $join->on('HSS.id', '=', 'SJOS.student_id');
                 })
-                ->join('tblstudent_enrollment as SE', 'HSS.id', '=', 'SE.student_id')
+                ->join('tblstudent_enrollment as SE',function($join){
+                    $join->on('SJOS.student_id', '=', 'SE.student_id')->on('SJOS.syear', '=', 'SE.syear'); // added syear 12-02-2025
+                })
                 ->join('subject_elective as CE',function($join) {
                     $join->on('CE.subject_id', '=', 'SJOS.subject_id')->on('SJOS.syear','=','CE.syear');
                 })
-                ->where('SE.syear', '=', $syear)
+                ->where('SJOS.syear', '=', $syear) // added syear 12-02-2025
                 ->where('SE.standard_id', '=', $standard_id)
                 ->where('SJOS.subject_id', '=', $subject_id)
                 ->where('SJOS.sub_institute_id',$sub_institute_id)
@@ -325,30 +338,38 @@ class houseAutomationController extends Controller
 
                 $studAllFCount = $studentResultF->count();
                 $ct=1;
-                    $sc=array();
+                    $fsc=$fsub= $fDiv=array();
                     for($j=1;$j<=count($sectionResult);$j++){
                         $section_id = $sectionResult[($j-1)]->division_id;
+                        $subject_id = $sectionResult[($j-1)]->subject_id;
                         //display_array($section_id);
-                        $sc[$j] = $section_id;
+                        $fsc[$j] = $section_id;
+                        $fsub[$j] = $subject_id;
                             
                     }   
                     //display_array($sc);
                     for($s=1;$s<=count($studentResultF);$s++){
                          $student_id = $studentResultF[($s-1)]->student_id;
-                         if($ct==count($sc)+1){
+                         $subject_id = $studentResultF[($s-1)]->subject_id;
+                         if($ct==count($fsc)+1){
                                 $ct=1;
                             }                            
-                            $section_id=$sc[$ct];
-                            $updateQuery = DB::table('tblstudent_enrollment')
-                            ->where('syear',$syear)
-                            ->where('student_id', $student_id)
-                            ->where('sub_institute_id', $sub_institute_id)                    
-                            ->update([
-                                'section_id' => $section_id,
-                                ]);
-                            
-                            $ct++;
+                            $section_id=$fsc[$ct];
+                            $sub=$fsub[$ct];
+                            if($sub===$subject_id){ // added condition 12-02-2025
+                                $updateQuery = DB::table('tblstudent_enrollment')
+                                ->where('syear',$syear)
+                                ->where('student_id', $student_id)
+                                ->where('sub_institute_id', $sub_institute_id)                    
+                                ->update([
+                                    'section_id' => $section_id,
+                                    ]);
+                                    $fDiv[$section_id][$sub_id][] = $student_id;
+                                
+                                $ct++;
+                            }
                         }
+                // echo "female-<pre>";print_r($fDiv);
                
             }
 // exit;
