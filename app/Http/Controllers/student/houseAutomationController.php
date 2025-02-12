@@ -39,7 +39,7 @@ class houseAutomationController extends Controller
     }
 
 
-    public function getStudent($syear,$sub_institute_id,$house_id='',$standard_id,$sectionId='',$gender){
+    public function getStudent($syear,$sub_institute_id,$house_id='',$standard_id,$sectionId='',$gender,$countDiv=''){
         // db::enableQueryLog();
         
         $data = DB::table('tblstudent')
@@ -59,7 +59,9 @@ class houseAutomationController extends Controller
         ->where('tblstudent_enrollment.sub_institute_id', $sub_institute_id)
         ->whereNull('tblstudent_enrollment.end_date')
         ->where('tblstudent.gender', '=', $gender)
-        ->whereNotIn('tblstudent_enrollment.section_id', [1397]) // Exclude section_id 1397
+        ->when($countDiv=='',function($q){
+            $q->whereNotIn('tblstudent_enrollment.section_id', [1397]); // Exclude section_id 1397
+        })
         ->get();
         //update house
 
@@ -150,8 +152,15 @@ class houseAutomationController extends Controller
                 $formatArray = [];
            
             $totalBoys=$totalGirls=0;
-            
-            foreach ($sectionArray as $sectionId) {
+            $sectionArray2 = DB::table('std_div_map as sdm')->selectRaw('count(sdm.id) as total_div,GROUP_CONCAT(sdm.division_id) as section_id')
+            ->where('sdm.standard_id', $standard_id)
+            ->where('sdm.sub_institute_id', $sub_institute_id)
+           // ->whereNotIn('sdm.division_id', [1397]) // Exclude section_id 1397
+            ->groupBy('sdm.standard_id')
+            ->get();
+            // echo "<pre>";print($sectionArray[0]->section_id);exit;
+            $sectionArray2 = explode(",", $sectionArray2[0]->section_id);
+            foreach ($sectionArray2 as $sectionId) {
                 $sectionResult = DB::table('division')->where('id', $sectionId)
                     ->where('sub_institute_id', $sub_institute_id)
                     ->first();
@@ -162,11 +171,11 @@ class houseAutomationController extends Controller
                 foreach ($houseResults as $houseResult) {
                     $house_id=$houseResult->id;
                     // for boys 
-                    $studMaleCount = $this->getStudent($syear,$sub_institute_id,$house_id,$standard_id,$sectionId,'M');
+                    $studMaleCount = $this->getStudent($syear,$sub_institute_id,$house_id,$standard_id,$sectionId,'M','Count');
                     
                     $studMCount= $studMaleCount->count();
                     //for girls 
-                    $studFemaleCount = $this->getStudent($syear,$sub_institute_id,$house_id,$standard_id,$sectionId,'F');
+                    $studFemaleCount = $this->getStudent($syear,$sub_institute_id,$house_id,$standard_id,$sectionId,'F','Count');
                     $studFCount= $studFemaleCount->count(); 
                   
                     // Populating the format array
@@ -379,7 +388,7 @@ class houseAutomationController extends Controller
             $sectionArray = DB::table('std_div_map')->selectRaw('count(id) as total_div,GROUP_CONCAT(division_id) as section_id')
             ->where('standard_id', $standard_id)
             ->where('sub_institute_id', $sub_institute_id)
-            ->whereNotIn('division_id', [1397]) // Exclude section_id 1397
+            // ->whereNotIn('division_id', [1397]) // Exclude section_id 1397
             ->groupBy('standard_id')
             ->first();
             $res['total_div'] = $totalDiv =$sectionArray->total_div ?? 0;
@@ -397,10 +406,10 @@ class houseAutomationController extends Controller
                 foreach ($houseResults as $houseResult) {
                     $houseId = $houseResult->id;
                     // for boys
-                    $StudentM = $this->getStudent($syear,$sub_institute_id,$houseId,$standard_id,$sectionId,'M');
+                    $StudentM = $this->getStudent($syear,$sub_institute_id,$houseId,$standard_id,$sectionId,'M','Count');
                     $studentCountM = $StudentM->count();
                     // for girls
-                    $StudentF = $this->getStudent($syear,$sub_institute_id,$houseId,$standard_id,$sectionId,'F');
+                    $StudentF = $this->getStudent($syear,$sub_institute_id,$houseId,$standard_id,$sectionId,'F','Count');
                     
                     $studentCountF = $StudentF->count();
             
