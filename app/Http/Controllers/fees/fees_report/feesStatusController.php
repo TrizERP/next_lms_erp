@@ -34,9 +34,10 @@ class feesStatusController extends Controller
     {
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
+        $syear = $request->session()->get('syear');
 
         $months = FeeMonthId();
-        $feesHead = fees_title::where(['sub_institute_id' => $sub_institute_id, 'other_fee_id' => 0])
+        $feesHead = fees_title::where(['sub_institute_id' => $sub_institute_id, 'other_fee_id' => 0,'syear'=>$syear])
         ->orderBy('sort_order') 
         ->pluck('display_name', 'fees_title')
         ->toArray();
@@ -63,7 +64,7 @@ class feesStatusController extends Controller
 
         $months = FeeMonthId();
 
-        $feesHead = fees_title::where(['sub_institute_id' => $sub_institute_id, 'other_fee_id' => 0])
+        $feesHead = fees_title::where(['sub_institute_id' => $sub_institute_id, 'other_fee_id' => 0,'syear'=>$syear])
         ->orderBy('sort_order') 
         ->pluck('display_name', 'fees_title')
         ->toArray();
