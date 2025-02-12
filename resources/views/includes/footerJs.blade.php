@@ -931,11 +931,7 @@ function attendanceState(){
     background: url('/Images/293633-middle-removebg.png') no-repeat center center; 
     background-size: contain;
     width: 80px; 
-<<<<<<< HEAD
-    height: 80px; 
-=======
     height: 70px; 
->>>>>>> ee24a5ee3a80846edf428d4a5a80e6c491bdebea
     border: none;
     cursor: pointer;
 }
