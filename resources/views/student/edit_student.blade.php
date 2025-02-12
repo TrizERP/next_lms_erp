@@ -65,7 +65,46 @@ datalist {
     max-height: 500px;
     overflow-y: auto;
 }
-
+/* quick view starts  */
+.profile-card {
+    background: #fff;
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+}
+.profile-card h2 {
+    font-size: 22px;
+    color: #333;
+    margin-bottom: 5px;
+}
+.profile-card p {
+    font-size: 16px;
+    color: #777;
+    margin-bottom: 15px;
+}
+.profile-section {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    margin-top: 15px;
+}
+.profile-img {
+    width: 120px; /* Increased image size */
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #ddd;
+}
+.member {
+    text-align: center;
+}
+.member span {
+    display: block;
+    font-size: 14px;
+    color: #555;
+    margin-top: 5px;
+}
+/* quick view end  */
 </style>
 
 <div id="page-wrapper">
@@ -73,6 +112,9 @@ datalist {
         <div class="row bg-title">
             <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
                 <h4 class="page-title">Edit Student Details</h4> 
+            </div>
+            <div class="col-lg-9 col-md-4 col-sm-4 col-xs-12 text-right">
+                <a class="btn btn-warning" data-toggle="modal" data-target="#quickView">Quick View</a> 
             </div>
         </div>
 
@@ -117,6 +159,9 @@ datalist {
                                     if(isset($data['data'])){
                                         $student_data = $data['data'];
                                     }
+                                    $studentArr[0] = $student_data->id;
+                                    $getStudentDataArr = App\Helpers\getStudents($studentArr);
+                                    $getStudentData = $getStudentDataArr[$student_data->id];
                                 @endphp
                             @endif
                             
@@ -337,8 +382,18 @@ datalist {
                                             </div>
                                         </div>
                                         <div class="col-md-4">
-                                            <label for="input-file-now">User Image</label>
+                                            <label for="input-file-now">Student Image</label>
                                             <input type="file" data-default-file="/storage/student/{{ $student_data->image }}" accept="image/png, image/jpg, image/jpeg" name="student_image" id="input-file-now" class="dropify" />
+                                        </div>  
+                                        <div class="col-md-4">
+                                            <label for="input-file-now2">Father Image</label>
+                                            <input type="file" data-default-file="https://s3-triz.fra1.cdn.digitaloceanspaces.com/public/parents_image/{{ $student_data->father_image }}" accept="image/png, image/jpg, image/jpeg" name="father_image" id="input-file-now2" class="dropify" />
+                                            <input type="hidden" name="oldFatherImage" value="{{ $student_data->father_image }}">
+                                        </div>  
+                                        <div class="col-md-4">
+                                            <label for="input-file-now3">Mother Image</label>
+                                            <input type="file" data-default-file="https://s3-triz.fra1.cdn.digitaloceanspaces.com/public/parents_image/{{ $student_data->mother_image }}" accept="image/png, image/jpg, image/jpeg" name="mother_image" id="input-file-now3" class="dropify" />
+                                            <input type="hidden" name="oldMotherImage" value="{{ $student_data->mother_image }}">
                                         </div>  
                                         @if(session()->get('sub_institute_id')==254)
                                         <div class="col-md-4 form-group">
@@ -2074,6 +2129,93 @@ datalist {
         </div>
     </div>
 <!--Modal: Add ChapterModal-->
+
+
+<!-- Quick View Modal -->
+<div class="modal fade" id="quickView" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document" style="max-width: 1200px;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLabel">Quick View</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="profile-card">
+            @php 
+                $student_image = $father_image = $mother_image = "/admin_dep/images/no-student.jpg";
+                if(isset($student_data->image) && $student_data->image!=''){
+                    $student_image = "/storage/student/".$student_data->image;
+                }
+                if(isset($student_data->father_image) && $student_data->father_image!=''){
+                    $father_image = "https://s3-triz.fra1.cdn.digitaloceanspaces.com/public/parents_image/".$student_data->father_image;
+                }
+                if(isset($student_data->mother_image) && $student_data->mother_image!=''){
+                    $mother_image = "https://s3-triz.fra1.cdn.digitaloceanspaces.com/public/parents_image/".$student_data->mother_image;
+                }
+                $studentName = isset($getStudentData['student_full_name']) ? $getStudentData['student_full_name'] : '-';
+                $fatherName = isset($getStudentData['father_name']) ? $getStudentData['father_name'] : '-';
+                $motherName = isset($getStudentData['mother_name']) ? $getStudentData['mother_name'] : '-';
+                $standardName = isset($getStudentData['standard_name']) ? $getStudentData['standard_name'] : '-';
+                $divisionName = isset($getStudentData['division_name']) ? $getStudentData['division_name'] : '-';
+                $studentMobile = isset($getStudentData['mobile']) ? $getStudentData['mobile'] : '-';
+                $fatherMobile = isset($getStudentData['mobile']) ? $getStudentData['mobile'] : '-';
+                $motherMobile = isset($getStudentData['mother_mobile']) ? $getStudentData['mother_mobile'] : '-';
+                $enrollment_no = isset($getStudentData['enrollment_no']) ? $getStudentData['enrollment_no'] : '-';
+            @endphp
+            <div class="profile-section">
+                @if(isset($student_data->image) && $student_data->image!='')
+                <div class="member">
+                    <img src="{{$student_image}}" alt="Student Image" class="profile-img">
+                    <span>Student</span>
+                </div>
+                @endif
+                @if(isset($student_data->father_image) && $student_data->father_image!='')
+                <div class="member">
+                    <img src="{{$father_image}}" alt="Father Image" class="profile-img">
+                    <span>Father</span>
+                </div>
+                @endif
+                @if(isset($student_data->mother_image) && $student_data->mother_image!='')
+                <div class="member">
+                    <img src="{{$mother_image}}" alt="Mother Image" class="profile-img">
+                    <span>Mother</span>
+                </div>
+                @endif
+            </div>
+            <hr>
+            <table class="table table-striped">
+                <tr>
+                    <th><b>{{App\Helpers\get_string('studentname','request')}}</b></th>
+                    <th><b>{{ App\Helpers\get_string('grno','request')}}</b></th>
+                    <th><b>{{ App\Helpers\get_string('standard','request') .'/'. App\Helpers\get_string('division','request')}}</b></th>
+                    <th><b>{{App\Helpers\get_string('studentmobile','request')}}</b></th>
+                </tr>
+                <tr>
+                    <td>{{$studentName}}</td>
+                    <td>{{$enrollment_no}}</td>
+                    <td>{{$standardName.'/'.$divisionName}}</td>
+                    <td>{{$studentMobile}}</td>
+                </tr>
+                <tr>
+                    <th><b>Father Name</b></th>
+                    <th><b>Father Mobile</b></th>
+                    <th><b>Mother Name</b></th>
+                    <th><b>Mother Mobile</b></th>
+                </tr>
+                <tr>
+                    <td>{{$fatherName}}</td>
+                    <td>{{$fatherMobile}}</td>
+                    <td>{{$motherName}}</td>
+                    <td>{{$motherMobile}}</td>
+                </tr>
+            </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
 @include('includes.footerJs')
 <script src="/plugins/bower_components/clockpicker/dist/jquery-clockpicker.min.js"></script>

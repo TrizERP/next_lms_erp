@@ -99,7 +99,12 @@
                                        	$checked = 'checked';
                                     }
                                 @endphp
-	                            <input {{$checked}} type="checkbox" id='auto_head_counting' value="1" name="auto_head_counting">
+	                            {{-- <input {{$checked}} type="checkbox" id='auto_head_counting' value="1" name="auto_head_counting">--}}
+								<select name="auto_head_counting" id="auto_head_counting" class="form-control">
+	                                <option value=""> Select Head Count</option>
+	                                <option value="1" @if(isset($data['auto_head_counting']) && $data['auto_head_counting']=="1") selected  @endif> Yes </option>
+	                                <option value="0" @if(isset($data['auto_head_counting']) && $data['auto_head_counting']=="0") selected  @endif> No. </option>
+	                            </select>
 	                        </div>
 							<div class="col-md-4 form-group">
 	                            <label>Month Beside Fees Heading </label>

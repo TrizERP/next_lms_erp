@@ -7,10 +7,10 @@
     <div class="container-fluid">
             <div class="row bg-title">
                 <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
-                    <h4 class="page-title">Fees Type Wise Report</h4> </div>
+                    <h4 class="page-title">Update Fees</h4> </div>
             </div>
         @php
-            $grade_id = $standard_id = $division_id = $enrollment_no = $first_name = $last_name = $mobile_no = $uniqueid = $from_date = $to_date = $admission_year = '';
+            $grade_id = $standard_id = $division_id = $enrollment_no = $first_name = $last_name = $mobile_no = $uniqueid = $from_date = $to_date = $admission_year = $receipt_no= '';
 
             if(isset($data['grade_id'])){
                 $grade_id = $data['grade_id'];
@@ -47,6 +47,9 @@
             {
                 $admission_year = $data['admission_year'];
             }
+            if(isset($data['receipt_no'])){
+                $receipt_no = $data['receipt_no'];
+            }
         @endphp
         <div class="card">
             @if ($sessionData = Session::get('data'))
@@ -72,6 +75,10 @@
                     <div class="col-md-4 form-group">
                         <label>Enrollment No</label>
                         <input type="text" id="enrollment_no" name="enrollment_no" value="{{$enrollment_no}}" class="form-control">
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label>Receipt No</label>
+                        <input type="text" id="receipt_no" name="receipt_no" value="{{$receipt_no}}" class="form-control">
                     </div>
                     <div class="col-md-4 form-group">
                         <label>Mobile No.</label>

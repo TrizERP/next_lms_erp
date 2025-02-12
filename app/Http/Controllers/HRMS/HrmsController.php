@@ -85,7 +85,7 @@ class HrmsController extends Controller
     {
         $type = $request->input('type');
         // echo "<pre>";print_r(session()->get('data'));exit;
-        if ($type == 'API') $userId = $request->input('user_id');
+        if (in_array($type,['API','JSON'])) $userId = $request->input('user_id');
         else $userId = $request->session()->get('user_id');
         $hrmsInOutTimeDetails = HrmsAttendance::where([['user_id', $userId], ['day', Carbon::now()->format('Y-m-d')]])->get();
 
@@ -191,7 +191,7 @@ class HrmsController extends Controller
         $type = $request->input('type');
         // $hrmsAttendanceDetails = '';
 
-        if ($type == 'API') $subInstituteId = $request->input('sub_institute_id');
+        if (in_array($type,['API','JSON'])) $subInstituteId = $request->input('sub_institute_id');
         else   $subInstituteId = $request->session()->get('sub_institute_id');
 
         if ($request->employee_id) 
@@ -247,7 +247,7 @@ class HrmsController extends Controller
         //return $request->all();
         //return Carbon::parse($request->indate)->format('Y-m-d');
         $type = $request->input('type');
-        if ($type == 'API') {
+        if (in_array($type,['API','JSON'])) {
             $clientId = $request->input('client_id');
             $subInstituteId = $request->input('sub_institute_id');
         } else {
@@ -298,7 +298,7 @@ class HrmsController extends Controller
     public function hrmsAttendanceReportIndex(Request $request) 
     {
         $type = $request->input('type');
-        if ($type == 'API') 
+        if (in_array($type,['API','JSON'])) 
         {
             $sub_institute_id = $request->input('sub_institute_id');
         } 
@@ -333,7 +333,7 @@ class HrmsController extends Controller
     public function hrmsAttendanceReport(Request $request) 
     {
         $type = $request->input('type');
-        if ($type == 'API') {
+        if (in_array($type,['API','JSON'])) {
             $sub_institute_id = $request->input('sub_institute_id');
         } else {
             $sub_institute_id = $request->session()->get('sub_institute_id');
@@ -467,7 +467,7 @@ class HrmsController extends Controller
     public function generalSettingIndex(Request $request) 
     {
         $type = $request->input('type');
-        if ($type == 'API') 
+        if (in_array($type,['API','JSON'])) 
         {
             $sub_institute_id = $request->input('sub_institute_id');
         } 
@@ -494,6 +494,7 @@ class HrmsController extends Controller
         $get_bulkDiscount = DB::table('general_data')->where(['fieldname' => 'fees_bulk_discount', 'sub_institute_id' => $sub_institute_id])->first();
 
         $get_studentName = DB::table('general_data')->where(['fieldname' => 'student_name', 'sub_institute_id' => $sub_institute_id])->first();
+        $get_previousAdmission = DB::table('general_data')->where(['fieldname' => 'previous_year_admission', 'sub_institute_id' => $sub_institute_id])->first();
 
         $res['get_sandwich_leave_data'] = $get_sandwich_leave_data;
         $res['get_casual_leave_data'] = $get_casual_leave_data;
@@ -504,6 +505,7 @@ class HrmsController extends Controller
         $res['get_timetable_ai']=$get_timetable_ai;
         $res['get_bulkDiscount']=$get_bulkDiscount;
         $res['get_studentName']=$get_studentName;
+        $res['get_previousAdmission']=$get_previousAdmission;
          
         // echo "<pre>";print_r($res);exit;  
 
@@ -514,7 +516,7 @@ class HrmsController extends Controller
     {
         // echo "<pre>";print_r($request->all());exit;        
         $type = $request->input('type');
-        if ($type == 'API'){
+        if (in_array($type,['API','JSON'])){
             $userId = $request->input('user_id');
             $clientId = $request->input('client_id');
             $subInstituteId = $request->input('sub_institute_id');
@@ -533,7 +535,8 @@ class HrmsController extends Controller
         $bulkDiscount = $request->input('bulkDiscount');    
         $bulkDiscountAmt = isset($request->bulkDiscountAmt) ? $request->bulkDiscountAmt : 0;                     
         
-        $studentName = $request->input('studentName');    
+        $studentName = $request->input('studentName');   
+        $previousAdmission = $request->previousAdmission; 
 
         if ($sandwich_leave !== null) {
             // Check if a record with fieldname 'sandwich_leave' and sub_institute_id exists
@@ -716,6 +719,26 @@ class HrmsController extends Controller
               $general_data->type = 'hrms';
               $general_data->save();        
           }
+
+           // Allow previous year admission
+           $existingTimetableTeacher = general_dataModel::where('fieldname', 'previous_year_admission')
+           ->where('sub_institute_id', $subInstituteId)
+           ->first();
+           $general_data = new general_dataModel();
+           
+           if($existingTimetableTeacher){
+               $existingTimetableTeacher->fieldvalue = $previousAdmission;
+               $existingTimetableTeacher->extra_field1 = null;
+               $existingTimetableTeacher->save();
+           }else{
+               $general_data->fieldname = 'previous_year_admission';
+               $general_data->fieldvalue = $previousAdmission;
+               $general_data->extra_field1 = null;
+               $general_data->sub_institute_id = $subInstituteId;
+               $general_data->client_id = $clientId;
+               $general_data->type = 'hrms';
+               $general_data->save();        
+           }
  
         $res['status_code']=1;
         $res['message']="General setting information add/updated successfully";
@@ -726,7 +749,7 @@ class HrmsController extends Controller
     public function earlyGoingHrmsAttendanceReportIndex(Request $request) 
     {
         $type = $request->input('type');
-        if ($type == 'API') 
+        if (in_array($type,['API','JSON'])) 
         {
             $sub_institute_id = $request->input('sub_institute_id');
         } 
@@ -754,7 +777,7 @@ class HrmsController extends Controller
     public function earlyGoingHrmsAttendanceReport(Request $request) {
         // echo "<pre>";print_r($request->all());exit; 
         $type = $request->input('type');
-        if ($type == 'API') {
+        if (in_array($type,['API','JSON'])) {
             $sub_institute_id = $request->input('sub_institute_id');
         } else {
             $sub_institute_id = $request->session()->get('sub_institute_id');
@@ -868,7 +891,7 @@ class HrmsController extends Controller
     public function departmentAttendanceReportCreate(Request $request){
         $type = $request->type;
         $sub_institute_id = session()->get('sub_institute_id');
-        if($type=="API"){
+        if(in_array($type,['API','JSON'])){
             $sub_institute_id = $request->sub_institute_id;
         }
         $res['selDepartments'] = $department_ids = $request->department_id;
@@ -1237,7 +1260,7 @@ class HrmsController extends Controller
         $type= $request->type;
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
-        if($type=='API'){
+        if(in_array($type,['API','JSON'])){
             $sub_institute_id = $request->get('sub_institute_id');
             $syear = $request->get('syear');
         }

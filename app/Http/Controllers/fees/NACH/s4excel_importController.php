@@ -17,6 +17,10 @@ use App\Http\Controllers\AJAXController;
 use Illuminate\Support\Facades\Storage;
 use function App\Helpers\FeeMonthId;
 use App\Models\easy_com\manage_sms_api\manage_sms_api;
+use function App\Helpers\send_FCM_Notification;
+use function App\Helpers\sendNotification;
+use App\Models\school_setup\SchoolModel;
+
 
 require('excel_upload/PHPExcel/IOFactory.php');
 require('excel_upload/PHPExcel/Shared/Date.php');
@@ -394,12 +398,12 @@ class s4excel_importController extends Controller {
 					            );
 
 								$_REQUEST = $send_arr;
-								//echo "<pre>";
-								//print_r($_REQUEST);
+								echo "<pre>";
+								print_r($_REQUEST);
 								//die();exit();
  								$paid_fees =  $controller->pay_fees($request);
-								// echo '<pre>';
-								// print_r($paid_fees);
+								echo '<pre>';
+								print_r($paid_fees);
 							if (!empty($fees_bk_data) || $fees_bk_data !== "") {
 									$successCnt++;
 									$upSql = "UPDATE tblstudent_bank_detail SET is_registered = 'Y' WHERE student_id = '".$STUDENT_ID."'";
@@ -473,7 +477,55 @@ class s4excel_importController extends Controller {
 							 	]);
 							 }
 						 // print_R($send_sms);
+							// send notification start 10-02-2025
+							$schoolData = SchoolModel::where(['id' => $sub_institute_id])->get()->toArray();
+							$schoolName = $schoolData[0]['SchoolName'];
+							$schoolLogo = $_SERVER['APP_URL'].'/admin_dep/images/'.$schoolData[0]['Logo'];
+
+							$app_notification_content = [
+								'NOTIFICATION_TYPE'        => 'FeesStatus',
+								'NOTIFICATION_DATE'        => now(),
+								'STUDENT_ID'               => $STUDENT_DETAILS['STUDENT_ID'],
+								'NOTIFICATION_DESCRIPTION' => $sms_text,
+								'STATUS'                   => 0,
+								'SUB_INSTITUTE_ID'         => $sub_institute_id,
+								'SYEAR'                    => $syear,
+								'SCREEN_NAME'              => 'general',
+								'CREATED_BY'               => session()->get('user_id'),
+								'CREATED_IP'               => $_SERVER['REMOTE_ADDR'],
+							];
+
+							$gcm_data = DB::table('gcm_users')->where('mobile_no', $STUDENT_DETAILS['MOBILE_NUMBER'])
+								->where('sub_institute_id', $sub_institute_id)->get()->toArray();
+
+							$gcmRegIds = [];
+							if (count($gcm_data) > 0) {
+								foreach ($gcm_data as $key1 => $val1) {
+									$gcmRegIds[] = $val1->gcm_regid;
+								}
+							}
+
+							$pushMessage = $sms_text;
+
+							$bunch_arr = array_chunk($gcmRegIds, 1000);
+							sendNotification($app_notification_content);
 							
+							if (! empty($bunch_arr)) {
+								$i++;
+								foreach ($bunch_arr as $val) {
+									if (isset($val, $pushMessage)) {
+										$type1 = 'Notification';
+										$message = [
+											'body'  => $pushMessage, 'TYPE' => $type1, 'USER_ID' => $STUDENT_DETAILS['STUDENT_ID'],
+											'title' => $schoolName, 'image' => $schoolLogo,
+										];
+										$pushStatus = send_FCM_Notification($val, $message, $sub_institute_id);
+										// sendNotification($app_notification_content);
+									}
+								}
+							
+							}
+							// 10-02-2025 end 
                             $failed_bnk_chk_flg = 1;
 							
                             $failed_bnk_str.="<tr>";

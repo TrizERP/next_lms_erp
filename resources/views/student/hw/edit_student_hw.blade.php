@@ -35,11 +35,11 @@
                                 </datalist>
                             </div>
                             <div class="col-md-4 form-group">
-                                <label>Doctor Name </label>
+                                <label>{{App\Helpers\get_string('doctorname_hw')}}</label>
                                 <input type="text" id='doctor_name' value="@if(isset($data['doctor_name'])){{ $data['doctor_name'] }}@endif" name="doctor_name" class="form-control">
                             </div>
                             <div class="col-md-4 form-group">
-                                <label>Doctor Contact </label>
+                                <label>{{App\Helpers\get_string('doctorcontact_hw')}}</label>
                                 <input type="text" id='doctor_contact' value="@if(isset($data['doctor_contact'])){{ $data['doctor_contact'] }}@endif" name="doctor_contact" class="form-control">
                             </div>
                             <div class="col-md-4 form-group">

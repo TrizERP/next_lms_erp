@@ -47,7 +47,6 @@ class cbse_1t5_result_controller extends Controller {
         $academicTerms = session()->get('academicTerms');
         $current_term = session()->get('term_id');
         $result_year = $syear . "-" . $next_year;
-
     if(session()->get('sub_institute_id')!=72){
         session()->put('term_id', $academicTerms[0]->term_id);
         session()->put('standard', $_REQUEST['standard']);
@@ -249,7 +248,7 @@ class cbse_1t5_result_controller extends Controller {
     }
 
     public function getAllExam($standard_id,$sub_id='') {
-        $str = 'SELECT em.ExamTitle, IF((e.con_point IS NULL) OR (e.con_point = ""), e.points, e.con_point) AS points, em.Id
+        $str = 'SELECT em.ExamTitle, IF((e.con_point IS NULL) OR (e.con_point = ""), e.points, e.con_point) AS co_points,sum(DISTINCT e.points) as points, em.Id
         FROM result_create_exam e
         INNER JOIN result_exam_master em ON em.Id = e.exam_id
         WHERE e.term_id = ' . session()->get('term_id') . ' 
@@ -352,8 +351,8 @@ if(session()->get('sub_institute_id') == 61)
     $decimal = 0;
 else
     $decimal = 2;
-
-        $str = 'SELECT ex.id,rm.student_id,s.subject_id,s.display_name,s.elective_subject,SUM(ex.points) total_points,ex.con_point,SUM(rm.points) points,exm.Id exam_id,rm.is_absent
+        // use weightage instead of con_point for overall_report 11-02-2025 by uma
+        $str = 'SELECT ex.id,rm.student_id,s.subject_id,s.display_name,s.elective_subject,SUM(ex.points) total_points,ex.points as con_point,SUM(rm.points) points,exm.Id exam_id,rm.is_absent
         FROM result_marks rm
         INNER JOIN result_create_exam ex ON ex.id = rm.exam_id
         INNER JOIN result_exam_master exm ON exm.Id = ex.exam_id

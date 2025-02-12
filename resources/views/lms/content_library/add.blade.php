@@ -70,13 +70,16 @@
                               <input type="file" name="attachment" id="input-file-now" class="dropify" /> 
                         </div>
 
-                        @foreach($data['mapType'] as $key=>$value)
-                          @if(isset($data['mapValue'][$value->name]) && !empty($data['mapValue'][$value->name]))
+                        @foreach($data['boards']['mapType'] as $key=>$value)
+                        @php 
+                            $board_name = str_replace(' ','_',$value->name);
+                        @endphp 
+                          @if(isset($data['boards']['mapValue'][$board_name]) && !empty($data['boards']['mapValue'][$board_name]))
                           <div class="col-md-4 form-group">
-                            <label for="{{$value->name}}">{{$value->name}}</label>
-                            <select name="keywords[{{$value->name}}]" id="select_{{$key}}" class="form-control">
+                            <label for="{{$board_name}}">Select {{$value->name}}</label>
+                            <select name="keywords[{{$board_name}}]" id="select_{{$key}}" class="form-control">
                               <option value="">Select any one</option>
-                              @foreach($data['mapValue'][$value->name] as $k=>$val)
+                              @foreach($data['boards']['mapValue'][$board_name] as $k=>$val)
                               <option value="{{$val->name}}">{{$val->name}}</option>
                               @endforeach
                             </select>
@@ -84,6 +87,89 @@
                           @endif
                         @endforeach
 
+                        @foreach($data['standards']['mapType'] as $key=>$value)
+                        @php 
+                            $std_name = str_replace(' ','_',$value->name);
+                        @endphp 
+                          @if(isset($data['standards']['mapValue'][$std_name]) && !empty($data['standards']['mapValue'][$std_name]))
+                          <div class="col-md-4 form-group">
+                            <label for="{{$std_name}}">Select {{$value->name}}</label>
+                            <select name="keywords[{{$std_name}}]" id="Standards" class="form-control">
+                              <option value="">Select any one</option>
+                              @foreach($data['standards']['mapValue'][$std_name] as $k=>$val)
+                              <option value="{{$val->name}}" data-type="{{$val->type}}">{{$val->name}}</option>
+                              @endforeach
+                            </select>
+                          </div>
+                          @endif
+                        @endforeach
+
+                        @foreach($data['courses']['mapType'] as $key=>$value)
+                        @php 
+                            $course_name = str_replace(' ','_',$value->name);
+                        @endphp 
+                          @if(isset($data['courses']['mapValue'][$course_name]) && !empty($data['courses']['mapValue'][$course_name]))
+                          <div class="col-md-4 form-group">
+                            <label for="{{$course_name}}">Select {{$value->name}}</label>
+                            <select name="keywords[{{$course_name}}]" id="select_{{$key}}" class="form-control" onchange="getContents(this,'subject');">
+                              <option value="">Select any one</option>
+                              @foreach($data['courses']['mapValue'][$course_name] as $k=>$val)
+                              <option value="{{$val->name}}" data-parentId="{{$val->id}}">{{$val->name}}</option>
+                              @endforeach
+                            </select>
+                          </div>
+                          @endif
+                        @endforeach
+
+                        @if(!empty($data['courses']['mapValue']))
+                        <div class="col-md-4">
+                          <label for="subject">Select Subjects</label>
+                          <select name="keywords[subject]" id="subject" class="form-control" onchange="getMappedChapter();">
+                            <option value="">Select Subject</option>
+                          </select>
+                        </div>
+                        <div class="col-md-4">
+                          <label for="chapter">Select Chapters</label>
+                          <select name="keywords[chapter]" id="chapter" class="form-control">
+                            <option value="">Select Chapter</option>
+                          </select>
+                        </div>
+                        @endif
+
+                        @foreach($data['content_type']['mapType'] as $key=>$value)
+                        @php 
+                            $type_name = str_replace(' ','_',$value->name);
+                        @endphp 
+                          @if(isset($data['content_type']['mapValue'][$type_name]) && !empty($data['content_type']['mapValue'][$type_name]))
+                          <div class="col-md-4 form-group">
+                            <label for="{{$type_name}}">Select {{$value->name}}</label>
+                            <select name="keywords[{{$type_name}}]" id="select_{{$key}}" class="form-control">
+                              <option value="">Select any one</option>
+                              @foreach($data['content_type']['mapValue'][$type_name] as $k=>$val)
+                              <option value="{{$val->name}}">{{$val->name}}</option>
+                              @endforeach
+                            </select>
+                          </div>
+                          @endif
+                        @endforeach
+
+                        @foreach($data['otherMaps']['mapType'] as $key=>$value)
+                        @php 
+                            $otherMap = str_replace(' ','_',$value->name);
+                        @endphp 
+                            @if(isset($data['otherMaps']['mapValue'][$otherMap]) && !empty($data['otherMaps']['mapValue'][$otherMap]))
+                            <div class="col-md-4 form-group">
+                            <label for="{{$otherMap}}">Select {{$value->name}}</label>
+                            <select name="keywords[{{$otherMap}}]" id="select_{{$key}}" class="form-control optionSelect" onchange="sendKeywords();">
+                                <option value="">Select any {{$value->name}}</option>
+                                @foreach($data['otherMaps']['mapValue'][$otherMap] as $k=>$val)
+                                <option value="{{$val->name}}">{{$val->name}}</option>
+                                @endforeach
+                            </select>
+                            </div>
+                            @endif
+                        @endforeach
+                        
                         <div class="col-md-12">
                           <center>
                             <input type="submit" name="submit" value="Add" class="btn btn-primary">
@@ -136,6 +222,59 @@
             }
         })
     });
+
+    function getContents(event, content_type) {
+        var selectedOption = $(event).find(':selected');
+        var value = selectedOption.val();
+        var parentId = selectedOption.data('parentid');
+
+        $('#'+content_type).empty();
+
+        $.ajax({
+          url: "{{route('getMapVals')}}",
+          data : {parent_id:parentId},
+          type : 'GET',
+          success : function(result){
+            console.log(result);
+            $('#'+content_type).find('option').remove().end().append('<option value="">Select '+content_type+'</option>').val('');
+            if (result.length > 0) {
+                result.forEach(function(item) {
+                    $("#" + content_type).append(`<option value="${item['name']}" data-parentid="${item['id']}"  data-type="${item['type']}">${item['name']}</option>`); // Closing bracket correctly placed
+                });
+            }
+
+          }
+        })
+    }
+
+    function getMappedChapter(){
+      var subjectID = $('#subject option:selected').attr('data-type');
+      var standardID = $('#Standards option:selected').attr('data-type');
+      console.log(standardID+'-'+subjectID);
+      if (subjectID && standardID) {
+            $.ajax({
+                type: "GET",
+                url: "/api/get-chapter-list?subject_id=" + subjectID + "&standard_id=" + standardID,
+                success: function (res) {
+                    if (res) {
+                        $("#chapter").empty();
+                        $("#chapter").append('<option value="">Select Chapter</option>');
+                        $.each(res, function (key, value) {      
+                            $("#chapter").append('<option value="' + value + '" >' + value + '</option>');
+                        });
+
+                    } else {
+                        $("#chapter").empty();
+                        $("#chapter").append('<option value="">Select Chapter</option>');
+                    }
+                }
+            });
+        } else {
+            $("#chapter").empty();
+            $("#chapter").append('<option value="">Select Chapter</option>');
+        }
+    }
+
 </script>
 @include('includes.footer')
 @endsection

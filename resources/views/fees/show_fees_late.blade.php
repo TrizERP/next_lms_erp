@@ -31,9 +31,11 @@
                         <table id="example" class="table table-striped">
                             <thead>
                                 <tr>
-                                    <th>Id</th>
+                                    <th>Sr No.</th>
                                     <th>{{ App\Helpers\get_string('standard','request')}}</th>
                                     <th>Late Fees Date</th>
+                                    <th>Fine Type</th>
+                                    <th>Status</th>
                                     <th>Created By</th>
                                     <th>Created On</th>
                                     <th>Action</th>
@@ -48,7 +50,9 @@
                                 <tr>
                                     <td>{{$j}}</td>
                                     <td>{{$data->standard}}</td>
-                                    <td>{{date('d-m-Y',strtotime($data->late_date))}}</td>
+                                    <td>{{$data->late_date}}</td>
+                                    <td>{{$data->fine_type}}</td>
+                                    <td>{{ ($data->status==1) ? 'Yes' : 'No'}}</td>
                                     <td>{{$data->user}}</td>
                                     <td>{{date('d-m-Y h:i:s',strtotime($data->created_on))}}</td>
                                     <td>

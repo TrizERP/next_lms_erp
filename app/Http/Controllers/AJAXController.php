@@ -838,9 +838,9 @@ class AJAXController extends Controller
                         <th  align="center" style="width: 30%;align-content: center;">Particular</th>
                         <th style="width: 10%;padding-left: 15px;">Amount</th>
                         <th style="width: 20%;padding-left: 15px;">Collection Amount</th>
-                        <th style="width: 20%;padding-left: 15px;">' . get_string('Discount', 'requests') . '</th>
-                        <th style="width: 20%;padding-left: 15px;">Fine</th>
-                    </tr>';
+                        <th style="width: 20%;padding-left: 15px;display:none">' . get_string('Discount', 'requests') . '</th>
+                        <th style="width: 20%;padding-left: 15px;display:none">Fine</th>
+                    </tr>'; // hide discount and fine columns 04-02-2025
         foreach ($full_bk as $id => $val) {
             if($val!=0){
                 $ids ='';
@@ -857,14 +857,14 @@ class AJAXController extends Controller
                 $response .= "<td style='width: 20%'><input type='number' min='0' max='$val' value='$val' name='fees_data[" . $final_bk_name[$id] . "]' class='form-control allField1' id=" . $final_bk_name[$id] . "></td>";
 
                 $response .= "<input type='hidden' value='" . $val . "' name='hid_fees_data[" . $final_bk_name[$id] . "]' class='hid_allField1'>";
-                $response .= "<td style='width: 20%'><input type='number' value='0' name='discount_data[" . $final_bk_name[$id] . "]' class='form-control allDisField' style='min-width:150px;'></td>"; // min=0 max=$val
-                $response .= "<td style='width: 20%'><input type='number'  min=0 value=0 name='fine_data[" . $final_bk_name[$id] . "]' class='form-control allFinField' style='min-width:150px;'></td>";
+                $response .= "<td style='width: 20%;display:none'><input type='number' value='0' name='discount_data[" . $final_bk_name[$id] . "]' class='form-control allDisField' style='min-width:150px;'></td>"; // min=0 max=$val
+                $response .= "<td style='width: 20%;display:none'><input type='number'  min=0 value=0 name='fine_data[" . $final_bk_name[$id] . "]' class='form-control allFinField' style='min-width:150px;'></td>";
             } else {
                 $response .= "<td style='width: 25%'><input type='text' id='totalVal' name='total' value='" . $total . "' class='form-control'></td>";
-                $response .= "<td style='width: 25%'><input type='text' id='totalDis' name='totalDis' value='0' class='form-control directdiscount'></td>";
-                $response .= "<td style='width: 25%'><input id='totalFin' type='text' name='totalFin' value='0' class='form-control directfine'></td>";
+                $response .= "<td style='width: 25%;display:none'><input type='text'  value='0' class='form-control directdiscount'></td>"; // id='totalDis' name='totalDis'
+                $response .= "<td style='width: 25%;display:none'><input id='totalFin' type='text' name='totalFin' value='0' class='form-control directfine'></td>";
             }
-            $response .= "</tr>";
+            $response .= "</tr>"; // hide discount and fine columns 04-02-2025
         }   
         }
 

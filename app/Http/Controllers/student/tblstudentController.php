@@ -51,6 +51,7 @@ use App\Http\Controllers\transportation\map_student\map_student_controller;
 use Illuminate\Support\Facades\Session;
 use GuzzleHttp\Client;
 use function App\Helpers\accesslog_json;
+use Storage;
 
 class tblstudentController extends Controller
 {
@@ -456,7 +457,7 @@ class tblstudentController extends Controller
                 && $key != 'id' && $key != 'optional_subject' && $key != 'optional_subject4' && $key != 'optional_subject5' && $key != 'optional_subject6' && $key != 'previous_school_gr_no' && $key != 'house'
                 && $key != 'father_occupation' && $key != 'father_qualification' && $key != 'mother_occupation'
                 && $key != 'mother_qualification' && $key != 'guardian_name' && $key != 'guardian_relation'
-                && $key != 'house_no' && $key != 'building_name_appratment_name_society_name' && $key != 'district_name' && $key != 'roll_no'  && $key != 'editable') { //&& $key != 'place_of_birth' && $key != 'previous_school_name'
+                && $key != 'house_no' && $key != 'building_name_appratment_name_society_name' && $key != 'district_name' && $key != 'roll_no'  && $key != 'editable' && $key!='oldFatherImage' && $key!='oldMotherImage') { //&& $key != 'place_of_birth' && $key != 'previous_school_name'
                 if (is_array($value)) {
                     $value = implode(",", $value);
                 }
@@ -1071,6 +1072,7 @@ die; */
                 'destinations' => $studentAddress,
                 'key' => $apiKey,
             ],
+            'verify' => false,  // Disable SSL verification
         ]);
 
         $data = json_decode($response->getBody(), true);
@@ -1170,6 +1172,56 @@ die; */
             $request->request->add(['file_size' => $file_size]); //add request
             $request->request->add(['file_type' => $ext]); //add request
         }
+
+        // start of father and nmother image 04-02-2025
+        if ($request->hasFile('father_image')) {
+			$file = $request->file('father_image');
+			$originalname = $file->getClientOriginalName();
+			$file_size = $file->getSize();
+            $ext = File::extension($originalname);
+			if ($file_size > 500000) {
+                $res['status_code'] = 0;
+                $res['message'] = "Father image not uploaded,Please select file up to 500 KB size.";
+                $res['data'] = [];
+
+                return is_mobile($type, "search_student.index", $res);
+            }
+            // $file_name = $name.'.'.$ext;
+            $father_image =  'father_'.$id.'.'.$ext;
+            if($request->has('oldFatherImage')){
+                $file_path = 'public/parents_image/' .$request->get('oldFatherImage');
+                if (Storage::disk('digitalocean')->exists($file_path)) {
+                    Storage::disk('digitalocean')->delete($file_path);
+                } 
+            }
+            Storage::disk('digitalocean')->putFileAs('public/parents_image/', $file, $father_image, 'public');   
+            $request->request->add(['father_image' => $father_image]); //add request
+        }
+
+        if ($request->hasFile('mother_image')) {
+			$file = $request->file('mother_image');
+			$originalname = $file->getClientOriginalName();
+			$file_size = $file->getSize();
+            $ext = File::extension($originalname);
+			if ($file_size > 500000) {
+                $res['status_code'] = 0;
+                $res['message'] = "Mother image not uploaded,Please select file up to 500 KB size.";
+                $res['data'] = [];
+
+                return is_mobile($type, "search_student.index", $res);
+            }
+            // $file_name = $name.'.'.$ext;
+            $mother_image =  'mother_'.$id.'.'.$ext;
+            if($request->has('oldMotherImage')){
+                $file_path = 'public/parents_image/' .$request->get('oldMotherImage');
+                if (Storage::disk('digitalocean')->exists($file_path)) {
+                    Storage::disk('digitalocean')->delete($file_path);
+                } 
+            }
+            Storage::disk('digitalocean')->putFileAs('public/parents_image/', $file, $mother_image, 'public');   
+            $request->request->add(['mother_image' => $mother_image]); //add request
+        }
+        // end of father and nmother image 04-02-2025
 
         $request->request->add(['id' => $id]); //add request
         $student_id = $id;

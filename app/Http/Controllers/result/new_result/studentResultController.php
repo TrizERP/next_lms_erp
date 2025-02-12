@@ -492,6 +492,22 @@ class studentResultController extends Controller
     
     $termAtten = $this->getTermAttendance($standard_id, $value['id'], $format,'');
     $html_content = str_replace(htmlspecialchars("<<term_attendance>>"), $termAtten, $html_content);
+    // for attendance in percentage in hills
+    $explodeTermAtten = explode('/',$termAtten);
+    $perTermAtt = 0;
+    $attUnderline = "";
+
+    if(isset($explodeTermAtten[0]) && is_numeric($explodeTermAtten[0]) && isset($explodeTermAtten[1]) && is_numeric($explodeTermAtten[1])){
+        $getPer = ($explodeTermAtten[0] / $explodeTermAtten[1]) * 100;
+        $perTermAtt = number_format($getPer, 2);
+    }
+
+    if($perTermAtt < 75){
+        $attUnderline ="text-decoration:underline red 2px";
+    }
+    $html_content = str_replace(htmlspecialchars("<<term_attendance_per_style>>"), $attUnderline, $html_content);
+
+    $html_content = str_replace(htmlspecialchars("<<term_attendance_per>>"), $perTermAtt, $html_content);
     
         if (strpos($html_content, htmlspecialchars('<<total_attendance_manual>>')) !== false) {
             $atten = $this->get_attendance($standard_id, $value['id'], $format, "total_attendance_manual");
@@ -3138,7 +3154,11 @@ while ($current_date <= $post_end_date) {
     $sub_institute_id = session()->get('sub_institute_id');
     $extra_term  = $extra_exam = "1=1";
     $att_term="atd.term_id = 2";
-    if ($format != "yearly"){
+    if ($format != '1' && $academic_type=="upper"){
+        $extra_term = "term_id = 2";
+        $extra_exam = "rce.term_id = 2";
+        $att_term = "atd.term_id = 2";
+    }elseif ($format != "yearly"){
         $extra_term = "term_id = " . $format;
         $extra_exam = "rce.term_id = " . $format;
         $att_term = "atd.term_id = " . $format;
@@ -3245,7 +3265,7 @@ while ($current_date <= $post_end_date) {
                                             // if ($marks->is_absent == '') {
                                             //     $ab_ex_na = 0;
                                             // }
-                                            $obtained_marks[$title->exam_id][] = $ab_ex_na;
+                                            $obtained_marks[$title->exam_id][] = $ab_ex_na ?? 0;
 
                                             if($ab_ex_na=="AB"){
                                                 $to_marks[$title->exam_id][] = $title->points;
@@ -3278,8 +3298,9 @@ while ($current_date <= $post_end_date) {
                                 // // get best 2 from array
                                 // $best_two = array_slice($obtained_mark_arr, 0, 2);
                                 // $obtained_mark_sum = array_sum($best_two);
-                                $obtained_mark_sum = array_sum($obtained_mark_arr);
+                                $numeric_marks = array_filter($obtained_mark_arr, 'is_numeric');
 
+                                $obtained_mark_sum = array_sum($numeric_marks);
                                 // get mark for total mark 
                                 $ob_main_mark += ($t_m !== 0) ? (($obtained_mark_sum / $t_m) * $w_m) : 0;
                                 // convert marks if best of 2
@@ -3292,6 +3313,10 @@ while ($current_date <= $post_end_date) {
                                     $total_marks += $w_m;
                                     $table .= '<td class="data_center" ' . $underline . ' ' . $exam_id . '-'.$val->subject_id.'-'.$standard_id.'>' . number_format($convert_mark, 2) . '</td>';
                                 }else{
+                                    if(!isset($obtained_mark_arr[0])){
+                                        $obtained_mark_arr[0] = '0.00';
+                                    }
+                                    
                                     if(isset($obtained_mark_arr[0]) && ($obtained_mark_arr[0]!='N.A.' || $obtained_mark_arr[0]!='EX')){
                                         $total_marks += $w_m;
                                     }
@@ -3405,8 +3430,7 @@ while ($current_date <= $post_end_date) {
                         $pass_or_fail ='Passed & Promoted to class : '.$next_std;
                     }
 
-                // $res['pass_or_fail'] = ($format != "yearly") ? $$pass_or_fail : $pass_or_fail; // commented on 23-01-2025
-                $res['pass_or_fail'] = $pass_or_fail;
+                $res['pass_or_fail'] = ($format == 1) ? '' : $pass_or_fail; // commented on 23-01-2025
  
         return $res;
     }
@@ -3551,7 +3575,9 @@ while ($current_date <= $post_end_date) {
                                     $w_m = $to_weight[$exam_id] ?? 0; // Check if the key exists
                                     $t_m = array_sum(array_intersect_key($to_marks[$exam_id] ?? [], $marksArray));
                                     $obtained_mark_arr = $obtained_marks[$exam_id] ?? [];
-                                    $obtained_mark_sum = array_sum($obtained_mark_arr);
+                                    $numeric_marks = array_filter($obtained_mark_arr, 'is_numeric');
+
+                                    $obtained_mark_sum = array_sum($numeric_marks);
                                     
                                     // get mark for total mark 
                                     $ob_main_mark += ($t_m !== 0) ? (($obtained_mark_sum / $t_m) * $w_m) : 0;
@@ -3574,6 +3600,9 @@ while ($current_date <= $post_end_date) {
                                         $total_marks += $w_m;
                                         $table .= '<td class="data_center" ' . $underline . ' ' . $exam_id . '-'.$val->subject_id.'-'.$standard_id.'>' . number_format($convert_mark, 2) . '</td>';
                                     }else {
+                                        if(!isset($obtained_mark_arr[0])){
+                                            $obtained_mark_arr[0] = '0.00';
+                                        }
                                         if (!empty($obtained_mark_arr) && !in_array($obtained_mark_arr[0],["N.A.","EX"])) {
                                             $total_marks += $w_m;
                                         }
@@ -4658,7 +4687,9 @@ while ($current_date <= $post_end_date) {
                                 $t_m = array_sum($to_marks[$exam_id] ?? []);
                                 $obtained_mark_arr = $obtained_marks[$exam_id] ?? [];
                                 
-                                $obtained_mark_sum = array_sum($obtained_mark_arr);
+                                $numeric_marks = array_filter($obtained_mark_arr, 'is_numeric');
+
+                                $obtained_mark_sum = array_sum($numeric_marks);
                                 
                                 // convert marks if best of 2
                                 $convert_mark = ($obtained_mark_sum != 0) ? (($obtained_mark_sum / $t_m) * $w_m) : 0;
@@ -4671,6 +4702,10 @@ while ($current_date <= $post_end_date) {
                                     $table .= '<td class="data_center" ' . $underline . ' ' . $exam_id . '-'.$val->subject_id.'-'.$standard_id.' *** '.$obtained_mark_sum.' % '.$t_m.'*'.$w_m.'>'. number_format($convert_mark, 2) . '</td>';
                                     $ob_main_mark += ($t_m !== 0) ? (($obtained_mark_sum / $t_m) * $w_m) : 0;
                                 }else{
+                                    if(!isset($obtained_mark_arr[0])){
+                                        $obtained_mark_arr[0] = '0.00';
+                                    }
+
                                     if($obtained_mark_arr[0]!='N.A.' || $obtained_mark_arr[0]!='EX'){
                                         $total_marks = $w_m;
                                     }
@@ -4783,7 +4818,7 @@ public function get_co_scholastic_hills($standard_id, $student_id, $format, $aca
     if (count($ret_mark_grade) > 0) {
         $ret_data = DB::table('result_co_scholastic_marks_entries as comark')
             ->selectRaw(
-                'comark.student_id, comark.co_scholastic_id, comark.term_id, cop.id as parent_id, cop.title as parent_title, co.title as child_title, co.id as coid,
+                'comark.student_id, comark.co_scholastic_id, comark.term_id, cop.id as parent_id, cop.title as parent_title, co.title as child_title, co.id as coid,co.mark_type,
                 IF(comark.grade = 0, comark.points, cograde.title) as obtain_grade, co.max_mark'
             )
             ->leftJoin('result_co_scholastic_grades as cograde', 'cograde.id', '=', 'comark.grade')
@@ -4821,7 +4856,11 @@ public function get_co_scholastic_hills($standard_id, $student_id, $format, $aca
                     $criteria_data[] = $value;
                     break;
                 case "DISCIPLINE":
-                    $grade = (!empty($get_grade) && $per != 0 && $per != '') ? $this->getGrade($get_grade, $value->max_mark, $per, "co_scholastic") : '-';
+                    if($value->mark_type=="GRADE"){
+                        $grade = (isset($value->obtain_grade)) ? $value->obtain_grade: '-';
+                    }else{
+                        $grade = (!empty($get_grade) && $per != 0 && $per != '') ? $this->getGrade($get_grade, $value->max_mark, $per, "co_scholastic") : '-';
+                    }
                     $value->obtain_grade = $grade;
                     $decipline_data[] = $value;
                     break;
@@ -4831,7 +4870,7 @@ public function get_co_scholastic_hills($standard_id, $student_id, $format, $aca
                     $co_data[] = $value;
             }
         }
-        
+        // echo "<pre>";print_r($decipline_data);exit;
         $term_name = ($academic_type == "upper") ? "Grade" : ($both_term[0]->title ?? 'Grade');
         $flex = 'display:flex;flex-wrap:wrap';
 
@@ -4970,7 +5009,7 @@ private function buildOtherTables($both_term, $criteria_data, $skill_data, $deci
             ".$this->buildSubTable('SKILL OBSERVATION', $groupedSkills, $both_term, $academic_type)."
         </div>";
     } elseif (!empty($decipline_data)) {
-        $other_table .= $this->buildDisciplineTable($decipline_data);
+        $other_table .= $this->buildDisciplineTable($decipline_data,$both_term);
     }
 
     return $other_table;
@@ -5003,25 +5042,44 @@ private function buildSubTable($title, $groupedData, $both_term, $academic_type)
     return $sub_table;
 }
 
-private function buildDisciplineTable($decipline_data)
+private function buildDisciplineTable($decipline_data,$both_term)
 {
+    $commonData = [];
+    $termArr = [];
+    foreach ($decipline_data as $value) {
+        $commonData[$value->child_title][$value->term_id]= $value->obtain_grade;
+        if(!isset($termArr[$value->term_id])){
+            $termArr[$value->term_id] = $value->term_id;
+        }
+    }
     $discipline_table = '<div style="width:50%;">
         <table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" cellpadding="0" border="1">
             <thead>
                 <tr>
-                    <th><b>DISCIPLINE</b></th>
-                    <th class="data_center"><b>Grade</b></th>
-                </tr>
+                    <th><b>DISCIPLINE</b></th>';
+                  if(!empty($both_term) && count($termArr)>1){
+                    foreach ($both_term as $key => $value) {
+                        $discipline_table .= '<th class="data_center"><b>'.$value->title.'</b></th>';
+                    }
+                  }else{
+                    $discipline_table .='<th class="data_center"><b>Grade</th>';
+                  }
+            $discipline_table .= ' </tr>
             </thead>
-            <tbody>
-                <tr>
-                    <td><b>Discipline</b></td>';
+            <tbody>';
 
-    foreach ($decipline_data as $value) {
-        $discipline_table .= '<td class="data_center">' . $value->obtain_grade . '</td>';
+    foreach ($commonData as $title => $cv) {
+        $discipline_table .= '<tr><td><b>' . $title . '</b></td>';
+        if(!empty($both_term)){
+            foreach ($both_term as $tk => $tv) {
+                $grade = isset($cv[$tv->term_id]) ? $cv[$tv->term_id] : '-';
+                $discipline_table .= '<td class="data_center">'.$grade.'</td>';
+            }
+          }
+        $discipline_table .='</tr>';
     }
 
-    $discipline_table .= '</tr></tbody></table></div>';
+    $discipline_table .= '</tbody></table></div>';
     return $discipline_table;
 }
 

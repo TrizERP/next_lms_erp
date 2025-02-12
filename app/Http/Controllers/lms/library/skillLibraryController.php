@@ -96,8 +96,8 @@ class skillLibraryController extends Controller
             }
         }
 
-        $categoryArr = ["Technical","Soft Skill","Finance Accounting","Personal and Interpersonal"];
-        $subCategoryArr = ["Programming Language","Data analysis","Web development","Database management","Financial reporting","Critical thinking","Communication"];
+        $categoryArr = masterSkill::whereNull('deleted_at')->groupBy('category')->pluck('category')->toArray();
+        $subCategoryArr =masterSkill::whereNull('deleted_at')->groupBy('sub_category')->pluck('sub_category')->toArray();
 
         $res['status'] = 1;
         $res['message'] = "success";
@@ -198,9 +198,9 @@ class skillLibraryController extends Controller
         }
         $skillData = masterSkill::find($id);
 
-        $categoryArr = ["Technical","Soft Skill","Finance Accounting","Personal and Interpersonal"];
-        $subCategoryArr = ["Programming Language","Data analysis","Web development","Database management","Financial reporting","Critical thinking","Communication"];
-
+        $categoryArr = masterSkill::whereNull('deleted_at')->groupBy('category')->pluck('category')->toArray();
+        $subCategoryArr =masterSkill::whereNull('deleted_at')->groupBy('sub_category')->pluck('sub_category')->toArray();
+        
         $res['status'] = 1;
         $res['message'] = "success";
         $res['editData'] = $skillData;

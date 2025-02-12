@@ -35,6 +35,7 @@ use function App\Helpers\getStudents;
 use App\Http\Controllers\easy_com\send_sms_parents\send_sms_parents_controller;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Crypt;
+use Carbon\CarbonPeriod;
 
 class fees_collect_controller extends Controller
 {
@@ -1473,7 +1474,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                 $fees_arr[$arr['rid'] . "_" . $sort_order][$diplay_name] = $total;
             }
         }
-
+        // echo "<pre>";print_r($fees_arr);exit;
         //adding discount in array
         foreach ($insert_html_ids as $sort_order => $arr) {
             $total_discount = 0;
@@ -1504,15 +1505,24 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                 if ($order_id[1] == $sort_order && $sub_institute_id==76) {
                     // $fees_arr[$sort_order_id]['Fine'] = $total_fine;
                     // $fees_arr[$sort_order_id][get_string('discount', 'request',$sub_institute_id)] = $total_discount;
+
                      // start 08-01-2025 by uma for ssmission
+                    //  $title_name='';
+                    $title_name='';
                     if(isset($fees_arr[$sort_order_id]['TUITION FEE'])){
                         $title_name='TUITION FEE';
-                    }elseif($fees_arr[$sort_order_id]['FOOD TRANSPORT ETC']){
+                    }elseif(isset($fees_arr[$sort_order_id]['FOOD TRANSPORT ETC']) && $fees_arr[$sort_order_id]['FOOD TRANSPORT ETC']){
                         $title_name='FOOD TRANSPORT ETC';
                     }
-                    elseif($fees_arr[$sort_order_id]['HOSTEL FEE']){
+                    elseif(isset($fees_arr[$sort_order_id]['HOSTEL FEE']) && $fees_arr[$sort_order_id]['HOSTEL FEE']){
                         $title_name='HOSTEL FEE';
+                    }else{
+                        // 10-02-2025 solve error on undefine $title_name
+                        foreach ($arr as $headName => $amount) {
+                            $title_name = $headName;
+                        }
                     }
+
                     if(isset($fees_arr[$sort_order_id][$title_name])){
                         $fees_arr[$sort_order_id][$title_name]+=$total_fine;
                         $fees_arr[$sort_order_id][$title_name]+=$total_discount;
@@ -1778,6 +1788,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
 
             // 2025-01-20 by uma
             $panCardTag = $ssmission_note = $thankFull = '';
+            $receiptType=null;  // differentiate ssmission reciepts 10-02-2025
             if($receipt_book_arr->receipt_id==2 && $sub_institute_id==76){
                 $panNo = isset($_REQUEST['pan_card']) ? $_REQUEST['pan_card'] : '-';
                 
@@ -1786,8 +1797,14 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                 $ssmission_note = 'Income Tax Exemtion U/S 80G(5) No.SRT/CIT-III/Tech/80G(5)/(05/1)
                 2008-09.<br>Dt.04-06-2008 Valid from 01/04/2008 to 31/03/2011 to and onwards';
 
-                $thankFull .=  'Has been Thanksfully Received by '.$receipt_line_1;
+                $thankFull .=  'Has been Thanksfully Received by Shri Swaminarayan Mission';
+                $receiptType = "MISSION";
             }
+            // differentiate ssmission reciepts 10-02-2025
+            else if($sub_institute_id==76){
+                $receiptType = "SCHOOL";
+            }
+
             $html_content = str_replace(htmlspecialchars("<<parent_pan_card>>"), $panCardTag, $html_content);
             $html_content = str_replace(htmlspecialchars("<<ssmission_note>>"), $ssmission_note, $html_content);
             $html_content = str_replace(htmlspecialchars("<<ssmission_thank_full>>"), $thankFull, $html_content);
@@ -1820,7 +1837,13 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             $html_content = str_replace(htmlspecialchars("<<student_batch>>"), isset($_REQUEST['student_batch']) ? $_REQUEST['student_batch'] : '-', $html_content);
 
              // 2025-01-20 by uma
-             $html_content = str_replace(htmlspecialchars("<<parent_pan_card>>"), isset($_REQUEST['pan_card']) ? $_REQUEST['pan_card'] : '-', $html_content);
+             $checkPanNo = DB::table('tblstudent')->where('id',$_REQUEST['student_id'])->first();
+             $pan_no = isset($_REQUEST['pan_card']) ? $_REQUEST['pan_card'] : '';
+             if(!empty($checkPanNo) && $checkPanNo->pan_card=='' && $pan_no!='' && $sub_institute_id==76){
+                DB::table('tblstudent')->where('id',$_REQUEST['student_id'])->update(['pan_card'=>$_REQUEST['pan_card']]);
+             }
+            
+             $html_content = str_replace(htmlspecialchars("<<parent_pan_card>>"), $pan_no, $html_content);
 
             $html_content = str_replace(htmlspecialchars("<<student_enrollment_value>>"), $enrollment, $html_content);
             $html_content = str_replace(htmlspecialchars("<<student_roll_value>>"), $roll_no, $html_content);
@@ -1877,6 +1900,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                                 ->whereIn('id', $vals)
                                 ->update([
                                     'fees_html' => str_replace($sArr, $rArr, $recHtml),
+                                    'bank_name' => $receiptType,  // differentiate ssmission reciepts 10-02-2025
                                 ]);
                         }
                     }
@@ -2836,18 +2860,84 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             ->where('fc.syear', $syear)->get()->toArray();
 
             $late_fees_amount = $fees_config[0]->late_fees_amount ?? '';
+        
+        $config_late_fine = 0;
         if (count($fees_config) > 0) {
             $receipt_css = $fees_config[0]->css;
             $paper_size = $fees_config[0]->fees_receipt_template;
+
+            // fees late master implement finr_type wise start 03-02-2025 not foe institutes altius,hills high and CN sports
+            if(isset($stu_detail['std_id']) && isset($fees_config[0]->late_fees_amount) && !in_array($sub_institute_id,[195,254,257])){
+                // get added late fees details 
+                $getFineType = DB::table('fees_late_master')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear,'standard_id'=>$stu_detail['std_id'],'status'=>1])->first();
+
+                // get added late fees details 
+                if(!empty($getFineType) && isset($getFineType->fine_type)){
+                    $fineType= $getFineType->fine_type;
+                    //check fees details of student
+                    if(!empty($left_bk_table)){
+                        $remainMonth =$remainYear= $fineMonth= $fineDays = $fineWeeks = 0;
+                        $datesArray=[];
+                        $currentMonth = date('n');
+                        $currentYear = date('Y');
+                        $currentDate = Carbon::now();
+
+                        //check fees details remain or not
+                        foreach($left_bk_table as $key=>$val){
+                              // remain fees count month and days in it
+                              $remainMonthId = substr($val['month_id'], 0,-4);
+                              $remainYear = substr($val['month_id'],-4);
+                            // if remain fees is greater than  0 get fine according to mont,week,day 
+                            if($val['remain'] > 0 && $remainYear <= $currentYear){
+                              
+                                $fineMonth += ($remainMonth+1);
+
+                                $day_date = Carbon::createFromFormat('d-n-Y', $getFineType->late_date.'-'.$remainMonthId.'-'.$remainYear); 
+                                
+                                // Get the weeks in the month
+                                $startOfMonth = $day_date->copy(); 
+                                $endOfMonth = $day_date->copy()->endOfMonth();
+
+                                $fineDays += $startOfMonth->diffInDays($endOfMonth) + 1; 
+
+                                $fineWeeks += CarbonPeriod::create($startOfMonth, '1 week', $endOfMonth)->count();
+
+                                $datesArray[] = collect(CarbonPeriod::create($startOfMonth, $endOfMonth)->toArray())
+                                ->map(fn($date) => $date->format('Y-m-d'))
+                                ->toArray();
+                                            
+                            }
+                        }
+
+                        // count fine typewise fines 
+                        if($fineType=="Monthly" && isset($getFineType->late_date) && $currentDate>=$getFineType->late_date){
+                            $config_late_fine = ($fineMonth*$fees_config[0]->late_fees_amount);
+                        }
+                        elseif($fineType=="Weekly" && isset($getFineType->late_date) && $currentDate>=$getFineType->late_date){
+                            $config_late_fine = ($fineWeeks*$fees_config[0]->late_fees_amount);
+                        }
+                        elseif($fineType=="Daily" && isset($getFineType->late_date) && $currentDate>=$getFineType->late_date){
+                            $config_late_fine = ($fineDays*$fees_config[0]->late_fees_amount);
+                        }
+                    }
+                }
+                // echo $fineMonth."<br>";
+                // echo $fineWeeks."<br>";
+                // echo $fineDays."<br>";
+                // echo "<pre>";print_r($datesArray);
+            }
+            // exit;
+            // fees late master implement finr_type wise end 04-02-2025
         } else {
             $fees_config = DB::table('fees_receipt_css')->select('css')
                 ->where('receipt_id', 'A5')->get()->toArray();
             $receipt_css = $fees_config[0]->css;
             $paper_size = 'A5';
         }
-// echo "<pre>";print_r($res);exit;
+        // echo "<pre>";print_r($res);exit;
         $res['receipt_css_data'] = $receipt_css;
         $res['paper_size'] = $paper_size;
+        $res['config_late_fine'] = $config_late_fine;
         return $res;
     }
 
@@ -3154,7 +3244,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                 . DB::raw("CONCAT_WS(' ', t.first_name, t.middle_name, t.last_name) as student_name") . ', g.title as grade, s.name as standard_name, d.name as division_name, fp.created_date, '
                 . DB::raw('CONCAT_WS(" ", u.first_name, u.last_name) AS user_name, fp.term_id, fp.receiptdate, fp.receipt_no, fp.payment_mode, '
                 . 'fp.cheque_bank_name, fp.bank_branch, fp.cheque_no, fp.cheque_date, b.title as batch, sq.title as quota, '
-                . 'IFNULL(fp.amount, 0) AS actual_amountpaid'))
+                . 'SUM(IFNULL(fp.amount, 0)) AS actual_amountpaid,IFNULL(fp.fees_discount, 0) as discount,fp.remarks,GROUP_CONCAT(DISTINCT fp.bank_name ORDER BY fp.bank_name SEPARATOR "/ ") as bank_name'))
                 ->from('tblstudent as t')
                 ->join('tblstudent_enrollment as te', function ($join) use($syear){
                     $join->on('te.student_id', '=', 't.id')->where('te.syear',$syear);
@@ -3174,13 +3264,15 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                     $join->on('fp.created_by', '=', 'u.id')->where('u.status',1); // 23-04-24 by uma
                 })
                 ->whereRaw("1=1 " . $extra_fp)
+                ->groupBy('fp.receipt_no')
 
                 ->unionAll(function ($query) use ($sub_institute_id, $syear, $extra_fo, $extra_fp) {
                     $query->selectRaw('t.id as student_id, t.enrollment_no, te.roll_no, t.uniqueid, t.place_of_birth, '
                         . DB::raw("CONCAT_WS(' ', t.first_name, t.middle_name, t.last_name) as student_name") . ', g.title as grade, s.name as standard_name, d.name as division_name, NULL AS created_date, '
                         . DB::raw('CONCAT_WS(" ", u.first_name, u.last_name) AS user_name, fo.month_id AS term_id, fo.receiptdate AS receiptdate, fo.reciept_id AS receipt_no, fo.payment_mode AS payment_mode, '
                         . 'fo.bank_name as cheque_bank_name, fo.bank_branch, fo.cheque_dd_no as cheque_no, fo.cheque_dd_date AS cheque_date, b.title as batch, sq.title as quota, '
-                        . 'IFNULL(fo.actual_amountpaid, 0) AS actual_amountpaid'))->from('tblstudent as t')
+                        . 'SUM(IFNULL(fo.actual_amountpaid, 0)) AS actual_amountpaid,IFNULL(fo.fees_discount, 0) as discount,fo.remarks').'," " as bank_name')
+                        ->from('tblstudent as t')
                         ->join('tblstudent_enrollment as te', function ($join) use($syear){
                             $join->on('te.student_id', '=', 't.id')->where('te.syear',$syear);
                         })
@@ -3198,10 +3290,12 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                         ->leftJoin('tbluser as u',function($join){
                             $join->on('fo.created_by', '=', 'u.id')->where('u.status',1); // 23-04-24 by uma
                         })
-                        ->whereRaw("1=1 " . $extra_fo);
+                        ->whereRaw("1=1 " . $extra_fo)
+                ->groupBy('fo.reciept_id')
+                ;
                 });
         })
-            ->selectRaw('student_id, enrollment_no, roll_no, IFNULL(uniqueid,"-") as uniqueid, place_of_birth, student_name, grade,standard_name, division_name,created_date, user_name, GROUP_CONCAT(term_id) AS term_ids, receiptdate, receipt_no,  payment_mode, cheque_bank_name, bank_branch, cheque_no, cheque_date, batch,  quota,   SUM(IFNULL(actual_amountpaid, 0)) AS actual_amountpaid')
+            ->selectRaw('student_id, enrollment_no, roll_no, IFNULL(uniqueid,"-") as uniqueid, place_of_birth, student_name, grade,standard_name, division_name,created_date, user_name, GROUP_CONCAT(term_id) AS term_ids, receiptdate, receipt_no,  payment_mode, cheque_bank_name, bank_branch, cheque_no, cheque_date, batch,  quota,   SUM(IFNULL(actual_amountpaid, 0)) AS actual_amountpaid,SUM(IFNULL(discount, 0)) as discount,remarks,bank_name')
             ->groupBy('receipt_no');
 
         $data = $data->get()->toArray();
@@ -3225,12 +3319,15 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
         ->where('fc.student_id',$stud_id)
         ->groupByRaw('reciept_id')
         ->get()->toArray();
+
+        $fees_config = DB::table('fees_config_master')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear])->first();
         // cancel data end
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['fees_data'] = $feesData;
         $res['cancelData'] = $cancelData;
         $res['enrollment_no'] = $enrollment_no;
+        $res['config_data'] = $fees_config;
 
         return $res;
     }
