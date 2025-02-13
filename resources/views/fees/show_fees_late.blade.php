@@ -34,6 +34,7 @@
                                     <th>Sr No.</th>
                                     <th>{{ App\Helpers\get_string('standard','request')}}</th>
                                     <th>Late Fees Date</th>
+                                    <th>Month</th>
                                     <th>Fine Type</th>
                                     <th>Status</th>
                                     <th>Created By</th>
@@ -42,15 +43,18 @@
                                 </tr>
                             </thead>
                             <tbody>
-                            @php
-                            $j=1;
-                            @endphp
+
                             @if(isset($data['data']))
                                 @foreach($data['data'] as $key => $data)
+                                    @php
+                                        $feesArr = App\Helpers\FeeMonthId();
+                                        $feesMonth = (isset($data->month_id) && isset($feesArr[$data->month_id])) ? $feesArr[$data->month_id] : '-';
+                                    @endphp
                                 <tr>
-                                    <td>{{$j}}</td>
+                                    <td>{{$key+1}}</td>
                                     <td>{{$data->standard}}</td>
-                                    <td>{{$data->late_date}}</td>
+                                    <td>{{date('d-m-Y',strtotime($data->late_date))}}</td>
+                                    <td>{{$feesMonth}}</td>
                                     <td>{{$data->fine_type}}</td>
                                     <td>{{ ($data->status==1) ? 'Yes' : 'No'}}</td>
                                     <td>{{$data->user}}</td>
@@ -66,9 +70,6 @@
                                         </form>
                                     </td>
                                 </tr>
-                            @php
-                            $j++;
-                            @endphp
                                 @endforeach
 							@endif
                             </tbody>
