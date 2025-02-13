@@ -2325,10 +2325,14 @@ if (!function_exists('get_string')) {
         return $fees_config;
     }
 
-    function get_map_month()
+    function get_map_month($sub_institute_id='',$syear='')
     {
-        $sub_institute_id = session()->get('sub_institute_id');
-        $syear = session()->get('syear');
+        if($sub_institute_id==''){
+            $sub_institute_id = session()->get('sub_institute_id');
+        }
+        if($sub_institute_id==''){
+            $syear = session()->get('syear');
+        }
 
         $data = map_year::where([
             'sub_institute_id' => $sub_institute_id,

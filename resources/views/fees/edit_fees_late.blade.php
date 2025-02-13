@@ -28,31 +28,30 @@
                         {{ method_field("PUT") }}
                         @csrf
                         <div class="row">
-	                        <div class="col-md-3 form-group">
+	                        <div class="col-md-4 form-group">
 	                        	<label>{{ App\Helpers\get_string('standard','request')}} </label>
-	                            <select name="standard_id" id="standard_id" class="form-control" required>
+	                            <select name="standard_id" id="standard_id" class="form-control" disabled>
 	                                @foreach($data['standard_list'] as $key => $value)
 	                                   <option value="{{$value['id']}}" @if(isset($data['editData']['standard_id']) && $value['id'] == $data['editData']['standard_id']) selected @endif>{{$value['name']}}</option>
 	                                @endforeach
 	                            </select>
 	                        </div>
-	                        {{-- <div class="col-md-3 form-group">
+	                        <div class="col-md-4 form-group">
 	                            <label>Late Fees Start Date</label>
-	                            <input type="text" id='late_date' value="@if(isset($data['late_date'])){{ $data['late_date'] }}@endif" required name="late_date" class="form-control">
+	                            <input type="text" id='late_date' value="@if(isset($data['editData']['late_date'])){{ $data['editData']['late_date'] }}@endif" required name="late_date" class="form-control mydatepicker">
 	                        </div>
-	                        <div class="col-md-3 form-group">
-	                            <label>Term/Quarter</label>
-	                            <select name="term_id" id="term_id" class="form-control" required>
-	                                @foreach($data['term_list'] as $key => $value)
-	                                    <option value="{{$value['id']}}"  @if(isset($data['term_id']))@if($value['id'] == $data['term_id']) selected @endif @endif>{{$value['title']}}</option>
-	                                @endforeach
-	                            </select>
-	                        </div> --}}
-							<div class="col-md-3">
-                                <label for="late_date">Late Fees Start Date</label>
-                                <input type="number" name="late_date" class="form-control" @if(isset($data['editData']['late_date'])) value="{{$data['editData']['late_date']}}" @endif required>
+	                        <!-- select fees month  -->
+                            <div class="col-md-4">
+                                <label for="fees_month">Select Fees Month</label>
+                                <select name="fees_month" id="fees_month" class="form-control" disabled>
+                                    <option value="">Select Fees Month</option>
+                                    @foreach($data['fees_month'] as $month_id=>$value)
+                                    <option value="{{$month_id}}"  @if(isset($data['editData']['month_id']) && $data['editData']['month_id']==$month_id) selected @endif>{{$value}}</option>
+                                    @endforeach
+                                </select>
                             </div>
-                            <div class="col-md-3">
+							
+                            <div class="col-md-4">
                                 <label for="fees_type">Fine Counting Type</label>
                                 <select name="fine_type" id="fine-type" class="form-control" required>
                                     <option value="">Select type</option>
@@ -61,7 +60,7 @@
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-4">
                                 <label for="status">Status</label><br>
                                 <label class="switch">
                                     <input type="checkbox" name="status" class="roundCheckbox check_status"   @if(isset($data['editData']['status']) && $data['editData']['status']==	1) checked @endif value="1">

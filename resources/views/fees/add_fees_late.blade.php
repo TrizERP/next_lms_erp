@@ -26,7 +26,8 @@
                     {{ method_field("POST") }}
                     @csrf
                         <div class="row">
-                            <div class="col-md-3 form-group">
+                            <!-- get standard lists  -->
+                            <div class="col-md-4 form-group">
                                 <label>{{ App\Helpers\get_string('standard','request')}}</label>
                                 <select name="standard_id[]" id="standard_id" class="form-control resizable" required multiple>
                                     @foreach($data['standard_list'] as $key => $value)
@@ -34,15 +35,23 @@
                                     @endforeach
                                 </select>
                             </div>
-                            <!-- <div class="col-md-4 form-group">
+                            <!-- select date to start late fees  -->
+                            <div class="col-md-4 form-group">
                                 <label>Late Fees Start Date </label>
                                 <input type="text" id='late_date' required name="late_date" class="form-control mydatepicker">
-                            </div> -->
-                            <div class="col-md-3">
-                                <label for="late_date">Late Fees Start Date</label>
-                                <input type="number" name="late_date" class="form-control" placeholder="Enter date of month to start counting" required>
                             </div>
-                            <div class="col-md-3">
+                            <!-- select fees month  -->
+                            <div class="col-md-4">
+                                <label for="fees_month">Select Fees Month</label>
+                                <select name="fees_month" id="fees_month" class="form-control" required>
+                                    <option value="">Select Fees Month</option>
+                                    @foreach($data['fees_month'] as $month_id=>$value)
+                                    <option value="{{$month_id}}">{{$value}}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <!-- fees counting one time or daily  -->
+                            <div class="col-md-4">
                                 <label for="fees_type">Fine Counting Type</label>
                                 <select name="fine_type" id="fine-type" class="form-control" required>
                                     <option value="">Select type</option>
@@ -51,14 +60,15 @@
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="col-md-3">
+                            <!-- status for apply or not  -->
+                            <div class="col-md-4">
                                 <label for="status">Status</label><br>
                                 <label class="switch">
                                     <input type="checkbox" name="status" class="roundCheckbox check_status" value="1" checked>
                                     <span class="slider round"></span>
                                 </label>
                             </div>
-                            <input type="hidden" name="term_id" value="0">
+                            <!-- <input type="hidden" name="term_id" value="0"> -->
                             <div class="col-md-12 form-group">
                                 <center>
                                     <input type="submit" name="submit" value="Save" class="btn btn-success" >
