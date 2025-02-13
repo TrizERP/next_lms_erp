@@ -756,7 +756,7 @@ class fees_collect_controller extends Controller
                                 $insert_amount = $_REQUEST['fees_data'][$title];
                                 $_REQUEST['fees_data'][$title] = 0;
                             }
-                            if ($insert_amount != 0) {
+                            if ($insert_amount != 0 && $insert_amount !='') {
                                 $reg_insert_arr[$month][$title] = $insert_amount;
                             }
                         }
@@ -1500,6 +1500,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                     $total_fine += $paid_result[0]->fine_amount;
                 }
             }
+            // echo "<Pre>";print_R($fees_arr);exit;
             foreach ($fees_arr as $sort_order_id => $arr) {
                 $order_id = explode('_', $sort_order_id);
                 if ($order_id[1] == $sort_order && $sub_institute_id==76) {
@@ -1509,23 +1510,25 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                      // start 08-01-2025 by uma for ssmission
                     //  $title_name='';
                     $title_name='';
-                    if(isset($fees_arr[$sort_order_id]['TUITION FEE'])){
+                    if(isset($fees_arr[$sort_order_id]['TUITION FEE']) && $fees_arr[$sort_order_id]['TUITION FEE']!=0 && $fees_arr[$sort_order_id]['TUITION FEE']!=''){
                         $title_name='TUITION FEE';
-                    }elseif(isset($fees_arr[$sort_order_id]['FOOD TRANSPORT ETC']) && $fees_arr[$sort_order_id]['FOOD TRANSPORT ETC']){
+                    }elseif(isset($fees_arr[$sort_order_id]['FOOD TRANSPORT ETC']) && $fees_arr[$sort_order_id]['FOOD TRANSPORT ETC']!=0 && $fees_arr[$sort_order_id]['FOOD TRANSPORT ETC']!=''){
                         $title_name='FOOD TRANSPORT ETC';
                     }
-                    elseif(isset($fees_arr[$sort_order_id]['HOSTEL FEE']) && $fees_arr[$sort_order_id]['HOSTEL FEE']){
+                    elseif(isset($fees_arr[$sort_order_id]['HOSTEL FEE']) && $fees_arr[$sort_order_id]['HOSTEL FEE']!=0 && $fees_arr[$sort_order_id]['HOSTEL FEE']=''){
                         $title_name='HOSTEL FEE';
                     }else{
                         // 10-02-2025 solve error on undefine $title_name
                         foreach ($arr as $headName => $amount) {
-                            $title_name = $headName;
+                            if($amount!=0 && $amount=''){
+                                $title_name = $headName;
+                            }
                         }
                     }
 
                     if(isset($fees_arr[$sort_order_id][$title_name])){
-                        $fees_arr[$sort_order_id][$title_name]+=$total_fine;
-                        $fees_arr[$sort_order_id][$title_name]+=$total_discount;
+                        $fees_arr[$sort_order_id][$title_name]-=$total_fine;
+                        $fees_arr[$sort_order_id][$title_name]-=$total_discount;
                     }
                       // end 08-01-2025 by uma for ssmission
                 }
