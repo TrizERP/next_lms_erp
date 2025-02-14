@@ -66,7 +66,7 @@ $route = ['dashboard'];
                             } 
                         @endphp
                         <!-- <a href='http://crm.triz.co.in/customerportal/index.php?api=Login&module=Portal&q={"password":"{{ $userPassword }}","username":"{{ $userEmail }}","language":"en_us"}&type=API' class="nav-link pb-0" target="_blank" rel="noopener noreferrer"> -->
-                            <span class="menu-main-icon" onclick="openTTMS()"><i class="mdi mdi-clipboard-account md-36"></i></span> TTMS
+                            <span class="menu-main-icon" onclick="openTTMS('{{ $userEmail }}', '{{ $userPassword }}')"><i class="mdi mdi-clipboard-account md-36"></i></span> TTMS
                         <!-- </a> -->
                     </div>
                 </div>
@@ -581,23 +581,18 @@ $('.guide-title').on('click', function(event) {
 
 
     });
-    function openTTMS(){
-       var username = '{{$userEmail}}';
-       var password = '{{$userPassword}}';
-       var url = 'https://crm.triz.co.in/customerportal/index.php?api=Login&module=Portal&q=' +
-        encodeURIComponent(JSON.stringify({
-            "password": "{{$userPassword}}",
-            "username": "{{$userEmail}}",
-            "language": "en_us"
-        })) +
-        '&type=API';
-      
-      //var url = 'https://crm.triz.co.in/customerportal/index.php';
-      // Open the URL in a new tab
+    function openTTMS(username, password) {
+    let queryParams = {
+        "password": password,
+        "username": username,
+        "language": "en_us"
+    };
+
+    let url = 'https://crm.triz.co.in/customerportal/index.php?api=Login&module=Portal&q=' + 
+              encodeURIComponent(JSON.stringify(queryParams)) + '&type=API';
+
     window.open(url, '_blank');
     }
-
-
 </script>
 
 <!-- Chatbot HTML -->
