@@ -409,7 +409,7 @@
 										<td>{{ App\Helpers\get_string('discount')}}</td>
 										<td></td>
 										<td>
-											<input type='text' id='totalDis' name='totalDis' value='0' class='form-control directdiscount'>
+											<input type='number' min="0" id='totalDis' name='totalDis' value='0' class='form-control directdiscount'>
 										</td>
 									</tr>
 									@php 

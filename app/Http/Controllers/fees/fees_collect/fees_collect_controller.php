@@ -756,7 +756,7 @@ class fees_collect_controller extends Controller
                                 $insert_amount = $_REQUEST['fees_data'][$title];
                                 $_REQUEST['fees_data'][$title] = 0;
                             }
-                            if ($insert_amount != 0) {
+                            if ($insert_amount != 0 && $insert_amount !='') {
                                 $reg_insert_arr[$month][$title] = $insert_amount;
                             }
                         }
@@ -1500,6 +1500,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                     $total_fine += $paid_result[0]->fine_amount;
                 }
             }
+            // echo "<Pre>";print_R($fees_arr);exit;
             foreach ($fees_arr as $sort_order_id => $arr) {
                 $order_id = explode('_', $sort_order_id);
                 if ($order_id[1] == $sort_order && $sub_institute_id==76) {
@@ -1509,23 +1510,25 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                      // start 08-01-2025 by uma for ssmission
                     //  $title_name='';
                     $title_name='';
-                    if(isset($fees_arr[$sort_order_id]['TUITION FEE'])){
+                    if(isset($fees_arr[$sort_order_id]['TUITION FEE']) && $fees_arr[$sort_order_id]['TUITION FEE']!=0 && $fees_arr[$sort_order_id]['TUITION FEE']!=''){
                         $title_name='TUITION FEE';
-                    }elseif(isset($fees_arr[$sort_order_id]['FOOD TRANSPORT ETC']) && $fees_arr[$sort_order_id]['FOOD TRANSPORT ETC']){
+                    }elseif(isset($fees_arr[$sort_order_id]['FOOD TRANSPORT ETC']) && $fees_arr[$sort_order_id]['FOOD TRANSPORT ETC']!=0 && $fees_arr[$sort_order_id]['FOOD TRANSPORT ETC']!=''){
                         $title_name='FOOD TRANSPORT ETC';
                     }
-                    elseif(isset($fees_arr[$sort_order_id]['HOSTEL FEE']) && $fees_arr[$sort_order_id]['HOSTEL FEE']){
+                    elseif(isset($fees_arr[$sort_order_id]['HOSTEL FEE']) && $fees_arr[$sort_order_id]['HOSTEL FEE']!=0 && $fees_arr[$sort_order_id]['HOSTEL FEE']=''){
                         $title_name='HOSTEL FEE';
                     }else{
                         // 10-02-2025 solve error on undefine $title_name
                         foreach ($arr as $headName => $amount) {
-                            $title_name = $headName;
+                            if($amount!=0 && $amount=''){
+                                $title_name = $headName;
+                            }
                         }
                     }
 
                     if(isset($fees_arr[$sort_order_id][$title_name])){
-                        $fees_arr[$sort_order_id][$title_name]+=$total_fine;
-                        $fees_arr[$sort_order_id][$title_name]+=$total_discount;
+                        $fees_arr[$sort_order_id][$title_name]-=$total_fine;
+                        $fees_arr[$sort_order_id][$title_name]-=$total_discount;
                     }
                       // end 08-01-2025 by uma for ssmission
                 }
@@ -2868,63 +2871,101 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
 
             // fees late master implement finr_type wise start 03-02-2025 not foe institutes altius,hills high and CN sports
             if(isset($stu_detail['std_id']) && isset($fees_config[0]->late_fees_amount) && !in_array($sub_institute_id,[195,254,257])){
+                // comment start on 13-02-2025 
                 // get added late fees details 
-                $getFineType = DB::table('fees_late_master')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear,'standard_id'=>$stu_detail['std_id'],'status'=>1])->first();
+                // $getFineType = DB::table('fees_late_master')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear,'standard_id'=>$stu_detail['std_id'],'status'=>1])->first();
 
-                // get added late fees details 
-                if(!empty($getFineType) && isset($getFineType->fine_type)){
-                    $fineType= $getFineType->fine_type;
-                    //check fees details of student
-                    if(!empty($left_bk_table)){
-                        $remainMonth =$remainYear= $fineMonth= $fineDays = $fineWeeks = 0;
-                        $datesArray=[];
-                        $currentMonth = date('n');
-                        $currentYear = date('Y');
-                        $currentDate = Carbon::now();
+                // // get added late fees details 
+                // if(!empty($getFineType) && isset($getFineType->fine_type)){
+                //     $fineType= $getFineType->fine_type;
+                //     //check fees details of student
+                //     if(!empty($left_bk_table)){
+                //         $remainMonth =$remainYear= $fineMonth= $fineDays = $fineWeeks = 0;
+                //         $datesArray=[];
+                //         $currentMonth = date('n');
+                //         $currentYear = date('Y');
+                //         $currentDate = Carbon::now();
 
-                        //check fees details remain or not
-                        foreach($left_bk_table as $key=>$val){
-                              // remain fees count month and days in it
-                              $remainMonthId = substr($val['month_id'], 0,-4);
-                              $remainYear = substr($val['month_id'],-4);
-                            // if remain fees is greater than  0 get fine according to mont,week,day 
-                            if($val['remain'] > 0 && $remainYear <= $currentYear){
+                //         //check fees details remain or not
+                //         foreach($left_bk_table as $key=>$val){
+                //               // remain fees count month and days in it
+                //               $remainMonthId = substr($val['month_id'], 0,-4);
+                //               $remainYear = substr($val['month_id'],-4);
+                //             // if remain fees is greater than  0 get fine according to mont,week,day 
+                //             if($val['remain'] > 0 && $remainYear <= $currentYear){
                               
-                                $fineMonth += ($remainMonth+1);
+                //                 $fineMonth += ($remainMonth+1);
 
-                                $day_date = Carbon::createFromFormat('d-n-Y', $getFineType->late_date.'-'.$remainMonthId.'-'.$remainYear); 
+                //                 $day_date = Carbon::createFromFormat('d-n-Y', $getFineType->late_date.'-'.$remainMonthId.'-'.$remainYear); 
                                 
-                                // Get the weeks in the month
-                                $startOfMonth = $day_date->copy(); 
-                                $endOfMonth = $day_date->copy()->endOfMonth();
+                //                 // Get the weeks in the month
+                //                 $startOfMonth = $day_date->copy(); 
+                //                 $endOfMonth = $day_date->copy()->endOfMonth();
 
-                                $fineDays += $startOfMonth->diffInDays($endOfMonth) + 1; 
+                //                 $fineDays += $startOfMonth->diffInDays($endOfMonth) + 1; 
 
-                                $fineWeeks += CarbonPeriod::create($startOfMonth, '1 week', $endOfMonth)->count();
+                //                 $fineWeeks += CarbonPeriod::create($startOfMonth, '1 week', $endOfMonth)->count();
 
-                                $datesArray[] = collect(CarbonPeriod::create($startOfMonth, $endOfMonth)->toArray())
-                                ->map(fn($date) => $date->format('Y-m-d'))
-                                ->toArray();
+                //                 $datesArray[] = collect(CarbonPeriod::create($startOfMonth, $endOfMonth)->toArray())
+                //                 ->map(fn($date) => $date->format('Y-m-d'))
+                //                 ->toArray();
                                             
+                //             }
+                //         }
+
+                //         // count fine typewise fines 
+                //         if($fineType=="Monthly" && isset($getFineType->late_date) && $currentDate>=$getFineType->late_date){
+                //             $config_late_fine = ($fineMonth*$fees_config[0]->late_fees_amount);
+                //         }
+                //         elseif($fineType=="Weekly" && isset($getFineType->late_date) && $currentDate>=$getFineType->late_date){
+                //             $config_late_fine = ($fineWeeks*$fees_config[0]->late_fees_amount);
+                //         }
+                //         elseif($fineType=="Daily" && isset($getFineType->late_date) && $currentDate>=$getFineType->late_date){
+                //             $config_late_fine = ($fineDays*$fees_config[0]->late_fees_amount);
+                //         }
+                //     }
+                // }
+                // comment end on 13-02-2025 
+                $getLateData = $remainMonthDate = [];
+                $currentDate =  Carbon::now()->format('d-n-Y');
+                if(!empty($left_bk_table)){
+                    foreach ($left_bk_table as $key => $value) {
+                        $remainMonthId = substr($value['month_id'], 0,-4);
+                        $remainYear = substr($value['month_id'],-4);
+                        $remainDate = Carbon::createFromFormat('d-n-Y', '01-'.$remainMonthId.'-'.$remainYear);
+
+                        if($value['remain'] > 0 && $remainDate->lessThanOrEqualTo($currentDate)){
+                            // get all fees late master
+                            $getLateDatas = DB::table('fees_late_master')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear,'standard_id'=>$stu_detail['std_id'],'status'=>1,'month_id'=>$value['month_id']])->first();
+                            if(!empty($getLateDatas)){
+                                $getLateData[] = $getLateDatas;
                             }
                         }
+                    }
+                    // get only data of smallest date or month late entry
+                    if(!empty($getLateData)){
+                        $remainMonthDate = collect($getLateData)->sortBy('late_date')->first();   
+                    }
+                }
+                $days_difference = 0;
+                if(!empty($remainMonthDate) && isset($remainMonthDate->month_id)){
+                    // echo "<pre>";print_r($remainMonthDate->month_id);
+                    $start_date = Carbon::parse($remainMonthDate->late_date);
+                    $end_date = Carbon::now(); // Gets the current date
 
-                        // count fine typewise fines 
-                        if($fineType=="Monthly" && isset($getFineType->late_date) && $currentDate>=$getFineType->late_date){
-                            $config_late_fine = ($fineMonth*$fees_config[0]->late_fees_amount);
-                        }
-                        elseif($fineType=="Weekly" && isset($getFineType->late_date) && $currentDate>=$getFineType->late_date){
-                            $config_late_fine = ($fineWeeks*$fees_config[0]->late_fees_amount);
-                        }
-                        elseif($fineType=="Daily" && isset($getFineType->late_date) && $currentDate>=$getFineType->late_date){
-                            $config_late_fine = ($fineDays*$fees_config[0]->late_fees_amount);
-                        }
+                    if (!$start_date->greaterThan($end_date)) {
+                        $days_difference += $start_date->diffInDays($end_date) + 1;
+                    }
+                    if($remainMonthDate->fine_type=="Daily"){
+                        $config_late_fine = ($days_difference*$fees_config[0]->late_fees_amount);
+                    }else{
+                        $config_late_fine = $fees_config[0]->late_fees_amount;
                     }
                 }
                 // echo $fineMonth."<br>";
                 // echo $fineWeeks."<br>";
                 // echo $fineDays."<br>";
-                // echo "<pre>";print_r($datesArray);
+                // echo "<pre>";print_r($config_late_fine);
             }
             // exit;
             // fees late master implement finr_type wise end 04-02-2025
@@ -2937,7 +2978,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
         // echo "<pre>";print_r($res);exit;
         $res['receipt_css_data'] = $receipt_css;
         $res['paper_size'] = $paper_size;
-        $res['config_late_fine'] = $config_late_fine;
+        $res['config_late_fine'] = $config_late_fine;   
         return $res;
     }
 

@@ -13,6 +13,8 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
+use function App\Helpers\get_map_month;
+use function App\Helpers\FeeMonthId;
 use Validator;
 
 class tblfeesLateController extends Controller
@@ -92,14 +94,13 @@ class tblfeesLateController extends Controller
         $term_list = academic_yearModel::where([
             'sub_institute_id' => $sub_institute_id, 'syear' => $syear,
         ])->get()->toArray();
-
-        // view()->share('standard_list', $data);
-        // view()->share('term_list', $term_list);
-        // return view('fees/add_fees_late');
+        // get fees months of fees collection
+        $getMonth = $this->getFeesMonth($request);
 
         $res['standard_list'] =$data;
         $res['term_list'] =$term_list;
-        $res['fine_types'] = ["Monthly","Weekly","Daily"];
+        $res['fine_types'] = ["One Time","Daily"];
+        $res['fees_month'] = $getMonth;
 
         return is_mobile($type, "fees/add_fees_late", $res, "view");
     }
@@ -118,10 +119,11 @@ class tblfeesLateController extends Controller
         $user_id = $request->session()->get('user_id');
         $type = $request->input('type');
         $standard_ids = $request->standard_id;
-        $late_date=$request->late_date;
-        $term_id=$request->term_id;
+        $late_date=date('Y-m-d',strtotime($request->late_date));
+        // $term_id=$request->term_id;
         $fine_type=$request->fine_type;
         $status=$request->status;
+        $month_id=$request->fees_month;
 
         if($type=="API"){
             try {
@@ -141,9 +143,10 @@ class tblfeesLateController extends Controller
                     'user_id' => 'required|numeric',
                     'standard_id' => 'required',
                     'late_date' => 'required',
-                    'term_id' => 'required',
+                    // 'term_id' => 'required',
                     'fine_type' => 'required',
                     'status' => 'required',
+                    'fees_month' => 'required',
                 ]);
         
                 if ($validator->fails()) {
@@ -165,13 +168,14 @@ class tblfeesLateController extends Controller
                 'late_date'=>$late_date,
                 'standard_id'=>$value,
                 'syear'=>$syear,
-                'term_id'=>$term_id,
+                'month_id'=>$month_id,
                 'fine_type'=>$fine_type,
                 'status'=>$status,
                 'sub_institute_id'=>$sub_institute_id,
                 'created_by'=>$user_id,
                 'created_on'=>now()
             ];
+            // echo "<pre>";print_r($Newrequest);exit;
 
             $data = $this->saveData($Newrequest,'insert');
             if($data){
@@ -195,7 +199,7 @@ class tblfeesLateController extends Controller
         if($action=='update' && $id!=''){
             $data = tblfeesLateModel::where('id',$id)->update($request);
         }else{
-            $checkData = tblfeesLateModel::where('standard_id',$request['standard_id'])->where(['sub_institute_id'=>$request['sub_institute_id'],'syear'=>$request['syear']])->get()->toArray();  
+            $checkData = tblfeesLateModel::where('standard_id',$request['standard_id'])->where(['sub_institute_id'=>$request['sub_institute_id'],'syear'=>$request['syear'],'month_id'=>$request['month_id']])->get()->toArray();  
             if(empty($checkData)){
                 $data = tblfeesLateModel::insert($request);
             }
@@ -278,15 +282,15 @@ class tblfeesLateController extends Controller
             'sub_institute_id' => $sub_institute_id, 'syear' => $syear,
         ])->get()->toArray();
 
-        // view()->share('standard_list', $data);
-        // view()->share('term_list', $term_list);
         $editData = tblfeesLateModel::find($id)->toArray();
-
+        // get fees months of fees collection
+        $getMonth = $this->getFeesMonth($request);
         // return view('fees/edit_fees_late', ['data' => $editData]);
         $res['standard_list'] =$data;
         $res['term_list'] =$term_list;
-        $res['fine_types'] = ["Monthly","Weekly","Daily"];
+        $res['fine_types'] = ["One Time","Daily"];
         $res['editData'] = $editData;
+        $res['fees_month'] = $getMonth;
         return is_mobile($type, "fees/edit_fees_late", $res, "view");
     }
 
@@ -299,15 +303,17 @@ class tblfeesLateController extends Controller
      */
     public function update(Request $request, $id)
     {
+        // echo "<pre>";print_R($request->all());exit;
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
         $user_id = $request->session()->get('user_id');
         $type = $request->input('type');
-        $standard_id = $request->standard_id;
-        $late_date=$request->late_date;
+        // $standard_id = $request->standard_id;
+        $late_date=date('Y-m-d',strtotime($request->late_date));
         $term_id=$request->term_id;
         $fine_type=$request->fine_type;
         $status=$request->status;
+        // $month_id=$request->fees_month;
 
         if($type=="API"){
             try {
@@ -323,11 +329,12 @@ class tblfeesLateController extends Controller
                     'sub_institute_id' => 'required|numeric',
                     'syear' => 'required|numeric',
                     'user_id' => 'required|numeric',
-                    'standard_ids' => 'required',
+                    // 'standard_ids' => 'required',
                     'late_date' => 'required',
-                    'term_id' => 'required',
+                    // 'term_id' => 'required',
                     'fine_type' => 'required',
                     'status' => 'required',
+                    // 'fees_month' => 'required',
                 ]);
         
                 if ($validator->fails()) {
@@ -348,11 +355,14 @@ class tblfeesLateController extends Controller
         // $this->updateData($request);
         $Newrequest = [
             'late_date'=>$late_date,
-            'standard_id'=>$standard_id,
+            // 'standard_id'=>$standard_id,
             'fine_type'=>$fine_type,
+            // 'month_id'=>$month_id,
             'status'=>$status,
             'updated_on'=>now()
         ];
+        // echo "<pre>";print_R($Newrequest);exit;
+
         $data = $this->saveData($Newrequest,'update',$id);
 
         $res['status_code'] = "1";
@@ -375,5 +385,50 @@ class tblfeesLateController extends Controller
         $res['message'] = "Fees Late Start Date deleted successfully";
 
         return is_mobile($type, "fees_late_master.index", $res);
+    }
+
+    public function getFeesMonth(Request $request){
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+        $type = $request->type;
+
+        if($type=="API"){
+            $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');
+        }
+
+        $FeeMonthId = FeeMonthId($syear,$sub_institute_id);
+        // get months from fees_month_header for fees collect
+        $getMonth = get_map_month($sub_institute_id,$syear);
+        // get months from fees_month_header not set then get from fees breakoff
+        if(empty($getMonth)){
+            // get months from feesBreakOff
+            $breakOff = DB::table('fees_breackoff')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear])->groupBy('month_id')->pluck('month_id')->toArray();
+
+            foreach ($breakOff as $key => $value) {
+                if(isset($FeeMonthId[$value])){
+                    $getMonth[$value] = $FeeMonthId[$value];
+                }
+            }
+        }
+
+        $months = [
+            "Jan" => 1, "Feb" => 2, "Mar" => 3, "Apr" => 4, "May" => 5, "Jun" => 6,
+            "Jul" => 7, "Aug" => 8, "Sep" => 9, "Oct" => 10, "Nov" => 11, "Dec" => 12
+        ];
+        
+        uksort($getMonth, function ($a, $b) {
+            // Extract year and month from the key
+            $yearA = (int)substr($a, -4);
+            $monthA = (int)substr($a, 0, -4);
+        
+            $yearB = (int)substr($b, -4);
+            $monthB = (int)substr($b, 0, -4);
+        
+            // Compare by year first, then by month
+            return ($yearA === $yearB) ? $monthA - $monthB : $yearA - $yearB;
+        });
+        
+        return $getMonth;
     }
 }
