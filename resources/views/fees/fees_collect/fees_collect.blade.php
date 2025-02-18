@@ -1167,8 +1167,16 @@ function checkForm() {
 		$.ajax({
 				url: "/ajax_PDF_FeesReceipt?action="+action+"&student_id="+student_id+"&receipt_id_html="+receiptId+"&paper_size="+paperSize,                
 				success: function(result){ 
-					window.open(result, '_blank');
-					$("#overlay").css("display","none");
+					let newTab = window.open(result, '_blank');
+					if (newTab) {
+						newTab.onload = function() {
+							newTab.print();  // Auto trigger the print dialog
+						};
+					} else {
+						alert("Pop-up blocked! Please allow pop-ups for this site.");
+					}
+					$("#overlay").css("display", "none");
+
 				},
 				error:function(xhr, status, error) {
 					alert('Failed to get RecieptData');
