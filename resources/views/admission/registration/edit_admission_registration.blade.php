@@ -539,7 +539,7 @@ $('document').ready(function(){
                 $('.' + fieldName + 'Div').addClass('show').find('label').text(fieldLabel);
                 @if($value['required']==1)
                     $('#'+fieldName).prop('required',true);
-                    alert("{{$value['required']}}");
+                    // alert("{{$value['required']}}");
                 @endif
             @endif 
         @endforeach
