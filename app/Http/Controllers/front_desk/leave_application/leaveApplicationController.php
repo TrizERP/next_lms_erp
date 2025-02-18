@@ -323,7 +323,7 @@ class leaveApplicationController extends Controller
                 $file_size = $file->getSize();
                 $name = $request->get('attechment').date('YmdHis');
                 $ext = File::extension($originalname);
-                $file_name = "attechment_".$name.'.'.$ext;
+                $file_name = "attachment_".$name.'.'.$ext; // 2025-02-18 changes spelling at attechment to attachment
                 $path = $file->storeAs('public/leave_application/', $file_name);
             }
 
