@@ -66,7 +66,8 @@
 												'Conditionally Promoted',
 												'Needs improvement',
 												'Passed Promoted to class 10',
-												'Detain'
+												'Detain',
+												'Essential repeat'
 												];
 										@endphp
 
