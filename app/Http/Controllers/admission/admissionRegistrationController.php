@@ -372,6 +372,9 @@ class admissionRegistrationController extends Controller
         $studentArray['religion'] = $data['con_religion'];
         $studentArray['cast'] = $data['con_cast'];
         // end 2024-08-27
+         // 2025-02-18 added fathre mobile numer in student mobile 
+         $studentArray['student_mobile'] = isset($data['mobile_number_father']) ? $data['mobile_number_father'] : null;
+         // end 2025-02-18 
         $i=0;
         if (isset($data['enrollment_no']) && $data['enrollment_no'] != '') {
             $enrollment_no_sql_new = $data['enrollment_no'];
@@ -410,6 +413,9 @@ class admissionRegistrationController extends Controller
                         'religion'            => $studentArray['religion'],
                         'cast'                => $studentArray['cast'],
                         // end 2024-08-27 
+                        // 2025-02-18 added fathre mobile numer in student mobile 
+                        'student_mobile'                => $studentArray['student_mobile'],
+                        // end 2025-02-18 
                     ]);
 
                 $student_id = DB::getPdo()->lastInsertId();
@@ -453,6 +459,9 @@ class admissionRegistrationController extends Controller
                         'religion'            => $studentArray['religion'],
                         'cast'                => $studentArray['cast'],
                         // 2024-08-27 end
+                        // 2025-02-18 added fathre mobile numer in student mobile 
+                        'student_mobile'                => $studentArray['student_mobile'],
+                        // end 2025-02-18 
                     ]);
 
                 $student_id = DB::getPdo()->lastInsertId();
