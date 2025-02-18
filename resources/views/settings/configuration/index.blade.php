@@ -88,7 +88,7 @@
 
             <div class="row infoDiv">
                 <h4 style="width:100%"><span class="fa fa-info-circle"></span> info</h4>
-                <p style="width:100%">Drag and drop a Module to re-order it.</p>
+                <p style="width:100%">Drag and drop a Module to re-order it. On click add/edit fields.</p>
             </div>
 
             <div class="drag-row-container">
@@ -99,14 +99,14 @@
                             <span class="mdi mdi-{{$value['icon']}}"></span>
                         </div>
                         <div class="menuName">
-                            <h4>{{$menuTitle}}</h4>
+                            <h6>{{$menuTitle}}</h6>
                         </div>
                     </div>
 
                     @if(isset($data['sub_menu'][$menuTitle]) && !empty($data['sub_menu'][$menuTitle]))
                     <div class="subMenuContainer">
                         @foreach($data['sub_menu'][$menuTitle] as $k => $val)
-                        <div class="subMenuList col-md-12" data-id="{{ $val['id'] }}">
+                        <div class="subMenuList col-md-12" data-id="{{ $val['id'] }}" onclick="addFieldPage({{$val['id']}})">
                             <div class="dragIcon col-md-2">
                                 <span class="mdi mdi-drag"></span>
                             </div>
@@ -139,7 +139,7 @@
                 // console.log("Updated order:", menuArr); // Log updated order
                 $.ajax({
                     url : "{{route('updateMenuSortOrder')}}",
-                    data : {orderArr:menuArr},
+                    data : {orderArr:menuArr, masterType: 'rights'},
                     type : 'POST',
                     success : function(response){
                         console.log("Updated order:", response); // Log updated order
@@ -155,7 +155,10 @@
             }
         }).disableSelection();
     });
-
+    // call fields page as per menu id
+    function addFieldPage(menuId){
+        window.location.href = "/settings/configurations/create?main_menu_id="+menuId;
+    }
 </script>
 
 @include('includes.footer')

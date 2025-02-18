@@ -32,6 +32,7 @@ Route::group(['prefix' => 'settings', 'middleware' => ['session', 'menu', 'logRo
 
     Route::resource('configurations', configurationController::class);
     Route::post('update-rights-order',[configurationController::class,'updateMenuSortOrder'])->name('updateMenuSortOrder');
+    Route::get('getFeildLists',[configurationController::class,'getFeildLists'])->name('getFeildLists');
 
 });
 // no permisson check

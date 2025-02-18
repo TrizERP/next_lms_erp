@@ -13,19 +13,23 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('master_fields', function (Blueprint $table) {
+        Schema::create('master_fields_institute', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->string('module',255)->nullable();
+            $table->string('section',255)->nullable();
             $table->string('field_name',255)->nullable();
             $table->string('field_label',255)->nullable();
             $table->string('field_type',255)->nullable();
             $table->text('field_value')->nullable();
-            $table->boolean('is_mandatory')->default(false);
-            $table->boolean('is_visible')->default(true);
+            $table->string('default_value',255)->nullable();
             $table->text('validation_rules')->nullable();
             $table->integer('sort_order')->nullable();
-            $table->string('section',255)->nullable();
+            $table->boolean('is_mandatory')->default(false);
+            $table->boolean('is_visible')->default(true);
             $table->string('main_menu',255)->nullable();
+            $table->bigInteger('sub_institute_id');
+            $table->biginteger('created_by');
+            $table->softDeletes();
             $table->timestamps();
         });
     }
@@ -37,6 +41,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('master_fields');
+        Schema::dropIfExists('master_fields_institute');
     }
 };
