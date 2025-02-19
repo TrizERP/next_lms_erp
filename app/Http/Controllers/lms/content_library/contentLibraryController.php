@@ -61,6 +61,7 @@ class contentLibraryController extends Controller
         $res['standards']=$this->getMapVals($request,'content_library_standard');
         $res['courses']=$this->getMapVals($request,'content_library_courses');
         $res['content_type']=$this->getMapVals($request,'content_library_type');
+        $res['material_type']=$this->getMapVals($request,'content_library_material');
         // echo "<pre>";print_r($res['otherMaps']);exit;      
         return is_mobile($type, 'lms/content_library/index', $res, 'view');
     }
@@ -107,6 +108,7 @@ class contentLibraryController extends Controller
         $res['standards']=$this->getMapVals($request,'content_library_standard');
         $res['courses']=$this->getMapVals($request,'content_library_courses');
         $res['content_type']=$this->getMapVals($request,'content_library_type');
+        $res['material_type']=$this->getMapVals($request,'content_library_material');
         // echo "<pre>";print_r($res['content_type']);exit;
 
         return is_mobile($type, 'lms/content_library/add', $res, 'view');
@@ -153,6 +155,7 @@ class contentLibraryController extends Controller
         $res['standards']=$this->getMapVals($request,'content_library_standard');
         $res['courses']=$this->getMapVals($request,'content_library_courses');
         $res['content_type']=$this->getMapVals($request,'content_library_type');
+        $res['material_type']=$this->getMapVals($request,'content_library_material');
         // echo "<pre>";print_r($res['content_type']);exit;
         $res['editData'] = contentLibraryModel::find($id);
         $res['contentData'] = DB::table('content_master')->where(['sub_institute_id'=>$sub_institute_id,'content_library_id'=>$id])->first();
@@ -411,6 +414,7 @@ class contentLibraryController extends Controller
         $res['standards']=$this->getMapVals($request,'content_library_standard');
         $res['courses']=$this->getMapVals($request,'content_library_courses');
         $res['content_type']=$this->getMapVals($request,'content_library_type');
+        $res['material_type']=$this->getMapVals($request,'content_library_material');
         $res['editData'] = contentLibraryModel::find($id);
         return is_mobile($type, 'lms/content_library/show', $res,'view');
     }
