@@ -665,10 +665,10 @@ document.getElementById('user_input').addEventListener('keypress', function(even
                 document.getElementById('messages').innerHTML += `
                     <div style="display: inline-block; max-width: 80%; text-align: left; background-color: #f1f1f1; padding: 10px; border-radius: 5px; margin: 5px 0; float: left; clear: both;">
                         <p style="margin-bottom: 5px; color: #333;">Fees FAQ's:</p> <!-- Reduced margin-bottom -->
-                        <div style="display: flex; flex-direction: column; gap: 10px;">
-                                    <button class="fees-button" data-message="Pending Fees" style="width: 100%; padding: 0px; border-radius: 5px; background-color:rgb(108, 194, 111); color: white; border: 2px solid #4CAF50; cursor: pointer; font-size: 12px;">Pending Fees</button>
-                                   <button class="fees-button" data-message="Student not showing while collecting the fees." style="width: 100%; padding: 0px; border-radius: 5px; background-color:rgb(108, 194, 111); color: white; border: 2px solid #4CAF50; cursor: pointer; font-size: 12px;">Student Not Visible</button>
-    
+                        <div style="display: flex; flex-direction: column; gap: 10px;"> <!-- Reduced gap -->
+                            <button class="fees-button" data-message="Pending Fees" style="width: 100%; padding: 0px; border-radius: 5px; background-color:rgb(108, 194, 111); color: white; border: 2px solid #4CAF50; cursor: pointer; font-size: 12px;">Pending Fees</button>
+                        <button class="fees-button" data-message="Student not showing while collecting the fees." style="width: 100%; padding: 0px; border-radius: 5px; background-color:rgb(108, 194, 111); color: white; border: 2px solid #4CAF50; cursor: pointer; font-size: 12px;">Student Not Visible</button>
+   
     <button class="fees-button" data-message="The fee amount is displayed as more than the specified break-off limit." style="width: 100%; padding: 0px; border-radius: 5px; background-color:rgb(108, 194, 111); color: white; border: 2px solid #4CAF50; cursor: pointer; font-size: 12px;">Excess Fee Amount</button>
     
     <button class="fees-button" data-message="How do I access the fees module?" style="width: 100%; padding: 0px; border-radius: 5px; background-color:rgb(108, 194, 111); color: white; border: 2px solid #4CAF50; cursor: pointer; font-size: 12px;">Access Fees Module</button>
@@ -701,8 +701,8 @@ document.getElementById('user_input').addEventListener('keypress', function(even
     
     <button class="fees-button" data-message="What reports should I generate at the end of each term or year?" style="width: 100%; padding: 0px; border-radius: 5px; background-color:rgb(108, 194, 111); color: white; border: 2px solid #4CAF50; cursor: pointer; font-size: 12px;">Term Reports</button>
 
-                                </div>
-                    </div>`;
+      </div>
+    </div>`;
             });
             document.getElementById('messages').addEventListener('click', function(event) {
                 var message=''; 
@@ -735,7 +735,7 @@ document.getElementById('messages').addEventListener('click', function(event) {
 // Function to send messages
 function sendMessage(message) {
     if (message.trim() === '') return; // Prevent sending empty messages
-    
+    console.log(message);
     // Display user message
     document.getElementById('messages').innerHTML += `<div style="display: inline-block; max-width: 80%; text-align: right; background-color: #e0f7fa; padding: 10px; border-radius: 5px; margin: 5px 0; float: right; clear: both;">${message}</div><br>`;
     document.getElementById('user_input').value = ''; // Clear input field
@@ -754,9 +754,17 @@ function sendMessage(message) {
     .then(data => {
       document.getElementById('send_button').disabled = false;
       document.getElementById('loading').style.display = 'none'; 
-        // Display bot response
-        document.getElementById('messages').innerHTML += `<div style="display: inline-block; max-width: 80%; text-align: left; background-color: #f1f1f1; padding: 10px; border-radius: 5px; margin: 5px 0; float:left; clear: both;">${data.message}</div>`;
-        
+         // Create a container for bot messages
+    const botMessage = document.createElement("div");
+    botMessage.style.cssText = "display: inline-block; max-width: 80%; text-align: left; background-color: #f1f1f1; padding: 10px; border-radius: 5px; margin: 5px 0; float: left; clear: both;";
+    
+    // Use innerHTML to correctly render HTML lists
+    botMessage.innerHTML = data.message; 
+
+    // Append the bot message
+    document.getElementById('messages').appendChild(botMessage);
+
+    console.log(data.message);
         // Scroll to the bottom of the messages
         document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
     })

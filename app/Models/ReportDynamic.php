@@ -11,6 +11,9 @@ class ReportDynamic extends Model {
         'id',
         'report_name',
         'fields',
+        'report_type',
+        'data_type',
+        'syear',
         'created_at',
         'updated_at'
     ];
