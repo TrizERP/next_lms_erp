@@ -233,7 +233,7 @@
                     </select>
                     </div> --}}
 
-                    <div class="col-md-12" style="padding: 10px 14px;text-align:left">
+                    <div class="col-md-12" style="padding: 10px 10px 14px;text-align:left">
                     <label for="Types">Select Types</label><br>
                     @foreach($data['otherMaps']['mapValue'][$otherMap] as $k=>$value)
                     <input type="hidden" name="keywords[{{$otherMap}}]" id="Type">
@@ -242,6 +242,21 @@
                     </div>
                     @endif
                 @endforeach
+
+                @foreach($data['otherMaps']['mapType'] as $key=>$value)
+                @php 
+                    $otherMap = str_replace(' ','_',$value->name);
+                @endphp 
+                @if(isset($data['otherMaps']['mapValue'][$otherMap]) && !empty($data['otherMaps']['mapValue'][$otherMap]))
+                    <div class="col-md-12" style="padding: 10px 14px;text-align:left">
+                        <label for="SubTypes">Select Sub-types</label><br>
+                        @foreach($data['otherMaps']['mapValue'][$otherMap] as $k=>$value)
+                            <input type="hidden" name="keywords[{{$otherMap}}]" id="SubType">
+                            <a class="btn btn-success SubTypeBtn" data-type="{{$value->type}}" onclick="getSearchedContents('contentDiv','');">{{$value->name}}</a>
+                        @endforeach
+                    </div>
+                @endif
+            @endforeach
         </div>
         <!-- standard search  -->
         </div>

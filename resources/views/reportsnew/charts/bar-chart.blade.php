@@ -3,7 +3,7 @@
 @section('content')
 <div class="container">
         <x-filters :showContries='true' />
-
+        <!-- 'sub_institute_id': $("#sub_institute_id").val(), -->
         <div class="card">
             <div class="card-body">
                 {{-- This Canvas is for the Bar Chart --}}
@@ -26,8 +26,7 @@
         url: '/fees-collect-data-b',  
         method: 'GET',
         dataType: 'json',
-        data: {
-            'sub_institute_id': $("#sub_institute_id").val(),  
+        data: {  
             'from': $("#from").val(),  
             'to': $("#to").val(),  
             'x_field': $("#xField").val(), 
