@@ -665,9 +665,43 @@ document.getElementById('user_input').addEventListener('keypress', function(even
                 document.getElementById('messages').innerHTML += `
                     <div style="display: inline-block; max-width: 80%; text-align: left; background-color: #f1f1f1; padding: 10px; border-radius: 5px; margin: 5px 0; float: left; clear: both;">
                         <p style="margin-bottom: 5px; color: #333;">Fees FAQ's:</p> <!-- Reduced margin-bottom -->
-                        <div style="display: flex; flex-direction: column; gap: 1px;"> <!-- Reduced gap -->
-                            <button class="fees-button" data-message="Pending Fees" style="width: 100%; padding: 0px; border-radius: 5px; background-color: #4CAF50; color: white; border: none; cursor: pointer; font-size: 12px;">Pending Fees</button>
-                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                                    <button class="fees-button" data-message="Pending Fees" style="width: 100%; padding: 0px; border-radius: 5px; background-color:rgb(108, 194, 111); color: white; border: 2px solid #4CAF50; cursor: pointer; font-size: 12px;">Pending Fees</button>
+                                   <button class="fees-button" data-message="Student not showing while collecting the fees." style="width: 100%; padding: 0px; border-radius: 5px; background-color:rgb(108, 194, 111); color: white; border: 2px solid #4CAF50; cursor: pointer; font-size: 12px;">Student Not Visible</button>
+    
+    <button class="fees-button" data-message="The fee amount is displayed as more than the specified break-off limit." style="width: 100%; padding: 0px; border-radius: 5px; background-color:rgb(108, 194, 111); color: white; border: 2px solid #4CAF50; cursor: pointer; font-size: 12px;">Excess Fee Amount</button>
+    
+    <button class="fees-button" data-message="How do I access the fees module?" style="width: 100%; padding: 0px; border-radius: 5px; background-color:rgb(108, 194, 111); color: white; border: 2px solid #4CAF50; cursor: pointer; font-size: 12px;">Access Fees Module</button>
+    
+    <button class="fees-button" data-message="I want to show fee payment history of a student?" style="width: 100%; padding: 0px; border-radius: 5px; background-color:rgb(108, 194, 111); color: white; border: 2px solid #4CAF50; cursor: pointer; font-size: 12px;">View Fee History</button>
+    
+    <button class="fees-button" data-message="How do I initiate the fee collection process for a student?" style="width: 100%; padding: 0px; border-radius: 5px; background-color:rgb(108, 194, 111); color: white; border: 2px solid #4CAF50; cursor: pointer; font-size: 12px;">Collect Fees</button>
+    
+    <button class="fees-button" data-message="What should I do if a student’s fee structure appears incorrect?" style="width: 100%; padding: 0px; border-radius: 5px; background-color:rgb(108, 194, 111); color: white; border: 2px solid #4CAF50; cursor: pointer; font-size: 12px;">Fix Fee Structure</button>
+    
+    <button class="fees-button" data-message="Where do I find the receipt number and details after a payment?" style="width: 100%; padding: 0px; border-radius: 5px; background-color:rgb(108, 194, 111); color: white; border: 2px solid #4CAF50; cursor: pointer; font-size: 12px;">Find Receipt</button>
+    
+    <button class="fees-button" data-message="How do I reprint or resend a receipt to a parent?" style="width: 100%; padding: 0px; border-radius: 5px; background-color:rgb(108, 194, 111); color: white; border: 2px solid #4CAF50; cursor: pointer; font-size: 12px;">Reprint Receipt</button>
+    
+    <button class="fees-button" data-message="How do I generate a report of collected fees for a specific period?" style="width: 100%; padding: 0px; border-radius: 5px; background-color:rgb(108, 194, 111); color: white; border: 2px solid #4CAF50; cursor: pointer; font-size: 12px;">Fee Collection Report</button>
+    
+    <button class="fees-button" data-message="How can I check or update the fee structure for different classes?" style="width: 100%; padding: 0px; border-radius: 5px; background-color:rgb(108, 194, 111); color: white; border: 2px solid #4CAF50; cursor: pointer; font-size: 12px;">Update Fee Structure</button>
+    
+    <button class="fees-button" data-message="How do I set up late fees or penalties for delayed payments?" style="width: 100%; padding: 0px; border-radius: 5px; background-color:rgb(108, 194, 111); color: white; border: 2px solid #4CAF50; cursor: pointer; font-size: 12px;">Set Late Fees</button>
+    
+    <button class="fees-button" data-message="What should I do if a payment is not showing up in the system?" style="width: 100%; padding: 0px; border-radius: 5px; background-color:rgb(108, 194, 111); color: white; border: 2px solid #4CAF50; cursor: pointer; font-size: 12px;">Missing Payment</button>
+    
+    <button class="fees-button" data-message="How can I correct an incorrect fee entry?" style="width: 100%; padding: 0px; border-radius: 5px; background-color:rgb(108, 194, 111); color: white; border: 2px solid #4CAF50; cursor: pointer; font-size: 12px;">Correct Fee Entry</button>
+    
+    <button class="fees-button" data-message="How can I notify parents about pending fees?" style="width: 100%; padding: 0px; border-radius: 5px; background-color:rgb(108, 194, 111); color: white; border: 2px solid #4CAF50; cursor: pointer; font-size: 12px;">Notify Parents</button>
+    
+    <button class="fees-button" data-message="Can I email or message a fee receipt directly to parents?" style="width: 100%; padding: 0px; border-radius: 5px; background-color:rgb(108, 194, 111); color: white; border: 2px solid #4CAF50; cursor: pointer; font-size: 12px;">Send Receipt</button>
+    
+    <button class="fees-button" data-message="How do I manage access rights for the fees module?" style="width: 100%; padding: 0px; border-radius: 5px; background-color:rgb(108, 194, 111); color: white; border: 2px solid #4CAF50; cursor: pointer; font-size: 12px;">Manage Access</button>
+    
+    <button class="fees-button" data-message="What reports should I generate at the end of each term or year?" style="width: 100%; padding: 0px; border-radius: 5px; background-color:rgb(108, 194, 111); color: white; border: 2px solid #4CAF50; cursor: pointer; font-size: 12px;">Term Reports</button>
+
+                                </div>
                     </div>`;
             });
             document.getElementById('messages').addEventListener('click', function(event) {
@@ -836,8 +870,42 @@ function feesState(){
   document.getElementById('messages').innerHTML += `
                             <div style="display: inline-block; max-width: 80%; text-align: left; background-color: #f1f1f1; padding: 10px; border-radius: 5px; margin: 5px 0; float: left; clear: both;">
                                 <p style="margin-bottom: 5px; color: #333;">Fees FAQ's:</p>
-                                <div style="display: flex; flex-direction: column; gap: 1px;">
-                                    <button class="fees-button" data-message="Pending Fees" style="width: 100%; padding: 0px; border-radius: 5px; background-color: #4CAF50; color: white; border: none; cursor: pointer; font-size: 12px;">Pending Fees</button>
+                                <div style="display: flex; flex-direction: column; gap: 10px;">
+                                    <button class="fees-button" data-message="Pending Fees" style="width: 100%; padding: 0px; border-radius: 5px; background-color:rgb(108, 194, 111); color: white; border: 2px solid #4CAF50; cursor: pointer; font-size: 12px;">Pending Fees</button>
+                                   <button class="fees-button" data-message="Student not showing while collecting the fees." style="width: 100%; padding: 0px; border-radius: 5px; background-color:rgb(108, 194, 111); color: white; border: 2px solid #4CAF50; cursor: pointer; font-size: 12px;">Student Not Visible</button>
+    
+    <button class="fees-button" data-message="The fee amount is displayed as more than the specified break-off limit." style="width: 100%; padding: 0px; border-radius: 5px; background-color:rgb(108, 194, 111); color: white; border: 2px solid #4CAF50; cursor: pointer; font-size: 12px;">Excess Fee Amount</button>
+    
+    <button class="fees-button" data-message="How do I access the fees module?" style="width: 100%; padding: 0px; border-radius: 5px; background-color:rgb(108, 194, 111); color: white; border: 2px solid #4CAF50; cursor: pointer; font-size: 12px;">Access Fees Module</button>
+    
+    <button class="fees-button" data-message="I want to show fee payment history of a student?" style="width: 100%; padding: 0px; border-radius: 5px; background-color:rgb(108, 194, 111); color: white; border: 2px solid #4CAF50; cursor: pointer; font-size: 12px;">View Fee History</button>
+    
+    <button class="fees-button" data-message="How do I initiate the fee collection process for a student?" style="width: 100%; padding: 0px; border-radius: 5px; background-color:rgb(108, 194, 111); color: white; border: 2px solid #4CAF50; cursor: pointer; font-size: 12px;">Collect Fees</button>
+    
+    <button class="fees-button" data-message="What should I do if a student’s fee structure appears incorrect?" style="width: 100%; padding: 0px; border-radius: 5px; background-color:rgb(108, 194, 111); color: white; border: 2px solid #4CAF50; cursor: pointer; font-size: 12px;">Fix Fee Structure</button>
+    
+    <button class="fees-button" data-message="Where do I find the receipt number and details after a payment?" style="width: 100%; padding: 0px; border-radius: 5px; background-color:rgb(108, 194, 111); color: white; border: 2px solid #4CAF50; cursor: pointer; font-size: 12px;">Find Receipt</button>
+    
+    <button class="fees-button" data-message="How do I reprint or resend a receipt to a parent?" style="width: 100%; padding: 0px; border-radius: 5px; background-color:rgb(108, 194, 111); color: white; border: 2px solid #4CAF50; cursor: pointer; font-size: 12px;">Reprint Receipt</button>
+    
+    <button class="fees-button" data-message="How do I generate a report of collected fees for a specific period?" style="width: 100%; padding: 0px; border-radius: 5px; background-color:rgb(108, 194, 111); color: white; border: 2px solid #4CAF50; cursor: pointer; font-size: 12px;">Fee Collection Report</button>
+    
+    <button class="fees-button" data-message="How can I check or update the fee structure for different classes?" style="width: 100%; padding: 0px; border-radius: 5px; background-color:rgb(108, 194, 111); color: white; border: 2px solid #4CAF50; cursor: pointer; font-size: 12px;">Update Fee Structure</button>
+    
+    <button class="fees-button" data-message="How do I set up late fees or penalties for delayed payments?" style="width: 100%; padding: 0px; border-radius: 5px; background-color:rgb(108, 194, 111); color: white; border: 2px solid #4CAF50; cursor: pointer; font-size: 12px;">Set Late Fees</button>
+    
+    <button class="fees-button" data-message="What should I do if a payment is not showing up in the system?" style="width: 100%; padding: 0px; border-radius: 5px; background-color:rgb(108, 194, 111); color: white; border: 2px solid #4CAF50; cursor: pointer; font-size: 12px;">Missing Payment</button>
+    
+    <button class="fees-button" data-message="How can I correct an incorrect fee entry?" style="width: 100%; padding: 0px; border-radius: 5px; background-color:rgb(108, 194, 111); color: white; border: 2px solid #4CAF50; cursor: pointer; font-size: 12px;">Correct Fee Entry</button>
+    
+    <button class="fees-button" data-message="How can I notify parents about pending fees?" style="width: 100%; padding: 0px; border-radius: 5px; background-color:rgb(108, 194, 111); color: white; border: 2px solid #4CAF50; cursor: pointer; font-size: 12px;">Notify Parents</button>
+    
+    <button class="fees-button" data-message="Can I email or message a fee receipt directly to parents?" style="width: 100%; padding: 0px; border-radius: 5px; background-color:rgb(108, 194, 111); color: white; border: 2px solid #4CAF50; cursor: pointer; font-size: 12px;">Send Receipt</button>
+    
+    <button class="fees-button" data-message="How do I manage access rights for the fees module?" style="width: 100%; padding: 0px; border-radius: 5px; background-color:rgb(108, 194, 111); color: white; border: 2px solid #4CAF50; cursor: pointer; font-size: 12px;">Manage Access</button>
+    
+    <button class="fees-button" data-message="What reports should I generate at the end of each term or year?" style="width: 100%; padding: 0px; border-radius: 5px; background-color:rgb(108, 194, 111); color: white; border: 2px solid #4CAF50; cursor: pointer; font-size: 12px;">Term Reports</button>
+
                                 </div>
                             </div>`;
 
