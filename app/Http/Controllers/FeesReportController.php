@@ -1,7 +1,6 @@
 <?php
 
 namespace App\Http\Controllers;
-
 use App\Models\fees\fees_collect\FeesCollect;
 use App\Models\fees\fees_breackoff\FeesBreackoff;
 use Illuminate\Http\Request;
@@ -12,7 +11,6 @@ class FeesReportController extends Controller
 {
     public function gethorizontalBarChartData(Request $request)
     {
-        // Extract filters from the request
         $subInstituteId = $request->input('sub_institute_id');
         $fromDate = $request->input('from');
         $toDate = $request->input('to');
@@ -59,9 +57,7 @@ class FeesReportController extends Controller
         \Log::debug('Fees Collect Data:', [$feesCollectData]);
         \Log::debug('Fees Breackoff Data:', [$feesBreackoffData]);
 
-        // Process data by grouping it by receiptdate and summing up the relevant fields
         $feesCollectGrouped = $feesCollectData->groupBy(function ($date) {
-            // Parse the receiptdate into a standardized format (YYYY-MM-DD)
             return Carbon::parse($date->receiptdate)->toDateString();
         });
 
@@ -90,96 +86,101 @@ class FeesReportController extends Controller
     $subInstituteId = $request->input('sub_institute_id');
     $fromDate = $request->input('from');
     $toDate = $request->input('to');
-    $fields = $request->input('field');
-    // Validate the input dates and parse them correctly
+    $xFields = $request->input('x_field'); 
+    $yFields = $request->input('y_field');
+    $reportType = $request->input('report_type'); // Get report type dynamically
+    $reportName = $request->input('report_name');
+    $dataType = $request->input('data_type');
+    $sYear = $request->input('syear');
+    // Log::Info($reportType);
+    // Log::Info($reportName);
+    // Log::Info($dataType);
+    // Log::Info($sYear);
+    // Log::Info($xFields);
+    // Log::Info($yFields);
+    // Validate and format the input dates
     try {
         if ($fromDate) {
-            $fromDate = Carbon::parse($fromDate)->format('Y-m-d'); // Ensure date format is 'YYYY-MM-DD'
+            $fromDate = Carbon::parse($fromDate)->format('Y-m-d');
         }
 
         if ($toDate) {
-            $toDate = Carbon::parse($toDate)->format('Y-m-d'); // Ensure date format is 'YYYY-MM-DD'
+            $toDate = Carbon::parse($toDate)->format('Y-m-d');
         }
     } catch (\Exception $e) {
-        // Handle date parsing error
         Log::error('Error parsing dates:', ['fromDate' => $fromDate, 'toDate' => $toDate, 'error' => $e->getMessage()]);
         return response()->json(['error' => 'Invalid date format'], 400);
     }
 
-    // Construct the API URL with dynamic parameters
-    $url = "https://erp.triz.co.in/easy_com/notification_report/create?";
-
-    // Add the query parameters to the URL
-    $url .= http_build_query([
+    $baseUrl = "https://erp.triz.co.in/";
+    $apiEndpoint = strtolower(str_replace(' ', '_', $reportType)) . "_report/create"; 
+    $url = $baseUrl .$reportName."/". $apiEndpoint . "?";  
+    $queryParams = http_build_query([
         'type' => 'API',
-        'syear' => '2024',  // Assuming 'syear' is constant
+        'syear' => $sYear,
         'from_date' => $fromDate,
         'to_date' => $toDate,
-        'sub_institute_id' => $subInstituteId
+        'sub_institute_id' => $subInstituteId,
+        'token'=> 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3NDA4MjU0NTYsInVzZXJfaWQiOjEwMDIsInN1Yl9pbnN0aXR1dGVfaWQiOjEsIm1vYmlsZSI6Ijk5NzkxNzY1NjIifQ.dhGbQPmJiidmH8b2zBo3HePl-lduftwAPM6dTeG90f0'
     ]);
 
-    // Log the full request URL
+    $url .= $queryParams; 
     Log::info('Generated API Request URL:', ['url' => $url]);
 
-    // Make the API call
     try {
         $response = Http::timeout(60)->get($url);
 
-        // Check if the request was successful
         if ($response->successful()) {
             $responseData = $response->json();
 
-            // Ensure the 'data' field exists and is an array
-            if (isset($responseData['data']) && is_array($responseData['data'])) {
-                $notifications = $responseData['data'];
+            // Ensure 'data' field exists and is an array
+            if (isset($responseData[$dataType]) && is_array($responseData[$dataType])) {
+                $reportData = $responseData[$dataType];
 
-                $notificationCounts = [];
+                $dataCounts = [];
 
-                // Process each notification and count occurrences by type
-                foreach ($notifications as $notification) {
-                    if (isset($notification[$fields])) {
-                        $notificationType = $notification[$fields];
+                // Process each entry dynamically based on the selected field
+                foreach ($reportData as $entry) {
+                    if (isset($entry[$xFields])) {
+                        $fieldValue = $entry[$xFields];
 
-                        // Count the occurrences of each notification type
-                        if (isset($notificationCounts[$notificationType])) {
-                            $notificationCounts[$notificationType]++;
-                        } else {
-                            $notificationCounts[$notificationType] = 1;
+                        // If yFields is not provided, count occurrences of xFields
+                        if (!$yFields) {
+                            $dataCounts[$fieldValue] = isset($dataCounts[$fieldValue]) ? $dataCounts[$fieldValue] + 1 : 1;
+                        } 
+                        // If yFields is provided, sum up yFields values grouped by xFields
+                        else {
+                            $yValue = isset($entry[$yFields]) ? floatval($entry[$yFields]) : 0;
+                            $dataCounts[$fieldValue] = isset($dataCounts[$fieldValue]) ? $dataCounts[$fieldValue] + $yValue : $yValue;
                         }
                     } else {
-                        // Handle missing NOTIFICATION_TYPE
-                        Log::warning('Missing NOTIFICATION_TYPE in notification', ['notification' => $notification]);
+                        Log::warning("Missing field '$xFields' in entry", ['entry' => $entry]);
                     }
                 }
 
-                // Prepare the chart data
+                // Prepare data for the chart
                 $chartData = [];
-                foreach ($notificationCounts as $type => $count) {
+                foreach ($dataCounts as $fieldValue => $count) {
                     $chartData[] = [
-                        'notification_type' => $type,
+                        'label' => $fieldValue, // Label for chart
                         'count' => $count
                     ];
                 }
 
-                // Return the data as JSON for the chart
                 return response()->json($chartData);
             } else {
-                // Handle case where 'data' is missing or invalid
                 Log::error('API response does not contain valid "data" field', ['response' => $responseData]);
                 return response()->json(['error' => 'Invalid data format'], 400);
             }
         } else {
-            // Handle API request failure (non-200 status)
             Log::error('API request failed', ['status' => $response->status()]);
             return response()->json(['error' => 'API request failed'], 500);
         }
     } catch (\Exception $e) {
-        // Handle network or timeout error
         Log::error('Error during API request:', ['error' => $e->getMessage()]);
         return response()->json(['error' => 'Error during API request'], 500);
     }
 }
-
 
 public function getBubbleChartData(Request $request)
 {
@@ -223,14 +224,10 @@ public function getBubbleChartData(Request $request)
         $feesBreackoffQuery->where('created_at', '<=', $toDate);
     }
 
-    // Get all fees break-off data (similar logic to fees_collect)
     $feesBreackoffData = $feesBreackoffQuery->select('created_at', 'amount')->get();
 
-    // Combine fees_collect and fees_breackoff data into a common structure, e.g., dates and corresponding amounts
-    // You could use something like grouping the data by dates if you wish to compare on a daily basis
     $combinedData = [];
 
-    // Group fees_collect by receiptdate and fees_breackoff by created_at
     foreach ($feesCollectData as $feeCollect) {
         $date = Carbon::parse($feeCollect->receiptdate)->toDateString();
         $combinedData[$date]['fees_collect'] = $feeCollect->amount;
@@ -265,99 +262,107 @@ public function getBubbleChartData(Request $request)
 
 public function getDoughnutChartData(Request $request)
 {
-    // Extract the filters from the request
-    $subInstituteId = $request->input('sub_institute_id');
-    $fromDate = $request->input('from');
-    $toDate = $request->input('to');
-    $fields = $request->input('field');
-    // Validate the input dates and parse them correctly
-    try {
-        if ($fromDate) {
-            $fromDate = Carbon::parse($fromDate)->format('Y-m-d'); // Ensure date format is 'YYYY-MM-DD'
+        // Extract the filters from the request
+        $subInstituteId = $request->input('sub_institute_id');
+        $fromDate = $request->input('from');
+        $toDate = $request->input('to');
+        $xFields = $request->input('x_field'); 
+        $yFields = $request->input('y_field');
+        $reportType = $request->input('report_type'); 
+        $reportName = $request->input('report_name');
+        $dataType = $request->input('data_type');
+        $sYear = $request->input('syear');
+        $countType = $request->input('count_type');
+        // Log::Info($reportType);
+        // Log::Info($reportName);
+        // Log::Info($dataType);
+        // Log::Info($sYear);
+        // Log::Info($xFields);
+        // Log::Info($yFields);
+        try {
+            if ($fromDate) {
+                $fromDate = Carbon::parse($fromDate)->format('Y-m-d');
+            }
+            if ($toDate) {
+                $toDate = Carbon::parse($toDate)->format('Y-m-d');
+            }
+        } catch (\Exception $e) {
+            Log::error('Error parsing dates:', ['fromDate' => $fromDate, 'toDate' => $toDate, 'error' => $e->getMessage()]);
+            return response()->json(['error' => 'Invalid date format'], 400);
         }
+    $baseUrl = "https://erp.triz.co.in/";
+    $apiEndpoint = strtolower(str_replace(' ', '_', $reportType)) . "_report/create"; 
 
-        if ($toDate) {
-            $toDate = Carbon::parse($toDate)->format('Y-m-d'); // Ensure date format is 'YYYY-MM-DD'
-        }
-    } catch (\Exception $e) {
-        // Handle date parsing error
-        Log::error('Error parsing dates:', ['fromDate' => $fromDate, 'toDate' => $toDate, 'error' => $e->getMessage()]);
-        return response()->json(['error' => 'Invalid date format'], 400);
-    }
+    Log::info('Generated API Endpoint:', ['apiEndpoint' => $apiEndpoint]);
 
-    // Construct the API URL with dynamic parameters
-    $url = "https://erp.triz.co.in/easy_com/notification_report/create?";
+    $url = $baseUrl .$reportName."/". $apiEndpoint . "?";  
 
-    // Add the query parameters to the URL
-    $url .= http_build_query([
+    $queryParams = http_build_query([
         'type' => 'API',
-        'syear' => '2024',  // Assuming 'syear' is constant
+        'syear' => $sYear,
         'from_date' => $fromDate,
         'to_date' => $toDate,
-        'sub_institute_id' => $subInstituteId
+        'sub_institute_id' => $subInstituteId,
+        'token'=> 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3NDA4MjU0NTYsInVzZXJfaWQiOjEwMDIsInN1Yl9pbnN0aXR1dGVfaWQiOjEsIm1vYmlsZSI6Ijk5NzkxNzY1NjIifQ.dhGbQPmJiidmH8b2zBo3HePl-lduftwAPM6dTeG90f0'
     ]);
 
-    // Log the full request URL
+    $url .= $queryParams; 
+
     Log::info('Generated API Request URL:', ['url' => $url]);
 
-    // Make the API call
     try {
         $response = Http::timeout(60)->get($url);
 
-        // Check if the request was successful
         if ($response->successful()) {
             $responseData = $response->json();
 
-            // Ensure the 'data' field exists and is an array
-            if (isset($responseData['data']) && is_array($responseData['data'])) {
-                $notifications = $responseData['data'];
+            if (isset($responseData[$dataType]) && is_array($responseData[$dataType])) {
+                $reportData = $responseData[$dataType];
+                $dataCounts = [];
 
-                $notificationCounts = [];
+                foreach ($reportData as $entry) {
+                    if (isset($entry[$xFields])) {
+                        $fieldValue = $entry[$xFields];
 
-                // Process each notification and count occurrences by type
-                foreach ($notifications as $notification) {
-                    if (isset($notification[$fields])) {
-                        $notificationType = $notification[$fields];
-
-                        // Count the occurrences of each notification type
-                        if (isset($notificationCounts[$notificationType])) {
-                            $notificationCounts[$notificationType]++;
+                        if ($yFields && isset($entry[$yFields])) {
+                           
+                            $dataCounts[$fieldValue] = isset($dataCounts[$fieldValue]) 
+                                ? $dataCounts[$fieldValue] + floatval($entry[$yFields]) 
+                                : floatval($entry[$yFields]);
                         } else {
-                            $notificationCounts[$notificationType] = 1;
+            
+                            $dataCounts[$fieldValue] = isset($dataCounts[$fieldValue]) 
+                                ? $dataCounts[$fieldValue] + 1 
+                                : 1;
                         }
                     } else {
-                        // Handle missing NOTIFICATION_TYPE
-                        Log::warning('Missing NOTIFICATION_TYPE in notification', ['notification' => $notification]);
+                        Log::warning("Missing field '{$xFields}' in entry", ['entry' => $entry]);
                     }
                 }
 
-                // Prepare the chart data
                 $chartData = [];
-                foreach ($notificationCounts as $type => $count) {
+                foreach ($dataCounts as $fieldValue => $count) {
                     $chartData[] = [
-                        'notification_type' => $type,
+                        'label' => $fieldValue,
                         'count' => $count
                     ];
                 }
 
-                // Return the data as JSON for the chart
                 return response()->json($chartData);
             } else {
-                // Handle case where 'data' is missing or invalid
                 Log::error('API response does not contain valid "data" field', ['response' => $responseData]);
                 return response()->json(['error' => 'Invalid data format'], 400);
             }
         } else {
-            // Handle API request failure (non-200 status)
             Log::error('API request failed', ['status' => $response->status()]);
             return response()->json(['error' => 'API request failed'], 500);
         }
     } catch (\Exception $e) {
-        // Handle network or timeout error
         Log::error('Error during API request:', ['error' => $e->getMessage()]);
         return response()->json(['error' => 'Error during API request'], 500);
     }
 }
+
 public function getRealTimeChartData(Request $request)
 {
     
@@ -426,110 +431,179 @@ public function getRealTimeChartData(Request $request)
 //             event(new addedDataEvent('India', $item->date, $item->Confirmed));
 //             sleep(2);
 //         }
-//     }
+//     }    
 public function getScatterChartData(Request $request)
 {
-// Extract the filters from the request
-$subInstituteId = $request->input('sub_institute_id');
-$fromDate = $request->input('from');
-$toDate = $request->input('to');
-$fields = $request->input('field');
-// Validate the input dates and parse them correctly
-try {
-    if ($fromDate) {
-        $fromDate = Carbon::parse($fromDate)->format('Y-m-d'); // Ensure date format is 'YYYY-MM-DD'
+    // Extract the filters from the request
+    $subInstituteId = $request->input('sub_institute_id');
+    $fromDate = $request->input('from');
+    $toDate = $request->input('to');
+    $xFields = $request->input('x_field'); 
+    $yFields = $request->input('y_field');
+    $reportType = $request->input('report_type'); 
+    $reportName = $request->input('report_name');
+    $dataType = $request->input('data_type');
+    $sYear = $request->input('syear');
+    $countType = $request->input('count_type');
+    // Log::Info($countType);
+    // Log::Info($reportType);
+    // Log::Info($reportName);
+    // Log::Info($dataType);
+    // Log::Info($sYear);
+    // Log::Info($xFields);
+    // Log::Info($yFields);
+    try {
+        if ($fromDate) {
+            $fromDate = Carbon::parse($fromDate)->format('Y-m-d');
+        }
+        if ($toDate) {
+            $toDate = Carbon::parse($toDate)->format('Y-m-d');
+        }
+    } catch (\Exception $e) {
+        Log::error('Error parsing dates:', ['fromDate' => $fromDate, 'toDate' => $toDate, 'error' => $e->getMessage()]);
+        return response()->json(['error' => 'Invalid date format'], 400);
     }
 
-    if ($toDate) {
-        $toDate = Carbon::parse($toDate)->format('Y-m-d'); // Ensure date format is 'YYYY-MM-DD'
-    }
-} catch (\Exception $e) {
-    // Handle date parsing error
-    Log::error('Error parsing dates:', ['fromDate' => $fromDate, 'toDate' => $toDate, 'error' => $e->getMessage()]);
-    return response()->json(['error' => 'Invalid date format'], 400);
-}
+    $baseUrl = "https://erp.triz.co.in/";
+    $apiEndpoint = strtolower(str_replace(' ', '_', $reportType)) . "_report/create"; 
+    $url = $baseUrl.$reportName ."/". $apiEndpoint . "?";  
 
-// Construct the API URL with dynamic parameters
-$url = "https://erp.triz.co.in/easy_com/notification_report/create?";
+    $queryParams = http_build_query([
+        'type' => 'API',
+        'syear' => $sYear,
+        'from_date' => $fromDate,
+        'to_date' => $toDate,
+        'sub_institute_id' => $subInstituteId,
+        'token'=> 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3NDA4MjU0NTYsInVzZXJfaWQiOjEwMDIsInN1Yl9pbnN0aXR1dGVfaWQiOjEsIm1vYmlsZSI6Ijk5NzkxNzY1NjIifQ.dhGbQPmJiidmH8b2zBo3HePl-lduftwAPM6dTeG90f0'
+    ]);
 
-// Add the query parameters to the URL
-$url .= http_build_query([
-    'type' => 'API',
-    'syear' => '2024',
-    'from_date' => $fromDate,
-    'to_date' => $toDate,
-    'sub_institute_id' => $subInstituteId
-]);
+    $url .= $queryParams; 
+    // Log the full request URL
+    Log::info('Generated API Request URL:', ['url' => $url]);
 
-// Log the full request URL
-Log::info('Generated API Request URL:', ['url' => $url]);
+    // Make the API call
+    try {
+        $response = Http::timeout(60)->get($url);
 
-// Make the API call
-try {
-    $response = Http::timeout(60)->get($url);
+        // Check if the request was successful
+        if ($response->successful()) {
+            $responseData = $response->json();
 
-    // Check if the request was successful
-    if ($response->successful()) {
-        $responseData = $response->json();
-        if (isset($responseData['data']) && is_array($responseData['data'])) {
-            $notifications = $responseData['data'];
+            if (isset($responseData[$dataType]) && is_array($responseData[$dataType])) {
+                $dataEntries = $responseData[$dataType];
 
-            $notificationCounts = [];
-            $labels = []; 
-            // Process each notification and count occurrences by type
-            foreach ($notifications as $notification) {
-                if (isset($notification[$fields])) {
-                    $notificationType = $notification[$fields];
-                    $notificationDate = $notification['NOTOFICATION_DATE']; 
+                $dataCounts = [];
+                $labels = [];
 
-                    if (!in_array($notificationDate, $labels)) {
-                        $labels[] = $notificationDate;
-                    }
+                // Process data dynamically based on field and date
+                foreach ($dataEntries as $entry) {
+                 if (!$yFields) {
+                    if (isset($entry[$xFields])) {
+                        $dataValue = $entry[$xFields];
+                        $dateField = $entry['DATE'] ?? $entry[$countType] ?? null;
 
-                    if (isset($notificationCounts[$notificationType])) {
-                        $notificationCounts[$notificationType][] = $notificationDate;
+                        if ($dateField) {
+                            if (!in_array($dateField, $labels)) {
+                                $labels[] = $dateField;
+                            }
+
+                            if (isset($dataCounts[$dataValue])) {
+                                $dataCounts[$dataValue][] = $dateField;
+                            } else {
+                                $dataCounts[$dataValue] = [$dateField];
+                            }
+                        } else {
+                            Log::warning('Missing DATE field in entry', ['entry' => $entry]);
+                        }
                     } else {
-                        $notificationCounts[$notificationType] = [$notificationDate];
+                        Log::warning("Missing {$xFields} in entry", ['entry' => $entry]);
                     }
-                } else {
-                    Log::warning('Missing NOTIFICATION_TYPE in notification', ['notification' => $notification]);
+                } else{
+                    if (isset($entry[$xFields]) && isset($entry[$yFields])) {
+                        $dataValue = $entry[$xFields];
+                        $yValue = intval($entry[$yFields]);   
+                        $dateField = $entry['DATE'] ?? $entry[$countType] ?? null;
+                
+                        if ($dateField) {
+                            if (!in_array($dateField, $labels)) {
+                                $labels[] = $dateField;
+                            }
+                
+                            if (!isset($dataCounts[$dataValue])) {
+                                $dataCounts[$dataValue] = [];
+                            }
+                
+                            if (!isset($dataCounts[$dataValue][$dateField])) {
+                                $dataCounts[$dataValue][$dateField] = 0;
+                            }
+                
+                            $dataCounts[$dataValue][$dateField] += $yValue;
+
+                            //Log::Info($dataCounts[$dataValue][$dateField]);
+                        } else {
+                            Log::warning('Missing DATE field in entry', ['entry' => $entry]);
+                        }
+                    } else {
+                        Log::warning("Missing {$xFields} or {$yFields} in entry", ['entry' => $entry]);
+                    }
                 }
             }
-
-            // Prepare the chart data
-            $chartData = [];
-            foreach ($notificationCounts as $type => $dates) {
-                $dateCounts = array_count_values($dates);  
-                $chartData[] = [
-                    'notification_type' => $type,
-                    'dates' => $dateCounts  
-                ];
+                $chartData = [];
+                if(!$yFields){
+                foreach ($dataCounts as $type => $dates) {
+                    //Log::Info($dates);
+                    $dateCounts = array_count_values($dates);
+                    //Log::Info($dateCounts);
+                    $chartData[] = [
+                        'type' => $type,
+                        'dates' => $dateCounts
+                    ];
+                }
+                //Log::Info($chartData);
+            }else{
+                foreach ($dataCounts as $type => $dates) {
+                    // if (is_array($dates)) {
+                    //     //Log::Info($dates);
+                    //     $dateCounts = array_count_values($dates);
+                    // } else {
+                    //     //Log::Error("Expected array but got: " . gettype($dates));
+                    //     $dateCounts = []; 
+                    // }
+                    $chartData[] = [
+                        'type' => $type,
+                        'dates' => $dates
+                    ];
+                }
+                //Log::Info($chartData);
             }
-
-            // Return the data as JSON for the chart
-            return response()->json([
+            Log::debug('Response Data', [
                 'labels' => $labels,
-                'notification_types' => array_column($chartData, 'notification_type'),
-                'counts' => array_map(function($item) {
+                'types' => array_column($chartData, 'type'),
+                'counts' => array_map(function ($item) {
                     return array_values($item['dates']);
                 }, $chartData)
-            ]);
+            ]);  
+            return response()->json([
+                    'labels' => $labels,
+                    'types' => array_column($chartData, 'type'),
+                    'counts' => array_map(function ($item) {
+                        return array_values($item['dates']);
+                    }, $chartData)
+                ]);
+            } else {
+                Log::error('API response does not contain valid "data" field', ['response' => $responseData]);
+                return response()->json(['error' => 'Invalid data format'], 400);
+            }
         } else {
-            // Handle case where 'data' is missing or invalid
-            Log::error('API response does not contain valid "data" field', ['response' => $responseData]);
-            return response()->json(['error' => 'Invalid data format'], 400);
+            Log::error('API request failed', ['status' => $response->status()]);
+            return response()->json(['error' => 'API request failed'], 500);
         }
-    } else {
-        // Handle API request failure (non-200 status)
-        Log::error('API request failed', ['status' => $response->status()]);
-        return response()->json(['error' => 'API request failed'], 500);
+    } catch (\Exception $e) {
+        Log::error('Error during API request:', ['error' => $e->getMessage()]);
+        return response()->json(['error' => 'Error during API request'], 500);
     }
-} catch (\Exception $e) {
-    // Handle network or timeout error
-    Log::error('Error during API request:', ['error' => $e->getMessage()]);
-    return response()->json(['error' => 'Error during API request'], 500);
 }
-}
+
 public function getPolarAreaChartData(Request $request)
 {
     // Extract filters from the request

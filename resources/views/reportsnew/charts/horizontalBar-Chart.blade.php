@@ -19,43 +19,43 @@ let labels = [];
 let feesCollectData = [];
 let feesBreackoffData = [];
 
-// Function to fetch data from the server
+
 function getData() {
     $.ajax({
         url: '/fees-collect-data-hb',
         method: 'GET',
         dataType: 'json',
         data: {
-            'sub_institute_id': $("#sub_institute_id").val(), // Get the selected institute
-            'from': $("#from").val(),  // Get the start date (YYYY-MM-DD)
-            'to': $("#to").val()  // Get the end date (YYYY-MM-DD)
+            'sub_institute_id': $("#sub_institute_id").val(),
+            'from': $("#from").val(),
+            'to': $("#to").val() 
         },
         success: function(data) {
-            labels = Object.keys(data.fees_collect);  // Date labels
-            feesCollectData = Object.values(data.fees_collect);  // Fees collected data
-            feesBreackoffData = Object.values(data.fees_breackoff);  // Fees break-off data
+            labels = Object.keys(data.fees_collect); 
+            feesCollectData = Object.values(data.fees_collect);  
+            feesBreackoffData = Object.values(data.fees_breackoff);  
 
             const ctx = document.getElementById('horizontalBarChart').getContext('2d');
             if (chart) {
-                chart.destroy();  // Destroy existing chart if present
+                chart.destroy(); 
             }
 
-            // Create a new bar chart
+  
             chart = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: labels,  // Dates
+                    labels: labels,  
                     datasets: [
                         {
                             label: 'Fees Collected',
-                            data: feesCollectData,  // Data for Fees Collected
+                            data: feesCollectData,  
                             backgroundColor: 'rgba(255,99,132)',
                             borderColor: 'rgb(255,99,132)',
                             borderWidth: 1
                         },
                         {
                             label: 'Fees Break-off',
-                            data: feesBreackoffData,  // Data for Fees Break-off
+                            data: feesBreackoffData,  
                             backgroundColor: 'rgba(54,162,235)',
                             borderColor: 'rgb(54,162,235)',
                             borderWidth: 1
@@ -82,32 +82,26 @@ function getData() {
 function downloadReport() {
     const imgData = chart.toBase64Image();
 
-                // Get filter values: country, from date, and to date
-                const country = $("#sub_institute_id option:selected").text(); // Get the selected country name
-                const fromDate = $("#from").val(); // Get the "From" date
-                const toDate = $("#to").val(); // Get the "To" date
+              const country = $("#sub_institute_id option:selected").text(); 
+                const fromDate = $("#from").val();
+                const toDate = $("#to").val();
 
-                // Create a new jsPDF instance
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
 
-                // Add title and filter information to the PDF
                 doc.setFontSize(16);
                 doc.text("Fees Statistics Report", 10, 10);
                 doc.setFontSize(12);
                 doc.text(`Institute Id: ${country}`, 10, 20);
                 doc.text(`Date Range: ${fromDate} to ${toDate}`, 10, 30);
 
-                // Add the chart image to the PDF (adjust position and size as needed)
-                doc.addImage(imgData, 'PNG', 10, 40, 180, 100); // Adjust the dimensions as necessary
+                doc.addImage(imgData, 'PNG', 10, 40, 180, 100); 
 
-                // Save the PDF with the name 'report.pdf'
                 doc.save('Enhanced-bar-chart-report.pdf');
                     }
 
 $(function() {
-    getData();  // Fetch data on page load
-
+    getData();  
 });
     </script>
 @endsection
