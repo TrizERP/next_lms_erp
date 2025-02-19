@@ -56,7 +56,8 @@
                                         <option value="Fees" @if(isset($data['template_data']['module_name'])) @if($data['template_data']['module_name'] == "Fees") selected @endif @endif >Fees</option>                                        
                                         <option value="Bonafide" @if(isset($data['template_data']['module_name'])) @if($data['template_data']['module_name'] == "Bonafide") selected @endif @endif >Bonafide</option>                                        
                                         <option value="Transfer Certificate" @if(isset($data['template_data']['module_name'])) @if($data['template_data']['module_name'] == "Transfer Certificate") selected @endif @endif >Transfer Certificate</option>   
-                                        <option value="Student Fees Certificate" @if(isset($data['template_data']['module_name'])) @if($data['template_data']['module_name'] == "Student Fees Certificate") selected @endif @endif >Student Fees Certificate</option>                                        
+                                        <option value="Student Fees Certificate" @if(isset($data['template_data']['module_name'])) @if($data['template_data']['module_name'] == "Student Fees Certificate") selected @endif @endif >Student Fees Certificate</option> 
+                                        <option value="REIMBURSEMENT OF CEA" @if(isset($data['template_data']['module_name'])) @if($data['template_data']['module_name'] == "REIMBURSEMENT OF CEA") selected @endif @endif >REIMBURSEMENT OF CEA</option>                                        
                                     </select>
                                 </div>
                                 
