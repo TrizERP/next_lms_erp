@@ -773,7 +773,6 @@ public function handleFeedback($input)
         Session::put('state', 'initial'); 
         return "Sorry to hear that. How can I further assist you?";
     } else {
-
         return "Please respond with 'Yes' or 'No'. Are you satisfied with the response?";
     }
 }
@@ -824,8 +823,6 @@ public function handleFeedback($input)
             return "I'm sorry, I didn't understand that. Please specify if you need help with pending fees.";
         }
     }
-
-    // Handle grades-related queries
     protected function handleGradesState($input)
     {
         $studentId = trim($input);
@@ -934,7 +931,6 @@ protected function getPendingFees($studentId)
                 'sub_institute_id' => $sub_institute_id,
                 'syear' => $syear,
             ];
-
             $request = new Request($reqArr);
             // send created request to fees_collect controller function show_student
             $feesController = new fees_collect_controller;
@@ -1013,7 +1009,6 @@ public function trackKeyIssues($input)
         'grades' => 0,
         'attendance' => 0
     ];
-
     foreach ($keywords as $keyword) {
         if (stripos($input, $keyword) !== false) {
             $issueCounts[$keyword]++;

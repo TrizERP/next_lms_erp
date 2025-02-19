@@ -574,4 +574,57 @@ Route::get('/doughnut-chart-data', [FeesReportController::class, 'getDoughnutCha
 Route::get('/real-time-chart-data', [FeesReportController::class, 'getRealTimeChartData']);
 Route::get('/scatter-line-chart-data', [FeesReportController::class, 'getScatterChartData']);
 Route::get('/polar-area-chart-data', [FeesReportController::class, 'getPolarAreaChartData']);
+
+use App\Models\ReportDynamic;
+Route::get('/get-fields', function (Request $request) {
+    $reportType = $request->query('report_type');
+
+    if (!$reportType) {
+        return response()->json([
+            'x_fields' => [],
+            'y_fields' => [],
+        ]);
+    }
+
+    $reportDynamics = ReportDynamic::where('report_name', $reportType)->get();
+    
+    $xFieldsArray = [];
+    $yFieldsArray = [];
+    $reportName = null;
+    $dataType = null;
+    $sYear = null;
+    $countType = null;
+    foreach ($reportDynamics as $reportDynamic) {
+        if (!$reportName) {
+            $reportName = $reportDynamic->report_type;
+            $dataType = $reportDynamic->data_type;
+            $sYear = $reportDynamic->syear;
+            $countType = $reportDynamic->count_type;
+        }
+        if (isset($reportDynamic->x_fields)) {
+            $decodedXFields = json_decode($reportDynamic->x_fields, true);
+            if (isset($decodedXFields['fields'])) {
+                $xFieldsArray = array_merge($xFieldsArray, $decodedXFields['fields']);
+            }
+        }
+        if (isset($reportDynamic->y_fields)) {
+            $decodedYFields = json_decode($reportDynamic->y_fields, true);
+            if (isset($decodedYFields['fields'])) {
+                $yFieldsArray = array_merge($yFieldsArray, $decodedYFields['fields']);
+            }
+        }
+    }
+
+    return response()->json([
+        'x_fields' => array_unique($xFieldsArray),
+        'y_fields' => array_unique($yFieldsArray),
+        'report_type' => $reportName,
+        'data_type' => $dataType,
+        'syear' => $sYear,
+        'count_type' => $countType
+    ]);
+});
+
+
+use App\Http\Controllers\DataMigrationController;
 Route::get('/migrate-data', [DataMigrationController::class, 'migrateDataToNeo4j']);
