@@ -60,31 +60,29 @@
             });
         }
 
-        // Trigger data fetching on page load
+      
         $(document).ready(function() {
             getData();  // Fetch data on page load
         });
-        // Function to download the report
+       
         function downloadReport() {
-            const imgData = chart.toBase64Image(); // Capture the chart as an image
-            const subInstituteId = $("#sub_institute_id option:selected").text(); // Get the institute name
-            const fromDate = $("#from").val(); // Get the "From" date
-            const toDate = $("#to").val(); // Get the "To" date
+            const imgData = chart.toBase64Image(); 
+            const subInstituteId = $("#sub_institute_id option:selected").text(); 
+            const fromDate = $("#from").val(); 
+            const toDate = $("#to").val(); 
 
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
 
-            // Add title and filter information to the PDF
             doc.setFontSize(16);
             doc.text("Fees Collection Date-wise Report", 10, 10);
             doc.setFontSize(12);
             doc.text("Institute: " + subInstituteId, 10, 20);
             doc.text("Date Range: " + fromDate + " to " + toDate, 10, 30);
 
-            // Add the chart image to the PDF
+         
             doc.addImage(imgData, 'PNG', 10, 40, 180, 100); 
 
-            // Save the PDF with a specific name
             doc.save('Fees-Collection-Report.pdf');
         }
     </script>
