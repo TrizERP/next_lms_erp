@@ -85,7 +85,12 @@
     <div class="container-fluid">
         <!-- Start Drag and Drop -->
         <div class="card" style="width:100%">
-
+                @if ($sessionData = Session::get('data'))
+                <div class="@if($sessionData['status']==1) alert alert-success alert-block @else alert alert-danger alert-block @endif ">
+                    <button type="button" class="close" data-dismiss="alert">×</button>
+                    <strong>{{ $sessionData['message'] }}</strong>
+                </div>
+                @endif
             <div class="row infoDiv">
                 <h4 style="width:100%"><span class="fa fa-info-circle"></span> info</h4>
                 <p style="width:100%">Drag and drop a Module to re-order it. On click add/edit fields.</p>
