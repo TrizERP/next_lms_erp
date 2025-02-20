@@ -239,7 +239,7 @@
                     </select>
                     </div> --}}
 
-                    <div class="col-md-12" style="padding: 10px 14px;text-align:left">
+                    <div class="col-md-12" style="padding: 10px 10px 14px;text-align:left">
                     <label for="Types">Select Types</label><br>
                     @foreach($data['otherMaps']['mapValue'][$otherMap] as $k=>$value)
                     <input type="hidden" name="keywords[{{$otherMap}}]" id="Type">
@@ -248,6 +248,7 @@
                     </div>
                     @endif
                 @endforeach
+
                 <!-- Start Material Type-->
                 @foreach($data['material_type']['mapType'] as $key=>$value)
                 @php 

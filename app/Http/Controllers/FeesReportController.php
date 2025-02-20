@@ -83,7 +83,7 @@ class FeesReportController extends Controller
     public function getBarChartData(Request $request)
 {
     // Extract the filters from the request
-    $subInstituteId = $request->input('sub_institute_id');
+    $subInstituteId = session()->get('sub_institute_id');
     $fromDate = $request->input('from');
     $toDate = $request->input('to');
     $xFields = $request->input('x_field'); 
@@ -263,7 +263,8 @@ public function getBubbleChartData(Request $request)
 public function getDoughnutChartData(Request $request)
 {
         // Extract the filters from the request
-        $subInstituteId = $request->input('sub_institute_id');
+        // $subInstituteId = $request->input('sub_institute_id');
+        $subInstituteId = session()->get('sub_institute_id');
         $fromDate = $request->input('from');
         $toDate = $request->input('to');
         $xFields = $request->input('x_field'); 
@@ -435,7 +436,7 @@ public function getRealTimeChartData(Request $request)
 public function getScatterChartData(Request $request)
 {
     // Extract the filters from the request
-    $subInstituteId = $request->input('sub_institute_id');
+    $subInstituteId = session()->get('sub_institute_id');
     $fromDate = $request->input('from');
     $toDate = $request->input('to');
     $xFields = $request->input('x_field'); 
