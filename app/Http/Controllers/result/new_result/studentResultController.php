@@ -814,17 +814,44 @@ class studentResultController extends Controller
                         	$pAB = 1;
                             $w_m = $to_weight[$exam_id] ?? 0; // Check if the key exists
                             $t_m = array_sum(array_intersect_key($to_marks[$exam_id] ?? [], $marksArray));
-                            $obtained_mark_sum = array_sum($obtained_mark_arr);
-                            $convert_mark = ($obtained_mark_sum != 0) ? (($obtained_mark_sum / $t_m) * $w_m) : 0;
+                            // commented on 20-02-2025 start
+                            // $obtained_mark_sum = array_sum($obtained_mark_arr);
+                            // $convert_mark = ($obtained_mark_sum != 0) ? (($obtained_mark_sum / $t_m) * $w_m) : 0;
+                            // // for AB 
+                            // foreach ($obtained_mark_arr as $mk => $mv) {
+                            //     $w_m = $to_weight[$exam_id] ?? 0;
+                            //     $t_m = $to_marks[$exam_id];
+                            //     if(is_numeric($mv))
+                            //        	$pAB = 0;
+                            //     else
+                            //         continue;
+                            // }
+                            // commented on 20-02-2025 end
+
+                            // 20-02-2025 Separate numeric and non-numeric values by uma
+                            $numeric_marks = array_filter($obtained_mark_arr, 'is_numeric');
+                            $non_numeric_marks = array_filter($obtained_mark_arr, fn($val) => !is_numeric($val));
+
+                            $numeric_marks = array_map('floatval', $numeric_marks);
+                           
+                            $obtained_mark_sum = (count($numeric_marks) > 1) ? array_sum($numeric_marks) : reset($numeric_marks);
+
+                            // If the array has only non-numeric values, return the original value
+                            if (empty($numeric_marks) && !empty($non_numeric_marks)) {
+                                $obtained_mark_sum = reset($non_numeric_marks);
+                                $convert_mark = 0;
+                            }else{
+                                $pAB = 0;
+                                $convert_mark = ($obtained_mark_sum != 0) ? (($obtained_mark_sum / $t_m) * $w_m) : 0;
+                            }
+
                             // for AB 
                             foreach ($obtained_mark_arr as $mk => $mv) {
                                 $w_m = $to_weight[$exam_id] ?? 0;
                                 $t_m = $to_marks[$exam_id];
-                                if(is_numeric($mv))
-                                   	$pAB = 0;
-                                else
-                                    continue;
                             }
+                            // 20-02-2025 Separate numeric and non-numeric values by uma
+
                         }
                         // echo $pAB.'<br>';
                          // get mark for total mark 
@@ -846,6 +873,9 @@ class studentResultController extends Controller
                             
                             if(!empty($obtained_mark_arr) && !in_array($obtained_mark_arr[0],["N.A.","EX","AB"])){
                                 $tdVal = number_format($convert_mark, 2);
+                            } // 20-02-2025 adde elseif by uma
+                            elseif($pAB>0){
+                                $tdVal = 'AB';
                             }else{
                                 $tdVal = $obtained_mark_arr[0] ?? "-"; // print AB,NA,EX
                             }
