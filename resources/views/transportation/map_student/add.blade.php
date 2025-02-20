@@ -102,6 +102,8 @@
                                     </td>
                                     <td>
                                         <input type="text" class="form-control distance_amount" disabled="true" name="values[{{ $col_arr['student_id'] }}][distance_amount]" id="distance_amount_{{ $col_arr['student_id'] }}" value="{{ $col_arr['total_amount']?? 0}}" readonly>
+                                        <!-- 20-02-2025 onload amount -->
+                                        @if(isset($col_arr['total_amount']) && $col_arr['total_amount']!=0) <span style="font-size:0.8rem;color:green">Old :{{ $col_arr['total_amount']?? 0}}</span> @endif
                                     </td>                                    
                                     <td>
                                         <select name="values[{{$col_arr['student_id']}}][to_shift]" disabled="true" id="to_shift" class="form-control to_shift" required>
@@ -308,7 +310,7 @@
                 data: "bus_id=" + from_busID + "&shift_id=" + from_shiftID,
                 success: function (res) {
                     if ( res.status == 200 ) {
-                        console.log(res);
+                        // console.log(res);
                         targetMSG.text('Total Capacity : '+ res.total_capacity +' / Remaining Capacity : '+ res.total_remain_capacity);
 
                         var textColor;
@@ -459,23 +461,41 @@
     // console.log('change event called');
     
     var selectedOption = $(this).find(':selected');
-    
-    var km_amount = selectedOption.data("fromshiftkm");
-    var shift_rate = selectedOption.data("fromshiftrate");
-    var stu_id = selectedOption.data("stud");
-    // added on 07-01-2025
-    var shiftRate = $('#shift_rate_' + stu_id).val(shift_rate);
-    var kmAmount = $('#km_amount_' + stu_id).val(km_amount);
-    // added on 07-01-2025
-    
-    var shifts = selectedOption.val();
-    var distance = $('#distance_' + stu_id).val();
-    // alert(shifts);
-    
-    var distance_amt = (shift_rate + (distance * km_amount));
-    console.log(distance_amt);
-    $('#distance_amount_' + stu_id).val(distance_amt);
+    getAmount(selectedOption);
+});
+// 20-02-2025 start onload fill amounts as per rate set
+$(document).ready(function () {
+    $('.from_shift').each(function () {
+        let selectedOption = $(this).find('option:selected'); // Get the selected option
+        let selectedValue = selectedOption.val(); // Get selected value
+        
+        if (selectedValue) { // Check if any value is selected
+            getAmount(selectedOption); // Pass the selected option element, not the value
+        }
+    });
 });
 
+function getAmount(selectedOption) {
+    let studentId = selectedOption.data('stud'); // Get data-stud from selected option
+
+    var km_amount = selectedOption.data("fromshiftkm"); // Get data-fromshiftkm
+    var shift_rate = selectedOption.data("fromshiftrate"); // Get data-fromshiftrate
+
+    $('#shift_rate_' + studentId).val(shift_rate);
+    $('#km_amount_' + studentId).val(km_amount);
+
+    var distance = $('#distance_' + studentId).val();
+    console.log(studentId + '= km:' + km_amount + ' & shift rate:' + shift_rate);
+
+    if (km_amount && shift_rate && distance) { // Ensure values are not undefined
+        var distance_amt = (shift_rate + (distance * km_amount));
+        console.log('onload distance amount:', distance_amt);
+        $('#distance_amount_' + studentId).val(distance_amt);
+    } else {
+        console.log('Missing values: shift_rate, km_amount, or distance.');
+    }
+}
+
+// 20-02-2025 ends
 </script>
 @include('includes.footer')
