@@ -121,9 +121,12 @@
          <div class="row" style="margin:0px !important">
             <div class="card ContainerCard">
                <div class="dataContainer detailContainer show">
+
                   <div class="addBlock">
-                     <button class="btn btn-outline-secondary" data-toggle="modal" data-target="#addModel"><span class="mdi mdi-plus"></span> Add Feild</button>
+                     <button class="btn btn-outline-dark" data-toggle="modal" data-target="#addModal"><span class="mdi mdi-plus"></span> Add Feild</button>
+                     <button class="btn btn-outline-secondary" data-toggle="modal" data-target="#restoreModal"><span class="mdi mdi-restore"></span> Restore</button>
                   </div>
+                  
                   <div class="basicContainer">
                   </div>
                </div>
@@ -173,7 +176,7 @@
    </div>
 </div>
 <!-- Modal -->
-<div class="modal fade" id="addModel" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+<div class="modal fade" id="addModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
    <div class="modal-dialog" role="document" style="max-width: 1000px !important;">
       <div class="modal-content">
          <div class="modal-header">
@@ -282,6 +285,53 @@
 
    </div>
 </div>
+
+<!-- Restore Modal -->
+<div class="modal fade" id="restoreModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document" style="max-width:1000px !important">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLabel">Restore Fields</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <table class="table">
+            <thead class="thead-dark">
+                <tr>
+                    <th scope="col">Sr No.</th>
+                    <th scope="col">Field Name</th>
+                    <th scope="col">Field Label</th>
+                    <th scope="col">Field Type</th>
+                    <th scope="col">Deleted At</th>
+                    <th scope="col" align="left">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if(isset($data['deletedData']) && count($data['deletedData']) > 0)
+                    @foreach($data['deletedData'] as $key=>$value)
+                    <tr>
+                        <td>{{$key+1}}</td>
+                        <td>{{$value['field_name']}}</td>
+                        <td>{{$value['field_label']}}</td>
+                        <td>{{$value['field_type']}}</td>
+                        <td>{{ date('d-m-Y',strtotime($value['deleted_at'])) }}</td>
+                        <td align="center"><button class="btn btn-outline-warning"><span class="mdi mdi-restore"></span></button></td>
+                    </tr>
+                    @endforeach
+                @else 
+                <tr>
+                    <td align="center" colspan="4">No Data Found</td>
+                </tr>
+                @endif
+            
+            </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
 @include('includes.footerJs')
 <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
 <script>
@@ -358,19 +408,22 @@
                          <div class="content60">
                              <div class="column1">
                                  <ul>
-                                     <li style="padding-bottom:30px"><span class="mdi mdi-information"></span> ${field.is_mandatory ? "Mandatory" : "Optional"}</li>
-                                     <li><span class="mdi mdi-asterisk"></span> ${field.validation_rules ? "Validation" : "No Validation"}</li>
+                                     <li style="padding-bottom:30px;color:${field.is_mandatory ? "black" : "#979797"}"><span class="mdi mdi-information"></span> Mandatory</li>
+                                     <li style="color:${field.validation_rules ? "black" : "#979797"}"><span class="mdi mdi-asterisk"></span> Validation</li>
                                  </ul>
                              </div>
                              <div class="column2">
                                  <ul>
-                                     <li style="padding-bottom:30px"><span class="mdi mdi-eye-outline"></span> ${field.is_visible ? "Visible" : "Hidden"}</li>
-                                     <li><span class="mdi mdi-alpha-d-circle"></span> Default</li>
+                                     <li style="padding-bottom:30px;color:${field.is_visible ? "black" : "#979797"}"><span class="mdi mdi-eye-outline"></span> Visible</li>
+                                     <li style="color:${field.default_value ? "black" : "#979797"}"><span class="mdi mdi-alpha-d-circle"></span> Default</li>
                                  </ul>
                              </div>
                              <div class="column3">
-                                 <span class="mdi mdi-pencil" onclick="editModel('${field.field_name}','${field.field_type}','${field.section}')"></span>
-                             </div>
+                                 <span class="mdi mdi-pencil" onclick="editModel('${field.field_name}','${field.field_type}','${field.section}')"></span>`;
+                                 if(sectionName==='Custom Details'){
+                                    row += `<span class="mdi mdi-delete" onclick="deleteField(${field.id})"></span>`;
+                                 }
+                            row += `  </div>
                          </div>
                  `;
    
@@ -629,41 +682,29 @@
        }).disableSelection();
    });
 
-
-   var datalist = $('datalist');
-var options = $('datalist option');
-var optionsarray = jQuery.map(options ,function(option) {
-        return option.value;
-});
-var input = $('input[list]');
-var inputcommas = (input.val().match(/,/g)||[]).length;
-var separator = ',';
-        
-function filldatalist(prefix) {
-    if (input.val().indexOf(separator) > -1 && options.length > 0) {
-        datalist.empty();
-        for (i=0; i < optionsarray.length; i++ ) {
-            if (prefix.indexOf(optionsarray[i]) < 0 ) {
-                datalist.append('<option value="'+prefix+optionsarray[i]+'">');
+   function deleteField(id) {
+    if (confirm('Are you sure you want to delete this field?')) {
+        $.ajax({
+            url: "{{ route('configurations.destroy', ':id') }}".replace(':id', id),
+            type: 'DELETE', // Use DELETE for proper RESTful route
+            data: {
+                _token: "{{ csrf_token() }}" // Include CSRF token for Laravel
+            },
+            success: function (result) {
+                if (result.status=="1") {
+                    window.location.reload();
+                } else {
+                    alert('Failed to delete the field.');
+                }
+            },
+            error: function (xhr) {
+                alert('Oops! Something went wrong.');
+                console.error(xhr.responseText);
             }
-        }
+        });
     }
 }
-input.bind("change paste keyup",function() {
-    var inputtrim = input.val().replace(/^\s+|\s+$/g, "");
-  //console.log(inputtrim);
-    var currentcommas = (input.val().match(/,/g)||[]).length;
-  //console.log(currentcommas);
-    if (inputtrim != input.val()) {
-        if (inputcommas != currentcommas) {
-            var lsIndex = inputtrim.lastIndexOf(separator);
-            var str = (lsIndex != -1) ? inputtrim.substr(0, lsIndex)+", " : "";
-            filldatalist(str);
-            inputcommas = currentcommas;
-        }
-        input.val(inputtrim);
-    }
-});
+
 </script>
 @include('includes.footer')
 @endsection

@@ -137,7 +137,8 @@ class configurationController extends Controller
 
         $res['fieldTypes'] = ['text','textarea','dropdown','file','checkbox','radio','email','date','time'];
         // echo "<pre>";print_r($res);exit;
-    
+        $res['deletedData'] = masterFieldInstituteModel::where('sub_institute_id',$sub_institute_id)->onlyTrashed()->get();
+
         return is_mobile($type, "settings/configuration/add", $res, "view");
     }
 
@@ -280,6 +281,8 @@ class configurationController extends Controller
         })
         ->groupBy('module')
         ->get();
+
+        $res['deletedData'] = masterFieldInstituteModel::where('sub_institute_id',$sub_institute_id)->onlyTrashed()->get();
 
         $res['fieldTypes'] = ['text','textarea','dropdown','file','checkbox','radio','email','date','time'];
         return is_mobile($type, "settings/configuration/add", $res, "view");
@@ -508,4 +511,57 @@ class configurationController extends Controller
         }
         return $data;
     }
+
+    public function destroy(Request $request, $id)
+    {
+        $type = $request->input('type');
+        $sub_institute_id = session()->get('sub_institute_id');
+        $user_profile_id = session()->get('user_profile_id');
+        // check request type is API or JSON
+        if(in_array($type,["API","JSON"])){
+            try {
+                if (! $this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+
+                    return response()->json($response, 200);
+                }
+
+                $validator = Validator::make($request->all(), [
+                    'sub_institute_id' => 'required|numeric',
+                    'user_profile_id' => 'required|numeric',
+                ]);
+
+                $sub_institute_id = $request->get('sub_institute_id');
+                $user_profile_id = $request->get('user_profile_id');
+                // validation check only for API and JSON
+                if ($validator->fails()) {
+                    $response['status'] = '0';
+                    $response['message'] = $validator->messages();
+                    return response()->json($response);
+                } 
+                
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+
+                return response()->json($response, 200);
+            }
+        }
+
+        $record = masterFieldInstituteModel::find($id);
+
+        if ($record) {
+            $record->delete(); 
+        }
+
+        if($record){
+            $response['status'] = '1';
+            $response['message'] = "Successfully Deleted";
+        }else{
+            $response['status'] = '0';
+            $response['message'] = "Failed to Delete";
+        }
+        
+        return response()->json($response);
+    }
+
 }
