@@ -23,7 +23,6 @@
         method: 'GET',
         dataType: 'json',
         data: {
-            'sub_institute_id': $("#sub_institute_id").val(),
             'from': $("#from").val(),
             'to': $("#to").val(),
             'x_field': $("#xField").val(), 

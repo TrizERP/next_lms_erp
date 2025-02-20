@@ -2,7 +2,7 @@
     <div class="card-body">
         <div class="d-flex align-items-center flex-wrap" style="gap: 8px;">
  
-            <div class="me-3" style="flex: 1;">
+            <!-- <div class="me-3" style="flex: 1;">
                 <label for="sub_institute_id">Institute</label>
                 <select id="sub_institute_id" name="sub_institute_id" class="form-control" style="width: 100%;">
                     <option value="">Select Institute</option>
@@ -10,7 +10,7 @@
                         <option value="{{ $instituteId }}">{{ $instituteId }}</option>
                     @endforeach
                 </select>
-            </div>
+            </div> -->
 
             <div class="me-3" style="flex: 1;">
                 <label for="from">From</label>

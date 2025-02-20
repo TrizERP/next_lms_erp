@@ -1,15 +1,4 @@
-<!DOCTYPE html>
-
-<html lang="en" class="light-style layout-menu-fixed" dir="ltr" data-theme="theme-default" data-assets-path="../reports/assets/"
-    data-template="vertical-menu-template-free">
-
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
-
-    <title>Dashboard - TRIZ</title>
-
-    <meta name="description" content="" />
+@include('includes.headcss')
 
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="../reports/assets/img/favicon/favicon.ico" />
@@ -42,9 +31,19 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="../reports/assets/vendor/libs/jquery/jquery.js"></script>
-</head>
+@include('includes.header')
+@include('includes.sideNavigation')
+<style>
+    .layout-content-navbar .layout-navbar{
+        z-index:0 !important;
+    }
+    .container, .container-fluid, .container-xxl, .container-xl, .container-lg, .container-md, .container-sm {
+        margin-bottom: 3px;
+    }
+</style>
+<div id="page-wrapper">
+    <div class="container-fluid">
 
-<body>
     <div class="layout-wrapper layout-content-navbar">
         <div class="layout-container">
             @include('reportsnew.layout.sidebar')
@@ -61,7 +60,8 @@
     </div>
 
 
-
+</div>
+</div>
     <script src="../reports/assets/vendor/libs/popper/popper.js"></script>
     <script src="../reports/assets/vendor/js/bootstrap.js"></script>
     <script src="../reports/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.js"></script>
@@ -80,6 +80,7 @@
 
     <!-- Place this tag in your head or just before your close body tag. -->
     <script async defer src="https://buttons.github.io/buttons.js"></script>
-</body>
 
-</html>
+
+@include('includes.footerJs')
+@include('includes.footer')
