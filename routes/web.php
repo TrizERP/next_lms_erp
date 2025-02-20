@@ -625,7 +625,4 @@ Route::get('/get-fields', function (Request $request) {
     ]);
 });
 
-
-use App\Http\Controllers\DataMigrationController;
-
 Route::get('/migrate-data', [DataMigrationController::class, 'migrateDataToNeo4j']);
