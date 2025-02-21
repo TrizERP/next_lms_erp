@@ -26,7 +26,6 @@
    }
    .basicContainer {
    width: 100%;
-   padding: 36px 0px 0px 0px;
    }
    .basicCard,
    .basicSubContents {
@@ -89,6 +88,32 @@
         height: 116px;
         color: #6297C3;
     }
+    .selected-items {
+            display: flex;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+        .selected-item {
+            background: #007bff;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            margin: 5px;
+            display: flex;
+            align-items: center;
+        }
+        .selected-item span {
+            margin-left: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .datalistInput {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
 </style>
 <div id="page-wrapper">
    <div class="container-fluid">
@@ -115,6 +140,9 @@
             <div class="displayTabs duplicateTab col-md-2" onclick="activeTabs('duplicate')">
                <h6>Duplicate Prevention</h6>
             </div>
+            <div class="displayTabs rightsTab col-md-2" onclick="activeTabs('rights')">
+               <h6>Field Rights</h6>
+            </div>
             <div class="col-md-8"></div>
          </div>
          <!-- tabs containers start -->
@@ -122,9 +150,11 @@
             <div class="card ContainerCard">
                <div class="dataContainer detailContainer show">
 
-                  <div class="addBlock">
+                  <div class="addBlock" align="right">
                      <button class="btn btn-outline-dark" data-toggle="modal" data-target="#addModal"><span class="mdi mdi-plus"></span> Add Feild</button>
+                     @if(isset($data['deletedData']) && count($data['deletedData']) > 0)
                      <button class="btn btn-outline-secondary" data-toggle="modal" data-target="#restoreModal"><span class="mdi mdi-restore"></span> Restore</button>
+                     @endif
                   </div>
                   
                   <div class="basicContainer">
@@ -151,16 +181,33 @@
                         <div class="col-md-6">
                             <label> Select the unique fields on which duplicate records are to be checked</label>
                            <div class="selectFields">
-                           <input type="text" list="duplicateFields-list" id="authors" value="" size="50" name="authors" placeholder="Type author names">
-<datalist id="duplicateFields-list">
-  
-</datalist>
+                           <input type="text" class="datalistField" id="searchInput" list="optionsList" placeholder="Type to search...">
+                                <datalist id="optionsList">
+                                    <?php
+                                    // Predefined list of selectable items
+                                    $items = ["Apple", "Banana", "Cherry", "Date", "Fig", "Grapes", "Mango", "Orange", "Peach", "Pear"];
+                                    foreach ($items as $item) {
+                                        echo "<option value='$item'>$item</option>";
+                                    }
+                                    ?>
+                                </datalist>
+
+                                <div class="selected-items" id="selectedItems"></div>
+
+                                <!-- Hidden input field to store selected values -->
+                                <input type="hidden" name="selectedValues" id="selectedValues">
                            </div>
                         </div>
                     </div>
 
                </div>   
                 <!-- tab 2 ends  -->
+
+                <!-- tab 3 starts  -->
+                <div class="dataContainer rightsContainer hide">
+                    <h6>Rights tab</h6>
+                </div>
+                <!-- tab 3 ends  -->
 
             </div>
          </div>
@@ -297,27 +344,32 @@
         </button>
       </div>
       <div class="modal-body">
-        <table class="table">
-            <thead class="thead-dark">
+      <form action="{{route('restoreData')}}" method="POST" onsubmit="checkRestoreCheckbox()">
+        @csrf
+        <div class="table-responsive">
+        <table id="example" class="table">
+            <thead>
                 <tr>
-                    <th scope="col">Sr No.</th>
-                    <th scope="col">Field Name</th>
-                    <th scope="col">Field Label</th>
-                    <th scope="col">Field Type</th>
-                    <th scope="col">Deleted At</th>
-                    <th scope="col" align="left">Action</th>
+                    <th>Sr No.</th>
+                    <th>Module</th>
+                    <th>Field Name</th>
+                    <th>Field Label</th>
+                    <th>Field Type</th>
+                    <th align="left">Deleted At</th>
+                    <!-- <th scope="col" align="left">Action</th> -->
                 </tr>
             </thead>
             <tbody>
                 @if(isset($data['deletedData']) && count($data['deletedData']) > 0)
                     @foreach($data['deletedData'] as $key=>$value)
                     <tr>
-                        <td>{{$key+1}}</td>
+                        <td><input type="checkbox" name="fieldIds[]" value="{{$value['id']}}">&nbsp;{{$key+1}}</td>
+                        <td>{{$value['module']}}</td>
                         <td>{{$value['field_name']}}</td>
                         <td>{{$value['field_label']}}</td>
                         <td>{{$value['field_type']}}</td>
                         <td>{{ date('d-m-Y',strtotime($value['deleted_at'])) }}</td>
-                        <td align="center"><button class="btn btn-outline-warning"><span class="mdi mdi-restore"></span></button></td>
+                        {{-- <td align="center"><button class="btn btn-outline-warning" onclick="restoreData('{{$value['id']}}')"><span class="mdi mdi-restore"></span></button></td>--}}
                     </tr>
                     @endforeach
                 @else 
@@ -328,6 +380,13 @@
             
             </tbody>
         </table>
+        </div>
+        <div class="row">
+            <div class="col-md-12 text-center">
+                <button type="submit" class="btn btn-primary"><span class="mdi mdi-restore"></span> Restore</button>
+            </div>
+        </div>
+        </form>
       </div>
     </div>
   </div>
@@ -683,28 +742,93 @@
    });
 
    function deleteField(id) {
-    if (confirm('Are you sure you want to delete this field?')) {
-        $.ajax({
-            url: "{{ route('configurations.destroy', ':id') }}".replace(':id', id),
-            type: 'DELETE', // Use DELETE for proper RESTful route
-            data: {
-                _token: "{{ csrf_token() }}" // Include CSRF token for Laravel
-            },
-            success: function (result) {
-                if (result.status=="1") {
-                    window.location.reload();
-                } else {
-                    alert('Failed to delete the field.');
+        if (confirm('Are you sure you want to delete this field?')) {
+            $.ajax({
+                url: "{{ route('configurations.destroy', ':id') }}".replace(':id', id),
+                type: 'DELETE', // Use DELETE for proper RESTful route
+                data: {
+                    _token: "{{ csrf_token() }}" // Include CSRF token for Laravel
+                },
+                success: function (result) {
+                    if (result.status=="1") {
+                        window.location.reload();
+                    } else {
+                        alert('Failed to delete the field.');
+                    }
+                },
+                error: function (xhr) {
+                    alert('Oops! Something went wrong.');
+                    console.error(xhr.responseText);
                 }
-            },
-            error: function (xhr) {
-                alert('Oops! Something went wrong.');
-                console.error(xhr.responseText);
-            }
-        });
+            });
+        }
     }
-}
+    // function restoreData(fieldId){
+    //     if (confirm('Are you sure you want to restore this field?')) {
+    //         $.ajax({
+    //             url: "{{ route('restoreData') }}",
+    //             type: 'POST',
+    //             data: {
+    //                 fieldId:fieldId,
+    //             },
+    //             success: function (result) {
+    //                 if (result.status=="1") {
+    //                     window.location.reload();
+    //                 } else {
+    //                     alert('Failed to delete the field.');
+    //                 }
+    //             },
+    //             error: function (xhr) {
+    //                 alert('Oops! Something went wrong.');
+    //                 console.error(xhr.responseText);
+    //             }
+    //         });
+    //     }
+    // }
 
+    function checkRestoreCheckbox(){
+        var checked_questions = err = 0;
+
+        $("input[name='fieldIds[]']:checked").each(function() {
+            checked_questions = checked_questions + 1;
+        });
+
+        if (checked_questions == 0) {
+            alert("Please Select Atleast one Checkbox!");
+            err = 1;
+        }
+
+        if (err == 1) {
+            event.preventDefault();
+        }
+
+        return err;
+    }
+
+    $(document).ready(function () {
+        var table = $('#example').DataTable({
+            select: true,
+            lengthMenu: [
+                [100, 500, 1000, -1],
+                ['100', '500', '1000', 'Show All']
+            ],
+        });
+
+        $('#example thead tr').clone(true).appendTo('#example thead');
+        $('#example thead tr:eq(1) th').each(function (i) {
+            var title = $(this).text();
+            $(this).html('<input type="text" placeholder="Search ' + title + '" />');
+
+            $('input', this).on('keyup change', function () {
+                if (table.column(i).search() !== this.value) {
+                    table
+                        .column(i)
+                        .search( this.value )
+                        .draw();
+                }
+            } );
+        } );
+    } );
 </script>
 @include('includes.footer')
 @endsection

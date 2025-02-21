@@ -564,4 +564,57 @@ class configurationController extends Controller
         return response()->json($response);
     }
 
+    public function restoreData(Request $request)
+    {
+        // echo "<pre>";print_r($request->all());exit;
+        $type = $request->input('type');
+        $sub_institute_id = session()->get('sub_institute_id');
+        $user_profile_id = session()->get('user_profile_id');
+
+        // Check if the request type is API or JSON
+        if (in_array($type, ["API", "JSON"])) {
+            try {
+                if (! $this->jwtToken()->validate()) {
+                    return response()->json(['status' => '2', 'message' => 'Token Auth Failed', 'data' => []], 200);
+                }
+
+                $validator = Validator::make($request->all(), [
+                    'sub_institute_id' => 'required|numeric',
+                    'user_profile_id' => 'required|numeric',
+                    'fieldIds' => 'required|array', 
+                ]);
+
+                if ($validator->fails()) {
+                    return response()->json([
+                        'status' => '0',
+                        'message' => $validator->messages()
+                    ]);
+                }
+
+            } catch (\Exception $e) {
+                return response()->json(['status' => '2', 'message' => $e->getMessage(), 'data' => []], 200);
+            }
+        }
+
+        $i=0;
+        foreach ($request->fieldIds as $key => $fieldId) {
+            // Find soft-deleted record using withTrashed()
+            $record = masterFieldInstituteModel::withTrashed()->find($fieldId);
+
+            if ($record) {
+                $record->restore(); // Restore the record
+                $i++;
+            }
+        }
+
+        if($i>0){
+            $res = ['status' => '1', 'message' => "Successfully Restored"];
+        }
+        else{
+          $res = ['status' => '0', 'message' => "Failed to restore"];
+        }
+
+        return is_mobile($type, "configurations.index", $res);
+    }
+
 }
