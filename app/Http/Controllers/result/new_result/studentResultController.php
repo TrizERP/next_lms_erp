@@ -1219,16 +1219,27 @@ class studentResultController extends Controller
              $resulRemark = ' - '.$getRemarks->result_remarks;
          }
          // standardwise scool reopen date
-         $reopenDate = '';
-         if(in_array($standard_id,[103,104,105,106,107,108,109,110,111])){ // 6 to 12
-            $reopenDate = '05<sup>th</sup> April, 2025';
+         
+        $reopen_date = $reopen_full_date= '';
+      
+         $examDetails = $this->getExamMasterSettigs($standard_id);
+         if(!empty($examDetails)){
+            if(isset($examDetails['reopen_date']) && $examDetails['reopen_date']!=''){
+                $convertedDate = Carbon::createFromFormat('d-m-Y', $examDetails['reopen_date'])
+                ->subYear();
+    
+                $day = $convertedDate->format('j');
+                $ordinal = match ($day % 10) {
+                    1 => ($day % 100 == 11 ? 'th' : 'st'),
+                    2 => ($day % 100 == 12 ? 'th' : 'nd'),
+                    3 => ($day % 100 == 13 ? 'th' : 'rd'),
+                    default => 'th',
+                };
+    
+                $reopen_full_date = $day . '<sup>' . $ordinal . '</sup> ' . $convertedDate->format('F, Y');
+            }
          }
-         else if(in_array($standard_id,[94])){ // only for nursery
-            $reopenDate = '07<sup>th</sup> April, 2025';
-         }
-         else{ // other standards
-            $reopenDate = '04<sup>th</sup> April, 2025';
-         }
+         $reopen_date = (isset($reopen_full_date) && $reopen_full_date!='') ? $reopen_full_date : '';
          // end on 21-02-2025
         if (empty($failed)) {
             $result = 'Passed &amp; Promoted to Class ' . $next_std->school_stream.$resulRemark; // added variable $resulRemark
@@ -1246,7 +1257,7 @@ class studentResultController extends Controller
 		      </tr>
 		      <tr>
 		       <td colspan="3" class="p-t-10">
-		        <b>School Reopens on : '.$reopenDate.'</b>
+		        <b>School Reopens on : '.$reopen_date.'</b>
 		       </td>
 		      </tr>';
 		  }
