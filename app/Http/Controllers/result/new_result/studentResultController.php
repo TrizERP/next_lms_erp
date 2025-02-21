@@ -1116,7 +1116,7 @@ class studentResultController extends Controller
                                     	$pAB=1;
                                         $w_m = $to_weight[$exam_id] ?? 0; // Check if the key exists
                                         $t_m = array_sum(array_intersect_key($to_marks[$exam_id] ?? [], $marksArray));
-                                        $obtained_mark_sum = array_sum($obtained_mark_arr);
+                                        $obtained_mark_sum = array_sum(array_map('floatval', $obtained_mark_arr));
                                         $convert_mark = ($obtained_mark_sum != 0) ? (($obtained_mark_sum / $t_m) * $w_m) : 0;
                                         // for AB 
                                         foreach ($obtained_mark_arr as $mk => $mv) {
