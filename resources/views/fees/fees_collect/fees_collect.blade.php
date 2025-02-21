@@ -1085,7 +1085,7 @@ function checkForm() {
 									<td>${value['cheque_no']} ${value['cheque_bank_name']} ${value['bank_branch']}</td>
 									<td>${value['receiptdate']}</td>
 									<td>${value['user_name']}</td>
-									<td>${value['bank_name']}</td>
+									<td>${value['bank_name'] ? value['bank_name'] : '' }</td>
 									<td>${value['remarks']}</td>
 									<td>${value['discount']}</td>
 									<td id='total_amt'>${value['actual_amountpaid']}</td>
