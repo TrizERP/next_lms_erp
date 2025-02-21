@@ -537,9 +537,7 @@ class studentResultController extends Controller
         $html_content = str_replace(htmlspecialchars("<<school_open_date>>"),$reopen_date, $html_content);
         // 31-12-2024 start
         if($reopen_date!=''){
-            $convertedDate = Carbon::createFromFormat('d-m-Y', $reopen_date)
-            ->subYear();
-
+            $convertedDate = Carbon::createFromFormat('d-m-Y', $reopen_date);
             $day = $convertedDate->format('j');
             $ordinal = match ($day % 10) {
                 1 => ($day % 100 == 11 ? 'th' : 'st'),
@@ -1118,7 +1116,7 @@ class studentResultController extends Controller
                                     	$pAB=1;
                                         $w_m = $to_weight[$exam_id] ?? 0; // Check if the key exists
                                         $t_m = array_sum(array_intersect_key($to_marks[$exam_id] ?? [], $marksArray));
-                                        $obtained_mark_sum = array_sum($obtained_mark_arr);
+                                        $obtained_mark_sum = array_sum(array_map('floatval', $obtained_mark_arr));
                                         $convert_mark = ($obtained_mark_sum != 0) ? (($obtained_mark_sum / $t_m) * $w_m) : 0;
                                         // for AB 
                                         foreach ($obtained_mark_arr as $mk => $mv) {
@@ -1225,8 +1223,7 @@ class studentResultController extends Controller
          $examDetails = $this->getExamMasterSettigs($standard_id);
          if(!empty($examDetails)){
             if(isset($examDetails['reopen_date']) && $examDetails['reopen_date']!=''){
-                $convertedDate = Carbon::createFromFormat('d-m-Y', $examDetails['reopen_date'])
-                ->subYear();
+                $convertedDate = Carbon::createFromFormat('d-m-Y', $examDetails['reopen_date']);
     
                 $day = $convertedDate->format('j');
                 $ordinal = match ($day % 10) {
@@ -1240,6 +1237,8 @@ class studentResultController extends Controller
             }
          }
          $reopen_date = (isset($reopen_full_date) && $reopen_full_date!='') ? $reopen_full_date : '';
+        //  echo "<pre>";print_r($reopen_date);exit;
+
          // end on 21-02-2025
         if (empty($failed)) {
             $result = 'Passed &amp; Promoted to Class ' . $next_std->school_stream.$resulRemark; // added variable $resulRemark
@@ -6810,16 +6809,26 @@ private function buildDisciplineTable($decipline_data,$both_term)
                     // echo "<pre>";print_r($coData2);exit;
                     $coScholaticTable.='<div style="display:flex;text-align:center">';
                     if(!empty($coData1)){
-                            foreach ($term_name as $key => $terms) {
-                            $coScholaticTable.='<table class="aca-year" cellspacing="0" cellpadding="0" border="1" width="50%">';
-                            $coScholaticTable .= '<tr><th class="data_center" style="width:70%"><b>'. strtoupper($part1Head[$terms->term_id]) . '</b></th><th class="data_center"><b>' . $terms->title . '</b></th></tr>';
-                            foreach ($coData1[$terms->term_id] as $sub => $term_data) {
-                                $coScholaticTable .= '<tr><td align="center" style="width:70%">' . $sub . '</td>';
-                                $coScholaticTable .= '<td align="center">' . $term_data . '</td>';
-                                $coScholaticTable .= '</tr>';
-                                }
-                            $coScholaticTable.='</table>';
-                        }
+						foreach ($term_name as $key => $terms) {
+						    $coScholaticTable .= '<table class="aca-year" cellspacing="0" cellpadding="0" border="1" width="50%">';
+						    $coScholaticTable .= '<tr><th class="data_center" style="width:70%"><b>' . 
+						        (isset($part1Head[$terms->term_id]) ? strtoupper($part1Head[$terms->term_id]) : 'N/A') . 
+						        '</b></th><th class="data_center"><b>' . $terms->title . '</b></th></tr>';
+
+						    // Check if term_id exists in $coData1
+						    if (isset($coData1[$terms->term_id])) {
+						        foreach ($coData1[$terms->term_id] as $sub => $term_data) {
+						            $coScholaticTable .= '<tr><td align="center" style="width:70%">' . $sub . '</td>';
+						            $coScholaticTable .= '<td align="center">' . $term_data . '</td>';
+						            $coScholaticTable .= '</tr>';
+						        }
+						    } else {
+						        // Optional: Show a message if no data exists for the term_id
+						        $coScholaticTable .= '<tr><td colspan="2" align="center">No data available</td></tr>';
+						    }
+
+						    $coScholaticTable .= '</table>';
+						}
                     }
                 }
                 $coScholaticTable.='</div>';
