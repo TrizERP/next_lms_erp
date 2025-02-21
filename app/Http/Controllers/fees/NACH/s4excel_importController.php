@@ -461,7 +461,7 @@ class s4excel_importController extends Controller {
 								DB::select($failInsSql);
 							}
 							$returned++;							
-
+							$j=0;
 							$sms_text = "Dear Parents, Your Monthly Fee NACH is returned from the bank. Please arrange Sufficient Funds";
 							$send_sms = $this->sendSMS($STUDENT_DETAILS['MOBILE_NUMBER'], $sms_text, $sub_institute_id);
 							if (isset($send_sms['error']) && $send_sms['error'] == 1) {
@@ -511,7 +511,7 @@ class s4excel_importController extends Controller {
 							sendNotification($app_notification_content);
 							
 							if (! empty($bunch_arr)) {
-								$i++;
+								$j++;
 								foreach ($bunch_arr as $val) {
 									if (isset($val, $pushMessage)) {
 										$type1 = 'Notification';
