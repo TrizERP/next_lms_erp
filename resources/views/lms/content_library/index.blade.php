@@ -40,7 +40,13 @@
     .TypeBtn{
         background : #8f9ce9;
         border : none;
-        margin : 0px 10px 0px 0px;
+        margin : 10px 10px 0px 0px;
+    }
+
+    .MatrialBtn{
+        background : #ce9fff;
+        border : none;
+        margin : 10px 10px 0px 0px;
     }
 
     .stdBtn:hover{
@@ -233,11 +239,27 @@
                     </select>
                     </div> --}}
 
-                    <div class="col-md-12" style="padding: 10px 14px;text-align:left">
+                    <div class="col-md-12" style="padding: 10px 10px 14px;text-align:left">
                     <label for="Types">Select Types</label><br>
                     @foreach($data['otherMaps']['mapValue'][$otherMap] as $k=>$value)
                     <input type="hidden" name="keywords[{{$otherMap}}]" id="Type">
                     <a class="btn btn-success TypeBtn" data-type="{{$value->type}}" onclick="getSearchedContents('contentDiv','');">{{$value->name}}</a>
+                    @endforeach
+                    </div>
+                    @endif
+                @endforeach
+
+                <!-- Start Material Type-->
+                @foreach($data['material_type']['mapType'] as $key=>$value)
+                @php 
+                    $material = str_replace(' ','_',$value->name);
+                @endphp 
+                    @if(isset($data['material_type']['mapValue'][$material]) && !empty($data['material_type']['mapValue'][$material]))
+                    <div class="col-md-12" style="padding: 10px 14px;text-align:left">
+                    <label for="Types">Material Types</label><br>
+                    @foreach($data['material_type']['mapValue'][$material] as $k=>$value)
+                    <input type="hidden" name="keywords[{{$material}}]" id="Type">
+                    <a class="btn btn-danger MatrialBtn" data-type="{{$value->type}}" onclick="getSearchedContents('contentDiv','');">{{$value->name}}</a>
                     @endforeach
                     </div>
                     @endif

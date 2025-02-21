@@ -26,44 +26,44 @@ function getData() {
         method: 'GET',
         dataType: 'json',
         data: {
-            'sub_institute_id': $("#sub_institute_id").val(), // Get the selected institute
-            'from': $("#from").val(),  // Get the start date (YYYY-MM-DD)
-            'to': $("#to").val()  // Get the end date (YYYY-MM-DD)
+            'sub_institute_id': $("#sub_institute_id").val(),
+            'from': $("#from").val(), 
+            'to': $("#to").val() 
         },
         success: function(data) {
-            labels = data.dates;  // Dates
-            feesCollectData = data.fees_collect;  // Fees collected data
-            feesBreackoffData = data.fees_breackoff;  // Fees break-off data
-            bubbleSizes = data.bubbleSizes;  // Bubble sizes based on amounts
+            labels = data.dates; 
+            feesCollectData = data.fees_collect;
+            feesBreackoffData = data.fees_breackoff;
+            bubbleSizes = data.bubbleSizes;
 
             const ctx = document.getElementById('bubbleChart').getContext('2d');
             if (chart) {
-                chart.destroy();  // Destroy existing chart if present
+                chart.destroy(); 
             }
 
-            // Create a new bubble chart
+           
             chart = new Chart(ctx, {
                 type: 'bubble',
                 data: {
-                    labels: labels,  // Dates
+                    labels: labels, 
                     datasets: [
                         {
                             label: 'Fees Collected',
                             data: labels.map((label, index) => ({
-                                x: index,  // Use index for x-axis (could be a time scale instead)
-                                y: feesCollectData[index],  // Fees collected amount
-                                r: bubbleSizes[index]  // Bubble size
+                                x: index, 
+                                y: feesCollectData[index], 
+                                r: bubbleSizes[index] 
                             })),
-                            backgroundColor: 'rgba(255,99,132)',  // Color for fees collected bubbles
+                            backgroundColor: 'rgba(255,99,132)',  
                         },
                         {
                             label: 'Fees Break-off',
                             data: labels.map((label, index) => ({
-                                x: index,  // Use index for x-axis
-                                y: feesBreackoffData[index],  // Fees break-off amount
-                                r: bubbleSizes[index]  // Bubble size
+                                x: index, 
+                                y: feesBreackoffData[index], 
+                                r: bubbleSizes[index]
                             })),
-                            backgroundColor: 'rgba(54,162,235)',  // Color for fees break-off bubbles
+                            backgroundColor: 'rgba(54,162,235)', 
                         }
                     ]
                 },
@@ -85,9 +85,9 @@ function getData() {
 function downloadReport() {
     const imgData = chart.toBase64Image();
 
-    const country = $("#sub_institute_id option:selected").text();  // Get selected country/institute name
-    const fromDate = $("#from").val();  // Get "From" date
-    const toDate = $("#to").val();  // Get "To" date
+    const country = $("#sub_institute_id option:selected").text();  
+    const fromDate = $("#from").val();  
+    const toDate = $("#to").val();  
 
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
@@ -98,12 +98,12 @@ function downloadReport() {
     doc.text(`Institute: ${country}`, 10, 20);
     doc.text(`Date Range: ${fromDate} to ${toDate}`, 10, 30);
 
-    // Add the chart image to the PDF
+   
     doc.addImage(imgData, 'PNG', 10, 40, 180, 100);
 
     doc.save('bubble-chart-report.pdf');
 }
-// Fetch data when the page is loaded
+
 $(function() {
     getData();
 });

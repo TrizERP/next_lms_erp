@@ -152,7 +152,7 @@ class book_listController extends Controller
             $originalname = $file->getClientOriginalName();
             $name = $request->get('attechment').date('YmdHis');
             $ext = File::extension($originalname);
-            $file_name = "attechment_".$name.'.'.$ext;
+            $file_name = "attachment_".$name.'.'.$ext; // 2025-02-18 changes spelling at attechment to attachment
             $path = $file->storeAs('public/book_list/', $file_name);
         }
         $values = [

@@ -1085,7 +1085,7 @@ function checkForm() {
 									<td>${value['cheque_no']} ${value['cheque_bank_name']} ${value['bank_branch']}</td>
 									<td>${value['receiptdate']}</td>
 									<td>${value['user_name']}</td>
-									<td>${value['bank_name']}</td>
+									<td>${value['bank_name'] ? value['bank_name'] : '' }</td>
 									<td>${value['remarks']}</td>
 									<td>${value['discount']}</td>
 									<td id='total_amt'>${value['actual_amountpaid']}</td>
@@ -1167,8 +1167,16 @@ function checkForm() {
 		$.ajax({
 				url: "/ajax_PDF_FeesReceipt?action="+action+"&student_id="+student_id+"&receipt_id_html="+receiptId+"&paper_size="+paperSize,                
 				success: function(result){ 
-					window.open(result, '_blank');
-					$("#overlay").css("display","none");
+					let newTab = window.open(result, '_blank');
+					if (newTab) {
+						newTab.onload = function() {
+							newTab.print();  // Auto trigger the print dialog
+						};
+					} else {
+						alert("Pop-up blocked! Please allow pop-ups for this site.");
+					}
+					$("#overlay").css("display", "none");
+
 				},
 				error:function(xhr, status, error) {
 					alert('Failed to get RecieptData');

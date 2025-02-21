@@ -7,7 +7,8 @@ use Illuminate\Pagination\Paginator;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
-
+use Illuminate\Support\Facades\Blade;
+use App\View\Components\filters;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -28,6 +29,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()
     {
+        Blade::component('filters', filters::class);
         Paginator::useBootstrap();
 
         if (env('APP_ENV') !== 'local') {

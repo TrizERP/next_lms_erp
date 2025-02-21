@@ -66,7 +66,8 @@
 												'Conditionally Promoted',
 												'Needs improvement',
 												'Passed Promoted to class 10',
-												'Detain'
+												'Detain',
+												'Essential repeat'
 												];
 										@endphp
 
@@ -79,12 +80,17 @@
 												<td>{{ $value->gr_number }}</td>
 												<td>{{ $value->first_name.' '.$value->middle_name.' '.$value->last_name }}</td>
 												<td>
+													@if(session()->get('sub_institute_id')!=47)
 													<select id='result_remarks' name="result_remarks[{{ $value->id }}]" class="form-control" style="width:300px;">	
 														<option value="">--Select Result Remarks--</option>
 														@foreach($remarks as $remark)
 															<option value="{{ $remark }}" @if(isset($value->result_remarks)) @if($value->result_remarks == $remark) selected="selected" @endif @endif>{{ $remark }}</option>
 														@endforeach
 													</select>
+													@else
+													<!-- for mmis display division in result remarks  -->
+														<input type="text" class="form-control" name="result_remarks[{{ $value->id }}]" @if(isset($value->result_remarks) && $value->result_remarks !='' && $value->result_remarks!=null) value="{{$value->result_remarks}}" @endif>
+													@endif
 												</td>
 											</tr>
 										@endforeach

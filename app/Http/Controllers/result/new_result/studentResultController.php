@@ -537,9 +537,7 @@ class studentResultController extends Controller
         $html_content = str_replace(htmlspecialchars("<<school_open_date>>"),$reopen_date, $html_content);
         // 31-12-2024 start
         if($reopen_date!=''){
-            $convertedDate = Carbon::createFromFormat('d-m-Y', $reopen_date)
-            ->subYear();
-
+            $convertedDate = Carbon::createFromFormat('d-m-Y', $reopen_date);
             $day = $convertedDate->format('j');
             $ordinal = match ($day % 10) {
                 1 => ($day % 100 == 11 ? 'th' : 'st'),
@@ -814,17 +812,44 @@ class studentResultController extends Controller
                         	$pAB = 1;
                             $w_m = $to_weight[$exam_id] ?? 0; // Check if the key exists
                             $t_m = array_sum(array_intersect_key($to_marks[$exam_id] ?? [], $marksArray));
-                            $obtained_mark_sum = array_sum($obtained_mark_arr);
-                            $convert_mark = ($obtained_mark_sum != 0) ? (($obtained_mark_sum / $t_m) * $w_m) : 0;
+                            // commented on 20-02-2025 start
+                            // $obtained_mark_sum = array_sum($obtained_mark_arr);
+                            // $convert_mark = ($obtained_mark_sum != 0) ? (($obtained_mark_sum / $t_m) * $w_m) : 0;
+                            // // for AB 
+                            // foreach ($obtained_mark_arr as $mk => $mv) {
+                            //     $w_m = $to_weight[$exam_id] ?? 0;
+                            //     $t_m = $to_marks[$exam_id];
+                            //     if(is_numeric($mv))
+                            //        	$pAB = 0;
+                            //     else
+                            //         continue;
+                            // }
+                            // commented on 20-02-2025 end
+
+                            // 20-02-2025 Separate numeric and non-numeric values by uma
+                            $numeric_marks = array_filter($obtained_mark_arr, 'is_numeric');
+                            $non_numeric_marks = array_filter($obtained_mark_arr, fn($val) => !is_numeric($val));
+
+                            $numeric_marks = array_map('floatval', $numeric_marks);
+                           
+                            $obtained_mark_sum = (count($numeric_marks) > 1) ? array_sum($numeric_marks) : reset($numeric_marks);
+
+                            // If the array has only non-numeric values, return the original value
+                            if (empty($numeric_marks) && !empty($non_numeric_marks)) {
+                                $obtained_mark_sum = reset($non_numeric_marks);
+                                $convert_mark = 0;
+                            }else{
+                                $pAB = 0;
+                                $convert_mark = ($obtained_mark_sum != 0) ? (($obtained_mark_sum / $t_m) * $w_m) : 0;
+                            }
+
                             // for AB 
                             foreach ($obtained_mark_arr as $mk => $mv) {
                                 $w_m = $to_weight[$exam_id] ?? 0;
                                 $t_m = $to_marks[$exam_id];
-                                if(is_numeric($mv))
-                                   	$pAB = 0;
-                                else
-                                    continue;
                             }
+                            // 20-02-2025 Separate numeric and non-numeric values by uma
+
                         }
                         // echo $pAB.'<br>';
                          // get mark for total mark 
@@ -846,6 +871,9 @@ class studentResultController extends Controller
                             
                             if(!empty($obtained_mark_arr) && !in_array($obtained_mark_arr[0],["N.A.","EX","AB"])){
                                 $tdVal = number_format($convert_mark, 2);
+                            } // 20-02-2025 adde elseif by uma
+                            elseif($pAB>0){
+                                $tdVal = 'AB';
                             }else{
                                 $tdVal = $obtained_mark_arr[0] ?? "-"; // print AB,NA,EX
                             }
@@ -894,9 +922,15 @@ class studentResultController extends Controller
         $table .= '<tr><td><b>Percentage</b></td><td colspan=' . ($all_colspan + 4) . '><b>' . $per . '%</b></td></tr>';
         $curr_std = DB::table('standard')->where('id', $standard_id)->first();
         $next_std = DB::table('standard')->where('id', $curr_std->next_standard_id)->first();
-
+        // get result remarks from table result_remarks 21-02-2025
+        $resulRemark = '';
+        $getRemarks = DB::table('result_remarks')->where('student_id', $student_id)->where('syear',$syear)->first();
+        if(!empty($getRemarks) && isset($getRemarks->result_remarks)){
+            $resulRemark = ' - '.$getRemarks->result_remarks;
+        }
+        // end on 21-02-2025
         if (empty($failed)) {
-            $result = 'Passed & Promoted to Class ' . $next_std->school_stream;
+            $result = 'Passed & Promoted to Class ' . $next_std->school_stream.$resulRemark; // added variable $resulRemark
         } else {
             $result = "Failed";
         }
@@ -1082,7 +1116,7 @@ class studentResultController extends Controller
                                     	$pAB=1;
                                         $w_m = $to_weight[$exam_id] ?? 0; // Check if the key exists
                                         $t_m = array_sum(array_intersect_key($to_marks[$exam_id] ?? [], $marksArray));
-                                        $obtained_mark_sum = array_sum($obtained_mark_arr);
+                                        $obtained_mark_sum = array_sum(array_map('floatval', $obtained_mark_arr));
                                         $convert_mark = ($obtained_mark_sum != 0) ? (($obtained_mark_sum / $t_m) * $w_m) : 0;
                                         // for AB 
                                         foreach ($obtained_mark_arr as $mk => $mv) {
@@ -1176,8 +1210,38 @@ class studentResultController extends Controller
         </tr>';
         $curr_std = DB::table('standard')->where('id', $standard_id)->first();
         $next_std = DB::table('standard')->where('id', $curr_std->next_standard_id)->first();
+         // get result remarks from table result_remarks 21-02-2025
+         $resulRemark = '';
+         $getRemarks = DB::table('result_remarks')->where('student_id', $student_id)->where('syear',$syear)->first();
+         if(!empty($getRemarks) && isset($getRemarks->result_remarks)){
+             $resulRemark = ' - '.$getRemarks->result_remarks;
+         }
+         // standardwise scool reopen date
+         
+        $reopen_date = $reopen_full_date= '';
+      
+         $examDetails = $this->getExamMasterSettigs($standard_id);
+         if(!empty($examDetails)){
+            if(isset($examDetails['reopen_date']) && $examDetails['reopen_date']!=''){
+                $convertedDate = Carbon::createFromFormat('d-m-Y', $examDetails['reopen_date']);
+    
+                $day = $convertedDate->format('j');
+                $ordinal = match ($day % 10) {
+                    1 => ($day % 100 == 11 ? 'th' : 'st'),
+                    2 => ($day % 100 == 12 ? 'th' : 'nd'),
+                    3 => ($day % 100 == 13 ? 'th' : 'rd'),
+                    default => 'th',
+                };
+    
+                $reopen_full_date = $day . '<sup>' . $ordinal . '</sup> ' . $convertedDate->format('F, Y');
+            }
+         }
+         $reopen_date = (isset($reopen_full_date) && $reopen_full_date!='') ? $reopen_full_date : '';
+        //  echo "<pre>";print_r($reopen_date);exit;
+
+         // end on 21-02-2025
         if (empty($failed)) {
-            $result = 'Passed &amp; Promoted to Class ' . $next_std->school_stream;
+            $result = 'Passed &amp; Promoted to Class ' . $next_std->school_stream.$resulRemark; // added variable $resulRemark
         } else {
             $result = "Failed";
         }
@@ -1192,12 +1256,12 @@ class studentResultController extends Controller
 		      </tr>
 		      <tr>
 		       <td colspan="3" class="p-t-10">
-		        <b>School Reopens on : 01<sup>st</sup> April, 2025</b>
+		        <b>School Reopens on : '.$reopen_date.'</b>
 		       </td>
 		      </tr>';
 		  }
 
-    // Calculate the total marks for each term
+        // Calculate the total marks for each term
         $res['result'] = $res_school;
         $table .= '</tr></tbody></table>';
         $res['table'] = $table;
@@ -6745,16 +6809,26 @@ private function buildDisciplineTable($decipline_data,$both_term)
                     // echo "<pre>";print_r($coData2);exit;
                     $coScholaticTable.='<div style="display:flex;text-align:center">';
                     if(!empty($coData1)){
-                            foreach ($term_name as $key => $terms) {
-                            $coScholaticTable.='<table class="aca-year" cellspacing="0" cellpadding="0" border="1" width="50%">';
-                            $coScholaticTable .= '<tr><th class="data_center" style="width:70%"><b>'. strtoupper($part1Head[$terms->term_id]) . '</b></th><th class="data_center"><b>' . $terms->title . '</b></th></tr>';
-                            foreach ($coData1[$terms->term_id] as $sub => $term_data) {
-                                $coScholaticTable .= '<tr><td align="center" style="width:70%">' . $sub . '</td>';
-                                $coScholaticTable .= '<td align="center">' . $term_data . '</td>';
-                                $coScholaticTable .= '</tr>';
-                                }
-                            $coScholaticTable.='</table>';
-                        }
+						foreach ($term_name as $key => $terms) {
+						    $coScholaticTable .= '<table class="aca-year" cellspacing="0" cellpadding="0" border="1" width="50%">';
+						    $coScholaticTable .= '<tr><th class="data_center" style="width:70%"><b>' . 
+						        (isset($part1Head[$terms->term_id]) ? strtoupper($part1Head[$terms->term_id]) : 'N/A') . 
+						        '</b></th><th class="data_center"><b>' . $terms->title . '</b></th></tr>';
+
+						    // Check if term_id exists in $coData1
+						    if (isset($coData1[$terms->term_id])) {
+						        foreach ($coData1[$terms->term_id] as $sub => $term_data) {
+						            $coScholaticTable .= '<tr><td align="center" style="width:70%">' . $sub . '</td>';
+						            $coScholaticTable .= '<td align="center">' . $term_data . '</td>';
+						            $coScholaticTable .= '</tr>';
+						        }
+						    } else {
+						        // Optional: Show a message if no data exists for the term_id
+						        $coScholaticTable .= '<tr><td colspan="2" align="center">No data available</td></tr>';
+						    }
+
+						    $coScholaticTable .= '</table>';
+						}
                     }
                 }
                 $coScholaticTable.='</div>';
@@ -7078,13 +7152,19 @@ private function buildDisciplineTable($decipline_data,$both_term)
             $scholaticTableGrades .='<tr></table>';
         }
 
-
         $curr_std = DB::table('standard')->where('id', $standard_id)->first();
         $next_std = DB::table('standard')->where('id', $curr_std->next_standard_id)->first();
-
-        if (empty($failed)) {
-            $result = 'Passed & Promoted to Class ' . $next_std->school_stream;
-        } else {
+       // get result remarks from table result_remarks 21-02-2025
+       $resulRemark = '';
+       $getRemarks = DB::table('result_remarks')->where('student_id', $student_id)->where('syear',$syear)->first();
+       if(!empty($getRemarks) && isset($getRemarks->result_remarks)){
+           $resulRemark = ' - '.$getRemarks->result_remarks;
+       }
+       
+       // end on 21-02-2025
+       if (empty($failed)) {
+           $result = 'Passed & Promoted to Class ' . $next_std->school_stream.$resulRemark; // added variable $resulRemark
+       } else {
             $result = "Failed";
         }
 
