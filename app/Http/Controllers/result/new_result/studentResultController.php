@@ -924,9 +924,15 @@ class studentResultController extends Controller
         $table .= '<tr><td><b>Percentage</b></td><td colspan=' . ($all_colspan + 4) . '><b>' . $per . '%</b></td></tr>';
         $curr_std = DB::table('standard')->where('id', $standard_id)->first();
         $next_std = DB::table('standard')->where('id', $curr_std->next_standard_id)->first();
-
+        // get result remarks from table result_remarks 21-02-2025
+        $resulRemark = '';
+        $getRemarks = DB::table('result_remarks')->where('student_id', $student_id)->where('syear',$syear)->first();
+        if(!empty($getRemarks) && isset($getRemarks->result_remarks)){
+            $resulRemark = ' - '.$getRemarks->result_remarks;
+        }
+        // end on 21-02-2025
         if (empty($failed)) {
-            $result = 'Passed & Promoted to Class ' . $next_std->school_stream;
+            $result = 'Passed & Promoted to Class ' . $next_std->school_stream.$resulRemark; // added variable $resulRemark
         } else {
             $result = "Failed";
         }
@@ -1206,8 +1212,15 @@ class studentResultController extends Controller
         </tr>';
         $curr_std = DB::table('standard')->where('id', $standard_id)->first();
         $next_std = DB::table('standard')->where('id', $curr_std->next_standard_id)->first();
+         // get result remarks from table result_remarks 21-02-2025
+         $resulRemark = '';
+         $getRemarks = DB::table('result_remarks')->where('student_id', $student_id)->where('syear',$syear)->first();
+         if(!empty($getRemarks) && isset($getRemarks->result_remarks)){
+             $resulRemark = ' - '.$getRemarks->result_remarks;
+         }
+         // end on 21-02-2025
         if (empty($failed)) {
-            $result = 'Passed &amp; Promoted to Class ' . $next_std->school_stream;
+            $result = 'Passed &amp; Promoted to Class ' . $next_std->school_stream.$resulRemark; // added variable $resulRemark
         } else {
             $result = "Failed";
         }
@@ -1227,7 +1240,7 @@ class studentResultController extends Controller
 		      </tr>';
 		  }
 
-    // Calculate the total marks for each term
+        // Calculate the total marks for each term
         $res['result'] = $res_school;
         $table .= '</tr></tbody></table>';
         $res['table'] = $table;
@@ -7118,13 +7131,19 @@ private function buildDisciplineTable($decipline_data,$both_term)
             $scholaticTableGrades .='<tr></table>';
         }
 
-
         $curr_std = DB::table('standard')->where('id', $standard_id)->first();
         $next_std = DB::table('standard')->where('id', $curr_std->next_standard_id)->first();
-
-        if (empty($failed)) {
-            $result = 'Passed & Promoted to Class ' . $next_std->school_stream;
-        } else {
+       // get result remarks from table result_remarks 21-02-2025
+       $resulRemark = '';
+       $getRemarks = DB::table('result_remarks')->where('student_id', $student_id)->where('syear',$syear)->first();
+       if(!empty($getRemarks) && isset($getRemarks->result_remarks)){
+           $resulRemark = ' - '.$getRemarks->result_remarks;
+       }
+       
+       // end on 21-02-2025
+       if (empty($failed)) {
+           $result = 'Passed & Promoted to Class ' . $next_std->school_stream.$resulRemark; // added variable $resulRemark
+       } else {
             $result = "Failed";
         }
 
