@@ -1218,6 +1218,17 @@ class studentResultController extends Controller
          if(!empty($getRemarks) && isset($getRemarks->result_remarks)){
              $resulRemark = ' - '.$getRemarks->result_remarks;
          }
+         // standardwise scool reopen date
+         $reopenDate = '';
+         if(in_array($standard_id,[103,104,105,106,107,108,109,110,111])){ // 6 to 12
+            $reopenDate = '05<sup>th</sup> April, 2025';
+         }
+         else if(in_array($standard_id,[94])){ // only for nursery
+            $reopenDate = '07<sup>th</sup> April, 2025';
+         }
+         else{ // other standards
+            $reopenDate = '04<sup>th</sup> April, 2025';
+         }
          // end on 21-02-2025
         if (empty($failed)) {
             $result = 'Passed &amp; Promoted to Class ' . $next_std->school_stream.$resulRemark; // added variable $resulRemark
@@ -1235,7 +1246,7 @@ class studentResultController extends Controller
 		      </tr>
 		      <tr>
 		       <td colspan="3" class="p-t-10">
-		        <b>School Reopens on : 01<sup>st</sup> April, 2025</b>
+		        <b>School Reopens on : '.$reopenDate.'</b>
 		       </td>
 		      </tr>';
 		  }
