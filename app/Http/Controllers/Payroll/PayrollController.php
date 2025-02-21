@@ -1969,8 +1969,10 @@ class PayrollController extends Controller
     public function getTotalDays(Request $request){
         $sub_institute_id=$request->sub_institute_id;
         $syear=$request->syear;
-        $from_date =$request->from_date;
-        $to_date =$request->to_date;
+
+        $from_date = $request->input('from_date') ? Carbon::parse($request->input('from_date')) : null;
+        $to_date = $request->input('to_date') ? Carbon::parse($request->input('to_date')) : null;
+        
         $user_id=$request->emp_id;
         $department_id=$request->department_id;
         // getUserData 

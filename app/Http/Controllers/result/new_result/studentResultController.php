@@ -537,9 +537,7 @@ class studentResultController extends Controller
         $html_content = str_replace(htmlspecialchars("<<school_open_date>>"),$reopen_date, $html_content);
         // 31-12-2024 start
         if($reopen_date!=''){
-            $convertedDate = Carbon::createFromFormat('d-m-Y', $reopen_date)
-            ->subYear();
-
+            $convertedDate = Carbon::createFromFormat('d-m-Y', $reopen_date);
             $day = $convertedDate->format('j');
             $ordinal = match ($day % 10) {
                 1 => ($day % 100 == 11 ? 'th' : 'st'),
@@ -1225,8 +1223,7 @@ class studentResultController extends Controller
          $examDetails = $this->getExamMasterSettigs($standard_id);
          if(!empty($examDetails)){
             if(isset($examDetails['reopen_date']) && $examDetails['reopen_date']!=''){
-                $convertedDate = Carbon::createFromFormat('d-m-Y', $examDetails['reopen_date'])
-                ->subYear();
+                $convertedDate = Carbon::createFromFormat('d-m-Y', $examDetails['reopen_date']);
     
                 $day = $convertedDate->format('j');
                 $ordinal = match ($day % 10) {
@@ -1240,6 +1237,8 @@ class studentResultController extends Controller
             }
          }
          $reopen_date = (isset($reopen_full_date) && $reopen_full_date!='') ? $reopen_full_date : '';
+        //  echo "<pre>";print_r($reopen_date);exit;
+
          // end on 21-02-2025
         if (empty($failed)) {
             $result = 'Passed &amp; Promoted to Class ' . $next_std->school_stream.$resulRemark; // added variable $resulRemark
