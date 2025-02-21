@@ -1790,17 +1790,19 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             // 22-01-2025 end
 
             // 2025-01-20 by uma
-            $panCardTag = $ssmission_note = $thankFull = '';
+            $panCardTag = '';
+            $ssmission_note = $thankFull = 'style="display:none;"';
             $receiptType=null;  // differentiate ssmission reciepts 10-02-2025
             if($receipt_book_arr->receipt_id==2 && $sub_institute_id==76){
                 $panNo = isset($_REQUEST['pan_card']) ? $_REQUEST['pan_card'] : '-';
                 
                 $panCardTag .=  'PAN : <label><b>'.$panNo.'</tr><tr>';
+                // commented on 21-02-2025
+                // $ssmission_note = 'Income Tax Exemtion U/S 80G(5) No.SRT/CIT-III/Tech/80G(5)/(05/1)
+                // 2008-09.<br>Dt.04-06-2008 Valid from 01/04/2008 to 31/03/2011 to and onwards';
 
-                $ssmission_note = 'Income Tax Exemtion U/S 80G(5) No.SRT/CIT-III/Tech/80G(5)/(05/1)
-                2008-09.<br>Dt.04-06-2008 Valid from 01/04/2008 to 31/03/2011 to and onwards';
-
-                $thankFull .=  'Has been Thanksfully Received by Shri Swaminarayan Mission';
+                // $thankFull .=  'Has been Thanksfully Received by Shri Swaminarayan Mission';
+                $ssmission_note = $thankFull = 'style="display:block;"';
                 $receiptType = "MISSION";
             }
             // differentiate ssmission reciepts 10-02-2025
