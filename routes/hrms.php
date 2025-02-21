@@ -127,3 +127,5 @@ Route::group(['prefix' => 'hrms', 'middleware' => ['session', 'menu', 'logRoute'
     Route::get('daywise_attendance_report',[HrmsController::Class,'DaywiseAttendanceReportIndex'])->name('daywise_attendance_report.index');
     Route::get('daywise_attendance_report/create',[HrmsController::Class,'DaywiseAttendanceportCreate'])->name('daywise_attendance_report.create');
 });
+
+Route::get('getTotalDays',[PayrollController::class, 'getTotalDays'])->name('getTotalDays');
