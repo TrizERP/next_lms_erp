@@ -1294,7 +1294,7 @@ class studentResultController extends Controller
 
         // echo "<pre>";print_r($co_scholastic);exit;
         $check_optional_subject_with_student = DB::table('student_optional_subject as sos')
-        ->select('ssm.display_name', 'sos.subject_id', 'sos.student_id', 'ssm.standard_id', 'rce.id as create_id', 'rce.title', 'rce.term_id', 'rce.standard_id', 'rem.weightage', 'rem.ExamTitle', 'rce.subject_id', 'rce.points as r_point', 'rce.con_point', 'rem.Id as ExamId', 'rce.exam_id', DB::raw('IFNULL(rm.points, 0) as points'))
+        ->select('ssm.display_name', 'sos.subject_id', 'sos.student_id', 'ssm.standard_id', 'rce.id as create_id', 'rce.title', 'rce.term_id', 'rce.standard_id', 'rem.weightage', 'rem.ExamTitle', 'rce.subject_id', 'rce.points as r_point', 'rce.con_point', 'rem.Id as ExamId', 'rce.exam_id', DB::raw('IFNULL(rm.points, 0) as points'),'rm.is_absent')
         ->join('sub_std_map as ssm', 'sos.subject_id', '=', 'ssm.subject_id')
         ->join('result_create_exam as rce', function ($join) use($syear){
 	        $join->on('rce.subject_id', '=', 'sos.subject_id')
@@ -1359,7 +1359,14 @@ class studentResultController extends Controller
 	        $scho_table .= '<tr>';
 	       	$scho_table .= '<td>' . $subject_name . '</td>';
             foreach ($check_optional_subject_with_student as $record) {
-	                $scho_table .= '<td class="data_center">' . $record->points . '</td>';
+                // 22-02-2025 added by uma display is_absent
+
+                if(in_array($record->is_absent,['AB','N.A.','EX'])){
+                    $tdVal = $record->is_absent;
+                }else{
+                    $tdVal = $record->points;    
+                }
+	                $scho_table .= '<td class="data_center optionlMarks">' . $tdVal . '</td>';
 	                $subtotal+=$record->points;
             }
             $obt_grade = $this->getGrade($grade_arr_mmis, $totalMark,$subtotal);   
@@ -1395,7 +1402,7 @@ class studentResultController extends Controller
 
         // echo "<pre>";print_r($co_scholastic);exit;
         $check_optional_subject_with_student = DB::table('student_optional_subject as sos')
-        ->select('ssm.display_name', 'sos.subject_id', 'sos.student_id', 'ssm.standard_id', 'rce.id as create_id', 'rce.title', 'rce.term_id', 'rce.standard_id', 'rem.weightage', 'rem.ExamTitle', 'rce.subject_id', 'rce.points as r_point', 'rce.con_point', 'rem.Id as ExamId', 'rce.exam_id', DB::raw('IFNULL(rm.points, 0) as points'))
+        ->select('ssm.display_name', 'sos.subject_id', 'sos.student_id', 'ssm.standard_id', 'rce.id as create_id', 'rce.title', 'rce.term_id', 'rce.standard_id', 'rem.weightage', 'rem.ExamTitle', 'rce.subject_id', 'rce.points as r_point', 'rce.con_point', 'rem.Id as ExamId', 'rce.exam_id', DB::raw('IFNULL(rm.points, 0) as points'),'rm.is_absent')
         ->join('sub_std_map as ssm', 'sos.subject_id', '=', 'ssm.subject_id')
         ->join('result_create_exam as rce', function ($join) use($syear){
 	        $join->on('rce.subject_id', '=', 'sos.subject_id')
@@ -1450,7 +1457,13 @@ class studentResultController extends Controller
 	        $skillTable .= '<tr>';
 	       	$skillTable .= '<td>' . $subject_name. '</td>';
             foreach ($check_optional_subject_with_student as $record) {
-	                $skillTable .= '<td class="data_center">' . $record->points . '</td>';
+                // 22-02-2025 added by uma display is_absent
+                if(in_array($record->is_absent,['AB','N.A.','EX'])){
+                    $tdVal = $record->is_absent;
+                }else{
+                    $tdVal = $record->points;    
+                }
+	                $skillTable .= '<td class="data_center">' . $tdVal . '</td>';
 	                $subtotal+=$record->points;
             }
             $obt_grade = $this->getGrade($grade_arr_mmis, $totalMark,$subtotal);   
@@ -7104,12 +7117,12 @@ private function buildDisciplineTable($decipline_data,$both_term)
                             $convertTp = ($mmFinal > 0) ? number_format(($obtFinal * $weightage ) / $mmFinal,2) : '0.00';
                             $totMark += $weightage;
                             $totObtMarks += $convertTp;
-                            $scholaticTable.='<td class="data_center"><b>'.$convertTp.'</b></td>';
+                            $scholaticTable.='<td class="data_center lastTotal"><b>'.$convertTp.'</b></td>';
                            }
                         }
                     }
                     $overAllMark +=$totMark;
-                    $overAllObt +=$totObtMarks;
+                    $overAllObt += round($totObtMarks); // make round on 22-02-2025 by uma
 
                     $sub_per = $this->getPer(round($totObtMarks), $totMark);
                     if ($sub_per < 33)

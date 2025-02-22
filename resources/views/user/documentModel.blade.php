@@ -56,7 +56,8 @@
                                     <td>{{$key+1}}</td>
                                     <td>{{$value->document_type}}</td>
                                     <td>{{$value->document_title}}</td>
-                                    <td><a target="_blank" href="{{ Storage::disk('digitalocean')->url('public/staff_document/'.$value->file_name)}}">{{$value->file_name ?? '-'}}</a></td>
+                                    {{-- <td><a target="_blank" href="{{ Storage::disk('digitalocean')->url('public/staff_document/'.$value->file_name)}}">{{$value->file_name ?? '-'}}</a></td> --}}
+                                    <td><a target="_blank" href="https://s3-triz.fra1.cdn.digitaloceanspaces.com/public/staff_document/{{$value->file_name}}">{{$value->file_name ?? '-'}}</a></td>
                                 </tr>
                             @endforeach
                         </tbody>
