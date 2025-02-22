@@ -89,31 +89,31 @@
         color: #6297C3;
     }
     .selected-items {
-            display: flex;
-            flex-wrap: wrap;
-            margin-top: 10px;
-        }
-        .selected-item {
-            background: #007bff;
-            color: white;
-            padding: 5px 10px;
-            border-radius: 20px;
-            margin: 5px;
-            display: flex;
-            align-items: center;
-        }
-        .selected-item span {
-            margin-left: 8px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        .datalistInput {
-            width: 100%;
-            padding: 8px;
-            margin-bottom: 5px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
+        display: flex;
+        flex-wrap: wrap;
+        margin-top: 10px;
+    }
+    .selected-item {
+        background: black;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 20px;
+        margin: 5px;
+        display: flex;
+        align-items: center;
+    }
+    .selected-item span {
+        margin-left: 8px;
+        cursor: pointer;
+        font-weight: bold;
+    }
+    .datalistInput {
+        width: 100%;
+        padding: 8px;
+        margin-bottom: 5px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
 </style>
 <div id="page-wrapper">
    <div class="container-fluid">
@@ -162,50 +162,13 @@
                </div>
                 <!-- tab 2 starts  -->
                <div class="dataContainer duplicateContainer hide">
-
-                    <div class="row infoDiv">
-                        <h4 style="width:100%"><span class="fa fa-info-circle"></span> info</h4>
-                        <p style="width:100%">Duplicate prevention feature only prevents new duplicate records from getting created by users and external applications. Records created from Import, and from Workflows will not be checked for duplicates.</p>
-                        <br>
-                        <p style="width:100%">Existing duplicate records can be removed using “Find Duplicates” feature from the module page.</p>
-                    </div>
-
-                    <div class="row mx-2 my-4">
-                        <div class="col-md-12 d-flex">
-                            <div>  <label>Enable duplicate check </label>&nbsp;&nbsp;&nbsp;&nbsp;</div> 
-                            <div class="custom-control custom-switch">
-                                <input type="checkbox" name="duplicate" class="custom-control-input customVisible" id="duplicate" value="1">
-                                <label class="custom-control-label" for="duplicate"></label>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <label> Select the unique fields on which duplicate records are to be checked</label>
-                           <div class="selectFields">
-                           <input type="text" class="datalistField" id="searchInput" list="optionsList" placeholder="Type to search...">
-                                <datalist id="optionsList">
-                                    <?php
-                                    // Predefined list of selectable items
-                                    $items = ["Apple", "Banana", "Cherry", "Date", "Fig", "Grapes", "Mango", "Orange", "Peach", "Pear"];
-                                    foreach ($items as $item) {
-                                        echo "<option value='$item'>$item</option>";
-                                    }
-                                    ?>
-                                </datalist>
-
-                                <div class="selected-items" id="selectedItems"></div>
-
-                                <!-- Hidden input field to store selected values -->
-                                <input type="hidden" name="selectedValues" id="selectedValues">
-                           </div>
-                        </div>
-                    </div>
-
+                        @include('settings.configuration.duplicate')
                </div>   
                 <!-- tab 2 ends  -->
 
                 <!-- tab 3 starts  -->
                 <div class="dataContainer rightsContainer hide">
-                    <h6>Rights tab</h6>
+                    @include('settings.configuration.rights')
                 </div>
                 <!-- tab 3 ends  -->
 
@@ -500,7 +463,7 @@
                $(".basicContainer").append(row);
    
                $('#fieldSelect').empty();
-               $('#duplicateFields-list').empty();
+               $('#optionsList').empty();
 
                Object.values(result.table_fields).forEach(element => {
                  let formattedText = element.replace(/_/g, ' ') // Replace underscores with spaces
@@ -508,7 +471,7 @@
    
                    $('.fieldSelect').append(`<option value='${element}'>${formattedText}</option>`);
                  
-                   $('#duplicateFields-list').append(`<option value='${element}'></option>`);
+                   $('#optionsList').append(`<option value='${element}'></option>`);
                 
                });
    
@@ -828,7 +791,73 @@
                 }
             } );
         } );
+
+
+     // Rights toggle switch
+let states = ["start", "middle", "end"];
+
+$(".toggle-container").click(function () {
+    let $this = $(this); // Get the clicked toggle container
+    let $knob = $this.find(".toggle-knob"); // Find the knob inside this container
+    let $hiddenInput = $this.find("input[type=hidden]"); // Find the hidden input inside this container
+
+    // Get the current index based on the hidden input value
+    let currentIndex = states.indexOf($hiddenInput.val());
+    currentIndex = (currentIndex + 1) % states.length; // Cycle through states
+    let newState = states[currentIndex];
+
+    // Remove existing knob classes
+    $knob.removeClass("knob-start knob-middle knob-end");
+
+    // Add new state class
+    $knob.addClass(`knob-${newState}`);
+
+    // Update hidden input value
+    $hiddenInput.val(newState);
+});
+
     } );
+
+    $(document).ready(function () {
+        let selectedValues = [];
+
+        $("#searchInput").on("input", function () {
+            let value = $(this).val().trim();
+            
+            // ✅ Dynamically get valid options on each input
+            let validOptions = $("#optionsList option").map(function () { return $(this).val(); }).get();
+
+            // Check if value is in the predefined options and not already selected
+            if (validOptions.includes(value) && !selectedValues.includes(value)) {
+                selectedValues.push(value);
+                updateSelectedItems();
+            }
+
+            $(this).val(""); // Clear input after selection
+    });
+
+    function updateSelectedItems() {
+        let container = $("#selectedItems");
+        container.html(""); // Clear container
+
+        selectedValues.forEach(function (val, index) {
+            container.append(
+                `<div class='selected-item'>
+                    ${val} <span class="remove-item" data-index="${index}">&times;</span>
+                </div>`
+            );
+        });
+
+        $("#selectedValues").val(selectedValues.join(",")); // Store values in hidden input
+    }
+
+    $(document).on("click", ".remove-item", function () {
+        let index = $(this).data("index");
+        selectedValues.splice(index, 1);
+        updateSelectedItems();
+    });
+});
+
 </script>
 @include('includes.footer')
 @endsection
