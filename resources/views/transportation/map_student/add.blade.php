@@ -29,7 +29,7 @@
                         <div class="table-responsive">
                             <table class="table-bordered table" id="myTable" width="100%">
                                 <tr>
-                                    <th></th>
+                                    <th><input id="checkall" onchange="checkAll(this);" type="checkbox"></th>
                                     <th>Sr. No.</th>
                                     <th>Student Name</th>
                                     <th>Std/Div</th>
@@ -187,40 +187,8 @@
         });
         $(".ckbox1").on("click", function () {
             var row = $(this).closest('tr');
-            var from_bus = row.find('.from_bus'); // get the other select in the same row
-            var from_shift = row.find('.from_shift'); // get the other select in the same row
-            var from_stop = row.find('.from_stop'); // get the other select in the same row
-            var to_bus = row.find('.to_bus'); // get the other select in the same row
-            var to_shift = row.find('.to_shift'); // get the other select in the same row
-            var to_stop = row.find('.to_stop'); // get the other select in the same row
-            var distance = row.find('.distance'); // get the other select in the same row
-            var distance_amount = row.find('.distance_amount'); // get the other select in the same row            
-
-            from_bus.prop('disabled', function (i, v) {
-                return !v;
-            });
-            from_shift.prop('disabled', function (i, v) {
-                return !v;
-            });
-            from_stop.prop('disabled', function (i, v) {
-                return !v;
-            });
-            to_bus.prop('disabled', function (i, v) {
-                return !v;
-            });
-            to_shift.prop('disabled', function (i, v) {
-                return !v;
-            });
-            to_stop.prop('disabled', function (i, v) {
-                return !v;
-            });
-            distance.prop('disabled', function (i, v) {
-                return !v;
-            });
-            distance_amount.prop('disabled', function (i, v) {
-                return !v;
-            });
-//            $($tblChkBox).prop('checked', $(this).prop('checked'));
+            // make prop disabled true false wirh function disableInputs
+           disableInputs(row);
         });
 
     });
@@ -230,14 +198,10 @@
         var row = $(this).closest('tr'); // get the row
         var from_bus = row.find('.from_bus'); // get the other select in the same row
         var from_stop = row.find('.from_stop'); // get the other select in the same row
-//        var to_stop = row.find('.to_stop'); // get the other select in the same row
         from_bus.empty();
         from_bus.append('<option value="">--Select--</option>');
         from_stop.empty();
         from_stop.append('<option value="">--Select--</option>');
-//        to_stop.empty();
-//        to_stop.append('<option value="">--Select--</option>');
-
 
         $.ajax({
             url: "/api/get-bus-list?shift_id=" + selectedValue,
@@ -254,6 +218,7 @@
 
         });
     });
+
     $('#myTable').on('change', '.from_bus', function () {
         var targetMSG = $(this).parent().find('span');
         var selectedValue = $(this).val();
@@ -274,8 +239,6 @@
 
         from_stop.empty();
         from_stop.append('<option value="">--Select--</option>');
-//        to_stop.empty();
-//        to_stop.append('<option value="">--Select--</option>');
 
         var from_busID = $(this).val();
         var from_shiftID = from_shift.val();
@@ -291,13 +254,6 @@
                         $.each(res, function (key, value) {
                             from_stop.append('<option value="' + key + '">' + value + '</option>');
                         });
-
-//                        to_stop.empty();
-//                        to_stop.append('<option value="">--Select--</option>');
-//                        $.each(res, function (key, value) {
-//                            to_stop.append('<option value="' + key + '">' + value + '</option>');
-//                        });
-
                     }
                 }
             });
@@ -324,21 +280,6 @@
                       
                                                                                                                
                     }
-                    // console.log(res);
-                    /* if (res) {
-                        from_stop.empty();
-                        from_stop.append('<option value="">--Select--</option>');
-                        $.each(res, function (key, value) {
-                            from_stop.append('<option value="' + key + '">' + value + '</option>');
-                        });
-
-//                        to_stop.empty();
-//                        to_stop.append('<option value="">--Select--</option>');
-//                        $.each(res, function (key, value) {
-//                            to_stop.append('<option value="' + key + '">' + value + '</option>');
-//                        });
-
-                    } */
                 }
             });
         }
@@ -371,9 +312,6 @@
         to_bus.append('<option value="">--Select--</option>');
         to_stop.empty();
         to_stop.append('<option value="">--Select--</option>');
-//        to_stop.empty();
-//        to_stop.append('<option value="">--Select--</option>');
-
 
         $.ajax({
             url: "/api/get-bus-list?shift_id=" + selectedValue,
@@ -402,8 +340,6 @@
 
         to_stop.empty();
         to_stop.append('<option value="">--Select--</option>');
-//        to_stop.empty();
-//        to_stop.append('<option value="">--Select--</option>');
 
         var to_busID = $(this).val();
         var to_shiftID = to_shift.val();
@@ -419,13 +355,6 @@
                         $.each(res, function (key, value) {
                             to_stop.append('<option value="' + key + '">' + value + '</option>');
                         });
-
-//                        to_stop.empty();
-//                        to_stop.append('<option value="">--Select--</option>');
-//                        $.each(res, function (key, value) {
-//                            to_stop.append('<option value="' + key + '">' + value + '</option>');
-//                        });
-
                     }
                 }
             });
@@ -441,61 +370,96 @@
         //END SET from stop value in to stop combo box
     });
 
-    // $('#myTable').on('change', '.from_shift', function () {
-    //     console.log('change event called');
-          
-    //     var km_amount =$(this).data("fromshiftkm");
-    //     var shift_rate = $(this).data("fromshiftrate");
-    //     var stu_id = $(this).data("stud");
-        
-    //     var shifts =$(this).val()
-    //     var distance = $('#distance\\[' + stu_id + '\\]').val();
-
-    //     console.log(stu_id);                    
-    //     console.log(distance);                    
-
-    //     var distance_amt = (shift_rate + (distance * km_amount) );
-    //     $('#distance_amount\\[' + stu_id + '\\]').val(distance_amt);
-    // })
+   
     $('#myTable').on('change', '.from_shift', function () {
-    // console.log('change event called');
-    
-    var selectedOption = $(this).find(':selected');
-    getAmount(selectedOption);
-});
-// 20-02-2025 start onload fill amounts as per rate set
-$(document).ready(function () {
-    $('.from_shift').each(function () {
-        let selectedOption = $(this).find('option:selected'); // Get the selected option
-        let selectedValue = selectedOption.val(); // Get selected value
+        // console.log('change event called');
         
-        if (selectedValue) { // Check if any value is selected
-            getAmount(selectedOption); // Pass the selected option element, not the value
-        }
+        var selectedOption = $(this).find(':selected');
+        getAmount(selectedOption);
     });
-});
+    // 20-02-2025 start onload fill amounts as per rate set
+    $(document).ready(function () {
+        $('.from_shift').each(function () {
+            let selectedOption = $(this).find('option:selected'); // Get the selected option
+            let selectedValue = selectedOption.val(); // Get selected value
+            
+            if (selectedValue) { // Check if any value is selected
+                getAmount(selectedOption); // Pass the selected option element, not the value
+            }
+        });
+    });
 
-function getAmount(selectedOption) {
-    let studentId = selectedOption.data('stud'); // Get data-stud from selected option
+    function getAmount(selectedOption) {
+        let studentId = selectedOption.data('stud'); // Get data-stud from selected option
 
-    var km_amount = selectedOption.data("fromshiftkm"); // Get data-fromshiftkm
-    var shift_rate = selectedOption.data("fromshiftrate"); // Get data-fromshiftrate
+        var km_amount = selectedOption.data("fromshiftkm"); // Get data-fromshiftkm
+        var shift_rate = selectedOption.data("fromshiftrate"); // Get data-fromshiftrate
 
-    $('#shift_rate_' + studentId).val(shift_rate);
-    $('#km_amount_' + studentId).val(km_amount);
+        $('#shift_rate_' + studentId).val(shift_rate);
+        $('#km_amount_' + studentId).val(km_amount);
 
-    var distance = $('#distance_' + studentId).val();
-    console.log(studentId + '= km:' + km_amount + ' & shift rate:' + shift_rate);
+        var distance = $('#distance_' + studentId).val();
+        // console.log(studentId + '= km:' + km_amount + ' & shift rate:' + shift_rate);
 
-    if (km_amount && shift_rate && distance) { // Ensure values are not undefined
-        var distance_amt = (shift_rate + (distance * km_amount));
-        console.log('onload distance amount:', distance_amt);
-        $('#distance_amount_' + studentId).val(distance_amt);
-    } else {
-        console.log('Missing values: shift_rate, km_amount, or distance.');
+        if (km_amount && shift_rate && distance) { // Ensure values are not undefined
+            var distance_amt = 0;
+            if(distance!=0){
+                distance_amt = (shift_rate + (distance * km_amount));
+            }
+            // console.log('onload distance amount:', distance_amt);
+            $('#distance_amount_' + studentId).val(distance_amt);
+        } else {
+            console.log('Missing values: shift_rate, km_amount, or distance.');
+        }
     }
-}
 
-// 20-02-2025 ends
+    // 20-02-2025 ends
+
+    // 22-02-2025
+    function checkAll(ele) {
+        var checkboxes = document.querySelectorAll('input[type="checkbox"]');
+
+        checkboxes.forEach(function (checkbox) {
+            checkbox.checked = ele.checked; 
+            var row = checkbox.closest('tr'); // Get the closest row
+            disableInputs($(row)); // Wrap row in jQuery before passing
+        });
+    }
+
+    function disableInputs(row){
+        var from_bus = row.find('.from_bus'); // get the other select in the same row
+        var from_shift = row.find('.from_shift'); // get the other select in the same row
+        var from_stop = row.find('.from_stop'); // get the other select in the same row
+        var to_bus = row.find('.to_bus'); // get the other select in the same row
+        var to_shift = row.find('.to_shift'); // get the other select in the same row
+        var to_stop = row.find('.to_stop'); // get the other select in the same row
+        var distance = row.find('.distance'); // get the other select in the same row
+        var distance_amount = row.find('.distance_amount'); // get the other select in the same row            
+
+        from_bus.prop('disabled', function (i, v) {
+            return !v;
+        });
+        from_shift.prop('disabled', function (i, v) {
+            return !v;
+        });
+        from_stop.prop('disabled', function (i, v) {
+            return !v;
+        });
+        to_bus.prop('disabled', function (i, v) {
+            return !v;
+        });
+        to_shift.prop('disabled', function (i, v) {
+            return !v;
+        });
+        to_stop.prop('disabled', function (i, v) {
+            return !v;
+        });
+        distance.prop('disabled', function (i, v) {
+            return !v;
+        });
+        distance_amount.prop('disabled', function (i, v) {
+            return !v;
+        });
+    }
 </script>
 @include('includes.footer')

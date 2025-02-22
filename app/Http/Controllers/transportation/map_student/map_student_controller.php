@@ -332,7 +332,7 @@ class map_student_controller extends Controller
         // echo "<pre>";print_r($request->all());exit;
         if (isset($_REQUEST['values'])) {
             foreach ($_REQUEST['values'] as $student_id => $arr) {
-                if (isset($arr['ckbox'])) {
+                if (isset($arr['ckbox']) && $arr['ckbox']=="on") {
 
                     map_student::where([
                         "syear"            => session()->get('syear'),
@@ -343,14 +343,14 @@ class map_student_controller extends Controller
                     $exam = new map_student([
                         "syear"            => session()->get('syear'),
                         "student_id"       => $student_id,
-                        "from_shift_id"    => $arr['from_shift'],
-                        "from_bus_id"      => $arr['from_bus'],
-                        "from_stop"        => $arr['from_stop'],
-                        "to_shift_id"      => $arr['to_shift'],
-                        "to_bus_id"        => $arr['to_bus'],
-                        "to_stop"          => $arr['to_stop'],
-                        "distance"         => $arr['distance'],                        
-                        "amount"          => $arr['distance_amount'],                        
+                        "from_shift_id"    => $arr['from_shift'] ?? 0,
+                        "from_bus_id"      => $arr['from_bus'] ?? 0,
+                        "from_stop"        => $arr['from_stop'] ?? 0,
+                        "to_shift_id"      => $arr['to_shift'] ?? 0,
+                        "to_bus_id"        => $arr['to_bus'] ?? 0,
+                        "to_stop"          => $arr['to_stop'] ?? 0,
+                        "distance"         => $arr['distance'] ?? 0,                        
+                        "amount"          => $arr['distance_amount'] ?? 0,                        
                         'sub_institute_id' => session()->get('sub_institute_id'),
                     ]);
                     $exam->save();

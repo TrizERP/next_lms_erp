@@ -10,15 +10,13 @@
             </div>                    
         </div>
         <div class="card">
-            <div class="row">
-                @if(!empty($data['message']))
-                <div class="col-lg-12 col-sm-12 col-xs-12">
-                    <div class="alert alert-success alert-block">
-                        <button type="button" class="close" data-dismiss="alert">×</button>
-                        <strong>{{ $data['message'] }}</strong>
-                    </div>
-                </div>
-                @endif
+            <div class="row col-lg-12 col-sm-12 col-xs-12">
+            @if ($sessionData = Session::get('data'))
+            <div class="alert {{($sessionData['status_code'] == 1) ? 'alert-success' : 'alert-danger'}} alert-block">
+                <button type="button" class="close" data-dismiss="alert">×</button>
+                <strong>{{ $sessionData['message'] }}</strong>
+            </div>
+            @endif
                 <div class="col-lg-12 col-sm-12 col-xs-12">
                     <form action="{{ route('map_student.create') }}" enctype="multipart/form-data" method="post">
                         {{ method_field("GET") }}
