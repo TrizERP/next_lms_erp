@@ -181,7 +181,11 @@ class feesStatusController extends Controller
                 $remain_fees = $student['student_remain_fees'];
 
                 $message = "Dear $name, Your pending fees is Rs.$remain_fees, So paid it.....";
-
+                if($sub_institute_id==254){
+                    $message='Dear Parents,
+                    Your wards school fees is pending. Please clear the dues at the earliest to avoid late fees.
+                    Thank you';
+                }
                 if($student['sendType']=="notification"){
                     $schoolData = SchoolModel::where(['id' => $sub_institute_id])->get()->toArray();
                     $schoolName = $schoolData[0]['SchoolName'];
