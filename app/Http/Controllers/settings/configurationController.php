@@ -12,6 +12,7 @@ use App\Models\user\tblgroupwise_rightsModel;
 use App\Models\user\tbluserprofilemasterModel;
 use App\Models\settings\masterFieldModel;
 use App\Models\settings\masterFieldInstituteModel;
+use App\Models\settings\mastreFieldsTable;
 use Validator;
 use DB;
 
@@ -138,11 +139,12 @@ class configurationController extends Controller
         $res['fieldTypes'] = ['text','textarea','dropdown','file','checkbox','radio','email','date','time'];
         // echo "<pre>";print_r($res);exit;
         $res['deletedData'] = masterFieldInstituteModel::where('sub_institute_id',$sub_institute_id)->onlyTrashed()->get();
-
+        $res['UserProfile'] = DB::table('tbluserprofilemaster')->where('sub_institute_id',$sub_institute_id)->get()->toArray();
         return is_mobile($type, "settings/configuration/add", $res, "view");
     }
 
     public function store(Request $request){
+        // echo "<pre>";print_r($request->all());exit;
         $type = $request->input('type');
         $sub_institute_id = session()->get('sub_institute_id');
         $user_profile_id = session()->get('user_profile_id');
@@ -158,6 +160,7 @@ class configurationController extends Controller
                 $validator = Validator::make($request->all(), [
                     'sub_institute_id' => 'required|numeric',
                     'user_profile_id' => 'required|numeric',
+                    'formType' => 'required',
                 ]);
     
                 $sub_institute_id = $request->get('sub_institute_id');
@@ -175,18 +178,41 @@ class configurationController extends Controller
                 return response()->json($response, 200);
             }
         }
+        $res['status'] = 0;
+        $res['message'] = "Failed";
+        // store fields 
         $this->masterInsertUpdate($request,'checkInsert',$sub_institute_id,$user_profile_id);
-        $insert = $this->masterInsertUpdate($request,'insert',$sub_institute_id,$user_profile_id);
-
-        if($insert!=0){
-            $res['status'] = 1;
-            $res['message'] = "Success";
-        }else{
-            $res['status'] = 0;
-            $res['message'] = "Failed";
+        if($request->formType=="addFields"){
+            $insert = $this->masterInsertUpdate($request,'insert',$sub_institute_id,$user_profile_id);
+    
+            if($insert!=0){
+                $res['status'] = 1;
+                $res['message'] = "Success";
+            }
+        }
+        // duplicate prevention 
+        if($request->formType=="duplicatePrevent"){
+            // echo "<pre>";print_r($request->all());exit;
+            $duplicate = mastreFieldsTable::where(['sub_institute_id'=>$sub_institute_id,'main_menu'=>$request->main_menu,'module'=>$request->module])->update([
+                'duplicate_fields'=>($request->duplicate_status==1) ? $request->selectedValues : null,
+                'duplicate_status'=>$request->duplicate_status
+            ]);
+            if($duplicate!=0){
+                $res['status'] = 1;
+                $res['message'] = "Success";
+            }
+        }
+        // user rights 
+        if($request->formType=="usersRights"){
+            echo "<pre>";print_r($request->all());exit;
         }
 
-        return is_mobile($type, "configurations.index", $res);
+        // return is_mobile($type, "configurations.index", $res);
+        if(in_array($type,["API","JSON"])){
+            return is_mobile($type, "configurations.index", $res);
+        }else{
+            return redirect('/settings/configurations/create?main_menu_id='.$request->main_menu)->with(['data'=>$res]);
+        }
     }
 
     public function edit(Request $request,$id){
@@ -276,16 +302,30 @@ class configurationController extends Controller
         }
 
         $update = $this->masterInsertUpdate($request,'update',$sub_institute_id,$user_profile_id,$id);
-        $res['modulesList'] = masterFieldModel::when($request->has('main_menu_id'),function($q) use($request){
-            $q->where('main_menu',$request->main_menu_id);
-        })
-        ->groupBy('module')
-        ->get();
 
-        $res['deletedData'] = masterFieldInstituteModel::where('sub_institute_id',$sub_institute_id)->onlyTrashed()->get();
+        // $res['modulesList'] = masterFieldModel::when($request->has('main_menu_id'),function($q) use($request){
+        //     $q->where('main_menu',$request->main_menu_id);
+        // })
+        // ->groupBy('module')
+        // ->get();
 
-        $res['fieldTypes'] = ['text','textarea','dropdown','file','checkbox','radio','email','date','time'];
-        return is_mobile($type, "settings/configuration/add", $res, "view");
+        // $res['deletedData'] = masterFieldInstituteModel::where('sub_institute_id',$sub_institute_id)->onlyTrashed()->get();
+
+        // $res['fieldTypes'] = ['text','textarea','dropdown','file','checkbox','radio','email','date','time'];
+        // return is_mobile($type, "settings/configuration/add", $res, "view");
+        if(!empty($update)){
+            $res['status']=1;
+            $res['message']='succes';
+        }else{
+            $res['status']='0';
+            $res['message']='No Data Found';
+        }
+
+        if(in_array($type,["API","JSON"])){
+            return is_mobile($type, "configurations.index", $res);
+        }else{
+            return redirect('/settings/configurations/create?main_menu_id='.$request->main_menu_id)->with(['data'=>$res]);
+        }
     }
     // update sort order of tblgroupwise rights as per profile id
     public function updateMenuSortOrder(Request $request){
@@ -386,6 +426,7 @@ class configurationController extends Controller
                 $validator = Validator::make($request->all(), [
                     'sub_institute_id' => 'required|numeric',
                     'user_profile_id' => 'required|numeric',
+                    'main_menu_id' => 'required|numeric',
                 ]);
 
                 $sub_institute_id = $request->get('sub_institute_id');
@@ -407,22 +448,43 @@ class configurationController extends Controller
         if(count($modelData)==0){
             $modelData = masterFieldModel::where('module',$request->module)->orderBy('id','ASC')->get();
         }
-        $tableFields = [];
-        $tableName = [];
-        $sectionData = [];
+        $tableFields = $duplicateFields = $sectionData = [];
+        $excludedColumns = ['id','student_id', 'grade_id', 'standard_id','division_id', 'grade', 'standard','division', 'sub_institute_id', 'syear', 'created_by', 'deleted_at', 'created_at', 'updated_at', 'created_on', 'updated_on'];
         foreach ($modelData as $key => $value) {
-            if(!in_array($value['table_name'],$tableName)){
-                $tableData = DB::getSchemaBuilder()->getColumnListing($value['table_name']);
-                $excludedColumns = ['id','student_id', 'grade_id', 'standard_id','division_id', 'grade', 'standard','division', 'sub_institute_id', 'syear', 'created_by', 'deleted_at', 'created_at', 'updated_at', 'created_on', 'updated_on'];
-                foreach ($modelData as $k => $v) {
-                    $excludedColumns[] = $v->field_name;
-                }
-                $tableFields = array_diff($tableData, $excludedColumns);
-            }
+            // if(!in_array($value['table_name'],$tableName)){
+            //     $tableData = DB::getSchemaBuilder()->getColumnListing($value['table_name']);
+                 $excludedColumns[] = $value['field_name'];
+            //     $tableFields = array_diff($tableData, $excludedColumns);
+            // }
             $sectionData[$value->section][] =$value; 
         }
+        // get master table data
+        $masterTable  = MastreFieldsTable::where([
+            'main_menu' => $request->main_menu_id,
+            'module' => $request->module,
+        ])
+        ->whereNull('deleted_at')
+        ->where(function ($query) use ($sub_institute_id) {
+            $query->where('sub_institute_id', $sub_institute_id)
+                  ->orWhere(function ($subQuery) use ($sub_institute_id) {
+                      if (!MastreFieldsTable::where('sub_institute_id', $sub_institute_id)->exists()) {
+                          $subQuery->where('sub_institute_id', 0);
+                      }
+                  });
+        })
+        ->first();
+    
+
+        if(isset($masterTable->table_name) && $masterTable->table_name!=''){
+            $tableData = DB::getSchemaBuilder()->getColumnListing($masterTable->table_name);
+            $tableFields = array_diff($tableData, $excludedColumns);
+            $duplicateFields = $tableData;
+        }
+
         $res['tableData'] = $sectionData;
+        $res['masterTable'] = $masterTable;
         $res['table_fields'] = $tableFields;
+        $res['duplicateFields'] = $duplicateFields;
         return $res;
     }
 
@@ -441,8 +503,25 @@ class configurationController extends Controller
         $i = 0;
 
         if($action=='checkInsert'){
+            
+            $checkMasterTableExists = mastreFieldsTable::where('sub_institute_id',$sub_institute_id)->get();
+            if(count($checkMasterTableExists)==0){
+                $checkMasterTable = mastreFieldsTable::where('sub_institute_id',0)->get();
+                foreach ($checkMasterTable as $key => $value) {
+                    $tableData = mastreFieldsTable::insert([
+                        'main_menu'=>$value['main_menu'],
+                        'module'=>$value['module'],
+                        'table_name'=>$value['table_name'],
+                        'sub_institute_id'=>$sub_institute_id,
+                        'created_by'=>$user_profile_id,
+                        'created_at'=>now(),
+                    ]);
+                }
+            }
+            
             $checkExists = masterFieldInstituteModel::where(['sub_institute_id'=>$sub_institute_id])->get();
             if(count($checkExists)==0){
+
                 $masterData = masterFieldModel::all();
                 if(count($masterData)>0){
                     foreach ($masterData as $key => $value) {
@@ -461,7 +540,7 @@ class configurationController extends Controller
                         'sub_institute_id'=>$sub_institute_id,
                         'created_by'=>$user_profile_id,
                         'main_menu'=>$value['main_menu'],
-                        'table_name'=>$value['table_name'],
+                        // 'table_name'=>$value['table_name'],
                         'created_at'=>now()
                     ];
                     $data = masterFieldInstituteModel::insert($insertArr);
@@ -491,7 +570,7 @@ class configurationController extends Controller
             'sub_institute_id'=>$sub_institute_id,
             'created_by'=>$user_profile_id,
             'main_menu'=>$request->main_menu ?? null,
-            'table_name'=>$request->table_name ?? null,
+            // 'table_name'=>$request->table_name ?? null,
             'created_at'=>now()
         ];
         $data = masterFieldInstituteModel::insert($insertArr);

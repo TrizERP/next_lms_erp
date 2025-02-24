@@ -26,7 +26,6 @@ return new class extends Migration
             $table->integer('sort_order')->nullable();
             $table->string('section',255)->nullable();
             $table->string('main_menu',255)->nullable();
-            $table->string('table_name',255)->nullable();
             $table->timestamps();
         });
     }

@@ -27,7 +27,6 @@ return new class extends Migration
             $table->boolean('is_mandatory')->default(false);
             $table->boolean('is_visible')->default(true);
             $table->string('main_menu',255)->nullable();
-            $table->string('table_name',255)->nullable();
             $table->bigInteger('sub_institute_id');
             $table->biginteger('created_by');
             $table->softDeletes();

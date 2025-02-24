@@ -71,7 +71,8 @@
    h3,
    h4,
    h5,
-   h6 {
+   h6,
+   p {
    margin-bottom: 0px !important;
    }
    /* Green switch styling */
@@ -86,6 +87,7 @@
         border-left:5px solid #6297C3;  
         border-radius: 5px; 
         height: 116px;
+        margin-bottom: 30px;
         color: #6297C3;
     }
     .selected-items {
@@ -114,9 +116,145 @@
         border: 1px solid #ccc;
         border-radius: 4px;
     }
+    .radio-group {
+        display: flex;
+        border: 2px solid #ccc;
+        border-radius: 10px; /* Capsule Shape */
+        overflow: hidden;
+        width: 130px;
+    }
+
+    .radio-btn {
+        flex: 1;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s ease-in-out;
+        background-color: white;
+        border: none;
+        margin:0px;
+    }
+    .radio-btn input {
+        display: none;
+    }
+
+    /* YES Selected */
+    .radio-btn.yes.selected {
+        background: #28a745;
+        color: white;
+    }
+
+    /* NO Selected */
+    .radio-btn.no.selected {
+        background: #dc3545;
+        color: white;
+    }
+    .duplicateHead{
+        display: flex;
+        align-items: center;
+        gap: 20px; 
+    }
+    /* // rights blade css  */
+    .dots {
+    height: 16px;
+    width: 16px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 5px;
+  }
+  .dotsDiv{
+    display: flex;
+    align-items: center;
+    justify-content: flex-end; 
+  }
+  .dotBlack, .knob-start{
+    background: black !important;
+  }
+  .dotOrange, .knob-middle{
+    background: orange !important;
+  }
+  .dotGreen, .knob-end{
+    background: green !important;
+  }
+
+  .fieldContainer {
+    display: flex;
+    align-items: center;
+    /* Align items vertically */
+    gap: 10px;
+    /* Space between switch and text */
+  }
+
+  .toggle-container {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .toggle-switch {
+    width: 45px;
+    height: 16px;
+    background: #fff;
+    border : 1px solid #ddd;
+    border-radius: 25px;
+    position: relative;
+    transition: background 0.3s;
+  }
+
+  .toggle-knob {
+    width: 16px;
+    height: 16px;
+    background: white;
+    /* Default knob color */
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    transition: left 0.3s, background 0.3s;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Default */
+  .knob-middle {
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  /* Middle */
+  .knob-end {
+    left: calc(100% - 16px) !important;
+  }
+
+  /* End */
+
+  .fieldNames h6 {
+    margin: 0;
+    /* Remove default margin */
+    font-size: 16px;
+  }
+  .mdi-up, .mdi-down{
+    background: #ededed;
+    font-size: 36px;
+    border-radius: 6px;
+    display: flex;
+    justify-content: center;
+    width: 32px;
+    padding: 8px 34px;
+  }
 </style>
 <div id="page-wrapper">
    <div class="container-fluid">
+   @if ($sessionData = Session::get('data'))
+                <div class="@if($sessionData['status']==1) alert alert-success alert-block @else alert alert-danger alert-block @endif ">
+                    <button type="button" class="close" data-dismiss="alert">×</button>
+                    <strong>{{ $sessionData['message'] }}</strong>
+                </div>
+                @endif
       <!-- Start Select Module -->
       <div class="card" style="width:100%">
          <div class="select-module">
@@ -162,7 +300,7 @@
                </div>
                 <!-- tab 2 starts  -->
                <div class="dataContainer duplicateContainer hide">
-                        @include('settings.configuration.duplicate')
+                    @include('settings.configuration.duplicate')
                </div>   
                 <!-- tab 2 ends  -->
 
@@ -202,7 +340,7 @@
             <input type="hidden" name="module" id="addModule">
             <input type="hidden" name="main_menu" id="addMainMenu">
             <input type="hidden" name="table_name" id="addTableName">
-
+            <input type="hidden" name="formType" value="addFields">
                <div class="col-md-6 mb-3">
                   <label class="font-weight-bold text-dark">Select Field</label>
                   <select name="field_name" id="fieldSelect" class="form-control fieldSelect">
@@ -389,10 +527,12 @@
    
    function getFieldData() {
        var selModule = $('#module_name').val();
+       var mainMenu = "{{ isset($_REQUEST['main_menu_id']) ? $_REQUEST['main_menu_id'] : 0}}";
+
        $('.basicContainer').empty();
        $.ajax({
            url: "{{route('getFeildLists')}}",
-           data: { module: selModule },
+           data: { module: selModule,main_menu_id:mainMenu },
            type: 'get',
            success: function (result) {
                console.log(result);
@@ -470,10 +610,47 @@
                              .replace(/\b\w/g, char => char.toUpperCase()); // Capitalize first letter of each word
    
                    $('.fieldSelect').append(`<option value='${element}'>${formattedText}</option>`);
-                 
-                   $('#optionsList').append(`<option value='${element}'></option>`);
                 
                });
+               Object.values(result.duplicateFields).forEach(element => {
+                 let formattedText = element.replace(/_/g, ' ') // Replace underscores with spaces
+                             .replace(/\b\w/g, char => char.toUpperCase()); // Capitalize first letter of each word
+   
+                   $('.fieldSelect').append(`<option value='${element}'>${formattedText}</option>`);
+                 
+                   $('#optionsList').append(`<option value='${element}'></option>`);
+
+               });
+            //    console.log('duplicate_status='+result.masterTable.duplicate_status);
+               if (result.masterTable) {
+                    if(result.masterTable.duplicate_status === 1){
+                        $(".radio-btn.yes").addClass("selected");
+                        $(".radio-btn.no").removeClass("selected");
+                        $(".radio-btn.yes input").prop("checked", true);
+                        $('.duplicateFields').show(); 
+                    }
+
+                    if (result.masterTable.duplicate_fields != null) {
+                        let container = $("#selectedItems");
+                        container.html(""); // Clear container
+
+                        // Convert comma-separated string into an array
+                        let selectedValues = result.masterTable.duplicate_fields.split(",");
+
+                        selectedValues.forEach(function (val, index) {
+                            container.append(
+                                `<div class='selected-item'>
+                                    ${val} <span class="remove-item" data-index="${index}">&times;</span>
+                                </div>`
+                            );
+                        });
+
+                        $("#selectedValues").val(selectedValues.join(",")); // Store values in hidden input
+                    }
+                }
+                
+              $('#mainMenu').val(mainMenu);
+              $('#moduleName').val(selModule);
    
            },
            error: function (response) {
@@ -794,27 +971,27 @@
 
 
      // Rights toggle switch
-let states = ["start", "middle", "end"];
+    let states = ["start", "middle", "end"];
 
-$(".toggle-container").click(function () {
-    let $this = $(this); // Get the clicked toggle container
-    let $knob = $this.find(".toggle-knob"); // Find the knob inside this container
-    let $hiddenInput = $this.find("input[type=hidden]"); // Find the hidden input inside this container
+    $(".toggle-container").click(function () {
+        let $this = $(this); // Get the clicked toggle container
+        let $knob = $this.find(".toggle-knob"); // Find the knob inside this container
+        let $hiddenInput = $this.find("input[type=hidden]"); // Find the hidden input inside this container
 
-    // Get the current index based on the hidden input value
-    let currentIndex = states.indexOf($hiddenInput.val());
-    currentIndex = (currentIndex + 1) % states.length; // Cycle through states
-    let newState = states[currentIndex];
+        // Get the current index based on the hidden input value
+        let currentIndex = states.indexOf($hiddenInput.val());
+        currentIndex = (currentIndex + 1) % states.length; // Cycle through states
+        let newState = states[currentIndex];
 
-    // Remove existing knob classes
-    $knob.removeClass("knob-start knob-middle knob-end");
+        // Remove existing knob classes
+        $knob.removeClass("knob-start knob-middle knob-end");
 
-    // Add new state class
-    $knob.addClass(`knob-${newState}`);
+        // Add new state class
+        $knob.addClass(`knob-${newState}`);
 
-    // Update hidden input value
-    $hiddenInput.val(newState);
-});
+        // Update hidden input value
+        $hiddenInput.val(newState);
+    });
 
     } );
 
@@ -824,17 +1001,17 @@ $(".toggle-container").click(function () {
         $("#searchInput").on("input", function () {
             let value = $(this).val().trim();
             
-            // ✅ Dynamically get valid options on each input
             let validOptions = $("#optionsList option").map(function () { return $(this).val(); }).get();
 
             // Check if value is in the predefined options and not already selected
             if (validOptions.includes(value) && !selectedValues.includes(value)) {
+
                 selectedValues.push(value);
                 updateSelectedItems();
             }
 
             $(this).val(""); // Clear input after selection
-    });
+        });
 
     function updateSelectedItems() {
         let container = $("#selectedItems");
@@ -856,6 +1033,43 @@ $(".toggle-container").click(function () {
         selectedValues.splice(index, 1);
         updateSelectedItems();
     });
+      // toggle radio dublicate blade
+      $('.duplicateFields').hide();
+      $(".radio-btn").click(function () {
+            $(".radio-btn").removeClass("selected");
+            $(this).addClass("selected");
+            $(this).find("input").prop("checked", true);
+            var val = $(this).find("input").val();
+            if (val === "1") {
+                $('.duplicateFields').show(); 
+            } else {
+                $('.duplicateFields').hide();
+            }
+        });
+
+    // Rights toggle switch rights.blade
+      let states = ["start", "middle", "end"];
+
+        $(".toggle-container").click(function () {
+        let $this = $(this); // Get the clicked toggle container
+        let $knob = $this.find(".toggle-knob"); // Find the knob inside this container
+        let $hiddenInput = $this.find("input[type=hidden]"); // Find the hidden input inside this container
+
+        // Get the current index based on the hidden input value
+        let currentIndex = states.indexOf($hiddenInput.val());
+        currentIndex = (currentIndex + 1) % states.length; // Cycle through states
+        let newState = states[currentIndex];
+
+        // Remove existing knob classes
+        $knob.removeClass("knob-start knob-middle knob-end");
+
+        // Add new state class
+        $knob.addClass(`knob-${newState}`);
+
+        // Update hidden input value
+        $hiddenInput.val(newState);
+        });
+
 });
 
 </script>
