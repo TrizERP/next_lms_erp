@@ -166,6 +166,12 @@ class studentResultController extends Controller
             $photo_height = "90px !important";
             $photo_width = "";
         }
+        
+        // 24-02-2024 Changes in hills nursery HPC
+        if (strpos($html_content, htmlspecialchars('<<hpc_hills_nursary>>')) !== false) {
+            $main_result = $this->get_hpc_hills_nursary($value['standard_id'], $value['id'], $format, "no_zero");
+            $html_content = str_replace(htmlspecialchars("<<hpc_hills_nursary>>"), $main_result['table'], $html_content);
+        }
 
         if (isset($result_trust->left_logo)) {
             $image_path1 = "/storage/result/left_logo/" . $result_trust->left_logo ?? '';
@@ -556,10 +562,10 @@ class studentResultController extends Controller
             $html_content = str_replace(htmlspecialchars("<<activity_tag_marks>>"), $main_result['table'], $html_content);
         }
 
-        if (strpos($html_content, htmlspecialchars('<<hpc_hills_nursary>>')) !== false) {
-            $main_result = $this->get_hpc_hills_nursary($standard_id, $value['id'], $format, "no_zero");
-            $html_content = str_replace(htmlspecialchars("<<hpc_hills_nursary>>"), $main_result['table'], $html_content);
-        }
+        // if (strpos($html_content, htmlspecialchars('<<hpc_hills_nursary>>')) !== false) {
+        //     $main_result = $this->get_hpc_hills_nursary($standard_id, $value['id'], $format, "no_zero");
+        //     $html_content = str_replace(htmlspecialchars("<<hpc_hills_nursary>>"), $main_result['table'], $html_content);
+        // }
 
         // 2024-09-11 MMIS std 9th co scholatic added 
         $mmisPartB9 = $this->mmisPartB9($standard_id, $value['id'], $format);
@@ -5928,7 +5934,7 @@ private function buildDisciplineTable($decipline_data,$both_term)
         foreach($get_result_skillsets as $keym=>$get_result_skillset)
         {
             
-            $table .= '<table  class="curricular_table" cellspacing="0"  border="1">
+            $table .= '<table  class="curricular_table" cellspacing="0"  border="1" width="100%">
             <tr class="curricular_thead_tr_main">';
             $style = '';
             $heading = $get_result_skillset->main_title;
@@ -6071,13 +6077,13 @@ private function buildDisciplineTable($decipline_data,$both_term)
                                       // juniors
                                     if(in_array($standard_id,[2281,2295,2285,2298,2288,2301])){
                                         $printClass = 'junior_'.$key.'_'.$ak;
-                                        if($key==0 && $ak==13){
-                                            $printStyle = 'style="page-break-after:always"';
-                                        }
+                                        // if($key==0 && $ak==13){
+                                        //     $printStyle = 'style="page-break-after:always"';
+                                        // }
                                     }
                                     if(in_array($standard_id,[2282,2296,2286,2299,2290,2303])){
                                         $printClass = 'senior_'.$key.'_'.$ak;
-                                        $printStyle = 'style="page-break-after:always"';
+                                        // $printStyle = 'style="page-break-after:always"';
                                     }
                                 
                                     // $printClass = 'class_'.$key.'_'.$ak;
@@ -6128,8 +6134,8 @@ private function buildDisciplineTable($decipline_data,$both_term)
 
         if(in_array($standard_id,[2277,2293,2287,2300,2291,2304])){
             $table.='<style>@media print{
-                .nursey_1_5,
-                .nursey_3_1{
+                .nursey_1_8,
+                .nursey_3_7{
                     margin-bottom:114px;
                 }
                 
@@ -6137,32 +6143,45 @@ private function buildDisciplineTable($decipline_data,$both_term)
         }
         // juniors
         if(in_array($standard_id,[2281,2295,2285,2298,2288,2301])){
+        //     $table.='<style>@media print{
+        //         .junior_0_12{
+        //             margin-bottom:120px;
+        //         }
+        //         .junior_3_6,
+        //         .junior_5_1{
+        //             margin-bottom:150px;
+        //         }
+        //         .junior_2_2{
+        //             margin-bottom:180px;
+        //         }
+                
+        //     }</style>';
+        // }
+
             $table.='<style>@media print{
-                .junior_0_12{
+                .junior_2_10{
                     margin-bottom:120px;
                 }
-                .junior_3_6,
-                .junior_5_1{
-                    margin-bottom:150px;
-                }
-                .junior_2_2{
-                    margin-bottom:180px;
-                }
-                
             }</style>';
         }
 
-// seniors
+       // seniors
         if(in_array($standard_id,[2282,2296,2286,2299,2290,2303])){
+            // $table.='<style>@media print{
+            //     .senior_0_12,
+            //     .senior_2_2,
+            //     .senior_3_7
+            //     {
+            //         margin-bottom:140px;
+            //     } 
+            //     .senior_5_2{
+            //         margin-bottom:130px;
+            //     }
+            // }</style>';
+            
             $table.='<style>@media print{
-                .senior_0_12,
-                .senior_2_2,
-                .senior_3_7
-                {
-                    margin-bottom:140px;
-                } 
-                .senior_5_2{
-                    margin-bottom:130px;
+                .senior_2_9{
+                    margin-bottom:120px;
                 }
             }</style>';
         }
