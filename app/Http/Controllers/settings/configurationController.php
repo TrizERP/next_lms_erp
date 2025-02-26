@@ -478,9 +478,10 @@ class configurationController extends Controller
         if(isset($masterTable->table_name) && $masterTable->table_name!=''){
             // explode excludeColumns
             $excludedColumnsArr = is_string($masterTable->exclude_columns) ? explode(',', $masterTable->exclude_columns) : [];
-            $mergedColumns = array_merge($excludedColumnsArr,$excludedColumns);
+            // $mergedColumns = array_merge($excludedColumnsArr,$excludedColumns);
             $tableData = DB::getSchemaBuilder()->getColumnListing($masterTable->table_name);
-            $tableFields = array_diff($tableData, $mergedColumns);
+            $tableFields = array_diff($tableData, $excludedColumns);
+            $tableFields = array_diff($tableFields, $excludedColumnsArr);
             $duplicateFields = $tableData;
         }
 
@@ -494,13 +495,16 @@ class configurationController extends Controller
     public function masterInsertUpdate($request,$action,$sub_institute_id,$user_profile_id,$id=''){
         $data = 0;
         $jsonValues=[];
+        $defaultVal = $request->default_value;
         if($request->has('option_keys') && $request->has('option_values')){
             foreach($request->option_keys as $key=>$jsonKey){
+                $jsonkey=str_replace(' ','_',$jsonKey);
                 if($jsonKey!=''){
                     $jsonVal = isset($request->option_values[$key]) ? $request->option_values[$key] : '-';
-                    $jsonValues[$jsonKey] = $jsonVal;
+                    $jsonValues[$jsonkey] = $jsonVal;
                 }
             }
+            $defaultVal = str_replace(' ','_',$defaultVal);
         }
         $jsonEncode = !empty($jsonValues) ? json_encode($jsonValues) : null;
         $i = 0;
@@ -565,7 +569,7 @@ class configurationController extends Controller
             'field_name'=>$request->field_name ?? null,
             'field_type'=>$request->field_type,
             'field_value'=>$jsonEncode ?? null,
-            'default_value'=>$request->default_value ?? null,
+            'default_value'=>$defaultVal ?? null,
             'is_mandatory'=>$request->is_mandatory ?? 0,
             'is_visible'=>$request->is_visible ?? 0,
             'validation_rules'=>$request->validation_rules ?? null,
@@ -584,7 +588,7 @@ class configurationController extends Controller
             $updateArr = [
                 'field_label'=>$request->field_label ?? null,
                 'field_value'=>$jsonEncode ?? null,
-                'default_value'=>$request->default_value ?? null,
+                'default_value'=>$defaultVal ?? null,
                 'is_mandatory'=>$request->is_mandatory ?? null,
                 'is_visible'=>$request->is_visible ?? null,
                 'validation_rules'=>$request->validation_rules ?? null,

@@ -422,6 +422,24 @@
                      </div>
                   </div>
                </div>
+               <div class="col-md-12 mb-4 checkboxDiv">  
+                  <label class="font-weight-bold text-dark">Checkbox Options</label>
+                  <div id="dropdown-options-container" class="p-3 border rounded bg-light">
+                     <div class="row add-checkbox-option mb-2">
+                        <div class="col-md-5">
+                           <label class="small text-secondary">Value</label>
+                           <input type="text" name="option_keys[]" class="form-control"  placeholder="Enter checkbox Text.." autocomplete="off">
+                        </div>
+                        <div class="col-md-5">
+                           <label class="small text-secondary">Display Name</label>
+                           <input type="text" name="option_values[]" class="form-control"  placeholder="Enter checkbox Text.." autocomplete="off">
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                           <i class="mdi mdi-plus-circle text-primary add-option-checkbox" onclick="addOption('add-checkbox-option','checkbox')"></i>
+                        </div>
+                     </div>
+                  </div>
+               </div>
                <div class="col-md-12">
                   <center>
                      <button type="submit" class="btn btn-success">Add Field</button>
@@ -499,6 +517,7 @@
    $(document).ready(function () {
         $('.dropDownDiv').hide();
         $('.radioDiv').hide();
+          $('.checkboxDiv').hide();
         // get all fields set by institute or triz
        getFieldData();
    
@@ -509,6 +528,7 @@
        $('#field_type_add').on('change',function(){
           $('.dropDownDiv').hide();
           $('.radioDiv').hide();
+          $('.checkboxDiv').hide();
           var field_type = $(this).val();
           // alert(field_type);
           if(field_type==='dropdown'){
@@ -516,6 +536,9 @@
           }
           if(field_type==='radio'){
             $('.radioDiv').show();
+          }
+          if(field_type==='checkbox'){
+            $('.checkboxDiv').show();
           }
        })
    })
@@ -747,7 +770,7 @@
                                                <input type="hidden" value="${response['editData'].main_menu}" name="main_menu_id">`;
    
                                                // **Dropdown Options Handling**
-                                               if (response['editData'].field_type === 'dropdown' || response['editData'].field_type === 'radio') {
+                                               if (response['editData'].field_type === 'dropdown' || response['editData'].field_type === 'radio' || response['editData'].field_type === 'checkbox') {
                                                    model += `
                                                      <div class="col-md-12 mb-4">
                                                          <label class="font-weight-bold text-dark">${response['editData'].field_type?.charAt(0).toUpperCase() + response['editData'].field_type?.slice(1) || ''} Options</label>
