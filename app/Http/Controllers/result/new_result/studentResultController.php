@@ -4409,7 +4409,7 @@ while ($current_date <= $post_end_date) {
                         }
                     }
                   
-                } else if ($val->subject_name != "MATHEMATICS") {
+                }else if ($val->subject_name != "MATHEMATICS") {
                     $get_points = DB::table('result_create_exam')
                         ->where('exam_id', $total_points[$key])
                         ->where('standard_id', $standard_id)
@@ -4422,8 +4422,9 @@ while ($current_date <= $post_end_date) {
                     if (($value == "UT1" || $value == "UT2") && $val->subject_name != "MATHEMATICS") {
                         $table .= '<td class="data_center">0</td>';
                     } elseif ($val->subject_name != "MATHEMATICS"  && ($abFlag != 1 || $exFlag != 1 || $naFlag != 1)) {
-                        $avg_max += $get_points->points;
-                        $table .= '<td ' . $value . ' class="data_center">' . $get_points->points . '</td>';
+                        $totPoints = isset($get_points->points) ? $get_points->points : 0;
+                        $avg_max += $totPoints;
+                        $table .= '<td ' . $value . ' class="data_center" '.$total_points[$key].'>' . $totPoints . '</td>';
                         $table .= '<td class="data_center">0</td>';
                                                   
                     }
@@ -6726,7 +6727,7 @@ private function buildDisciplineTable($decipline_data,$both_term)
         $next_std = DB::table('standard')->where('id', $curr_std->next_standard_id)->first();
 
         if ($per!='-') {
-            $result = 'Passed & Promoted to Class ' . $next_std->school_stream;
+            $result = 'Passed & Promoted to Class ' . isset($next_std->school_stream) ? $next_std->school_stream : '';
         } else {
             $result = "Failed";
         }
