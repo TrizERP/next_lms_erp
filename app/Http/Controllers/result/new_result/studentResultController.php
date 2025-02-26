@@ -4410,21 +4410,24 @@ while ($current_date <= $post_end_date) {
                     }
                   
                 }else if ($val->subject_name != "MATHEMATICS") {
-                    $get_points = DB::table('result_create_exam')
-                        ->where('exam_id', $total_points[$key])
-                        ->where('standard_id', $standard_id)
-                        ->where('sub_institute_id', $sub_institute_id)
-                        ->where('subject_id', $val->subject_id)
-                        ->where('syear',$syear)
-                        ->where('term_id', 150)
-                        ->first();
+                    // $get_points = DB::table('result_create_exam as rce')
+                    // ->select('rce.*')
+                    //     ->join('result_marks as rm','rm.exam_id','=','rce.id')
+                    //     ->where('rce.exam_id', $total_points[$key])
+                    //     ->where('rce.standard_id', $standard_id)
+                    //     ->where('rce.sub_institute_id', $sub_institute_id)
+                    //     ->where('rce.subject_id', $val->subject_id)
+                    //     ->where('rce.syear',$syear)
+                    //     ->where('rm.student_id',$student_id)
+                    //     ->where('rce.term_id', 150)
+                    //     ->first();
     
                     if (($value == "UT1" || $value == "UT2") && $val->subject_name != "MATHEMATICS") {
                         $table .= '<td class="data_center">0</td>';
                     } elseif ($val->subject_name != "MATHEMATICS"  && ($abFlag != 1 || $exFlag != 1 || $naFlag != 1)) {
-                        $totPoints = isset($get_points->points) ? $get_points->points : 0;
+                        $totPoints = 0;// isset($get_points->points) ? $get_points->points : 0;
                         $avg_max += $totPoints;
-                        $table .= '<td ' . $value . ' class="data_center" '.$total_points[$key].'>' . $totPoints . '</td>';
+                        $table .= '<td ' . $value . ' class="data_center" '.$total_points[$key].'/'.$standard_id.'/'. $val->subject_id.'>' . $totPoints . '</td>';
                         $table .= '<td class="data_center">0</td>';
                                                   
                     }
