@@ -357,17 +357,17 @@
                <!-- Label Name -->
                <div class="col-md-6 mb-3">
                   <label class="font-weight-bold text-dark">Label Name</label>
-                  <input type="text" name="field_label" class="form-control" placeholder="Enter Label Value.." required>
+                  <input type="text" name="field_label" class="form-control" placeholder="Enter Label Value.." required autocomplete="off">
                </div>
                <!-- Default Value -->
                <div class="col-md-6 mb-3">
                   <label class="font-weight-bold text-dark">Default Value</label>
-                  <input type="text" name="default_value" class="form-control" placeholder="Enter Default Value..">
+                  <input type="text" name="default_value" class="form-control" placeholder="Enter Default Value.." autocomplete="off">
                </div>
                <!-- Validation Rules -->
                <div class="col-md-6 mb-3">
                   <label class="font-weight-bold text-dark">Validation Rules</label>
-                  <input type="text" name="validation_rules" class="form-control" placeholder="Enter Validation Rules..">
+                  <input type="text" name="validation_rules" class="form-control" placeholder="Enter Validation Rules.." autocomplete="off">
                </div>
                <!-- Show Field Switch -->
                <div class="col-md-3 mb-3">
@@ -391,11 +391,11 @@
                      <div class="row add-dropdown-option mb-2">
                         <div class="col-md-5">
                            <label class="small text-secondary">Value</label>
-                           <input type="text" name="option_keys[]" class="form-control" placeholder="Enter Dropdown Value..">
+                           <input type="text" name="option_keys[]" class="form-control" placeholder="Enter Dropdown Value.." autocomplete="off">
                         </div>
                         <div class="col-md-5">
                            <label class="small text-secondary">Display Name</label>
-                           <input type="text" name="option_values[]" class="form-control" placeholder="Enter Dropdown Text..">
+                           <input type="text" name="option_values[]" class="form-control" placeholder="Enter Dropdown Text.." autocomplete="off">
                         </div>
                         <div class="col-md-2 d-flex align-items-end">
                            <i class="mdi mdi-plus-circle text-primary add-option-dropdown" onclick="addOption('add-dropdown-option','dropdown')"></i>
@@ -409,11 +409,11 @@
                      <div class="row add-radio-option mb-2">
                         <div class="col-md-5">
                            <label class="small text-secondary">Value</label>
-                           <input type="text" name="option_keys[]" class="form-control"  placeholder="Enter Radio Text..">
+                           <input type="text" name="option_keys[]" class="form-control"  placeholder="Enter Radio Text.." autocomplete="off">
                         </div>
                         <div class="col-md-5">
                            <label class="small text-secondary">Display Name</label>
-                           <input type="text" name="option_values[]" class="form-control"  placeholder="Enter Radio Text..">
+                           <input type="text" name="option_values[]" class="form-control"  placeholder="Enter Radio Text.." autocomplete="off">
                         </div>
                         <div class="col-md-2 d-flex align-items-end">
                            <i class="mdi mdi-plus-circle text-primary add-option-radio" onclick="addOption('add-radio-option','radio')"></i>
@@ -706,21 +706,21 @@
                                                <!-- Label Name -->
                                                <div class="col-md-6 mb-3">
                                                    <label class="font-weight-bold text-dark">Label Name</label>
-                                                   <input type="text" name="field_label" value="${response['editData'].field_label}" class="form-control">
+                                                   <input type="text" name="field_label" value="${response['editData'].field_label}" class="form-control" autocomplete="off">
                                                </div>
    
                                                <!-- Default Value -->
                                                <div class="col-md-6 mb-3">
                                                    <label class="font-weight-bold text-dark">Default Value</label>
                                                    <input type="text" name="default_value" class="form-control"
-                                                       ${response['editData'].default_value != null ? `value="${response['editData'].default_value}"` : 'placeholder="Enter default value"'}>
+                                                       ${response['editData'].default_value != null ? `value="${response['editData'].default_value}"` : 'placeholder="Enter default value"'} autocomplete="off">
                                                </div>
    
                                                <!-- Validation Rules -->
                                                <div class="col-md-6 mb-3">
                                                    <label class="font-weight-bold text-dark">Validation Rules</label>
                                                    <input type="text" name="validation_rules" class="form-control"
-                                                       ${response['editData'].validation_rules != null ? `value="${response['editData'].validation_rules}"` : 'placeholder="Enter Validations like number, email, etc."'} >
+                                                       ${response['editData'].validation_rules != null ? `value="${response['editData'].validation_rules}"` : 'placeholder="Enter Validations like number, email, etc."'} autocomplete="off">
                                                </div>
    
                                                <!-- Show Field Switch -->
@@ -768,11 +768,11 @@
                                                          <div class="row dropdown-option-remove mb-2">
                                                              <div class="col-md-5">
                                                                  <label class="small text-secondary">Value</label>
-                                                                 <input type="text" name="option_keys[]" value="${key}" class="form-control">
+                                                                 <input type="text" name="option_keys[]" value="${key}" class="form-control" autocomplete="off">
                                                              </div>
                                                              <div class="col-md-5">
                                                                  <label class="small text-secondary">Display Name</label>
-                                                                 <input type="text" name="option_values[]" value="${value}" class="form-control">
+                                                                 <input type="text" name="option_values[]" value="${value}" class="form-control" autocomplete="off">
                                                              </div>
                                                              <div class="col-md-2 d-flex align-items-end">
                                                                <i class="mdi mdi-minus-circle text-danger remove-option-edit" onclick="removeOption('dropdown-option-remove','edit',this)"></i>
@@ -785,11 +785,11 @@
                                                          <div class="row dropdown-option mb-2">
                                                              <div class="col-md-5">
                                                                  <label class="small text-secondary">Value</label>
-                                                                 <input type="text" name="option_keys[]" class="form-control">
+                                                                 <input type="text" name="option_keys[]" class="form-control" autocomplete="off">
                                                              </div>
                                                              <div class="col-md-5">
                                                                  <label class="small text-secondary">Display Name</label>
-                                                                 <input type="text" name="option_values[]" class="form-control">
+                                                                 <input type="text" name="option_values[]" class="form-control" autocomplete="off">
                                                              </div>
                                                              <div class="col-md-2 d-flex align-items-end">
                                                                  <i class="mdi mdi-plus-circle text-primary add-option" onclick="addOption('dropdown-option','edit')"></i>
@@ -830,11 +830,11 @@
        <div class="row ${className}">
            <div class="col-md-5">
                <label>Value</label>
-               <input type="text" name="option_keys[]" class="form-control">
+               <input type="text" name="option_keys[]" class="form-control" autocomplete="off">
            </div>
            <div class="col-md-5">
                <label>Display Name</label>
-               <input type="text" name="option_values[]" class="form-control">
+               <input type="text" name="option_values[]" class="form-control" autocomplete="off">
            </div>
            <div class="col-md-2 d-flex align-items-end">
                <i class="mdi mdi-minus-circle text-danger remove-option-${type}" onclick="removeOption('${className}','${type}',this)"></i>

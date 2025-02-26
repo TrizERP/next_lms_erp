@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('main_menu',255)->nullable();
             $table->string('module',255)->nullable();
             $table->string('table_name',255)->nullable();
+            $table->tinyText('exclude_columns')->nullable();
             $table->text('duplicate_fields')->nullable();
             $table->boolean('duplicate_status')->default(false);
             $table->bigInteger('sub_institute_id');

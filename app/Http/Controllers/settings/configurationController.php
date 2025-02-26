@@ -136,7 +136,7 @@ class configurationController extends Controller
         ->groupBy('module')
         ->get();
 
-        $res['fieldTypes'] = ['text','textarea','dropdown','file','checkbox','radio','email','date','time'];
+        $res['fieldTypes'] = ['text','textarea','dropdown','image','file','checkbox','radio','email','date','time'];
         // echo "<pre>";print_r($res);exit;
         $res['deletedData'] = masterFieldInstituteModel::where('sub_institute_id',$sub_institute_id)->onlyTrashed()->get();
         $res['UserProfile'] = DB::table('tbluserprofilemaster')->where('sub_institute_id',$sub_institute_id)->get()->toArray();
@@ -373,7 +373,7 @@ class configurationController extends Controller
                     foreach ($request->orderArr as $key => $value) {
                         $sortOrder = ($key+1);
                         $updateRights = DB::table('master_fields_institute')
-                            ->where(['sub_institute_id'=>$sub_institute_id,'section'=>$request->section,'module'=>$request->module,'field_name'=>$value])
+                            ->where(['sub_institute_id'=>$sub_institute_id,'section'=>$request->section,'field_name'=>$value])
                             ->update(['sort_order'=>$sortOrder]);
                             $i++;
                     }
@@ -444,12 +444,12 @@ class configurationController extends Controller
                 return response()->json($response, 200);
             }
         }
-        $modelData = masterFieldInstituteModel::where(['sub_institute_id'=>$sub_institute_id,'module'=>$request->module])->orderBy('id','ASC')->get();
+        $modelData = masterFieldInstituteModel::where(['sub_institute_id'=>$sub_institute_id,'module'=>$request->module])->orderBy('sort_order','ASC')->get();
         if(count($modelData)==0){
-            $modelData = masterFieldModel::where('module',$request->module)->orderBy('id','ASC')->get();
+            $modelData = masterFieldModel::where('module',$request->module)->orderBy('sort_order','ASC')->get();
         }
         $tableFields = $duplicateFields = $sectionData = [];
-        $excludedColumns = ['id','student_id', 'grade_id', 'standard_id','division_id', 'grade', 'standard','division', 'sub_institute_id', 'syear', 'created_by', 'deleted_at', 'created_at', 'updated_at', 'created_on', 'updated_on'];
+        $excludedColumns = [];
         foreach ($modelData as $key => $value) {
             // if(!in_array($value['table_name'],$tableName)){
             //     $tableData = DB::getSchemaBuilder()->getColumnListing($value['table_name']);
@@ -476,8 +476,11 @@ class configurationController extends Controller
     
 
         if(isset($masterTable->table_name) && $masterTable->table_name!=''){
+            // explode excludeColumns
+            $excludedColumnsArr = explode(',',$masterTable->table_name);
+            $mergedColumns = array_merge($excludedColumnsArr,$excludedColumns);
             $tableData = DB::getSchemaBuilder()->getColumnListing($masterTable->table_name);
-            $tableFields = array_diff($tableData, $excludedColumns);
+            $tableFields = array_diff($tableData, $mergedColumns);
             $duplicateFields = $tableData;
         }
 
