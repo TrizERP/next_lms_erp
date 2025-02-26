@@ -131,4 +131,29 @@
         </div>
     </div>
 </form>
- 
+ <script>
+$(document).ready(function(){
+    // Rights toggle switch rights.blade
+    let states = ["start", "middle", "end"];
+
+    $(".toggle-container").click(function () {
+    let $this = $(this); // Get the clicked toggle container
+    let $knob = $this.find(".toggle-knob"); // Find the knob inside this container
+    let $hiddenInput = $this.find("input[type=hidden]"); // Find the hidden input inside this container
+
+    // Get the current index based on the hidden input value
+    let currentIndex = states.indexOf($hiddenInput.val());
+    currentIndex = (currentIndex + 1) % states.length; // Cycle through states
+    let newState = states[currentIndex];
+
+    // Remove existing knob classes
+    $knob.removeClass("knob-start knob-middle knob-end");
+
+    // Add new state class
+    $knob.addClass(`knob-${newState}`);
+
+    // Update hidden input value
+    $hiddenInput.val(newState);
+    });
+})
+ </script>

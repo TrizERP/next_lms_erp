@@ -278,9 +278,10 @@
             <div class="displayTabs duplicateTab col-md-2" onclick="activeTabs('duplicate')">
                <h6>Duplicate Prevention</h6>
             </div>
-            <div class="displayTabs rightsTab col-md-2" onclick="activeTabs('rights')">
+            <!-- rights module in progress  -->
+            <!-- <div class="displayTabs rightsTab col-md-2" onclick="activeTabs('rights')">
                <h6>Field Rights</h6>
-            </div>
+            </div> -->
             <div class="col-md-8"></div>
          </div>
          <!-- tabs containers start -->
@@ -304,10 +305,10 @@
                </div>   
                 <!-- tab 2 ends  -->
 
-                <!-- tab 3 starts  -->
-                <div class="dataContainer rightsContainer hide">
+                <!-- tab 3 starts module in progress -->
+               {{-- <div class="dataContainer rightsContainer hide">
                     @include('settings.configuration.rights')
-                </div>
+                </div> --}}
                 <!-- tab 3 ends  -->
 
             </div>
@@ -946,6 +947,66 @@
     }
 
     $(document).ready(function () {
+    let selectedValues = [];
+
+    $("#searchInput").on("change blur", function () {  // Use change/blur for better accuracy
+        let value = $(this).val().trim();
+        
+        let validOptions = $("#optionsList option").map(function () { 
+            return $(this).val().trim(); 
+        }).get();
+
+        // Ensure the value is valid and not already selected
+        if (validOptions.includes(value) && !selectedValues.includes(value)) {
+            console.log("Function called");
+            selectedValues.push(value);
+            updateSelectedItems();
+        }
+
+        $(this).val(""); // Clear input after selection
+    });
+
+    function updateSelectedItems() {
+        let container = $("#selectedItems");
+        container.html(""); // Clear container
+
+        selectedValues.forEach(function (val, index) {
+            container.append(
+                `<div class='selected-item'>
+                    ${val} <span class="remove-item" data-index="${index}">&times;</span>
+                </div>`
+            );
+        });
+
+        $("#selectedValues").val(selectedValues.join(",")); // Store values in hidden input
+    }
+
+    $(document).on("click", ".remove-item", function () {
+        let index = $(this).data("index");
+        selectedValues.splice(index, 1);
+        updateSelectedItems();
+    });
+
+    // Toggle radio duplicate blade
+    $(".duplicateFields").hide();
+
+    $(".radio-btn").on("click", function () {
+        $(".radio-btn").removeClass("selected");
+        $(this).addClass("selected");
+        $(this).find("input").prop("checked", true);
+        
+        let val = $(this).find("input").val();
+        if (val === "1") {
+            $(".duplicateFields").fadeIn(); 
+        } else {
+            $(".duplicateFields").fadeOut();
+        }
+    });
+});
+
+
+
+$(document).ready(function () {
         var table = $('#example').DataTable({
             select: true,
             lengthMenu: [
@@ -969,109 +1030,7 @@
             } );
         } );
 
-
-     // Rights toggle switch
-    let states = ["start", "middle", "end"];
-
-    $(".toggle-container").click(function () {
-        let $this = $(this); // Get the clicked toggle container
-        let $knob = $this.find(".toggle-knob"); // Find the knob inside this container
-        let $hiddenInput = $this.find("input[type=hidden]"); // Find the hidden input inside this container
-
-        // Get the current index based on the hidden input value
-        let currentIndex = states.indexOf($hiddenInput.val());
-        currentIndex = (currentIndex + 1) % states.length; // Cycle through states
-        let newState = states[currentIndex];
-
-        // Remove existing knob classes
-        $knob.removeClass("knob-start knob-middle knob-end");
-
-        // Add new state class
-        $knob.addClass(`knob-${newState}`);
-
-        // Update hidden input value
-        $hiddenInput.val(newState);
-    });
-
     } );
-
-    $(document).ready(function () {
-        let selectedValues = [];
-
-        $("#searchInput").on("input", function () {
-            let value = $(this).val().trim();
-            
-            let validOptions = $("#optionsList option").map(function () { return $(this).val(); }).get();
-
-            // Check if value is in the predefined options and not already selected
-            if (validOptions.includes(value) && !selectedValues.includes(value)) {
-
-                selectedValues.push(value);
-                updateSelectedItems();
-            }
-
-            $(this).val(""); // Clear input after selection
-        });
-
-    function updateSelectedItems() {
-        let container = $("#selectedItems");
-        container.html(""); // Clear container
-
-        selectedValues.forEach(function (val, index) {
-            container.append(
-                `<div class='selected-item'>
-                    ${val} <span class="remove-item" data-index="${index}">&times;</span>
-                </div>`
-            );
-        });
-
-        $("#selectedValues").val(selectedValues.join(",")); // Store values in hidden input
-    }
-
-    $(document).on("click", ".remove-item", function () {
-        let index = $(this).data("index");
-        selectedValues.splice(index, 1);
-        updateSelectedItems();
-    });
-      // toggle radio dublicate blade
-      $('.duplicateFields').hide();
-      $(".radio-btn").click(function () {
-            $(".radio-btn").removeClass("selected");
-            $(this).addClass("selected");
-            $(this).find("input").prop("checked", true);
-            var val = $(this).find("input").val();
-            if (val === "1") {
-                $('.duplicateFields').show(); 
-            } else {
-                $('.duplicateFields').hide();
-            }
-        });
-
-    // Rights toggle switch rights.blade
-      let states = ["start", "middle", "end"];
-
-        $(".toggle-container").click(function () {
-        let $this = $(this); // Get the clicked toggle container
-        let $knob = $this.find(".toggle-knob"); // Find the knob inside this container
-        let $hiddenInput = $this.find("input[type=hidden]"); // Find the hidden input inside this container
-
-        // Get the current index based on the hidden input value
-        let currentIndex = states.indexOf($hiddenInput.val());
-        currentIndex = (currentIndex + 1) % states.length; // Cycle through states
-        let newState = states[currentIndex];
-
-        // Remove existing knob classes
-        $knob.removeClass("knob-start knob-middle knob-end");
-
-        // Add new state class
-        $knob.addClass(`knob-${newState}`);
-
-        // Update hidden input value
-        $hiddenInput.val(newState);
-        });
-
-});
-
 </script>
 @include('includes.footer')
 @endsection

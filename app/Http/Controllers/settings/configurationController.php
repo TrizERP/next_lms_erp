@@ -477,7 +477,7 @@ class configurationController extends Controller
 
         if(isset($masterTable->table_name) && $masterTable->table_name!=''){
             // explode excludeColumns
-            $excludedColumnsArr = explode(',',$masterTable->table_name);
+            $excludedColumnsArr = is_string($masterTable->exclude_columns) ? explode(',', $masterTable->exclude_columns) : [];
             $mergedColumns = array_merge($excludedColumnsArr,$excludedColumns);
             $tableData = DB::getSchemaBuilder()->getColumnListing($masterTable->table_name);
             $tableFields = array_diff($tableData, $mergedColumns);
@@ -515,6 +515,7 @@ class configurationController extends Controller
                         'main_menu'=>$value['main_menu'],
                         'module'=>$value['module'],
                         'table_name'=>$value['table_name'],
+                        'exclude_columns'=>$value['exclude_columns'],
                         'sub_institute_id'=>$sub_institute_id,
                         'created_by'=>$user_profile_id,
                         'created_at'=>now(),
