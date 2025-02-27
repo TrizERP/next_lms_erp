@@ -929,18 +929,34 @@ class studentResultController extends Controller
         $curr_std = DB::table('standard')->where('id', $standard_id)->first();
         $next_std = DB::table('standard')->where('id', $curr_std->next_standard_id)->first();
         // get result remarks from table result_remarks 21-02-2025
-        $resulRemark = '';
+        $resulRemark = $stu_remarks_input = $stu_remarks ='';
         $getRemarks = DB::table('result_remarks')->where('student_id', $student_id)->where('syear',$syear)->first();
+        $resultVal = $stu_remarks = $stu_remarks_input = '';
         if(!empty($getRemarks) && isset($getRemarks->result_remarks)){
-            $resulRemark = ' - '.$getRemarks->result_remarks;
+            $explodeVal = explode('||',$getRemarks->result_remarks); // starts 27-02-2025
+            $stu_remarks = (isset($explodeVal[0]) && $explodeVal[0]!='') ? $explodeVal[0] : ''; // starts 27-02-2025
+            $stu_remarks_input = (isset($explodeVal[1]) && $explodeVal[1]!='') ? $explodeVal[1] : ''; // starts 27-02-2025
         }
         // end on 21-02-2025
-        if (empty($failed)) {
-            $result = 'Passed & Promoted to Class ' . $next_std->school_stream.$resulRemark; // added variable $resulRemark
-        } else {
+        // starts 27-02-2025
+        if($stu_remarks!='' && $stu_remarks_input!=''){
+            $result = $stu_remarks.'-'.$stu_remarks_input;
+        }
+        else if (empty($failed) && $stu_remarks_input!='') {
+            $result = 'Passed & Promoted to Class ' . isset($next_std->school_stream) ? $next_std->school_stream : '' .'-'.$stu_remarks_input; // added variable $resulRemark
+        }
+        else if($stu_remarks!=''){
+            $result = $stu_remarks;
+        }
+        else if($stu_remarks_input!=''){
+            $result = $stu_remarks_input;
+        }
+        else if (empty($failed)){
+            $result = 'Passed & Promoted to Class ' . isset($next_std->school_stream) ? $next_std->school_stream : '' ;  
+        }
+        else {
             $result = "Failed";
         }
-
     // Calculate the total marks for each term
         $res['result'] = $result;
         $table .= '</tr></tbody></table>';
@@ -1217,12 +1233,32 @@ class studentResultController extends Controller
         $curr_std = DB::table('standard')->where('id', $standard_id)->first();
         $next_std = DB::table('standard')->where('id', $curr_std->next_standard_id)->first();
          // get result remarks from table result_remarks 21-02-2025
-         $resulRemark = '';
-         $getRemarks = DB::table('result_remarks')->where('student_id', $student_id)->where('syear',$syear)->first();
+         $resulRemark = $stu_remarks_input = $stu_remarks ='';
          if(!empty($getRemarks) && isset($getRemarks->result_remarks)){
-             $resulRemark = ' - '.$getRemarks->result_remarks;
-         }
-         // standardwise scool reopen date
+            $explodeVal = explode('||',$getRemarks->result_remarks); // starts 27-02-2025
+            $stu_remarks = (isset($explodeVal[0]) && $explodeVal[0]!='') ? $explodeVal[0] : ''; // starts 27-02-2025
+            $stu_remarks_input = (isset($explodeVal[1]) && $explodeVal[1]!='') ? $explodeVal[1] : ''; // starts 27-02-2025
+        }
+        // end on 21-02-2025
+        // starts 27-02-2025
+        if($stu_remarks!='' && $stu_remarks_input!=''){
+            $result = $stu_remarks.'-'.$stu_remarks_input;
+        }
+        else if (empty($failed) && $stu_remarks_input!='') {
+            $result = 'Passed & Promoted to Class ' . isset($next_std->school_stream) ? $next_std->school_stream : '' .'-'.$stu_remarks_input; // added variable $resulRemark
+        }
+        else if($stu_remarks!=''){
+            $result = $stu_remarks;
+        }
+        else if($stu_remarks_input!=''){
+            $result = $stu_remarks_input;
+        }
+        else if (empty($failed)){
+            $result = 'Passed & Promoted to Class ' . isset($next_std->school_stream) ? $next_std->school_stream : '' ;  
+        }
+        else {
+            $result = "Failed";
+        }
          
         $reopen_date = $reopen_full_date= '';
       
@@ -1244,13 +1280,6 @@ class studentResultController extends Controller
          }
          $reopen_date = (isset($reopen_full_date) && $reopen_full_date!='') ? $reopen_full_date : '';
         //  echo "<pre>";print_r($reopen_date);exit;
-
-         // end on 21-02-2025
-        if (empty($failed)) {
-            $result = 'Passed &amp; Promoted to Class ' . $next_std->school_stream.$resulRemark; // added variable $resulRemark
-        } else {
-            $result = "Failed";
-        }
         
         $res_school = $custom_note_1 = "";
 		if ($format == "yearly"){
@@ -7191,19 +7220,33 @@ private function buildDisciplineTable($decipline_data,$both_term)
         $curr_std = DB::table('standard')->where('id', $standard_id)->first();
         $next_std = DB::table('standard')->where('id', $curr_std->next_standard_id)->first();
        // get result remarks from table result_remarks 21-02-2025
-       $resulRemark = '';
+       $resulRemark = $stu_remarks_input = $stu_remarks ='';
        $getRemarks = DB::table('result_remarks')->where('student_id', $student_id)->where('syear',$syear)->first();
        if(!empty($getRemarks) && isset($getRemarks->result_remarks)){
-           $resulRemark = ' - '.$getRemarks->result_remarks;
-       }
-       
-       // end on 21-02-2025
-       if (empty($failed)) {
-           $result = 'Passed & Promoted to Class ' . $next_std->school_stream.$resulRemark; // added variable $resulRemark
-       } else {
+            $explodeVal = explode('||',$getRemarks->result_remarks); // starts 27-02-2025
+            $stu_remarks = (isset($explodeVal[0]) && $explodeVal[0]!='') ? $explodeVal[0] : ''; // starts 27-02-2025
+            $stu_remarks_input = (isset($explodeVal[1]) && $explodeVal[1]!='') ? $explodeVal[1] : ''; // starts 27-02-2025
+        }
+        // end on 21-02-2025
+        // starts 27-02-2025
+        if($stu_remarks!='' && $stu_remarks_input!=''){
+            $result = $stu_remarks.'-'.$stu_remarks_input;
+        }
+        else if (empty($failed) && $stu_remarks_input!='') {
+            $result = 'Passed & Promoted to Class ' . isset($next_std->school_stream) ? $next_std->school_stream : '' .'-'.$stu_remarks_input; // added variable $resulRemark
+        }
+        else if($stu_remarks!=''){
+            $result = $stu_remarks;
+        }
+        else if($stu_remarks_input!=''){
+            $result = $stu_remarks_input;
+        }
+        else if (empty($failed)){
+            $result = 'Passed & Promoted to Class ' . isset($next_std->school_stream) ? $next_std->school_stream : '' ;  
+        }
+        else {
             $result = "Failed";
         }
-
         $res['scholastic_table']=$scholaticTable;
         $res['scholastic_gradeRange']=$scholaticTableGrades;
         $res['conducted'] = \App\Helpers\getGradeComment($grade_arr, 100, $per) ?? '-';
