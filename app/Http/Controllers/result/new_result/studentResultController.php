@@ -943,7 +943,7 @@ class studentResultController extends Controller
             $result = $stu_remarks.'-'.$stu_remarks_input;
         }
         else if (empty($failed) && $stu_remarks_input!='') {
-            $result = 'Passed & Promoted to Class ' . isset($next_std->school_stream) ? $next_std->school_stream : '' .'-'.$stu_remarks_input; // added variable $resulRemark
+            $result = 'Passed & Promoted to Class ' . $next_std->school_stream .'-'.$stu_remarks_input; // added variable $resulRemark
         }
         else if($stu_remarks!=''){
             $result = $stu_remarks;
@@ -952,7 +952,7 @@ class studentResultController extends Controller
             $result = $stu_remarks_input;
         }
         else if (empty($failed)){
-            $result = 'Passed & Promoted to Class ' . isset($next_std->school_stream) ? $next_std->school_stream : '' ;  
+            $result = 'Passed & Promoted to Class ' .$next_std->school_stream;  
         }
         else {
             $result = "Failed";
@@ -1109,7 +1109,7 @@ class studentResultController extends Controller
                                     }
                                 }
                             }
-                            // echo "<pre>";print_r($to_weight);
+                            // echo "<pre>";print_r($obtained_marks);
                             $ob_main_mark = $ab_ex_na = $total_marks = 0;
                             // for best of 2 exam wise 
                             if (!empty($title_exam)) {
@@ -1129,6 +1129,7 @@ class studentResultController extends Controller
                                             	$pAB = 0;
                                                 $pamarks +=($t_m != 0) ? (($mv / $t_m) * $w_m) : 0;
                                             }else{
+                                                $pAB = $mv; // added on 27-02-2025 by uma
                                                continue;
                                             }
                                         }
@@ -1144,10 +1145,13 @@ class studentResultController extends Controller
                                         foreach ($obtained_mark_arr as $mk => $mv) {
                                             $w_m = $to_weight[$exam_id] ?? 0;
                                             $t_m = $to_marks[$exam_id];
-                                            if(is_numeric($mv))
+                                            if(is_numeric($mv)){
                                             	$pAB = 0;
-                                            else
+                                                // $pamarks +=($t_m != 0) ? (($mv / $t_m) * $w_m) : 0;
+                                            }else{
+                                                $pAB = $mv; // added on 27-02-2025 by uma
                                                continue;
+                                            }
                                         }
                                     }
                                     // echo $pAB.'<br>';
@@ -1156,8 +1160,8 @@ class studentResultController extends Controller
 
                                     if(count($obtained_mark_arr) > 1) {
                                         $total_marks += $w_m;
-                                        if($pAB){
-                                            $tdVal = 'AB';
+                                        if(in_array($pAB,['AB','N.A.','EX']) && $convert_mark==0){ // added on 27-02-2025 by uma
+                                            $tdVal = $pAB;  // added on 27-02-2025 by uma
                                         }
                                         else{
                                             $tdVal = number_format($convert_mark, 2);
@@ -1245,7 +1249,7 @@ class studentResultController extends Controller
             $result = $stu_remarks.'-'.$stu_remarks_input;
         }
         else if (empty($failed) && $stu_remarks_input!='') {
-            $result = 'Passed & Promoted to Class ' . isset($next_std->school_stream) ? $next_std->school_stream : '' .'-'.$stu_remarks_input; // added variable $resulRemark
+            $result = 'Passed & Promoted to Class ' . $next_std->school_stream.'-'.$stu_remarks_input; // added variable $resulRemark
         }
         else if($stu_remarks!=''){
             $result = $stu_remarks;
@@ -1254,7 +1258,7 @@ class studentResultController extends Controller
             $result = $stu_remarks_input;
         }
         else if (empty($failed)){
-            $result = 'Passed & Promoted to Class ' . isset($next_std->school_stream) ? $next_std->school_stream : '' ;  
+            $result = 'Passed & Promoted to Class ' . $next_std->school_stream;  
         }
         else {
             $result = "Failed";
@@ -6759,7 +6763,7 @@ private function buildDisciplineTable($decipline_data,$both_term)
         $next_std = DB::table('standard')->where('id', $curr_std->next_standard_id)->first();
 
         if ($per!='-') {
-            $result = 'Passed & Promoted to Class ' . isset($next_std->school_stream) ? $next_std->school_stream : '';
+            $result = 'Passed & Promoted to Class ' . $next_std->school_stream;
         } else {
             $result = "Failed";
         }
@@ -7233,7 +7237,7 @@ private function buildDisciplineTable($decipline_data,$both_term)
             $result = $stu_remarks.'-'.$stu_remarks_input;
         }
         else if (empty($failed) && $stu_remarks_input!='') {
-            $result = 'Passed & Promoted to Class ' . isset($next_std->school_stream) ? $next_std->school_stream : '' .'-'.$stu_remarks_input; // added variable $resulRemark
+            $result = 'Passed & Promoted to Class '. $next_std->school_stream .'-'.$stu_remarks_input; // added variable $resulRemark
         }
         else if($stu_remarks!=''){
             $result = $stu_remarks;
@@ -7242,7 +7246,7 @@ private function buildDisciplineTable($decipline_data,$both_term)
             $result = $stu_remarks_input;
         }
         else if (empty($failed)){
-            $result = 'Passed & Promoted to Class ' . isset($next_std->school_stream) ? $next_std->school_stream : '' ;  
+            $result = 'Passed & Promoted to Class ' . $next_std->school_stream;  
         }
         else {
             $result = "Failed";
