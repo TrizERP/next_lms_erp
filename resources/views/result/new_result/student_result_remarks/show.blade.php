@@ -7,12 +7,16 @@
 			</div>
 		</div>
 		<div class="card">
-			@if(session('success'))
-				<div class="alert alert-success alert-block">
-					<button type="button" class="close" data-dismiss="alert">×</button>
-					<strong>{{ session('success') }}</strong>
-				</div>
-			@endif
+		@if ($sessionData = Session::get('data'))
+                    @if($sessionData['status_code'] == 1)
+                    <div class="alert alert-success alert-block">
+                    @else
+                    <div class="alert alert-danger alert-block">
+                    @endif
+                        <button type="button" class="close" data-dismiss="alert">×</button>
+                        <strong>{{ $sessionData['message'] }}</strong>
+                    </div>
+            @endif
 			@php
             	$grade_id = $standard_id = $division_id = $term_id = '';
 				if(isset($data['grade_id'])){
@@ -72,6 +76,11 @@
 										@endphp
 
 										@foreach($data['get_students'] as $key => $value)
+										@php 
+											$explodeVal = explode('||',$value->result_remarks);
+											$remarks_val = (isset($explodeVal[0]) && $explodeVal[0]!='') ? $explodeVal[0] : '';
+											$remarks_input = (isset($explodeVal[1]) && $explodeVal[1]!='') ? $explodeVal[1] : '';
+										@endphp 
 											<tr>
 												<input type="hidden" value="{{ $value->id }}" name="student_id[]">
 												<input type="hidden" value="{{ $data['term_id'] }}" name="term_id">
@@ -80,17 +89,22 @@
 												<td>{{ $value->gr_number }}</td>
 												<td>{{ $value->first_name.' '.$value->middle_name.' '.$value->last_name }}</td>
 												<td>
-													@if(session()->get('sub_institute_id')!=47)
-													<select id='result_remarks' name="result_remarks[{{ $value->id }}]" class="form-control" style="width:300px;">	
-														<option value="">--Select Result Remarks--</option>
-														@foreach($remarks as $remark)
-															<option value="{{ $remark }}" @if(isset($value->result_remarks)) @if($value->result_remarks == $remark) selected="selected" @endif @endif>{{ $remark }}</option>
-														@endforeach
-													</select>
-													@else
+													<div class="row">
+													<div class="col-md-6">
+														<select id='result_remarks' name="result_remarks[{{ $value->id }}]" class="form-control">	
+															<option value="">--Select Result Remarks--</option>
+															@foreach($remarks as $remark)
+																<option value="{{ $remark }}" @if(isset($remarks_val) && $remarks_val == $remark) selected="selected" @endif>{{ $remark }}</option>
+															@endforeach
+														</select>
+													</div>
+													@if(session()->get('sub_institute_id')==47)
+													<div class="col-md-6">
 													<!-- for mmis display division in result remarks  -->
-														<input type="text" class="form-control" name="result_remarks[{{ $value->id }}]" @if(isset($value->result_remarks) && $value->result_remarks !='' && $value->result_remarks!=null) value="{{$value->result_remarks}}" @endif>
+														<input type="text" class="form-control" name="result_remarks_input[{{ $value->id }}]" @if(isset($remarks_input) && $remarks_input !='' && $remarks_input!=null) value="{{$remarks_input}}" @endif>
+													</div>
 													@endif
+													</div>
 												</td>
 											</tr>
 										@endforeach
@@ -111,4 +125,9 @@
 	</div>
 </div>
 @include('includes.footerJs')
+<script>
+	$(document).ready(function(){
+		$('#term').prop('required',true);
+	})
+</script>
 @include('includes.footer')

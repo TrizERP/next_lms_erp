@@ -56,12 +56,14 @@ class studentResultRemarksController extends Controller
 
     public function store(Request $request)
     {
+        // echo "<pre>";print_r($request->all());exit;
         $type = $request->input('type');
         $syear = $request->session()->get('syear');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $user_id = $request->session()->get('user_id');
         $student_ids = $request->get('student_id');
         $result_remarks = $request->get('result_remarks');
+        $remarks_input = $request->get('result_remarks_input');
         $grade_id = $request->get('grade_id');
         $standard_id = $request->get('standard_id');
         $division_id = $request->get('division_id');
@@ -70,15 +72,29 @@ class studentResultRemarksController extends Controller
         foreach($student_ids as $student_id)
         {
             $get_result_remarks = DB::table('result_remarks')->where(['student_id' => $student_id, 'sub_institute_id' => $sub_institute_id, 'syear' => $syear, 'term_id' => $term_id])->first();
-   
-            if(isset($result_remarks[$student_id]))
+            // added on 27-02-2025
+            $stu_remarks_input = isset($remarks_input[$student_id]) ? $remarks_input[$student_id] : '';
+            $stu_remarks = isset($result_remarks[$student_id]) ? $result_remarks[$student_id] : '';
+
+            $remarkVal = '';
+            if($stu_remarks!='' && $stu_remarks_input!=''){
+                $remarkVal = $stu_remarks.'||'.$stu_remarks_input;
+            }
+            else if($stu_remarks!=''){
+                $remarkVal = $stu_remarks;
+            }
+            else if($stu_remarks_input!=''){
+                $remarkVal = '||'.$stu_remarks_input;
+            }
+
+            if(isset($remarkVal))
             {
                 if(isset($get_result_remarks))
                 {
                     DB::table('result_remarks')
                     ->where('student_id', $get_result_remarks->student_id)
                     ->update([
-                        'result_remarks' => $result_remarks[$student_id] ?? '',
+                        'result_remarks' => $remarkVal,
                         'updated_at' => now(),
                     ]);
                 } 
@@ -87,7 +103,7 @@ class studentResultRemarksController extends Controller
                     DB::table('result_remarks')
                     ->insert([
                         'student_id' => $student_id,
-                        'result_remarks' => $result_remarks[$student_id] ?? '',
+                        'result_remarks' => $remarkVal,
                         'term_id' => $term_id,
                         'syear' => $syear,
                         'sub_institute_id' => $sub_institute_id,
@@ -99,7 +115,9 @@ class studentResultRemarksController extends Controller
         }
 
         $request->session()->flash('success', 'Student result remarks added & updated successfully.');
+        $res['status_code'] = 1;
+        $res['message'] = "Added Successfully !";
         
-        return is_mobile($type, "student-result-remarks.index", null, "redirect");
+        return is_mobile($type, "student-result-remarks.index", $res, "redirect");
     }
 }
