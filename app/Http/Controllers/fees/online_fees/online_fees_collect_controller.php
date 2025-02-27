@@ -1844,9 +1844,14 @@ exit; */
                       ->orWhereNull('fp.razorpay_dashboard_ps');
             })
             ->whereNotNull('fp.razorpay_order_id')
-            ->whereBetween('fp.created_at', [now()->subDays(3), now()])
+            ->whereBetween('fp.created_at', [now()->subDays(3), now()->subMinutes(30)])
+            //->where('fp.razorpay_order_id', 'LIKE', 'order_%')
             ->groupBy('fp.id')
             ->get(); // ->on('tse.syear', '=', 'fr.syear')
+
+            //->whereIn('fp.sub_institute_id', [253])
+            //->whereIn('fp.student_id', [199428,199461,195283,195156,195227])
+            //->limit($limit)
 
         if ( !empty($payment_data) ) {
 
@@ -1900,6 +1905,18 @@ exit; */
                     // echo "<pre>"; print_r($request->all()); exit;
                     if($status == 'captured')
                         $schooldata = $this->pay_fees($request, $data->student_id, $data->syear, $data->sub_institute_id, ($amount/100), $payment_id);
+                }
+                else{
+                    $update_arr = array(
+                        "razorpay_dashboard_ps" => 'cron',
+                        "icici_bank_res" => "cron",
+                        "updated_at" => now()
+                        );
+                //echo "<pre>IF-PAY"; print_r($data); exit;
+                  DB::table("fees_payment")
+                    ->where('id', $id)
+                    ->update($update_arr);
+
                 }
             }
         }
