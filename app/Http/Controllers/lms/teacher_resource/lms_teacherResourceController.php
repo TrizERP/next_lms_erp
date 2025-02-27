@@ -27,6 +27,19 @@ class lms_teacherResourceController extends Controller
         $res['status_code'] = 1;
         $res['message'] = "SUCCESS";                  
         $res['data'] = $data;        
+            $lms_mapping_type = DB::table('lms_mapping_type')
+            ->where('status', '=', 1)
+            ->where('parent_id', '=', 0)
+            ->where(function ($q) use ($request) {
+                $q->where('globally', '=', 1)
+                    ->orWhere('chapter_id', $request->get('chapter_id'));
+            })->where(function ($q) use ($request) {
+                $q->where('topic_id', '=', 0)
+                    ->orWhere('topic_id', $request->get('topic_id'));
+            })->get()->toArray();
+
+        $lms_mapping_type = json_decode(json_encode($lms_mapping_type), true);
+        $res['lms_mapping_type'] = $lms_mapping_type;
         return is_mobile($type,'lms/teacher_resource/show_teacher_resource',$res,"view");  
     }
 
