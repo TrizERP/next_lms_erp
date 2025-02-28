@@ -54,6 +54,33 @@ use DB;
             @endif
         </div>
     </div>
+    
+    <div class="row mb-5 bg-white p-4">
+        <!-- <div class="addButtonCheckbox"> -->
+                <div class="col-md-4 my-2">
+                    <div class="form-group mb-0">
+                    <label for="topicType">Mapping Type</label>
+                    <select class="load_map_value cust-select form-control mb-0" name="mapping_type[]" data-new="1">
+                        <option value="">Select Mapping Type</option>
+                        @if(isset($data['lms_mapping_type']))
+                        @foreach($data['lms_mapping_type'] as $key => $value)
+                        <option value="{{$value['id']}}" @if(isset($data['mapped_type']) && $data['mapped_type']==$value['id']) selected @endif>{{$value['name']}}</option>
+                        @endforeach
+                        @endif
+                    </select>
+                    </div>
+                </div>
+                <div class="col-md-4 my-2">
+                    <div class="form-group mb-0">
+                    <label for="topicType2">Mapping Value</label>
+                    <select name="mapping_value[]" data-new="1" class="cust-select mapVal form-control mb-0">
+                        <option value="">Select Mapping Value</option>
+                    </select>
+                    </div>
+                </div>
+               
+        <!-- </div> -->
+    </div>
 
     <div class="container-fluid mb-5">
         <div class="coursr-chp-list" id="cource-chap-list">
@@ -243,6 +270,7 @@ use DB;
                     @php
                         // echo "<pre>"; print_r($data['content_data'][$chdata->id]); exit;
                     @endphp
+                    @if(!empty($content))
                         <div class="mb-2 mt-2 chapter-content-single p-3 d-flex align-items-center" data-collapse_id="{{ $chdata->id }}-{{ $subColapse }}" onclick="tarCollapse(this)" >
                             <div class="content-category">{{ $con_key }}</div>
                             <!-- main heading that will be used for seperate flashcard div -->
@@ -250,6 +278,7 @@ use DB;
                                 <i class="mdi mdi-chevron-down"></i>
                             </div>
                         </div>
+                    @endif
                         {{-- @php
                             echo "<pre>"; print_r($con_key);
                             echo "<pre>"; print_r($content); exit;
@@ -259,7 +288,7 @@ use DB;
                         $no = 1;
                         @endphp
                         <!-- flashcard start  -->
-                        @if($con_key=='Flash Cards')
+                        @if($con_key=='Flash Cards' && !empty($content))
                         <div class="row chapter-content-box my-2 py-2 mx-0">
                             <div class="col-md-10 chapter-img-box">
                             @foreach( $content as $flashcontent )
@@ -462,7 +491,7 @@ use DB;
 </div>
 <!--Modal: Add ChapterModal-->
 
-
+@include('includes.lmsfooterJs')
 <script>
 
     function edit_data(url, chapter_id, standard_id, chapter_name, chapter_desc, availability, show_hide, sort_order) {
@@ -534,9 +563,63 @@ use DB;
         console.log(target_id);
         $('#chapter-content-tar-list-' + target_id).toggleClass('show');
     }
+    // 28-02-2025
+    $('.mapVal').on('change',function(){
+        var mappingType = $('.load_map_value').val();
+        var mappingVal = $(this).val();
+        var standard_id = "{{$_REQUEST['standard_id']}}";
+        var subject_id = "{{$_REQUEST['subject_id']}}";
+        var perm =  1;
 
+        window.location.href = "/lms/chapter_master?standard_id="+standard_id+"&subject_id="+subject_id+"&perm="+perm+"&mapping_type="+mappingType+"&mapped_value="+mappingVal;
+
+    })
+
+    
+    $(document).on('change', '.load_map_value', function () {
+        var mapping_type = $(this).val();
+        var data_new = $(this).attr('data-new');
+        getMappedVals(mapping_type,data_new);
+    });
+    $(document).ready(function(){
+        @if(isset($data['mapped_type']) && isset($data['mapped_value']))
+            var mapping_type="{{$data['mapped_type']}}";
+            var selVal="{{$data['mapped_value']}}";
+
+            getMappedVals(mapping_type,1,selVal);
+        @endif
+    })
+    function getMappedVals(mapping_type,data_new,selVal=''){
+        // alert(mapping_type);
+        // alert(data_new);
+
+        var path = "{{ route('ajax_LMS_MappingValue') }}";
+        //$('#mapping_value').find('option').remove().end();
+        $.ajax({
+        url: path,
+        data: 'mapping_type=' + mapping_type,
+        success: function (result) {
+            //var e = $('#mapping_value[data-new='+data_new+']');
+            // console.log(selVal);
+            var e = $('select[name="mapping_value[]"][data-new=' + data_new + ']');
+            $(e).find('option').remove().end();
+            $(e).append($("<option></option>").val("").html("Select any one"));
+                for (var i = 0; i < result.length; i++) {
+                    var option = $("<option></option>")
+                        .val(result[i]['id'])
+                        .html(result[i]['name']);
+
+                    if (selVal != '' && selVal == result[i]['id']) {
+                        option.prop("selected", true);
+                    }
+
+                    $(e).append(option);
+                }
+
+        }
+        });
+    }
 //.chapter-details
 </script>
-@include('includes.lmsfooterJs')
 @include('includes.footer')
 @endsection
