@@ -39,12 +39,12 @@
         @csrf
         <div class="row">
           <div class="col-md-4 form-group">
-            <label>Title</label> <span class="mdi mdi-atrisk"></span>
+            <label>Title</label> <span class="mdi mdi-asterisk" style="font-size:10px;color:red;"></span>
             <input type="text" class="form-control" name="title" id="title" required placeholder="Enter Title...">
           </div>
 
           <div class="col-md-4 form-group">
-            <label>Resource</label>
+            <label>Resource</label> <span class="mdi mdi-asterisk" style="font-size:10px;color:red;"></span>
             <input type="file" name="teacher_file" id="teacher_file" class="form-control" required>
           </div>
 
@@ -172,14 +172,14 @@
               <th>Resource</th>
               <th>Activity</th>
               <th>File</th>
-
+              <th>Mapped Values</th>
               @if(isset($data['data']['custom_fields']))
               @foreach($data['data']['custom_fields'] as $key => $value)
               <th>{{ $value['field_label'] }}</th>
               @endforeach
               @endif
 
-              <th>Action</th>
+              <th class="text-left">Action</th>
             </tr>
           </thead>
           <tbody>
@@ -198,6 +198,21 @@
               <td>
                 <a href="{{ Storage::disk('digitalocean')->url('public'.$tdata['file_folder'].'/'.$tdata['file_name'])}}"
                   target="_blank">View</a>
+              </td>
+              <td>
+                @php 
+                  $jsonVal = (isset($tdata['mapping_value']) && $tdata['mapping_value']!='') ? json_decode($tdata['mapping_value'],true) : [];
+                  $j=1;
+                @endphp
+                <ul>
+                  @foreach($jsonVal as $jk => $jv)
+                  <li>
+                    {{$j++.')'}}   
+                    {{isset($data['data']['mapType'][$jk]) ? $data['data']['mapType'][$jk] : '-'}} /
+                    {{isset($data['data']['mapVal'][$jk][$jv]) ? $data['data']['mapVal'][$jk][$jv] : '-'}}
+                  </li>
+                  @endforeach
+                </ul>
               </td>
 
               @if(isset($data['data']['custom_fields']))

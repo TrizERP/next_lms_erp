@@ -26,8 +26,9 @@ class lms_teacherResourceController extends Controller
         $type = $request->input('type');
         $res['status_code'] = 1;
         $res['message'] = "SUCCESS";                  
-        $res['data'] = $data;        
-            $lms_mapping_type = DB::table('lms_mapping_type')
+        $res['data'] = $data;    
+        // 27-02-2025 starts     
+        $lms_mapping_type = DB::table('lms_mapping_type')
             ->where('status', '=', 1)
             ->where('parent_id', '=', 0)
             ->where(function ($q) use ($request) {
@@ -40,6 +41,9 @@ class lms_teacherResourceController extends Controller
 
         $lms_mapping_type = json_decode(json_encode($lms_mapping_type), true);
         $res['lms_mapping_type'] = $lms_mapping_type;
+        // echo "<pre>";print_r($data['mapVal']);exit;
+        // 27-02-2025 end     
+
         return is_mobile($type,'lms/teacher_resource/show_teacher_resource',$res,"view");  
     }
 
@@ -98,6 +102,19 @@ class lms_teacherResourceController extends Controller
             $data['data_fields'] = $finalfieldsData;
         }                        
         //END Columns from field setting for combo checkbox         
+        // get mapped parent Values 28-02-2025
+        $mapParents = DB::table('lms_mapping_type')->where(['parent_id'=>0,'globally'=>1,'status'=>1])->get()->toArray();
+        $mapVal=$mapType=[];
+        foreach ($mapParents as $key => $value) {
+            $mapType[$value->id] =$value->name;
+            $mappedVals = DB::table('lms_mapping_type')->where(['parent_id'=>$value->id,'globally'=>1,'status'=>1])->get()->toArray();
+            foreach ($mappedVals as $key2 => $value2) {
+                $mapVal[$value->id][$value2->id] = $value2->name;
+            }
+        }
+        $data['mapType'] = $mapType;
+        $data['mapVal'] = $mapVal;
+        // get mapped parent Values 28-02-2025 end
 
         return $data;
     }
@@ -110,7 +127,8 @@ class lms_teacherResourceController extends Controller
      * @return RedirectResponse
      */
     public function store(Request $request)
-    {            
+    {      
+              
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
         $user_id = $request->session()->get('user_id');
@@ -146,9 +164,10 @@ class lms_teacherResourceController extends Controller
         );
 
         $newRequest = $request->post();
+        $mappingType = $mappingVal = [];
         foreach($newRequest as $key =>$value)
         {
-            if ($key != '_method' && $key != '_token' && $key != 'submit') {
+            if ($key != '_method' && $key != '_token' && $key != 'submit' && $key != 'mapping_type' && $key != 'mapping_value' ) {
                 if (strpos($key, 'hid') !== false) {
                     $key = str_replace('hid_','',$key);
                 }
@@ -157,8 +176,27 @@ class lms_teacherResourceController extends Controller
                 }
                 $TR_data[$key] = $value;
             }
+            if($key == 'mapping_type'){
+               $mappingType = $value;
+            }
+            if($key == 'mapping_value'){
+                $mappingVal = $value;
+             }
         }
-
+        $jsonArr = [];
+        if(!empty($mappingType) && !empty($mappingVal)){
+            foreach ($mappingType as $key => $value) {
+               if(isset($mappingVal[$key])){
+                $jsonArr[$value] = $mappingVal[$key];
+               }
+            }
+        }
+        $jsonDecodes = (!empty($jsonArr)) ? json_encode($jsonArr) : null;
+        if($jsonDecodes!=null){
+            $TR_data['mapping_value'] =  $jsonDecodes;
+        }
+        // echo "<pre>";print_r($TR_data);
+        // exit;
         teacherResourceModel::insert($TR_data);
 
         $res = array(
