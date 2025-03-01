@@ -32,9 +32,20 @@ class chapterController extends Controller
         })->where(function ($q) use ($request) {
             $q->where('topic_id', '=', 0)
                 ->orWhere('topic_id', $request->get('topic_id'));
-        })->get()->toArray();
+        })
+        ->where('element_id','content_library')
+        ->get()->toArray();
 
         $lms_mapping_type = json_decode(json_encode($lms_mapping_type), true);
+
+       $lms_mapping_Values = [];
+       foreach ($lms_mapping_type as $key => $value) {
+            $lms_mapping_Values[$value['name']]=  DB::table('lms_mapping_type')
+            ->where('status', '=', 1)
+            ->where('parent_id', '=', $value['id'])
+            ->get()->toArray();
+       }
+
         $res['status_code'] = 1;
         $res['message'] = "SUCCESS";
         $res['data'] = $data['chapter_data'];
@@ -45,9 +56,10 @@ class chapterController extends Controller
         $res['subject_name'] = $data['basic_ids']['subject_name'];
         $res['show_content'] = $data['basic_ids']['add_content'];
         $res['lms_mapping_type'] = $lms_mapping_type;  // added on 28-02-2025
+        $res['lms_mapping_Values'] = $lms_mapping_Values;  // added on 28-02-2025
         $res['mapped_type'] = $request->mapping_type;  // added on 28-02-2025
         $res['mapped_value'] = $request->mapped_value;  // added on 28-02-2025
-
+        // echo "<pre>";print_r($data['chapter_data']);exit;
         return is_mobile($type, 'lms/show_chapter', $res, "view");
     }
 
@@ -83,11 +95,6 @@ class chapterController extends Controller
             DB::raw('COUNT(content_master.id) as total_content,sum(if(content_category = "Triz", 1, 0)) AS total_triz_content,
         sum(if(content_category = "OER", 1, 0)) AS total_OER_content'))
             ->leftjoin('content_master', 'content_master.chapter_id', '=', 'chapter_master.id')
-            ->when($request->has('mapped_value') && $request->mapped_value!='',function($q) use($request){ // added on 28-02-2025
-                $q->join('content_mapping_type as cmt','cmt.content_id','=','content_master.id');
-            },function($q){  // added on 28-02-2025
-                $q->leftjoin('content_mapping_type as cmt','cmt.content_id','=','content_master.id');
-            })
             ->where(function ($query) use ($getIsLms, $sub_institute_id) {
                 if ($getIsLms == 'Y') {
                     $query->where('chapter_master.sub_institute_id', '1')
@@ -95,9 +102,6 @@ class chapterController extends Controller
                 } else {
                     $query->Where('chapter_master.sub_institute_id', $sub_institute_id);
                 }
-            })
-            ->when($request->has('mapped_value') && $request->mapped_value!='',function($q) use($request){  // added on 28-02-2025
-                $q->where('cmt.mapping_value_id',$request->mapped_value);
             })
             ->where('chapter_master.subject_id', $subject_id)
             ->where('chapter_master.standard_id', $standard_id)
@@ -120,49 +124,46 @@ class chapterController extends Controller
             ->where('sub_std_map.standard_id', $standard_id)
             ->get()->toArray();
 
-        // $content_data = contentModel::select('content_master.*')
-        //     ->where(function ($query) use ($getIsLms, $sub_institute_id) {
-        //         if ($getIsLms == 'Y') {
-        //             $query->where('content_master.sub_institute_id', '1')
-        //                 ->orWhere('content_master.sub_institute_id', $sub_institute_id);
-        //         }
-        //     })
-        //     ->where('content_master.subject_id', $subject_id)
-        //     ->where('content_master.standard_id', $standard_id)
-        //     ->where(function ($query) {
-        //         $query->whereNull('content_master.topic_id')
-        //             ->orWhere('content_master.topic_id', '0');
-        //     })
-        //     ->get()->toArray(); // commented on 28-02-2025
+        $content_data = contentModel::select('content_master.*')
+            ->where(function ($query) use ($getIsLms, $sub_institute_id) {
+                if ($getIsLms == 'Y') {
+                    $query->where('content_master.sub_institute_id', '1')
+                        ->orWhere('content_master.sub_institute_id', $sub_institute_id);
+                }
+            })
+            ->where('content_master.subject_id', $subject_id)
+            ->where('content_master.standard_id', $standard_id)
+            ->where(function ($query) {
+                $query->whereNull('content_master.topic_id')
+                    ->orWhere('content_master.topic_id', '0');
+            })
+            ->get()->toArray(); // commented on 28-02-2025
         // added on 28-02-2025
-        $content_data = contentModel::select('content_master.*',DB::Raw('group_concat(cmt.mapping_type_id) as mapping_types'),DB::Raw('group_concat(cmt.mapping_value_id) as mapping_values'))
-        ->when($request->has('mapped_value') && $request->mapped_value!='',function($q) use($request){
-            $q->join('content_mapping_type as cmt','cmt.content_id','=','content_master.id');
-        },function($q){
-            $q->leftjoin('content_mapping_type as cmt','cmt.content_id','=','content_master.id');
-        })
-        ->where(function ($query) use ($getIsLms, $sub_institute_id) {
-            if ($getIsLms == 'Y') {
-                $query->where('content_master.sub_institute_id', '1')
-                    ->orWhere('content_master.sub_institute_id', $sub_institute_id);
-            }
-        })
-        ->where('content_master.subject_id', $subject_id)
-        ->where('content_master.standard_id', $standard_id)
-        ->where(function ($query) {
-            $query->whereNull('content_master.topic_id')
-                ->orWhere('content_master.topic_id', '0');
-        })
-        ->when($request->has('mapped_value') && $request->mapped_value!='',function($q) use($request){
-            $q->where('cmt.mapping_value_id',$request->mapped_value);
-        })
-        ->groupBy('content_master.id')
-        ->get()->toArray();
+        // $content_data = contentModel::select('content_master.*',DB::Raw('group_concat(cmt.mapping_type_id) as mapping_types'),DB::Raw('group_concat(cmt.mapping_value_id) as mapping_values'))
+        // ->leftjoin('content_mapping_type as cmt','cmt.content_id','=','content_master.id')
+        // ->where(function ($query) use ($getIsLms, $sub_institute_id) {
+        //     if ($getIsLms == 'Y') {
+        //         $query->where('content_master.sub_institute_id', '1')
+        //             ->orWhere('content_master.sub_institute_id', $sub_institute_id);
+        //     }
+        // })
+        // ->where('content_master.subject_id', $subject_id)
+        // ->where('content_master.standard_id', $standard_id)
+        // ->where(function ($query) {
+        //     $query->whereNull('content_master.topic_id')
+        //         ->orWhere('content_master.topic_id', '0');
+        // })
+        // ->when($request->has('mapped_value') && $request->mapped_value!='',function($q) use($request){
+        //     $q->whereIn('cmt.mapping_value_id',explode(',',$request->mapped_value));
+        // })
+        // ->groupBy('content_master.id')
+        // ->get()->toArray();
 
         $content_data_array = [];
+        $mappedVal = explode(',',$request->mapped_value);
         if (! empty($content_data)) {
             foreach ($content_data as $content) {
-                $content_data_array[$content['chapter_id']][$content['content_category']][] = $content;
+                $content_data_array[$content['chapter_id']][$content['content_category']][] = in_array($content['id'],$mappedVal) ? $content : [];
             }
             // After processing all content, append flashcards at the end
             foreach ($content_data_array as $chapter_id => &$chapter_content) {

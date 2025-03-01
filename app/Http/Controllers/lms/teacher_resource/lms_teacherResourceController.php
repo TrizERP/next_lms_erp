@@ -73,6 +73,24 @@ class lms_teacherResourceController extends Controller
                         'lms_teacher_resource.chapter_id'=>$chapter_id,
                         'lms_teacher_resource.standard_id'=>$standard_id])
                         //'lms_teacher_resource.syear'=>$syear])
+                        ->when(isset($request->mappedValues) && $request->mappedValues != '', function ($q) use ($request) {
+                            $explodeData = explode(',', $request->mappedValues);
+                            
+                            // Ensure we exclude NULL values
+                            $q->whereNotNull('mapping_value');
+                        
+                            if (count($explodeData) > 1) {
+                                $q->where(function ($subQuery) use ($explodeData) {
+                                    foreach ($explodeData as $value) {
+                                        $subQuery->orWhere('mapping_value', 'LIKE', '%"'.$value.'"%' );
+                                    }
+                                });
+                            } else {
+                                foreach ($explodeData as $value) {
+                                    $q->where('mapping_value', 'LIKE', '%"'.$value.'"%' );
+                                }
+                            }
+                        })
                     ->get()->toArray(); 
 
         $data['chapter_id'] = $chapter_id;
