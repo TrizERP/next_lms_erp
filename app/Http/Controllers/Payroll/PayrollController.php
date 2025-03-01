@@ -20,6 +20,7 @@ use GenTux\Jwt\GetsJwtToken;
 use DB;
 use PDF;
 use Validator;
+use Illuminate\Support\Facades\Http;
 
 class PayrollController extends Controller
 {
@@ -1136,6 +1137,7 @@ class PayrollController extends Controller
     {
 
         $sub_institute_id = $request->session()->get('sub_institute_id');
+        $syear = $request->session()->get('syear');
         
         $employeeSalaryData = EmployeeMonthlySalaryData::with('getUser')->where([['employee_id', $id],[ 'sub_institute_id', $sub_institute_id],['month', $month],['year', $year]])->first();
 
@@ -1182,7 +1184,20 @@ class PayrollController extends Controller
                     $loopDate->addDay();
                 }
             }
+            // if not attandance found add day in lwp 01-03-2025
+            $request2 = new Request(['type'=>"API",'sub_institute_id'=>$sub_institute_id ,'syear'=>$syear,'from_date'=>$startOfMonth,'to_date'=>$endOfMonth,'department_id'=>$get_user_detail->department_id,'emp_id'=>$get_user_detail->id]);
+            $emp_att = $this->getTotalDays($request2);
+            if(isset($emp_att['totalDays'])){
+                $carbonDate = Carbon::createFromFormat('M Y', $request->month . ' ' . $request->year);
+                $totalMonthDays = $carbonDate->daysInMonth;
+                $lwpCounts = $totalMonthDays - $emp_att['totalDays'];
+            }
+
             $employeeData['leave_without_pay'] = $lwpCounts;
+
+            // if not attandance found add day in lwp 01-03-2025 end
+
+            // $employeeData['leave_without_pay'] = $lwpCounts;
             $employeeData['month'] = $employeeSalaryData->month;
             $employeeData['year'] = $employeeSalaryData->year;
             $employeeData['total_payment'] = $employeeSalaryData->total_payment + $employeeSalaryData->total_deduction;
@@ -1219,6 +1234,8 @@ class PayrollController extends Controller
 
 
             $employeeData['total_actual_payment'] = $actualpayment;
+            // echo "<pre>";print_r($employeeData);exit;
+
             view()->share('employeeData',$employeeData);
             $pdf = PDF::loadView('payroll.monthly_payroll_report.employeeSalaryPdf');
 
@@ -1230,8 +1247,9 @@ class PayrollController extends Controller
                     Storage::disk('digitalocean')->delete($file_path);
                 }
 
-                Storage::disk('digitalocean')->put($file_path, $pdfContent, 'public');
-                
+                // Storage::disk('digitalocean')->put($file_path, $pdfContent, 'public');
+                Storage::disk('digitalocean')->put($file_path, $pdfContent, 'public', ['Cache-Control' => 'max-age=0, no-cache, no-store']);
+
                 return $fileName;
             }else{
                 return $pdf->download('salary.pdf');
