@@ -192,10 +192,14 @@
                 success: function(response) {
                     if (response.salaryData && Object.keys(response.salaryData).length > 0) {
                         Object.entries(response.salaryData).forEach(([index, element]) => {
+                            if(month=="Feb" && element===200 && index==2){
+                                element = 300;
+                            }
+                            console.log(element);
                             $('#' + emp_id + '_' + index).text(element);
                             $('#input_' + emp_id + '_' + index).val(element);
                         });
-                        console.log(response.salaryData);
+                        // console.log(response.salaryData);
                     } else {
                         console.log('salaryData is empty');
                     }
