@@ -33,14 +33,14 @@ class studentResultRemarksController extends Controller
             ->join('tblstudent as u', function ($join) {
                 $join->on('u.id', '=', 'te.student_id');
             })
-            ->leftJoin('result_remarks as rr', function ($join) use ($syear) {
+            ->leftJoin('result_remarks as rr', function ($join) use ($syear,$term) {
                 $join->on('rr.student_id', '=', 'te.student_id')
-                ->where(['rr.syear' => $syear]);
+                ->where(['rr.syear' => $syear])->where(['rr.term_id' => $term]);
             })
             ->where(['te.standard_id' => $standard_id])
             ->where(['te.section_id' => $division_id])
             ->where(['te.syear' => $syear])
-            ->where(['rr.term_id' => $term])
+            // ->where(['rr.term_id' => $term])
             ->where(['te.sub_institute_id' => $sub_institute_id])
             ->whereNull('te.end_date')
             ->orderBy('te.roll_no', 'asc')
