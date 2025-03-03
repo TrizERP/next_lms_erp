@@ -119,7 +119,11 @@ class studentResultController extends Controller
             $new_html_content = '<div id="' . $value['id'] . '"><div ' . $class . ' style="page-break-before:avoid !important;page-break:always !important;">' . $this->create_html_content($syear, $sub_institute_id, $html_content, $value, $template, $result_trust, $format) . '</div></div>';
 
             $new_html .= $new_html_content;
-            $all_stud_html[$value['id']] = $new_html_content;
+            if($sub_institute_id==47){ // for print sort order
+                $all_stud_html[$value['roll_no']] = $new_html_content;
+            }else{
+                $all_stud_html[$value['id']] = $new_html_content;
+            }
         }
         $type = "";
         if ($format == "yearly") {
@@ -1238,6 +1242,7 @@ class studentResultController extends Controller
         $next_std = DB::table('standard')->where('id', $curr_std->next_standard_id)->first();
          // get result remarks from table result_remarks 21-02-2025
          $resulRemark = $stu_remarks_input = $stu_remarks ='';
+         $getRemarks = DB::table('result_remarks')->where('student_id', $student_id)->where('syear',$syear)->first();
          if(!empty($getRemarks) && isset($getRemarks->result_remarks)){
             $explodeVal = explode('||',$getRemarks->result_remarks); // starts 27-02-2025
             $stu_remarks = (isset($explodeVal[0]) && $explodeVal[0]!='') ? $explodeVal[0] : ''; // starts 27-02-2025
@@ -6170,13 +6175,13 @@ private function buildDisciplineTable($decipline_data,$both_term)
 
 
         if(in_array($standard_id,[2277,2293,2287,2300,2291,2304])){
-            $table.='<style>@media print{
-                .nursey_1_8,
-                .nursey_3_7{
-                    margin-bottom:114px;
-                }
+            // $table.='<style>@media print{
+            //     .nursey_1_8,
+            //     .nursey_3_7{
+            //         margin-bottom:114px;
+            //     }
                 
-            }</style>';
+            // }</style>';
         }
         // juniors
         if(in_array($standard_id,[2281,2295,2285,2298,2288,2301])){
@@ -6196,7 +6201,13 @@ private function buildDisciplineTable($decipline_data,$both_term)
         // }
 
             $table.='<style>@media print{
-                .junior_2_10{
+                .junior_2_20{
+                    margin-bottom:120px;
+                }
+                .junior_2_21{
+                    margin-top:50px;
+                }
+                .junior_4_1{
                     margin-bottom:120px;
                 }
             }</style>';
@@ -6216,11 +6227,11 @@ private function buildDisciplineTable($decipline_data,$both_term)
             //     }
             // }</style>';
             
-            $table.='<style>@media print{
-                .senior_2_9{
-                    margin-bottom:120px;
-                }
-            }</style>';
+            // $table.='<style>@media print{
+            //     .senior_2_9{
+            //         margin-bottom:120px;
+            //     }
+            // }</style>';
         }
       
         // exit;
