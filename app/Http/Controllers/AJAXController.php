@@ -1670,7 +1670,7 @@ class AJAXController extends Controller
                 $pdf_file_path = $save_path . '/' . $pdf_filename;
                 file_put_contents($html_file_path, $html);
 
-                if (($action == 'Bonafide' || $action == 'Character Certificate' || $action == 'other_fees_collect_receipt' || $action == 'imprest_fees_cancel_refund_receipt') && $sub_institute_id != 254) {
+                if (($action == 'Bonafide' || $action == 'Character Certificate' || $action == 'other_fees_collect_receipt' || $action == 'imprest_fees_cancel_refund_receipt' || $action == 'REIMBURSEMENT OF CEA' ) && $sub_institute_id != 254) {
                     if(in_array($sub_institute_id,[47,48])){
                         htmlToPDFPortrait($html_file_path, $pdf_file_path);
                     }else{
@@ -1898,7 +1898,7 @@ class AJAXController extends Controller
             $html_array['fees_receipt_html'] = $fees_circular_data['FEES_CIRCULAR_HTML'];
         }
 
-        if ($action == 'Bonafide' || $action == 'Character Certificate' || $action == 'Transfer Certificate' || $action == 'Fees Statement' || $action == 'No Dues Certificate') {
+        if ($action == 'Bonafide' || $action == 'Character Certificate' || $action == 'Transfer Certificate' || $action == 'Fees Statement' || $action == 'No Dues Certificate' || $action == 'REIMBURSEMENT OF CEA') {
             $get_data = DB::table('certificate_history')
                 ->where('sub_institute_id', $sub_institute_id)
                 ->where('syear', $syear)
@@ -1933,7 +1933,7 @@ class AJAXController extends Controller
             $receipt_css = $fees_config[0]->css;
         }
 
-        if ($action == 'imprest_ledger_view' || $action == 'Bonafide' || $action == 'Character Certificate' || $action == 'Transfer Certificate' || $action == 'certificate_re_receipt' || $action == 'other_fees_re_receipt') {
+        if ($action == 'imprest_ledger_view' || $action == 'Bonafide' || $action == 'Character Certificate' || $action == 'Transfer Certificate' || $action == 'certificate_re_receipt' || $action == 'other_fees_re_receipt' || $action == 'REIMBURSEMENT OF CEA') {
             $fees_receipt_css = '';
         } else {
             $fees_receipt_css = $receipt_css;
