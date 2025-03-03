@@ -161,9 +161,15 @@ class chapterController extends Controller
 
         $content_data_array = [];
         $mappedVal = explode(',',$request->mapped_value);
-        if (! empty($content_data)) {
+
+        if (!empty($content_data)) {
             foreach ($content_data as $content) {
-                $content_data_array[$content['chapter_id']][$content['content_category']][] = in_array($content['id'],$mappedVal) ? $content : [];
+                if(isset($mappedVal[0]) && $mappedVal[0]!=''){
+                    $content_data_array[$content['chapter_id']][$content['content_category']][] =in_array($content['id'],$mappedVal) ? $content : [];
+                }else{
+                    $content_data_array[$content['chapter_id']][$content['content_category']][] = $content;
+                }
+                // $content_data_array[$content['chapter_id']][$content['content_category']][] = $content;
             }
             // After processing all content, append flashcards at the end
             foreach ($content_data_array as $chapter_id => &$chapter_content) {
