@@ -40,6 +40,7 @@ class studentResultRemarksController extends Controller
             ->where(['te.standard_id' => $standard_id])
             ->where(['te.section_id' => $division_id])
             ->where(['te.syear' => $syear])
+            ->where(['rr.term_id' => $term])
             ->where(['te.sub_institute_id' => $sub_institute_id])
             ->whereNull('te.end_date')
             ->orderBy('te.roll_no', 'asc')
@@ -93,6 +94,9 @@ class studentResultRemarksController extends Controller
                 {
                     DB::table('result_remarks')
                     ->where('student_id', $get_result_remarks->student_id)
+                    ->where('sub_institute_id', $sub_institute_id)
+                    ->where('term_id', $term_id)
+                    ->where('syear', $syear)
                     ->update([
                         'result_remarks' => $remarkVal,
                         'updated_at' => now(),
