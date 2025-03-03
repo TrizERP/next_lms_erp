@@ -12,21 +12,41 @@ use DB;
     border-radius: 5px;
     margin-bottom:32px;
 }
-
+.btnSearch{
+    color:white !important; 
+    padding: 4px 4px !important; 
+    margin : 8px 4px !important; 
+}
+.btnactive{
+    color:white !important;
+    margin-top: 0px !important;
+    box-shadow: #ebe1e1 3px 5px !important;
+}
+.btn:hover{
+    color:white;
+    margin-top: 0px !important;
+}
+.btn-0,.btn-5,.btn-10{
+    background: #26dad2;
+}
+.btn-1,.btn-6,.btn-11{
+    background:#87c2fe;
+}
+.btn-2,.btn-7,.btn-12{
+    background: #ce9fff;
+}
+.btn-3,.btn-8,.btn-13{
+    background: #8f9ce9;
+}
+.btn-4,.btn-9,.btn-14{
+    background: #8979ff;
+}
 </style>
 <!-- Content main Section -->
 <div class="content-main flex-fill">
-    <h1 class="h4 mb-3">Chapter List</h1>
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb bg-transparent p-0">
-            <li class="breadcrumb-item"><a href="{{route('course_master.index')}}">LMS</a></li>
-            @php $standard_name = DB::table('standard')->where('id',$_REQUEST['standard_id'])->get(); @endphp
-            <li class="breadcrumb-item"><a href="#">{{ $standard_name[0]->name ?? '' }}</a></li>
-            <li class="breadcrumb-item"><a href="#">{{$data['subject_name']}}</a></li>
-        </ol>
-    </nav>
+ 
     @php
-
+        $k=0;
         $user_profile = Session::get('user_profile_name');
         $show_block = 'NO';
         if(strtoupper($user_profile) == 'LMS TEACHER' || strtoupper($user_profile) == 'TEACHER')
@@ -41,20 +61,52 @@ use DB;
         if(!isset($_REQUEST['perm'])) {
             $_REQUEST['perm'] = session()->get('sub_institute_id');
         }
-
+        $mappedValues = '';
+        if(isset($_REQUEST['mapped_values'])) {
+            $mappedValues = $_REQUEST['mapped_values'];
+        }
     @endphp
 
     <div class="row align-items-center">
         <div class="col-md-6 mb-3">
+            <h1 class="h4 mb-3">Chapter List</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb bg-transparent p-0">
+                    <li class="breadcrumb-item"><a href="{{route('course_master.index')}}">LMS</a></li>
+                    @php $standard_name = DB::table('standard')->where('id',$_REQUEST['standard_id'])->get(); @endphp
+                    <li class="breadcrumb-item"><a href="#">{{ $standard_name[0]->name ?? '' }}</a></li>
+                    <li class="breadcrumb-item"><a href="#">{{$data['subject_name']}}</a></li>
+                </ol>
+            </nav>
         </div>
         <div class="col-md-6 mb-3">
         @if($show_block == 'YES' && $_REQUEST['perm']==$data['sub_institute_id'])
             <!-- <a href="{{ route('chapter_master.create') }}" class="btn btn-info add-new"><i class="fa fa-plus"></i> Add New Chapter</a>                    -->
             <button type="button" class="btn btn-info float-right" data-toggle="modal" onclick="javascript:add_data();"><i class="fa fa-plus"></i> Add New Chapter</button>
+            <button type="button" class="btn btn-secondary float-right mr-2" onclick="clearSerach()">Clear Search</button>
             @endif
         </div>
     </div>
-
+   
+    <div class="row mb-5 bg-white p-2">
+        @foreach($data['lms_mapping_Values'] as $parentType=>$valueArr)
+            <div class="col-md-12">
+                {{-- <h6>{{$parentType}}</h6> --}}
+                @foreach($valueArr as $key=>$value)
+                    @php 
+                        $class='';
+                        $explodeVal= isset($data['mapped_value']) ? explode(',',$data['mapped_value']) : [] ;
+                       
+                        if(!empty($explodeVal) && in_array($value->id,$explodeVal)){
+                            $class="btnactive";
+                        }
+                    @endphp
+                    <button class="btn btnSearch btn-{{$k}} sub-btn-{{$k}}-{{$value->id}} mb-2 {{$class}}" onclick="makeActive({{$k}},{{$value->id}})">{{$value->name}}</button>
+                @endforeach
+            </div>
+            @php $k++; @endphp
+        @endforeach
+   </div>
     <div class="container-fluid mb-5">
         <div class="coursr-chp-list" id="cource-chap-list">
             @php $i = 1; $collapse = 1; @endphp
@@ -106,10 +158,10 @@ use DB;
                                 @endif
                                 @if( $data['show_content'] == 'chapterwise' && $_REQUEST['perm'] == $data['sub_institute_id'] )
                                     <a target="_blank"
-                                       href="{{ route('lms_teacherResource.index',['standard_id'=>$chdata->standard_id,'subject_id'=>$chdata->subject_id,'chapter_id'=>$chdata->id,$preload_lms ?? '']) }}"
+                                       href="{{ route('lms_teacherResource.index',['standard_id'=>$chdata->standard_id,'subject_id'=>$chdata->subject_id,'chapter_id'=>$chdata->id,$preload_lms ?? '','mappedValues'=>$mappedValues]) }}"
                                        class="btn btn-outline-dark mx-1 my-1">Teacher Resource</a>
                                     <a target="_blank"
-                                       href="{{ route('lms_lessonplan.index',['standard_id'=>$chdata->standard_id,'subject_id'=>$chdata->subject_id,'chapter_id'=>$chdata->id,$preload_lms ?? '']) }}"
+                                       href="{{ route('lms_lessonplan.index',['standard_id'=>$chdata->standard_id,'subject_id'=>$chdata->subject_id,'chapter_id'=>$chdata->id,$preload_lms ?? '','mappedValues'=>$mappedValues]) }}"
                                        class="btn btn-outline-dark mx-1 my-1">Lesson Planning</a>
                                     <a target="_blank"
                                        href="{{ route('lmsmapping.index',['chapter_id'=>$chdata->id,$preload_lms ?? '']) }}"
@@ -243,6 +295,7 @@ use DB;
                     @php
                         // echo "<pre>"; print_r($data['content_data'][$chdata->id]); exit;
                     @endphp
+                    @if(!empty($content))
                         <div class="mb-2 mt-2 chapter-content-single p-3 d-flex align-items-center" data-collapse_id="{{ $chdata->id }}-{{ $subColapse }}" onclick="tarCollapse(this)" >
                             <div class="content-category">{{ $con_key }}</div>
                             <!-- main heading that will be used for seperate flashcard div -->
@@ -250,6 +303,7 @@ use DB;
                                 <i class="mdi mdi-chevron-down"></i>
                             </div>
                         </div>
+                    @endif
                         {{-- @php
                             echo "<pre>"; print_r($con_key);
                             echo "<pre>"; print_r($content); exit;
@@ -259,7 +313,7 @@ use DB;
                         $no = 1;
                         @endphp
                         <!-- flashcard start  -->
-                        @if($con_key=='Flash Cards')
+                        @if($con_key=='Flash Cards' && !empty($content))
                         <div class="row chapter-content-box my-2 py-2 mx-0">
                             <div class="col-md-10 chapter-img-box">
                             @foreach( $content as $flashcontent )
@@ -309,7 +363,7 @@ use DB;
                             {{-- @php
                                 echo "<pre>"; print_r($single_content); exit;
                             @endphp --}}
-
+                        @if(isset($single_content) && !empty($single_content))
                         <div class="row chapter-content-box my-2 py-2 mx-0">
                             <div class="col-md-1 chapter-img-box">
                                 @php
@@ -358,6 +412,8 @@ use DB;
                             </div>
                             @endif
                         </div>
+                        @endif <!-- content search -->
+
                         @endforeach
                     @endif <!-- flashcard end if -->
                     </div>
@@ -462,7 +518,7 @@ use DB;
 </div>
 <!--Modal: Add ChapterModal-->
 
-
+@include('includes.lmsfooterJs')
 <script>
 
     function edit_data(url, chapter_id, standard_id, chapter_name, chapter_desc, availability, show_hide, sort_order) {
@@ -534,9 +590,58 @@ use DB;
         console.log(target_id);
         $('#chapter-content-tar-list-' + target_id).toggleClass('show');
     }
+    // 28-02-2025
+    $('.mapVal').on('change',function(){
+        var mappingType = $('.load_map_value').val();
+        var mappingVal = $(this).val();
+        var standard_id = "{{$_REQUEST['standard_id']}}";
+        var subject_id = "{{$_REQUEST['subject_id']}}";
+        var perm =  1;
+
+        window.location.href = "/lms/chapter_master?standard_id="+standard_id+"&subject_id="+subject_id+"&perm="+perm+"&mapping_type="+mappingType+"&mapped_value="+mappingVal;
+
+    })
+
+    var selectedMappingVals = []; // Global array to store selected mapping values
+
+    function makeActive(btnKey, subBtnKey) {
+        // Remove active class from all buttons of the same group
+        $('.btn-' + btnKey).removeClass('btnactive');
+
+        // Add active class to the clicked button
+        $('.sub-btn-' + btnKey + '-' + subBtnKey).addClass('btnactive');
+
+        var selectedId = subBtnKey.toString(); // Convert to string for consistency
+
+        // Check if the ID already exists in the array
+        if (!selectedMappingVals.includes(selectedId)) {
+            selectedMappingVals.push(selectedId); // Add new selection
+        }
+
+        // Prepare the URL with multiple mapped values
+        var standard_id = "{{ $_REQUEST['standard_id'] }}";
+        var subject_id = "{{ $_REQUEST['subject_id'] }}";
+        var mapped_value = "{{ isset($_REQUEST['mapped_value']) ? ','.$_REQUEST['mapped_value'] : '' }}";
+        var perm = 1;
+        
+        window.location.href = "/lms/chapter_master?standard_id=" + standard_id + 
+                            "&subject_id=" + subject_id + 
+                            "&perm=" + perm + 
+                            "&mapped_value=" + selectedMappingVals+mapped_value;
+    }
+
+    function clearSerach(){
+        $('.btn').removeClass('btnactive');
+        var standard_id = "{{ $_REQUEST['standard_id'] }}";
+        var subject_id = "{{ $_REQUEST['subject_id'] }}";
+        var perm = 1;
+        
+        window.location.href = "/lms/chapter_master?standard_id=" + standard_id + 
+                            "&subject_id=" + subject_id + 
+                            "&perm=" + perm;
+    }
 
 //.chapter-details
 </script>
-@include('includes.lmsfooterJs')
 @include('includes.footer')
 @endsection

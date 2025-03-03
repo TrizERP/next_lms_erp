@@ -3,7 +3,6 @@
 @include('includes.sideNavigation')--}}
 @extends('lmslayout')
 @section('container')
-use DB;
 <link href="../../plugins/bower_components/bootstrap-tagsinput/dist/bootstrap-tagsinput.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/gh/gitbrent/bootstrap4-toggle@3.6.1/css/bootstrap4-toggle.min.css" rel="stylesheet">
 <!--style>
@@ -32,20 +31,6 @@ use DB;
 .toggle.btn.btn-warning {
     width: 200px !important;
 }
-#prompt {
-    width: 100%; 
-    height: 150px; 
-    overflow: auto; 
-    border: 1px solid #ccc; 
-    padding: 10px; 
-    box-sizing: border-box; 
-    white-space: pre-wrap; 
-    word-wrap: break-word; 
-}
-#prompt.focused {
-    border: 2px solid #26bdeb;
-}
-
 </style>
 <div id="overlay" style="display:none;">
     <center>
@@ -62,22 +47,19 @@ use DB;
         <div class="col-md-6">
             <h1 class="h4 mb-3">Add Content</h1>
             <nav aria-label="breadcrumb">
-            <ol class="breadcrumb bg-transparent p-0">
-                <li class="breadcrumb-item"><a href="{{ route('course_master.index') }}">LMS</a></li>
-                <li class="breadcrumb-item"><a href="#">{{ $data['standard_name'] ?? 'Standard Not Found' }}</a></li>
-                <li class="breadcrumb-item"><a href="{{ route('chapter_master.index', ['standard_id' => $data['breadcrum_data']->standard_id ?? '', 'subject_id' => $data['breadcrum_data']->subject_id ?? '']) }}">{{ $data['breadcrum_data']->subject_name ?? '' }}</a></li>
-                <li class="breadcrumb-item"><a href="{{ route('topic_master.index', ['id' => $data['breadcrum_data']->chapter_id ?? '']) }}">{{ $data['breadcrum_data']->chapter_name ?? '' }}</a></li>
-                <li class="breadcrumb-item"><a href="{{ route('topic_master.index', ['id' => $data['breadcrum_data']->chapter_id ?? '']) }}">{{ $data['breadcrum_data']->topic_name ?? '' }}</a></li>
-                <li class="breadcrumb-item active" aria-current="page">Add Content</li>
-                @php
-                   Log::info("Standard: ".$data['standard_name']);
-                @endphp
-            </ol>
+                <ol class="breadcrumb bg-transparent p-0">
+                    <li class="breadcrumb-item"><a href="{{route('course_master.index')}}">LMS</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('chapter_master.index',['standard_id'=>$data['breadcrum_data']->standard_id ?? '','subject_id'=>$data['breadcrum_data']->subject_id ?? '']) }}">{{$data['breadcrum_data']->subject_name  ?? ''}}</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('topic_master.index',['id'=>$data['breadcrum_data']->chapter_id ?? '']) }}">{{$data['breadcrum_data']->chapter_name ?? ''}}</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('topic_master.index',['id'=>$data['breadcrum_data']->chapter_id ?? '']) }}">{{$data['breadcrum_data']->topic_name ?? ''}}</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Add Content</li>
+                </ol>
             </nav>
         </div>
     </div>
 
     <div class="container-fluid mb-5">
+        <div class="card border-0">
             <div class="card-body">
                 <form action="{{route('content_master.store')}}" method="post" enctype='multipart/form-data'>
                     @csrf
@@ -161,7 +143,7 @@ use DB;
                             <div class="row align-items-center">
                                 <div class="col-md-4 my-2">
                                     <div class="form-group mb-0">
-                                        <label for="topicType">Mapping Type 1</label>
+                                        <label for="topicType">Mapping Type</label>
                                         <select class="load_map_value cust-select form-control mb-0"
                                                 name="mapping_type[]" data-new="1">
                                             <option value="">Select Mapping Type</option>
@@ -182,7 +164,7 @@ use DB;
                                         </select>
                                     </div>
                                 </div>
-                                <div class="col-md-4 mt-0 mb-3">
+                                <div class="col-md-4 mt-0 mb-3" style="padding-top:30px;">
                                     <a href="javascript:void(0);" onclick="addNewRow();"
                                        class="d-inline-block btn btn-success mr-2"><i class="mdi mdi-plus"></i></a>
                                     <!-- <a href="#" class="d-inline btn btn-danger btn-sm"><i class="mdi mdi-minus"></i></a> -->
@@ -239,7 +221,6 @@ use DB;
                                 <input type="file" id='filename' name="filename" class="form-control"
                                        onChange='getFileNameWithExt(event)'>
                             </div>
-                            <div id="upload_div1"></div>
                         </div>
 
                         <div class="col-md-8">
@@ -258,7 +239,7 @@ use DB;
                         <div class="col-md-8">
                             <div class="form-group">
                                 <label for="prompt" id="test123">Prompt</label>
-                                <div type="text" rows="4" class="form-control" id="prompt" contenteditable="true" name="prompt" placeholder="Prompt"></div>
+                                <textarea type="text" rows="4" class="form-control" id="prompt" name="prompt" placeholder="Prompt"></textarea>
                                 <button id="refreshPrompt" style="cursor: pointer;">🔄</button> <!-- Refresh icon -->
                             </div>
                         </div>
@@ -305,57 +286,6 @@ use DB;
                                 </select>
                             </div>
                         </div>
-                               @php
-                               $sub_institute_id = Session::get('sub_institute_id');
-                                $syear = Session::get('syear');
-                               $chapter_id = $_REQUEST['chapter_id']; // Assuming chapter_id is passed in the request
- 
-                                // Log chapter ID for debugging purposes
-                                Log::info('Chapter ID : ' . $chapter_id);
-
-                                 // Query to fetch booklist data from the database
-                                 $booklist_data = DB::select("
-                                     SELECT * FROM book_list
-                                     WHERE standard_id = :standard_id
-                                     AND subject_id = :subject_id
-                                     AND chapter_id = :chapter_id
-                                     AND topic_id = 0
-                                     AND sub_institute_id = :sub_institute_id
-                                     AND syear = :syear
-                                     ", [
-                                        'standard_id' => $data['breadcrum_data']->standard_id ?? 0,
-                                        'subject_id' => $data['breadcrum_data']->subject_id ?? 0,
-                                        'chapter_id' => $chapter_id,
-                                        'sub_institute_id' => $sub_institute_id,
-                                        'syear' => $syear
-                                   ]);
-                                   $booklist_data = json_decode(json_encode($booklist_data), true);
-
-                                   Log::info('Booklist Data : ' ,$booklist_data);
-
-                                @endphp
-                    @if(!empty($booklist_data))
-                    <div class="booklist-container" style="background-color: white; padding: 10px; border-radius: 5px;">
-                        <ul>
-                            @foreach($booklist_data as $k => $book_data)
-                                @php
-                                    $file_name = '';
-                                    if($book_data['file_name'] != '')
-                                    {
-                                        $file_name = '/storage/book_list/'.$book_data['file_name'];
-                                    }else{
-                                        $file_name = $book_data['link'];
-                                    }
-                            
-                                @endphp
-                                <li>
-                                    <a target="_blank" href="{{$file_name}}" class="text-dark-1">{{$book_data['title']}}</a>
-                                </li>
-                                <input type="hidden" class="book-file-names" value="{{$book_data['link']}}">
-                            @endforeach
-                        </ul>
-                    </div>
-                    @endif
                     </div>
                     <div class="row">
                         <div class="col-md-4">
@@ -417,7 +347,6 @@ use DB;
 @include('includes.lmsfooterJs')
 <script src="{{asset('/plugins/bower_components/bootstrap-tagsinput/dist/bootstrap-tagsinput.min.js')}}"></script>
 <script src="https://cdn.jsdelivr.net/gh/gitbrent/bootstrap4-toggle@3.6.1/js/bootstrap4-toggle.min.js"></script>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
 <script type="text/javascript">
     $(function () {
@@ -523,7 +452,7 @@ use DB;
 
         htmlcontent += '<div class="col-md-4 my-2"><div class="form-group mb-0"><label for="topicType">Mapping Type</label><select class="load_map_value form-control cust-select" name="mapping_type[]" data-new=' + data_new + '>' + mapping_type_data + '</select></div></div>';
         htmlcontent += '<div class="col-md-4 my-2"><div class="form-group mb-0"><label for="topicType2">Mapping Value</label><select class="form-control cust-select" name="mapping_value[]" data-new=' + data_new + '><option>Select Mapping Value</option></select></div></div>';
-        htmlcontent += '<div class="col-md-4 mt-0 mb-3"><a href="javascript:void(0);" onclick="removeNewRow();" class="d-inline btn btn-danger"><i class="mdi mdi-minus"></i></a></div></div>';
+        htmlcontent += '<div class="col-md-4 mt-0 mb-3" style="padding-top:30px;"><a href="javascript:void(0);" onclick="removeNewRow();" class="d-inline btn btn-danger"><i class="mdi mdi-minus"></i></a></div></div>';
 
         $('.addButtonCheckbox:last').after(htmlcontent);
     }
@@ -630,12 +559,6 @@ use DB;
 </script>
 <script type="text/javascript">
     $(document).ready(function () {
-        $('#prompt').on('focus', function() {
-        $(this).addClass('focused');
-    });
-    $('#prompt').on('blur', function() {
-        $(this).removeClass('focused');
-    });
         // Trigger AI processing when content type or category changes
         $('#content_category').change(function() {
             processAIData();
@@ -655,25 +578,18 @@ use DB;
         var topicName = "{{ $data['breadcrum_data']->topic_name ?? '' }}";
         var contentType = $('#contentType').val();
         var contentCategory = $('#content_category').val();
-        var curriculumAlignment = "{{ $data['curriculum_alignment'] ?? '' }}";
-        var holisticCurriculum = "{{ $data['holistic_curriculum'] ?? '' }}";
-        var objective = "{{ $data['objective'] ?? '' }}";
-        var assessmentTool = "{{ $data['assessment_tool'] ?? '' }}";
-        var objectiveOne = "{{ $data['objective_one'] ?? '' }}";
-        var learningOutcomes = "{{ $data['learning_outcomes'] ?? '' }}";
-        var suggestedMaterials = "{{ $data['suggested_materials'] ?? '' }}";
-        var assessmentPlan = "{{ $data['assessment_plan'] ?? '' }}";
-        var standardName = "{{ $data['standard_name'] ?? '' }}";
-
-        console.log("STANDARD: ",standardName);
         let fileNames=[];
         $('.book-file-names').each(function(){
             fileNames.push($(this).val());
         });
+
+        console.log('Content Type:', contentType);
+        console.log('Content Category:', contentCategory);
         if (contentType && contentCategory) {
             console.log('Both content type and category are selected.');
 
             if (contentType === 'pdf' || contentType === 'jpg') {
+                console.log('Processing AI data...');
                 $.ajax({
                     url: "{{ route('ai.processData') }}",
                     type: 'POST',
@@ -684,15 +600,6 @@ use DB;
                         topic_name: topicName,
                         content_type: contentType,
                         content_category: contentCategory,
-                        curriculum_alignment: curriculumAlignment,
-                        holistic_curriculum: holisticCurriculum,
-                        objective: objective,
-                        assessment_tool: assessmentTool,
-                        objective_one: objectiveOne,               
-                        learning_outcomes: learningOutcomes,       
-                        suggested_materials: suggestedMaterials,   
-                        assessment_plan: assessmentPlan,
-                        standard_name: standardName,             
                         _token: '{{ csrf_token() }}'
                     },
                     success: function(response) {
@@ -704,6 +611,8 @@ use DB;
                         alert('An error occurred while processing your request.');
                     }
                 });
+
+                console.log('Generating Data...');
                 $.ajax({
                     url: "{{ route('ai.generateLessonPlan') }}",
                     type: 'POST',
@@ -714,22 +623,13 @@ use DB;
                         topic_name: topicName,
                         content_category: contentCategory,
                         content_type: contentType,
-                        curriculum_alignment: curriculumAlignment,
-                        holistic_curriculum: holisticCurriculum,
-                        objective: objective,
-                        assessment_tool: assessmentTool,
-                        objective_one: objectiveOne,               
-                        learning_outcomes: learningOutcomes,       
-                        suggested_materials: suggestedMaterials,   
-                        assessment_plan: assessmentPlan ,  
-                        standard_name: standardName,     
                         booklist_data: fileNames,
                         _token: '{{ csrf_token() }}'
                     },
                     success: function(response) {
                         console.log(response.prompt);
                         $("#test123").val("Prompt");
-                        $('#prompt').html(response.prompt);
+                        $('#prompt').val(response.prompt);
                         if (response.file_url) {
                              $('#upload_div1').empty();
                             var downloadLink = $('<a>', {
@@ -739,6 +639,7 @@ use DB;
                                 download: ''
                             });
                             $('#upload_div1').append(downloadLink);
+                            console.log(contentType.toUpperCase() + ' URL:', response.file_url);
                             downloadLink.css({
                                 display: 'block',
                                 margin: '10px 0',
@@ -771,7 +672,7 @@ use DB;
         $('.book-file-names').each(function(){
             fileNames.push($(this).val());
         });
-        var promptNew = $('#prompt').html();
+        var promptNew = $('#prompt').val();
         console.log('Generating Data...');
                 $.ajax({
                     url: "{{ route('ai.generateLessonPlanNew') }}",
@@ -790,7 +691,7 @@ use DB;
                     success: function(response) {
                         console.log(response.prompt);
                         $("#test123").val("Prompt");
-                        $('#prompt').html(response.prompt);
+                        $('#prompt').val(response.prompt);
                         $('#upload_div1').empty();
                         if (response.file_url) {
                             var downloadLink = $('<a>', {
