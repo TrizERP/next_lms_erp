@@ -388,6 +388,38 @@ if(isset($_REQUEST['preload_lms'])){
                                 id="reallifeapplication" cols="60" rows="4">{{ $data['lessonplan_data']->reallifeapplication }}</textarea>
                         </div>
                     </div>
+                    <!-- mapping value starts 28-02-2025  -->
+                    <div class="addButtonCheckbox">
+                        <div class="row">
+                            <div class="col-md-4 my-2">
+                                <div class="form-group mb-0">
+                                <label for="topicType">Mapping Type</label>
+                                <select class="load_map_value cust-select form-control mb-0" name="mapping_type[]" data-new="1">
+                                    <option value="">Select Mapping Type</option>
+                                    @if(isset($data['lms_mapping_type']))
+                                    @foreach($data['lms_mapping_type'] as $key => $value)
+                                    <option value="{{$value['id']}}">{{$value['name']}}</option>
+                                    @endforeach
+                                    @endif
+                                </select>
+                                </div>
+                            </div>
+                            <div class="col-md-4 my-2">
+                                <div class="form-group mb-0">
+                                <label for="topicType2">Mapping Value</label>
+                                <select name="mapping_value[]" data-new="1" class="cust-select form-control mb-0">
+                                    <option value="">Select Mapping Value</option>
+                                </select>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mt-0 mb-3" style="padding-top:30px">
+                                <a href="javascript:void(0);" onclick="addNewRow();" class="d-inline-block btn btn-success mr-2"><i
+                                    class="mdi mdi-plus"></i></a>
+                                <!-- <a href="#" class="d-inline btn btn-danger btn-sm"><i class="mdi mdi-minus"></i></a> -->
+                            </div>
+                        </div>
+                    </div>
+                     <!-- mapping value ends 28-02-2025  -->
                     <div class="col-md-12 form-group">
                         <center>
                             <input type="submit" name="submit" value="Save" class="btn btn-success" style="{{$readonly ?? ''}}">
@@ -562,7 +594,8 @@ if(isset($_REQUEST['preload_lms'])){
         @if(isset($_REQUEST['chapter_id']))
             all_input();
         @endif
-      
+
+        getMapVal(); // 28-02-2025 get AI generated Mapped Vals
     })
     function get_chapters() {
             // api/get-chapter-list
@@ -737,7 +770,132 @@ if(isset($_REQUEST['preload_lms'])){
             }
         });
     } 
+    // 28-02-2025 start 
+    function addNewRow() {
+        $('select[name="mapping_type[]"]').each(function () {
+        data_new = parseInt($(this).attr('data-new'));
+        html = $(this).html();
+        });
+        data_new = parseInt(data_new) + 1;
+
+        var mapping_type_data = html;//$('#mapping_type:first').html();
+        var htmlcontent = '';
+        htmlcontent += '<div class="clearfix"></div><div class="addButtonCheckbox" style="display: flex; margin-right: -15px; margin-left: -15px; flex-wrap: wrap;">';
+
+        htmlcontent += '<div class="col-md-4 my-2"><div class="form-group mb-0"><label for="topicType">Mapping Type</label><select class="load_map_value form-control cust-select" name="mapping_type[]" data-new=' + data_new + '>' + mapping_type_data + '</select></div></div>';
+        htmlcontent += '<div class="col-md-4 my-2"><div class="form-group mb-0"><label for="topicType2">Mapping Value</label><select class="form-control cust-select" name="mapping_value[]" data-new=' + data_new + '><option>Select Mapping Value</option></select></div></div>';
+        htmlcontent += '<div class="col-md-4 mt-0 mb-3" style="padding-top:30px;"><a href="javascript:void(0);" onclick="removeNewRow();" class="d-inline btn btn-danger"><i class="mdi mdi-minus"></i></a></div></div>';
+
+        $('.addButtonCheckbox:last').after(htmlcontent);
+    }
+
+    function removeNewRow() {
+        $(".addButtonCheckbox:last").remove();
+    }
+
+    $(document).on('change', '.load_map_value', function () {
+        var mapping_type = $(this).val();
+        var data_new = $(this).attr('data-new');
+        // alert('mapping_type');
+        // alert(data_new);
+
+        var path = "{{ route('ajax_LMS_MappingValue') }}";
+        //$('#mapping_value').find('option').remove().end();
+        $.ajax({
+        url: path,
+        data: 'mapping_type=' + mapping_type,
+        success: function (result) {
+            //var e = $('#mapping_value[data-new='+data_new+']');
+            var e = $('select[name="mapping_value[]"][data-new=' + data_new + ']');
+            $(e).find('option').remove().end();
+            for (var i = 0; i < result.length; i++) {
+            $(e).append($("<option></option>").val(result[i]['id']).html(result[i]['name']));
+            //$("#mapping_value[]").append($("<option></option>").val(result[i]['id']).html(result[i]['name']));
+            }
+        }
+        });
+    });
+    function getMapVal() {
+    var selectedStd = $('#standard option:selected').text();
+    var selectedSub = $('#subject option:selected').text();
+    var selectedChap = $('#chapter option:selected').text();
+    var selectedTopic = $('#topic option:selected').text();
+    var MappArr = @json($data['mapValArr']);
+
+    let jsonData = { 
+        standard: selectedStd, 
+        subject: selectedSub, 
+        chapter: selectedChap, 
+        topic: selectedTopic, 
+        MappArr: MappArr, 
+        search: "mapValues"
+    };
+
+    $.ajax({
+        type: 'GET',
+        url: '{{route("get_chat_data")}}',
+        data: jsonData,
+        success: function (response) {
+            var parsedResult = JSON.parse(response);
+            // console.log(parsedResult[0]); 
+            parsedResult.forEach((element,index)=> {
+                if(index==0){
+                    load_map_value(1,9,element);
+                }else{
+                    load_map_value(2,82,element);
+                }
+            });
+            
+        },
+
+        error: function (xhr, status, error) {
+            console.log("Error:", error);
+        }
+    });
+}
+
+// Define the load_map_value function
+function load_map_value(data_new, selectedValue,map_val) {
+    if(data_new!=1){
+
+        data1 = parseInt($('.load_map_value ').attr('1'));
+        html = $('.load_map_value ').html();
+
+        // data_new = parseInt(data_new) + 1;
+        var mapping_type_data = html;
+        var htmlcontent = '';
+        htmlcontent += '<div class="clearfix"></div><div class="addButtonCheckbox" style="display: flex; margin-right: -15px; margin-left: -15px; flex-wrap: wrap;">';
+
+        htmlcontent += '<div class="col-md-4 my-2"><div class="form-group mb-0"><label for="topicType">Mapping Type</label><select class="load_map_value form-control cust-select" name="mapping_type[]" data-new=' + data_new + '>' + mapping_type_data + '</select></div></div>';
+        htmlcontent += '<div class="col-md-4 my-2"><div class="form-group mb-0"><label for="topicType2">Mapping Value</label><select class="form-control cust-select" name="mapping_value[]" data-new=' + data_new + '><option>Select Mapping Value</option></select></div></div>';
+        htmlcontent += '<div class="col-md-4 mt-0 mb-3" style="padding-top:30px;"><a href="javascript:void(0);" onclick="removeNewRow();" class="d-inline btn btn-danger"><i class="mdi mdi-minus"></i></a></div></div>';
+
+        $('.addButtonCheckbox:last').after(htmlcontent);
+    }
+
+    $('select[name="mapping_type[]"][data-new=' + data_new + ']').val(selectedValue).change();
     
+    var mapping_type = $('select[name="mapping_type[]"][data-new=' + data_new + ']').val();
+    var path = "{{ route('ajax_LMS_MappingValue') }}";
+    $.ajax({
+        url: path,
+        data: 'mapping_type=' + mapping_type,
+        success: function(result) {
+            var e = $('select[name="mapping_value[]"][data-new=' + data_new + ']');
+            $(e).find('option').remove().end();
+            for (var i = 0; i < result.length; i++) {
+                $(e).append($("<option></option>").val(result[i]['id']).html(result[i]['name']));
+                if (result[i]['name'] === map_val) {
+                    $(e).find('option[value="' + result[i]['id'] + '"]').attr('selected', true);
+                }
+            }
+        }
+
+    });
+}
+
+    // 28-02-2025 ends 
+
 </script>
 
 @include('includes.footer')

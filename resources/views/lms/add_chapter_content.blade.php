@@ -164,7 +164,7 @@
                                         </select>
                                     </div>
                                 </div>
-                                <div class="col-md-4 mt-0 mb-3">
+                                <div class="col-md-4 mt-0 mb-3" style="padding-top:30px;">
                                     <a href="javascript:void(0);" onclick="addNewRow();"
                                        class="d-inline-block btn btn-success mr-2"><i class="mdi mdi-plus"></i></a>
                                     <!-- <a href="#" class="d-inline btn btn-danger btn-sm"><i class="mdi mdi-minus"></i></a> -->
@@ -452,7 +452,7 @@
 
         htmlcontent += '<div class="col-md-4 my-2"><div class="form-group mb-0"><label for="topicType">Mapping Type</label><select class="load_map_value form-control cust-select" name="mapping_type[]" data-new=' + data_new + '>' + mapping_type_data + '</select></div></div>';
         htmlcontent += '<div class="col-md-4 my-2"><div class="form-group mb-0"><label for="topicType2">Mapping Value</label><select class="form-control cust-select" name="mapping_value[]" data-new=' + data_new + '><option>Select Mapping Value</option></select></div></div>';
-        htmlcontent += '<div class="col-md-4 mt-0 mb-3"><a href="javascript:void(0);" onclick="removeNewRow();" class="d-inline btn btn-danger"><i class="mdi mdi-minus"></i></a></div></div>';
+        htmlcontent += '<div class="col-md-4 mt-0 mb-3" style="padding-top:30px;"><a href="javascript:void(0);" onclick="removeNewRow();" class="d-inline btn btn-danger"><i class="mdi mdi-minus"></i></a></div></div>';
 
         $('.addButtonCheckbox:last').after(htmlcontent);
     }

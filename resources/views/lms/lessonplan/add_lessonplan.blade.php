@@ -31,7 +31,7 @@
         </div>
         @else
         <div class="col-md-3 mb-4 text-md-right" style="@php echo $readonly ?? '' @endphp">
-            <a href="{{ route('lms_lessonplan.create', ['standard_id' => $data['lessonplan_data']->standard_id, 'subject_id' => $data['lessonplan_data']->subject_id, 'chapter_id' => $data['lessonplan_data']->chapter_id]) }}" class="btn btn-info add-new"><i class="fa fa-plus"></i>Add Lesson Plan</a>
+            <a href="{{ route('lms_lessonplan.create', ['standard_id' => $data['lessonplan_data']->standard_id, 'subject_id' => $data['lessonplan_data']->subject_id, 'chapter_id' => $data['lessonplan_data']->chapter_id,'view'=>'create']) }}" class="btn btn-info add-new"><i class="fa fa-plus"></i>Add Lesson Plan</a>
         </div>
         @endif
     </div>
@@ -120,7 +120,7 @@
                                 ['assessmenttime'=>'Assessment time','','assessment'=>'Assessment','lesson_days'=>$day6,'sel'=>'SEL ( Social & emotional learning)'],
                                 ['learningtime'=>'Learning Time','','','lesson_days'=>$day7,'stem'=>'STEM'],
                                 ['assessmentqualifying'=>'Assessment Qualifying','','','lesson_days'=>$day8,'vocationaltraining'=>'Vocational training'],
-                                ['','','','lesson_days'=>$day9,'simulation'=>'Simulation'],
+                                ['mapping_value'=>'Mapping','','','lesson_days'=>$day9,'simulation'=>'Simulation'],
                                 ['','','','lesson_days'=>$day10,'games'=>'Games'],
                                 ['','','','lesson_days'=>$day11,'activities'=>'Activities'],
                                 ['','','','lesson_days'=>$day12,'reallifeapplication'=>'Real life application']];
@@ -198,6 +198,37 @@
                             <tr><td><b>Assessment:</b> ` + count_day.assessment + `</td></tr>
                     </table>`;
                 
+            }
+            // added on 28-02-2025
+            else if(key=='mapping_value'){
+                var jsonData = lessonplan_data[key];
+
+                // Decode JSON string into an object
+                var mappingValues = jsonData ? JSON.parse(jsonData) : {};
+                if(jsonData!==null && jsonData!==''){
+                    var j = 1;
+                    var htmlContent = `<table class="bordered">
+                    <tr style="background: #f2f2f2;">
+                        <th><b>Sr No.</b></th>
+                        <th><b>Mapping Type</b></th>
+                        <th><b>Mapping Value</b></th>
+                    </tr>`;
+                    var mapTypes = @json($data['mapType']);
+                    var mapVals = @json($data['mapVal']);
+
+                    Object.entries(mappingValues).forEach(([jk, jv]) => {
+                        var mapType = mapTypes?.[jk] ?? '-';
+                        var mapVal = mapVals?.[jk]?.[jv] ?? '-';
+
+                        htmlContent += `<tr><td>${j++}</td><td>${mapType}</td><td>${mapVal}</td></tr>`;
+                    });
+
+                    htmlContent += `</table>`;
+                    var data = htmlContent;
+                }else{
+                    var data = 'No Data Added For '+value;
+                }
+
             }else if (typeof lessonplan_data[key] !== 'undefined' && lessonplan_data[key] !== null && lessonplan_data[key] !== '') {
                 // var data = lessonplan_data[key];
                 var data = (lessonplan_data[key]) ? lessonplan_data[key] : 'No lesson Plan';
