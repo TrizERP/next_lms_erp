@@ -269,6 +269,11 @@ class studentResultController extends Controller
                 $term_name = '('.$term_name.')';
             }
         }
+
+        $getStudents = SearchStudent($value['grade_id'],$value['standard_id'],$value['section_id']);
+        $no_of_student = count($getStudents);
+        $html_content = str_replace(htmlspecialchars("<<no_of_student_class>>"), $no_of_student, $html_content);
+
         //Start Bonafide certificate Tags
         $html_content = str_replace(htmlspecialchars("<<class_teacher_name>>"), isset($teacher_name->teacher_name) ? $teacher_name->teacher_name : ' ', $html_content);
         $html_content = str_replace(htmlspecialchars("<<class_teacher_lastname>>"), isset($teacher_name->last_name) ? $teacher_name->last_name : ' ', $html_content);
@@ -285,6 +290,11 @@ class studentResultController extends Controller
         $html_content = str_replace(htmlspecialchars("<<student_year_value>>"), $display_year, $html_content);
         $html_content = str_replace(htmlspecialchars("<<student_mobile_value>>"), $value['mobile'], $html_content);
         $html_content = str_replace(htmlspecialchars("<<student_dob_value>>"),date('d-m-Y', strtotime($value['dob'])),$html_content);
+        // 04-03-2025 dob
+        $html_content = str_replace(htmlspecialchars("<<student_dob_day>>"),date('d', strtotime($value['dob'])),$html_content);
+        $html_content = str_replace(htmlspecialchars("<<student_dob_sort_month>>"),date('M', strtotime($value['dob'])),$html_content);
+        $html_content = str_replace(htmlspecialchars("<<student_dob_year>>"),date('Y', strtotime($value['dob'])),$html_content);
+        // 04-03-2025
         $html_content = str_replace(htmlspecialchars("<<current_date>>"), date('d-M-Y'), $html_content);
         $html_content = str_replace(htmlspecialchars("<<student_dob_word_value>>"), $date_in_word,$html_content);
         $html_content = str_replace(htmlspecialchars("<<student_dise_uid_value>>"), $value['dise_uid'], $html_content);
@@ -593,6 +603,14 @@ class studentResultController extends Controller
         }
         // cma tags end
         // 2024-09-11 end 
+        
+        // 04-03-2025 start
+        if (strpos($html_content, htmlspecialchars('<<scholastic_frangelo_prep>>')) !== false) {
+            $cmaScholatic = $this->get_frangelo_scholatic_prep($standard_id, $value['id'], $format,$value);
+            $html_content = str_replace(htmlspecialchars("<<scholastic_frangelo_prep>>"), $cmaScholatic['table'], $html_content);
+        }
+        // 04-03-2025 end
+
         return $html_content;
         //  return $main_result;         
     }
@@ -7289,4 +7307,395 @@ private function buildDisciplineTable($decipline_data,$both_term)
         $res['co_scholastic_table'] = $coScholasticTable;
         return $res;
     }
+
+    // 04-03-2025 start frangelo
+    public function get_frangelo_scholatic_prep($standard_id, $student_id, $format,$stuData){
+        $syear = session()->get('syear');
+        $sub_institute_id = session()->get('sub_institute_id');
+        $extra_term =$extra_exam = "1=1";
+        // if ($format != "yearly"){
+        //     $extra_term = "term_id = " . $format;
+        //     $extra_exam = "rce.term_id = " . $format;
+        // }
+        // get term_name 
+        $term_name = DB::table('academic_year')->whereRaw($extra_term)->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->get()->toArray();
+
+        // get subject
+        $PASSING_MARKS = 35;
+        $get_subject = $this->get_subject($sub_institute_id,$syear,$student_id,$standard_id);
+        $exam_created = $this->get_exam_name($sub_institute_id,$syear,$standard_id,$extra_exam);
+        $exam_marks = $this->get_exam_marks($sub_institute_id,$student_id,'examWise',$syear);
+        // get standard gardes
+        $grade_arr = $this->getGradeScale($standard_id, '');
+            // get common exam title from created exam 
+            $examMasters = [];
+            foreach ($exam_created as $key => $value) {
+            if(!in_array($value->ExamId,$examMasters)){
+                $examMasters[$value->ExamId] = $value->ExamTitle;
+            }
+            }
+            $examArr = $examMarks = $examPoint = $examPassing = [];
+            foreach($exam_created as $key => $examData){
+                foreach ($exam_marks as $exam_markskey => $exam_marksvalue) {
+                    if($examData->ExamId==$exam_marksvalue->exam_id && $examData->subject_id==$exam_marksvalue->subject_id){
+                        $examArr[$exam_marksvalue->subject_id][$exam_marksvalue->exam_id]['OBT'][] = in_array($exam_marksvalue->is_absent,['AB','N.A.','EX']) ? $exam_marksvalue->is_absent : $exam_marksvalue->points;
+                        $examArr[$exam_marksvalue->subject_id][$exam_marksvalue->exam_id]['POINTS'][] = $exam_marksvalue->weightage;
+                        $examArr[$exam_marksvalue->subject_id][$exam_marksvalue->exam_id]['PASSING'][] = $PASSING_MARKS;
+                        $examArr[$exam_marksvalue->subject_id][$exam_marksvalue->exam_id]['create_id'][] = $exam_marksvalue->create_exam;
+                        $examArr[$exam_marksvalue->subject_id][$exam_marksvalue->exam_id]['student_id'][] = $exam_marksvalue->student_id;
+                    }
+                }
+                // $examArr[$examData->subject_id][$examData->ExamId][] = 0;
+            }
+        // echo "<pre>";print_r($stuData); exit;
+        $table = '<table class="frangeloTable" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" border="1">
+            <thead>
+                <tr>
+                    <th rowspan="2" style="text-align:center;"><b>Subjects</b></th>';
+                    
+                    foreach ($examMasters as $examId => $examTitle) {
+                        $table .= '<th colspan="3" class="data_center"><b>' . $examTitle . '</b></th>';
+                    }
+        
+                $table .= '<th colspan="3" class="data_center"><b>Average Performance</b></th>
+                </tr>
+                <tr>';
+        
+                foreach ($examMasters as $examId => $examTitle) {
+                    $table .= '
+                    <th class="data_center"><b>Out Of</b></th>
+                    <th class="data_center"><b>Passing</b></th>
+                    <th class="data_center"><b>Obtained</b></th>';
+                }
+        
+                $table .= '<th colspan="3" class="data_center"><b>Obtained</b></th>
+                </tr>
+            </thead>
+            <tbody>';
+            $grade_arr = $this->getGradeScale($standard_id, '');
+            // echo "<pre>";print_r($examArr);exit;
+            foreach ($get_subject as $subkey => $subjectData) {
+                $table .= '<tr>
+                            <td>'.$subjectData->subject_name.'</td>';// subject send start
+                            // check exam has marks or not 
+                            $avgMarks= $avgPoints= $grandTotAvg = $grandTotAvgPoints =0;
+                            $grandTotPoints = $grandTotPassing = $grandTotObt = [];
+                            foreach ($examMasters as $examkey => $examData) {
+                                $obtMarks = $pointMarks = $passingMarks = '0';
+                               if(isset($examArr[$subjectData->subject_id][$examkey]['OBT'])){
+                                    $obtMarks = array_sum($examArr[$subjectData->subject_id][$examkey]['OBT']);
+                               }
+                               if(isset($examArr[$subjectData->subject_id][$examkey]['POINTS'])){
+                                    $pointMarks = array_sum($examArr[$subjectData->subject_id][$examkey]['POINTS']);
+                               }
+                               if(isset($examArr[$subjectData->subject_id][$examkey]['PASSING'])){
+                                    $passingMarks = array_sum($examArr[$subjectData->subject_id][$examkey]['PASSING']);
+                               }
+
+                               $pointsGrade = $this->getGrade($grade_arr, $pointMarks, $pointMarks);
+                               $passingGrade = $this->getGrade($grade_arr, $pointMarks, $passingMarks);
+                               $obtGrade = $this->getGrade($grade_arr, $pointMarks, $obtMarks);
+
+                               $allArr = json_encode(['student_id'=>$student_id,'standard_id'=>$standard_id,'subject'=>$subjectData->subject_id,'exam_id'=>$examkey]);
+
+                               $table .= '<td class="data_center" json=`'.$allArr.'` '.$pointMarks.'>'.$pointsGrade.'</td>';
+                               $table .= '<td class="data_center" '.$passingMarks.'>'.$passingGrade.'</td>';
+                               $table .= '<td class="data_center" '.$obtMarks.'>'.$obtGrade.'</td>';
+
+                               $avgPoints +=$pointMarks;
+                               $avgMarks +=$obtMarks;
+                               if(!isset($grandTotPoints[$examkey])){
+                                $grandTotPoints[$examkey]=0;
+                               }
+                               if(!isset($grandTotPassing[$examkey])){
+                                $grandTotPassing[$examkey]=0;
+                               }
+                               if(!isset($grandTotObt[$examkey])){
+                                $grandTotObt[$examkey]=0;
+                               }
+                               $grandTotPoints[$examkey]+=$pointMarks;
+                               $grandTotPassing[$examkey]+=$passingMarks;
+                               $grandTotObt[$examkey]+=$obtMarks;
+                               $grandTotAvg+=$avgMarks;
+                               $grandTotAvgPoints+=$avgPoints;
+                            }
+                            $avgGrade = $this->getGrade($grade_arr,$avgPoints, $avgMarks);
+                            $table .= '<td colspan="3" class="data_center" '.$avgMarks.'>'.$avgGrade.'</td>';
+                $table .= '</tr>'; // subject send
+            }
+            // subject end here 
+            // grand total row
+            $table .='<tr>
+            <td><b>Grand Total</b></td>';
+            
+            foreach ($examMasters as $examId => $examTitle) {
+                $grandPoints = $this->getGrade($grade_arr,$grandTotPoints[$examId], $grandTotPoints[$examId]);
+                $grandPassing = $this->getGrade($grade_arr,$grandTotPoints[$examId], $grandTotPassing[$examId]);
+                $grandObt = $this->getGrade($grade_arr,$grandTotPoints[$examId], $grandTotObt[$examId]);
+                $table .= '
+                <td class="data_center"><b>'.$grandPoints.'</b></td>
+                <td class="data_center"><b>'.$grandPassing.'</b></td>
+                <td class="data_center"><b>'.$grandObt.'</b></td>';
+            }
+            $grandAvgGrade = $this->getGrade($grade_arr,$grandTotAvgPoints, $grandTotAvg);
+            $table .='<td colspan="3" class="data_center"><b>'.$grandAvgGrade.'<b></td></tr>';
+            
+            // other table rows like grand total, conduct, applictaion,remarks
+            $avgrankArr = $this->getRank($standard_id,$stuData['section_id'],$PASSING_MARKS,'');
+            $rankTerm1Arr = $this->getRank($standard_id,$stuData['section_id'],$PASSING_MARKS,149);
+            $rankTerm2Arr = $this->getRank($standard_id,$stuData['section_id'],$PASSING_MARKS,150);
+            $avgrank = isset($avgrankArr[$student_id]) ? $avgrankArr[$student_id]['rank'] : 0;
+            $rankTerm1 = isset($rankTerm1Arr[$student_id]) ? $rankTerm1Arr[$student_id]['rank'] : 0;
+            $rankTerm2 = isset($rankTerm2Arr[$student_id]) ? $rankTerm2Arr[$student_id]['rank'] : 0;
+            $avgFail = isset($avgrankArr[$student_id]) ? $avgrankArr[$student_id]['failed'] : 0;
+            $FailTerm1 = isset($rankTerm1Arr[$student_id]) ? $rankTerm1Arr[$student_id]['failed'] : 0;
+            $FailTerm2 = isset($rankTerm2Arr[$student_id]) ? $rankTerm2Arr[$student_id]['failed'] : 0;
+            $mainTotalArr= [];
+            // echo "<pre>";print_r($avgrank[$student_id]);
+            // echo "<pre>";print_r($rankTerm1[$student_id]);
+            $nextStd = DB::table('standard as std')->selectRaw('(select short_name from standard where id = std.next_standard_id) as next_sort_std,(select name from standard where id = std.next_standard_id) as next_std')->where('std.id',$standard_id)->whereNotNull('next_standard_id')->first();
+            $sortNextStd = isset($nextStd->next_sort_std) ? $nextStd->next_sort_std : 0;
+            // echo "<pre>";print_r($nextStd->next_sort_std);exit;
+            if ($avgrank >= 1 && $avgrank <= 3) {
+            $appText = "EXCELLENT";
+            $passText = "Passed & Promoted to Class : $sortNextStd&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+            $remarksText = "Keep it up";
+            } else if ($avgrank >= 4 && $avgrank <= 10) {
+                $appText = "V. GOOD";
+                $passText = "Passed & Promoted to Class : $sortNextStd&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+                $remarksText = "Aim higher";
+            } else {
+                $appText = "GOOD";
+                if (isset($mainTotalArr['10F'])) {
+                    if (count($mainTotalArr['10F']) == 1) {
+                        $appText = "Fair";
+                        $passText = "Promoted to Class : $sortNextStd&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+                    } else if (count($mainTotalArr['10F']) == 2) {
+                        $appText = "Satisfactory";
+                        $passText = "Promoted to Class : $sortNextStd&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+                    } else if (count($mainTotalArr['10F']) >= 3) {
+                        $appText = "Not Satisfactory";
+                        $passText = "";
+                    } else {
+                        $appText = "Good";
+                        $passText = "Passed & Promoted to Class : $sortNextStd&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+                    }
+                } else {
+                    $passText = "Passed & Promoted to Class : $sortNextStd&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+                }
+                $remarksText = "Can do better";
+            }
+
+            if ($rankTerm1 >= 1 && $rankTerm1 <= 3) {
+                $app1Text = "EXCELLENT";
+                $remarks1Text = "Keep it up";
+                if ($rankTerm1 == 1) {
+                    $remarks1Text = "Keep it up";
+                } else {
+                    $remarks1Text = "Aim higher";
+                }
+                if (isset($FailTerm1)) {
+                    if ($FailTerm1 == 1) {
+                        $app1Text = "Fair";
+                        $remarks1Text = 'Work Hard in Failed Subject';
+                    } else if ($FailTerm1 == 2) {
+                        $app1Text = "Satisfaction";
+                        $remarks1Text = 'Work Hard in Failed Subjects';
+                    } else if ($FailTerm1 >= 3) {
+                        $app1Text = "Not Satisfaction";
+                        $remarks1Text = 'Work Hard in Failed Subjects';
+                    }
+                }
+            } else if ($rankTerm1 >= 4 && $rankTerm1 <= 10) {
+                $app1Text = "V. GOOD";
+                $remarks1Text = "Aim higher";
+                if (isset($FailTerm1)) {
+                    if ($FailTerm1 == 1) {
+                        $app1Text = "Fair";
+                        $remarks1Text = 'Work Hard in Failed Subject';
+                    } else if ($FailTerm1 == 2) {
+                        $app1Text = "Satisfactory";
+                        $remarks1Text = 'Work Hard in Failed Subjects';
+                    } else if ($FailTerm1 >= 3) {
+                        $app1Text = "Not Satisfactory";
+                        $remarks1Text = 'Work Hard in Failed Subjects';
+                    }
+                }
+            } else {
+                $app1Text = "GOOD";
+                $remarks1Text = "Can do better";
+                if (isset($FailTerm1)) {
+                    if ($FailTerm1 == 1) {
+                        $app1Text = "Fair";
+                        $remarks1Text = 'Work Hard in Failed Subject';
+                    } else if ($FailTerm1 == 2) {
+                        $app1Text = "Satisfaction";
+                        $remarks1Text = 'Work Hard in Failed Subjects';
+                    } else if ($FailTerm1 >= 3) {
+                        $app1Text = "Not Satisfaction";
+                        $remarks1Text = 'Work Hard in Failed Subjects';
+                    }
+                }
+            }
+
+            if ($rankTerm2 >= 1 && $rankTerm2 <= 3) {
+                $app2Text = "EXCELLENT";
+                $remarks2Text = "Keep it up";
+                if ($rankTerm2 == 1) {
+                    $remarks2Text = "Keep it up";
+                } else {
+                    $remarks2Text = "Aim higher";
+                }
+
+                if (isset($FailTerm2)) {
+                    if ($FailTerm2 == 1) {
+                        $app2Text = "Fair";
+                        $remarks2Text = 'Work Hard in Failed Subject';
+                    } else if ($FailTerm2 == 2) {
+                        $app2Text = "Satisfaction";
+                        $remarks2Text = 'Work Hard in Failed Subjects';
+                    } else if ($FailTerm2 >= 3) {
+                        $app2Text = "Not Satisfaction";
+                        $remarks2Text = 'Work Hard in Failed Subjects';
+                    }
+                }
+            } else if ($rankTerm2 >= 4 && $rankTerm2 <= 10) {
+                $app2Text = "V. GOOD";
+                $remarks2Text = "Aim higher";
+                if (isset($FailTerm2)) {
+                    if ($FailTerm2 == 1) {
+                        $app2Text = "Fair";
+                        $remarks2Text = 'Work Hard in Failed Subject';
+                    } else if ($FailTerm2 == 2) {
+                        $app2Text = "Satisfaction";
+                        $remarks2Text = 'Work Hard in Failed Subjects';
+                    } else if ($FailTerm2 >= 3) {
+                        $app2Text = "Not Satisfaction";
+                        $remarks2Text = 'Work Hard in Failed Subjects';
+                    }
+                }
+            } else {
+                $app2Text = "GOOD";
+                $remarks2Text = "Can do better";
+                if (isset($FailTerm2)) {
+                    if ($FailTerm2 == 1) {
+                        $app2Text = "Fair";
+                        $remarks2Text = 'Work Hard in Failed Subject';
+                    } else if ($FailTerm2 == 2) {
+                        $app2Text = "Satisfaction";
+                        $remarks2Text = 'Work Hard in Failed Subjects';
+                    } else if ($FailTerm2 >= 3) {
+                        $app2Text = "Not Satisfaction";
+                        $remarks2Text = 'Work Hard in Failed Subjects';
+                    } else {
+                        $app2Text = "Good";
+                        $remarks2Text = 'Work Hard in Failed Subjects';
+                    }
+                }
+            }
+            
+            $table .='<tr>
+            <td><b>CONDUCT</b></td>';
+            if(!empty($examMasters)){
+                $table .='<td colspan="3">Good</td>
+                <td colspan="3">Good</td>';
+            }
+            $table .='<td colspan="3" class="data_center">Good</td>
+            </tr>';
+
+            $table .='<tr>
+            <td><b>APPLICATION<b></td>';
+            if(!empty($examMasters)){
+                $table .='<td colspan="3">'.$app1Text.'</td>
+                <td colspan="3">'.$app2Text.'</td>';
+            }
+            $table .='<td colspan="3" class="data_center">'.$appText.'</td>
+            </tr>';
+
+            $table .='<tr>
+            <td><b>Remarks</b></td>';
+            if(!empty($examMasters)){
+                $table .='<td colspan="3">'.$remarks1Text.'</td>
+                <td colspan="3">'.$remarks2Text.'</td>';
+            }
+            $table .='<td colspan="3" class="data_center">'.$remarksText.'</td>
+            </tr>';
+        
+            $table .= '</tbody>
+        </table>';
+    
+       $res['table'] = $table;
+       return $res;
+    }
+
+    public function getRank($standard_id,$division_id,$passing_ratio,$term_id='',$type='',$exam_title='') {
+        if ($type == 'API') {
+            $syear = $_REQUEST['syear'];
+            $sub_institute_id = $_REQUEST['sub_institute_id'];
+            $term_id = 149;
+        } else {
+            $syear = session()->get('syear');
+            $sub_institute_id = session()->get('sub_institute_id');
+        }
+
+        $rank_data = DB::table("tblstudent as s")
+            ->join('tblstudent_enrollment as se', function ($join) {
+                $join->whereRaw("se.student_id = s.id AND se.sub_institute_id = s.sub_institute_id");
+            })
+            ->join('result_marks as rm', function ($join) {
+                $join->whereRaw("rm.student_id = s.id AND rm.sub_institute_id = s.sub_institute_id");
+            })
+            ->join('result_create_exam as rc', function ($join) use ($syear, $term_id) {
+                $join->whereRaw("rc.id = rm.exam_id AND rc.sub_institute_id = rm.sub_institute_id
+                        AND rc.standard_id = se.standard_id AND rc.syear = '" . $syear . "'")
+                        ->when($term_id!='',function($q) use($term_id){
+                            $q->whereRaw("rc.term_id = '" . $term_id . "'");
+                        });
+            })
+            ->selectRaw("s.id AS student_id,se.roll_no,concat_ws(' ',s.first_name,s.middle_name,s.last_name) as student_name,
+    SUM(IFNULL(rm.points,0)) AS obtainedMarks,SUM(IFNULL(rc.points,0)) AS totalMarks,
+    ((SUM(IFNULL(rm.points,0))/ SUM(IFNULL(rc.points,0)))*100) AS percentage,COUNT(if(((IFNULL(rm.points,0)/rc.points)*100)
+    < " . $passing_ratio . ",1, NULL)) AS failed")
+            ->where("se.syear", "=", $syear)
+            ->where("se.standard_id", "=", $standard_id)
+            ->where("se.section_id", "=", $division_id)
+            ->where("rc.report_card_status", "=", 'Y')
+            ->when($exam_title!='',function($q) use($exam_title){
+                $q->where("rc.title",$exam_title);
+            })
+            ->whereNull("se.end_date")
+            ->where('s.sub_institute_id', $sub_institute_id);
+
+        $rank_data = $rank_data->groupBy('s.id')
+            ->orderByRaw('percentage DESC,se.roll_no ASC')
+            ->get()->toarray();
+
+        $rank_data = json_decode(json_encode($rank_data), true);
+
+        $percentageArr = [];
+        $i = 1;
+        foreach ($rank_data as $key => $val) {
+            if (!isset($percentageArr[$val['percentage']])) {
+                $percentageArr[$val['percentage']] = $i;
+                $i++;
+            }
+        }
+        $rankArr = [];
+        if($exam_title!=''){
+            foreach ($rank_data as $key => $val) {
+                $rankArr[$val['student_id']][$exam_title] = $val;
+                $rankArr[$val['student_id']][$exam_title]['rank'] = $percentageArr[$val['percentage']];
+                $rankArr[$val['student_id']][$exam_title]['failed'] = $val['failed'];
+            }
+        }else{
+            foreach ($rank_data as $key => $val) {
+                $rankArr[$val['student_id']] = $val;
+                $rankArr[$val['student_id']]['rank'] = $percentageArr[$val['percentage']];
+                $rankArr[$val['student_id']]['failed'] = $val['failed'];
+            }
+        }
+
+        return $rankArr;
+    }
+    // 04-03-2025 frangelo end 
 }
