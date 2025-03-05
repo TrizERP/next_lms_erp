@@ -120,7 +120,7 @@
 		                                    <th>Sr No.</th>
 		                                    <th>{{ App\Helpers\get_string('grno','request')}}</th>
 		                                    <th>{{ App\Helpers\get_string('studentname','request')}}</th>
-		                                    <th>{{ App\Helpers\get_string('studentmobile','request')}}</th>
+		                                    <th>Mobile</th>
 		                                    <th>{{ App\Helpers\get_string('standard','request')}}</th>
 		                                    <th>{{ App\Helpers\get_string('division','request')}}</th>
                                             @foreach($data['fees_head'] as $dk => $dv)
