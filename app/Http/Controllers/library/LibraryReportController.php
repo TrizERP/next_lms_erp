@@ -206,12 +206,17 @@ class LibraryReportController extends Controller
     public function generateBarcodePdf(Request $request){
        
         $barcodes = [];
-
+        $sub_institute_id = session()->get('sub_institute_id');
         foreach ($request->check_id as $key => $value) {
             $barcodeGenerator = new BarcodeGeneratorPNG();
         
             // Generate the barcode image
-            $barcodeImageData = $barcodeGenerator->getBarcode($value, $barcodeGenerator::TYPE_CODE_128, 2, 60);
+            if($sub_institute_id==254){
+                $barcodeImageData = $barcodeGenerator->getBarcode($value, $barcodeGenerator::TYPE_CODE_39, 2, 60);
+            }
+            else{
+                $barcodeImageData = $barcodeGenerator->getBarcode($value, $barcodeGenerator::TYPE_CODE_128, 2, 60);
+            }
             
             // Create an image resource from the barcode data
             $barcodeImage = imagecreatefromstring($barcodeImageData);
