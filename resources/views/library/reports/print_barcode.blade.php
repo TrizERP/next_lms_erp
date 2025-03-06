@@ -84,8 +84,14 @@
                                 <td>{{$value->standard.'/'.$value->division}}</td>
                             </tr>
                         @else
+                        @php
+                            $itemCodeId = $value->id;
+                            if(session()->get('sub_institute_id')==254){
+                               $itemCodeId = $value->item_code;
+                            }
+                        @endphp     
                         <tr>
-                                <td><input id="{{$value->id}}" value="{{$value->id}}" name="check_id[]" type="checkbox">
+                                <td><input id="{{$value->id}}" value="{{$itemCodeId}}" name="check_id[]" type="checkbox">
                                 <input type="hidden" name="print_text[]" value="{{$value->book_title}}">
                                 <input type="hidden" name="print_code[]" value="{{$value->classification}}">
                                 </td>                            
