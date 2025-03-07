@@ -2510,7 +2510,6 @@ class AJAXController extends Controller
             $pdf_file_path = $save_path . '/' . $pdf_filename;
 
             file_put_contents($html_file_path, $dom);
-            // echo "<pre>";print_r($save_path);exit;
 
             htmlToPDFHills($html_file_path, $pdf_file_path);
             $PDF_path_for_open = "https://" . $_SERVER['HTTP_HOST'] . '/storage/test_PDF/' . $pdf_filename;

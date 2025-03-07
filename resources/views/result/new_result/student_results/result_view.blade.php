@@ -157,6 +157,7 @@ $student_id_arr = implode(",",array_values($data['students_ids']));
                 }
 
                 let newTab = window.open(result, '_blank');
+                
             }
         });
         @endif
