@@ -218,16 +218,31 @@ class AJAXController extends Controller
             $menu_ids=[];
 
         }
-        $studentData = DB::table('tblstudent as s')->join('tblstudent_enrollment as se','se.student_id','=','s.id')
-        ->where('s.sub_institute_id',session()->get('sub_institute_id'))
-        ->where('se.syear',session()->get('syear'))
-        ->where('s.id',session()->get('user_id'))
-        ->first();
-        $getClass=DB::table('class_teacher')->whereRaw('sub_institute_id='.session()->get('sub_institute_id').' and teacher_id ='.session()->get('user_id').' and syear="'.session()->get('syear').'"')->first();
-        if (count($explode) > 1) {
-            $query = DB::table('standard');
-            $query->whereIn('grade_id', $explode)->get();
+        // added on 07-03-2025 for standalone modules end 
 
+        $type = $request->type;
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+        $user_id = session()->get('user_id');
+        if($type=='webForm'){
+            $sub_institute_id = $request->sub_institute_id ?? 0;
+            $syear = $request->syear ?? 0;
+            $user_id = $request->user_id ?? 0;
+        }
+        // added on 07-03-2025 for standalone modules end 
+        
+        $studentData = DB::table('tblstudent as s')->join('tblstudent_enrollment as se','se.student_id','=','s.id')
+        ->where('s.sub_institute_id',$sub_institute_id)
+        ->where('se.syear',$syear)
+        ->where('s.id',$user_id)
+        ->first();
+        
+        $getClass=DB::table('class_teacher')->whereRaw('sub_institute_id='.$sub_institute_id.' and teacher_id ='.$user_id.' and syear="'.$syear.'"')->first();
+
+        $query = DB::table('standard');
+        $query->where("grade_id", $request->grade_id);
+
+        if (count($explode) > 1) {
             //START Check for class teacher assigned standards
             $classTeacherStdArr = session()->get('classTeacherStdArr');
 
@@ -261,11 +276,9 @@ class AJAXController extends Controller
                     $query->where('id', [$studentData->standard_id ?? 0 ]);
                 }
                 // for student 01-01-2025 end
-            $standard = $query->pluck("name", "id");
 
         } else {
-            $query = DB::table('standard');
-            $query->where("grade_id", $request->grade_id);
+
 
             //START Check for class teacher assigned standards
             $classTeacherStdArr = session()->get('classTeacherStdArr');
@@ -300,15 +313,27 @@ class AJAXController extends Controller
             }
             // for student 01-01-2025 end
             //END Check for subject teacher assigned
-            $standard = $query->pluck("name", "id");
         }
+        $standard = $query->pluck("name", "id");
+
         // echo session()->get('right_menu_id')
         return response()->json($standard);
         // return $classTeacherStdArr;
     }
 
     public function getDivisionList(Request $request)
-    {
+    {   
+        // added on 07-03-2025 for standalone modules 
+        $type = $request->type;
+        if($type=="webForm"){
+            $query = DB::table('std_div_map');
+            $query->join('division', 'division.id', '=', 'std_div_map.division_id');
+            $query->where("std_div_map.standard_id", $request->standard_id);
+            $std_div_map = $query->pluck('division.name', 'division.id');
+            return $std_div_map;
+        }
+        // added on 07-03-2025 for standalone modules end 
+
         $path = $_SERVER['HTTP_REFERER'];
 
         if ($path) {
