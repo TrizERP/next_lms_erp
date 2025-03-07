@@ -68,7 +68,6 @@ $student_id_arr = implode(",",array_values($data['students_ids']));
 
    function printMob(divName) {
     var studentData = <?php echo json_encode($data['all_stud_html']); ?>;
-    // console.log(studentData);
     // Loop through each student ID and associated HTML
     for (var studentId in studentData) {
         if (studentData.hasOwnProperty(studentId)) {
@@ -127,28 +126,41 @@ $student_id_arr = implode(",",array_values($data['students_ids']));
     //     popupWin.document.close();
     // }
     function printDiv(divName) {
-    var studentData = @json($data['all_stud_html']);
+        var studentData = @json($data['all_stud_html']);
 
-    var divToPrint = document.getElementById(divName);
-    var popupWin = window.open('', '_blank', 'width=300,height=300');
-    popupWin.document.open();
-    popupWin.document.write('<html>');
-    @if(in_array(session()->get('sub_institute_id'),[201,202,203,204]) && $data['result_type']=="HPC")
-    popupWin.document.write('<head><link rel="stylesheet" href="/css/hpc_result.css" /></head>');
-    @else 
-    popupWin.document.write('<head><link rel="stylesheet" href="/css/result.css" /></head>');
-    @endif
+        @if(!in_array(session()->get('sub_institute_id'),[201,202,203,204]))
+            
+            var divToPrint = document.getElementById(divName);
+            var popupWin = window.open('', '_blank', 'width=300,height=300');
+            popupWin.document.open();
+            popupWin.document.write('<html>');
 
-    popupWin.document.write('<body onload="setTimeout(function() { window.print(); }, 2000);"><style>body{margin:0;padding:0}</style>');
+            popupWin.document.write('<head><link rel="stylesheet" href="/css/result.css" /></head>');
 
-    Object.keys(studentData).forEach(function(studentId) {
-        var html = studentData[studentId];
-        popupWin.document.write('<div style="page-break-before: always !important;">' + html + '</div>');
-    });
+            popupWin.document.write('<body onload="setTimeout(function() { window.print(); }, 2000);"><style>body{margin:0;padding:0}</style>');
 
-    popupWin.document.write('</body></html>');
-    popupWin.document.close();
-}
+            Object.keys(studentData).forEach(function(studentId) {
+                var html = studentData[studentId];
+                popupWin.document.write('<div style="page-break-before: always !important;">' + html + '</div>');
+            });
+
+            popupWin.document.write('</body></html>');
+            popupWin.document.close();
+        @else 
+        $.ajax({
+            url : "{{route('getHillsHPCPDF')}}",
+            data : {studentHtml : studentData},
+            type : 'POST',
+            success : function(result){
+                if(result.status_code){
+                    alert(result.message);
+                }
+
+                let newTab = window.open(result, '_blank');
+            }
+        });
+        @endif
+    }
 
 </script>
 @include('includes.footer')
