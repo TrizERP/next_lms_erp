@@ -68,6 +68,7 @@ $student_id_arr = implode(",",array_values($data['students_ids']));
 
    function printMob(divName) {
     var studentData = <?php echo json_encode($data['all_stud_html']); ?>;
+    // console.log(studentData);
     // Loop through each student ID and associated HTML
     for (var studentId in studentData) {
         if (studentData.hasOwnProperty(studentId)) {
