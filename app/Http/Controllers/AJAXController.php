@@ -12,6 +12,7 @@ use function App\Helpers\FeeBreackoff;
 use function App\Helpers\FeeBreakoffHeadWise;
 use function App\Helpers\FeeMonthId;
 use function App\Helpers\htmlToPDF;
+use function App\Helpers\htmlToPDFHills;
 use function App\Helpers\htmlToPDFLandscape;
 use function App\Helpers\htmlToPDFLandscapeCertificate;
 use function App\Helpers\htmlToPDFPortrait;
