@@ -6234,17 +6234,17 @@ private function buildDisciplineTable($decipline_data,$both_term)
         //     }</style>';
         // }
 
-            $table.='<style>@media print{
-                .junior_2_20{
-                    margin-bottom:120px;
-                }
-                .junior_2_21{
-                    margin-top:50px;
-                }
-                .junior_4_1{
-                    margin-bottom:120px;
-                }
-            }</style>';
+            // $table.='<style>@media print{
+            //     .junior_2_20{
+            //         margin-bottom:120px;
+            //     }
+            //     .junior_2_21{
+            //         margin-top:50px;
+            //     }
+            //     .junior_4_1{
+            //         margin-bottom:120px;
+            //     }
+            // }</style>';
         }
 
        // seniors

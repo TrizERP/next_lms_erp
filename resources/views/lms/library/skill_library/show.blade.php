@@ -5,6 +5,19 @@
         color : #2f99de;
         border-bottom : 2px solid #2f99de;
     }
+td ul {
+    list-style: none !important;
+    padding-left: 0 !important;
+}
+
+td ul li::before {
+    content: "• ";
+    color: black;
+    font-weight: bold;
+    display: inline-block;
+    width: 1em;
+}
+.category{background-color: #90D5FF}
 </style>
 <div id="page-wrapper">
     <div class="container-fluid">
@@ -83,8 +96,100 @@
                     </tr>
                 </table>
            </div>
-        </div>
 
+<div class="container mt-5">
+        <h2 class="text-center">Skills Framework for Aerospace</h2>
+        <h4 class="text-center">Technical Skills & Competencies (TSC) Reference Document</h4>
+
+        <table class="table table-bordered">
+            <tbody>
+                <!--<tr >
+                    <th>TSC Category</th>
+                    <td colspan="6">Aerospace and Engineering Fundamentals</td>
+                </tr>
+                <tr >
+                    <th>TSC</th>
+                    <td colspan="6">Helicopter Aerodynamics Structures and Systems Principles Application</td>
+                </tr>
+                <tr>
+                    <th>TSC Description</th>
+                    <td colspan="6">Apply and use principles of helicopter aerodynamics, structures and systems for maintenance, repair, overhaul or manufacturing in accordance with the original equipment manufacturer (OEM) manuals and organisational procedures</td>
+                </tr>-->
+                <tr class="category">
+                    <th>Proficiency Levels</th>
+                    <th>Level 3</th>
+                    <th>Level 4</th>
+                </tr>
+                <tr>
+                    <th>TSC Proficiency Description</th>
+                    <td>Apply principles of theory of flight, airframe structures and systems towards maintenance, repair, overhaul or manufacturing of helicopter structures and systems</td>
+                    <td>Apply principles of theory of flight, airframe structures and systems towards maintenance, repair, overhaul or manufacturing of helicopter structures and systems</td>
+                </tr>
+                <tr>
+                    <th><b>Knowledge</b></th>
+                    <td>
+                        <ul>
+                            <li>Tools & programming for Big Data</li>
+                            <li>Data quality & modeling</li>
+                            <li>Principles of theory of flight</li>
+                            <li>Principles of blade tracking and vibration analysis</li>
+                            <li>General concepts of transmissions and airframe structures</li>
+                            <li>Principles of air supply and air conditioning (ATA 21)</li>
+                            <li>Functions of avionic, instrument, landing gear and lighting systems (ATA 22 - 23, 31 - 34)</li>
+                            <li>Aircraft electrical power systems, equipment and cabin furnishings and fire detection methods (ATA 24 - 26)</li>
+                            <li>Types of fuel, hydraulic power and ice and rain protection systems (ATA 28 - 30)</li>
+                            <li>Types of pneumatic/vacuum systems (ATA 36)</li>
+                            <li>Specification of water and waste systems (ATA 38)</li>
+                            <li>Concepts of integrated modular avionics (ATA 42)</li>
+                            <li>On-board maintenance and information systems (ATA 45 - 46)</li>
+                        </ul>
+                    </td>
+                    <td>
+                        <ul>
+                            <li>Concepts of rotary wing aerodynamics and flight control system design and operation.</li>
+<li>Principles of blade tracking and vibration analysis.</li>
+<li>Installation, construction, and assembly methods for transmissions and airframe structures.</li>
+<li>Principles of air supply and air conditioning.</li>
+<li>Construction and application of avionic, instrument, landing gear, and lighting systems.</li>
+<li>Installation and handling requirements of power systems, equipment, furnishings, and fire protection systems.</li>
+<li>Operation of fuel, hydraulic power, and ice and rain protection systems.</li>
+<li>Layout and operation of pneumatic/vacuum systems.</li>
+<li>Layout and operation of water and waste systems.</li>
+<li>Functions of Integrated Modular Avionics (IMA) system.</li>
+<li>Functions of on-board maintenance and information systems.</li>
+                        </ul>
+                    </td>
+                </tr>
+                <tr>
+                    <td><b>Abilities</b></td>
+                    <td>
+                        <ul>
+                            <li>Apply theory of flight to assess torque reaction, directional control, and ground effect.</li> <li>Describe the function and operation of flight control systems.</li> <li>Explain techniques for rotor tracking, alignment, and balancing.</li> <li>Explain characteristics of transmissions and airframe structures.</li> <li>Explain characteristics of air conditioning systems.</li> <li>Describe the operating characteristics of electro-avionic systems.</li> <li>Describe the operating characteristics of electro-mechanical systems.</li> <li>Explain the operation of flight control systems.</li> <li>Identify functions that may be integrated in the Integrated Modular Avionic (IMA) modules.</li> <li>Describe the functions of on-board maintenance and information systems.</li>
+                        </ul>
+                    </td>
+                    <td>
+                        <ul>
+                            <li>Evaluate the operation and effects of rotary wing aerodynamics.</li>
+                            <li>Guide the design, operation, and construction of flight control systems.</li>
+                            <li>Recommend methods for vibration reduction and ground resonance.</li>
+                            <li>Define work instructions for installation and construction of transmissions and airframe structures.</li>
+                            <li>Evaluate the operation of air conditioning systems.</li>
+                            <li>Discuss the layout and operation of electro-avionic systems.</li>
+                            <li>Discuss the layout and operation of electro-mechanical airframe and powerplant systems.</li>
+                            <li>Optimise the operation of flight control systems.</li>
+                            <li>Define the function of various Integrated Modular Avionic (IMA) modules.</li>
+                            <li>Guide the configuration of on-board maintenance and information systems.</li>
+                        </ul>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+
+
+
+        </div>
     </div>
 </div>
 
