@@ -7694,7 +7694,7 @@ private function buildDisciplineTable($decipline_data,$both_term)
                      }
          
                  $table .= '<th colspan="2" class="data_center"><b>Annual</b></th>
-                 <th colspan="4" class="data_center"><b>Average Performance</b></th>
+                 <th colspan="3" class="data_center"><b>Average Performance</b></th>
                  </tr>
                  <tr>';
          
@@ -7708,7 +7708,6 @@ private function buildDisciplineTable($decipline_data,$both_term)
                  <th class="data_center avg avg"><b>Out Of</b></th>
                  <th class="data_center avg"><b>Passing</b></th>
                  <th class="data_center avg"><b>Obtained</b></th>
-                 <th class="data_center avg"><b>Cond. By</b></th>
                  </tr>
              </thead>
              <tbody>';
@@ -7798,7 +7797,6 @@ private function buildDisciplineTable($decipline_data,$both_term)
                             $table .= '<td class="data_center avg" 100>'.$avgOutMarksGrade.'</td>';
                             $table .= '<td class="data_center avg">'.$avgPassMarksGrade.'</td>';
                             $table .= '<td class="data_center avg" '.$avgMarks.'>'.$avgMarksGrade.'</td>';
-                            $table .= '<td class="data_center avg" '.$avgMarks.'>&nbsp;</td>';
                             
                 $table .= '</tr>'; // subject send
             }
@@ -7828,8 +7826,7 @@ private function buildDisciplineTable($decipline_data,$both_term)
 
             $table .='<td class="data_center grandAvg"><b>'.$grandAvgOutGrade.'<b></td>
             <td class="data_center grandAvg"><b>'.$grandAvgPassGrade.'<b></td>
-            <td class="data_center grandAvg"><b>'.$grandAvgObtGrade.'<b></td>
-            <td class="data_center grandAvg"><b>&nbsp;<b></td>';
+            <td class="data_center grandAvg"><b>'.$grandAvgObtGrade.'<b></td>';
             $table .='</tr>';
             
             // PERCENTAGE
@@ -7861,8 +7858,7 @@ private function buildDisciplineTable($decipline_data,$both_term)
 
             $table .='<td class="data_center grandAvg"><b>&nbsp;<b></td>
             <td class="data_center grandAvg"><b>&nbsp;<b></td>
-            <td class="data_center grandAvg"><b>'.$avgPerGrade.'<b></td>
-            <td class="data_center grandAvg"><b>&nbsp;<b></td>';
+            <td class="data_center grandAvg"><b>'.$avgPerGrade.'<b></td>';
             $table .='</tr>';
             // other table rows like grand total, conduct, applictaion,remarks
             $avgrankArr = $this->getRank($standard_id,$stuData['section_id'],$PASSING_MARKS,'');
@@ -7897,7 +7893,7 @@ private function buildDisciplineTable($decipline_data,$both_term)
                     $table .='<td>'.$conduct.'</td>';
                 }
             }
-            $table .='<td colspan="6" style="text-align:right"><b>Good</b></td>
+            $table .='<td colspan="5" style="text-align:right"><b>Good</b></td>
             </tr>';
 
             $table .='<tr>
@@ -7912,7 +7908,7 @@ private function buildDisciplineTable($decipline_data,$both_term)
                     $table .='<td>'.$conduct.'</td>';
                 }
             }
-            $table .='<td colspan="6" style="text-align:right"><b>'.$appText.'</b></td>
+            $table .='<td colspan="5" style="text-align:right"><b>'.$appText.'</b></td>
             </tr>';
 
             $table .='<tr>
@@ -7927,7 +7923,7 @@ private function buildDisciplineTable($decipline_data,$both_term)
                     $table .='<td>'.$conduct.'</td>';
                 }
             }
-            $table .='<td colspan="6" style="text-align:right"><b>'.$passText.'</b></td>
+            $table .='<td colspan="5" style="text-align:right"><b>'.$passText.'</b></td>
             </tr>';
         
             $table .= '</tbody>
@@ -7988,7 +7984,7 @@ private function buildDisciplineTable($decipline_data,$both_term)
                      }
          
                  $table .= '<th colspan="2" class="data_center"><b>Annual</b></th>
-                 <th colspan="4" class="data_center"><b>Average Performance</b></th>
+                 <th colspan="3" class="data_center"><b>Average Performance</b></th>
                  </tr>
                  <tr>';
          
@@ -8002,7 +7998,6 @@ private function buildDisciplineTable($decipline_data,$both_term)
                  <th class="data_center avg avg"><b>Out Of</b></th>
                  <th class="data_center avg"><b>Passing</b></th>
                  <th class="data_center avg"><b>Obtained</b></th>
-                 <th class="data_center avg"><b>Cond. By</b></th>
                  </tr>
              </thead>
              <tbody>';
@@ -8085,7 +8080,6 @@ private function buildDisciplineTable($decipline_data,$both_term)
                             $table .= '<td class="data_center avg" 100>'.$avgOutMarks.'</td>';
                             $table .= '<td class="data_center avg">'.$avgPassMarks.'</td>';
                             $table .= '<td class="data_center avg" '.$avgMarks.'>'.$avgMarks.'</td>';
-                            $table .= '<td class="data_center avg">&nbsp;</td>';
                             
                 $table .= '</tr>'; // subject send
             }
@@ -8105,8 +8099,7 @@ private function buildDisciplineTable($decipline_data,$both_term)
 
             $table .='<td class="data_center grandAvg"><b>'.$grandAvgOut.'<b></td>
             <td class="data_center grandAvg"><b>'.$grandAvgPass.'<b></td>
-            <td class="data_center grandAvg"><b>'.$grandAvgObt.'<b></td>
-            <td class="data_center grandAvg"><b>&nbsp;<b></td>';
+            <td class="data_center grandAvg"><b>'.$grandAvgObt.'<b></td>';
             $table .='</tr>';
             
             // PERCENTAGE
@@ -8135,8 +8128,7 @@ private function buildDisciplineTable($decipline_data,$both_term)
 
             $table .='<td class="data_center grandAvg"><b>&nbsp;<b></td>
             <td class="data_center grandAvg"><b>&nbsp;<b></td>
-            <td class="data_center grandAvg"><b>'.$avgPer.'<b></td>
-            <td class="data_center grandAvg"><b>&nbsp;<b></td>';
+            <td class="data_center grandAvg"><b>'.$avgPer.'<b></td>';
             $table .='</tr>';
             // other table rows like grand total, conduct, applictaion,remarks
             $avgrankArr = $this->getRank($standard_id,$stuData['section_id'],$PASSING_MARKS,'');
@@ -8171,7 +8163,7 @@ private function buildDisciplineTable($decipline_data,$both_term)
                     $table .='<td>'.$conduct.'</td>';
                 }
             }
-            $table .='<td colspan="6" style="text-align:right"><b>Good</b></td>
+            $table .='<td colspan="5" style="text-align:right"><b>Good</b></td>
             </tr>';
 
             $table .='<tr>
@@ -8186,7 +8178,7 @@ private function buildDisciplineTable($decipline_data,$both_term)
                     $table .='<td>'.$conduct.'</td>';
                 }
             }
-            $table .='<td colspan="6" style="text-align:right"><b>'.$appText.'</b></td>
+            $table .='<td colspan="5" style="text-align:right"><b>'.$appText.'</b></td>
             </tr>';
 
             $table .='<tr>
@@ -8201,7 +8193,7 @@ private function buildDisciplineTable($decipline_data,$both_term)
                     $table .='<td>'.$conduct.'</td>';
                 }
             }
-            $table .='<td colspan="6" style="text-align:right"><b>'.$passText.'</b></td>
+            $table .='<td colspan="5" style="text-align:right"><b>'.$passText.'</b></td>
             </tr>';
         
             $table .= '</tbody>
@@ -8262,7 +8254,7 @@ private function buildDisciplineTable($decipline_data,$both_term)
                      }
          
                  $table .= '<th colspan="2" class="data_center"><b>Annual</b></th>
-                 <th colspan="4" class="data_center"><b>Average Performance</b></th>
+                 <th colspan="3" class="data_center"><b>Average Performance</b></th>
                  </tr>
                  <tr>';
          
@@ -8276,7 +8268,6 @@ private function buildDisciplineTable($decipline_data,$both_term)
                  <th class="data_center avg avg"><b>Out Of</b></th>
                  <th class="data_center avg"><b>Passing</b></th>
                  <th class="data_center avg"><b>Obtained</b></th>
-                 <th class="data_center avg"><b>Cond. By</b></th>
                  </tr>
              </thead>
              <tbody>';
@@ -8359,7 +8350,6 @@ private function buildDisciplineTable($decipline_data,$both_term)
                             $table .= '<td class="data_center avg" 100>'.$avgOutMarks.'</td>';
                             $table .= '<td class="data_center avg">'.$avgPassMarks.'</td>';
                             $table .= '<td class="data_center avg" '.$avgMarks.'>'.$avgMarks.'</td>';
-                            $table .= '<td class="data_center avg">&nbsp;</td>';
                             
                 $table .= '</tr>'; // subject send
             }
@@ -8379,8 +8369,7 @@ private function buildDisciplineTable($decipline_data,$both_term)
 
             $table .='<td class="data_center grandAvg"><b>'.$grandAvgOut.'<b></td>
             <td class="data_center grandAvg"><b>'.$grandAvgPass.'<b></td>
-            <td class="data_center grandAvg"><b>'.$grandAvgObt.'<b></td>
-            <td class="data_center grandAvg"><b>&nbsp;<b></td>';
+            <td class="data_center grandAvg"><b>'.$grandAvgObt.'<b></td>';
             $table .='</tr>';
             
             // PERCENTAGE
@@ -8409,8 +8398,7 @@ private function buildDisciplineTable($decipline_data,$both_term)
 
             $table .='<td class="data_center grandAvg"><b>&nbsp;<b></td>
             <td class="data_center grandAvg"><b>&nbsp;<b></td>
-            <td class="data_center grandAvg"><b>'.$avgPer.'<b></td>
-            <td class="data_center grandAvg"><b>&nbsp;<b></td>';
+            <td class="data_center grandAvg"><b>'.$avgPer.'<b></td>';
             $table .='</tr>';
             // other table rows like grand total, conduct, applictaion,remarks
             $avgrankArr = $this->getRank($standard_id,$stuData['section_id'],$PASSING_MARKS,'');
@@ -8445,7 +8433,7 @@ private function buildDisciplineTable($decipline_data,$both_term)
                     $table .='<td>'.$conduct.'</td>';
                 }
             }
-            $table .='<td colspan="6" style="text-align:right"><b>Good</b></td>
+            $table .='<td colspan="5" style="text-align:right"><b>Good</b></td>
             </tr>';
 
             $table .='<tr>
@@ -8460,7 +8448,7 @@ private function buildDisciplineTable($decipline_data,$both_term)
                     $table .='<td>'.$conduct.'</td>';
                 }
             }
-            $table .='<td colspan="6" style="text-align:right"><b>'.$appText.'</b></td>
+            $table .='<td colspan="5" style="text-align:right"><b>'.$appText.'</b></td>
             </tr>';
 
             $table .='<tr>
@@ -8475,7 +8463,7 @@ private function buildDisciplineTable($decipline_data,$both_term)
                     $table .='<td>'.$conduct.'</td>';
                 }
             }
-            $table .='<td colspan="6" style="text-align:right"><b>'.$passText.'</b></td>
+            $table .='<td colspan="5" style="text-align:right"><b>'.$passText.'</b></td>
             </tr>';
         
             $table .= '</tbody>

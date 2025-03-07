@@ -2466,4 +2466,59 @@ class AJAXController extends Controller
 
         return $dataList;
     }
+
+    // Hills Nurser HPC PDF
+    public function getHillsHPCPDF(Request $request)
+    {
+    //    echo "<pre>";print_r($request->all());exit;
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+        $studentHtml = $request->studentHtml;
+        if(!isset($studentHtml)){
+            return response()->json(['status_code'=>0,'message'=>'Failed to Find Student Data']);
+        }
+        $css_name = "https://" . $_SERVER['SERVER_NAME'];
+        $result_css = '<link rel="stylesheet" href="' . $css_name . '/css/hpc_result.css" />';
+            $dom = '<!DOCTYPE html>
+                    <html>
+                        <head>
+                           <title></title>
+                           <meta charset="UTF-8">
+                           <meta name="viewport" content="width=erpice-width, initial-scale=1.0">
+                          '.$result_css.'
+                           </head>
+                        <body>';
+                        foreach ($studentHtml as $key => $value) {
+                            $dom .= '<div>' . $value . '</div>';
+                            
+                            // Add page break only if it's NOT the last item
+                            if ($key !== array_key_last($studentHtml)) {
+                                $dom .= '<div style="page-break-after:always;"></div>';
+                            }
+                        }
+                        
+                        $dom .= ' </body>
+                    </html>';
+
+            $save_path=$_SERVER['DOCUMENT_ROOT'] . 'storage/test_PDF';
+          
+            $CUR_TIME = date('Ymd');
+            $html_filename = $sub_institute_id . '_' . $CUR_TIME . ".html";
+            $pdf_filename = $sub_institute_id . '_' . $CUR_TIME . ".pdf";
+
+            $html_file_path = $save_path . '/' . $html_filename;
+            $pdf_file_path = $save_path . '/' . $pdf_filename;
+
+            file_put_contents($html_file_path, $dom);
+
+            htmlToPDFHills($html_file_path, $pdf_file_path);
+            $PDF_path_for_open = "https://" . $_SERVER['HTTP_HOST'] . '/storage/test_PDF/' . $pdf_filename;
+
+            // unlink($html_file_path);
+            // unlink($pdf_file_path);
+
+            return $PDF_path_for_open;
+
+    }
+
 }
