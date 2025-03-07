@@ -125,6 +125,14 @@ class bulkStudentController extends Controller
             $tblcustom_fields['student_quota']['name'] = get_string('studentquota','request');
             $tblcustom_fields['student_quota']['type'] = 'dropdown';
         }
+        if($sub_institute_id == 195)
+        {
+            $tblcustom_fields['student_height']['name'] = 'Student Height';
+            $tblcustom_fields['student_height']['type'] = 'textbox';
+
+            $tblcustom_fields['student_weight']['name'] = 'Student Weight';
+            $tblcustom_fields['student_weight']['type'] = 'textbox';
+        }
         $tblcustoms = tblcustomfieldsModel::select(['field_name', 'field_label', 'field_type'])
             ->where(["status" => "1", "table_name" => "tblstudent"])
             ->whereRaw('(sub_institute_id = ' . $sub_institute_id . ' OR common_to_all = 1)')
@@ -253,6 +261,8 @@ class bulkStudentController extends Controller
             'tblstudent_enrollment.grade_id as grade',
             'tblstudent_enrollment.roll_no as roll_no',
             'tblstudent.id as id',
+            'student_height_weight.height as student_height',
+            'student_height_weight.weight as student_weight',
         ];
         //$header = array('student_name' => 'Student Name');
         $header = [
@@ -275,7 +285,7 @@ class bulkStudentController extends Controller
         $keyQuotes = '';
 
         foreach ($request->input('dynamicFields') as $key => $value) {
-            if ($value != 'standard' && $value != 'grade' && $value != 'division' && $value != 'roll_no') {
+            if ($value != 'standard' && $value != 'grade' && $value != 'division' && $value != 'roll_no' && $value != 'student_height' && $value != 'student_weight') {
                 $array[] = $value;
             }
             $value1 = str_replace($searchArr, $replaceArr, $value);
@@ -323,6 +333,10 @@ class bulkStudentController extends Controller
             ->leftjoin("fees_collect", function ($join) {
                 $join->on("fees_collect.sub_institute_id", "=", "tblstudent_enrollment.sub_institute_id")
                     ->on("fees_collect.student_id", "=", "tblstudent_enrollment.student_id");
+            })
+            ->leftjoin("student_height_weight", function ($join) {
+                $join->on("student_height_weight.sub_institute_id", "=", "tblstudent_enrollment.sub_institute_id")
+                    ->on("student_height_weight.student_id", "=", "tblstudent_enrollment.student_id");
             })
             ->where($extraSearchArray)
             ->whereRaw('tblstudent_enrollment.end_date is NULL')
@@ -390,6 +404,7 @@ class bulkStudentController extends Controller
         
         $type = $request->input('type');
         $syear = $request->session()->get('syear');
+        $user_id = $request->session()->get('user_id');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $values = $request->post('values');
         $file = $request->file('values');    
@@ -406,11 +421,13 @@ class bulkStudentController extends Controller
             // Create a new file and put the data in it
             Storage::put($fileName, $fileData);
         }
+        $healthData = array();
 
         foreach ($values as $key => $value) {
 
             $value['id'] = $key;
             $studentEnrollment = array();
+
             if (isset($value['standard'])) {
                 $studentEnrollment['standard_id'] = $value['standard'];
             }
@@ -446,8 +463,40 @@ class bulkStudentController extends Controller
 
             $this->updateData($value);
 
+            if (isset($value['student_height'])) {
+                $healthData[$key]['student_height'] = $value['student_height'];
+            }
+            if (isset($value['student_weight'])) {
+                $healthData[$key]['student_weight'] = $value['student_weight'];
+            }
+
         }    
-        
+        // added on 2025-03-07 starts
+        if(!empty($healthData)){
+            foreach ($healthData as $student_id =>$val) {
+               $check = DB::table('student_height_weight')->where(['sub_institute_id'=>$sub_institute_id
+               ,'syear'=>$syear,'student_id'=>$student_id])->first();
+
+               if(!empty($check) && isset($check->student_id)){
+                DB::table('student_height_weight')->where(['sub_institute_id'=>$sub_institute_id
+                ,'syear'=>$syear,'student_id'=>$student_id])->update([
+                    'height'=>$val['student_height'],
+                    'weight'=>$val['student_weight']
+                ]);
+               }else{
+                DB::table('student_height_weight')->insert([
+                    'height'=>$val['student_height'],
+                    'weight'=>$val['student_weight'],
+                    'sub_institute_id'=>$sub_institute_id,
+                    'syear'=>$syear,
+                    'student_id'=>$student_id,
+                    'created_on'=>now(),
+                    'created_by'=>$user_id,
+                ]);
+               }
+            }
+        }
+        // added on 2025-03-07 ends
 
         if (isset($file)) {
             foreach ($file as $student_id => $req) {
@@ -543,7 +592,7 @@ class bulkStudentController extends Controller
         // unset($newRequest['student_image']);
         $finalArray = array();
         foreach ($newRequest as $key => $value) {
-            if ($key != '_method' && $key != '_token' && $key != 'submit' && $key != 'grade' && $key != 'standard' && $key != 'division' && $key != 'student_quota' && $key != 'id' && $key != 'house' && $key != 'updateData'  && $key != 'roll_no') {
+            if ($key != '_method' && $key != '_token' && $key != 'submit' && $key != 'grade' && $key != 'standard' && $key != 'division' && $key != 'student_quota' && $key != 'id' && $key != 'house' && $key != 'updateData'  && $key != 'roll_no' && $key != 'student_height' && $key != 'student_weight') {
                 if (is_array($value)) {
                     $value = implode(",", $value);
                 }
