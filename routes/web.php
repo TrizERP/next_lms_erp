@@ -626,3 +626,4 @@ Route::get('/get-fields', function (Request $request) {
 });
 
 Route::get('/migrate-data', [DataMigrationController::class, 'migrateDataToNeo4j']);
+Route::post('getHillsHPCPDF', [AJAXController::class, 'getHillsHPCPDF'])->name('getHillsHPCPDF');
