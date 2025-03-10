@@ -228,7 +228,7 @@ document.addEventListener("DOMContentLoaded", function () {
             }
 
             // Save as Excel file
-            XLSX.writeFile(wb, "report.xlsx");
+            XLSX.writeFile(wb, "date wise fees report.xlsx");
         });
 
 });
