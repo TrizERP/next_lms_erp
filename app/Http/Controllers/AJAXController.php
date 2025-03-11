@@ -240,9 +240,10 @@ class AJAXController extends Controller
         $getClass=DB::table('class_teacher')->whereRaw('sub_institute_id='.$sub_institute_id.' and teacher_id ='.$user_id.' and syear="'.$syear.'"')->first();
 
         $query = DB::table('standard');
-        $query->where("grade_id", $request->grade_id);
+        // $query->where("grade_id", $request->grade_id);
 
         if (count($explode) > 1) {
+            $query->whereIn("grade_id", $explode);
             //START Check for class teacher assigned standards
             $classTeacherStdArr = session()->get('classTeacherStdArr');
 
@@ -279,7 +280,7 @@ class AJAXController extends Controller
 
         } else {
 
-
+            $query->where("grade_id", $request->grade_id);
             //START Check for class teacher assigned standards
             $classTeacherStdArr = session()->get('classTeacherStdArr');
             if (is_array($classTeacherStdArr)) {
@@ -2511,11 +2512,14 @@ class AJAXController extends Controller
                            <title></title>
                            <meta charset="UTF-8">
                            <meta name="viewport" content="width=erpice-width, initial-scale=1.0">
+                           <link href="http://fonts.googleapis.com/css?family=Jolly+Lodger" rel="stylesheet" type="text/css">
+
                           '.$result_css.'
                            </head>
+                          
                         <body>';
                         foreach ($studentHtml as $key => $value) {
-                            $dom .= '<div>' . $value . '</div>';
+                            $dom .= '<div>' .$value . '</div>';
                             
                             // Add page break only if it's NOT the last item
                             if ($key !== array_key_last($studentHtml)) {
@@ -2525,17 +2529,20 @@ class AJAXController extends Controller
                         
                         $dom .= ' </body>
                     </html>';
+                    $html = html_entity_decode($dom, ENT_QUOTES, 'UTF-8');
 
             $save_path=$_SERVER['DOCUMENT_ROOT'] . 'storage/test_PDF';
           
-            $CUR_TIME = date('Ymd');
+            // return $dom;
+
+            $CUR_TIME = date('YmdHis');
             $html_filename = $sub_institute_id . '_' . $CUR_TIME . ".html";
             $pdf_filename = $sub_institute_id . '_' . $CUR_TIME . ".pdf";
 
             $html_file_path = $save_path . '/' . $html_filename;
             $pdf_file_path = $save_path . '/' . $pdf_filename;
 
-            file_put_contents($html_file_path, $dom);
+            file_put_contents($html_file_path, $html);
 
             htmlToPDFHills($html_file_path, $pdf_file_path);
             $PDF_path_for_open = "https://" . $_SERVER['HTTP_HOST'] . '/storage/test_PDF/' . $pdf_filename;
