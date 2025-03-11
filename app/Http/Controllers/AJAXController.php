@@ -240,9 +240,10 @@ class AJAXController extends Controller
         $getClass=DB::table('class_teacher')->whereRaw('sub_institute_id='.$sub_institute_id.' and teacher_id ='.$user_id.' and syear="'.$syear.'"')->first();
 
         $query = DB::table('standard');
-        $query->where("grade_id", $request->grade_id);
+        // $query->where("grade_id", $request->grade_id);
 
         if (count($explode) > 1) {
+            $query->whereIn("grade_id", $explode);
             //START Check for class teacher assigned standards
             $classTeacherStdArr = session()->get('classTeacherStdArr');
 
@@ -279,7 +280,7 @@ class AJAXController extends Controller
 
         } else {
 
-
+            $query->where("grade_id", $request->grade_id);
             //START Check for class teacher assigned standards
             $classTeacherStdArr = session()->get('classTeacherStdArr');
             if (is_array($classTeacherStdArr)) {
@@ -2528,7 +2529,7 @@ class AJAXController extends Controller
 
             $save_path=$_SERVER['DOCUMENT_ROOT'] . 'storage/test_PDF';
           
-            $CUR_TIME = date('Ymd');
+            $CUR_TIME = date('YmdHis');
             $html_filename = $sub_institute_id . '_' . $CUR_TIME . ".html";
             $pdf_filename = $sub_institute_id . '_' . $CUR_TIME . ".pdf";
 
@@ -2540,7 +2541,7 @@ class AJAXController extends Controller
             htmlToPDFHills($html_file_path, $pdf_file_path);
             $PDF_path_for_open = "https://" . $_SERVER['HTTP_HOST'] . '/storage/test_PDF/' . $pdf_filename;
 
-            // unlink($html_file_path);
+            unlink($html_file_path);
             // unlink($pdf_file_path);
 
             return $PDF_path_for_open;

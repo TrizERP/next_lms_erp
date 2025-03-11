@@ -1753,7 +1753,11 @@ class PayrollController extends Controller
 
                 $checkDeduction = DB::table('hrms_emp_payroll_deduction')->where('employee_id',$request->emp_id)->where(['sub_institute_id'=>$sub_institute_id,'month'=>$request->month,'year'=>$request->year,'deduction_type'=>$payrollType->id])->first();
                 // echo "<pre>";print_r($checkDeduction);exit;
-                $payrollAmount=$employeeSalaryDetails[$payrollType->id];
+                if($request->month=="Feb" && $payrollType->id==2){
+                    $payrollAmount=300;
+                }else{
+                    $payrollAmount=$employeeSalaryDetails[$payrollType->id];
+                }
                 if(isset($checkDeduction->deduction_amount)){
                     $payrollAmount = ($payrollAmount + $checkDeduction->deduction_amount);
                 }
