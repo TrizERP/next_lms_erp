@@ -345,9 +345,9 @@ class feesReportController extends Controller
                 ->where('se.syear', $syear)
                 ->where('fc.syear', $syear)
                 ->where('s.sub_institute_id', $sub_institute_id)
-                ->when($request->has('institute'),function($q) use($request){
-                    $q->where('fc.bank_name',$request->institute);
-                })
+                // ->when($request->has('institute'),function($q) use($request){
+                //     $q->where('fc.bank_name',$request->institute);
+                // })
                 ->when($request->has('payment_mode'),function($q) use($request){
                     $q->where('fc.payment_mode',$request->payment_mode);
                 })

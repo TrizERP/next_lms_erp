@@ -16,11 +16,12 @@
             $to_date = $data['selToDate'];
         }
         @endphp
+        <!-- controller is fees/fees_report/feesReportController  -->
         <form action="{{route('fees_report_datewise.index')}}" method="get">
             @csrf
             <div class="card">
                 <div class="row">
-                    <div class="col-md-3">
+                    {{-- <div class="col-md-3">
                         <label for="">Select Institute</label>
                         <select name="institute" id="institute" class="form-control" required>
                             <option value="">Select Institute</option>
@@ -28,7 +29,7 @@
                          <option value="{{$institute}}" @if($data['selInstitute']==$institute) selected @endif>{{$institute}}</option>
                         @endforeach
                         </select>
-                    </div>
+                    </div> --}}
                     <div class="col-md-3">
                         <label for="">From Date</label>
                         <input type="text" name="from_date" id="from_date" class="form-control mydatepicker" value="{{$from_date}}" required>
@@ -65,7 +66,7 @@
                 </div>
             </div>
         </form>
-        @if(isset($data['datewiseData']))
+        @if(isset($data['datewiseData']) && !empty($data['datewiseData']))
         <div class="card">
             <div class="row" id="printDiv" style="width:100%">
             @php $grandTotal = 0; @endphp
