@@ -35,6 +35,7 @@
                                 <option value="overall_report">Overall Report</option>
                                 <option value="marks_report">Marks Report</option>
                                 <option value="weightage_conversion_report">Weightage Conversion Report</option>
+                                <option value="created_exam_report">Created Exam Report</option>
                             </select>
                         </div>
 
@@ -91,6 +92,14 @@
                             <select name="exam_create" id="exam_create" class="form-control">
                                 <option value="">Select</option>
                               
+                            </select>
+                        </div>
+
+                        <div class="col-md-4 form-group" id="totalField">
+                            <label>With Total</label>
+                            <select name="totalField" class="form-control">
+                               <option value="Yes">Yes</option>
+                               <option value="No">No</option>
                             </select>
                         </div>
 
@@ -208,6 +217,9 @@
             document.getElementById('for_exam_type').style.display = 'none';
             document.getElementById('for_from_date').style.display = 'block';
             document.getElementById('for_to_date').style.display = 'block';
+            document.getElementById('subject').style.display = 'none';
+            document.getElementById('totalField').style.display = 'none';
+            
             $('#subject').prop('required', false);
         }
 
@@ -218,6 +230,8 @@
             document.getElementById('for_exam_type').style.display = 'block';
             document.getElementById('for_from_date').style.display = 'block';
             document.getElementById('for_to_date').style.display = 'block';
+            document.getElementById('subject').style.display = 'none';
+            document.getElementById('totalField').style.display = 'none';
             $('#subject').prop('required', true);
         }
 
@@ -228,6 +242,8 @@
             document.getElementById('for_exam_type').style.display = 'block';
             document.getElementById('for_from_date').style.display = 'none';
             document.getElementById('for_to_date').style.display = 'none';
+            document.getElementById('subject').style.display = 'none';
+            document.getElementById('totalField').style.display = 'none';
             $('#subject').prop('required', false);
         }
 
@@ -238,6 +254,8 @@
             document.getElementById('for_exam_type').style.display = 'block';
             document.getElementById('for_from_date').style.display = 'none';
             document.getElementById('for_to_date').style.display = 'none';
+            document.getElementById('subject').style.display = 'none';
+            document.getElementById('totalField').style.display = 'none';
             $('#subjects').prop('required', false);
         }
 
@@ -248,6 +266,8 @@
             document.getElementById('for_exam_type').style.display = 'block';
             document.getElementById('for_from_date').style.display = 'none';
             document.getElementById('for_to_date').style.display = 'none';
+            document.getElementById('subject').style.display = 'none';
+            document.getElementById('totalField').style.display = 'none';
             $('#subjects').prop('required', false);
         }
 
@@ -258,7 +278,9 @@
             document.getElementById('for_exam_type').style.display = 'block';
             document.getElementById('for_from_date').style.display = 'block';
             document.getElementById('for_to_date').style.display = 'block';
+            document.getElementById('subject').style.display = 'none';
             document.getElementById('for_additional_subjects').style.display = 'block';
+            document.getElementById('totalField').style.display = 'none';
             $('#additional_subjects').prop('required', true);
         }
 
@@ -269,8 +291,22 @@
             document.getElementById('for_exam_type').style.display = 'none';
             document.getElementById('for_from_date').style.display = 'none';
             document.getElementById('for_to_date').style.display = 'none';
+            document.getElementById('subject').style.display = 'none';
             document.getElementById('for_additional_subjects').style.display = 'none';
+            document.getElementById('totalField').style.display = 'none';
             $('#subject').prop('required', true);
+        }
+
+        if(report_val == 'created_exam_report'){
+            document.getElementById('for_top_students').style.display = 'none';
+            document.getElementById('for_subject').style.display = 'none';
+            document.getElementById('for_roll_no').style.display = 'none';
+            document.getElementById('for_exam_type').style.display = 'block';
+            document.getElementById('for_from_date').style.display = 'none';
+            document.getElementById('for_to_date').style.display = 'none';
+            document.getElementById('subject').style.display = 'none';
+            document.getElementById('for_additional_subjects').style.display = 'none';
+            document.getElementById('totalField').style.display = 'block';
         }
 
         if (report_val == '') {
@@ -280,7 +316,9 @@
             document.getElementById('for_exam_type').style.display = 'none';
             document.getElementById('for_from_date').style.display = 'none';
             document.getElementById('for_to_date').style.display = 'none';
+            document.getElementById('subject').style.display = 'none';
             document.getElementById('for_additional_subjects').style.display = 'none';
+            document.getElementById('totalField').style.display = 'none';
             $('#subject').prop('required', false);
         }
     }

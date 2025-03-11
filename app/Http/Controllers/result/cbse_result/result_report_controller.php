@@ -735,6 +735,73 @@ class result_report_controller extends Controller
 
             return is_mobile($type, "result/result_report/weightage_conversion_report_show", $data, "view");
         }
+        // 2025-03-10 
+        if ($report_of == 'created_exam_report') {
+                // echo "<pre>";print_r($request->all());exit;
+
+                $all_student = SearchStudent($_REQUEST['grade'], $_REQUEST['standard'], $_REQUEST['division']);
+
+                $termData = DB::table("academic_year")
+                ->where([
+                    "sub_institute_id" => $sub_institute_id,
+                    "syear" => $syear,
+                ])
+                ->pluck("title", "term_id");
+
+                $getCreatedExams = DB::table('result_exam_master as rem')
+                ->join('result_create_exam as rce',function($query) use($request,$sub_institute_id){
+                    $query->on('rce.exam_id','=','rem.Id')->where(['rce.report_card_status'=>'Y','rce.exam_id'=>$request->exam_type,'rce.sub_institute_id'=>$sub_institute_id]);
+                })
+                ->join('sub_std_map as ssm','rce.subject_id','=','ssm.subject_id')
+                ->selectRaw('rce.*,rem.*,ssm.display_name as subject_name')
+                ->where(['rem.id'=>$request->exam_type,'rem.SubInstituteId'=>$sub_institute_id,'rce.syear'=>$syear])
+                ->when($request->has('exam_create') && $request->exam_create!='',function($q) use($request){
+                    $q->where('rce.title',$request->exam_create);
+                })
+                ->orderByRaw('rce.sort_order')
+                ->groupBy('rce.id')
+                ->get()->toArray();
+
+                $subjectWiseExams = [];
+                foreach ($getCreatedExams as $key => $value) {
+                    $subjectWiseExams[$value->subject_name][] = $value;
+                }
+                // echo "<pre>";print_r($subjectWiseExams);exit;
+                $studentData = [];
+                foreach ($all_student as $key => $value) {
+                   $studentData[$value['id']]=$value;
+                   foreach ($getCreatedExams as $key2 => $value2) {
+                        $getMarks = DB::table('result_marks as rm')
+                        ->where(['rm.sub_institute_id' => $sub_institute_id, 'rm.student_id' => $value['id'],'exam_id'=>$value2->id])->first();
+
+                        if(isset($getMarks->is_absent) && in_array($getMarks->is_absent,['AB','N.A.','EX'])){
+                            $marks = $getMarks->is_absent;
+                            $outof = $value2->points;
+                        }
+                        elseif(isset($getMarks->points)){
+                            $marks = $getMarks->points;
+                            $outof = $value2->points;
+                        }
+                        else{
+                            $marks = '0.00';
+                            $outof = $value2->points ?? '0.00';
+                        }
+                        $studentData[$value['id']][$value2->subject_name][$value2->id]['outof'] = $outof;
+                        $studentData[$value['id']][$value2->subject_name][$value2->id]['marks'] = $marks;
+                    }
+                  
+                }
+
+                // echo "<pre>";print_r($studentData);exit;
+                $data['term_id'] = $request->term;
+                $data['examType'] = $request->exam_type;
+                $data['exam_create'] = $request->exam_create;
+                $data['totalField']  = $request->totalField;
+                $data['termData'] = $termData;
+                $data['createdExams'] = $subjectWiseExams;
+                $data['studentData'] = $studentData;
+                return is_mobile($type, "result/result_report/createdExamReport", $data, "view");
+        }
     }
 
     public function getMarkwise(
