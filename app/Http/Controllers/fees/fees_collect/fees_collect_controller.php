@@ -1791,18 +1791,17 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
 
             // 2025-01-20 by uma
             $panCardTag = '';
-            $ssmission_note = $thankFull = 'style="display:none;"';
+            $ssmission_note = $thankFull = $parent_pan_display = $foodDisplay = 'style="display:none;"';
+            $regularDisplay = 'style="display:block;"';
             $receiptType=null;  // differentiate ssmission reciepts 10-02-2025
             if($receipt_book_arr->receipt_id==2 && $sub_institute_id==76){
                 $panNo = isset($_REQUEST['pan_card']) ? $_REQUEST['pan_card'] : '-';
                 
                 $panCardTag .=  'PAN : <label><b>'.$panNo.'</tr><tr>';
-                // commented on 21-02-2025
-                // $ssmission_note = 'Income Tax Exemtion U/S 80G(5) No.SRT/CIT-III/Tech/80G(5)/(05/1)
-                // 2008-09.<br>Dt.04-06-2008 Valid from 01/04/2008 to 31/03/2011 to and onwards';
+                $ssmission_note = $thankFull = $parent_pan_display = 'style="display:block;"';
+                $foodDisplay = 'style="display:end;"';
+                $regularDisplay = 'style="display:none;"';
 
-                // $thankFull .=  'Has been Thanksfully Received by Shri Swaminarayan Mission';
-                $ssmission_note = $thankFull = 'style="display:block;"';
                 $receiptType = "MISSION";
             }
             // differentiate ssmission reciepts 10-02-2025
@@ -1811,6 +1810,10 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             }
 
             $html_content = str_replace(htmlspecialchars("<<parent_pan_card>>"), $panCardTag, $html_content);
+            $html_content = str_replace(htmlspecialchars("<<parent_pan_display>>"), $parent_pan_display, $html_content); // added on 12-03-2025
+            $html_content = str_replace(htmlspecialchars("<<for_regular_fees>>"), $regularDisplay, $html_content); // added on 12-03-2025
+            $html_content = str_replace(htmlspecialchars("<<for_food_fees>>"), $foodDisplay, $html_content); // added on 12-03-2025
+            
             $html_content = str_replace(htmlspecialchars("<<ssmission_note>>"), $ssmission_note, $html_content);
             $html_content = str_replace(htmlspecialchars("<<ssmission_thank_full>>"), $thankFull, $html_content);
 
