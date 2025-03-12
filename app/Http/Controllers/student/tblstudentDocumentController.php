@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use function App\Helpers\is_mobile;
+use Illuminate\Support\Facades\Session;
 
 class tblstudentDocumentController extends Controller
 {
@@ -42,7 +43,7 @@ class tblstudentDocumentController extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $type = $request->type;
         
-        if($type=="API"){
+        if(in_array($type,["API","JSON"])){
             $sub_institute_id = $request->sub_institute_id;
         }
 
@@ -112,8 +113,34 @@ class tblstudentDocumentController extends Controller
      * @param  int  $id
      * @return void
      */
-    public function destroy($id)
+    public function destroy(Request $request,$id)
     {
         //
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $type = $request->type;
+        
+        if(in_array($type,["API","JSON"])){
+            $sub_institute_id = $request->sub_institute_id;
+        }
+
+       $record = tblstudentDocumentModel::find($id);
+       $file_path = 'public/student_document/' . $record->file_name;
+       if (Storage::disk('digitalocean')->exists($file_path)) {
+           Storage::disk('digitalocean')->delete($file_path);
+           if (!Storage::disk('digitalocean')->exists($file_path)) {
+           }   
+       } 
+        // Delete the record
+        $record->delete();
+
+        if($record){
+            Session::flash('status', 1); 
+            Session::flash('message', 'Document Deleted Successfully!'); 
+        }else{
+            Session::flash('status', 0); 
+            Session::flash('message', 'Failed to Delete Document!'); 
+        }
+        return redirect()->back();
+
     }
 }
