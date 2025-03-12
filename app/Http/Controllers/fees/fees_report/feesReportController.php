@@ -11,6 +11,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\FeeMonthId;
 use function App\Helpers\is_mobile;
+use Illuminate\Support\Facades\Schema;
+use App\Models\fees\fees_title\fees_title;
 use GenTux\Jwt\GetsJwtToken;
 use Carbon\Carbon;
 
@@ -254,5 +256,174 @@ class feesReportController extends Controller
         // echo "<pre>";print_r($res['fees_data']);exit;
         return is_mobile($type, "fees/fees_report/index", $res, "view");
     }
+
+    // added new report for ssmission
+    public function datewiseReportIndex(Request $request){
+        $type = $request->input("type");
+        $from_date = $request->input('from_date');
+        $to_date = $request->input('to_date');
+        $payment_mode = $request->input('payment_mode');
+        $syear = $request->session()->get('syear');
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        
+        if(in_array($type,["API","JSON"])){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');            
+        }
+
+        $datewiseData = [];
+
+        if($request->has('search')){
+            // echo "<pre>";print_r($request->all());exit;
+            $fees_head_sum = "";
+        
+            $fees_columns = "";
+            $other_columns = "";
+            $columns = "";  
+            foreach ($request->fees_head as $key => $title) {
+                if($title!=''){
+                    $feesTitleColumnExistsInCollect = Schema::hasColumn('fees_collect', $title);
+                    $feesTitleColumnExistsInPaidOther = Schema::hasColumn('fees_paid_other', $title);
+                    $columnAlias = is_numeric($title) ? $title : $title;
+        
+                    if ($feesTitleColumnExistsInCollect) {
+                        $fees_columns .= "sum(fc.`". $title . "`) as total_" . $title . ",";
+                        if($title == "tution_fee"){
+                            $columns .= "IFNULL(SUM(total_" . $title . "),0) as total_" . $title . ",";
+                        }else{
+                            $columns .= "IFNULL(SUM(total_" . $title . "),0) as total_" . $title . ",";
+                        }
+                    } else {
+                        $fees_columns .= "NULL as total_" . $columnAlias . ",";
+                    }
+        
+                    if ($feesTitleColumnExistsInPaidOther) {
+                        $other_columns .="sum(fp.`". $title . "`) as  total_" . $title . ",";
+                        $columns .="IFNULL(SUM(`total_" . $title . "`),0) as  total_" . $title . ",";
+                    } else {
+                        $other_columns .= "NULL as total_" . $columnAlias . ",";
+                    }
+                }
+            }
+            // echo "<pre>";print_r($feesTitleColumnExistsInCollect);exit;
+            // DB::enableQueryLog();
+            $fees_data = DB::table(function ($query)  use($fees_columns,$other_columns,$sub_institute_id,$syear,$request) {
+                $query->from('fees_collect as fc')
+                ->join('tblstudent as ts', function ($join) {
+                    $join->whereRaw('ts.id = fc.student_id AND ts.sub_institute_id = fc.sub_institute_id');
+                })->join('tblstudent_enrollment as se', function ($join) {
+                    $join->whereRaw('se.student_id = ts.id');
+                })->join('student_quota as sq', function ($join) {
+                    $join->whereRaw('sq.id = se.student_quota');
+                })->join('academic_section as a', function ($join) {
+                    $join->whereRaw('a.id = se.grade_id');
+                })->join('standard as s', function ($join) {
+                    $join->whereRaw('s.id = se.standard_id');
+                })->join('division as d', function ($join) {
+                    $join->whereRaw('d.id = se.section_id');
+                })->leftjoin('batch as b', function ($join) {
+                    $join->whereRaw('b.id = ts.studentbatch AND se.syear=b.syear');
+                })
+                ->leftJoin('tbluser as u',function($join){
+                    $join->on('fc.created_by', '=', 'u.id')->where('u.status',1); // 23-04-24 by uma
+                })
+                ->selectRaw("fc.id,fc.student_id,CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name) AS student_name,
+                    ts.enrollment_no,ts.admission_year,ts.mobile,ts.email,date_format(ts.dob,'%d-%m-%Y') AS dob,a.title AS section,
+                    s.name AS std_name,d.name AS div_name,sq.title AS stu_qouta, $fees_columns
+                    SUM(fc.fine) AS total_fine,SUM(fc.fees_discount) AS tot_disc,fc.receipt_no,sum(fc.amount) as total_amt,b.title as student_batch_name,date_format(fc.receiptdate,'%d-%m-%Y') AS receiptdate,fc.payment_mode,fc.cheque_bank_name,fc.bank_branch,fc.cheque_no,fc.cheque_date,fc.bank_name,concat_ws(' ',COALESCE(u.first_name,'-'),COALESCE(u.last_name,'-')) as user_name,fc.remarks")
+                ->where('se.syear', $syear)
+                ->where('fc.syear', $syear)
+                ->where('s.sub_institute_id', $sub_institute_id)
+                ->when($request->has('institute'),function($q) use($request){
+                    $q->where('fc.bank_name',$request->institute);
+                })
+                ->when($request->has('payment_mode'),function($q) use($request){
+                    $q->where('fc.payment_mode',$request->payment_mode);
+                })
+                ->when($request->has('from_date') && $request->has('to_date'),function($q) use($request){
+                    $q->whereBetween('fc.receiptdate',[$request->from_date,$request->to_date]);
+                })
+                ->where('fc.is_deleted','N')->groupBy(['fc.student_id', 'fc.receipt_no'])->orderBy('fc.receiptdate')
+                ->unionAll(function ($query)  use($other_columns,$sub_institute_id,$syear,$request){
+                    $query->selectRaw("fp.id,fp.student_id,CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name) AS student_name,
+                    ts.enrollment_no,ts.admission_year,ts.mobile,ts.email,date_format(ts.dob,'%d-%m-%Y') AS dob,a.title AS section,
+                    s.name AS std_name,d.name AS div_name,sq.title AS stu_qouta, $other_columns
+                    SUM(fp.fine) AS total_fine,SUM(fp.fees_discount) AS tot_disc,fp.reciept_id as receipt_no,sum(fp.actual_amountpaid) as total_amt,b.title as student_batch_name,date_format(fp.receiptdate,'%d-%m-%Y') AS receiptdate,fp.payment_mode,fp.bank_name AS cheque_bank_name,fp.bank_branch,fp.cheque_dd_no as cheque_no,fp.cheque_dd_date as cheque_date,'' as bank_name,concat_ws(' ',COALESCE(u.first_name,'-'),COALESCE(u.last_name,'-')) as user_name,fp.remarks")
+                        ->from('fees_paid_other as fp')
+                        ->join('tblstudent as ts', function ($join) {
+                            $join->whereRaw('ts.id = fp.student_id AND ts.sub_institute_id = fp.sub_institute_id');
+                        })->join('tblstudent_enrollment as se', function ($join) {
+                            $join->whereRaw('se.student_id = ts.id');
+                        })->join('student_quota as sq', function ($join) {
+                            $join->whereRaw('sq.id = se.student_quota');
+                        })->join('academic_section as a', function ($join) {
+                            $join->whereRaw('a.id = se.grade_id');
+                        })->join('standard as s', function ($join){
+                            $join->whereRaw('s.id = se.standard_id');
+                        })->join('division as d', function ($join) {
+                            $join->whereRaw('d.id = se.section_id');
+                        })->leftjoin('batch as b', function ($join) {
+                            $join->whereRaw('b.id = ts.studentbatch');
+                        })
+                        ->leftJoin('tbluser as u',function($join){
+                            $join->on('fp.created_by', '=', 'u.id')->where('u.status',1); // 23-04-24 by uma
+                        })
+                        ->where('se.syear', $syear)
+                        ->where('fp.syear', $syear)
+                        ->where('s.sub_institute_id', $sub_institute_id)
+                        ->when($request->has($request->payment_mode),function($q) use($request){
+                            $q->where('fp.payment_mode',$request->payment_mode);
+                        })
+                        ->when($request->has('from_date') && $request->has('to_date'),function($q) use($request){
+                            $q->whereBetween('fp.receiptdate',[$request->from_date,$request->to_date]);
+                        })
+                        ->where('fp.is_deleted','N')->groupBy(['fp.student_id','fp.reciept_id'])->orderBy('fp.receiptdate');
+                });
+            })
+            ->selectRaw("id,student_id,student_name,
+            enrollment_no,admission_year,mobile,email,dob,section,
+           std_name,div_name,stu_qouta, ".$columns."
+           SUM(total_fine) as total_fine,SUM(tot_disc) as tot_disc,receipt_no,sum(total_amt) as amount,student_batch_name,receiptdate,payment_mode,cheque_bank_name,bank_branch,cheque_no,cheque_date,bank_name as institute_type,user_name,remarks,STR_TO_DATE(receiptdate, '%d-%m-%Y') as formatted_receiptdate")
+            ->groupBy(['student_id','receiptdate','payment_mode','cheque_bank_name','cheque_no'])
+            ->orderBy('formatted_receiptdate')
+            ->get()->toArray();
+            // dd(DB::getQueryLog($fees_data));
+            // echo "<pre>";print_r($fees_data);exit;
+
+            foreach ($fees_data as $key => $value) {
+                $datewiseData[$value->receiptdate.'||'.$value->payment_mode][]=$value;
+            }
+            // echo "<pre>";print_r($datewiseData);exit;
+        }
+
+        $res['payment_mode']=['Cash','Cheque','DD','Online','NACH','UPI','Swipe1','Swipe2','Swipe3','POS'];
+        $res['institutes']=['SCHOOL','MISSION'];
+
+        $res['feesHead'] = fees_title::where(['sub_institute_id' => $sub_institute_id,'syear' => $syear])
+        ->orderBy('sort_order', 'asc') 
+        ->pluck('display_name', 'fees_title')
+        ->toArray();
+
+        $res['selInstitute'] = isset($request->institute) ? $request->institute : '';
+        $res['selPaymentMode'] = isset($request->payment_mode) ? $request->payment_mode : '';
+        $res['selfeesHead'] = isset($request->fees_head) ? $request->fees_head : [];
+
+        $res['selFromDate'] = isset($request->from_date) ? $request->from_date : now();
+        $res['selToDate'] = isset($request->to_date) ? $request->to_date : now();
+        $res['datewiseData'] = $datewiseData;
+
+        return is_mobile($type, "fees/fees_report/datewiseFeesReport", $res, "view");
+    } 
     
 }

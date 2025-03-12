@@ -131,6 +131,14 @@ datalist {
                     <strong>{{ $message }}</strong>
                 </div>
                 @endif
+
+                @if(Session::has('message'))
+                <div class="alert  @if(Session::has('status') && Session::get('message')==0)  alert-danger @else alert-success @endif alert-block">
+                <button type="button" class="close" data-dismiss="alert">×</button>
+                <strong>{{  Session::get('message') }}</strong>
+                </div>
+                @endif
+
             <div class="row">
                 <div class="col-lg-12 col-sm-12 col-xs-12">
                     <div class="sttabs tabs-style-linemove triz-verTab bg-white style2">
@@ -1284,6 +1292,9 @@ datalist {
                                                     <th>Document Title</th>
                                                     <th>Date</th>
                                                     <th>File Name</th>
+                                                    @if(session()->get('user_profile_name')=="Admin")
+                                                    <th>Action</th>
+                                                    @endif
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -1298,6 +1309,15 @@ datalist {
                                                     <td>{{$docdata['document_title']}}</td>
                                                     <td>{{$docdata['created_on']}}</td>
                                                     <td><a target="_blank" href="{{ Storage::disk('digitalocean')->url('public/student_document/'.$docdata['file_name'])}}">{{$docdata['file_name']}}</a></td>
+                                                    @if(session()->get('user_profile_name')=="Admin")
+                                                    <td>
+                                                        <form class="d-inline" action="{{ route('student_document.destroy',$docdata['id'])}}" method="post">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button class="btn btn-info btn-outline-danger" onclick="return confirmDelete();" type="submit"><i class="ti-trash"></i></button>
+                                                        </form>     
+                                                    </td>
+                                                    @endif
                                                 </tr>
                                             @php
                                             $j++;
