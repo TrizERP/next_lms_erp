@@ -138,12 +138,7 @@
 </style>
 <div id="page-wrapper">
 	<div class="container-fluid">
-		<div class="row bg-title">
-			<div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
-				<h4 class="page-title">Skill Library</h4>
-			</div>
-		</div>
-		
+	
 		@if ($sessionData = Session::get('data'))
         @if (isset($sessionData['status']))
             <div class="col-md-12 alert alert-{{ $sessionData['status'] == '1' ? 'success' : 'danger' }} alert-block">
@@ -152,6 +147,75 @@
             </div>
         @endif 
         @endif
+
+<div id="page-wrapper">
+    <div class="container-fluid">
+        <div class="card roundCard mb-4">
+          <div class="row justify-content-center" style="background-color: #ADDFFF">
+            <div class="col-md-2 mx-auto p-3">
+                <h4 class="page-title">Skill Library</h4>
+            </div>
+            <div class="col-md-4 mx-auto text-right p-3">  <!-- Or any other column size you need -->
+              <label for="mainCategory">Sector:</label>
+            <select class="form-select form-select-lg mb-3" id="mainCategory" onchange="updateSubcategory()">
+                <option value="">--Select Sector--</option>
+                <option value="Aerospace">Aerospace</option>
+                <option value="Accountancy">Accountancy</option>
+            </select>
+            </div>
+            <div class="col-md-6 mx-auto p-3">
+            <label for="subCategory">Sub-Sector:</label>
+            <select class="form-select form-select-lg mb-3" id="subCategory" onchange="updateSkills()">
+                <option value="">--Select Sub-Sector--</option>
+            </select>
+            </div>
+          </div>
+        </div>
+    </div>
+</div>  
+<script>
+        // Data mapping
+        const data = {
+            "Aerospace": {
+                "Staying Relevant": ["Adaptability", "Digital Fluency", "Global Perspective", "Learning Agility", "Self Management"],
+                "Thinking Critically": ["Creative Thinking", "Decision Making", "Problem Solving", "Sense Making", "Transdisciplinary Thinking"]
+            },
+            "Accountancy": {
+                "Assurance": ["Audit Frameworks", "Auditing and Assurance Standards", "Auditor Independence", "Engagement Completion and Reporting", "Engagement Execution", "Engagement Planning", "Engagement Quality Control", "Engagement Review"],
+                "Business Management": ["Benchmarking", "Business Acumen", "Business Continuity Management"]
+            }
+        };
+
+        function updateSubcategory() {
+            let mainCategory = document.getElementById("mainCategory").value;
+            let subCategoryDropdown = document.getElementById("subCategory");
+            let skillDropdown = document.getElementById("skill");
+
+            subCategoryDropdown.innerHTML = "<option value=''>--Select Sub-Sector--</option>";
+
+            if (mainCategory) {
+                for (let sub in data[mainCategory]) {
+                    let option = new Option(sub, sub);
+                    subCategoryDropdown.add(option);
+                }
+            }
+        }
+
+        function updateSkills() {
+            let mainCategory = document.getElementById("mainCategory").value;
+            let subCategory = document.getElementById("subCategory").value;
+            let skillDropdown = document.getElementById("skill");
+
+            skillDropdown.innerHTML = "<option value=''>--Select Skill--</option>";
+
+            if (mainCategory && subCategory) {
+                data[mainCategory][subCategory].forEach(skill => {
+                    let option = new Option(skill, skill);
+                    skillDropdown.add(option);
+                });
+            }
+        }
+    </script>
 
         		
         <!-- header card starts  -->
@@ -213,7 +277,7 @@
             buttons: [
                 {
                     extend: 'pdfHtml5',
-                    title: 'LMS Curriculum Report',
+                    title: 'Skill Report',
                     orientation: 'landscape',
                     pageSize: 'LEGAL',
                     pageSize: 'A0',
@@ -226,7 +290,7 @@
                 {
                     extend: 'print',
                     text: ' PRINT',
-                    title: 'LMS Curriculum Report',
+                    title: 'Skill Report',
                 },
                 'pageLength'
             ],

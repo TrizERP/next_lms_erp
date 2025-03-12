@@ -102,6 +102,8 @@ class RouteServiceProvider extends ServiceProvider
         $this->mapHrmsRoutes();
 
         $this->mapSkillRoutes();
+
+        $this->mapCustomModuleApiRoutes();
     }
 
     /**
@@ -116,6 +118,14 @@ class RouteServiceProvider extends ServiceProvider
         Route::middleware('web')
             ->namespace($this->namespace)
             ->group(base_path('routes/web.php'));
+    }
+
+
+    protected function mapCustomModuleApiRoutes()
+    {
+        Route::namespace($this->namespace)
+            ->middleware('web')
+            ->group(base_path('routes/custom_module.php'));
     }
 
     /**
