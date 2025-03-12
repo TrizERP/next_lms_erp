@@ -58,35 +58,6 @@
     <div class="row mt-4">
         <div class="col-lg-6">
             <div class="card info-card p-4">
-                <h5 class="text-primary"><i class="fas fa-tools"></i> Required Skills</h5>
-                <span class="badge bg-primary">➤ Technical</span>
-                <ul>
-                    <li>➤ CAD Software Proficiency</li>
-                    <li>➤ Biomaterials & Tissue Engineering</li>
-                    <li>➤ Medical Device Manufacturing</li>
-                    <li>➤ Electronics & Signal Processing</li>
-                    <li>➤ Cell Culture Techniques</li>
-                </ul>
-                <span class="badge bg-primary">➤ Analytical</span>
-                <ul>
-                    <li>➤ Data Analysis & Interpretation</li>
-                    <li>➤ Mathematical Modeling of Biological Systems</li>
-                    <li>➤ Critical Thinking & Problem-Solving</li>
-                </ul>
-                <span class="badge bg-primary">➤ Communication</span>
-                <ul>
-                    <li>➤ Technical Writing</li>
-                    <li>➤ Team Collaboration</li>
-                    <li>➤ Presentation Skills</li>
-                </ul>
-                <div class="progress mt-2">
-                    <div class="progress-bar bg-primary" style="width: 60%"></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-lg-6">
-            <div class="card info-card p-4">
                 <h5 class="text-danger"><i class="fas fa-tasks"></i> Perform Tasks</h5>
                 <span class="badge bg-danger">➤ Research & Development</span>
                 <ul>
@@ -108,6 +79,34 @@
                 </ul>
                 <div class="progress mt-2">
                     <div class="progress-bar bg-danger" style="width: 65%"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card info-card p-4">
+                <h5 class="text-primary"><i class="fas fa-tools"></i> Required Skills</h5>
+                <span class="badge bg-primary">➤ Technical</span>
+                <ul>
+                    <li>➤ <a href="https://dev.triz.co.in/lms/skill_library/1/show" target="_blank">Helicopter Aerodynamics Structures and Systems Principles Application</a></li>
+                    <li>➤ Biomaterials & Tissue Engineering</li>
+                    <li>➤ Medical Device Manufacturing</li>
+                    <li>➤ Electronics & Signal Processing</li>
+                    <li>➤ Cell Culture Techniques</li>
+                </ul>
+                <span class="badge bg-primary">➤ Analytical</span>
+                <ul>
+                    <li>➤ Data Analysis & Interpretation</li>
+                    <li>➤ Mathematical Modeling of Biological Systems</li>
+                    <li>➤ Critical Thinking & Problem-Solving</li>
+                </ul>
+                <span class="badge bg-primary">➤ Communication</span>
+                <ul>
+                    <li>➤ Technical Writing</li>
+                    <li>➤ Team Collaboration</li>
+                    <li>➤ Presentation Skills</li>
+                </ul>
+                <div class="progress mt-2">
+                    <div class="progress-bar bg-primary" style="width: 60%"></div>
                 </div>
             </div>
         </div>

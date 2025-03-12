@@ -12,6 +12,7 @@ use function App\Helpers\FeeBreackoff;
 use function App\Helpers\FeeBreakoffHeadWise;
 use function App\Helpers\FeeMonthId;
 use function App\Helpers\htmlToPDF;
+use function App\Helpers\htmlToPDFHills;
 use function App\Helpers\htmlToPDFLandscape;
 use function App\Helpers\htmlToPDFLandscapeCertificate;
 use function App\Helpers\htmlToPDFPortrait;
@@ -2480,13 +2481,18 @@ class AJAXController extends Controller
         $css_name = "https://" . $_SERVER['SERVER_NAME'];
         $result_css = '<link rel="stylesheet" href="' . $css_name . '/css/hpc_result.css" />';
             $dom = '<!DOCTYPE html>
-                    <html>
+                        <html lang="en">
                         <head>
-                           <title></title>
-                           <meta charset="UTF-8">
-                           <meta name="viewport" content="width=erpice-width, initial-scale=1.0">
-                          '.$result_css.'
-                           </head>
+                        <meta charset="UTF-8">
+                        <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+                        <title>Hindi PDF</title>
+                        <link rel="stylesheet" href="https://erp.triz.co.in/css/hpc_result.css" />
+                        <style>
+                        @font-face {font-family: "Aakar";src: url("' . asset("fonts/Aakar.ttf") . '") format("truetype");}
+                            body {font-family: "Aakar", sans-serif; // Use the defined font-family}
+                        </style>
+                    </head>
+        
                         <body>';
                         foreach ($studentHtml as $key => $value) {
                             $dom .= '<div>' . $value . '</div>';
@@ -2502,7 +2508,7 @@ class AJAXController extends Controller
 
             $save_path=$_SERVER['DOCUMENT_ROOT'] . 'storage/test_PDF';
           
-            $CUR_TIME = date('Ymd');
+            $CUR_TIME = date('YmdHis');
             $html_filename = $sub_institute_id . '_' . $CUR_TIME . ".html";
             $pdf_filename = $sub_institute_id . '_' . $CUR_TIME . ".pdf";
 
@@ -2514,7 +2520,7 @@ class AJAXController extends Controller
             htmlToPDFHills($html_file_path, $pdf_file_path);
             $PDF_path_for_open = "https://" . $_SERVER['HTTP_HOST'] . '/storage/test_PDF/' . $pdf_filename;
 
-            // unlink($html_file_path);
+            unlink($html_file_path);
             // unlink($pdf_file_path);
 
             return $PDF_path_for_open;

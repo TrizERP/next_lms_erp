@@ -1,4 +1,3 @@
-
 <div class="row">
     <!-- side na bar start  -->
     <div class="col-md-2">
@@ -8,6 +7,7 @@
                 <hr style="margin: 10px 0px;">
 
                 <input type="text" class="form-control" id="searchInput" name="searchInput" style="padding:6px;height:30px !important" placeholder="search">
+
             </div>
             <div class="toggleDiv" style="padding:10px">
                 <h6>TOGGLE</h6>

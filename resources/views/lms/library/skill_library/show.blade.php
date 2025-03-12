@@ -79,8 +79,16 @@ td ul li::before {
            <div class="abuotDiv">
                 <table class="table table-bordered"  cellspacing="0"  border="1">
                     <tr>
-                        <th><strong>Name</strong></th>
-                        <th>{{$data['editData']['title']}}</th>
+                        <th width="15%"><strong>Sector</strong></th>
+                        <th width="85%">{{$data['editData']['sector']}}</th>
+                    </tr>
+                    <tr>
+                        <th><strong>Sub-Sector</strong></th>
+                        <th>{{$data['editData']['tsc_ccs_category']}}</th>
+                    </tr>
+                    <tr>
+                        <th style="background-color: #90EE90"><strong><h4>Skill Name</h4></strong></th>
+                        <th style="background-color: #90EE90"><h4>{{$data['editData']['title']}}</h4></th>
                     </tr>
                     <tr>
                         <th><strong>Category</strong></th>

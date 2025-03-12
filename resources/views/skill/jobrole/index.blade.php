@@ -22,7 +22,7 @@
                 </ul>
             </div>
             <div class="col-lg-6 col-md-8 col-sm-8 col-xs-12">
-                <h1 class="center">{{ $skills->first()->career_cluster }}</h1>
+                <!--<h1 class="center">{{ $skills->first()->career_cluster }}</h1>-->
             </div>
         </div>
         <div class="card">
@@ -31,23 +31,23 @@
                     <table id="jobrole" class="table table-striped table-bordered" style="width:100%">
                         <thead>
                             <tr>
-                            <th>Career Path</th>
+                            <!--<th>Career Path</th>-->
                             <th>Job Role</th>
+                            <th class="center">Perform Tasks</th>
                             <th class="center">Required Skills</th>
                             <th class="center">Required Knowledge</th>
                             <th class="center">Required Ability</th>
-                            <th class="center">Perform Tasks</th>
                             </tr>
                         </thead>
                         <tbody>
                         @foreach ($skills as $skill)
                         <tr>
-                            <td>{{ $skill->CareerPath }}</td>
+                            <!--<td>{{ $skill->CareerPath }}</td>-->
                             <td><a href="{{ route('jobrole.jobdescription',['code' => $skill->JobCode])}}" target="_blank" rel="noopener noreferrer">{{ $skill->JobRole }}</a></td>
+                            <td class="center"><a href="#" class="open-modal" data-toggle="modal" data-target="#dynamicModal" data-title="Perform Tasks" data-content="{{ $skill->TasksData }}"><u>{{ $skill->Tasks }}</u></a></td>
                             <td class="center"><a href="#" class="open-modal" data-toggle="modal" data-target="#dynamicModal" data-title="Required Skill" data-content="{{ $skill->SkillData }}"><u>{{ $skill->Skill }}</u></a></td>
                             <td class="center"><a href="#" class="open-modal" data-toggle="modal" data-target="#dynamicModal" data-title="Required Knowledge" data-content="{{ $skill->KnowledgeData }}"><u>{{ $skill->Knowledge }}</u></a></td>
                             <td class="center"><a href="#" class="open-modal" data-toggle="modal" data-target="#dynamicModal" data-title="Required Ability" data-content="{{ $skill->AbilityData }}"><u>{{ $skill->Ability }}</u></a></td>
-                            <td class="center"><a href="#" class="open-modal" data-toggle="modal" data-target="#dynamicModal" data-title="Perform Tasks" data-content="{{ $skill->TasksData }}"><u>{{ $skill->Tasks }}</u></a></td>
                         </tr>
                         @endforeach
                         </tbody>
