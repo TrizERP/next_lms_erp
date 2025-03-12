@@ -254,6 +254,8 @@
                   <a class="dropdown-item" href="{{route('Onboarding')}}"><i
                      class="mdi mdi-checkerboard"></i> Onboarding</a>
                   @if(Session::get('user_profile_name') == 'Admin')
+                  <a class="dropdown-item" href="{{route('configurations.index')}}"><i
+                     class="mdi mdi-wallet-travel"></i> Fields Configuration</a>
                   <a class="dropdown-item" href="{{route('norm-clature.index')}}"><i
                      class="mdi mdi-wallet-travel"></i> Language Setting</a>
                   <a class="dropdown-item" href="{{route('add_groupwise_rights.index')}}"><i
