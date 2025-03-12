@@ -52,6 +52,8 @@ use Illuminate\Support\Facades\Session;
 use GuzzleHttp\Client;
 use function App\Helpers\accesslog_json;
 use Storage;
+use App\Models\settings\masterFieldModel;
+use App\Models\settings\masterFieldInstituteModel;
 
 class tblstudentController extends Controller
 {
@@ -64,6 +66,7 @@ class tblstudentController extends Controller
      */
     public function index(Request $request)
     {
+        // echo "<pre>";print_r($request->all());exit;
 		$type = $request->input('type');
 
         if (session()->has('data')) { // check if it exists
@@ -143,6 +146,20 @@ class tblstudentController extends Controller
 		$res['city_data'] = $cityData;
 		$res['new_enrollment_no'] = $new_enrollment_no;
 
+        // master Fields Data stats
+ 
+        $masterData = masterFieldInstituteModel::where(['sub_institute_id'=>$sub_institute_id])->whereNull('deleted_at')->orderBy('sort_order')->get();
+        if(count($masterData)==0){
+            $masterData = masterFieldModel::orderBy('sort_order')->get();
+        }
+
+        $masterDataArr = [];
+        foreach ($masterData as $key => $value) {
+            $masterDataArr[$value['section']][] = $value;
+        }
+        $res['masterData'] = $masterDataArr;
+        // echo "<pre>";print_R($masterData);exit;
+        // master Fields Data ends
         if($type=='web'){
             $res['grades'] = DB::table('academic_section')->where(['sub_institute_id'=>$sub_institute_id])->get()->toArray();
             
@@ -230,6 +247,56 @@ class tblstudentController extends Controller
         $request->request->add(['image' => $file_name]); //add request
         $request->request->add(['file_size' => $file_size]); //add request
         $request->request->add(['file_type' => $ext]); //add request
+
+        // start of father and nmother image 26-02-2025
+        if ($request->hasFile('father_image')) {
+			$file = $request->file('father_image');
+			$originalname = $file->getClientOriginalName();
+			$file_size = $file->getSize();
+            $ext = File::extension($originalname);
+			if ($file_size > 500000) {
+                $res['status_code'] = 0;
+                $res['message'] = "Father image not uploaded,Please select file up to 500 KB size.";
+                $res['data'] = [];
+
+                return is_mobile($type, "search_student.index", $res);
+            }
+            // $file_name = $name.'.'.$ext;
+            $father_image =  'father_'.$request->enrollment_no.'_'.$sub_institute_id.'.'.$ext;
+            if($request->has('oldFatherImage')){
+                $file_path = 'public/parents_image/' .$request->get('oldFatherImage');
+                if (Storage::disk('digitalocean')->exists($file_path)) {
+                    Storage::disk('digitalocean')->delete($file_path);
+                } 
+            }
+            Storage::disk('digitalocean')->putFileAs('public/parents_image/', $file, $father_image, 'public');   
+            $request->request->add(['father_image' => $father_image]); //add request
+        }
+
+        if ($request->hasFile('mother_image')) {
+			$file = $request->file('mother_image');
+			$originalname = $file->getClientOriginalName();
+			$file_size = $file->getSize();
+            $ext = File::extension($originalname);
+			if ($file_size > 500000) {
+                $res['status_code'] = 0;
+                $res['message'] = "Mother image not uploaded,Please select file up to 500 KB size.";
+                $res['data'] = [];
+
+                return is_mobile($type, "search_student.index", $res);
+            }
+            // $file_name = $name.'.'.$ext;
+            $mother_image =  'mother_'.$request->enrollment_no.'_'.$sub_institute_id.'.'.$ext;
+            if($request->has('oldMotherImage')){
+                $file_path = 'public/parents_image/' .$request->get('oldMotherImage');
+                if (Storage::disk('digitalocean')->exists($file_path)) {
+                    Storage::disk('digitalocean')->delete($file_path);
+                } 
+            }
+            Storage::disk('digitalocean')->putFileAs('public/parents_image/', $file, $mother_image, 'public');   
+            $request->request->add(['mother_image' => $mother_image]); //add request
+        }
+        // end of father and nmother image 26-02-2025
 
         $dataCustomFields = tblcustomfieldsModel::select('field_name')
             ->where(['status' => "1", 'table_name' => "tblstudent", 'field_type' => "file"])
