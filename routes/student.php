@@ -231,3 +231,7 @@ Route::get('checkExists', [tblstudentController::class,'checkExists'])->name('ch
 // Route::post('front_desk/leave_application/add_leave_application', function(){
 //     echo "asds";
 // });
+
+Route::get('dicipline_alone', [diciplineController::class,'index'])->name('dicipline_alone.index');
+Route::get('dicipline_alone/create', [diciplineController::class,'create'])->name('dicipline_alone.create');
+Route::post('dicipline_alone/store', [diciplineController::class,'store'])->name('dicipline_alone.store');

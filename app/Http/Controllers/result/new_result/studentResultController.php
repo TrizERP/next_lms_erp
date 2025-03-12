@@ -6730,7 +6730,7 @@ private function buildDisciplineTable($decipline_data,$both_term)
                 $markArr[$value->subject_id][$value->term_id][$value->exam_id]['wieghtage']=0;
             }
             $markArr[$value->subject_id][$value->term_id][$value->exam_id]['title'] .= $value->create_exam.'-'.$value->title.'//';
-            $markArr[$value->subject_id][$value->term_id][$value->exam_id]['is_absent'] .= isset($value->is_absent) ? $value->create_exam.'-'.$value->is_absent.'//' : '';
+            $markArr[$value->subject_id][$value->term_id][$value->exam_id]['is_absent'] = isset($value->is_absent) ? $value->is_absent : '';
             $markArr[$value->subject_id][$value->term_id][$value->exam_id]['marks'] += $value->points;
             $markArr[$value->subject_id][$value->term_id][$value->exam_id]['total_points'] += $value->total_points;
             $markArr[$value->subject_id][$value->term_id][$value->exam_id]['weightage'] = $value->weightage;
@@ -6765,7 +6765,11 @@ private function buildDisciplineTable($decipline_data,$both_term)
                             $tot_mark = isset($markVal['total_points']) ? $markVal['total_points'] : 0;
                             $weightage = isset($markVal['weightage']) ? $markVal['weightage'] : 0;
                             $total_mark+=$weightage;
-                           $obt_grade = $this->getGrade($grade_arr, $weightage, $obt_mark);
+                            $obt_grade = $this->getGrade($grade_arr, $weightage, $obt_mark);
+                           // added on 11-03-2025 for AB print
+                           if(isset($markVal['is_absent']) && in_array($markVal['is_absent'],['AB','N.A.','EX']) && $obt_mark==0){
+                            $obt_grade = $markVal['is_absent'];
+                           }
                            $scholaticTable .='<td align="center">'.$obt_grade.'</td>';
                         }
                     }
@@ -6806,13 +6810,36 @@ private function buildDisciplineTable($decipline_data,$both_term)
 
         $curr_std = DB::table('standard')->where('id', $standard_id)->first();
         $next_std = DB::table('standard')->where('id', $curr_std->next_standard_id)->first();
-
-        if ($per!='-') {
-            $result = 'Passed & Promoted to Class ' . $next_std->school_stream;
-        } else {
+       // get result remarks from table result_remarks 21-02-2025
+       $resulRemark = $stu_remarks_input = $stu_remarks ='';
+       $getRemarks = DB::table('result_remarks')->where('student_id', $student_id)->where('syear',$syear)->first();
+       if(!empty($getRemarks) && isset($getRemarks->result_remarks)){
+            $explodeVal = explode('||',$getRemarks->result_remarks); // starts 27-02-2025
+            $stu_remarks = (isset($explodeVal[0]) && $explodeVal[0]!='') ? $explodeVal[0] : ''; // starts 27-02-2025
+            $stu_remarks_input = (isset($explodeVal[1]) && $explodeVal[1]!='') ? $explodeVal[1] : ''; // starts 27-02-2025
+        }
+        // end on 21-02-2025
+        // starts 27-02-2025
+        $failed = [];
+        if($stu_remarks!='' && $stu_remarks_input!=''){
+            $result = $stu_remarks.'-'.$stu_remarks_input;
+        }
+        else if (empty($failed) && $stu_remarks_input!='') {
+            $result = 'Passed & Promoted to Class '. $next_std->school_stream .'-'.$stu_remarks_input; // added variable $resulRemark
+        }
+        else if($stu_remarks!=''){
+            $result = $stu_remarks;
+        }
+        else if($stu_remarks_input!=''){
+            $result = $stu_remarks_input;
+        }
+        else if (empty($failed)){
+            $result = 'Passed & Promoted to Class ' . $next_std->school_stream;  
+        }
+        else {
             $result = "Failed";
         }
-
+        
         $res['scholastic_table']=$scholaticTable;
         $res['scholastic_gradeRange']=$scholaticTableGrades;
         $res['conducted'] = \App\Helpers\getGradeComment($grade_arr, 100, $per) ?? '-';

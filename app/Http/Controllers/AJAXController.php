@@ -218,16 +218,32 @@ class AJAXController extends Controller
             $menu_ids=[];
 
         }
-        $studentData = DB::table('tblstudent as s')->join('tblstudent_enrollment as se','se.student_id','=','s.id')
-        ->where('s.sub_institute_id',session()->get('sub_institute_id'))
-        ->where('se.syear',session()->get('syear'))
-        ->where('s.id',session()->get('user_id'))
-        ->first();
-        $getClass=DB::table('class_teacher')->whereRaw('sub_institute_id='.session()->get('sub_institute_id').' and teacher_id ='.session()->get('user_id').' and syear="'.session()->get('syear').'"')->first();
-        if (count($explode) > 1) {
-            $query = DB::table('standard');
-            $query->whereIn('grade_id', $explode)->get();
+        // added on 07-03-2025 for standalone modules end 
 
+        $type = $request->type;
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+        $user_id = session()->get('user_id');
+        if($type=='webForm'){
+            $sub_institute_id = $request->sub_institute_id ?? 0;
+            $syear = $request->syear ?? 0;
+            $user_id = $request->user_id ?? 0;
+        }
+        // added on 07-03-2025 for standalone modules end 
+        
+        $studentData = DB::table('tblstudent as s')->join('tblstudent_enrollment as se','se.student_id','=','s.id')
+        ->where('s.sub_institute_id',$sub_institute_id)
+        ->where('se.syear',$syear)
+        ->where('s.id',$user_id)
+        ->first();
+        
+        $getClass=DB::table('class_teacher')->whereRaw('sub_institute_id='.$sub_institute_id.' and teacher_id ='.$user_id.' and syear="'.$syear.'"')->first();
+
+        $query = DB::table('standard');
+        // $query->where("grade_id", $request->grade_id);
+
+        if (count($explode) > 1) {
+            $query->whereIn("grade_id", $explode);
             //START Check for class teacher assigned standards
             $classTeacherStdArr = session()->get('classTeacherStdArr');
 
@@ -261,12 +277,10 @@ class AJAXController extends Controller
                     $query->where('id', [$studentData->standard_id ?? 0 ]);
                 }
                 // for student 01-01-2025 end
-            $standard = $query->pluck("name", "id");
 
         } else {
-            $query = DB::table('standard');
-            $query->where("grade_id", $request->grade_id);
 
+            $query->where("grade_id", $request->grade_id);
             //START Check for class teacher assigned standards
             $classTeacherStdArr = session()->get('classTeacherStdArr');
             if (is_array($classTeacherStdArr)) {
@@ -300,15 +314,27 @@ class AJAXController extends Controller
             }
             // for student 01-01-2025 end
             //END Check for subject teacher assigned
-            $standard = $query->pluck("name", "id");
         }
+        $standard = $query->pluck("name", "id");
+
         // echo session()->get('right_menu_id')
         return response()->json($standard);
         // return $classTeacherStdArr;
     }
 
     public function getDivisionList(Request $request)
-    {
+    {   
+        // added on 07-03-2025 for standalone modules 
+        $type = $request->type;
+        if($type=="webForm"){
+            $query = DB::table('std_div_map');
+            $query->join('division', 'division.id', '=', 'std_div_map.division_id');
+            $query->where("std_div_map.standard_id", $request->standard_id);
+            $std_div_map = $query->pluck('division.name', 'division.id');
+            return $std_div_map;
+        }
+        // added on 07-03-2025 for standalone modules end 
+
         $path = $_SERVER['HTTP_REFERER'];
 
         if ($path) {
@@ -2481,6 +2507,7 @@ class AJAXController extends Controller
         $css_name = "https://" . $_SERVER['SERVER_NAME'];
         $result_css = '<link rel="stylesheet" href="' . $css_name . '/css/hpc_result.css" />';
             $dom = '<!DOCTYPE html>
+<<<<<<< HEAD
                         <html lang="en">
                         <head>
                         <meta charset="UTF-8">
@@ -2496,6 +2523,21 @@ class AJAXController extends Controller
                         <body>';
                         foreach ($studentHtml as $key => $value) {
                             $dom .= '<div>' . $value . '</div>';
+=======
+                    <html>
+                        <head>
+                           <title></title>
+                           <meta charset="UTF-8">
+                           <meta name="viewport" content="width=erpice-width, initial-scale=1.0">
+                           <link href="http://fonts.googleapis.com/css?family=Jolly+Lodger" rel="stylesheet" type="text/css">
+
+                          '.$result_css.'
+                           </head>
+                          
+                        <body>';
+                        foreach ($studentHtml as $key => $value) {
+                            $dom .= '<div>' .$value . '</div>';
+>>>>>>> 63c6dc3ba6e4ec206d1f2177672a206fac077dda
                             
                             // Add page break only if it's NOT the last item
                             if ($key !== array_key_last($studentHtml)) {
@@ -2505,9 +2547,18 @@ class AJAXController extends Controller
                         
                         $dom .= ' </body>
                     </html>';
+<<<<<<< HEAD
 
             $save_path=$_SERVER['DOCUMENT_ROOT'] . 'storage/test_PDF';
           
+=======
+                    $html = html_entity_decode($dom, ENT_QUOTES, 'UTF-8');
+
+            $save_path=$_SERVER['DOCUMENT_ROOT'] . 'storage/test_PDF';
+          
+            // return $dom;
+
+>>>>>>> 63c6dc3ba6e4ec206d1f2177672a206fac077dda
             $CUR_TIME = date('YmdHis');
             $html_filename = $sub_institute_id . '_' . $CUR_TIME . ".html";
             $pdf_filename = $sub_institute_id . '_' . $CUR_TIME . ".pdf";
@@ -2515,12 +2566,20 @@ class AJAXController extends Controller
             $html_file_path = $save_path . '/' . $html_filename;
             $pdf_file_path = $save_path . '/' . $pdf_filename;
 
+<<<<<<< HEAD
             file_put_contents($html_file_path, $dom);
+=======
+            file_put_contents($html_file_path, $html);
+>>>>>>> 63c6dc3ba6e4ec206d1f2177672a206fac077dda
 
             htmlToPDFHills($html_file_path, $pdf_file_path);
             $PDF_path_for_open = "https://" . $_SERVER['HTTP_HOST'] . '/storage/test_PDF/' . $pdf_filename;
 
+<<<<<<< HEAD
             unlink($html_file_path);
+=======
+            // unlink($html_file_path);
+>>>>>>> 63c6dc3ba6e4ec206d1f2177672a206fac077dda
             // unlink($pdf_file_path);
 
             return $PDF_path_for_open;

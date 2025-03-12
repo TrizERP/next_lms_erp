@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
 use function App\Helpers\SearchStudent;
 use function App\Helpers\sendNotification;
-
+use Illuminate\Support\Facades\Session;
 
 class diciplineController extends Controller
 {
@@ -37,7 +37,25 @@ class diciplineController extends Controller
 
         $data['data'] = array();
         $type = $request->input('type');
+        // added on 07-03-2025 for standalone modules start
+        // http://127.0.0.1:8000/dicipline_alone?type=webForm&sub_institute_id=254
+        if($type=='webForm'){
+            $sub_institute_id = $request->get('sub_institute_id');
+            $data['syears'] = DB::table('academic_year')->where('sub_institute_id',$sub_institute_id)->orderBy('sort_order')->groupBy('syear')->get()->toArray();
+            $data['gradeList'] = DB::table('academic_section')->where('sub_institute_id',$sub_institute_id)->orderBy('sort_order')->get()->toArray();
+            $data['syear'] = Date('Y');
+            $data['profiles'] = DB::table("tbluser as tu")
+            ->join('tbluserprofilemaster as tup','tup.id','=','tu.user_profile_id')
+            ->selectRaw("concat(tu.first_name,' ',tu.last_name) name,tu.id")
+            ->where("tu.sub_institute_id", "=", $sub_institute_id)
+            ->where('tu.status',1)  
+            ->where('tup.name','Watchman')
+            ->get()->toArray();
+            // echo "<pre>";print_r($data);exit;
 
+            return is_mobile($type, "front_desk/dicipline/standalone", $data, "view");
+        }
+        // added on 07-03-2025 for standalone modules end
         return is_mobile($type, "front_desk/dicipline/show", $data, "view");
     }
 
@@ -50,7 +68,14 @@ class diciplineController extends Controller
     public function create(Request $request)
     {
         $type = $request->input('type');
-        $student_data = SearchStudent($_REQUEST['grade'], $_REQUEST['standard'], $_REQUEST['division']);
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear'); 
+
+        if($type=='webForm'){
+            $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear'); 
+        }
+        $student_data = SearchStudent($_REQUEST['grade'], $_REQUEST['standard'], $_REQUEST['division'],$sub_institute_id,$syear);
 
         $responce_arr['grade'] = $_REQUEST['grade'];
         $responce_arr['standard'] = $_REQUEST['standard'];
@@ -66,7 +91,26 @@ class diciplineController extends Controller
         }
         $dd = DB::table('dicipline_dd')->pluck('message', 'id');
         $responce_arr['dd'] = $dd;
+        if($type=='webForm'){
+            $responce_arr['syears'] = DB::table('academic_year')->where('sub_institute_id',$sub_institute_id)->orderBy('sort_order')->groupBy('syear')->get()->toArray();
+            $responce_arr['gradeList'] = DB::table('academic_section')->where('sub_institute_id',$sub_institute_id)->orderBy('sort_order')->get()->toArray();
+            $responce_arr['profiles'] = DB::table("tbluser as tu")
+            ->join('tbluserprofilemaster as tup','tup.id','=','tu.user_profile_id')
+            ->selectRaw("concat(tu.first_name,' ',tu.last_name) name,tu.id")
+            ->where("tu.sub_institute_id", "=", $sub_institute_id)
+            ->where('tu.status',1)  
+            ->where('tup.name','Watchman')
+            ->get()->toArray();
+            $responce_arr['syear'] = $request->syear;
+            $responce_arr['grade'] = $request->grade;
+            $responce_arr['standard'] = $request->standard;
+            $responce_arr['division'] = $request->division;
+            $responce_arr['user_id'] = $request->user_id;
 
+            // echo "<pre>";print_r($responce_arr);exit;
+
+            return is_mobile($type, "front_desk/dicipline/standalone", $responce_arr, "view");
+        }
         return is_mobile($type, "front_desk/dicipline/add", $responce_arr, "view");
     }
 
@@ -78,6 +122,19 @@ class diciplineController extends Controller
      */
     public function store(Request $request)
     {
+
+        $type = $request->type;
+        $user_id = session()->get('user_id');
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+        if($type=='webForm'){
+            $user_id = 0 ;
+            $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');
+            $user_id = $request->get('user_id');
+            // echo "<pre>";print_r($request->all());exit;
+        }
+
         $stu_arr = [];
         $student_ids = $_REQUEST['values']['stud_id'] ?? [];
         
@@ -87,25 +144,29 @@ class diciplineController extends Controller
 
         $result = DB::table("tbluser")
             ->selectRaw("concat(first_name,' ',last_name) name")
-            ->where("id", "=", $request->session()->get('user_id'))
+            ->where("id", "=", $user_id)
             ->where('status',1)  // 23-04-24 by uma
             ->get()->toArray();
             
         $name = $result[0]->name;
-        //echo("<pre>");print_r($stu_arr);exit;
+        // echo("<pre>");print_r($name);exit;
+        $i=0;
         foreach ($stu_arr as $id => $stu_id) {
-            DB::table('dicipline')->insert([
-                'syear'            => session()->get('syear'),
+            $insert = DB::table('dicipline')->insert([
+                'syear'            => $syear,
                 'student_id'       => $stu_id,
                 'name'             => $name,
                 'dicipline'        => $_REQUEST['values']['dd'][$stu_id],
                 'message'          => $_REQUEST['values']['text'][$stu_id],
                 'date_'            => date('Y-m-d'),
-                'sub_institute_id' => session()->get('sub_institute_id'),
-                'created_by'       => session()->get('user_id'),
+                'sub_institute_id' => $sub_institute_id,
+                'created_by'       => $user_id,
                 'created_at'       => now(),
-                'updated_at'       => now(),
             ]);
+
+            if($insert){
+                $i++;
+            }
 
             //START Send Notification Code
             $app_notification_content = [
@@ -114,9 +175,9 @@ class diciplineController extends Controller
                 'STUDENT_ID'               => $stu_id,
                 'NOTIFICATION_DESCRIPTION' => $_REQUEST['values']['text'][$stu_id],
                 'STATUS'                   => 0,
-                'SUB_INSTITUTE_ID'         => session()->get('sub_institute_id'),
-                'SYEAR'                    => session()->get('syear'),
-                'CREATED_BY'               => session()->get('user_id'),
+                'SUB_INSTITUTE_ID'         => $sub_institute_id,
+                'SYEAR'                    => $syear,
+                'CREATED_BY'               => $user_id,
                 'CREATED_IP'               => $_SERVER['REMOTE_ADDR'],
             ];
             sendNotification($app_notification_content);
@@ -127,8 +188,17 @@ class diciplineController extends Controller
             "message"     => "Dicipline Added",
         ];
 
-        $type = $request->input('type');
+        if($type=='webForm'){
+            if($i!=0){
+                Session::flash('status', 1); 
+                Session::flash('message', 'Dicipline Added!'); 
+            }else{
+                Session::flash('status', 0); 
+                Session::flash('message', 'Dicipline Added!'); 
+            }
 
+            return redirect('dicipline_alone?type=webForm&sub_institute_id='.$sub_institute_id);
+        }
         return is_mobile($type, "dicipline.index", $res, "redirect");
     }
 

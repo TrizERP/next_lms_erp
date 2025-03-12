@@ -214,6 +214,8 @@ Route::get('payphi', function ($id = null) {
     });
 
     Route::resource('imprest_refund_report', imprestRefundReportController::class);
+    // added new report for ssmission
+    Route::get('fees_report_datewise', [feesReportController::class, 'datewiseReportIndex'])->name('fees_report_datewise.index');
 
 });
 

@@ -1809,13 +1809,23 @@ if (!function_exists('htmlToPDF')) {
         return exec($command);
     }
 }
-
 if (!function_exists('htmlToPDFHills')) {
     function htmlToPDFHills($htmlPath, $pdfPath)
     {
+<<<<<<< HEAD
         $command = '/usr/local/bin/wkhtmltopdf --enable-local-file-access --encoding utf-8 --header-html https://erp.triz.co.in/css/hpc_header.html --footer-html https://erp.triz.co.in/css/hpc_footer.html --margin-top 35mm --margin-bottom 15mm ';
         $command .= " $htmlPath ";
         $command .= " $pdfPath ";
+=======
+        $command = '/usr/local/bin/wkhtmltopdf --encoding utf-8 ';
+        $command .= '--header-html https://erp.triz.co.in/css/hpc_header.html ';
+        $command .= '--footer-html https://erp.triz.co.in/css/hpc_footer.html ';
+        $command .= '--margin-top 35mm --margin-bottom 15mm ';
+        $command .= '--enable-local-file-access '; // Allows external files (CSS, fonts)
+        $command .= '--load-media-error-handling ignore '; // Ignore font load errors
+        $command .= "$htmlPath ";
+        $command .= "$pdfPath ";
+>>>>>>> 63c6dc3ba6e4ec206d1f2177672a206fac077dda
 
         return exec($command);
     }
