@@ -9,6 +9,7 @@ use App\Http\Controllers\settings\templateMasterController;
 use App\Http\Controllers\settings\announcementController;
 use App\Http\Controllers\settings\masterSetupSelectController;
 use App\Http\Controllers\settings\TrizSkillsController;
+use App\Http\Controllers\settings\configurationController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -28,6 +29,11 @@ Route::group(['prefix' => 'settings', 'middleware' => ['session', 'menu', 'logRo
 
     Route::resource('master_setup', masterSetupSelectController::class);
     Route::get('triz_skills',[TrizSkillsController::class,'triz_skills'])->name('triz-skills');
+
+    Route::resource('configurations', configurationController::class);
+    Route::post('update-rights-order',[configurationController::class,'updateMenuSortOrder'])->name('updateMenuSortOrder');
+    Route::get('getFeildLists',[configurationController::class,'getFeildLists'])->name('getFeildLists');
+    Route::post('restoreData',[configurationController::class,'restoreData'])->name('restoreData');
 
 });
 // no permisson check
