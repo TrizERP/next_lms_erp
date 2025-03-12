@@ -209,72 +209,67 @@ class LibraryReportController extends Controller
         $sub_institute_id = session()->get('sub_institute_id');
         foreach ($request->check_id as $key => $value) {
             $barcodeGenerator = new BarcodeGeneratorPNG();
-        
-            // Generate the barcode image
-            if($sub_institute_id==254){
-                $barcodeImageData = $barcodeGenerator->getBarcode($value, $barcodeGenerator::TYPE_CODE_39, 2, 60);
-            }
-            else{
-                $barcodeImageData = $barcodeGenerator->getBarcode($value, $barcodeGenerator::TYPE_CODE_128, 2, 60);
-            }
+            $value = trim($value);
+            $barcodeImageData = $barcodeGenerator->getBarcode($value, $barcodeGenerator::TYPE_CODE_128, 2, 60);
+            
+            $barcodeGenerator = new BarcodeGeneratorPNG();
+            $value = trim($value);
+            $barcodeImageData = $barcodeGenerator->getBarcode($value, $barcodeGenerator::TYPE_CODE_128, 2, 60);
             
             // Create an image resource from the barcode data
             $barcodeImage = imagecreatefromstring($barcodeImageData);
             
-            // Get the dimensions of the barcode image
+            // Get barcode dimensions
             $barcodeWidth = imagesx($barcodeImage);
             $barcodeHeight = imagesy($barcodeImage);
             
-            // Define text properties
-            $fontSize = 3; // GD built-in font size (1 to 5)
+            // Load a TrueType font
+            $fontPath = public_path('fonts/saira-semi-condensed-v4-latin-regular.ttf'); // Adjust the path
+            $fontSize = 14; // Adjust font size
             $topPadding = 0; // Padding above the text
-            $sidePadding = 25; // Padding on left and right of the text
-        
-            $textHeight = imagefontheight($fontSize) + $topPadding  * 2; // Height including padding
-            
-            // Create a new image with additional space for the text background
-            $newImageHeight = $barcodeHeight; // No additional height needed
-            $newImage = imagecreatetruecolor($barcodeWidth, $newImageHeight);
-            
+            $sidePadding = 30;
             // Allocate colors
-            $white = imagecolorallocate($newImage, 255, 255, 255);
-            $black = imagecolorallocate($newImage, 0, 0, 0);
+            $white = imagecolorallocate($barcodeImage, 255, 255, 255);
+            $black = imagecolorallocate($barcodeImage, 0, 0, 0);
             
-            // Fill the background with white
-            imagefill($newImage, 0, 0, $white);
+            // Calculate text width and height
+            $bbox = imagettfbbox($fontSize, 0, $fontPath, $value);
+            $textWidth = $bbox[2] - $bbox[0];
+            $textHeight = abs($bbox[5] - $bbox[1]);
+            $backgroundWidth =  $textWidth + $sidePadding * 2; 
+            $backgroundX = ($barcodeWidth - $backgroundWidth) / 2; 
+            $backgroundY = (($barcodeHeight - $topPadding) / 2) + 29;
+        
+           // Calculate text position
+           $textX = $backgroundX + $sidePadding; // Add padding to the text position
+           $textY = $backgroundY + $topPadding; 
             
-            // Copy the barcode image onto the new image
-            imagecopy($newImage, $barcodeImage, 0, 0, 0, 0, $barcodeWidth, $barcodeHeight);
+            // Draw a white rectangle behind the text
+            $textPadding = 4; // Extra padding around text for better visibility
+            imagefilledrectangle(
+                $barcodeImage, 
+                $textX - $textPadding, 
+                $textY - $textHeight - $textPadding, 
+                $textX + $textWidth + $textPadding, 
+                $textY + $textPadding, 
+                $white
+            );
             
-            // Calculate text width and background box dimensions
-            $textWidth = imagefontwidth($fontSize) * strlen($value);
-            $backgroundWidth =  $textWidth + $sidePadding * 2; // Background width including padding
-            $backgroundX = ($barcodeWidth - $backgroundWidth) / 2; // Center background horizontally
-            $backgroundY = (($barcodeHeight - $topPadding) / 2) + 19; // Center background vertically
+            // Add text inside the barcode (centered)
+            imagettftext($barcodeImage, $fontSize, 0, $textX, $textY, $black, $fontPath, $value);
             
-            // Draw a white background box for the text
-            imagefilledrectangle($newImage, $backgroundX, $backgroundY, $backgroundX + $backgroundWidth, $backgroundY + $textHeight, $white);
-            
-            // Calculate text position
-            $textX = $backgroundX + $sidePadding; // Add padding to the text position
-            $textY = $backgroundY + $topPadding; // Add padding to the text position
-            
-            // Add the text to the image
-            imagestring($newImage, $fontSize, $textX, $textY, $value, $black);
-            
-            // Output the final image as PNG
+            // Output the final image
             ob_start();
-            imagepng($newImage);
+            imagepng($barcodeImage);
             $imageData = ob_get_contents();
             ob_end_clean();
             
-            // Free up memory
+            // Free memory
             imagedestroy($barcodeImage);
-            imagedestroy($newImage);
             
-        // Return the image response
-        // return response($imageData)
-        //     ->header('Content-Type', 'image/png');
+            // Return the image response
+            // return response($imageData)->header('Content-Type', 'image/png');
+            
             if ($request->print_type == "member") {
                 $barcodes[] = ['code' => $value, 'image' => $imageData, 'title' => $request->print_text[$key],'other'=>$request->print_type];
             } else {
