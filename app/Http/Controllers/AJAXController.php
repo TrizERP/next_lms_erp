@@ -2507,23 +2507,6 @@ class AJAXController extends Controller
         $css_name = "https://" . $_SERVER['SERVER_NAME'];
         $result_css = '<link rel="stylesheet" href="' . $css_name . '/css/hpc_result.css" />';
             $dom = '<!DOCTYPE html>
-<<<<<<< HEAD
-                        <html lang="en">
-                        <head>
-                        <meta charset="UTF-8">
-                        <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-                        <title>Hindi PDF</title>
-                        <link rel="stylesheet" href="https://erp.triz.co.in/css/hpc_result.css" />
-                        <style>
-                        @font-face {font-family: "Aakar";src: url("' . asset("fonts/Aakar.ttf") . '") format("truetype");}
-                            body {font-family: "Aakar", sans-serif; // Use the defined font-family}
-                        </style>
-                    </head>
-        
-                        <body>';
-                        foreach ($studentHtml as $key => $value) {
-                            $dom .= '<div>' . $value . '</div>';
-=======
                     <html>
                         <head>
                            <title></title>
@@ -2537,7 +2520,6 @@ class AJAXController extends Controller
                         <body>';
                         foreach ($studentHtml as $key => $value) {
                             $dom .= '<div>' .$value . '</div>';
->>>>>>> 63c6dc3ba6e4ec206d1f2177672a206fac077dda
                             
                             // Add page break only if it's NOT the last item
                             if ($key !== array_key_last($studentHtml)) {
@@ -2547,18 +2529,12 @@ class AJAXController extends Controller
                         
                         $dom .= ' </body>
                     </html>';
-<<<<<<< HEAD
-
-            $save_path=$_SERVER['DOCUMENT_ROOT'] . 'storage/test_PDF';
-          
-=======
                     $html = html_entity_decode($dom, ENT_QUOTES, 'UTF-8');
 
             $save_path=$_SERVER['DOCUMENT_ROOT'] . 'storage/test_PDF';
           
             // return $dom;
 
->>>>>>> 63c6dc3ba6e4ec206d1f2177672a206fac077dda
             $CUR_TIME = date('YmdHis');
             $html_filename = $sub_institute_id . '_' . $CUR_TIME . ".html";
             $pdf_filename = $sub_institute_id . '_' . $CUR_TIME . ".pdf";
@@ -2566,20 +2542,12 @@ class AJAXController extends Controller
             $html_file_path = $save_path . '/' . $html_filename;
             $pdf_file_path = $save_path . '/' . $pdf_filename;
 
-<<<<<<< HEAD
-            file_put_contents($html_file_path, $dom);
-=======
             file_put_contents($html_file_path, $html);
->>>>>>> 63c6dc3ba6e4ec206d1f2177672a206fac077dda
 
             htmlToPDFHills($html_file_path, $pdf_file_path);
             $PDF_path_for_open = "https://" . $_SERVER['HTTP_HOST'] . '/storage/test_PDF/' . $pdf_filename;
 
-<<<<<<< HEAD
-            unlink($html_file_path);
-=======
             // unlink($html_file_path);
->>>>>>> 63c6dc3ba6e4ec206d1f2177672a206fac077dda
             // unlink($pdf_file_path);
 
             return $PDF_path_for_open;
