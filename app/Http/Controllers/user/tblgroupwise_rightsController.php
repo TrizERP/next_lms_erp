@@ -62,10 +62,13 @@ class tblgroupwise_rightsController extends Controller {
     }
 
     public function store(Request $request) {
+        // echo "<pre>";print_r($request->all());exit;
         $addRights = $request->input('add');
         $editRights = $request->input('edit');
         $deleteRights = $request->input('delete');
         $viewRights = $request->input('view');
+        $dashboardRights = $request->input('dashboard_right'); // dashobard rihts column 13-03-2025 by uma  
+
         if (!isset($addRights)) {
             $addRights = array();
         }
@@ -77,6 +80,10 @@ class tblgroupwise_rightsController extends Controller {
         }
         if (!isset($viewRights)) {
             $viewRights = array();
+        }
+        // dashobard rihts column 13-03-2025 by uma  
+        if (!isset($dashboardRights)) {
+            $dashboardRights = array();
         }
 
         $arrayKeys = array_replace($addRights, $editRights, $deleteRights, $viewRights);
@@ -101,6 +108,10 @@ class tblgroupwise_rightsController extends Controller {
             }
             if (isset($deleteRights[$key])) {
                 $finalArray['can_delete'] = 1;
+            }
+            // dashobard rihts column 13-03-2025 by uma  
+            if (isset($dashboardRights[$key])) {
+                $finalArray['dashboard_right'] = 1;
             }
             tblgroupwise_rightsModel::insert($finalArray);
         }
@@ -160,6 +171,10 @@ class tblgroupwise_rightsController extends Controller {
                 }
                 if ($value['can_delete'] == 1) {
                     $rights['delete'][] = $value['menu_id'] . "_" . $value['can_delete'];
+                }
+                // dashobard rihts column 13-03-2025 by uma  
+                if ($value['dashboard_right'] == 1) {
+                    $rights['dashboard_right'][] = $value['menu_id'] . "_" . $value['dashboard_right'];
                 }
             }
         }

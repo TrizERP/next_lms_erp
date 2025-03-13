@@ -55,6 +55,7 @@
                                                 <th style="text-align: center;"> Can Add <input id="checkall" onchange="checkAll(this,'add');" type="checkbox"></th>
                                                 <th style="text-align: center;"> Can Edit <input id="checkall" onchange="checkAll(this,'edit');" type="checkbox"></th>
                                                 <th style="text-align: center;"> Can Delete <input id="checkall" onchange="checkAll(this,'delete');" type="checkbox"></th>
+                                                <th style="text-align: center;"> Dashboard Right <input id="checkall" onchange="checkAll(this,'dashborad');" type="checkbox"></th> <!-- dashobard rihts column 13-03-2025 by uma  -->
                                             </tr>
                                         </thead>
 
@@ -135,6 +136,14 @@
                                 <label for="delete_${item['menu_id']}"> Delete </label>
                             </div>
                         </td>
+                        
+                        <td style="text-align: center;font-weigth:bold;">
+                            <div class="checkbox checkbox-success checkbox-circle">
+                                <input name="dashboard_right[${item['menu_id']}][]" id="dashboard_right_${item['menu_id']}" platform="delete" value="1" type="checkbox" >
+                                <label for="dashboard_right_${item['menu_id']}"> Right </label>
+                            </div>
+                        </td>
+
                         </tr>
                      `);
                      // console.log(subdata[item['menu_id']]);
@@ -188,6 +197,14 @@
                                 <label for="delete_${sitem['menu_id']}"> Delete </label>
                             </div>
                         </td>
+
+                        <td style="text-align: center;font-weigth:bold;">
+                            <div class="checkbox checkbox-success checkbox-circle">
+                                <input name="dashboard_right[${sitem['menu_id']}][]" id="dashboard_right_${sitem['menu_id']}" platform="delete" value="1" type="checkbox" >
+                                <label for="dashboard_right_${sitem['menu_id']}"> Right </label>
+                            </div>
+                        </td>
+
                         </tr>
                      `);
                     if(typeof(lastdata[sitem['menu_id']]) != "undefined" && lastdata[sitem['menu_id']] !== null) {
@@ -221,6 +238,14 @@
                                     <label for="delete_${litem['menu_id']}"> Delete </label>
                                 </div>
                             </td>
+
+                            <td style="text-align: center;font-weigth:bold;">
+                                <div class="checkbox checkbox-success checkbox-circle">
+                                    <input name="dashboard_right[${litem['menu_id']}][]" id="dashboard_right_${litem['menu_id']}" platform="delete" value="1" type="checkbox" >
+                                    <label for="dashboard_right_${litem['menu_id']}"> Right </label>
+                                </div>
+                            </td>
+
                             </tr>
                             `);
 
@@ -274,6 +299,18 @@
                     var menuView = rights.view[i];
                     var res = menuView.split("_");
                     var finalViewId = "view_"+res[0];
+                    if(document.getElementById(finalViewId))
+                    {
+                        document.getElementById(finalViewId).checked = true;
+                    }
+                }
+            }
+            if ("dashboard" in rights)
+            {
+                for (i = 0; i < rights.view.length; i++) {
+                    var menuView = rights.view[i];
+                    var res = menuView.split("_");
+                    var finalViewId = "dashboard_"+res[0];
                     if(document.getElementById(finalViewId))
                     {
                         document.getElementById(finalViewId).checked = true;
