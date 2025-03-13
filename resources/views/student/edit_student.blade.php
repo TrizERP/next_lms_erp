@@ -104,6 +104,9 @@ datalist {
     color: #555;
     margin-top: 5px;
 }
+.dropify-clear{
+    display:none !important;
+}
 /* quick view end  */
 </style>
 
@@ -391,15 +394,24 @@ datalist {
                                         </div>
                                         <div class="col-md-4">
                                             <label for="input-file-now">Student Image</label>
+                                            @if(isset($student_data->image) && $student_data->image!='')
+                                                <span class="mdi mdi-trash-can" style="color:red" onclick="deleteImage({{$student_data->id}},'student')"></span>
+                                            @endif
                                             <input type="file" data-default-file="/storage/student/{{ $student_data->image }}" accept="image/png, image/jpg, image/jpeg" name="student_image" id="input-file-now" class="dropify" />
                                         </div>  
                                         <div class="col-md-4">
                                             <label for="input-file-now2">Father Image</label>
+                                            @if(isset($student_data->father_image) && $student_data->father_image!='')
+                                                <span class="mdi mdi-trash-can" style="color:red" onclick="deleteImage({{$student_data->id}},'father')"></span>
+                                            @endif
                                             <input type="file" data-default-file="https://s3-triz.fra1.cdn.digitaloceanspaces.com/public/parents_image/{{ $student_data->father_image }}" accept="image/png, image/jpg, image/jpeg" name="father_image" id="input-file-now2" class="dropify" />
                                             <input type="hidden" name="oldFatherImage" value="{{ $student_data->father_image }}">
                                         </div>  
                                         <div class="col-md-4">
                                             <label for="input-file-now3">Mother Image</label>
+                                            @if(isset($student_data->mother_image) && $student_data->mother_image!='')
+                                                <span class="mdi mdi-trash-can" style="color:red" onclick="deleteImage({{$student_data->id}},'mother')"></span>
+                                            @endif
                                             <input type="file" data-default-file="https://s3-triz.fra1.cdn.digitaloceanspaces.com/public/parents_image/{{ $student_data->mother_image }}" accept="image/png, image/jpg, image/jpeg" name="mother_image" id="input-file-now3" class="dropify" />
                                             <input type="hidden" name="oldMotherImage" value="{{ $student_data->mother_image }}">
                                         </div>  
@@ -2741,6 +2753,27 @@ datalist {
     var links = document.querySelectorAll('a[href="{{ route("norm-clature.create") }}"]');
     for (var j = 0; j < links.length; j++) {
         links[j].href = url;
+    }
+    // 2025-03-13 student and parent image delete 
+    function deleteImage(studentId,imageType){
+        var r = confirm("Are you sure ?");
+        if (r == true) {
+            $.ajax({
+                url : "{{route('studentImage.destroy')}}",
+                data : {studentId:studentId,image_type:imageType},
+                type : 'POST',
+                success : function(result){
+                    // console.log(result);
+                    if (result.status_code == 1) {
+                        location.reload();
+                    } else {
+                        alert(result.message); 
+                    }
+                }
+            });
+        } else {
+            return false;
+        }
     }
 </script>
 @endsection

@@ -152,6 +152,8 @@ Route::group(['prefix' => 'student', 'middleware' => ['session', 'menu', 'logRou
     Route::post('student_certificate/show_student_certificate', [studentCertificateController::class, 'showStudentCertificate'])->name('show_student_certificate');
 
     Route::get('ajax_getHomeworkSubjects', [studentHomeworkController::class, 'ajax_getHomeworkSubjects'])->name('ajax_getHomeworkSubjects');
+    // 13-03-2025 delete student Image
+    Route::post('destroyImage',[tblstudentController::class,'destroyImage'])->name('studentImage.destroy');
 
 });
 Route::get('ajax_getBatch', [tblstudentController::class, 'ajax_getBatch'])->name('ajax_getBatch');
