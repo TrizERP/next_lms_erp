@@ -8,6 +8,6 @@ Route::group(['prefix' => 'skill', 'middleware' => ['session', 'menu', 'logRoute
     Route::post('/matrix/save', [SkillMatrixController::class, 'store'])->name('matrix.save');
     Route::get('/jobrole', [SkillMatrixController::class, 'JobRole'])->name('jobrole.index');
     Route::get('/jobdescription', [SkillMatrixController::class, 'JobDescription'])->name('jobrole.jobdescription');
-    Route::get('/assessment_library', [SkillMatrixController::class, 'AssessmentLibrary'])->name('assessment.assessment_library');
-    Route::view('/gap_analysis', 'skill.assessment.gap_analysis');
+    Route::get('/assessment_library', [SkillMatrixController::class, 'AssessmentLibrary'])->name('assessment_library');
+    Route::view('/gap_analysis', 'skill.assessment.gap_analysis')->name('gap_analysis');
 });

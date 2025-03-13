@@ -49,19 +49,7 @@ body {
         </div>
 
         @php
-            $badgeColors = [
-                'Psychometric' => 'badge-primary',
-                'Aptitude' => 'badge-success',
-                'Coding' => 'badge-warning',
-                'Domain' => 'badge-info',
-            ];
-
-            $cardColors = [
-                'Psychometric' => 'border border-primary',
-                'Aptitude' => 'border border-success',
-                'Coding' => 'border border-warning',
-                'Domain' => 'border border-info',
-            ];
+            $badgeColors = ['primary','secondary','success','danger','warning','info','dark'];
         @endphp
 
         <div class="tab-title d-table mb-4 mx-auto">
@@ -77,29 +65,24 @@ body {
                         {{ $type }}
                     </a>
                 </li>
-                @php $first = false; @endphp
+                @php 
+                    $first = false; 
+                    $randomKey = array_rand($badgeColors);
+                    $typeBadges[$type] = $badgeColors[$randomKey];
+                @endphp
             @endforeach
-
-            <!--
-            @foreach ($assessments->groupBy('type') as $type => $group)
-                <li class="nav-item">
-                    <a class="nav-link" data-toggle="tab" href="#" data-filter="{{ $type }}">{{ $type }}</a>
-                </li>
-            @endforeach
-            -->
             </ul>
         </div>
         <div class="row mt-1">
         @foreach ($assessments as $assessment)
             @php
-                $badgeClass = $badgeColors[$assessment->type] ?? 'badge-secondary';
-                $cardClass = $cardColors[$assessment->type] ?? 'border border-secondary';
+                $badgeClass = $typeBadges[$assessment->type];
             @endphp
             <div class="col-md-3 assessment-card fade-up" data-type="{{ $assessment->type }}">
-                <div class="p-card bg-white p-2 rounded {{ $cardClass }}">
+                <div class="p-card bg-white p-2 rounded border border-{{ $badgeClass }}">
                     <div class="text-left"><span class="text-black-50 ml-2">{{ $assessment->level }}</span></div>
                     <h5 class="mt-2">{{ $assessment->title }}</h5>
-                    <span class="badge {{ $badgeClass }} py-1 mb-2">{{ $assessment->type }}</span>
+                    <span class="badge badge-{{ $badgeClass }} py-1 mb-2">{{ $assessment->type }}</span>
                     <span class="d-block mb-5">{{ $assessment->description }}</span>
                     <!--<a href="#" target="_blank" class="btn btn-primary btn-sm">Start</a>-->
                     <div class="d-flex justify-content-between stats">

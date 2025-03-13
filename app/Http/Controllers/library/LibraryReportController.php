@@ -212,10 +212,6 @@ class LibraryReportController extends Controller
             $value = trim($value);
             $barcodeImageData = $barcodeGenerator->getBarcode($value, $barcodeGenerator::TYPE_CODE_128, 2, 60);
             
-            $barcodeGenerator = new BarcodeGeneratorPNG();
-            $value = trim($value);
-            $barcodeImageData = $barcodeGenerator->getBarcode($value, $barcodeGenerator::TYPE_CODE_128, 2, 60);
-            
             // Create an image resource from the barcode data
             $barcodeImage = imagecreatefromstring($barcodeImageData);
             
@@ -223,31 +219,43 @@ class LibraryReportController extends Controller
             $barcodeWidth = imagesx($barcodeImage);
             $barcodeHeight = imagesy($barcodeImage);
             
-            // Load a TrueType font
-            $fontPath = public_path('fonts/saira-semi-condensed-v4-latin-regular.ttf'); // Adjust the path
-            $fontSize = 14; // Adjust font size
-            $topPadding = 0; // Padding above the text
-            $sidePadding = 30;
+            // Create a new image with a white background
+            $newImage = imagecreatetruecolor($barcodeWidth, $barcodeHeight);
+            
             // Allocate colors
-            $white = imagecolorallocate($barcodeImage, 255, 255, 255);
-            $black = imagecolorallocate($barcodeImage, 0, 0, 0);
+            $white = imagecolorallocate($newImage, 255, 255, 255);
+            $black = imagecolorallocate($newImage, 0, 0, 0);
+            
+            // Fill the new image with a white background
+            imagefill($newImage, 0, 0, $white);
+            
+            // Copy the barcode onto the white background
+            imagecopy($newImage, $barcodeImage, 0, 0, 0, 0, $barcodeWidth, $barcodeHeight);
+            
+            // Load a TrueType font
+            $fontPath = public_path('fonts/saira-semi-condensed-v4-latin-regular.ttf'); 
+            $fontSize = 14;
+            $sidePadding = 30;
+            $topPadding = 0;
             
             // Calculate text width and height
             $bbox = imagettfbbox($fontSize, 0, $fontPath, $value);
             $textWidth = $bbox[2] - $bbox[0];
             $textHeight = abs($bbox[5] - $bbox[1]);
-            $backgroundWidth =  $textWidth + $sidePadding * 2; 
-            $backgroundX = ($barcodeWidth - $backgroundWidth) / 2; 
-            $backgroundY = (($barcodeHeight - $topPadding) / 2) + 29;
-        
-           // Calculate text position
-           $textX = $backgroundX + $sidePadding; // Add padding to the text position
-           $textY = $backgroundY + $topPadding; 
+            
+            // Set text background and position
+            $backgroundWidth = $textWidth + $sidePadding * 2;
+            $backgroundX = ($barcodeWidth - $backgroundWidth) / 2;
+            $backgroundY = (($barcodeHeight - $topPadding) / 2) + 17;
+            
+            // Text position
+            $textX = $backgroundX + $sidePadding;
+            $textY = $backgroundY + $textHeight;
             
             // Draw a white rectangle behind the text
-            $textPadding = 4; // Extra padding around text for better visibility
+            $textPadding = 4;
             imagefilledrectangle(
-                $barcodeImage, 
+                $newImage, 
                 $textX - $textPadding, 
                 $textY - $textHeight - $textPadding, 
                 $textX + $textWidth + $textPadding, 
@@ -256,16 +264,17 @@ class LibraryReportController extends Controller
             );
             
             // Add text inside the barcode (centered)
-            imagettftext($barcodeImage, $fontSize, 0, $textX, $textY, $black, $fontPath, $value);
+            imagettftext($newImage, $fontSize, 0, $textX, $textY, $black, $fontPath, $value);
             
             // Output the final image
             ob_start();
-            imagepng($barcodeImage);
+            imagepng($newImage);
             $imageData = ob_get_contents();
             ob_end_clean();
             
             // Free memory
             imagedestroy($barcodeImage);
+            imagedestroy($newImage);
             
             // Return the image response
             // return response($imageData)->header('Content-Type', 'image/png');

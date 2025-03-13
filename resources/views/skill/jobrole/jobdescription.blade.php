@@ -87,7 +87,7 @@
                 <h5 class="text-primary"><i class="fas fa-tools"></i> Required Skills</h5>
                 <span class="badge bg-primary">➤ Technical</span>
                 <ul>
-                    <li>➤ <a href="https://dev.triz.co.in/lms/skill_library/1/show" target="_blank">Helicopter Aerodynamics Structures and Systems Principles Application</a></li>
+                    <li>➤ <a href="{{ url('lms/skill_library/1/show')}}" target="_blank">Helicopter Aerodynamics Structures and Systems Principles Application</a></li>
                     <li>➤ Biomaterials & Tissue Engineering</li>
                     <li>➤ Medical Device Manufacturing</li>
                     <li>➤ Electronics & Signal Processing</li>
