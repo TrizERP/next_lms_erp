@@ -527,8 +527,14 @@ LIMIT 1");
         }
         // echo "<pre>";print_r($result_remarks);exit;
         
-        $html_content = str_replace(htmlspecialchars("<<whether_qualified_value_result>>"),
+        $html_content = str_replace(htmlspecialchars("<<annual_value_result>>"),
         strtoupper($result_remarks), $html_content);
+        $failPass = 'CLASS '.$next_std->school_stream.'-'.$stu_remarks_input;
+        if(isset($value['whether_failed']) && in_array($value['whether_failed'],['Yes','YES','yes','Y'])){
+            $failPass = "CLASS ".$curr_std->school_stream.'-'.$value['division_name'];
+        }
+        $html_content = str_replace(htmlspecialchars("<<whether_qualified_value_result>>"),
+        strtoupper($failPass), $html_content);
         // for mmis auto fetch remarks from end
         $html_content = str_replace(htmlspecialchars("<<subjects_studied_value>>"),strtoupper($value['subjects_studied']), $html_content);
         $html_content = str_replace(htmlspecialchars("<<candidate_belongs_to_value>>"),
