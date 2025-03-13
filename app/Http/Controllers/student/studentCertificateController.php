@@ -482,8 +482,8 @@ LIMIT 1");
         $html_content = str_replace(htmlspecialchars("<<religion_name_value>>"), strtoupper($value['religion_name']),
             $html_content);
             $caste_name = $value['caste_name'];
-            if($sub_institute_id==47 && isset($value['caste_name']) && $value['caste_name']!=''){
-                $caste_name = "(".$value['caste_name'].")";
+            if($sub_institute_id==47 && isset($caste_name) && $caste_name!=''){
+                $caste_name = "(".$caste_name.")";
             }
         $html_content = str_replace(htmlspecialchars("<<caste_name_value>>"), strtoupper($caste_name),
             $html_content);
@@ -502,7 +502,34 @@ LIMIT 1");
         }else*/{
             $html_content = str_replace(htmlspecialchars("<<subjects_studied_system>>"),strtoupper($tdOptionalData),$html_content);
         }
-       
+
+        // for mmis auto fetch remarks from result_remarks
+        $curr_std = DB::table('standard')->where('id', $value['standard_id'])->first();
+        $next_std = DB::table('standard')->where('id', $curr_std->next_standard_id)->first();
+        $getRemarks = DB::table('result_remarks')->where('student_id', $value['id'])->where('syear',$syear)->latest()->first();
+        $result_remarks = $stu_remarks = $stu_remarks_input = '';
+        if(!empty($getRemarks) && isset($getRemarks->result_remarks)){
+            $explodeVal = explode('||',$getRemarks->result_remarks); 
+            $stu_remarks = (isset($explodeVal[0]) && $explodeVal[0]!='') ? $explodeVal[0] : '';
+            $stu_remarks_input = (isset($explodeVal[1]) && $explodeVal[1]!='') ? $explodeVal[1] : '';
+        }
+        if($stu_remarks!='' && $stu_remarks_input!=''){
+            $result_remarks = $stu_remarks.'-'.$stu_remarks_input;
+        }
+        else if ($stu_remarks=='' && $stu_remarks_input!='') {
+            $result_remarks = 'Passed & Promoted to Class ' . $next_std->school_stream .'-'.$stu_remarks_input; 
+        }
+        else if($stu_remarks!=''){
+            $result_remarks = $stu_remarks;
+        }
+        else if($stu_remarks_input!=''){
+            $result_remarks = $stu_remarks_input;
+        }
+        // echo "<pre>";print_r($result_remarks);exit;
+        
+        $html_content = str_replace(htmlspecialchars("<<whether_qualified_value_result>>"),
+        strtoupper($result_remarks), $html_content);
+        // for mmis auto fetch remarks from end
         $html_content = str_replace(htmlspecialchars("<<subjects_studied_value>>"),strtoupper($value['subjects_studied']), $html_content);
         $html_content = str_replace(htmlspecialchars("<<candidate_belongs_to_value>>"),
             strtoupper($value['candidate_belongs_to']), $html_content);
