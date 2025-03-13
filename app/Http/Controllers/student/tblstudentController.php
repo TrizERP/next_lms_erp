@@ -1802,4 +1802,47 @@ END as color_code
 
         return  response()->json($response);
     }
+
+    // 13-03-2025
+    public function destroyImage(Request $request){
+        // return $request;exit;
+        $getData = DB::table('tblstudent')->where('id',$request->studentId)->first();
+        $i=0;
+        if(!empty($getData) && isset($getData->id) && $getData->id==$request->studentId && in_array($request->image_type,['student','father','mother'])){
+            $updateArr=[];
+            if($request->image_type=='student'){
+                $updateArr['image'] = '';
+                $file_path = '';
+            }
+            if($request->image_type=='father'){
+                $updateArr['father_image'] = null;
+                $file_path = 'public/parents_image/' .$request->get('oldFatherImage');
+            }
+            if($request->image_type=='mother'){
+                $updateArr['mother_image'] = null;
+                $file_path = 'public/parents_image/' .$request->get('oldFatherImage');
+            }
+
+            if($file_path!='')
+            {
+                if (Storage::disk('digitalocean')->exists($file_path)) {
+                    Storage::disk('digitalocean')->delete($file_path);
+                } 
+            }
+            // echo "<pre>";print_r($updateArr);exit;
+            if(!empty($updateArr)){
+                $deleteImage = DB::table('tblstudent')->where('id',$request->studentId)->update($updateArr);
+                $i=1;
+            }
+        }
+
+        if($i==0){
+            $res['status_code'] = 0;
+            $res['message'] = 'Failed to Delete Image';
+        }else{
+            $res['status_code'] = 1;
+            $res['message'] = 'Image Deleted Successfully !';
+        }
+        return response()->json($res);
+    }
 }
