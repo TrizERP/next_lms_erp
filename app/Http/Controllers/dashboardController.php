@@ -2647,5 +2647,43 @@ $fees_chart2_fees_data = [];
         return is_mobile($type, "setup_institute_details", $res, 'view');
     }
 
+    // 13-03-2025 by uma for dashboard rights
+    public function dashboardRights(Request $request){       
+        $type = $request->type;
+        // return session();exit;
+        $sub_institute_id = session()->get('sub_institute_id');
+        $user_profile_id = session()->get('user_profile_id');
+        if(in_array($type,['API','JSON'])){
+            $sub_institute_id = $request->get('sub_institute_id');
+            $user_profile_id = $request->get('user_profile_id');
+        }
+
+        $getRights = DB::table('tblgroupwise_rights as tgr')
+        ->join('tblmenumaster as tmm',function($join){
+            $join->on('tmm.id','=','tgr.menu_id')->where('tmm.parent_menu_id','>',0)->where('status',1);
+        })
+        ->join('tbluserprofilemaster as tum',function($join) use($sub_institute_id){
+            $join->on('tum.id','=','tgr.profile_id')->where('tum.sub_institute_id',$sub_institute_id);
+        })
+        ->selectRaw('tgr.*,tmm.name as menu_name,tmm.menu_title,tmm.level as menu_level,tum.name as profile_name')
+        ->where(['tgr.sub_institute_id'=>$sub_institute_id,'tgr.profile_id'=>$user_profile_id,'tgr.dashboard_right'=>1])
+        ->orderBy('tgr.sort_order')
+        ->groupBy('tmm.id')
+        ->get()->toArray();
+
+        // echo "<pre>";print_r($getRights);exit;
+        if(!empty($getRights)){
+            $res['status_code'] = 1;                                                                                                                                  
+            $res['message'] = "Rights Found";
+        }
+        else{
+            $res['status_code'] = 0;
+            $res['message'] = "Rights Not Found";
+        }
+
+        $res['rightsData'] = $getRights;
+
+        return response()->json($res);
+    }
 }
  
