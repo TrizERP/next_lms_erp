@@ -765,14 +765,25 @@ class tblstudentController extends Controller
                     $student_optional_subject_data = explode(",", $student_optional_subject_data[0]->subject_ids);
                 }else{
                     foreach ($optional_subject_data as $key => $value) {
-                        if($value['optional_type'] !=null && $value['optional_type']==4){
+                          // 15-03-2025 get optional subject 4 
+                          $dataArr = [
+                            'syear'=>$syear,
+                            'subject_id'=>$value['subject_id'],
+                            'standard_id'=>$value['standard_id'],
+                            'optional_type'=>4,
+                            'sub_institute_id'=>$sub_institute_id
+                        ];
+                        
+                        $mappedOptionalSub = DB::table('subject_optional_type')
+                        ->where($dataArr)
+                        ->first();
+                        // echo "<pre>";print_r($dataArr);
+                        if(isset($mappedOptionalSub->optional_type)){
                             $hilldOptional4[]=$value;
                         }
-                        if($value['optional_type'] !=null && $value['optional_type']==5){
-                            $hilldOptional5[]=$value;
-                        }
-                        if($value['optional_type'] !=null && $value['optional_type']==6){
+                        else{
                             $hilldOptional6[]=$value;
+                            $hilldOptional5[]=$value;
                         }
                     }
                     $student_optional_subject_data4 = student_optional_subjectModel::selectRaw('GROUP_CONCAT(subject_id) AS subject_ids')
@@ -789,7 +800,7 @@ class tblstudentController extends Controller
                     $student_optional_subject_data6 = explode(",", $student_optional_subject_data6[0]->subject_ids);
                 }
         }
-        // echo "<pre>";print_r($hilldOptional4);exit;
+        // exit;
         $pastEducation = tblstudentPastEducationModel::where([
             'sub_institute_id' => $sub_institute_id, 'student_id' => $id,
         ])->get()->toArray();
