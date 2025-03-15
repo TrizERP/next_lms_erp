@@ -34,6 +34,7 @@
                                     <th><center>Can Add</center></th>
                                     <th><center>Can Edit</center></th>
                                     <th><center>Can Delete</center></th>
+                                    <th><center>Dashboard rights</center></th> <!-- dashobard rihts column 13-03-2025 by uma  -->
                                 </tr>
                             </thead>
                             <tbody>
@@ -81,6 +82,17 @@
                                     @endif
                                     </center>
                                     </td> 
+                                     <!-- dashobard rihts column 13-03-2025 by uma  -->
+                                     <td>
+                                    <center>
+                                    @if ($data->dashboard_rights == 1) 
+                                    <i class="fa fa-check text-success"></i>
+                                    @else 
+                                    <i class="fa fa-times text-danger"></i>
+                                    @endif
+                                    </center>
+                                    </td> 
+                                    <!-- dashboard rights ends  -->
                                 </tr>
                                 @php
                             $j++;
