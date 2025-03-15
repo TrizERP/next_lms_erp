@@ -106,7 +106,7 @@ td ul li::before {
            </div>
 
 <div class="container mt-5">
-        <h2 class="text-center">Skills Framework for Aerospace</h2>
+        <h2 class="text-center">Skills Framework for {{$data['editData']['title']}}</h2>
         <h4 class="text-center">Technical Skills & Competencies (TSC) Reference Document</h4>
 
         <table class="table table-bordered">
@@ -130,41 +130,27 @@ td ul li::before {
                 </tr>
                 <tr>
                     <th>TSC Proficiency Description</th>
-                    <td>Apply principles of theory of flight, airframe structures and systems towards maintenance, repair, overhaul or manufacturing of helicopter structures and systems</td>
-                    <td>Apply principles of theory of flight, airframe structures and systems towards maintenance, repair, overhaul or manufacturing of helicopter structures and systems</td>
+                    <td>Conduct holistic case history for routine cases independently. Seek guidance for case history taking for complex cases</td>
+                    <td>Conduct holistic case history taking for routine and complex cases independently. Provide guidance to junior therapists where necessary</td>
                 </tr>
                 <tr>
                     <th><b>Knowledge</b></th>
                     <td>
                         <ul>
-                            <li>Tools & programming for Big Data</li>
-                            <li>Data quality & modeling</li>
-                            <li>Principles of theory of flight</li>
-                            <li>Principles of blade tracking and vibration analysis</li>
-                            <li>General concepts of transmissions and airframe structures</li>
-                            <li>Principles of air supply and air conditioning (ATA 21)</li>
-                            <li>Functions of avionic, instrument, landing gear and lighting systems (ATA 22 - 23, 31 - 34)</li>
-                            <li>Aircraft electrical power systems, equipment and cabin furnishings and fire detection methods (ATA 24 - 26)</li>
-                            <li>Types of fuel, hydraulic power and ice and rain protection systems (ATA 28 - 30)</li>
-                            <li>Types of pneumatic/vacuum systems (ATA 36)</li>
-                            <li>Specification of water and waste systems (ATA 38)</li>
-                            <li>Concepts of integrated modular avionics (ATA 42)</li>
-                            <li>On-board maintenance and information systems (ATA 45 - 46)</li>
+                            <li>World Health Organisation's International Classification of Functioning, Disability and Health Framework (WHO ICF framework)</li>
+                            <li>Principles of effective interviewing</li>
+                            <li>Relevant elements in the clients' medical or therapy history</li>
+                            <li>Code of conduct and other relevant ethical and legislative guidelines</li>
+                            <li>Difficulties or considerations that must be taken into account for different target groups</li>
+                            <li>Modifications to the traditional interview process for different client groups</li>
+                            <li>Organisational practice guidelines of case documentation</li>
+                            <li>Workplace safety and health measures and workplace violence policies for handling difficult or potentially violent clients</li>
                         </ul>
                     </td>
-                    <td>
+                    <td style="vertical-align:top">
                         <ul>
-                            <li>Concepts of rotary wing aerodynamics and flight control system design and operation.</li>
-<li>Principles of blade tracking and vibration analysis.</li>
-<li>Installation, construction, and assembly methods for transmissions and airframe structures.</li>
-<li>Principles of air supply and air conditioning.</li>
-<li>Construction and application of avionic, instrument, landing gear, and lighting systems.</li>
-<li>Installation and handling requirements of power systems, equipment, furnishings, and fire protection systems.</li>
-<li>Operation of fuel, hydraulic power, and ice and rain protection systems.</li>
-<li>Layout and operation of pneumatic/vacuum systems.</li>
-<li>Layout and operation of water and waste systems.</li>
-<li>Functions of Integrated Modular Avionics (IMA) system.</li>
-<li>Functions of on-board maintenance and information systems.</li>
+                            <li>Multidisciplinary approaches to case history taking for cases that require treatment from multiple professions</li>
+                            <li>Models and/or frameworks of history taking</li>
                         </ul>
                     </td>
                 </tr>
@@ -172,21 +158,33 @@ td ul li::before {
                     <td><b>Abilities</b></td>
                     <td>
                         <ul>
-                            <li>Apply theory of flight to assess torque reaction, directional control, and ground effect.</li> <li>Describe the function and operation of flight control systems.</li> <li>Explain techniques for rotor tracking, alignment, and balancing.</li> <li>Explain characteristics of transmissions and airframe structures.</li> <li>Explain characteristics of air conditioning systems.</li> <li>Describe the operating characteristics of electro-avionic systems.</li> <li>Describe the operating characteristics of electro-mechanical systems.</li> <li>Explain the operation of flight control systems.</li> <li>Identify functions that may be integrated in the Integrated Modular Avionic (IMA) modules.</li> <li>Describe the functions of on-board maintenance and information systems.</li>
+                            <li>Identify purpose of interviews and structure the interviews to achieve required outcomes</li>
+                            <li>Gather information and develop client profiles</li>
+                            <li>Determine if additional assessments of performance skills are required under guidance</li>
+                            <li>Identify client strengths and potential problem areas</li>
+                            <li>Establish priorities for interventions as part of the client interviews</li>
+                            <li>Review medical and academic records of clients</li>
+                            <li>Document interview processes and findings appropriately</li>
+                            <li>Identify client and/or caregiver concerns</li>
+                            <li>Build trust and rapport with clients and caregivers</li>
+                            <li>Adhere to the code of conduct and other ethical or legislative guidelines in handling client information from the interview</li>
+                            <li>Apply workplace violence procedures or workplace safety and health measures to protect against violent clients</li>
+                            <li>Maintain professional code of conduct and/or confidentiality</li>
+                            <li>Show sensitivity to cultural background and practices of clients and adjust accordingly</li>
+                            <li>Identify possible client conditions that may require modification to the interview structures</li>
+                            <li>Identify suitable adjuncts for interviews where necessary</li>
+                            <li>Reflect on personal effectiveness in performing the interviews</li>
+                            <li>Identify areas for improvement or client-related limitations that need to be addressed</li>
+                            <li>Identify the most reliable source of information to establish the clinical history in clients</li>
+                            <li>Identify gaps in information and seek to fill these gaps</li>
+                            <li>Hypothesize potential problem areas</li>
                         </ul>
                     </td>
-                    <td>
+                    <td style="vertical-align:top">
                         <ul>
-                            <li>Evaluate the operation and effects of rotary wing aerodynamics.</li>
-                            <li>Guide the design, operation, and construction of flight control systems.</li>
-                            <li>Recommend methods for vibration reduction and ground resonance.</li>
-                            <li>Define work instructions for installation and construction of transmissions and airframe structures.</li>
-                            <li>Evaluate the operation of air conditioning systems.</li>
-                            <li>Discuss the layout and operation of electro-avionic systems.</li>
-                            <li>Discuss the layout and operation of electro-mechanical airframe and powerplant systems.</li>
-                            <li>Optimise the operation of flight control systems.</li>
-                            <li>Define the function of various Integrated Modular Avionic (IMA) modules.</li>
-                            <li>Guide the configuration of on-board maintenance and information systems.</li>
+                            <li>Integrate knowledge gathered by other professionals to form a holistic clinical impression of the clients</li>
+                            <li>Collaborate with other professionals when validating interview findings for complex cases</li>
+                            <li>Perform case history taking for complex cases requiring more in-depth knowledge or that have been escalated</li>
                         </ul>
                     </td>
                 </tr>
@@ -194,9 +192,98 @@ td ul li::before {
         </table>
     </div>
 
+<!-- RANGE OF APPLICATION -->
 
+<div class="container mt-5">
+    <h2 class="text-center mb-4">Proficiency Level wise Range of Application</h2>
+    
+    <ul class="nav nav-tabs" id="testPlanningTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="test2-tab" data-bs-toggle="tab" data-bs-target="#test2" type="button" role="tab">
+                Level 2
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="test3-tab" data-bs-toggle="tab" data-bs-target="#test3" type="button" role="tab">
+                Level 3
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="test4-tab" data-bs-toggle="tab" data-bs-target="#test4" type="button" role="tab">
+                Level 4
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="test5-tab" data-bs-toggle="tab" data-bs-target="#test5" type="button" role="tab">
+                Level 5
+            </button>
+        </li>
+    </ul>
 
+    <div class="tab-content mt-3" id="testPlanningContent">
+        <div class="tab-pane fade show active" id="test2" role="tabpanel">
+            <div class="card">
+                <div class="card-body">
+                    <p class="card-title"><strong>Proficiency Description:</strong> Identify and document tools, testware, resources, and processes</p><hr>
+                    <p class="card-text"><strong>Range of Application:</strong> Test planning may be applied but is not limited to:</p>
+                    <ul>
+                        <li>- Stress Tests</li>
+                        <li>- Load Tests</li>
+                        <li>- Volume Tests</li>
+                        <li>- Baseline Tests</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
 
+        <div class="tab-pane fade" id="test3" role="tabpanel">
+            <div class="card">
+                <div class="card-body">
+                    <p class="card-title"><strong>Proficiency Description:</strong> Determine requirements and develop a phase test plan</p><hr>
+                    <p class="card-text"><strong>Range of Application:</strong> Test planning may be applied but is not limited to:</p>
+                    <ul>
+                        <li>- Stress Tests</li>
+                        <li>- Load Tests</li>
+                        <li>- Volume Tests</li>
+                        <li>- Baseline Tests</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="test4" role="tabpanel">
+            <div class="card">
+                <div class="card-body">
+                    <p class="card-title"><strong>Proficiency Description:</strong> Define testing objectives and design a master test plan</p><hr>
+                    <p class="card-text"><strong>Range of Application:</strong> Test planning may be applied but is not limited to:</p>
+                    <ul>
+                        <li>- Stress Tests</li>
+                        <li>- Load Tests</li>
+                        <li>- Volume Tests</li>
+                        <li>- Baseline Tests</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="test5" role="tabpanel">
+            <div class="card">
+                <div class="card-body">
+                    <p class="card-title"><strong>Proficiency Description:</strong> Develop a test strategy and establish testing policies</p><hr>
+                    <p class="card-text"><strong>Range of Application:</strong> Test planning may be applied but is not limited to:</p>
+                    <ul>
+                        <li>- Stress Tests</li>
+                        <li>- Load Tests</li>
+                        <li>- Volume Tests</li>
+                        <li>- Baseline Tests</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- RANGE OF APPLICATION -->
         </div>
     </div>
 </div>

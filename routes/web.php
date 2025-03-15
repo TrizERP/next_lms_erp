@@ -556,7 +556,8 @@ Route::get('/ChartDashboard', function () {
     return view('reportsnew.welcome');
 });
 
-Route::view('bar-chart', 'reportsnew.charts.bar-chart');
+
+Route::view('bar-chart', 'reportsnew.charts.bar-chart')->name('bar-chart');
 Route::view('bubble-chart', 'reportsnew.charts.Bubble-Chart');
 Route::view('/doughnut-chart', 'reportsnew.charts.Doughnut-Chart');
 Route::view('horizontal-bar-chart', 'reportsnew.charts.horizontalBar-Chart');

@@ -44,7 +44,7 @@ class skillLibraryController extends Controller
             }
         }
 
-        $skillData = masterSkill::whereNull('deleted_at')->get()->toArray();
+        $skillData = masterSkill::whereNull('deleted_at')->where('status', 'Active')->get()->toArray();
         
         $treeData = [];
         foreach ($skillData as $key => $value) {

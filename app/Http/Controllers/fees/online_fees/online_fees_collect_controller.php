@@ -47,9 +47,11 @@ class online_fees_collect_controller extends Controller
             )
             ->where("s.id", $_REQUEST["student_id"])
             ->get();
+            // added school_setup join on 15-03-2025 for lions fees issue
         $get_syear = DB::select("SELECT s.id,s.mobile,se.syear,se.sub_institute_id,s.admission_under
                                 FROM tblstudent s
                                 INNER JOIN tblstudent_enrollment se ON se.student_id = s.id AND se.sub_institute_id = s.sub_institute_id
+                                INNER JOIN school_setup ss ON se.sub_institute_id = ss.Id AND ss.syear = se.syear
                                 WHERE s.id = '" . $_REQUEST["student_id"] . "'
                                 ORDER BY se.syear desc");
         if (isset($_REQUEST["syear"])) {
