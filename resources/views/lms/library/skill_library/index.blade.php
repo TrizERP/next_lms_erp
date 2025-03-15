@@ -159,8 +159,8 @@
               <label for="mainCategory">Sector:</label>
             <select class="form-select form-select-lg mb-3" id="mainCategory" onchange="updateSubcategory()">
                 <option value="">--Select Sector--</option>
-                <option value="Aerospace">Aerospace</option>
-                <option value="Accountancy">Accountancy</option>
+                <option value="Healthcare">Healthcare</option>
+                <option value="Education">Education</option>
             </select>
             </div>
             <div class="col-md-6 mx-auto p-3">
@@ -169,6 +169,7 @@
                 <option value="">--Select Sub-Sector--</option>
             </select>
             </div>
+            <h1 class="center" id="selectedCategory"></h1>
           </div>
         </div>
     </div>
@@ -176,13 +177,30 @@
 <script>
         // Data mapping
         const data = {
-            "Aerospace": {
-                "Staying Relevant": ["Adaptability", "Digital Fluency", "Global Perspective", "Learning Agility", "Self Management"],
-                "Thinking Critically": ["Creative Thinking", "Decision Making", "Problem Solving", "Sense Making", "Transdisciplinary Thinking"]
+            "Healthcare": {
+                "Ambulance Operations Readiness": [],
+                "Department Management": [],
+                "Drug Compounding and Management": [],
+                "Education for Healthcare Professions": [],
+                "Enterprise Risk Management": [],
+                "Ethics and Professionalism": [],
+                "Evidence Based Practice": [],
+                "General Management": [],
+                "Patient and/or Client Education and Health Promotion": [],
+                "Patient Care": [],
+                "People Development": [],
+                "Prehospital Patient Management": [],
+                "Quality and Patient Safety": [],
+                "Stakeholder Engagement and Partnerships": []
             },
-            "Accountancy": {
-                "Assurance": ["Audit Frameworks", "Auditing and Assurance Standards", "Auditor Independence", "Engagement Completion and Reporting", "Engagement Execution", "Engagement Planning", "Engagement Quality Control", "Engagement Review"],
-                "Business Management": ["Benchmarking", "Business Acumen", "Business Continuity Management"]
+            "Education": {
+                "General Management": [],
+                "Learning Assessment and Evaluation": [],
+                "Learning Delivery": [],
+                "Learning Design": [],
+                "Marketing": [],
+                "Technology Development and Management": [],
+                "Workplace Learning": []
             }
         };
 
@@ -190,6 +208,8 @@
             let mainCategory = document.getElementById("mainCategory").value;
             let subCategoryDropdown = document.getElementById("subCategory");
             let skillDropdown = document.getElementById("skill");
+
+            document.getElementById("selectedCategory").innerText = mainCategory ? mainCategory : "";
 
             subCategoryDropdown.innerHTML = "<option value=''>--Select Sub-Sector--</option>";
 

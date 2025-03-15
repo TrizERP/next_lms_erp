@@ -211,7 +211,11 @@ class studentResultController extends Controller
         $standard_id = $value['standard_id'];
         $reopen_date =$reopen_full_date= '';
 
-        $teacher_name = DB::table('class_teacher as ct')->join('tbluser as us', 'ct.teacher_id', '=', 'us.id')->selectRaw('ct.standard_id,ct.division_id,ct.teacher_id,concat_ws(" ",us.first_name,us.last_name) as teacher_name,us.last_name')->where(['ct.syear' => $syear, 'ct.sub_institute_id' => $sub_institute_id, 'ct.standard_id' => $value['standard_id'], 'ct.division_id' => $value['section_id']])->first();
+        $teacher_name = DB::table('class_teacher as ct')
+        ->join('tbluser as us', 'ct.teacher_id', '=', 'us.id')
+        ->selectRaw('ct.standard_id,ct.division_id,ct.teacher_id,concat_ws(" ",us.first_name,us.last_name) as teacher_name,us.last_name')->where(['ct.syear' => $syear, 'ct.sub_institute_id' => $sub_institute_id, 'ct.standard_id' => $value['standard_id'], 'ct.division_id' => $value['section_id']])
+        ->where('us.status',1)
+        ->first();
            // for teachers signature standard_wise
         $result_teacher = $this->getExamMasterSettigs($standard_id);
         if (!empty($result_teacher)) {

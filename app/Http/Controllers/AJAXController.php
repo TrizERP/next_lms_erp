@@ -1136,11 +1136,15 @@ class AJAXController extends Controller
     {
         $student_id = $_REQUEST["student_id"];
 
-        $get_enrollment_data = DB::table('tblstudent_enrollment')->where('student_id', $student_id)
-            ->orderBy('syear', 'DESC')->limit(1)->get()->toArray();
+        $get_enrollment_data = DB::table('tblstudent_enrollment as se')->where('se.student_id', $student_id)
+            ->join('school_setup as ss',function($q){
+                $q->on('ss.Id','=','se.sub_institute_id')->on('ss.syear','=','se.syear');
+            })
+            ->orderBy('ss.syear', 'DESC')->limit(1)->get()->toArray();
 
         $get_enrollment_data = $get_enrollment_data[0];
-
+            // return $get_enrollment_data;exit;
+            // added school_setup join on 15-03-2025 for lions fees issue
         $bf_data = DB::table('tblstudent as s')
             ->leftJoin('fees_breackoff as fb', function ($join) use ($get_enrollment_data) {
                 $join->whereRaw("fb.sub_institute_id = s.sub_institute_id AND fb.admission_year = s.admission_year AND fb.quota = '"
