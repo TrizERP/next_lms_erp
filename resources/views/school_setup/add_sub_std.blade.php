@@ -90,7 +90,7 @@
                             <select name="optional_type" id="optional_type" class="form-control">
                                 <option value="">Select Optional Type</option>
                                 @foreach($data['optional_type'] as $k => $v)
-                                <option value="{{$v}}" @if(isset($data['mapped_data']['elective_subject']) && $data['mapped_data']['optional_type'] == $v) selected @endif>{{$v}}</option>
+                                <option value="{{$v}}" @if(!empty($data['subject_optional_mapped']) && $data['subject_optional_mapped']->optional_type == $v) selected @endif>{{$v}}</option>
                                 @endforeach
                             </select>
                         </div>                        
@@ -180,7 +180,7 @@
         $('#optional_type').prop('required',false);
         @if(isset($data['mapped_data']['elective_subject']) && $data['mapped_data']['elective_subject'] == "Yes" && session()->get('sub_institute_id')==254)
             $('#optionalType').show();
-            $('#optional_type').prop('required',true);
+            // $('#optional_type').prop('required',true);
         @endif
     })
     function openOptionType(){
@@ -188,10 +188,10 @@
 
        if ($('#elective_subject').is(':checked')) {
             $('#optionalType').show();
-            $('#optional_type').prop('required',true);
+            // $('#optional_type').prop('required',true); // commented on 15-03-2025
         } else {
             $('#optionalType').hide();
-            $('#optional_type').prop('required',false);
+            // $('#optional_type').prop('required',false); // commented on 15-03-2025
         }
     }
 
