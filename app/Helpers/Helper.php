@@ -1505,10 +1505,14 @@ if (!function_exists('getStudents')) {
                 $join->whereRaw('td.id = tv.driver')->where('td.status', 'Active');
             })->leftJoin('transport_kilometer_rate as tkr', function ($join) {
                 $join->whereRaw('tkr.id = s.distance_from_school');
-            })->leftJoin('result_student_attendance_master as rsam', function ($join) {
-                $join->on('rsam.student_id','=', 's.id')->where('rsam.term_id', '2');
-            })->leftJoin('attendance_student as ats', function ($join) {
-                $join->whereRaw('ats.student_id = s.id AND ats.sub_institute_id = s.sub_institute_id');
+            })->leftJoin('result_student_attendance_master as rsam', function ($join) use ($syear) {
+                $join->on('rsam.student_id', '=', 's.id')
+                     ->where('rsam.term_id', '2')
+                     ->where('rsam.syear', '=', $syear) // Adding syear condition
+                     ->whereColumn('rsam.standard', 'se.standard_id'); // Adding standard condition
+            })->leftJoin('attendance_student as ats', function ($join) use ($syear) {
+                $join->whereRaw('ats.student_id = s.id AND ats.sub_institute_id = s.sub_institute_id')
+                     ->where('ats.syear', '=', $syear); // Adding syear=2024 condition
             })->leftJoin('fees_collect as fc', function ($join) {
                 $join->on('fc.student_id', '=', 's.id')->on('fc.sub_institute_id','=','s.sub_institute_id')->on('se.syear','=','fc.syear')->where('fc.is_deleted', 'N')->groupBy('fc.term_id');
             })
