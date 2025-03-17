@@ -16,29 +16,36 @@
             $to_date = $data['selToDate'];
         }
         @endphp
+
+        @if(Session::has('message'))
+        <div class="alert  @if(Session::has('status') && Session::get('status')==0)  alert-danger @endif alert-block">
+            <button type="button" class="close" data-dismiss="alert">×</button>
+            <strong>{{  Session::get('message') }}</strong>
+        </div>
+        @endif
         <!-- controller is fees/fees_report/feesReportController  -->
         <form action="{{route('fees_report_datewise.index')}}" method="get">
             @csrf
             <div class="card">
                 <div class="row">
-                    {{-- <div class="col-md-3">
-                        <label for="">Select Institute</label>
-                        <select name="institute" id="institute" class="form-control" required>
-                            <option value="">Select Institute</option>
-                            @foreach($data['institutes'] as $key=>$institute)
-                         <option value="{{$institute}}" @if($data['selInstitute']==$institute) selected @endif>{{$institute}}</option>
+                    <div class="col-md-4">
+                        <label for="">Select {{ App\Helpers\get_string('searchsection')}}</label>
+                        <select name="grade" id="grade" class="form-control" required>
+                            <option value="">Select {{ App\Helpers\get_string('searchsection')}}</option>
+                            @foreach($data['grade'] as $gradeId=>$grade)
+                         <option value="{{$gradeId}}" @if($data['selGrade']==$gradeId) selected @endif>{{$grade}}</option>
                         @endforeach
                         </select>
-                    </div> --}}
-                    <div class="col-md-3">
+                    </div> 
+                    <div class="col-md-4">
                         <label for="">From Date</label>
                         <input type="text" name="from_date" id="from_date" class="form-control mydatepicker" value="{{$from_date}}" required>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-4">
                         <label for="">To Date</label>
                         <input type="text" name="to_date" id="to_date" class="form-control mydatepicker" value="{{$to_date}}" required>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-4">
                         <label for="">Payment Mode</label>
                         <select name="payment_mode" id="payment_mode" class="form-control" required>
                         <option value="">Select Mode</option>
@@ -47,7 +54,7 @@
                         @endforeach
                         </select>
                     </div>
-                    <div class="col-md-3 mt-2" >
+                    <div class="col-md-4 mt-2" >
                         <label for="">Fees Head</label>
                         <select name="fees_head[]" id="fees_head" class="form-control resizable" multiple required>
                         <option value="">Select Head</option>
@@ -91,11 +98,11 @@
                             <th><b>CHEQUE NO.</b></th>
                             <th><b>RECIEVED BY</b></th>
                             <th><b>REMARKS</b></th>
-                            @foreach($data['selfeesHead'] as $key=>$title)
+                            {{-- @foreach($data['selfeesHead'] as $key=>$title)
                                 @if(isset($data['feesHead'][$title]))
                                 <th><b>{{strtoupper($data['feesHead'][$title])}}</b></th>
                                 @endif
-                            @endforeach
+                            @endforeach--}}
                             <th><b>AMOUNT</b></th>
                         </tr>
                     </thead>
@@ -106,8 +113,8 @@
                             @endphp
                             @foreach($values as $key=>$value)
                             @php 
-                                $total_amt+=$value->amount;
-                                $grandTotal+=$value->amount;
+                                $total_amt+=$value->total_amount;
+                                $grandTotal+=$value->total_amount;
                             @endphp
                             <tr>
                                 <td style="text-align:center;">{{$value->receipt_no}}</td>
@@ -117,14 +124,14 @@
                                 <td>{{$value->cheque_no}}</td>
                                 <td>{{$value->user_name}}</td>
                                 <td>{{$value->remarks}}</td>
-                                @foreach($data['selfeesHead'] as $key=>$title)
+                                {{-- @foreach($data['selfeesHead'] as $key=>$title)
                                 <td>
                                 @if(isset($value->{'total_'.$title}))
                                     {{ $value->{'total_'.$title} }}
                                 @endif
                                 </td>
-                            @endforeach
-                                <td>{{$value->amount}}</td>
+                                @endforeach --}}
+                                <td>{{$value->total_amount}}</td>
                             </tr>
                             @endforeach
                         <tr>

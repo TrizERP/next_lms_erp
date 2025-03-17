@@ -342,9 +342,9 @@ class feesReportController extends Controller
                 ->where('se.syear', $syear)
                 ->where('fc.syear', $syear)
                 ->where('s.sub_institute_id', $sub_institute_id)
-                // ->when($request->has('institute'),function($q) use($request){
-                //     $q->where('fc.bank_name',$request->institute);
-                // })
+                ->when($request->has('grade'),function($q) use($request){
+                    $q->where('se.grade_id',$request->grade);
+                })
                 ->when($request->has('payment_mode'),function($q) use($request){
                     $q->where('fc.payment_mode',$request->payment_mode);
                 })
@@ -399,20 +399,31 @@ class feesReportController extends Controller
             // echo "<pre>";print_r($fees_data);exit;
 
             foreach ($fees_data as $key => $value) {
+                $value->total_amount = 0;
+                foreach ($request->fees_head as $key => $feesTitle) {
+                    $property = 'total_' . $feesTitle;
+
+                    if (isset($value->$property)) {
+                        $value->total_amount += $value->$property;
+                    }
+                }
                 $datewiseData[$value->receiptdate.'||'.$value->payment_mode][]=$value;
             }
             // echo "<pre>";print_r($datewiseData);exit;
         }
 
         $res['payment_mode']=['Cash','Cheque','DD','Online','NACH','UPI','Swipe1','Swipe2','Swipe3','POS'];
-        $res['institutes']=['SCHOOL','MISSION'];
-
+        $res['grade'] = DB::table("academic_section")
+        ->where("sub_institute_id", $sub_institute_id)
+        ->pluck("title", "id") // Fetch key-value pairs
+        ->toArray();
+    
         $res['feesHead'] = fees_title::where(['sub_institute_id' => $sub_institute_id,'syear' => $syear])
         ->orderBy('sort_order', 'asc') 
         ->pluck('display_name', 'fees_title')
         ->toArray();
 
-        $res['selInstitute'] = isset($request->institute) ? $request->institute : '';
+        $res['selGrade'] = isset($request->grade) ? $request->grade : '';
         $res['selPaymentMode'] = isset($request->payment_mode) ? $request->payment_mode : '';
         $res['selfeesHead'] = isset($request->fees_head) ? $request->fees_head : [];
 
