@@ -507,6 +507,9 @@ LIMIT 1");
         $curr_std = DB::table('standard')->where('id', $value['standard_id'])->first();
         $next_std = DB::table('standard')->where('id', $curr_std->next_standard_id)->first();
         $getRemarks = DB::table('result_remarks')->where('student_id', $value['id'])->where('syear',$syear)->latest()->first();
+        $nextStd = (isset($next_std->school_stream) && $next_std->school_stream!='') ? $next_std->school_stream: '';
+        $currentStd = (isset($curr_std->school_stream) && $curr_std->school_stream!='') ? $curr_std->school_stream: '';
+
         $result_remarks = $stu_remarks = $stu_remarks_input = '';
         if(!empty($getRemarks) && isset($getRemarks->result_remarks)){
             $explodeVal = explode('||',$getRemarks->result_remarks); 
@@ -517,7 +520,7 @@ LIMIT 1");
             $result_remarks = $stu_remarks.'-'.$stu_remarks_input;
         }
         else if ($stu_remarks=='' && $stu_remarks_input!='') {
-            $result_remarks = 'Passed & Promoted to Class ' . $next_std->school_stream .'-'.$stu_remarks_input; 
+            $result_remarks = 'Passed & Promoted to Class ' . $nextStd .'-'.$stu_remarks_input; 
         }
         else if($stu_remarks!=''){
             $result_remarks = $stu_remarks;
@@ -529,9 +532,9 @@ LIMIT 1");
         
         $html_content = str_replace(htmlspecialchars("<<annual_value_result>>"),
         strtoupper($result_remarks), $html_content);
-        $failPass = 'CLASS '.$next_std->school_stream.'-'.$stu_remarks_input;
+        $failPass = 'CLASS '.$nextStd.'-'.$stu_remarks_input;
         if(isset($value['whether_failed']) && in_array($value['whether_failed'],['Yes','YES','yes','Y'])){
-            $failPass = "CLASS ".$curr_std->school_stream.'-'.$value['division_name'];
+            $failPass = "CLASS ".$currentStd.'-'.$value['division_name'];
         }
         $html_content = str_replace(htmlspecialchars("<<whether_qualified_value_result>>"),
         strtoupper($failPass), $html_content);
