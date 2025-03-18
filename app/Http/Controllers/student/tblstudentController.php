@@ -341,6 +341,7 @@ class tblstudentController extends Controller
                     $optional_subject['subject_id'] = $val;
                     student_optional_subjectModel::insert($optional_subject);
                 }
+          
             }
         }else{
             if ($request->input('optional_subject4')) {
@@ -355,6 +356,8 @@ class tblstudentController extends Controller
                     student_optional_subjectModel::insert($optional_subject4);
                     }
                 }
+                $optionalQuery = "Insert optional subject 4";
+                accesslog_json($optionalQuery,'insert','Student Edit Profile (Optionl Subject insert)',$optional_subject4);
             }
             if ($request->input('optional_subject5')) {
                 $optional_subject5['student_id'] = $student_id;
@@ -368,6 +371,8 @@ class tblstudentController extends Controller
                     student_optional_subjectModel::insert($optional_subject5);
                     }
                 }
+                $optionalQuery = "Insert optional subject 5";
+                accesslog_json($optionalQuery,'insert','Student Edit Profile (Optionl Subject insert)',$optional_subject5);
             }
 
             if ($request->input('optional_subject6')) {
@@ -382,6 +387,8 @@ class tblstudentController extends Controller
                     student_optional_subjectModel::insert($optional_subject6);
                     }
                 }
+                $optionalQuery = "Insert optional subject 6";
+                accesslog_json($optionalQuery,'insert','Student Edit Profile (Optionl Subject insert)',$optional_subject6);
             }
         }
 		//END Save Optional Subject
@@ -1114,11 +1121,11 @@ die; */
 		$res['stu_par_communication'] = $stuParCommunication;
         $res['leave_application'] = $leaveApplication;
         if(isset($trans_details['stu_data'])){
-        $res['trans_details']=$trans_details['stu_data'];
-    }else{
-        $res['trans_details']=[];
-    }
-
+            $res['trans_details']=$trans_details['stu_data'];
+        }else{
+            $res['trans_details']=[];
+        }
+        
 		return is_mobile($type, "student/edit_student", $res, "view");
 	}
 
@@ -1328,9 +1335,10 @@ die; */
 		$data = $this->updateData($request);
 
 		//START Save Optional Subject
-        student_optional_subjectModel::where(["sub_institute_id" => $sub_institute_id, 'student_id' => $student_id, 'syear' => $syear])->delete();
+        // student_optional_subjectModel::where(["sub_institute_id" => $sub_institute_id, 'student_id' => $student_id, 'syear' => $syear])->delete();
 		if(session()->get('sub_institute_id') != 254){
             if ($request->input('optional_subject')) {
+                student_optional_subjectModel::where(["sub_institute_id" => $sub_institute_id, 'student_id' => $student_id, 'syear' => $syear])->delete();
                 $optional_subject['student_id'] = $student_id;
                 $optional_subject['sub_institute_id'] = $sub_institute_id;
                 $optional_subject['syear'] = $syear;
@@ -1352,6 +1360,8 @@ die; */
                     student_optional_subjectModel::insert($optional_subject4);
                     }
                 }
+                $optionalQuery = "Update optional subject 4";
+                accesslog_json($optionalQuery,'Update','Student Edit Profile (Optionl Subject Update)',$optional_subject4);
             }
             if ($request->input('optional_subject5')) {
                 $optional_subject5['student_id'] = $student_id;
@@ -1365,6 +1375,8 @@ die; */
                     student_optional_subjectModel::insert($optional_subject5);
                     }
                 }
+                $optionalQuery = "Update optional subject 5";
+                accesslog_json($optionalQuery,'Update','Student Edit Profile (Optionl Subject Update)',$optional_subject5);
             }
 
             if ($request->input('optional_subject6')) {
@@ -1379,6 +1391,8 @@ die; */
                     student_optional_subjectModel::insert($optional_subject6);
                     }
                 }
+                $optionalQuery = "Update optional subject 6";
+                accesslog_json($optionalQuery,'Update','Student Edit Profile (Optionl Subject Update)',$optional_subject6);
             }
         }
 		//END Save Optional Subject
@@ -1844,6 +1858,9 @@ END as color_code
             if(!empty($updateArr)){
                 $deleteImage = DB::table('tblstudent')->where('id',$request->studentId)->update($updateArr);
                 $i=1;
+
+                $query = "delete student image";
+                accesslog_json($query,'delete','Student Edit Profile (student Image)',$updateArr);
             }
         }
 
@@ -1853,6 +1870,46 @@ END as color_code
         }else{
             $res['status_code'] = 1;
             $res['message'] = 'Image Deleted Successfully !';
+        }
+        return response()->json($res);
+    }
+
+    // 18-03-2025
+    public function deleteData(Request $request){
+        $type = $request->type;
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+        if(in_array($type,['API','JSON'])){
+            $sub_institute_id = $request->sub_institute_id;
+            $syear = $request->syear;
+            $validator = Validator::make($request->all(), [
+               'sub_institute_id'  => 'required|numeric',
+                'syear'   => 'required|numeric',
+            ]);
+
+            if ($validator->fails()) {
+                $res['status'] = '0';
+                $res['response'] = $validator->messages()->first();
+		        return is_mobile($type, "student/edit_student", $res, "view");
+            } 
+        }
+        $i=0;
+        if($request->has('deleteType') && $request->deleteType=="optionalSubject"){
+            $where = ["sub_institute_id" => $sub_institute_id, 'student_id' => $request->studentId, 'syear' => $syear,'level'=>$request->level];
+            $i++;
+            DB::enableQueryLog(); // 2024-08-24 required to convert query into sql for json
+            student_optional_subjectModel::where($where)->delete();
+            $data = DB::getQueryLog(); // 2024-08-24 required to convert query into sql for json
+            $query = end($data);
+            accesslog_json($query,'delete','Student Edit Profile (Optionl Subject Delete)',$where);
+        }
+
+        if($i==0){
+            $res['status_code'] = 0;
+            $res['message'] = 'Failed to Data';
+        }else{
+            $res['status_code'] = 1;
+            $res['message'] = 'Data Deleted Successfully !';
         }
         return response()->json($res);
     }
