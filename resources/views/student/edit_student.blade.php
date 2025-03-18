@@ -416,9 +416,12 @@ datalist {
                                             <input type="hidden" name="oldMotherImage" value="{{ $student_data->mother_image }}">
                                         </div>  
                                         @if(session()->get('sub_institute_id')==254)
-                                        <div class="col-md-4 form-group">
+                                        <div class="col-md-4 form-group mt-2">
                                             <label>Optional Subject 4</label>
-                                            <select id='optional_subject' name="optional_subject4[]" multiple class="form-control">
+                                            @if(isset($data['student_optional_subject_data4'][0]) && $data['student_optional_subject_data4'][0]!='')
+                                            <span class="mdi mdi-trash-can" style="color:red" onclick="deleteOptionalSubject({{$student_data->id}},4)"></span>
+                                            @endif
+                                            <select id='optional_subject' name="optional_subject4[]" multiple class="form-control resizableVertical">
                                                 @if(isset($data['hilldOptional4']))
                                                     @foreach($data['hilldOptional4'] as $key => $value)
                                                         <option @if( in_array($value['subject_id'],$data['student_optional_subject_data4']) ) selected @endif value="{{ $value['subject_id'] }}">{{ $value['subject_name'] }}</option>
@@ -426,9 +429,12 @@ datalist {
                                                 @endif                                                   
                                             </select>
                                         </div>
-                                        <div class="col-md-4 form-group">
+                                        <div class="col-md-4 form-group mt-2">
                                             <label>Optional Subject 5</label>
-                                            <select id='optional_subject' name="optional_subject5[]" multiple class="form-control">
+                                            @if(isset($data['student_optional_subject_data5'][0]) && $data['student_optional_subject_data5'][0]!='')
+                                            <span class="mdi mdi-trash-can" style="color:red" onclick="deleteOptionalSubject({{$student_data->id}},5)"></span>
+                                            @endif
+                                            <select id='optional_subject' name="optional_subject5[]" multiple class="form-control resizableVertical">
                                                 @if(isset($data['hilldOptional5']))
                                                     @foreach($data['hilldOptional5'] as $key => $value)
                                                         <option @if( in_array($value['subject_id'],$data['student_optional_subject_data5']) ) selected @endif value="{{ $value['subject_id'] }}">{{ $value['subject_name'] }}</option>
@@ -436,9 +442,12 @@ datalist {
                                                 @endif                                                   
                                             </select>
                                         </div>
-                                        <div class="col-md-4 form-group">
+                                        <div class="col-md-4 form-group mt-2">
                                             <label>Optional Subject 6</label>
-                                            <select id='optional_subject' name="optional_subject6[]" multiple class="form-control">
+                                            @if(isset($data['student_optional_subject_data6'][0]) && $data['student_optional_subject_data6'][0]!='')
+                                            <span class="mdi mdi-trash-can" style="color:red" onclick="deleteOptionalSubject({{$student_data->id}},6)"></span>
+                                            @endif
+                                            <select id='optional_subject' name="optional_subject6[]" multiple class="form-control resizableVertical">
                                                 @if(isset($data['hilldOptional6']))
                                                     @foreach($data['hilldOptional6'] as $key => $value)
                                                         <option @if( in_array($value['subject_id'],$data['student_optional_subject_data6']) ) selected @endif value="{{ $value['subject_id'] }}">{{ $value['subject_name'] }}</option>
@@ -2761,6 +2770,28 @@ datalist {
             $.ajax({
                 url : "{{route('studentImage.destroy')}}",
                 data : {studentId:studentId,image_type:imageType},
+                type : 'POST',
+                success : function(result){
+                    // console.log(result);
+                    if (result.status_code == 1) {
+                        location.reload();
+                    } else {
+                        alert(result.message); 
+                    }
+                }
+            });
+        } else {
+            return false;
+        }
+    }
+
+    // 18-03-2025 delete Optional Subject
+    function deleteOptionalSubject(studentId,level){
+        var r = confirm("Are you sure ?");
+        if (r == true) {
+            $.ajax({
+                url : "{{route('deleteData.destroy')}}",
+                data : {studentId:studentId,level:level,'deleteType':'optionalSubject'},
                 type : 'POST',
                 success : function(result){
                     // console.log(result);
