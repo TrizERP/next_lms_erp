@@ -738,6 +738,10 @@ datalist {
                                                 <label>Trial </label>
                                                 <input type="text" id='trial' value="{{$pvalue['trial']}}" name="trials[]" class="form-control">
                                             </div>
+                                            <div class="col-md-4 form-group ml-0">
+                                                <label>Reason of Leaving </label>
+                                                <input type="text" id='trial' value="{{$pvalue['reason_of_leaving']}}" name="reason_of_leaving[]" class="form-control">
+                                            </div>
                                             <div style="height:60px; width:100%; clear:both;"></div>
                                         </div>
                                     </div>
@@ -777,6 +781,10 @@ datalist {
                                             <div class="col-md-4 form-group ml-0">
                                                 <label>Trial </label>
                                                 <input type="text" id='trial'  name="trials[]" class="form-control">
+                                            </div> 
+                                            <div class="col-md-4 form-group ml-0">
+                                                <label>Trial </label>
+                                                <input type="text" id='reason_of_leaving'  name="reason_of_leaving[]" class="form-control">
                                             </div>                                              
                                         </div>                                              
                                     </div>

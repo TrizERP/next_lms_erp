@@ -15,7 +15,7 @@ return new class extends Migration
     {
         // add columns in table tblstudent_past_education
         Schema::table('tblstudent_past_education', function (Blueprint $table) {
-            $table->integer('reason_of_leaving')->after('trial')->nullable();
+            $table->mediumText('reason_of_leaving')->after('trial')->nullable();
             $table->biginteger('created_by')->after('sub_institute_id')->nullable();
             $table->timestamp('updated_on')->after('created_on')->nullable();
         });
