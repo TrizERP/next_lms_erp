@@ -109,7 +109,7 @@ datalist {
 }
 /* quick view end  */
 /* 19-03-2025  */
-#entered_og_family, #family_og{
+#entered_og_family, #family_og, #entered_og, #past_og{
     border: 1px solid #ccc;
     border-radius: 10px;
     padding:10px 20px;
@@ -706,6 +706,9 @@ datalist {
                                 @foreach($past_education as $pkey => $pvalue)
                                     <div id="entered_og">
                                         <div class="row">
+                                            <div class="col-md-12 text-right">
+                                            <button type="button" class="btn btn-outline-danger deleteFamily" onclick="deleteData({{$pvalue['id']}},'pastEducation')">x</button>
+                                            </div>
                                             <div class="col-md-4 form-group">
                                                 <label>Course </label>
                                                 <input type="text" required id='course' value="{{$pvalue['course']}}" name="courses[]" class="form-control">
@@ -742,7 +745,7 @@ datalist {
                                                 <label>Reason of Leaving </label>
                                                 <input type="text" id='trial' value="{{$pvalue['reason_of_leaving']}}" name="reason_of_leaving[]" class="form-control">
                                             </div>
-                                            <div style="height:60px; width:100%; clear:both;"></div>
+                                         
                                         </div>
                                     </div>
                                     @endforeach
@@ -783,7 +786,7 @@ datalist {
                                                 <input type="text" id='trial'  name="trials[]" class="form-control">
                                             </div> 
                                             <div class="col-md-4 form-group ml-0">
-                                                <label>Trial </label>
+                                                <label>Reason Of Leaving </label>
                                                 <input type="text" id='reason_of_leaving'  name="reason_of_leaving[]" class="form-control">
                                             </div>                                              
                                         </div>                                              
@@ -823,7 +826,7 @@ datalist {
                                     <div id="entered_og_family">
                                             <div class="row">
                                                 <div class="col-md-12 text-right">
-                                                 <button type="button" class="btn btn-outline-danger deleteFamily">x</button>
+                                                 <button type="button" class="btn btn-outline-danger deleteFamily" onclick="deleteData({{$fvalue['id']}},'familyHistory')">x</button>
                                                 </div>
                                                 <div class="col-md-3">
                                                     <label>Name </label>
@@ -2880,6 +2883,28 @@ datalist {
             $.ajax({
                 url : "{{route('deleteData.destroy')}}",
                 data : {studentId:studentId,level:level,'deleteType':'optionalSubject'},
+                type : 'POST',
+                success : function(result){
+                    // console.log(result);
+                    if (result.status_code == 1) {
+                        location.reload();
+                    } else {
+                        alert(result.message); 
+                    }
+                }
+            });
+        } else {
+            return false;
+        }
+    }
+
+    // 18-03-2025 delete Optional Subject
+    function deleteData(id,deleteType){
+        var r = confirm("Are you sure ?");
+        if (r == true) {
+            $.ajax({
+                url : "{{route('deleteData.destroy')}}",
+                data : {id:id,'deleteType':deleteType},
                 type : 'POST',
                 success : function(result){
                     // console.log(result);

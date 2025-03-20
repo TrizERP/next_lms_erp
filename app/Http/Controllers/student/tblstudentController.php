@@ -1904,12 +1904,35 @@ END as color_code
             accesslog_json($query,'delete','Student Edit Profile (Optionl Subject Delete)',$where);
         }
 
+        if($request->has('deleteType') && $request->deleteType=="familyHistory"){
+            $where = ['id'=>$request->id];
+            $i++;
+            DB::enableQueryLog(); // 2024-08-24 required to convert query into sql for json
+            tblstudentFamilyHistoryModel::where($where)->delete();
+            $data = DB::getQueryLog(); // 2024-08-24 required to convert query into sql for json
+            $query = end($data);
+            accesslog_json($query,'delete','Student Edit Profile (Family History Delete)',$where);
+        }
+        if($request->has('deleteType') && $request->deleteType=="pastEducation"){
+            $where = ['id'=>$request->id];
+            $i++;
+            DB::enableQueryLog(); // 2024-08-24 required to convert query into sql for json
+            tblstudentPastEducationModel::where($where)->delete();
+            $data = DB::getQueryLog(); // 2024-08-24 required to convert query into sql for json
+            $query = end($data);
+            accesslog_json($query,'delete','Student Edit Profile (Past Education Delete)',$where);
+        }
+
         if($i==0){
             $res['status_code'] = 0;
-            $res['message'] = 'Failed to Data';
+            $res['message'] = 'Failed to delete Data';
+            Session::flash('status', 0); 
+            Session::flash('message', 'Failed to delete data!!'); 
         }else{
             $res['status_code'] = 1;
             $res['message'] = 'Data Deleted Successfully !';
+            Session::flash('status', 1); 
+            Session::flash('message', 'Data Deleted Successfully !'); 
         }
         return response()->json($res);
     }
