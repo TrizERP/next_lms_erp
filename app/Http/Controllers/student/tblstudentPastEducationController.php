@@ -51,6 +51,8 @@ class tblstudentPastEducationController extends Controller
         $school_names = $request['school_names'];
         $places = $request['places'];
         $trials = $request['trials'];
+        $reason_of_leaving = $request['reason_of_leaving'];
+
         tblstudentPastEducationModel::where([
             "student_id"       => $request->input('student_id'),
             "sub_institute_id" => $sub_institute_id,
@@ -63,6 +65,8 @@ class tblstudentPastEducationController extends Controller
         $request->request->remove('school_names');
         $request->request->remove('places');
         $request->request->remove('trials');
+        $request->request->remove('reason_of_leaving');
+
         foreach ($courses as $key => $value) {
             if ($value == '') {
                 break;
@@ -75,6 +79,7 @@ class tblstudentPastEducationController extends Controller
             $request->request->set('school_name', $school_names[$key]);
             $request->request->set('place', $places[$key]);
             $request->request->set('trial', $trials[$key]);
+            $request->request->set('reason_of_leaving', $reason_of_leaving[$key]);
             $data = $this->saveData($request);
         }
 
@@ -91,6 +96,7 @@ class tblstudentPastEducationController extends Controller
         $newRequest = $request->post();
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $finalArray['sub_institute_id'] = $sub_institute_id;
+        $finalArray['created_by'] =$request->session()->get('user_id');
 
         foreach ($newRequest as $key => $value) {
             if ($key != '_method' && $key != '_token' && $key != 'submit') {
