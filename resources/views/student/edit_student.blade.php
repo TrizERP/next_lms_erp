@@ -108,6 +108,13 @@ datalist {
     display:none !important;
 }
 /* quick view end  */
+/* 19-03-2025  */
+#entered_og_family, #family_og, #entered_og, #past_og{
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    padding:10px 20px;
+    margin-bottom: 20px;
+}
 </style>
 
 <div id="page-wrapper">
@@ -136,7 +143,7 @@ datalist {
                 @endif
 
                 @if(Session::has('message'))
-                <div class="alert  @if(Session::has('status') && Session::get('message')==0)  alert-danger @else alert-success @endif alert-block">
+                <div class="alert  @if(Session::has('status') && Session::get('status')==0)  alert-danger @else alert-success @endif alert-block">
                 <button type="button" class="close" data-dismiss="alert">×</button>
                 <strong>{{  Session::get('message') }}</strong>
                 </div>
@@ -699,6 +706,9 @@ datalist {
                                 @foreach($past_education as $pkey => $pvalue)
                                     <div id="entered_og">
                                         <div class="row">
+                                            <div class="col-md-12 text-right">
+                                            <button type="button" class="btn btn-outline-danger deleteFamily" onclick="deleteData({{$pvalue['id']}},'pastEducation')">x</button>
+                                            </div>
                                             <div class="col-md-4 form-group">
                                                 <label>Course </label>
                                                 <input type="text" required id='course' value="{{$pvalue['course']}}" name="courses[]" class="form-control">
@@ -731,7 +741,11 @@ datalist {
                                                 <label>Trial </label>
                                                 <input type="text" id='trial' value="{{$pvalue['trial']}}" name="trials[]" class="form-control">
                                             </div>
-                                            <div style="height:60px; width:100%; clear:both;"></div>
+                                            <div class="col-md-4 form-group ml-0">
+                                                <label>Reason of Leaving </label>
+                                                <input type="text" id='trial' value="{{$pvalue['reason_of_leaving']}}" name="reason_of_leaving[]" class="form-control">
+                                            </div>
+                                         
                                         </div>
                                     </div>
                                     @endforeach
@@ -770,6 +784,10 @@ datalist {
                                             <div class="col-md-4 form-group ml-0">
                                                 <label>Trial </label>
                                                 <input type="text" id='trial'  name="trials[]" class="form-control">
+                                            </div> 
+                                            <div class="col-md-4 form-group ml-0">
+                                                <label>Reason Of Leaving </label>
+                                                <input type="text" id='reason_of_leaving'  name="reason_of_leaving[]" class="form-control">
                                             </div>                                              
                                         </div>                                              
                                     </div>
@@ -807,69 +825,142 @@ datalist {
                                 @foreach($family_history as $fkey => $fvalue)
                                     <div id="entered_og_family">
                                             <div class="row">
-                                                <div class="col-md-4 form-group">
+                                                <div class="col-md-12 text-right">
+                                                 <button type="button" class="btn btn-outline-danger deleteFamily" onclick="deleteData({{$fvalue['id']}},'familyHistory')">x</button>
+                                                </div>
+                                                <div class="col-md-3">
                                                     <label>Name </label>
-                                                    <input type="text" required id='name' placeholder="Name" value="{{$fvalue['name']}}" name="names[]" class="form-control">
+                                                    <input type="text" required id='name' placeholder="Name" value="{{$fvalue['name']}}" name="update[name][{{$fvalue['id']}}]" class="form-control">
                                                 </div>
-                                                <div class="col-md-4 form-group">
-                                                    <label>Institute Name </label>
-                                                    <input type="text" id='institute_name' placeholder="Institute Name" value="{{$fvalue['institute_name']}}" name="institute_names[]" class="form-control">
-                                                </div>
-                                                <div class="col-md-4 form-group">
-                                                    <label>Course </label>
-                                                    <input type="text" id='course' placeholder="Course" value="{{$fvalue['course']}}" name="courses[]" class="form-control">
-                                                </div>
-                                                <div class="col-md-4 form-group">
-                                                    <label>Year</label>
-                                                    <input type="text" id='year' placeholder="Year" value="{{$fvalue['year']}}" name="years[]" class="form-control">
-                                                </div>
-                                                <div class="col-md-4 form-group">
-                                                    <label>Percentage </label>
-                                                    <input type="text" id='percentage' placeholder="Percentage" value="{{$fvalue['percentage']}}" name="percentages[]" class="form-control">
-                                                </div>
-                                                <div class="col-md-4 form-group">
+                                                <div class="col-md-3">
                                                     <label>Relation With Student </label>
-                                                    <input type="text" id='relation_with_student' placeholder="Relation With Student" value="{{$fvalue['relation_with_student']}}" name="relation_with_students[]" class="form-control">
+                                                    <input type="text" id='relation_with_student' placeholder="Relation With Student" value="{{$fvalue['relation_with_student']}}" name="update[relation_with_students][{{$fvalue['id']}}]" class="form-control">
                                                 </div>
-                                                <div class="col-md-4 form-group">
+                                                <div class="col-md-3">
+                                                    <label>Date of Birth </label>
+                                                    <input type="text" name="update[dob][{{$fvalue['id']}}]" class="form-control mydatepicker" value="{{$fvalue['birthdate']}}" >
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label>Blood Goup</label>
+                                                    <select id='bloodgroup' name="update[bloodgroup][{{$fvalue['id']}}]" class="form-control">
+                                                        <option value="">--Select--</option>  
+                                                        @if(isset($data['bloodgroup_data']))
+                                                            @foreach($data['bloodgroup_data'] as $key => $value)
+                                                                <option value="{{ $value['bloodgroup'] }}" @if(isset($fvalue['blood_group']) && $fvalue['blood_group']==$value['bloodgroup']) selected @endif>{{ $value['bloodgroup'] }}</option>
+                                                            @endforeach
+                                                        @endif                                                      
+                                                </select>   
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label>Institute Name </label>
+                                                    <input type="text" id='institute_name' placeholder="Institute Name" value="{{$fvalue['institute_name']}}" name="update[institute_name][{{$fvalue['id']}}]" class="form-control">
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label>Course </label>
+                                                    <input type="text" id='course' placeholder="Course" value="{{$fvalue['course']}}" name="update[courses][{{$fvalue['id']}}]" class="form-control">
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label>Year</label>
+                                                    <input type="text" id='year' placeholder="Year" value="{{$fvalue['year']}}" name="update[years][{{$fvalue['id']}}]" class="form-control">
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label>Percentage </label>
+                                                    <input type="text" id='percentage' placeholder="Percentage" value="{{$fvalue['percentage']}}" name="update[percentage][{{$fvalue['id']}}]" class="form-control">
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label>Designation </label>
+                                                    <input type="text" id='designation' placeholder="Designation" name="update[designation][{{$fvalue['id']}}]" class="form-control" value="{{$fvalue['designation']}}" >
+                                                </div> 
+                                                <div class="col-md-3">
+                                                    <label>Company Name </label>
+                                                    <input type="text" id='company_name' placeholder="Company Name" name="update[company_name][{{$fvalue['id']}}]" class="form-control" value="{{$fvalue['company_name']}}" >
+                                                </div> 
+                                                <div class="col-md-3">
+                                                    <label>Office Address </label>
+                                                    <input type="text" id='office_address' placeholder="Office Address" name="update[office_address][{{$fvalue['id']}}]" class="form-control" value="{{$fvalue['office_address']}}" >
+                                                </div> 
+                                                <div class="col-md-3">
                                                     <label>Annual Income</label>
-                                                    <input type="text" id='annual_income' placeholder="Annual Income" value="{{$fvalue['annual_income']}}" name="annual_income[]" class="form-control">
+                                                    <input type="text" id='annual_income' placeholder="Annual Income" name="update[annual_income][{{$fvalue['id']}}]" class="form-control" value="{{$fvalue['annual_income']}}" >
                                                 </div>
-                                                <div style="height:60px; width:100%; clear:both;"></div>
+                                                <div class="col-md-3">
+                                                    <label>Mobile No. </label>
+                                                    <input type="text" id='mobile_no' placeholder="Mobile No" name="update[mobile_no][{{$fvalue['id']}}]" class="form-control" value="{{$fvalue['mobile_no']}}" >
+                                                </div> 
+                                                <div class="col-md-3">
+                                                    <label>Local Guardian Address </label>
+                                                    <input type="text" id='local_guardian' placeholder="Local Guardian Address" name="update[local_guardian][{{$fvalue['id']}}]" class="form-control" value="{{$fvalue['guardian_address']}}" >
+                                                </div> 
+                                            
                                             </div>
                                     </div>
                                     @endforeach
                                     <input type="hidden" name="student_id" value="{{$student_data['id']}}">
                                     <div id="family_og">
                                         <div class="row">
-                                            <div class="col-md-4 form-group">
-                                                <label>Name </label>
-                                                <input type="text" id='name' required placeholder="Name" name="names[]" class="form-control">
-                                            </div>
-                                            <div class="col-md-4 form-group">
-                                                <label>Institute Name </label>
-                                                <input type="text" id='institute_name' placeholder="Institute Name" name="institute_names[]" class="form-control">
-                                            </div>
-                                            <div class="col-md-4 form-group">
-                                                <label>Course </label>
-                                                <input type="text" id='course' placeholder="Course" name="courses[]" class="form-control">
-                                            </div>
-                                            <div class="col-md-4 form-group">
-                                                <label>Year</label>
-                                                <input type="text" id='year' placeholder="Year" name="years[]" class="form-control">
-                                            </div>
-                                            <div class="col-md-4 form-group">
-                                                <label>Percentage </label>
-                                                <input type="text" id='percentage' placeholder="Percentage" name="percentages[]" class="form-control">
-                                            </div>
-                                            <div class="col-md-4 form-group">
-                                                <label>Relation With Student </label>
-                                                <input type="text" id='relation_with_student' placeholder="Relation With Student" name="relation_with_students[]" class="form-control">
-                                            </div>
-                                            <div class="col-md-4 form-group">
-                                                <label>Annual Income</label>
-                                                <input type="text" id='annual_income' placeholder="Annual Income" name="annual_income[]" class="form-control">
-                                            </div>
+                                                <div class="col-md-3">
+                                                    <label>Name </label>
+                                                    <input type="text" id='name' placeholder="Name" name="insert[name][]" class="form-control">
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label>Relation With Student </label>
+                                                    <input type="text" id='relation_with_student' placeholder="Relation With Student" name="insert[relation_with_students][]" class="form-control">
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label>Date of Birth </label>
+                                                    <input type="text" name="insert[dob][]" class="form-control mydatepicker">
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label>Blood Goup</label>
+                                                    <select id='bloodgroup' name="insert[bloodgroup][]" class="form-control">
+                                                        <option value="">--Select--</option>  
+                                                        @if(isset($data['bloodgroup_data']))
+                                                            @foreach($data['bloodgroup_data'] as $key => $value)
+                                                                <option  value="{{ $value['bloodgroup'] }}">{{ $value['bloodgroup'] }}</option>
+                                                            @endforeach
+                                                        @endif                                                      
+                                                </select>   
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label>Institute Name </label>
+                                                    <input type="text" id='institute_name' placeholder="Institute Name"  name="insert[institute_name][]" class="form-control">
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label>Course </label>
+                                                    <input type="text" id='course' placeholder="Course" name="insert[courses][]" class="form-control">
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label>Year</label>
+                                                    <input type="text" id='year' placeholder="Year" name="insert[years][]" class="form-control">
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label>Percentage </label>
+                                                    <input type="text" id='percentage' placeholder="Percentage" name="insert[percentages][]" class="form-control">
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label>Designation </label>
+                                                    <input type="text" id='designation' placeholder="Designation" name="insert[designation][]" class="form-control">
+                                                </div> 
+                                                <div class="col-md-3">
+                                                    <label>Company Name </label>
+                                                    <input type="text" id='company_name' placeholder="Company Name" name="insert[company_name][]" class="form-control">
+                                                </div> 
+                                                <div class="col-md-3">
+                                                    <label>Office Address </label>
+                                                    <input type="text" id='office_address' placeholder="Office Address" name="insert[office_address][]" class="form-control">
+                                                </div> 
+                                                <div class="col-md-3">
+                                                    <label>Annual Income</label>
+                                                    <input type="text" id='annual_income' placeholder="Annual Income" name="insert[annual_income][]" class="form-control">
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label>Mobile No. </label>
+                                                    <input type="text" id='mobile_no' placeholder="Mobile No." name="insert[mobile_no][]" class="form-control">
+                                                </div> 
+                                                <div class="col-md-3">
+                                                    <label>Local Guardian Address </label>
+                                                    <input type="text" id='local_guardian' placeholder="Local Guardian" name="insert[local_guardian][]" class="form-control">
+                                                </div> 
                                             <div class="clearfix"></div>
                                         </div>
                                     </div>
@@ -2792,6 +2883,28 @@ datalist {
             $.ajax({
                 url : "{{route('deleteData.destroy')}}",
                 data : {studentId:studentId,level:level,'deleteType':'optionalSubject'},
+                type : 'POST',
+                success : function(result){
+                    // console.log(result);
+                    if (result.status_code == 1) {
+                        location.reload();
+                    } else {
+                        alert(result.message); 
+                    }
+                }
+            });
+        } else {
+            return false;
+        }
+    }
+
+    // 18-03-2025 delete Optional Subject
+    function deleteData(id,deleteType){
+        var r = confirm("Are you sure ?");
+        if (r == true) {
+            $.ajax({
+                url : "{{route('deleteData.destroy')}}",
+                data : {id:id,'deleteType':deleteType},
                 type : 'POST',
                 success : function(result){
                     // console.log(result);
