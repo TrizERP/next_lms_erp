@@ -1,5 +1,10 @@
 @extends('layout')
 @section('container')
+<style>
+    .schoolData{
+        margin-top:22px;
+    }
+</style>
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row bg-title">
@@ -29,21 +34,25 @@
             <div class="card">
                 <div class="row">
                     <div class="col-md-4">
-                        <label for="">Select {{ App\Helpers\get_string('searchsection')}}</label>
-                        <select name="grade" id="grade" class="form-control" required>
-                            <option value="">Select {{ App\Helpers\get_string('searchsection')}}</option>
-                            @foreach($data['grade'] as $gradeId=>$grade)
-                         <option value="{{$gradeId}}" @if($data['selGrade']==$gradeId) selected @endif>{{$grade}}</option>
-                        @endforeach
+                        <label for="">Select Institute</label>
+                        <select name="receipt_title" id="receipt_title" class="form-control" required>
+                            <option value="">Select Institute</option>
+                            @foreach($data['receipt_title'] as $key=>$value)
+                                @php 
+                                $instituteName = $value->receipt_line_2;
+                                if($value->sort_order==2 && session()->get('sub_institute_id')==76){
+                                    $instituteName = 'SHRI RAMKRISHNA HARIKRISHNA MISSION';
+                                }
+                                @endphp 
+                            <option value="{{$value->sort_order}}" @if($data['selreceipt_title']==$value->sort_order) selected @endif data-standard="{{$value->standards}}" data-heads="{{$value->heads}}">{{$instituteName}}</option>
+                            @endforeach
                         </select>
                     </div> 
-                    <div class="col-md-4">
-                        <label for="">From Date</label>
-                        <input type="text" name="from_date" id="from_date" class="form-control mydatepicker" value="{{$from_date}}" required>
-                    </div>
-                    <div class="col-md-4">
-                        <label for="">To Date</label>
-                        <input type="text" name="to_date" id="to_date" class="form-control mydatepicker" value="{{$to_date}}" required>
+                    <div class="col-md-4 mt-2" required>
+                        <label for="">Fees Head</label>
+                        <select name="fees_head[]" id="fees_head" class="form-control resizable" multiple>
+                       
+                        </select>
                     </div>
                     <div class="col-md-4">
                         <label for="">Payment Mode</label>
@@ -51,20 +60,21 @@
                         <option value="">Select Mode</option>
                         @foreach($data['payment_mode'] as $key=>$mode)
                          <option value="{{$mode}}" @if($data['selPaymentMode']==$mode) selected @endif>{{$mode}}</option>
-                        @endforeach
+                        @endforeach 
                         </select>
                     </div>
-                    <div class="col-md-4 mt-2" >
-                        <label for="">Fees Head</label>
-                        <select name="fees_head[]" id="fees_head" class="form-control resizable" multiple required>
-                        <option value="">Select Head</option>
-                        @foreach($data['feesHead'] as $title=>$head)
-                         <option value="{{$title}}" @if(in_array($title,$data['selfeesHead'])) selected @endif>{{$head}}</option>
-                        @endforeach
-                        </select>
+                    
+                    
+                    <div class="col-md-4">
+                        <label for="">From Date</label>
+                        <input type="text" name="from_date" id="from_date" class="form-control mydatepicker" value="{{$from_date}}" >
                     </div>
-
-                    <div class="col-md-12">
+                    <div class="col-md-4">
+                        <label for="">To Date</label>
+                        <input type="text" name="to_date" id="to_date" class="form-control mydatepicker" value="{{$to_date}}">
+                    </div>
+                   
+                    <div class="col-md-12 mt-2">
                         <center>
                             <input type="submit" value="search" name="search" class="btn btn-success">
                         </center>
@@ -76,13 +86,29 @@
         @if(isset($data['datewiseData']) && !empty($data['datewiseData']))
         <div class="card">
             <div class="row" id="printDiv" style="width:100%">
+            @if(isset($data['school_details']->id))
+                @php 
+                    $instituteName = $data['school_details']->receipt_line_2;
+                    if($data['school_details']->sort_order==2 && session()->get('sub_institute_id')==76){
+                        $instituteName = 'SHRI RAMKRISHNA HARIKRISHNA MISSION';
+                    }
+                @endphp 
+            <div style="width:100%;display:flex;justify-content:center;flex-wrap:wrap;text-align:center;margin-bottom:8px">
+                    <div><img style="height:80px;" src="https://erp.triz.co.in/storage/fees/{{$data['school_details']->receipt_logo}}"></div>
+                    <div class="schoolData" style="text-align:left;">
+                        <h4 style="margin:0px;"><b>{{$instituteName}}</b></h4>
+                        <h5 style="margin:0px;"><b>{{$data['school_details']->receipt_line_3}}</b></h5>
+                        <p style="margin:0px;"><b>DATE : {{$from_date}} to {{$to_date}}</b></p>
+                    </div>
+                </div>
+            @endif
             @php $grandTotal = 0; @endphp
             @foreach($data['datewiseData'] as $date_pay=>$values)
                 @php 
                     $explode = explode('||',$date_pay);
                     $date = $explode[0] ?? '-';
                     $pay_mode = $explode[1] ?? '-';
-                    $colspan = (8+count($data['selfeesHead']))
+                    $colspan = 8;
                 @endphp
                 <div class="table-responsive" style="margin-bottom:20px;width:100%;">
                 <table class="table table-striped">
@@ -98,11 +124,10 @@
                             <th><b>CHEQUE NO.</b></th>
                             <th><b>RECIEVED BY</b></th>
                             <th><b>REMARKS</b></th>
-                            {{-- @foreach($data['selfeesHead'] as $key=>$title)
-                                @if(isset($data['feesHead'][$title]))
-                                <th><b>{{strtoupper($data['feesHead'][$title])}}</b></th>
-                                @endif
-                            @endforeach--}}
+                            {{--  @php $colspan += count($data['selTitle']); @endphp
+                                @foreach($data['selTitle'] as $key=>$title)
+                                <th><b>{{strtoupper($title)}}</b></th>
+                            @endforeach --}}
                             <th><b>AMOUNT</b></th>
                         </tr>
                     </thead>
@@ -124,13 +149,13 @@
                                 <td>{{$value->cheque_no}}</td>
                                 <td>{{$value->user_name}}</td>
                                 <td>{{$value->remarks}}</td>
-                                {{-- @foreach($data['selfeesHead'] as $key=>$title)
+                                {{--@foreach($data['selTitle'] as $key=>$title)
                                 <td>
                                 @if(isset($value->{'total_'.$title}))
                                     {{ $value->{'total_'.$title} }}
                                 @endif
                                 </td>
-                                @endforeach --}}
+                                @endforeach --}} 
                                 <td>{{$value->total_amount}}</td>
                             </tr>
                             @endforeach
@@ -180,13 +205,54 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <script>
+    $(document).ready(function(){
+        @if(isset($data['selreceipt_title']) && $data['selreceipt_title']!='')
+            var selectedOption = $('#receipt_title').find(':selected');
+            var standard = selectedOption.data('standard');
+            var heads = selectedOption.data('heads');
+            console.log(@json($data['selfeesHead']));
+            getHeads(heads,@json($data['selfeesHead']));
+        @endif
+
+        $('#receipt_title').on('change', function() {
+            // alert('function called');
+            var selectedOption = $(this).find(':selected');
+            var standard = selectedOption.data('standard');
+            var heads = selectedOption.data('heads');
+            getHeads(heads);
+        });
+
+    })
+
+function getHeads(heads,selVals = ''){
+    var selValsInt = (selVals!='') ? selVals.map(Number) : [];
+    $('#fees_head').empty();
+            $.ajax({
+                url : '{{route("getFeesTitle")}}',
+                data : {heads:heads},
+                type: 'GET',
+                success : function(result){
+                    var options = '<option value="">-- Select Fees heads --</option>';
+                   
+                    $.each(result, function(index, item) {
+                        var selected = ''; 
+                        if (selVals.length === 0 || selValsInt.includes(parseInt(item.id))) {
+                            selected = 'selected';
+                        }
+                        options += '<option value="' + item.id + '" '+selected+'>' + item.display_name + '</option>';
+                    });
+
+                    $('#fees_head').html(options);
+                }
+            })
+}
 document.addEventListener("DOMContentLoaded", function () {
     document.getElementById("printButton").addEventListener("click", function () {
         var printContents = document.getElementById("printDiv").innerHTML;
         var printWindow = window.open("", "", "width=800,height=600");
 
         printWindow.document.write('<html><head><title>Print</title>');
-        printWindow.document.write('<style>@page{margin:0}@media print{ table{border:0.8px solid #ddd;width:100%;} th,td{border:0.8px solid #ddd;padding:4px;}}</style>');
+        printWindow.document.write('<style>@page{margin:0}@media print{ table{border:0.8px solid #ddd;width:100%;} th,td{border:0.8px solid #ddd;padding:4px;} .schoolData{margin-top:20px} }</style>');
         printWindow.document.write('</head><body>');
         printWindow.document.write(printContents);
         printWindow.document.write('</body></html>');
