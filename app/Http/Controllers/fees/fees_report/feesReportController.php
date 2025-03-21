@@ -290,9 +290,12 @@ class feesReportController extends Controller
         
             $fees_columns = "";
             $other_columns = "";
-            $columns = "";  
-            foreach ($request->fees_head as $key => $title) {
-                if($title!=''){
+            $columns = "";
+            $selTitle = [];  
+            foreach ($request->fees_head as $key => $feeTitleId) {
+                if($feeTitleId!=''){
+                    $title = DB::table('fees_title')->where('id',$feeTitleId)->value('fees_title');
+                    $selTitle[] = $title;
                     $feesTitleColumnExistsInCollect = Schema::hasColumn('fees_collect', $title);
                     $feesTitleColumnExistsInPaidOther = Schema::hasColumn('fees_paid_other', $title);
                     $columnAlias = is_numeric($title) ? $title : $title;
@@ -316,9 +319,17 @@ class feesReportController extends Controller
                     }
                 }
             }
-            // echo "<pre>";print_r($feesTitleColumnExistsInCollect);exit;
+
+            $receipt_book= DB::table('fees_receipt_book_master')->where(['sub_institute_id' => $sub_institute_id,'status' => 1,'syear'=>$syear])
+            ->selectRaw('*,GROUP_CONCAT(DISTINCT standard_id) as standards,GROUP_CONCAT(DISTINCT fees_head_id) as heads')    
+            ->when($request->has('receipt_title'),function($q) use($request){
+                 $q->where('sort_order',$request->receipt_title);
+             })
+             ->first();
+             $searchedStandards = (isset($receipt_book->standards) && $receipt_book->standards!='') ? explode(',',$receipt_book->standards) : [];
+            // echo "<pre>";print_r($fees_columns);exit;
             // DB::enableQueryLog();
-            $fees_data = DB::table(function ($query)  use($fees_columns,$other_columns,$sub_institute_id,$syear,$request) {
+            $fees_data = DB::table(function ($query)  use($fees_columns,$other_columns,$sub_institute_id,$syear,$request,$searchedStandards) {
                 $query->from('fees_collect as fc')
                 ->join('tblstudent as ts', function ($join) {
                     $join->whereRaw('ts.id = fc.student_id AND ts.sub_institute_id = fc.sub_institute_id');
@@ -345,9 +356,7 @@ class feesReportController extends Controller
                 ->where('se.syear', $syear)
                 ->where('fc.syear', $syear)
                 ->where('s.sub_institute_id', $sub_institute_id)
-                ->when($request->has('grade'),function($q) use($request){
-                    $q->where('se.grade_id',$request->grade);
-                })
+                ->whereIn('fc.standard_id',$searchedStandards)
                 ->when($request->has('payment_mode'),function($q) use($request){
                     $q->where('fc.payment_mode',$request->payment_mode);
                 })
@@ -403,22 +412,33 @@ class feesReportController extends Controller
 
             foreach ($fees_data as $key => $value) {
                 $value->total_amount = 0;
-                foreach ($request->fees_head as $key => $feesTitle) {
+                foreach ($request->fees_head as $key => $feeTitleId) {
+                    $feesTitle = DB::table('fees_title')->where('id',$feeTitleId)->value('fees_title');
                     $property = 'total_' . $feesTitle;
 
                     if (isset($value->$property)) {
                         $value->total_amount += $value->$property;
                     }
                 }
-                $datewiseData[$value->receiptdate.'||'.$value->payment_mode][]=$value;
+
+                if($value->total_amount!=0){
+                    $datewiseData[$value->receiptdate.'||'.$value->payment_mode][]=$value;
+                }
             }
             // echo "<pre>";print_r($datewiseData);exit;
+            if(empty($datewiseData)){
+                $res['status']=0;
+                $res['message']='No Data Found';
+            }
+            $res['school_details'] = $receipt_book;
         }
 
         $res['payment_mode']=['Cash','Cheque','DD','Online','NACH','UPI','Swipe1','Swipe2','Swipe3','POS'];
-        $res['grade'] = DB::table("academic_section")
-        ->where("sub_institute_id", $sub_institute_id)
-        ->pluck("title", "id") // Fetch key-value pairs
+        $res['receipt_title'] =  DB::table('fees_receipt_book_master')->where(['sub_institute_id' => $sub_institute_id,'status' => 1])
+        ->selectRaw('*,GROUP_CONCAT(DISTINCT standard_id) as standards,GROUP_CONCAT(DISTINCT fees_head_id) as heads')    
+        ->orderBy('sort_order', 'asc') 
+        ->groupBy('sort_order')
+        ->get()
         ->toArray();
     
         $res['feesHead'] = fees_title::where(['sub_institute_id' => $sub_institute_id,'syear' => $syear])
@@ -426,15 +446,46 @@ class feesReportController extends Controller
         ->pluck('display_name', 'fees_title')
         ->toArray();
 
-        $res['selGrade'] = isset($request->grade) ? $request->grade : '';
+        $res['selreceipt_title'] = isset($request->receipt_title) ? $request->receipt_title : '';
         $res['selPaymentMode'] = isset($request->payment_mode) ? $request->payment_mode : '';
         $res['selfeesHead'] = isset($request->fees_head) ? $request->fees_head : [];
-
+        $res['selTitle'] = $selTitle;
         $res['selFromDate'] = isset($request->from_date) ? $request->from_date : now();
         $res['selToDate'] = isset($request->to_date) ? $request->to_date : now();
         $res['datewiseData'] = $datewiseData;
+            // echo "<pre>";print_r($res);exit;
 
         return is_mobile($type, "fees/fees_report/datewiseFeesReport", $res, "view");
     } 
+
+    public function getFeesTitle(Request $request){
+        $type = $request->input("type");
+        $syear = $request->session()->get('syear');
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        // $standard = $request->standard;
+        $heads = $request->heads;
+        if(in_array($type,["API","JSON"])){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');            
+        }
+
+        $data = DB::table('fees_title')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear])
+        ->whereIn('id',explode(',',$heads))
+        ->get()
+        ->toArray();
+
+        return $data;
+    }
     
 }
