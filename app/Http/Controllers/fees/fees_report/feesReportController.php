@@ -433,7 +433,12 @@ class feesReportController extends Controller
             $res['school_details'] = $receipt_book;
         }
 
-        $res['payment_mode']=['Cash','Cheque','DD','Online','NACH','UPI','Swipe1','Swipe2','Swipe3','POS'];
+        if($sub_institute_id==76){
+            $res['payment_mode'] = ['Cash'=>'CASH','Cheque'=>'CHEQUE','POS'=>'POS','Online'=>'ONLINE','UPI'=>'UPI','RTGS/NEFT'=>'RTGS/NEFT'];
+        }
+        else{
+            $res['payment_mode'] = ['Cash'=>'Cash','Cheque'=>'Cheque','DD'=>'DD','Online'=>'Online','NACH'=>'NACH','UPI'=>'UPI','Swipe1'=>'Swipe1','Swipe2'=>'Swipe2','Swipe3'=>'Swipe3','POS'=>'POS'];
+        }
         $res['receipt_title'] =  DB::table('fees_receipt_book_master')->where(['sub_institute_id' => $sub_institute_id,'status' => 1])
         ->selectRaw('*,GROUP_CONCAT(DISTINCT standard_id) as standards,GROUP_CONCAT(DISTINCT fees_head_id) as heads')    
         ->orderBy('sort_order', 'asc') 

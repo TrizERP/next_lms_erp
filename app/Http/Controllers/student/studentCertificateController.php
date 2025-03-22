@@ -433,7 +433,6 @@ LIMIT 1");
         $html_content = str_replace(htmlspecialchars("<<student_mobile_value>>"), $value['mobile'],$html_content);
         $html_content = str_replace(htmlspecialchars("<<student_dob_value>>"), date('d-m-Y', strtotime($value['dob'])),$html_content);
         $html_content = str_replace(htmlspecialchars("<<current_date>>"), date('d-M-Y'), $html_content);
-        $html_content = str_replace(htmlspecialchars("<<current_date_dmy>>"), date('d-m-Y'), $html_content);
         $html_content = str_replace(htmlspecialchars("<<student_dob_word_value>>"), $date_in_word, $html_content);
         $html_content = str_replace(htmlspecialchars("<<student_dise_uid_value>>"), $value['dise_uid'], $html_content);
         $html_content = str_replace(htmlspecialchars("<<certificate_no>>"), $certificate_no, $html_content);
@@ -582,30 +581,6 @@ LIMIT 1");
         // echo "<pre>";print_r($month);exit;
         // end 15-04-2024
 
-        // start 20-03-2025 
-        if($sub_institute_id==47){
-
-            $getFees = DB::table('fees_collect')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear,'is_deleted'=>'N','student_id'=>$value['id']])->latest('id')->first();
-
-            $getFeesTitle = DB::table('fees_title')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear])->orderBy('sort_order')->get()->toArray();
-            $paidFees = '';
-            foreach ($getFeesTitle as $fk => $ft) {
-                if(isset($getFees->{$ft->fees_title}) && $getFees->{$ft->fees_title}!=0){
-                    $paidFees =$ft->append_name;
-                    foreach ($months as $mk => $mv) {
-                        if (strpos($mv, $paidFees) !== false) {
-                            $paidFees = $mv; // Output: Apr/2024
-                            break;
-                        }
-                    }
-                    
-                }
-            }
-            $month = $paidFees;
-        }
-        // echo "<pre>";print_r($paidFees);exit;
-
-        // end 20-03-2025
         $html_content = str_replace(htmlspecialchars("<<month_name_value>>"),
             strtoupper($month), $html_content);
         $html_content = str_replace(htmlspecialchars("<<month_up_paid_school_dues_value>>"),
@@ -813,6 +788,25 @@ LIMIT 1");
         $template = $request->input('template');
         $student_ids = explode(',', $student_id);
         $certificate_reason = $request->input('certificate_reason');
+
+        // 22-03-2025 start duplication prevent
+        $studentDetails = DB::table('certificate_history as a')
+        ->join('tblstudent as s','s.id','=','a.student_id')
+        ->selectRaw('a.certificate_number')
+        ->where(['a.sub_institute_id'=>$sub_institute_id,'a.syear'=>$syear])
+        ->where('a.certificate_type', $template)
+        ->where('a.student_id',$student_ids)
+        ->first();
+        $studentEnroll = [];
+        if(isset($studentDetails->certificate_number) && !in_array($studentDetails->certificate_number,$studentEnroll)){
+            $studentEnroll[] = $studentDetails->certificate_number;
+        }
+        if(!empty($studentEnroll) && $template == 'Transfer Certificate'){
+            $res['status_code'] = 0;
+            $res['message'] = "Certificate is already Issued with Certificate No ".implode(',',$studentEnroll).". Please check in Student Certificate Report.";
+            return $res;     
+        }
+        // 22-03-2025 end duplication prevent
         
         $data = getStudents($student_ids);
 
@@ -884,8 +878,10 @@ LIMIT 1");
                 $last_inserted_id = DB::getPdo()->lastInsertId();
                 $last_insert_ids .= $last_inserted_id.',';
     }
-
-        return rtrim($last_insert_ids, ',');
+        $res['status_code'] = 1;
+        $res['message'] ='Added Successfully !!';
+        $res['certificate_id'] = rtrim($last_insert_ids, ',');
+        return $res;
     }
 
     public function convert_number_to_words($number)

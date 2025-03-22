@@ -3021,6 +3021,12 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                 $res['hillsFine'] = $hillsFine;
             }
             $res['fees_config_data'] = $config;
+            if($sub_institute_id==76){
+                $res['payment_modes'] = ['Cash'=>'CASH','Cheque'=>'CHEQUE','POS'=>'POS','Online'=>'ONLINE','UPI'=>'UPI','RTGS/NEFT'=>'RTGS/NEFT'];
+            }
+            else{
+                $res['payment_modes'] = ['Cash'=>'Cash','Cheque'=>'Cheque','DD'=>'DD','Online'=>'Online','NACH'=>'NACH','UPI'=>'UPI','Swipe1'=>'Swipe1','Swipe2'=>'Swipe2','Swipe3'=>'Swipe3','POS'=>'POS'];
+            }
             // echo "<pre>";print_r($res);exit;
             return is_mobile($type, "fees/fees_collect/fees_collect", $res, "view");exit;
         } 
