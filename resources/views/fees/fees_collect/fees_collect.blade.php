@@ -478,7 +478,10 @@
 										<td>
 											<select class="form-control" required="required" name="PAYMENT_MODE" id="payment_mode" onchange="sh_bankDetail(this.value);">
 												<option value="">Select Payment Mode</option>
-												<option value="Cash">Cash</option>
+												@foreach($data['payment_modes'] as $key=>$value)
+												<option value="{{$key}}">{{$value}}</option>
+												@endforeach
+												<!-- <option value="Cash">Cash</option>
 												<option value="Cheque">Cheque</option>
 												<option value="DD">DD</option>
 												<option value="Online">Online</option>
@@ -487,7 +490,7 @@
 												<option value="Swipe1">Swipe1</option>
 												<option value="Swipe2">Swipe2</option>
 												<option value="Swipe3">Swipe3</option>
-												<option value="POS">POS</option>
+												<option value="POS">POS</option> -->
 											</select>
 										</td>
 										<td>Receipt Date</td>

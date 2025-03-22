@@ -158,7 +158,12 @@
                         @foreach($fees_data as $key => $fees_value)
                         @php
                             $total_paid = 0;
-                            $paymentModes = ['Cash','Cheque','DD','Online','NACH','UPI','Swipe1','Swipe2','Swipe3','POS'];
+                            if(session()->get('sub_institute_id')==76){
+                                $paymentModes = ['Cash'=>'CASH','Cheque'=>'CHEQUE','POS'=>'POS','Online'=>'ONLINE','UPI'=>'UPI','RTGS/NEFT'=>'RTGS/NEFT'];
+                            }
+                            else{
+                                $paymentModes = ['Cash'=>'Cash','Cheque'=>'Cheque','DD'=>'DD','Online'=>'Online','NACH'=>'NACH','UPI'=>'UPI','Swipe1'=>'Swipe1','Swipe2'=>'Swipe2','Swipe3'=>'Swipe3','POS'=>'POS'];
+                            }
                         @endphp
                         <tr>
                             <td><input type="checkbox" name="checkedFees[{{$fees_value['id']}}]" id="checkedFees" class="checkedFees" value="{{$fees_value['student_id']}}">&nbsp;{{$j}}</td>
