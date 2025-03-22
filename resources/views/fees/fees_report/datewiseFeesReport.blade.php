@@ -22,11 +22,11 @@
         }
         @endphp
 
-        @if(Session::has('message'))
-        <div class="alert  @if(Session::has('status') && Session::get('status')==0)  alert-danger @endif alert-block">
-            <button type="button" class="close" data-dismiss="alert">×</button>
-            <strong>{{  Session::get('message') }}</strong>
-        </div>
+        @if (isset($data['status']) && $data['status']==0)
+            <div class="alert alert-danger alert-block">
+                <button type="button" class="close" data-dismiss="alert">×</button>
+                <strong>{{ isset($data['message']) ? $data['message'] : 'Something wen wrong!' }}</strong>
+            </div>
         @endif
         <!-- controller is fees/fees_report/feesReportController  -->
         <form action="{{route('fees_report_datewise.index')}}" method="get">
@@ -41,7 +41,7 @@
                                 @php 
                                 $instituteName = $value->receipt_line_2;
                                 if($value->sort_order==2 && session()->get('sub_institute_id')==76){
-                                    $instituteName = 'SHRI RAMKRISHNA HARIKRISHNA MISSION';
+                                    $instituteName = 'SHRI SWAMINARAYAN MISSION';
                                 }
                                 @endphp 
                             <option value="{{$value->sort_order}}" @if($data['selreceipt_title']==$value->sort_order) selected @endif data-standard="{{$value->standards}}" data-heads="{{$value->heads}}">{{$instituteName}}</option>
@@ -50,7 +50,7 @@
                     </div> 
                     <div class="col-md-4 mt-2" required>
                         <label for="">Fees Head</label>
-                        <select name="fees_head[]" id="fees_head" class="form-control resizable" multiple>
+                        <select name="fees_head[]" id="fees_head" class="form-control resizableVerticale" multiple required>
                        
                         </select>
                     </div>
@@ -90,7 +90,7 @@
                 @php 
                     $instituteName = $data['school_details']->receipt_line_2;
                     if($data['school_details']->sort_order==2 && session()->get('sub_institute_id')==76){
-                        $instituteName = 'SHRI RAMKRISHNA HARIKRISHNA MISSION';
+                        $instituteName = 'SHRI SWAMINARAYAN MISSION';
                     }
                 @endphp 
             <div style="width:100%;display:flex;justify-content:center;flex-wrap:wrap;text-align:center;margin-bottom:8px">
@@ -98,7 +98,7 @@
                     <div class="schoolData" style="text-align:left;">
                         <h4 style="margin:0px;"><b>{{$instituteName}}</b></h4>
                         <h5 style="margin:0px;"><b>{{$data['school_details']->receipt_line_3}}</b></h5>
-                        <p style="margin:0px;"><b>DATE : {{$from_date}} to {{$to_date}}</b></p>
+                        <p style="margin:0px;"><b>DATE : {{date('d-m-y',strtotime($from_date))}} to {{date('d-m-y',strtotime($to_date))}}</b></p>
                     </div>
                 </div>
             @endif
@@ -119,7 +119,7 @@
                         <tr>
                             <th><b>REC.NO</b></th>
                             <th><b>NAME</b></th>
-                            <th><b>STD</b></th>
+                            <th><b>STD.</b></th>
                             <th><b>BANK NAME</b></th>
                             <th><b>CHEQUE NO.</b></th>
                             <th><b>RECIEVED BY</b></th>
@@ -143,20 +143,20 @@
                             @endphp
                             <tr>
                                 <td style="text-align:center;">{{$value->receipt_no}}</td>
-                                <td>{{$value->student_name}}</td>
-                                <td>{{$value->std_name}}</td>
-                                <td>{{$value->cheque_bank_name}}</td>
-                                <td>{{$value->cheque_no}}</td>
-                                <td>{{$value->user_name}}</td>
-                                <td>{{$value->remarks}}</td>
+                                <td style="text-align:center;">{{$value->student_name}}</td>
+                                <td style="text-align:center;">{{$value->short_standard_name}} - {{$value->div_name}}</td>
+                                <td style="text-align:center;">{{$value->cheque_bank_name}}</td>
+                                <td style="text-align:center;">{{$value->cheque_no}}</td>
+                                <td style="text-align:center;">{{$value->user_name}}</td>
+                                <td style="text-align:center;">{{$value->remarks}}</td>
                                 {{--@foreach($data['selTitle'] as $key=>$title)
-                                <td>
+                                <td style="text-align:center;">
                                 @if(isset($value->{'total_'.$title}))
                                     {{ $value->{'total_'.$title} }}
                                 @endif
                                 </td>
                                 @endforeach --}} 
-                                <td>{{$value->total_amount}}</td>
+                                <td style="text-align:center;">{{$value->total_amount}}</td>
                             </tr>
                             @endforeach
                         <tr>
@@ -193,7 +193,7 @@
             <div class="col-md-12">
                 <center>
                     <button class="btn btn-primary mt-4" id="printButton">Print</button>
-                    <button class="btn btn-primary mt-4" id="printExcel">Excel</button>
+                    <button class="btn btn-primary mt-4 hide" id="printExcel">Excel</button>
                 </center>
             </div>
         </div>
@@ -226,13 +226,14 @@
 
 function getHeads(heads,selVals = ''){
     var selValsInt = (selVals!='') ? selVals.map(Number) : [];
-    $('#fees_head').empty();
+        $('#fees_head').empty();
             $.ajax({
                 url : '{{route("getFeesTitle")}}',
                 data : {heads:heads},
                 type: 'GET',
                 success : function(result){
-                    var options = '<option value="">-- Select Fees heads --</option>';
+                    $('#fees_head').empty();
+                    var options = '';
                    
                     $.each(result, function(index, item) {
                         var selected = ''; 
