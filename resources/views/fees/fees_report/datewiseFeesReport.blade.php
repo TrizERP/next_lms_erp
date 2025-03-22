@@ -2,7 +2,7 @@
 @section('container')
 <style>
     .schoolData{
-        margin-top:22px;
+        margin-left:12px;
     }
 </style>
 <div id="page-wrapper">
@@ -50,7 +50,7 @@
                     </div> 
                     <div class="col-md-4 mt-2" required>
                         <label for="">Fees Head</label>
-                        <select name="fees_head[]" id="fees_head" class="form-control resizableVerticale" multiple required>
+                        <select name="fees_head[]" id="fees_head" class="form-control resizableVarticle" multiple required>
                        
                         </select>
                     </div>
@@ -59,7 +59,7 @@
                         <select name="payment_mode" id="payment_mode" class="form-control" required>
                         <option value="">Select Mode</option>
                         @foreach($data['payment_mode'] as $key=>$mode)
-                         <option value="{{$mode}}" @if($data['selPaymentMode']==$mode) selected @endif>{{$mode}}</option>
+                         <option value="{{$key}}" @if($data['selPaymentMode']==$key) selected @endif>{{$mode}}</option>
                         @endforeach 
                         </select>
                     </div>
@@ -92,13 +92,17 @@
                     if($data['school_details']->sort_order==2 && session()->get('sub_institute_id')==76){
                         $instituteName = 'SHRI SWAMINARAYAN MISSION';
                     }
+                    $academicYear = session()->get('syear').'-'.(session()->get('syear')+1);
                 @endphp 
             <div style="width:100%;display:flex;justify-content:center;flex-wrap:wrap;text-align:center;margin-bottom:8px">
-                    <div><img style="height:80px;" src="https://erp.triz.co.in/storage/fees/{{$data['school_details']->receipt_logo}}"></div>
+                    <div><img style="height:50px;" src="https://erp.triz.co.in/storage/fees/{{$data['school_details']->receipt_logo}}"></div>
                     <div class="schoolData" style="text-align:left;">
-                        <h4 style="margin:0px;"><b>{{$instituteName}}</b></h4>
-                        <h5 style="margin:0px;"><b>{{$data['school_details']->receipt_line_3}}</b></h5>
-                        <p style="margin:0px;"><b>DATE : {{date('d-m-y',strtotime($from_date))}} to {{date('d-m-y',strtotime($to_date))}}</b></p>
+                        <p style="margin:0px;"><b>{{$instituteName}}</b></p>
+                        <p style="margin:0px;"><b>{{$data['school_details']->receipt_line_3}}</b></p>
+                        <p style="margin:0px;">
+                        <b> {{--DATE : {{date('d-m-y',strtotime($from_date))}} to {{date('d-m-y',strtotime($to_date))}}--}}
+                            ACADEMIC YEAR : {{$academicYear}}
+                        </b></p>
                     </div>
                 </div>
             @endif
@@ -108,7 +112,7 @@
                     $explode = explode('||',$date_pay);
                     $date = $explode[0] ?? '-';
                     $pay_mode = $explode[1] ?? '-';
-                    $colspan = 8;
+                    $colspan = 9;
                 @endphp
                 <div class="table-responsive" style="margin-bottom:20px;width:100%;">
                 <table class="table table-striped">
@@ -117,18 +121,21 @@
                             <th colspan="{{$colspan}}" style="text-align:left;"><b><span>DATE : {{ \Carbon\Carbon::parse($date)->format('d/m/Y') }}</span><span style="padding-left:70px;">PAYMENT MODE : {{strtoupper($pay_mode)}}</span><b></th>
                         </tr>
                         <tr>
-                            <th><b>REC.NO</b></th>
-                            <th><b>NAME</b></th>
-                            <th><b>STD.</b></th>
+                            <th style="text-align:center;"><b>Sr.NO</b></th>
+                            <th style="text-align:center;"><b>REC.NO</b></th>
+                            <th style="text-align:center;"><b>NAME</b></th>
+                            <th style="text-align:center;"><b>STD.</b></th>
+                            @if($data['selPaymentMode']!='CASH')
                             <th><b>BANK NAME</b></th>
-                            <th><b>CHEQUE NO.</b></th>
-                            <th><b>RECIEVED BY</b></th>
-                            <th><b>REMARKS</b></th>
+                            <th style="text-align:center;"><b>CHEQUE NO.</b></th>
+                            @endif
+                            <!-- <th><b>RECIEVED BY</b></th> -->
+                            <th style="text-align:center;"><b>REMARKS</b></th>
                             {{--  @php $colspan += count($data['selTitle']); @endphp
                                 @foreach($data['selTitle'] as $key=>$title)
                                 <th><b>{{strtoupper($title)}}</b></th>
                             @endforeach --}}
-                            <th><b>AMOUNT</b></th>
+                            <th style="text-align:center;"><b>AMOUNT</b></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -142,21 +149,24 @@
                                 $grandTotal+=$value->total_amount;
                             @endphp
                             <tr>
-                                <td style="text-align:center;">{{$value->receipt_no}}</td>
-                                <td style="text-align:center;">{{$value->student_name}}</td>
-                                <td style="text-align:center;">{{$value->short_standard_name}} - {{$value->div_name}}</td>
-                                <td style="text-align:center;">{{$value->cheque_bank_name}}</td>
-                                <td style="text-align:center;">{{$value->cheque_no}}</td>
-                                <td style="text-align:center;">{{$value->user_name}}</td>
-                                <td style="text-align:center;">{{$value->remarks}}</td>
+                                <td>{{$key+1}}</td>
+                                <td>{{$value->receipt_no}}</td>
+                                <td>{{$value->student_name}}</td>
+                                <td>{{$value->short_standard_name}} - {{$value->div_name}}</td>
+                                @if($data['selPaymentMode']!='CASH')
+                                <td>{{$value->cheque_bank_name}}</td>
+                                <td>{{$value->cheque_no}}</td>
+                                @endif
+                                {{--<td>{{$value->user_name}}</td>--}}
+                                <td>{{$value->remarks}}</td>
                                 {{--@foreach($data['selTitle'] as $key=>$title)
-                                <td style="text-align:center;">
+                                <td>
                                 @if(isset($value->{'total_'.$title}))
                                     {{ $value->{'total_'.$title} }}
                                 @endif
                                 </td>
                                 @endforeach --}} 
-                                <td style="text-align:center;">{{$value->total_amount}}</td>
+                                <td>{{$value->total_amount}}</td>
                             </tr>
                             @endforeach
                         <tr>
@@ -253,7 +263,7 @@ document.addEventListener("DOMContentLoaded", function () {
         var printWindow = window.open("", "", "width=800,height=600");
 
         printWindow.document.write('<html><head><title>Print</title>');
-        printWindow.document.write('<style>@page{margin:0}@media print{ table{border:0.8px solid #ddd;width:100%;} th,td{border:0.8px solid #ddd;padding:4px;} .schoolData{margin-top:20px} }</style>');
+        printWindow.document.write('<style>@page{margin:0}@media print{ table{border:0.8px solid #ddd;width:100%;} th,td{border:0.8px solid #ddd;padding:4px;} .schoolData{margin-left:8px} }</style>');
         printWindow.document.write('</head><body>');
         printWindow.document.write(printContents);
         printWindow.document.write('</body></html>');
