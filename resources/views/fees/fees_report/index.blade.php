@@ -66,12 +66,22 @@
 						if(isset($data['payment_mode'])){
 							$payment_mode = $data['payment_mode'];
 						}
+						if(session()->get('sub_institute_id')==76){
+							$paymentModes = ['Cash'=>'CASH','Cheque'=>'CHEQUE','POS'=>'POS','Online'=>'ONLINE','UPI'=>'UPI','RTGS/NEFT'=>'RTGS/NEFT'];
+						}
+						else{
+							$paymentModes = ['Cash'=>'Cash','Cheque'=>'Cheque','DD'=>'DD','Online'=>'Online','NACH'=>'NACH','UPI'=>'UPI','Swipe1'=>'Swipe1','Swipe2'=>'Swipe2','Swipe3'=>'Swipe3','POS'=>'POS'];
+						}
 					@endphp
 					<div class="col-md-4 form-group">
 						<label>Payment Mode</label>
 						<select class="form-control" name="payment_mode" id="payment_mode">
 							<option value="">Select Payment Mode</option>
-							<option @if($payment_mode == 'Cash') selected="selected"
+							@foreach($paymentModes as $k=>$v)
+							<option @if($payment_mode ==  $k) selected="selected"
+                                                    @endif value="{{$k}}">{{$v}}</option>
+							@endforeach
+							{{--<option @if($payment_mode == 'Cash') selected="selected"
                                                     @endif value="Cash">Cash</option>
 							<option @if($payment_mode == 'Cheque') selected="selected"
                                                     @endif value="Cheque">Cheque</option>
@@ -90,7 +100,7 @@
 							<option @if($payment_mode == 'Swipe3') selected="selected"
                                                     @endif value="Swipe3">Swipe3</option>
 							<option @if($payment_mode == 'POS') selected="selected"
-                                                    @endif value="POS">POS</option>
+                                                    @endif value="POS">POS</option>--}}
 						</select>
 					</div>
 					@php

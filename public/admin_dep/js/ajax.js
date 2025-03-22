@@ -510,15 +510,21 @@ if ($("#ajax_PDF_Certificate").length != 0)
         var path = '/ajax_saveData?insert_student_ids='+insert_student_ids+'&template='+template_name+'&certificate_reason='+certificate_reason;
         $.ajax({
                 url: path,
-                success: function(result){
-                    $.ajax({
-                            url: '/ajax_PDF_Bulk_OtherFeesReceipt?action='+action+'&inserted_ids='+result,                
-                            success: function(result){ 
-                                window.open(result, '_blank');
-                                $("#overlay").css("display","none");
-                            }
-                    });   
-                }
+                success: function(response){
+                    //added if condition 22-03-2025
+                    if(response.status_code==0){
+                        alert(response.message);
+                    }
+                    {
+                        $.ajax({
+                                    url: '/ajax_PDF_Bulk_OtherFeesReceipt?action='+action+'&inserted_ids='+response.certificate_id,                
+                                    success: function(result){ 
+                                        window.open(result, '_blank');
+                                        $("#overlay").css("display","none");
+                                    }
+                            });   
+                        }
+                    }
         });
         }
     });
