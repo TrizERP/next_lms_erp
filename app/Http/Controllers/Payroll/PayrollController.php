@@ -21,6 +21,9 @@ use DB;
 use PDF;
 use Validator;
 use Illuminate\Support\Facades\Http;
+use DateTime;
+use DateInterval;
+use DatePeriod;
 
 class PayrollController extends Controller
 {
@@ -2075,6 +2078,8 @@ class PayrollController extends Controller
         ->get()->toArray();
         //echo "<pre>";print_r($userLeaves);exit();
       
+      $leaveStatus=["approved","pending"];
+      
         $totLeaveDay = $tot_lwp_leave = $noData = 0;
         $leaveDates=[];
         $searchMonth = $from_date->format('Y-m');
@@ -2090,15 +2095,14 @@ class PayrollController extends Controller
                 // $leaveMonth = $leaveTo->format('Y-m');
                     if($checkMonth == $leaveMonth && $searchMonth==$leaveMonth){
                         // Leaves that are not in attendance and not holidays
-                        if(!in_array($checkLeave,$attArr) && !in_array($checkLeave,$holidayDates)){
+                        if(!in_array($checkLeave,$attArr) && !in_array($checkLeave,$holidayDates) && in_array($value->status,$leaveStatus)){
                         // if(!in_array($checkLeave,$attArr) && $value->status != "approved_lwp" ){
-                            $totLeaveDay = ($totLeaveDay+$value->day_type);
-
+                            $totLeaveDay += $value->day_type;
                         }
 
                         // Decrease $totLeaveDay if $checkLeave matches a holiday date
-					    if (in_array($checkLeave, $holidayDates)) {
-					        $totLeaveDay--;
+					    if (in_array($checkLeave, $holidayDates) && $totLeaveDay > 0) {
+					        // $totLeaveDay--;
 					    }
 
                         // if date not found in attdance and leave is approved lwp then minus, count only full day leave because half day will be in attandance == If leave is approved LWP and half-day
@@ -2125,8 +2129,8 @@ class PayrollController extends Controller
                 }
         }
         // exit;
-        // echo "<br>Leaves<br>";
-        //echo "<pre>";print_r($leaveDates);
+        //echo "<br>Leaves<br>";
+        //echo "<pre>";print_r($leaveDates);exit();
        // date not found in attandance and leave, no punch in and punch out and also no leave entry in database
         $noEnrty = 0;
         foreach ($noAtt as $key => $value) {
@@ -2135,13 +2139,20 @@ class PayrollController extends Controller
                 // echo "<pre>";print_r($value);
             }
         }
+
+//START SANDWICH LEAVE
+$sandwichLeaveCount = 0;
+$sandwichLeaveCount = $this->calculateLeaveCounts($from_date,$to_date,$weekDays,$holidayDates,$leaveDates,$attArr);
+//END SANDWICH LEAVE
+
         $arr = [
             "att_+" =>$totalAtt,
             "holidays_+" => $holiday,
             "weekoff_+" => $weekday_off,
             "tot_leave_+"=>$totLeaveDay,
-            "noAtt_-"=>$noEnrty,
-            "lwp_-"=> $tot_lwp_leave
+            "sandwich_-"=> $sandwichLeaveCount,
+            //"noAtt_-"=>$noEnrty,
+            //"lwp_-"=> $tot_lwp_leave,
         ];
         // echo "<pre>";print_r($weekDays);
         // echo "<pre>";print_r($holidayDates);
@@ -2149,10 +2160,10 @@ class PayrollController extends Controller
         $json = json_encode($arr);
         //echo $json;exit();
         $daysCount = $from_date->diffInDays($to_date);
-       
-        $totalDays = ($totalAtt + $holiday + $weekday_off + $totLeaveDay + $noEnrty); // 31 //+ $tot_lwp_leave by Rajesh 02-01-2025
-        // echo "<pre>";print_r($totalDays);exit;
-        $totalDays = ($totalDays - $tot_lwp_leave - $noEnrty); // 16
+
+       $totalDays = ($totalAtt + $holiday + $weekday_off + $totLeaveDay - $sandwichLeaveCount); // + $noEnrty // 31 //+ $tot_lwp_leave by Rajesh 20-02-2025
+        //$totalDays = ($totalDays - $tot_lwp_leave - $noEnrty); // 16
+        
         $totalDays = ($totalDays>0) ? $totalDays : 0; // totDays should not be in minus
         // if no attendance,no leave applied and no lwp 2024-10-11
         if($totalAtt==0 && $totLeaveDay == 0 && $tot_lwp_leave==0){
@@ -2166,5 +2177,36 @@ class PayrollController extends Controller
 		];
 
         return $response;
+    }
+    public function calculateLeaveCounts($startDate,$endDate,$weekOffDates,$holidays,$leaveDates,$presentDates)
+    {
+        $allDates = [];
+        $sandwichLeaveCount = 0;
+
+        // Identify absent days
+        $allDates = array_unique(array_merge($weekOffDates, $holidays));
+
+        // Check for sandwich leave cases
+        foreach ($allDates as $allDate) {
+            $prevDay = date('Y-m-d', strtotime('-1 day', strtotime($allDate)));
+            $nextDay = date('Y-m-d', strtotime('+1 day', strtotime($allDate)));
+
+            if (!in_array($prevDay, $presentDates) && !in_array($nextDay, $presentDates) && !in_array($allDate, $leaveDates)) {
+                $sandwichLeaveCount++;
+                //$holidayCount = max(0, $holidayCount - ($allDate == $holidays ? 1 : 0));
+                //$weekoffCount = max(0, $weekoffCount - (in_array($allDate, $weekOffDates) ? 1 : 0));
+            }
+        }
+
+        // Output results
+        return $sandwichLeaveCount;
+        /*return [
+            'present' => $presentCount,
+            'holiday' => $holidayCount,
+            'weekoff' => $weekoffCount,
+            'tot_leave' => $totalLeaveCount,
+            'sandwich_leave' => $sandwichLeaveCount
+        ];
+        */
     }
 }

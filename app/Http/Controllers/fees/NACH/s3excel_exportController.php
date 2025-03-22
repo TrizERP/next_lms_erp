@@ -104,7 +104,7 @@ class s3excel_exportController extends Controller {
             
                 SELECT s.id,s.enrollment_no,CONCAT_WS(' ',s.first_name,s.last_name) AS full_name,
                 se.student_quota,f.month_id,bd.ac_type,bd.ac_holder_name,bd.ifsc_code,bd.ac_number,bd.UMRN,
-                f.amount AS totalFees,fc.amount AS paid_amount from tblstudent s 
+                SUM(f.amount) AS totalFees,fc.amount AS paid_amount from tblstudent s 
                 INNER JOIN tblstudent_enrollment se ON se.student_id = s.id 
                 INNER JOIN tblstudent_bank_detail bd ON bd.student_id = se.student_id AND bd.sub_institute_id = '".$sub_institute_id."'
                 INNER JOIN fees_breackoff f ON f.standard_id = se.standard_id AND f.grade_id = se.grade_id AND f.admission_year = s.admission_year AND se.student_quota = f.quota AND f.sub_institute_id = '".$sub_institute_id."' AND f.syear = '".$syear."' 

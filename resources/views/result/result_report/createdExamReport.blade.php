@@ -58,7 +58,7 @@
 
                                         @php $marksTotal = 0; @endphp
                                         @foreach($examData as $examTitle=>$createExams)
-                                            @php $marksTotal+=$studentData[$subjectName][$createExams->id]['marks']; @endphp
+                                            @php $marksTotal+= (isset($studentData[$subjectName][$createExams->id]['marks']) && !in_array($studentData[$subjectName][$createExams->id]['marks'],['N.A.','AB','EX'])) ? $studentData[$subjectName][$createExams->id]['marks'] : 0; @endphp
                                             <td>{{ isset($studentData[$subjectName][$createExams->id]['marks']) ? $studentData[$subjectName][$createExams->id]['marks'] : '-' }}</td>
                                         @endforeach
 
