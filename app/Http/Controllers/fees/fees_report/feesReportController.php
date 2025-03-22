@@ -348,7 +348,7 @@ class feesReportController extends Controller
                 })
                 ->selectRaw("fc.id,fc.student_id,CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name) AS student_name,
                     ts.enrollment_no,ts.admission_year,ts.mobile,ts.email,date_format(ts.dob,'%d-%m-%Y') AS dob,a.title AS section,
-                    s.name AS std_name,d.name AS div_name,sq.title AS stu_qouta, $fees_columns
+                    s.name AS std_name,s.short_name as short_standard_name,d.name AS div_name,sq.title AS stu_qouta, $fees_columns
                     SUM(fc.fine) AS total_fine,SUM(fc.fees_discount) AS tot_disc,fc.receipt_no,sum(fc.amount) as total_amt,b.title as student_batch_name,date_format(fc.receiptdate,'%d-%m-%Y') AS receiptdate,fc.payment_mode,fc.cheque_bank_name,fc.bank_branch,fc.cheque_no,fc.cheque_date,fc.bank_name,concat_ws(' ',COALESCE(u.first_name,'-'),COALESCE(u.last_name,'-')) as user_name,fc.remarks")
                 ->where('se.syear', $syear)
                 ->where('fc.syear', $syear)
@@ -364,7 +364,7 @@ class feesReportController extends Controller
                 ->unionAll(function ($query)  use($other_columns,$sub_institute_id,$syear,$request){
                     $query->selectRaw("fp.id,fp.student_id,CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name) AS student_name,
                     ts.enrollment_no,ts.admission_year,ts.mobile,ts.email,date_format(ts.dob,'%d-%m-%Y') AS dob,a.title AS section,
-                    s.name AS std_name,d.name AS div_name,sq.title AS stu_qouta, $other_columns
+                    s.name AS std_name,s.short_name as short_standard_name,d.name AS div_name,sq.title AS stu_qouta, $other_columns
                     SUM(fp.fine) AS total_fine,SUM(fp.fees_discount) AS tot_disc,fp.reciept_id as receipt_no,sum(fp.actual_amountpaid) as total_amt,b.title as student_batch_name,date_format(fp.receiptdate,'%d-%m-%Y') AS receiptdate,fp.payment_mode,fp.bank_name AS cheque_bank_name,fp.bank_branch,fp.cheque_dd_no as cheque_no,fp.cheque_dd_date as cheque_date,'' as bank_name,concat_ws(' ',COALESCE(u.first_name,'-'),COALESCE(u.last_name,'-')) as user_name,fp.remarks")
                         ->from('fees_paid_other as fp')
                         ->join('tblstudent as ts', function ($join) {
@@ -399,7 +399,7 @@ class feesReportController extends Controller
             })
             ->selectRaw("id,student_id,student_name,
             enrollment_no,admission_year,mobile,email,dob,section,
-           std_name,div_name,stu_qouta, ".$columns."
+           std_name,short_standard_name,div_name,stu_qouta, ".$columns."
            SUM(total_fine) as total_fine,SUM(tot_disc) as tot_disc,receipt_no,sum(total_amt) as amount,student_batch_name,receiptdate,payment_mode,cheque_bank_name,bank_branch,cheque_no,cheque_date,bank_name as institute_type,user_name,remarks,STR_TO_DATE(receiptdate, '%d-%m-%Y') as formatted_receiptdate")
             ->groupBy(['student_id','receiptdate','payment_mode','cheque_bank_name','cheque_no'])
             ->orderBy('formatted_receiptdate')
