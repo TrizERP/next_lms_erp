@@ -433,6 +433,7 @@ LIMIT 1");
         $html_content = str_replace(htmlspecialchars("<<student_mobile_value>>"), $value['mobile'],$html_content);
         $html_content = str_replace(htmlspecialchars("<<student_dob_value>>"), date('d-m-Y', strtotime($value['dob'])),$html_content);
         $html_content = str_replace(htmlspecialchars("<<current_date>>"), date('d-M-Y'), $html_content);
+        $html_content = str_replace(htmlspecialchars("<<current_date_dmy>>"), date('d-m-Y'), $html_content);
         $html_content = str_replace(htmlspecialchars("<<student_dob_word_value>>"), $date_in_word, $html_content);
         $html_content = str_replace(htmlspecialchars("<<student_dise_uid_value>>"), $value['dise_uid'], $html_content);
         $html_content = str_replace(htmlspecialchars("<<certificate_no>>"), $certificate_no, $html_content);
@@ -581,6 +582,30 @@ LIMIT 1");
         // echo "<pre>";print_r($month);exit;
         // end 15-04-2024
 
+        // start 20-03-2025 
+        if($sub_institute_id==47){
+
+            $getFees = DB::table('fees_collect')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear,'is_deleted'=>'N','student_id'=>$value['id']])->latest('id')->first();
+
+            $getFeesTitle = DB::table('fees_title')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear])->orderBy('sort_order')->get()->toArray();
+            $paidFees = '';
+            foreach ($getFeesTitle as $fk => $ft) {
+                if(isset($getFees->{$ft->fees_title}) && $getFees->{$ft->fees_title}!=0){
+                    $paidFees =$ft->append_name;
+                    foreach ($months as $mk => $mv) {
+                        if (strpos($mv, $paidFees) !== false) {
+                            $paidFees = $mv; // Output: Apr/2024
+                            break;
+                        }
+                    }
+                    
+                }
+            }
+            $month = $paidFees;
+        }
+        // echo "<pre>";print_r($paidFees);exit;
+
+        // end 20-03-2025
         $html_content = str_replace(htmlspecialchars("<<month_name_value>>"),
             strtoupper($month), $html_content);
         $html_content = str_replace(htmlspecialchars("<<month_up_paid_school_dues_value>>"),

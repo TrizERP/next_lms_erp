@@ -230,7 +230,7 @@
             document.getElementById('for_exam_type').style.display = 'block';
             document.getElementById('for_from_date').style.display = 'block';
             document.getElementById('for_to_date').style.display = 'block';
-            document.getElementById('subject').style.display = 'none';
+            document.getElementById('subject').style.display = 'block';
             document.getElementById('totalField').style.display = 'none';
             $('#subject').prop('required', true);
         }

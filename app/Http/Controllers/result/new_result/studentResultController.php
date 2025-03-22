@@ -2809,12 +2809,15 @@ $overall_total = $overall_total / 2;
                     ->first();
                     
                     $get_next_std = DB::table('standard')->where('id',$standard_id)->first();
-                    if(isset($get_remark->remark) && $get_remark->remark!=''){
+                    //START RAJESH HIDE BELOW CONDITION - Not know but give solution 20-03-2025
+                    //if(isset($get_remark->remark) && $get_remark->remark!=''){
                         $next_std_name = DB::table('standard')->where('id',$get_next_std->next_standard_id)->first();
                             $next_std =$next_std_name->short_name;
-                        }else{
+                    /*    }else{
                             $next_std ='';
                         }
+                    */
+                    //END RAJESH HIDE BELOW CONDITION - Not know but give solution 20-03-2025
 
                     if(isset($get_remark->remark)){
                         $result = str_replace('|','',$get_remark->remark);
@@ -4534,7 +4537,7 @@ while ($current_date <= $post_end_date) {
             $avg_mark = ($avg_max != 0) ? round(($avg_total * 100 / $avg_max)) : 0;
             $table .= "<td  class='data_center'>" . $total_practical."</td>";
             $table .= "<td  class='data_center'>" . $total_marks ."</td>";
-            $table .= "<td  class='data_center'>" . $avg_mark. "</td>";
+            $table .= "<td  class='data_center' ".$prac_yearly." ".$prac_yearly_tot.">" . $avg_mark. "</td>";
 
             $total_avg += $avg_mark;
             $total_avg_max += $avg_max;
@@ -4555,7 +4558,7 @@ while ($current_date <= $post_end_date) {
         }
         // exit;
         $table .= "</tr>";
-        $table .= "<tr><td colspan=" . ($cols + $cols + 1) . " style='text-align:right'><b>GRAND TOTAL</b></td>
+        $table .= "<tr><td colspan=" . ($cols + $cols + 1) . " style='text-align:right' ><b>GRAND TOTAL</b></td>
                     <td class='data_center'><b>" . $total_avg . "</b></td></tr>
                     <tr><td colspan=" . ($cols + $cols + 1) . " style='text-align:right'><b>PERCENTAGE</b></td>
                     <td class='data_center'><b>" . $per . "%</b></td>";
@@ -4627,7 +4630,8 @@ while ($current_date <= $post_end_date) {
             $grade_arr = $this->getGradeScale($standard_id, '');
             // get all subject name 
             foreach ($get_subject as $val) {
-            $both_term_ob_mark = 0;
+            $both_term_ob_mark = $infoTotTheory = $infoTotTheoryM = $infoTotPractical = $infoTotPracticalM = $infoTotTheoryOb = $infoTotPracticalOb = 0;
+
             $table .= '<tr>
             <td>' . $val->subject_name . '</td>';
             // get term wise eam and marks 
@@ -4654,15 +4658,17 @@ while ($current_date <= $post_end_date) {
                     ->groupByRaw('rce.title,s.display_name,rce.points')->get()->toArray();
                 
                     $value=$title->ExamTitle;
-                    $ob_marks=$tot_points=$weigthage=[];
+                    $ob_marks=$tot_points= $infoPoints = $infoMarks = $weigthage=[];
                         if(!empty($marks)){
                                 foreach($marks as $markskey=>$mark){                       
                                 if($mark->ExamTitle ==$title->ExamTitle && $val->subject_id == $mark->subject_id){
-                                        if($mark->points!="0.00"){
-                                            $ob_marks[$value][] = round(($mark->points * $mark->weightage)/$mark->total_points,0);
-                                            $tot_points[$value][] = $mark->weightage; 
-                                            $weigthage[$value] = $mark->weightage;
-                                        }    
+                                    $infoPoints[$value][] = in_array($mark->is_absent,['N.A.','EX']) ? 0 : $mark->total_points; 
+                                    $tot_points[$value][] = $mark->weightage; 
+                                    $weigthage[$value] = $mark->weightage;
+                                    if($mark->points!="0.00"){
+                                        $ob_marks[$value][] = round(($mark->points * $mark->weightage)/$mark->total_points,0);
+                                        $infoMarks[$value][] = $mark->points; 
+                                    }    
                                     }
                                 }
                             }
@@ -4672,13 +4678,48 @@ while ($current_date <= $post_end_date) {
                                 $best_two = array_sum(array_slice($ob_marks[$value], 0, 2));
                                 $best_two_p = array_sum(array_slice($tot_points[$value], 0, 2));
                                 $obtain_marks = round(($best_two/$best_two_p) * $weigthage[$value],0);
-                                $both_term_ob_mark+=$obtain_marks;                                        
-                                $table .= '<td  class="data_center">'.$obtain_marks.'</td>';
+                                $tdVal= $obtain_marks;
+                                
+                                if($val->subject_id==5188 && $standard_id==2898){
+                                    $informationMarks = isset($infoMarks[$value]) ? array_sum($infoMarks[$value]) : 0;
+                                    $informationPoints = isset($infoPoints[$value]) ? array_sum($infoPoints[$value]) : 0;
+                                    $obtain_marks = $informationMarks;
+                                    // $both_term_ob_mark+=$obtain_marks;  
+                                    if($value=="Periodic Test"){
+                                        $infoTotTheory +=$informationPoints;
+                                        $infoTotTheoryM +=$informationMarks;
+                                    }
+                                    if($value=="Yearly Exam"){
+                                        $infoTotPractical +=$informationPoints;
+                                        $infoTotPracticalM +=$informationMarks;
+                                    }
+                                    $tdVal = '-'; 
+                                }
+                                else{
+                                    $both_term_ob_mark+=$obtain_marks;  
+                                }
+                                                                     
+                                $table .= '<td  class="data_center" sub="'.$val->subject_id.'" '.$infoTotTheoryM.'D'.$infoTotTheory.' '.$infoTotPracticalM.'D'.$infoTotPractical.'>'.$tdVal.'</td>';
                             }else{
-                                $table .= '<td  class="data_center">0</td>';
+                                $tdVal = 0;
+                                if($val->subject_id==5188 && $standard_id==2898){
+                                    $tdVal = '-';
+                                }
+                                $table .= '<td  class="data_center">'.$tdVal.'</td>';
+                            }
+
+                            if($value=="Periodic Test"){
+                               $infoTotTheoryOb = ($infoTotTheory>0) ? ($infoTotTheoryM/$infoTotTheory) * 50 : 0;
+                            }
+                            if($value=="Yearly Exam"){
+                                $infoTotPracticalOb = ($infoTotPractical>0) ? ($infoTotPracticalM/$infoTotPractical) * 50 : 0;
                             }
                         }
                     }
+                    
+            if($val->subject_id==5188 && $standard_id==2898){
+                $both_term_ob_mark += round($infoTotPracticalOb + $infoTotTheoryOb,0);
+            }
             $get_all_ob_mark +=$both_term_ob_mark; 
             $get_all_tot_mark +=$overall_total;                
             if($both_term_ob_mark < 33){
@@ -4686,6 +4727,7 @@ while ($current_date <= $post_end_date) {
             }                                     
             $table.="<td class='data_center'><b>".$both_term_ob_mark."</b></td><td class='data_center'><b>".$this->getGrade($grade_arr, $overall_total, $both_term_ob_mark)."</b></td>";
         }
+
         $per = $this->getPer($get_all_ob_mark, $get_all_tot_mark) ?? '-';
     $table.="</tr><tr>
         <td style='text-align:right'  colspan=".(count($exam_ids)+1)."><b>Total</b></td>
