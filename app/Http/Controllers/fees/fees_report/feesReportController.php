@@ -280,6 +280,7 @@ class feesReportController extends Controller
         }
 
         $datewiseData = [];
+        $selTitle = [];  
 
         if($request->has('search')){
             // echo "<pre>";print_r($request->all());exit;
@@ -288,7 +289,6 @@ class feesReportController extends Controller
             $fees_columns = "";
             $other_columns = "";
             $columns = "";
-            $selTitle = [];  
             foreach ($request->fees_head as $key => $feeTitleId) {
                 if($feeTitleId!=''){
                     $title = DB::table('fees_title')->where('id',$feeTitleId)->value('fees_title');
