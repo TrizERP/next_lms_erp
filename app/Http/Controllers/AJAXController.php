@@ -1545,7 +1545,14 @@ class AJAXController extends Controller
     public function ajax_PDF_FeesReceipt(Request $request)
     {
         //Start For Empty folder before creating new PDF
-        $folder_path = $_SERVER['DOCUMENT_ROOT'] . '/storage/print_receipt_pdf/*';
+        $action = $request->input('action');
+        $certificatesArr = ['certificate_re_receipt'];
+        if(in_array($action,$certificatesArr)){
+            $folder_path = $_SERVER['DOCUMENT_ROOT'] . '/storage/print_certificate_pdf/*';
+        }
+        else{
+            $folder_path = $_SERVER['DOCUMENT_ROOT'] . '/storage/print_receipt_pdf/*';
+        }
         $files = glob($folder_path); // get all file names
         foreach ($files as $file) { // iterate files
             if (is_file($file)) {
@@ -1559,7 +1566,6 @@ class AJAXController extends Controller
       
         $student_id = $request->input('student_id');
         $receipt_id = $request->input('receipt_id_html');
-        $action = $request->input('action');
         $paper_size = $request->input('paper_size');
         if($request->has('type') && $request->input('type')=="API"){
             $sub_institute_id = $request->input('sub_institute_id');
@@ -1603,8 +1609,12 @@ class AJAXController extends Controller
             $dom .= '</body>
                 </html>';
 
-            $save_path = $_SERVER['DOCUMENT_ROOT'] . '/storage/print_receipt_pdf';
-
+            if(in_array($action,$certificatesArr)){
+                $save_path = $_SERVER['DOCUMENT_ROOT'] . '/storage/print_certificate_pdf';
+            }
+            else{
+                $save_path = $_SERVER['DOCUMENT_ROOT'] . '/storage/print_receipt_pdf';
+            }
             $CUR_TIME = date('YmdHis');
             $html_filename = $student_id . '_' . $CUR_TIME . ".html";
             $pdf_filename = $student_id . '_' . $CUR_TIME . ".pdf";
@@ -1633,9 +1643,12 @@ class AJAXController extends Controller
             $htmlToPDF = $this->htmlToPDF_making($paper_size, $html_file_path, $pdf_file_path);
 
             unlink($html_file_path);
-
-            $PDF_path_for_open = "https://" . $_SERVER['HTTP_HOST'] . '/storage/print_receipt_pdf/' . $pdf_filename;
-
+            if(in_array($action,$certificatesArr)){
+                $PDF_path_for_open = "https://" . $_SERVER['HTTP_HOST'] . '/storage/print_certificate_pdf/' . $pdf_filename;
+            }else{
+                $PDF_path_for_open = "https://" . $_SERVER['HTTP_HOST'] . '/storage/print_receipt_pdf/' . $pdf_filename;
+            }
+            
             return $PDF_path_for_open;
         }
     }
@@ -1693,8 +1706,12 @@ class AJAXController extends Controller
                                 </div>
                             </body>
                         </html>';
-
-                $save_path = $_SERVER['DOCUMENT_ROOT'] . '/storage/print_receipt_pdf';
+                        
+                if(in_array($action,$certificatesArr)){
+                    $save_path = $_SERVER['DOCUMENT_ROOT'] . '/storage/print_certificate_pdf';
+                }else{
+                    $save_path = $_SERVER['DOCUMENT_ROOT'] . '/storage/print_receipt_pdf';
+                }
 
                 $CUR_TIME = date('YmdHis');
                 $html_filename = $student_id . '_' . $CUR_TIME . ".html";
