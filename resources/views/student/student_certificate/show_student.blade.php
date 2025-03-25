@@ -20,6 +20,12 @@
             }
         @endphp
         <div class="card">
+            @if(isset($_REQUEST['status_code']) && ($_REQUEST['status_code']==0))
+                <div class="alert alert-danger alert-block">
+                    <button type="button" class="close" data-dismiss="alert">×</button>
+                    <strong>{{ $_REQUEST['message'] }}</strong>
+                </div>
+            @endif
         @if(!empty($data['message']))
                     @if($data['status_code'] == 1)
                         <div class="alert alert-success alert-block">
