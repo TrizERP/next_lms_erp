@@ -124,8 +124,8 @@
                         @enderror
                     </div>
                     <div class="col-md-1">
-                        <label>Not Null </label>
-                        <input type="checkbox" id='column_not_null' name="column_not_null" class="form-control"
+                        <label>Not Null </label> <br>
+                        <input type="checkbox" id='column_not_null' name="column_not_null" 
                                {{($data['column_not_null'] === 1) ? 'checked': ''}}
                                value="{{$data['column_not_null']}}">
                         @error('table_name')
@@ -134,10 +134,9 @@
                     </div>
 
                     <div class="col-md-1">
-                        <label style="text-align: center">Auto In. </label>
+                        <label style="text-align: center">Auto In. </label><br>
                         <input type="checkbox" id='column_auto_increment' name="column_auto_increment"
                                {{($data['column_auto_increment'] === 1) ? 'checked': ''}}
-                               class="form-control"
                                value="{{$data['column_auto_increment']}}">
                         @error('table_name')
                         <span style="color: red">{{$message}}</span>
@@ -180,31 +179,28 @@
                             <option value="date" {{$data['field_type'] == 'date' ? "selected": ''}}>Date</option>
                         </select>
                     </div>
-                    <div class="col-md-6 mt-5">
-                        <label>Field Value </label>
+                    <div class="col-md-2 mt-5">
+                        <label>Field Value </label><br>
                         <input class="form-control" type="text" name="field_value" value="{{$data['field_value']}}" data-role="tagsinput"/>
                     </div>
                     <input type="hidden" value="{{$data['column_id']}}" name="col_id">
-                    @if($data['column_id'] > 0)
-                        <div class="col-md-1">
-                            <label style="display: block">Action</label>
-                            <button type="submit" name="submit" id="Submit" class="btn btn-info btn-outline">
-                                <i class="ti-pencil-alt"></i>
-                            </button>
-                        </div>
-                    @else
-                        <div class="col-md-1">
-                            <label style="display: block">Action</label>
-                            <input type="submit" name="submit" id="Submit" value="+" class="btn btn-success">
-                        </div>
-                    @endif
+                    <div class="col-md-3 mt-5">
+                        <label style="display: block">Action</label>
+                        @if($data['column_id'] > 0)
+                                <button type="submit" name="submit" id="Submit" class="btn btn-info">
+                                    Add <i class="ti-pencil-alt"></i>
+                                </button>
+                        @else
+                                <input type="submit" name="submit" id="Submit" value="Add +" class="btn btn-success">
+                        @endif
+                    </div>
 
                 </div>
             </form>
         </div>
         <div class="card">
             @if ($sessionData = Session::get('data'))
-                <div class="alert alert-success alert-block">
+                <div class="alert @if($sessionData['status']==1) alert-success @else alert-danger @endif alert-block">
                     <button type="button" class="close" data-dismiss="alert">×</button>
                     <strong>{{ $sessionData['message'] }}</strong>
                 </div>
@@ -287,8 +283,31 @@
 
 <script>
     $(document).ready(function () {
-        $('#example').DataTable();
-    });
+        var table = $('#example').DataTable({
+                select: true,
+                lengthMenu: [
+                    [100, 500, 1000, -1],
+                    ['100', '500', '1000', 'Show All']
+                ],
+                
+            });
+            //table.buttons().container().appendTo('#example_wrapper .col-md-6:eq(0)');
+
+            $('#example thead tr').clone(true).appendTo('#example thead');
+            $('#example thead tr:eq(1) th').each(function (i) {
+                var title = $(this).text();
+                $(this).html('<input type="text" placeholder="Search ' + title + '" />');
+
+                $('input', this).on('keyup change', function () {
+                    if (table.column(i).search() !== this.value) {
+                        table
+                            .column(i)
+                            .search(this.value)
+                            .draw();
+                    }
+                });
+            });
+        });
 
 </script>
 @include('includes.footer')

@@ -24,7 +24,7 @@
                         <table id="example" class="table table-striped">
                             <thead>
                             <tr>
-                                <th>Id</th>
+                                <th>Sr No.</th>
                                 <th>Table Name</th>
                                 {{-- <th>Client Id</th>
                                  <th>Sub Institute Id</th>--}}
@@ -38,7 +38,7 @@
                             @endphp
                             @foreach($data['data'] as $key => $data)
                                 <tr>
-                                    <td>{{$data->id}}</td>
+                                    <td>{{$key+1}}</td>
                                     <td>{{$data->table_name}}</td>
                                     {{--<td>{{$data->client_id}}</td>
                                     <td>{{$data->sub_institute_id}}</td>--}}

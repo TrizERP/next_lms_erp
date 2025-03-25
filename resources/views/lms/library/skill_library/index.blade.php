@@ -159,8 +159,7 @@
               <label for="mainCategory">Sector:</label>
             <select class="form-select form-select-lg mb-3" id="mainCategory" onchange="updateSubcategory()">
                 <option value="">--Select Sector--</option>
-                <option value="Healthcare">Healthcare</option>
-                <option value="Education">Education</option>
+                <option value="Hospital Management">Hospital Management</option>
             </select>
             </div>
             <div class="col-md-6 mx-auto p-3">

@@ -21,18 +21,32 @@
                         <li><strong>➤ Tasks:</strong> Total perform tasks</li>
                     </ul>
                 </div>
-                    <div class="col-lg-6 col-md-8 col-sm-8 col-xs-12 center">
+                    <div class="col-lg-9 col-md-8 col-sm-8 col-xs-12 center">
                         <!--<h1 class="center">{{ $skills->first()->sector }}</h1>-->
-                        <label for="mainCategory">Sector:</label>
-                        <select class="form-select form-select-lg mb-3" id="mainCategory" onchange="updateSubcategory()">
-                            <option value="">--Select Sector--</option>
-                            <option value="Healthcare">Healthcare</option>
-                            <option value="Education">Education</option>
-                        </select>
-                        <label for="subCategory">Track:</label>
-                        <select class="form-select form-select-lg mb-3" id="subCategory">
-                            <option value="">--Select Track--</option>
-                        </select>
+<label for="Category">Industry:</label>
+<select class="form-select form-select-lg mb-4" id="Category">
+    <option value="">--Select Industry--</option>
+    <option value="Hospital Management">Hospital Management</option>
+</select>
+
+<label for="mainCategory">Sector:</label>
+<select class="form-select form-select-lg mb-4" id="mainCategory" onchange="updateSubcategory()">
+    <option value="">--Select Sector--</option>
+    @php
+        $sectorData = [];
+    @endphp
+    @foreach ($skills->groupBy('sector') as $sector => $items)
+        <option value="{{ $sector }}">{{ $sector }}</option>
+        @php
+            $sectorData[$sector] = $items->groupBy('track')->keys()->toArray();
+        @endphp
+    @endforeach
+</select>
+
+<label for="subCategory">Track:</label>
+<select class="form-select form-select-lg mb-4" id="subCategory">
+    <option value="">--Select Track--</option>
+</select>
                         <h1 class="center" id="selectedCategory"></h1>
                     </div>
             </div>
@@ -43,7 +57,8 @@
                     <table id="jobrole" class="table table-striped table-bordered" style="width:100%">
                         <thead>
                             <tr>
-                            <!--<th>Career Path</th>-->
+                            <th>Sector / Department</th>
+                            <th>Track</th>
                             <th>Job Role</th>
                             <th class="center">Perform Tasks</th>
                             <th class="center" style="text-align:center !important">Required Skills</th>
@@ -54,7 +69,8 @@
                         <tbody>
                         @foreach ($skills as $skill)
                         <tr>
-                            <!--<td>{{ $skill->track }}</td>-->
+                            <td>{{ $skill->industries }} ({{ $skill->sector }})</td>
+                            <td>{{ $skill->track }}</td>
                             <td><a href="{{ route('jobrole.jobdescription',['id' => $skill->id])}}" target="_blank" rel="noopener noreferrer">{{ $skill->jobrole }}</a></td>
                             <td class="center"><a href="#" class="open-modal" data-toggle="modal" data-target="#dynamicModal" data-title="Perform Tasks" data-content="{{ $skill->TasksData }}"><u>{{ $skill->Tasks }}</u></a></td>
                             <td class="center"><a href="#" class="open-modal" data-toggle="modal" data-target="#dynamicModal" data-title="Required Skill" data-content="{{ $skill->SkillData }}"><u>{{ $skill->Skill }}</u></a></td>
@@ -109,42 +125,24 @@ $(document).ready(function () {
 
 </script>
 <script>
-        // Data mapping
-        const data = {
-            "Healthcare": {
-              "Community Care": [],
-              "Genetic Counselling": [],
-              "Nursing": [],
-              "Occupational Therapy": [],
-              "Operations": [],
-              "Oral Health Therapy": [],
-              "Pharmacy Support": [],
-              "Physiotherapy": [],
-              "Prehospital Emergency Care": [],
-              "Speech Therapy": [],
-              "Therapy Support": []
-            },
-            "Education": {
-                "Adult Education": [],
-                "Learning Management": [],
-            }
-        };
+    // Convert Laravel PHP data to JavaScript
+    const data = @json($sectorData);
 
-        function updateSubcategory() {
-            let mainCategory = document.getElementById("mainCategory").value;
-            let subCategoryDropdown = document.getElementById("subCategory");
-            let skillDropdown = document.getElementById("skill");
-            
-            document.getElementById("selectedCategory").innerText = mainCategory ? mainCategory : "";
-            
-            subCategoryDropdown.innerHTML = "<option value=''>--Select Track--</option>";
+    function updateSubcategory() {
+        let Category = document.getElementById("Category").value;
+        let mainCategory = document.getElementById("mainCategory").value;
+        let subCategoryDropdown = document.getElementById("subCategory");
+        document.getElementById("selectedCategory").innerText = Category ? Category : "";
+        // Clear previous options
+        subCategoryDropdown.innerHTML = "<option value=''>--Select Track--</option>";
 
-            if (mainCategory) {
-                for (let sub in data[mainCategory]) {
-                    let option = new Option(sub, sub);
-                    subCategoryDropdown.add(option);
-                }
-            }
+        // Populate subcategories if a sector is selected
+        if (mainCategory && data[mainCategory]) {
+            data[mainCategory].forEach(track => {
+                let option = new Option(track, track);
+                subCategoryDropdown.add(option);
+            });
         }
-    </script>
+    }
+</script>    
 @include('includes.footer')
