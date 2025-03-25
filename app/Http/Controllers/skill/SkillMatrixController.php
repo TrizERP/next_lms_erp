@@ -44,6 +44,7 @@ class SkillMatrixController extends Controller
         $skills = DB::table('s_jobrole')
         ->select(
             'id',
+'industries',
             'sector',
             'track',
             'jobrole',
@@ -53,7 +54,7 @@ class SkillMatrixController extends Controller
             DB::raw('FLOOR(RAND() * 20) + 8 AS Ability'),
             DB::raw('FLOOR(RAND() * 4) + 9 AS Tasks')
         )
-        //->where('sector', 'Healthcare')
+        ->where('status', 'Active')
         ->orderBy('id') // Ordering by ID
         ->get()
         ->map(function ($skill) {

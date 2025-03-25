@@ -44,7 +44,7 @@
                                        class="form-control" value="{{$data['data']['view'][$column['column_name']]}}">
                                 @if ($data['data']['view']['id'] > 0)
                                     <a href="{{asset('images/'.$data['data']['view'][$column['column_name']])}}"
-                                       target="_blank">link</a>
+                                       target="_blank">View File</a>
                                 @endif
                             @elseif($column['field_type'] == 'checkbox')
                                 @foreach($fieldVal as $val)
@@ -132,8 +132,8 @@
                                     @endforeach
                                 </select>
                             @elseif ($column['field_type'] == "date")
-                                <input type="date" id="{{$column['column_name']}}"
-                                       name="{{$column['column_name']}}" class="form-control"
+                                <input type="text" id="{{$column['column_name']}}"
+                                       name="{{$column['column_name']}}" class="form-control mydatepicker"
                                        value="{{$data['data']['view'][$column['column_name']]}}">
                             @else
                                 <input type="text" id="{{$column['column_name']}}"

@@ -8,6 +8,7 @@ use function App\Helpers\is_mobile;
 use App\Models\lms\masterSkill;
 use GenTux\Jwt\GetsJwtToken;
 use Validator;
+use Illuminate\Support\Facades\DB;
 
 class skillLibraryController extends Controller
 {
@@ -45,6 +46,7 @@ class skillLibraryController extends Controller
         }
 
         $skillData = masterSkill::whereNull('deleted_at')->where('status', 'Active')->get()->toArray();
+        $skills = DB::table('s_jobrole')->get();
         
         $treeData = [];
         foreach ($skillData as $key => $value) {
@@ -63,6 +65,7 @@ class skillLibraryController extends Controller
         $res['user_id'] = $user_id;
         $res['tableData'] = $skillData;
         $res['treeData'] = $treeData;
+        $res['skills'] = $skills;
         
         return is_mobile($type, "lms/library/skill_library/index", $res, "view");        
     }

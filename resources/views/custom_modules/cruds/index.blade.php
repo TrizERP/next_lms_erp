@@ -5,7 +5,7 @@
     <div class="container-fluid">
         <div class="row bg-title">
             <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
-                <h4 class="page-title">{{$data['data']['table_name']}}</h4>
+                <h4 class="page-title">{{strtoupper($data['data']['module_name'])}}</h4>
             </div>
         </div>
         <div class="card">
@@ -16,12 +16,10 @@
                 </div>
             @endif
             <div class="row">
-                <div class="col-lg-3 col-sm-3 col-xs-3">
-                    <a href="{{ route('custom-module.tables') }}" class="btn btn-info add-new"> Back </a>
-                </div>
-                <div class="col-lg-3 col-sm-3 col-xs-3">
+                <div class="col-lg-12 col-md-12 col-sm-3 col-xs-3 text-right">
+                    <a href="{{ route('custom-module.tables') }}" class="btn btn-primary add-new"> Back </a>
                     <a href="{{ route('custom_module_crud.create', $data['data']['id']) }}"
-                       class="btn btn-info add-new"><i class="fa fa-plus"></i> Add Records </a>
+                       class="btn btn-primary add-new"><i class="fa fa-plus"></i> Add Records </a>
                 </div>
 
                 <div class="col-lg-12 col-sm-12 col-xs-12">
@@ -30,7 +28,7 @@
                             <thead>
                             <tr>
                                 @foreach($data['data']['columns'] as $column)
-                                    <th>{{$column['column_name']}}</th>
+                                    <th>{{ucfirst(str_replace('_',' ',$column['column_name']))}}</th>
                                 @endforeach
                                 <th>Action</th>
                             </tr>
@@ -104,9 +102,47 @@
 
 <script src="{{ asset("/plugins/bower_components/datatables/datatables.min.js") }}"></script>
 <script>
-    $(document).ready(function () {
-        $('#example').DataTable();
-    });
+ $(document).ready(function () {
+            var table = $('#example').DataTable({
+                select: true,
+                lengthMenu: [
+                    [100, 500, 1000, -1],
+                    ['100', '500', '1000', 'Show All']
+                ],
+                dom: 'Bfrtip',
+                buttons: [
+                    {
+                        extend: 'pdfHtml5',
+                        title: '{{strtoupper($data['data']['module_name'])}} report',
+                        orientation: 'landscape',
+                        pageSize: 'LEGAL',
+                        pageSize: 'A0',
+                        exportOptions: {
+                            columns: ':visible'
+                        },
+                    },
+                    {extend: 'csv', text: ' CSV', title: '{{strtoupper($data['data']['module_name'])}} report'},
+                    {extend: 'excel', text: ' EXCEL', title: '{{strtoupper($data['data']['module_name'])}} report'},
+                    {extend: 'print', text: ' PRINT', title: '{{strtoupper($data['data']['module_name'])}} report'},
+                    'pageLength'
+                ],
+            });
+            //table.buttons().container().appendTo('#example_wrapper .col-md-6:eq(0)');
 
+            $('#example thead tr').clone(true).appendTo('#example thead');
+            $('#example thead tr:eq(1) th').each(function (i) {
+                var title = $(this).text();
+                $(this).html('<input type="text" placeholder="Search ' + title + '" />');
+
+                $('input', this).on('keyup change', function () {
+                    if (table.column(i).search() !== this.value) {
+                        table
+                            .column(i)
+                            .search(this.value)
+                            .draw();
+                    }
+                });
+            });
+        });
 </script>
 @include('includes.footer')

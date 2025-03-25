@@ -4099,7 +4099,7 @@ while ($current_date <= $post_end_date) {
                     $total_mark = 0;
                     foreach ($exam_title as $key => $title) {
                         if ($terms->term_id == $title->term_id) {
-                            $table .= '<th class="data_center"><b>' . $title->ExamTitle . '<br>(' . $title->weightage . ')</b></th>';
+                            $table .= '<th class="data_center" data-masterId="'.$title->ExamId.'"><b>' . $title->ExamTitle . '<br>(' . $title->weightage . ')</b></th>';
                                 $total_mark += $title->weightage;
                         }
                     }

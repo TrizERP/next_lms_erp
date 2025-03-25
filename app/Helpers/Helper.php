@@ -48,7 +48,12 @@ if (!function_exists('is_mobile')) {
                 if ($redirect_type == 'route_with_message') {
 
                     return route($url)->with(['data' => $data]);
-                } else {
+                }
+                // added on 24-03-2025 for id
+                else if ($redirect_type == 'route_with_id') {
+                    return redirect()->to(url($url))->with(['data' => $data]);
+                } 
+                else {
                     if ($redirect_type == 'view') {
 
                         return view($url, ['data' => $data]);

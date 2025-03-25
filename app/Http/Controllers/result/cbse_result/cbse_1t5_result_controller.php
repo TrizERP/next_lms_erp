@@ -842,9 +842,13 @@ else
 
             $remaining_amt = $total_bf - $total_paid_amt;
 
+//Previous Year Display Result
+$oprator = ($request->get('sub_institute_id') == 1) ? '<' : '=';            
+//Previous Year Display Result            
+
             $data = DB::select("SELECT * FROM result_html 
-                        WHERE SUB_INSTITUTE_ID = '".$request->get('sub_institute_id')."' and student_id = '".$request->get('student_id')."'
-                        AND syear = '".$request->get('syear')."' AND term_id = '".$request->get('term_id')."'"); // AND is_allowed='Y' 
+                        WHERE SUB_INSTITUTE_ID = '".$request->get('sub_institute_id')."' and student_id = '".$request->get('student_id')."' AND term_id = '".$request->get('term_id')."'
+                            AND syear ".$oprator." '".$request->get('syear')."' ORDER BY syear desc"); // AND is_allowed='Y' 
 
             $second_sql = DB::select("SELECT ur.id,ur.syear,ur.sub_institute_id,ur.student_id,ay.title as term_name,
                             if(ur.file_name = '','',concat('https://".$_SERVER['SERVER_NAME']."/storage/upload_result/',ur.file_name)) as file_name
@@ -917,7 +921,7 @@ else
 
                             // Prepare the response data for each record
                             $new_data = [
-                                'title' => "Result ".$record->result_type,
+                                'title' => $record->syear." - ".$record->result_type,
                                 'result_type' => $record->result_type,
                                 'term_id' => $record->term_id,
                                 'student_id' => (string) $record->student_id,
@@ -1027,7 +1031,7 @@ else
 
                         // Prepare the response data for each record
                         $new_data = [
-                            'title' => "Result ".$record->result_type,
+                            'title' => $record->syear." - ".$record->result_type,
                             'result_type' => $record->result_type,
                             'term_id' => $record->term_id,
                             'student_id' => (string) $record->student_id,

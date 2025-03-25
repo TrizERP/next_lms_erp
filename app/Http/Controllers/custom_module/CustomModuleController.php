@@ -36,7 +36,8 @@ class CustomModuleController extends Controller
         $type = $request->input('type');
         if ($id) {
             $customModuleTable = CustomModuleTable::with('whereColumns')->find($id);
-            return is_mobile($type, "custom_modules.tables.create-edit", compact('customModuleTable'), "view", 'compact');
+            // added $customModuleTable in is_mobile on 24-03-2025
+            return is_mobile($type, "custom_modules.tables.create-edit", $customModuleTable, "view", 'compact');
             //return view('HRMS.hrms_job_title.create', compact('hrmsJobTitle'));
         }
         $customModuleTable['table_name'] = '';
@@ -53,7 +54,8 @@ class CustomModuleController extends Controller
         $customModuleTable['validation'] = '';
         $customModuleTable['access_link'] = '';
         $customModuleTable['id'] = 0;
-        return is_mobile($type, "custom_modules.tables.create-edit", compact('customModuleTable'), "view", 'compact');
+        // added $customModuleTable in is_mobile on 24-03-2025
+        return is_mobile($type, "custom_modules.tables.create-edit", $customModuleTable, "view", 'compact');
     }
 
     public function tableStore(Request $request)
@@ -72,9 +74,9 @@ class CustomModuleController extends Controller
         } else {
             $customModuleTable = new CustomModuleTable();
         }
-        $prefixTableName = $request->table_name;
+        $prefixTableName = str_replace(' ','_',$request->table_name);
         if (!Str::startsWith($request->table_name, "Z_")) {
-            $prefixTableName = "Z_" . $request->table_name;
+            $prefixTableName = "Z_" . str_replace(' ','_',$request->table_name);
         }
 
         $customModuleTable->module_name = $request->module_name;
@@ -94,6 +96,7 @@ class CustomModuleController extends Controller
         $customModuleTable->save();
 
         $tableColumn = CustomModuleTableColumn::where('table_id', $customModuleTable->id);
+        // $existingColumns = $tableColumn->pluck('column_name')->toArray(); // Get existing column names
 
         if (isset($request->student)) {
             $tableColumnData = $tableColumn->where([
@@ -201,27 +204,46 @@ class CustomModuleController extends Controller
         } else {
             $tableColumn->where('column_name', 'Standard')->delete();
         }
-
-
-        return is_mobile($type, "custom-module.tables", null, "redirect");
+        // $res added by uma on 24-03-2025
+        if($tableColumn){
+            $res['status']= 1;
+            $res['message']='Added Successfully';
+        }
+        else{
+            $res['status']= 0;
+            $res['message']='Failed to Add Data';
+        }
+        // $res added by uma on 24-03-2025
+        return is_mobile($type, "custom-module.tables", $res, "redirect");
     }
 
     public
     function tableDelete(Request $request, $id)
     {
         $type = $request->input('type');
+        $i=0;
         if ($id > 0) {
+            $i=1;
             $table = CustomModuleTable::find($id);
             if (!empty($table)) {
                 DB::statement('DROP TABLE IF EXISTS ' . $table->table_name);
             }
             CustomModuleTable::where('id', $id)->delete();
         }
-        return is_mobile($type, "custom-module.tables", null, "redirect");
+        // $res added by uma on 24-03-2025
+        if($i>0){
+            $res['status']= 1;
+            $res['message']='Table Deleted Successfully';
+        }
+        else{
+            $res['status']= 0;
+            $res['message']='Failed to Delete Table';
+        }
+
+        return is_mobile($type, "custom-module.tables", $res, "redirect");
     }
 
-    public
-    function tableColumnCreate(Request $request, $id, $colId = 0)
+    public function tableColumnCreate(Request $request, $id, $colId = 0)
     {
         $data['column_name'] = '';
         $data['column_length'] = 0;
@@ -247,6 +269,7 @@ class CustomModuleController extends Controller
             $data['column_id'] = $colId;
         }
         $data['data'] = CustomModuleTable::with('columns')->whereId($id)->first();
+        // echo "<pre>";print_r($data);exit;
         $type = $request->input('type');
         return is_mobile($type, "custom_modules.tables.columns.index", $data, "view");
     }
@@ -280,82 +303,134 @@ class CustomModuleController extends Controller
         $tableColumn->field_type = $request->field_type;
         $tableColumn->field_value = json_encode(explode(',', $request->field_value));
         $tableColumn->save();
-        return is_mobile($type, ["route" => "custom_module_table_column.create", "id" => $id], null, "redirect", '', 1);
-
-    }
-
-    public
-    function tableColumnDelete(Request $request, $id, $colId)
-    {
-        $type = $request->input('type');
-        if ($id > 0) {
-            CustomModuleTableColumn::where('id', $colId)->delete();
+        // $res added by uma on 24-03-2025
+        if($tableColumn){
+            $res['status']= 1;
+            $res['message']='Added Successfully';
         }
-        return is_mobile($type, ["route" => "custom_module_table_column.create", "id" => $id], null, "redirect", '', 1);
+        else{
+            $res['status']= 0;
+            $res['message']='Failed to Add Data';
+        }
+        // $res added by uma on 24-03-2025
+        // return is_mobile($type, ["route" => "custom_module_table_column.create", "id" => $id], $res, "redirect", '', 1);
+        return is_mobile($type, "/custom-module/table-column-create/".$id, $res, "route_with_id");
     }
 
-    public
-    function createDBTable(Request $request, $id)
+    public function tableColumnDelete(Request $request, $id, $colId)
+    {
+        // echo "<pre>";print_r($id);exit;
+        $type = $request->input('type');
+        $i = 0;
+        if ($id > 0) {
+            $i=1;
+            $findData = CustomModuleTableColumn::find($colId);
+
+            if ($findData) {
+                $findData->delete();
+            }
+
+        }
+         // $res added by uma on 24-03-2025
+         if($i!=0){
+            $res['status']= 1;
+            $res['message']='Deleted Successfully';
+        }
+        else{
+            $res['status']= 0;
+            $res['message']='Failed to Add Data';
+        }
+        // $res added by uma on 24-03-2025
+        // return is_mobile($type, ["route" => "custom_module_table_column.create", "id" => $id], null, "redirect", '', 1);
+        return is_mobile($type, "/custom-module/table-column-create/".$id, $res, "route_with_id");
+    }
+
+    public function createDBTable(Request $request, $id)
     {
         $type = $request->input('type');
         $getTableData = CustomModuleTable::with('columns')->whereId($id)->first();
         if ($getTableData) {
             if (!count($getTableData['columns'])) {
-                return is_mobile($type, ["route" => "custom_module_table_column.create", "id" => $id], ['message' => 'Please add at least one column'], "redirect", '', 1);
+                // return is_mobile($type, ["route" => "custom_module_table_column.create", "id" => $id], ['message' => 'Please add at least one column'], "redirect", '', 1);
+                 // $res added by uma on 24-03-2025
+                
+                    $res['status']= 0;
+                    $res['message']='please add at least one columns';
+                
+                return is_mobile($type, "/custom-module/table-column-create/".$id, $res, "route_with_id");
             }
         }
         $tableName = $getTableData['table_name'];
         $tableExists = DB::select("SHOW TABLES LIKE '{$tableName}'");
 
         if (!empty($tableExists)) {
-            // Get existing columns in the table
+            // Fetch existing columns from the table
             $existingColumns = DB::select("SHOW COLUMNS FROM {$tableName}");
             $existingColumnNames = array_column($existingColumns, 'Field');
-
-            // Exclude 'created_at' and 'updated_at' columns from being altered
+            
+            // Exclude certain columns from being modified/dropped
             $excludedColumns = ['id', 'sub_institute_id', 'created_at', 'updated_at'];
-
-            // Prepare the column definitions for adding new columns
+            
             $newColumns = [];
+            $modifyColumns = [];
             $columnsToDrop = array_diff($existingColumnNames, $excludedColumns);
-
+            
+            // Iterate over provided columns
             foreach ($getTableData['columns'] as $column) {
                 $columnName = $column['column_name'];
-                $columnType = $column['type'];
-                $columnLength = !empty($column['length']) ? "({$column['length']})" : ($column['type'] == 'varchar' ? "(255)" : " ");
-                $autoIncrement = $column['auto_increment'] == 1 ? "AUTO_INCREMENT" : "";
-                $notNull = $column['not_null'] == 1 ? "NOT NULL" : "";
+                $columnType = strtoupper($column['type']);
+                $columnLength = !empty($column['length']) ? "({$column['length']})" : ($columnType == 'VARCHAR' ? "(255)" : "");
+                $autoIncrement = !empty($column['auto_increment']) ? "AUTO_INCREMENT" : "";
+                $notNull = !empty($column['not_null']) ? "NOT NULL" : "";
                 $defaultValue = isset($column['default']) ? "DEFAULT '{$column['default']}'" : "";
-
+            
                 $columnDefinition = "{$columnName} {$columnType}{$columnLength} {$notNull} {$defaultValue} {$autoIncrement}";
-
-                if (!in_array($columnName, $existingColumnNames) && !in_array($columnName, $excludedColumns)) {
-                    $newColumns[] = "ADD COLUMN {$columnDefinition}";
-                } else {
-                    $key = array_search($columnName, $columnsToDrop);
-                    if ($key !== false) {
+            
+                if (!in_array($columnName, $excludedColumns)) {
+                    if (!in_array($columnName, $existingColumnNames)) {
+                        // If column does not exist, add it
+                        $newColumns[] = "ADD COLUMN {$columnDefinition}";
+                    } else {
+                        // If column exists, modify it
+                        $modifyColumns[] = "MODIFY COLUMN {$columnDefinition}";
+                    }
+            
+                    // Remove from drop list since it's present in the new schema
+                    if (($key = array_search($columnName, $columnsToDrop)) !== false) {
                         unset($columnsToDrop[$key]);
                     }
                 }
-            }
-
-            // Prepare SQL for adding new columns
-            if (!empty($newColumns)) {
-                $alterTableSql = "ALTER TABLE {$tableName} " . implode(", ", $newColumns) . ";";
+            }   
+            $update = 0;
+            // Execute ALTER TABLE queries if needed
+            if (!empty($newColumns) || !empty($modifyColumns)) {
+                $update = 1;
+                $alterQueries = array_merge($newColumns, $modifyColumns);
+                $alterTableSql = "ALTER TABLE {$tableName} " . implode(", ", $alterQueries) . ";";
                 DB::statement($alterTableSql);
             }
-
-            // Prepare SQL for dropping columns
+            
+            // Drop columns that are no longer needed
             if (!empty($columnsToDrop)) {
-                $dropColumns = array_map(function ($column) {
-                    return "DROP COLUMN {$column}";
-                }, $columnsToDrop);
+                $update = 1;
+                $dropColumns = array_map(fn($column) => "DROP COLUMN {$column}", $columnsToDrop);
                 $alterTableSql = "ALTER TABLE {$tableName} " . implode(", ", $dropColumns) . ";";
                 DB::statement($alterTableSql);
             }
-            return is_mobile($type, ["route" => "custom_module_table_column.create", "id" => $id], ['message' => "Table '{$tableName}' has been updated successfully."], "redirect", ['message' => "Table '{$tableName}' has been updated successfully."], 1);
+            
+            // return is_mobile($type, ["route" => "custom_module_table_column.create", "id" => $id], ['message' => "Table '{$tableName}' has been updated successfully."], "redirect", ['message' => "Table '{$tableName}' has been updated successfully."], 1);
 
-            return "Table '{$tableName}' has been updated successfully.";
+            // return "Table '{$tableName}' has been updated successfully.";
+             // $res added by uma on 24-03-2025
+             if($update==1){
+                $res['status']= 1;
+                $res['message']='Updated Table Successfully';
+            }
+            else{
+                $res['status']= 0;
+                $res['message']='Failed to Update Table';
+            }
+            return is_mobile($type, "/custom-module/table-column-create/".$id, $res, "route_with_id");
         } else {
             // Prepare the column definitions for creating the table
             $prepareColumn = [];
@@ -389,21 +464,37 @@ class CustomModuleController extends Controller
             }
 
             $columns = implode(",\n", $prepareColumn);
+            // Create table if it doesn't exist
+            $i=0;
+            try {
+                $i=1;
+                DB::statement("
+                    CREATE TABLE {$tableName} (
+                        id BIGINT NOT NULL AUTO_INCREMENT,
+                        " . rtrim($columns, ',') . ",
+                        sub_institute_id INT NOT NULL DEFAULT '0',
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                        PRIMARY KEY (id)
+                    ) ENGINE=INNODB;
+                ");
+            } catch (\Exception $e) {
+                $i=0;
+            }
+            
+            // DB::statement($sql);
 
-            $sql = "
-        CREATE TABLE {$tableName} (
-              id bigint NOT NULL AUTO_INCREMENT,
-            " . $columns . ",
-            sub_institute_id int NOT NULL DEFAULT '0',
-            created_at TIMESTAMP DEFAULT DATETIME,
-            updated_at TIMESTAMP DEFAULT DATETIME,
-            PRIMARY KEY (`id`)
-        ) ENGINE=INNODB;
-    ";
-
-            DB::statement($sql);
-
-            return is_mobile($type, ["route" => "custom_module_table_column.create", "id" => $id], ['message' => "Table '{$tableName}' has been created successfully."], "redirect", ['message' => "Table '{$tableName}' has been created successfully."], 1);
+            // return is_mobile($type, ["route" => "custom_module_table_column.create", "id" => $id], ['message' => "Table '{$tableName}' has been created successfully."], "redirect", ['message' => "Table '{$tableName}' has been created successfully."], 1);
+            // $res added by uma on 24-03-2025
+            if($i){
+                $res['status']= 1;
+                $res['message']='Table Created Successfully';
+            }
+            else{
+                $res['status']= 0;
+                $res['message']='Failed Create Table';
+            }
+            return is_mobile($type, "/custom-module/table-column-create/".$id, $res, "route_with_id");
         }
 
 // sub_institute_id int NOT NULL DEFAULT '0',
@@ -419,6 +510,7 @@ class CustomModuleController extends Controller
         $data['data']['division'] = divisionModel::where('sub_institute_id', $request->session()->get('sub_institute_id'))->get(['id', 'name']);
         $data['data']['standard'] = standardModel::where('sub_institute_id', $request->session()->get('sub_institute_id'))->get(['id', 'name']);
         $data['data']['academic_section'] = academic_sectionModel::where('sub_institute_id', $request->session()->get('sub_institute_id'))->get(['id', 'title', 'short_name', 'medium']);
+        // echo "<pre>";print_r($data);exit;
         return is_mobile($type, "custom_modules.cruds.index", $data, "view");
     }
 
@@ -513,28 +605,53 @@ class CustomModuleController extends Controller
             }, ARRAY_FILTER_USE_KEY);
 
 
-
+            $i=0;
             if (!empty($getTable)) {
                 $data['sub_institute_id'] = $request->session()->get('sub_institute_id');
                 $dynamicModel = new DynamicModel([], $columns);
                 if ($request->view_id) {
+                    $i=1;
                     $dynamicModel->updateRecord($getTable['table_name'], $request->view_id, $data);
                 } else {
+                    $i=1;
                     $dynamicModel->createRecord($getTable['table_name'], $data);
                 }
             }
         }
-        return is_mobile($type, ["route" => "custom_module_crud.index", "id" => $id], null, "redirect", '', 1);
+        // return is_mobile($type, ["route" => "custom_module_crud.index", "id" => $id], null, "redirect", '', 1);
+         // $res added by uma on 24-03-2025
+         if($i!=0){
+            $res['status']= 1;
+            $res['message']='Added Successfully';
+        }
+        else{
+            $res['status']= 0;
+            $res['message']='Failed to Add Data';
+        }
+        // $res added by uma on 24-03-2025
+        // return is_mobile($type, ["route" => "custom_module_table_column.create", "id" => $id], $res, "redirect", '', 1);
+        return is_mobile($type, "/custom-module/".$id, $res, "route_with_id");
 
     }
 
-    public
-    function viewDelete(Request $request, $id)
+    public function viewDelete(Request $request, $id)
     {
         $type = $request->input('type');
+        $i=0;
         if ($id > 0 && $request->table_name) {
+            $i=1;
             DynamicModel::deleteRecord($request->table_name, $id);
         }
-        return is_mobile($type, ["route" => "custom_module_crud.index", "id" => $request->view_id], null, "redirect", '', 1);
+         // $res added by uma on 24-03-2025
+         if($i!=0){
+            $res['status']= 1;
+            $res['message']='Added Successfully';
+        }
+        else{
+            $res['status']= 0;
+            $res['message']='Failed to Add Data';
+        }
+        // return is_mobile($type, ["route" => "custom_module_crud.index", "id" => $request->view_id], null, "redirect", '', 1);
+        return is_mobile($type, "/custom-module/".$request->view_id, $res, "route_with_id");
     }
 }
