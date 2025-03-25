@@ -388,8 +388,8 @@ LIMIT 1");
                     }
                 }
             }
-            $optionalImplode = implode(',',$optionalSub);
-            $subjectImplode = implode(',',$mainSub);
+            $optionalImplode = implode(', ',$optionalSub);
+            $subjectImplode = implode(', ',$mainSub);
             $tdOptionalData = $subjectImplode.'<br>'.$optionalImplode;
         }else{
             $tdOptionalData = $get_standard_subjects[0]->subject_name ?? '-';
@@ -581,7 +581,36 @@ LIMIT 1");
         }
         // echo "<pre>";print_r($month);exit;
         // end 15-04-2024
+        // start 20-03-2025 
+        
+        $monthList = ['Jan' => 'JANUARY','Feb' => 'FEBRUARY','Mar' => 'MARCH','Apr' => 'APRIL','May' => 'MAY','Jun' => 'JUNE','Jul' => 'JULY','Aug' => 'AUGUST','Sep' => 'SEPTEMBER','Oct' => 'OCTOBER','Nov' => 'NOVEMBER','Dec' => 'DECEMBER'];
+        if($sub_institute_id==47){
 
+            $getFees = DB::table('fees_collect')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear,'is_deleted'=>'N','student_id'=>$value['id']])->latest('id')->first();
+
+            $getFeesTitle = DB::table('fees_title')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear])->orderBy('sort_order')->get()->toArray();
+            $paidFees = '';
+            foreach ($getFeesTitle as $fk => $ft) {
+                if(isset($getFees->{$ft->fees_title}) && $getFees->{$ft->fees_title}!=0){
+                    $paidFees =$ft->append_name;
+                    foreach ($months as $mk => $mv) {
+                        if (strpos($mv, $paidFees) !== false) {
+                            $explode = explode('/',$mv); // Output: Apr/2024
+                            $feeMoth = $explode[0] ? $explode[0] : '-';
+                            $feeYear = $explode[1] ? $explode[1] : '-';
+                            $monthName = isset($monthList[$feeMoth]) ? $monthList[$feeMoth] : $feeMoth;
+                            $paidFees = $monthName.'/'.$feeYear;
+                            break;
+                        }
+                    }
+                    
+                }
+            }
+            $month = $paidFees;
+        }
+        // echo "<pre>";print_r($paidFees);exit;
+
+        // end 20-03-2025
         $html_content = str_replace(htmlspecialchars("<<month_name_value>>"),
             strtoupper($month), $html_content);
         $html_content = str_replace(htmlspecialchars("<<month_up_paid_school_dues_value>>"),
