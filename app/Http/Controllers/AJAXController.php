@@ -1642,8 +1642,16 @@ class AJAXController extends Controller
 
     public function ajax_PDF_Bulk_OtherFeesReceipt(Request $request)
     {
+         // if condition added on 25-03-2025 for certificate print issue
+        $action = $request->input('action');
+        $certificatesArr = ['Bonafide','Character Certificate','Transfer Certificate','Fees Statement','No Dues Certificate','CBSE Form','REIMBURSEMENT OF CEA'];
+        if(in_array($action,$certificatesArr)){
+            $folder_path = $_SERVER['DOCUMENT_ROOT'] . '/storage/print_certificate_pdf/*';
+        }
+        else{
+            $folder_path = $_SERVER['DOCUMENT_ROOT'] . '/storage/print_receipt_pdf/*';
+        }
         //Start For Empty folder before creating new PDF
-        $folder_path = $_SERVER['DOCUMENT_ROOT'] . '/storage/print_receipt_pdf/*';
         $files = glob($folder_path); // get all file names
         foreach ($files as $file) { // iterate files
             if (is_file($file)) {
@@ -1655,7 +1663,6 @@ class AJAXController extends Controller
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
         $last_inserted_ids = $request->input('inserted_ids');
-        $action = $request->input('action');
 
         $inserted_ids_arr = explode(',', $last_inserted_ids);
 
@@ -1715,8 +1722,13 @@ class AJAXController extends Controller
                 }
 
                 unlink($html_file_path);
-
-                $PDF_path_for_open = "https://" . $_SERVER['HTTP_HOST'] . '/storage/print_receipt_pdf/' . $pdf_filename;
+                // if condition added on 25-03-2025 for certificate print issue
+                if(in_array($action,$certificatesArr)){
+                    $PDF_path_for_open = "https://" . $_SERVER['HTTP_HOST'] . '/storage/print_certificate_pdf/' . $pdf_filename;
+                }
+                else{
+                    $PDF_path_for_open = "https://" . $_SERVER['HTTP_HOST'] . '/storage/print_receipt_pdf/' . $pdf_filename;
+                }
             }
         }
         return $PDF_path_for_open;
