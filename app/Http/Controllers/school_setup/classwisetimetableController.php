@@ -101,10 +101,13 @@ class classwisetimetableController extends Controller
             }
         }
 
-        $period_data = periodModel::select('period.*', DB::raw('date_format(period.start_time,"%H:%i") as s_time,
-            date_format(period.end_time,"%H:%i") as e_time'))
-            ->where(['sub_institute_id' => $sub_institute_id])//, 'academic_section_id' => $academic_section_id
-            ->orderby('sort_order')
+        $period_data = periodModel::select('period.*', DB::raw('date_format(period_details.start_time,"%H:%i") as s_time,
+            date_format(period_details.end_time,"%H:%i") as e_time'))
+            ->leftJoin('period_details',function($join) use($standard_id){
+                $join->on('period_details.period_id','=','period.id')->where('period_details.standard_id',$standard_id);
+            })
+            ->where(['period.sub_institute_id' => $sub_institute_id])//, 'academic_section_id' => $academic_section_id
+            ->orderby('period.sort_order')
             ->get()
             ->toArray();
 
