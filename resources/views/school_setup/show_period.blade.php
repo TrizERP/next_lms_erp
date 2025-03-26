@@ -27,9 +27,9 @@
                                 <tr>
                                     <th>Title</th>
                                     <th>Short Name</th>
-                                    <!--<th>Start Time</th>
+                                    <th>Start Time</th>
                                     <th>End Time</th>
-                                    <th>Academic Year</th>
+                                    <!--<th>Academic Year</th>
                                     <th>Academic Section</th>-->
                                     <th>Used for Attendance</th>
                                     <th>Action</th>
@@ -37,12 +37,28 @@
                             </thead>
                             <tbody>
                                 @foreach($data['data'] as $key => $data)
+                                @php 
+                                    $startTime = (isset($data->startTime) && $data->startTime!='') ? explode(',',$data->startTime) : [];
+                                    $endTime = (isset($data->endTime) && $data->endTime!='') ? explode(',',$data->endTime) : [];
+                                @endphp
                                 <tr>    
                                     <td>{{$data->title}}</td>
                                     <td>{{$data->short_name}}</td>                 
-                                    <!--<td>{{$data->start_time}}</td>                 
-                                    <td>{{$data->end_time}}</td>     
-                                    <td>{{$data->academic_year_name}}</td>                                         
+                                    <td>
+                                        <ul>
+                                            @foreach($startTime as $tk => $tv)
+                                            <li>{{date("H:i a",strtotime($tv))}}</li>
+                                            @endforeach
+                                        </ul>
+                                    </td>                 
+                                    <td>
+                                        <ul>
+                                            @foreach($endTime as $tk => $tv)
+                                            <li>{{date("H:i a",strtotime($tv))}}</li>
+                                            @endforeach
+                                        </ul>
+                                    </td>     
+                                    <!--<td>{{$data->academic_year_name}}</td>                                         
                                     <td>
                                     @if($data->academic_section_name != "")
                                         {{$data->academic_section_name}}
@@ -93,9 +109,46 @@
 @include('includes.footerJs')
 <script src="{{ asset("/plugins/bower_components/datatables/datatables.min.js") }}"></script>
 <script>
-$(document).ready(function () {
-    $('#example').DataTable({});
-});
+ $(document).ready(function () {
+        var table = $('#example').DataTable({
+            select: true,
+            lengthMenu: [
+                [100, 500, 1000, -1],
+                ['100', '500', '1000', 'Show All']
+            ],
+            dom: 'Bfrtip',
+            buttons: [
+                {
+                    extend: 'pdfHtml5',
+                    title: 'Period Report',
+                    orientation: 'landscape',
+                    pageSize: 'LEGAL',
+                    pageSize: 'A0',
+                    exportOptions: {
+                        columns: ':visible'
+                    },
+                },
+                {extend: 'csv', text: ' CSV', title: 'Period Report'},
+                {extend: 'excel', text: ' EXCEL', title: 'Period Report'},
+                {extend: 'print', text: ' PRINT', title: 'Period Report'},
+                'pageLength'
+            ],
+        });
 
+        $('#example thead tr').clone(true).appendTo('#example thead');
+        $('#example thead tr:eq(1) th').each(function (i) {
+            var title = $(this).text();
+            $(this).html('<input type="text" placeholder="Search ' + title + '" />');
+
+            $('input', this).on('keyup change', function () {
+                if (table.column(i).search() !== this.value) {
+                    table
+                        .column(i)
+                        .search( this.value )
+                        .draw();
+                }
+            } );
+        } );
+    } );
 </script>
 @include('includes.footer')
