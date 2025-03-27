@@ -3040,7 +3040,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
 
 
     // 01-03-2024 by uma autoincrement fine amount for hills
-    public function hillsFine($id,$request,$late_fees_amount){
+    public function hillsFine($id,$request,$late_fees_amount,$sub_institute_id='',$syear='',$previousYear=''){
            
         $stu_arr = [
             "0" => $id,
@@ -3048,6 +3048,15 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
 
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
+
+        if($request->has('type') && $request->type=="API"){
+            $sub_institute_id = $sub_institute_id;
+            $syear = $previousYear;
+        }
+        // for previous year fees
+        if($request->has('type') && $request->type=="API" && $previousYear !=''){
+            $syear = $previousYear;
+        }
 
         $thisMonth = Carbon::now()->month;
         $thisYear = Carbon::now()->year;
@@ -3057,19 +3066,30 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
 
         $fineAmount = [];
         $inAmount = 0;
-
+        $allFeesMonth =  FeeMonthId($syear,$sub_institute_id);
         if($studentDetails){
             // $currentMonth = 72024; // for testing
             $getBreakoff = FeeBreackoff($stu_arr, $studentDetails->std,$syear,$sub_institute_id);
             $monthBreakoff = [];
             if(!empty($getBreakoff)){
                 foreach($getBreakoff as $key => $value){
-                    if($value->month_id == $currentMonth){
-                        break;
+                    if($request->has('type') && $request->type=="API"){
+                        if($value->month_id == $currentMonth){
+                            break;
+                        }
+                        $monthBreakoff[] = $value->month_id;
                     }
-                    $monthBreakoff[] = $value->month_id;
+                    else{
+                        if(array_key_exists($currentMonth,$allFeesMonth)){
+                            if($value->month_id == $currentMonth){
+                                break;
+                            }
+                            $monthBreakoff[] = $value->month_id;
+                        }
+                    }
                 }
             }
+            // echo "<pre>";print_r($monthBreakoff);exit;
             // get months which student have paid fees 
             $findFees = DB::table('fees_collect')->selectRaw('group_concat(term_id) as month_id')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear])->where('student_id',$id)->where('is_deleted','N')->groupBy('student_id')->first();
 
@@ -3482,4 +3502,93 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
         return [$result,$request->fees_title];
     }
 
+    // till month pending fees 27-03-2025 for hills
+    public function tillMonthPendingFees(Request $request){
+        $type = $request->type;
+        $studentId = $request->student_id;
+        $sub_institute_id = $request->sub_institute_id;
+        $syear = $request->syear;
+        $nextYear = ($syear+1);
+        $previousYear = ($syear-1);
+        $apiStatus = 0;
+        $status = 0;
+        $message = "Opps Something went wrong !";
+        
+        $validator = Validator::make($request->all(), [
+            'type'             => 'required',
+            'student_id'       => 'required|numeric',
+            'sub_institute_id' => 'required|numeric',
+            'syear'            => 'required|numeric',
+        ]);
+    
+        if ($validator->fails()) {
+            return response()->json([
+                'status'  => 0,
+                'message' => $validator->errors(),
+            ], 400);
+        }
+
+        $thisMonth = Carbon::now()->month;
+        $thisYear = Carbon::now()->year;
+        $currentMonth = $thisMonth.$thisYear;
+        $allFeesMonth =  FeeMonthId($syear,$sub_institute_id);
+        // getFees Here
+        $feesData = $this->getBk($request, $studentId);
+        $config = tblfeesConfigModel::where([
+            'sub_institute_id' => $sub_institute_id, 'syear' => $syear,
+        ])->first();
+
+        $Preconfig = tblfeesConfigModel::where([
+            'sub_institute_id' => $sub_institute_id, 'syear' => $previousYear,
+        ])->first();
+
+        $hillPreviousFineArr = [];
+        $hillCurrentFineArr = [];
+
+        $pre_late_fees_amount = isset($Preconfig->late_fees_amount) ? $Preconfig->late_fees_amount : 0;
+        $late_fees_amount = isset($config->late_fees_amount) ? $config->late_fees_amount : 0;
+
+        $hillPreviousFineArr = $this->hillsFine($studentId,$request,$pre_late_fees_amount,$sub_institute_id,$syear,$previousYear);
+        $hillCurrentFineArr = $this->hillsFine($studentId,$request,$late_fees_amount,$sub_institute_id,$syear);
+        
+        // echo "<pre>";print_r($feesData);exit;
+
+        $pendingFees = [];
+        $currentFees = 0;
+        if(!empty($feesData) && isset($feesData['total_fees'])){
+            $feesBreakOff = $feesData['total_fees'];
+            // echo "<pre>";print_r($feesBreakOff);exit;
+            foreach ($feesBreakOff as $key => $value) {
+               if($value['remain'] > 0){
+                    $getMonthYear = explode('/',$value['month']);
+                    $feesMonth = isset($getMonthYear[1]) ? $getMonthYear[1] : 0;
+                    if(($feesMonth == $syear || $feesMonth== $nextYear) && array_key_exists($currentMonth,$allFeesMonth)){
+                        $pendingFees[] = $value;
+                        if($value['month_id'] == $currentMonth){
+                            $currentFees += $value['remain'];
+                            break;
+                        }
+                        // previous month and current month pending fees 
+                        $currentFees += $value['remain'];
+                    }
+               }
+            }
+            $status = 1;
+            $message = "Student Fees Data Found";
+        }
+        $previousFees = (!empty($feesData) && isset($feesData['previous_fees'])) ? $feesData['previous_fees']['Previous Fees'] : 0;
+        $previousFees = isset($hillPreviousFineArr['total']) ? ($previousFees+$hillPreviousFineArr['total']) : $previousFees;
+        // currnt and previous is 0 then hide 
+        if($previousFees==0 && $currentFees==0){
+            $apiStatus = 0;
+        }
+        $res['status'] = $status;
+        $res['message'] = $message;
+        $res['api_status'] = $apiStatus;
+        $res['previous_fees'] = $previousFees;
+        $res['current_fees'] = $currentFees;
+        $res['studentData'] = (!empty($feesData) && isset($feesData['stu_data'])) ? $feesData['stu_data'] : []; 
+
+        return response()->json($res);
+    }
 }
