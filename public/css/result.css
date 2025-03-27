@@ -57,9 +57,11 @@ tbody {
         /* background-color:black; */
 
     }
-    .hills_co th{
-        width:200px !important;
+
+    .hills_co th {
+        width: 200px !important;
     }
+
     /* vietnamese */
     @font-face {
         font-family: 'Saira Semi Condensed';
@@ -90,17 +92,19 @@ tbody {
         src: local('Saira SemiCondensed Regular'), local('SairaSemiCondensed-Regular'), url(styles/fonts/E1gvqhdADptsO-uwP-KYOk_viB2zVz6tDDe85Nl1PNo.woff2) format('woff2');
         unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215;
     }
+
     /* added on 23-01-2025 for hills high  */
-    .report-card-bg2{
-    padding: 25px;
-    width: 90%;
-    margin: 0 auto;
-    background-position: center center;
-    background-repeat: repeat;
-    font-family: 'Saira Semi Condensed', sans-serif;
-    top: 16px;
-    position: relative;
-	}
+    .report-card-bg2 {
+        padding: 25px;
+        width: 90%;
+        margin: 0 auto;
+        background-position: center center;
+        background-repeat: repeat;
+        font-family: 'Saira Semi Condensed', sans-serif;
+        top: 16px;
+        position: relative;
+    }
+
     /* end on 23-01-2025 for hills high  */
 
     .report-card-bg>table,
@@ -108,13 +112,13 @@ tbody {
     .report-card-bg>table tr th,
     table tr th {
         font-family: 'Saira Semi Condensed' !important;
-        font-size: 0.6rem !important
+        font-size: 0.6rem
     }
 
 
     .report-card-bg>table {
         font-family: 'Saira Semi Condensed', sans-serif !important;
-        font-size: 10px !important;
+        font-size: 10px;
         display: inline-table;
     }
 
@@ -136,7 +140,7 @@ tbody {
         background: linear-gradient(to bottom, rgba(255, 175, 75, 1) 0%, rgba(255, 146, 10, 1) 100%);
         filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ffaf4b', endColorstr='#ff920a', GradientType=0);
         color: #191919;
-        font-size: 10px !important;
+        font-size: 10px;
 
     }
 
@@ -155,8 +159,8 @@ tbody {
 
     table.report-card tr td {
         padding: 2px 0px;
-        font-family: 'Saira Semi Condensed', sans-serif !important;
-        font-size: 10px !important;
+        font-family: 'Saira Semi Condensed', sans-serif;
+        font-size: 10px;
 
     }
 
@@ -169,13 +173,14 @@ tbody {
         padding: 10px;
         width: 100% !important;
     }
+
     /* .report-card-bg2 {
         padding: 4px !important;
         width: 100% !important;
         margin: 0px !important;
     } */
 
-    .report-card-bg2>.main-table-hpc{
+    .report-card-bg2>.main-table-hpc {
         margin: 14px;
         width: 95%;
         background-position: center !important;
@@ -183,7 +188,7 @@ tbody {
 
     .report-card-bg>.main-table {
         padding: 0px !important;
-        width: 94% !important;
+        width: 94%;
         background-position: center center !important;
     }
 
@@ -197,7 +202,7 @@ tbody {
     table.aca-year tr td {
         padding: 2px 5px;
         font-family: 'Saira Semi Condensed', sans-serif;
-        font-size: 10px !important;
+        font-size: 10px;
         border: 1px solid #e68023;
 
     }
@@ -306,13 +311,14 @@ table.report-card tr td {
     padding: 0px !important
 }
 
-.report-card-bg{
+.report-card-bg {
     padding: 20px;
     width: 90%;
     margin: 0 auto !important;
     position: relative !important;
-    font-family: 'Saira Semi Condensed', sans-serif !important;
+    font-family: 'Saira Semi Condensed', sans-serif;
 }
+
 .report-card-bg2 {
     padding: 20px;
     width: 90%;
@@ -322,17 +328,18 @@ table.report-card tr td {
     background-size: cover !important;
     background-position: center center !important;
     background-repeat: no-repeat !important;
-    font-family: 'Saira Semi Condensed', sans-serif !important;
+    font-family: 'Saira Semi Condensed', sans-serif;
 }
 
-.main-table,.main-table-hpc {
+.main-table,
+.main-table-hpc {
     width: 100%;
     background-color: #d7d7d7;
     padding: 0px 8px 8px 8px;
     background-image: url('assets/img/bg-1.png');
     background-position: left center;
     background-repeat: repeat !important;
-    font-family: 'Saira Semi Condensed', sans-serif !important;
+    font-family: 'Saira Semi Condensed', sans-serif;
 }
 
 .report-card h3 {

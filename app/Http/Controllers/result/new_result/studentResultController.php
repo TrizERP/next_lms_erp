@@ -4164,7 +4164,7 @@ while ($current_date <= $post_end_date) {
                             $subject_total[$terms->term_id] = 0;
                         }
                     //    echo "<pre>";print_r($obtained_mark_arr); echo '-'.$exam_id.'-';
-                        if($obtained_mark_sum=="AB" || $obtained_mark_sum=="EX" || $obtained_mark_sum=="N.A." || $obtained_mark_sum=="A.B"){
+                        if(in_array($obtained_mark_sum,["AB","EX","N.A.","A.B"])){
                             $convert_mark = $obtained_mark_sum;
                             if($obtained_mark_sum=="A.B" || $obtained_mark_sum=="AB"){
                                 $subject_total[$terms->term_id] += $w_m;    
@@ -4209,7 +4209,7 @@ while ($current_date <= $post_end_date) {
         // exit;
         $table .= '<tr>';
         $table_per = $rep_val =$table_all = '';
-        $all_ob_mark = $all_sub_mark =$overall_per = $finalPer= 0;
+        $totalMarks = $all_ob_mark = $all_sub_mark =$overall_per = $finalPer = 0;
         $result = "Pass";
         
         // Calculate the total marks for each term
@@ -4232,7 +4232,13 @@ while ($current_date <= $post_end_date) {
                 $finalPer = $this->getPer($tot_ob_mark, $tot_sub_mark);  
                 // get overall percentage  
                 $overall_per += $finalPer;  
-                $main_per = number_format(($overall_per / 200) * 100,2);  
+                // 25-03-2025 added $totalMarks
+                $gradeTotal = 0 ;
+                if($total_sub_marks[$terms->term_id]>0){
+                    $totalMarks +=100;
+                    $gradeTotal = $total_mark;
+                }
+                $main_per = ($totalMarks > 0)  ? number_format(($overall_per / $totalMarks) * 100,2) : 0;  
                 // get overall grade  
                 $grade_arr = $this->getGradeScale($standard_id, '');
 
@@ -4243,9 +4249,9 @@ while ($current_date <= $post_end_date) {
                 } else {
                     $rep_val = "&lt;&lt;grade&gt;&gt;";
                 }
-                $table .= '<td colspan="' . (count($term_exam_titles)) + $cols . '" style="text-align:right"><b>Total</b></td><td class="data_center"><b>' . round($tot_ob_mark,0) . '</b></td><td rowspan="2" class="data_center"><b>' . \App\Helpers\getGrade($grade_arr, $total_mark, $finalPer) . '</b></td>';
+                $table .= '<td colspan="' . (count($term_exam_titles)) + $cols . '" style="text-align:right"><b>Total</b></td><td class="data_center"><b>' . round($tot_ob_mark,0) . '</b></td><td rowspan="2" class="data_center" '.$totalMarks.'><b>' . \App\Helpers\getGrade($grade_arr, $gradeTotal, $finalPer) . '</b></td>';
 
-                $table_per .= '<td colspan="' . (count($term_exam_titles)) + $cols . '" style="text-align:right"><b>Percentage</b></td><td class="data_center"><b>' . $finalPer . '% </b></td>';
+                $table_per .= '<td colspan="' . (count($term_exam_titles)) + $cols . '" style="text-align:right" '.$total_term_marks[$terms->term_id].' '.$total_sub_marks[$terms->term_id].'><b>Percentage</b></td><td class="data_center"><b>' . $finalPer . '% </b></td>';
 
                 $table_all .= '<td colspan="' . (count($term_exam_titles)) + $cols . '" style="text-align:right"><b>' . $val . '</b></td><td colspan="2" class="data_center"><b>' . $rep_val . '</b></td>';
             }
@@ -7822,7 +7828,12 @@ private function buildDisciplineTable($decipline_data,$both_term)
                                 $tdVal =$obtGrade;
 
                                     if($subjectData->elective_subject=="Yes"){
-                                        $tdVal = $obtGrade;
+                                        if(isset($examArr[$subjectData->subject_id][$examkey]['OBT'])){
+                                            $tdVal = $obtGrade;
+                                        }
+                                        else{
+                                            $tdVal = '';
+                                        }
                                     }
                                     else{
                                         $grandTotal[$examkey]['point']=($grandTotal[$examkey]['point']+$examData['weightage']);
@@ -8116,7 +8127,12 @@ private function buildDisciplineTable($decipline_data,$both_term)
                                 $tdVal =$obtMarks;
 
                                     if($subjectData->elective_subject=="Yes"){
-                                        $tdVal = $obtGrade;
+                                        if(isset($examArr[$subjectData->subject_id][$examkey]['OBT'])){
+                                            $tdVal = $obtGrade;
+                                        }
+                                        else{
+                                            $tdVal = '';
+                                        }
                                     }
                                     else{
                                         $grandTotal[$examkey]['point']=($grandTotal[$examkey]['point']+$examData['weightage']);
@@ -8315,13 +8331,14 @@ private function buildDisciplineTable($decipline_data,$both_term)
                      if($examData->ExamId==$exam_marksvalue->exam_id && $examData->subject_id==$exam_marksvalue->subject_id){
                          $examArr[$exam_marksvalue->subject_id][$exam_marksvalue->exam_id]['OBT'][] = in_array($exam_marksvalue->is_absent,['AB','N.A.','EX']) ? $exam_marksvalue->is_absent : $exam_marksvalue->points;
                          $examArr[$exam_marksvalue->subject_id][$exam_marksvalue->exam_id]['POINTS'][] = $exam_marksvalue->weightage;
+                         $examArr[$exam_marksvalue->subject_id][$exam_marksvalue->exam_id]['CREATE_POINTS'][] = $exam_marksvalue->total_points;
                          $examArr[$exam_marksvalue->subject_id][$exam_marksvalue->exam_id]['PASSING'][] = $PASSING_MARKS;
                          $examArr[$exam_marksvalue->subject_id][$exam_marksvalue->exam_id]['is_elective'][] = $exam_marksvalue->elective_subject;
                          $examArr[$exam_marksvalue->subject_id][$exam_marksvalue->exam_id]['create_id'][] = $exam_marksvalue->create_exam;
                          $examArr[$exam_marksvalue->subject_id][$exam_marksvalue->exam_id]['student_id'][] = $exam_marksvalue->student_id;
                      }
                  }
-                 // $examArr[$examData->subject_id][$examData->ExamId][] = 0;
+                 // $examArr[$examData->subject_id][$examData->ExamId][] = 0; total_points
              }
         //  echo "<pre>";print_r($examArr); 
          $table = '<table class="frangeloTable" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" border="1">
@@ -8361,12 +8378,18 @@ private function buildDisciplineTable($decipline_data,$both_term)
                             // check exam has marks or not 
                             $annualOut= $annualObt=0;
                             foreach ($examMasters as $examkey => $examData) {
-                                $obtMarks = $pointMarks = $passingMarks = '0';
+                                $obtMarks = $pointMarks = $gradePoints = $passingMarks = '0';
                                if(isset($examArr[$subjectData->subject_id][$examkey]['OBT'])){
                                     $obtMarks = array_sum($examArr[$subjectData->subject_id][$examkey]['OBT']);
                                }
+                               if(isset($examArr[$subjectData->subject_id][$examkey]['CREATE_POINTS'])){
+                                    $gradePoints = array_sum($examArr[$subjectData->subject_id][$examkey]['CREATE_POINTS']);
+                                }
                                if(isset($examData['weightage'])){
-                                    $pointMarks = $examData['weightage'];
+                                $pointMarks = $examData['weightage'];
+                                if($subjectData->elective_subject=="Yes"){
+                                    $pointMarks = $gradePoints;
+                                }
                                }
                                if(isset($examArr[$subjectData->subject_id][$examkey]['PASSING'])){
                                     $passingMarks = array_sum($examArr[$subjectData->subject_id][$examkey]['PASSING']);
@@ -8374,7 +8397,9 @@ private function buildDisciplineTable($decipline_data,$both_term)
 
                                $pointsGrade = $this->getGrade($grade_arr, $pointMarks, $pointMarks);
                                $passingGrade = $this->getGrade($grade_arr, $pointMarks, $passingMarks);
-                               $obtGrade = $this->getGrade($grade_arr, $pointMarks, $obtMarks);
+                            //   if(isset($examArr[$subjectData->subject_id][$examkey]['OBT'])){
+                                $obtGrade = $this->getGrade($grade_arr, $pointMarks, $obtMarks);
+                            //    }
 
                                $allArr = json_encode(['student_id'=>$student_id,'standard_id'=>$standard_id,'subject'=>$subjectData->subject_id,'exam_id'=>$examkey]);
 
@@ -8389,7 +8414,12 @@ private function buildDisciplineTable($decipline_data,$both_term)
                                 $tdVal =$obtMarks;
 
                                     if($subjectData->elective_subject=="Yes"){
-                                        $tdVal = $obtGrade;
+                                        if(isset($examArr[$subjectData->subject_id][$examkey]['OBT'])){
+                                            $tdVal = $obtGrade;
+                                        }
+                                        else{
+                                            $tdVal = '';
+                                        }
                                     }
                                     else{
                                         $grandTotal[$examkey]['point']=($grandTotal[$examkey]['point']+$examData['weightage']);
@@ -8401,7 +8431,7 @@ private function buildDisciplineTable($decipline_data,$both_term)
                                         // for ab,na and ex
                                         $tdVal = (count($examArr[$subjectData->subject_id][$examkey]['OBT'])==1 && in_array($examArr[$subjectData->subject_id][$examkey]['OBT'][0],['AB','N.A.','EX'])) ? $examArr[$subjectData->subject_id][$examkey]['OBT'][0] : $tdVal;
                                    }
-                                    $table .= '<td class="data_center" json=`'.$allArr.'` '.$pointMarks.'>'.$tdVal.'</td>';
+                                    $table .= '<td class="data_center" json=`'.$allArr.'` '.$gradePoints.' '.$obtMarks.'>'.$tdVal.'</td>';
                                     $annualOut +=$examData['weightage'];
                                     $annualObt +=$obtMarks;
                                     if($subjectData->elective_subject!="Yes"){

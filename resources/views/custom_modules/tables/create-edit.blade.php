@@ -19,6 +19,13 @@
         font-weight: bold;
     }
 </style>
+@php
+$disabled= $tableExists =  '';
+if(isset($data['tableCreated']) && $data['tableCreated'] ==1){
+    $disabled = 'disabled';
+    $tableExists = 'readonly';
+}
+@endphp
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row bg-title">
@@ -81,7 +88,7 @@
 
                     <div class="col-md-4 form-group">
                         <label>Table Name </label>
-                        <input type="text" id='table_name' required name="table_name" class="form-control" value="{{$data['table_name']}}">
+                        <input type="text" id='table_name' required name="table_name" class="form-control" value="{{$data['table_name']}}" {{$tableExists}}>
                         @error('table_name')
                         <span style="color: red">{{$message}}</span>
                         @enderror
@@ -162,19 +169,19 @@
                     </div>
                     <?php
                         $student = false;
-                    $staff = false;
+                        $staff = false;
                     ?>
                     @if(isset($data['whereColumns']))
 
                     @foreach($data['whereColumns'] as $where_column)
                         @if($where_column['column_name'] == 'Division')
                          <?php
-                                $student = true
+                                $student = true;
                              ?>
                         @endif
                             @if($where_column['column_name'] == 'staff_mobile')
                                <?php
-                                    $staff = true
+                                    $staff = true;
                                    ?>
                             @endif
                     @endforeach
@@ -200,11 +207,11 @@
 
                     <div class="col-md-2 form-group">
                         <label>Include Student</label><br>
-                        <input type="checkbox" id='student' name="student" {{$student ? 'checked' : ''}}  value="1">
+                        <input type="checkbox" id='student' name="student" {{$student ? 'checked' : ''}}  value="1" {{$disabled}}>
                     </div>
                     <div class="col-md-2 form-group">
                         <label>Include Staff</label><br>
-                        <input type="checkbox" id='staff' name="staff" {{$staff ? 'checked' : ''}}  value="1">
+                        <input type="checkbox" id='staff' name="staff" {{$staff ? 'checked' : ''}}  value="1" {{$disabled}}>
                     </div>
 
                     <input type="hidden" name="id" value="{{$data['id']}}">

@@ -516,7 +516,8 @@ if ($("#ajax_PDF_Certificate").length != 0)
                         alert(response.message);
                         window.location.href = "/student/student_certificate?status_code=0&message="+response.message;
                     }
-                    {
+                    
+                    else{
                         $.ajax({
                                     url: '/ajax_PDF_Bulk_OtherFeesReceipt?action='+action+'&inserted_ids='+response.certificate_id,                
                                     success: function(result){ 

@@ -2399,19 +2399,33 @@ class AJAXController extends Controller
 
     public function lmsDataApi(Request $request){
     	
-        if($request->table == 'lms_lesson_plan' && $request->sub_institute_id){
-        	$data = DB::table($request->table)->where('sub_institute_id', $request->sub_institute_id)
-                  ->limit(25)
-                  ->get()
-                  ->toArray();
-        }elseif($request->table && $request->sub_institute_id){
-            $data = DB::table($request->table)->where('sub_institute_id', $request->sub_institute_id)->get()->toArray();
-        }elseif($request->table){
-            $data = DB::table($request->table)->get()->toArray();
-        }else{
-           $data = DB::table('lms_data')->get()->toArray();
-            // $data = DB::select("SELECT * FROM lms_data");
+        if (!$request->has('table')) {
+            return response()->json(['error' => 'Table name is required'], 400);
         }
+
+        // Get the table name from the request
+        $table = $request->table;
+
+        // Validate if the table exists
+        if (!Schema::hasTable($table)) {
+            return response()->json(['error' => 'Invalid table name'], 400);
+        }
+
+        // Start query
+        $query = DB::table($table);
+
+        // Apply filters if provided
+        if ($request->has('filters') && is_array($request->filters)) {
+            foreach ($request->filters as $column => $value) {
+                if (Schema::hasColumn($table, $column)) {
+                    $query->where($column, $value);
+                }
+            }
+        }
+
+        // Fetch data
+        $data = $query->get();
+
         return response()->json($data);
     }
 

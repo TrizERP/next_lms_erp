@@ -253,7 +253,7 @@ class skillLibraryController extends Controller
             }
         }
         $res['status'] = "0";
-        $res['message'] = "Failed to Add Skill";
+        $res['message'] = "Failed to Update Skill";
 
         $data = [
             "category"=>$category,
@@ -303,7 +303,7 @@ class skillLibraryController extends Controller
             }
         }
         $res['status'] = "0";
-        $res['message'] = "Failed to Add Skill";
+        $res['message'] = "Failed to Delete Skill";
 
         $findData = masterSkill::find($id);
 
