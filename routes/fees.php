@@ -275,4 +275,6 @@ Route::post('/studentFeesDetailAPI', [fees_collect_controller::class, 'studentFe
 Route::get('ajax_checkFeesStructure',
     [fees_breackoff_controller::class, 'ajax_checkFeesStructure'])->name('ajax_checkFeesStructure');
 
+// hills monthwise pending fees feesStatusController
 
+Route::get('pending_fees',[fees_collect_controller::class, 'tillMonthPendingFees'])->name('pending_fees');
