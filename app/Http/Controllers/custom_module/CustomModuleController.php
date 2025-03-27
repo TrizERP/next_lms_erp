@@ -15,6 +15,7 @@ use Illuminate\Support\Str;
 use Opcodes\LogViewer\Log;
 use function App\Helpers\is_mobile;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Schema;
 
 class CustomModuleController extends Controller
 {
@@ -36,6 +37,14 @@ class CustomModuleController extends Controller
         $type = $request->input('type');
         if ($id) {
             $customModuleTable = CustomModuleTable::with('whereColumns')->find($id);
+            $tableName = $customModuleTable['table_name'];
+
+            if (Schema::hasTable($tableName)) {
+                $customModuleTable['tableCreated'] = 1;
+            } else {
+                $customModuleTable['tableCreated'] = 0;
+            }
+            // echo "<pre>";print_r($customModuleTable);exit;
             // added $customModuleTable in is_mobile on 24-03-2025
             return is_mobile($type, "custom_modules.tables.create-edit", $customModuleTable, "view", 'compact');
             //return view('HRMS.hrms_job_title.create', compact('hrmsJobTitle'));
@@ -98,77 +107,117 @@ class CustomModuleController extends Controller
         $tableColumn = CustomModuleTableColumn::where('table_id', $customModuleTable->id);
         // $existingColumns = $tableColumn->pluck('column_name')->toArray(); // Get existing column names
 
-        if (isset($request->student)) {
-            $tableColumnData = $tableColumn->where([
-                ['column_name', 'first_name'],
-                ['column_name', 'middle_name'],
-                ['column_name', 'last_name'],
-                ['column_name', 'enrollment_no'],
-                ['column_name', 'mobile'],
-                ['column_name', 'mother_mobile'],
-                ['column_name', 'email'],
-                ['column_name', 'academic_section'],
-                ['column_name', 'Standard'],
-                ['column_name', 'Division'],
-                ['column_name', 'roll_no']
-            ])->first();
-            if (!$tableColumnData) {
-                DB::table('custom_module_table_columns')->insert([
-                    ["column_name" => 'first_name', "table_id" => $customModuleTable->id, "auto_increment" => 0, "type" => 'varchar', "length" => 255, 'not_null' => 0, 'index' => null, 'default' => null],
-                    ["column_name" => 'middle_name', "table_id" => $customModuleTable->id, "auto_increment" => 0, "type" => 'varchar', "length" => 255, 'not_null' => 0, 'index' => null, 'default' => null],
-                    ["column_name" => 'last_name', "table_id" => $customModuleTable->id, "auto_increment" => 0, "type" => 'varchar', "length" => 255, 'not_null' => 0, 'index' => null, 'default' => null],
-                    ["column_name" => 'enrollment_no', "table_id" => $customModuleTable->id, "auto_increment" => 0, "type" => 'varchar', "length" => 255, 'not_null' => 0, 'index' => null, 'default' => null],
-                    ["column_name" => 'mobile', "table_id" => $customModuleTable->id, "auto_increment" => 0, "type" => 'varchar', "length" => 255, 'not_null' => 0, 'index' => null, 'default' => null],
-                    ["column_name" => 'mother_mobile', "table_id" => $customModuleTable->id, "auto_increment" => 0, "type" => 'varchar', "length" => 255, 'not_null' => 0, 'index' => null, 'default' => null],
-                    ["column_name" => 'email', "table_id" => $customModuleTable->id, "auto_increment" => 0, "type" => 'varchar', "length" => 255, 'not_null' => 0, 'index' => null, 'default' => null],
-                    ["column_name" => 'academic_section', "table_id" => $customModuleTable->id, "auto_increment" => 0, "type" => 'integer', "length" => 255, 'not_null' => 0, 'index' => null, 'default' => null],
-                    ["column_name" => 'Standard', "table_id" => $customModuleTable->id, "auto_increment" => 0, "type" => 'integer', "length" => 255, 'not_null' => 0, 'index' => null, 'default' => null],
-                    ["column_name" => 'Division', "table_id" => $customModuleTable->id, "auto_increment" => 0, "type" => 'integer', "length" => 255, 'not_null' => 0, 'index' => null, 'default' => null],
-                    ["column_name" => 'roll_no', "table_id" => $customModuleTable->id, "auto_increment" => 0, "type" => 'varchar', "length" => 255, 'not_null' => 0, 'index' => null, 'default' => null],
+        // if (isset($request->student)) {
+        //     $tableColumnData = $tableColumn->where([
+        //         ['column_name', 'first_name'],
+        //         ['column_name', 'middle_name'],
+        //         ['column_name', 'last_name'],
+        //         ['column_name', 'enrollment_no'],
+        //         ['column_name', 'mobile'],
+        //         ['column_name', 'mother_mobile'],
+        //         ['column_name', 'email'],
+        //         ['column_name', 'academic_section'],
+        //         ['column_name', 'Standard'],
+        //         ['column_name', 'Division'],
+        //         ['column_name', 'roll_no']
+        //     ])->first();
+        //     if (!$tableColumnData) {
+        //         DB::table('custom_module_table_columns')->insert([
+        //             ["column_name" => 'first_name', "table_id" => $customModuleTable->id, "auto_increment" => 0, "type" => 'varchar', "length" => 255, 'not_null' => 0, 'index' => null, 'default' => null],
+        //             ["column_name" => 'middle_name', "table_id" => $customModuleTable->id, "auto_increment" => 0, "type" => 'varchar', "length" => 255, 'not_null' => 0, 'index' => null, 'default' => null],
+        //             ["column_name" => 'last_name', "table_id" => $customModuleTable->id, "auto_increment" => 0, "type" => 'varchar', "length" => 255, 'not_null' => 0, 'index' => null, 'default' => null],
+        //             ["column_name" => 'enrollment_no', "table_id" => $customModuleTable->id, "auto_increment" => 0, "type" => 'varchar', "length" => 255, 'not_null' => 0, 'index' => null, 'default' => null],
+        //             ["column_name" => 'mobile', "table_id" => $customModuleTable->id, "auto_increment" => 0, "type" => 'varchar', "length" => 255, 'not_null' => 0, 'index' => null, 'default' => null],
+        //             ["column_name" => 'mother_mobile', "table_id" => $customModuleTable->id, "auto_increment" => 0, "type" => 'varchar', "length" => 255, 'not_null' => 0, 'index' => null, 'default' => null],
+        //             ["column_name" => 'email', "table_id" => $customModuleTable->id, "auto_increment" => 0, "type" => 'varchar', "length" => 255, 'not_null' => 0, 'index' => null, 'default' => null],
+        //             ["column_name" => 'academic_section', "table_id" => $customModuleTable->id, "auto_increment" => 0, "type" => 'integer', "length" => 255, 'not_null' => 0, 'index' => null, 'default' => null],
+        //             ["column_name" => 'Standard', "table_id" => $customModuleTable->id, "auto_increment" => 0, "type" => 'integer', "length" => 255, 'not_null' => 0, 'index' => null, 'default' => null],
+        //             ["column_name" => 'Division', "table_id" => $customModuleTable->id, "auto_increment" => 0, "type" => 'integer', "length" => 255, 'not_null' => 0, 'index' => null, 'default' => null],
+        //             ["column_name" => 'roll_no', "table_id" => $customModuleTable->id, "auto_increment" => 0, "type" => 'varchar', "length" => 255, 'not_null' => 0, 'index' => null, 'default' => null],
+        //         ]);
+        //     }
+        // } else {
+        //     $tableColumn->where([
+        //         ['column_name', 'first_name'],
+        //         ['column_name', 'middle_name'],
+        //         ['column_name', 'last_name'],
+        //         ['column_name', 'enrollment_no'],
+        //         ['column_name', 'mobile'],
+        //         ['column_name', 'mother_mobile'],
+        //         ['column_name', 'email'],
+        //         ['column_name', 'academic_section'],
+        //         ['column_name', 'Standard'],
+        //         ['column_name', 'Division'],
+        //         ['column_name', 'roll_no']
+        //     ])->delete();
+        // }
+
+        // if (isset($request->staff)) {
+        //     $tableColumnData = $tableColumn->where([
+        //         ['column_name', 'first_name'],
+        //         ['column_name', 'middle_name'],
+        //         ['column_name', 'last_name'],
+        //         ['column_name', 'staff_mobile'],
+        //         ['column_name', 'email']
+        //     ])->first();
+        //     if (!$tableColumnData) {
+        //         DB::table('custom_module_table_columns')->insert([
+        //             ["column_name" => 'first_name', "table_id" => $customModuleTable->id, "auto_increment" => 0, "type" => 'varchar', "length" => 255, 'not_null' => 0, 'index' => null, 'default' => null],
+        //             ["column_name" => 'middle_name', "table_id" => $customModuleTable->id, "auto_increment" => 0, "type" => 'varchar', "length" => 255, 'not_null' => 0, 'index' => null, 'default' => null],
+        //             ["column_name" => 'last_name', "table_id" => $customModuleTable->id, "auto_increment" => 0, "type" => 'varchar', "length" => 255, 'not_null' => 0, 'index' => null, 'default' => null],
+        //             ["column_name" => 'staff_mobile', "table_id" => $customModuleTable->id, "auto_increment" => 0, "type" => 'varchar', "length" => 255, 'not_null' => 0, 'index' => null, 'default' => null],
+        //             ["column_name" => 'email', "table_id" => $customModuleTable->id, "auto_increment" => 0, "type" => 'varchar', "length" => 255, 'not_null' => 0, 'index' => null, 'default' => null],
+        //         ]);
+        //     }
+        // } else {
+        //     $tableColumn->where([
+        //         ['column_name', 'first_name'],
+        //         ['column_name', 'middle_name'],
+        //         ['column_name', 'last_name'],
+        //         ['column_name', 'staff_mobile'],
+        //         ['column_name', 'email']
+        //     ])->delete();
+        // }
+
+        // added on 25-03-2025 by uma for student and employee columns start
+        $studentColumns = ['first_name','middle_name','last_name','enrollment_no','mobile','mother_mobile','email','academic_section','Standard','Division','roll_no'];
+        $employeeColumns = ['first_name','middle_name','last_name','staff_mobile','email'];
+
+        foreach ($studentColumns as $key => $colName) {
+          DB::table('custom_module_table_columns')->where('table_id',$customModuleTable->id)->where('column_name',$colName)->delete();
+           if($request->has('student')){
+            DB::table('custom_module_table_columns')->insert([
+                "column_name" => $colName,
+                    "table_id" => $customModuleTable->id,
+                    "auto_increment" => 0, 
+                    "type" => 'varchar',
+                    "length" => 255,
+                    'not_null' => 0,
+                    'index' => null,
+                    'default' => null,
+                    'created_at'=>now()
                 ]);
-            }
-        } else {
-            $tableColumn->where([
-                ['column_name', 'first_name'],
-                ['column_name', 'middle_name'],
-                ['column_name', 'last_name'],
-                ['column_name', 'enrollment_no'],
-                ['column_name', 'mobile'],
-                ['column_name', 'mother_mobile'],
-                ['column_name', 'email'],
-                ['column_name', 'academic_section'],
-                ['column_name', 'Standard'],
-                ['column_name', 'Division'],
-                ['column_name', 'roll_no']
-            ])->delete();
+           }
         }
 
-        if (isset($request->staff)) {
-            $tableColumnData = $tableColumn->where([
-                ['column_name', 'first_name'],
-                ['column_name', 'middle_name'],
-                ['column_name', 'last_name'],
-                ['column_name', 'staff_mobile'],
-                ['column_name', 'email']
-            ])->first();
-            if (!$tableColumnData) {
+        foreach ($employeeColumns as $key => $colName) {
+            DB::table('custom_module_table_columns')->where('table_id',$customModuleTable->id)->where('column_name',$colName)->delete();
+            if($request->has('staff')){
                 DB::table('custom_module_table_columns')->insert([
-                    ["column_name" => 'first_name', "table_id" => $customModuleTable->id, "auto_increment" => 0, "type" => 'varchar', "length" => 255, 'not_null' => 0, 'index' => null, 'default' => null],
-                    ["column_name" => 'middle_name', "table_id" => $customModuleTable->id, "auto_increment" => 0, "type" => 'varchar', "length" => 255, 'not_null' => 0, 'index' => null, 'default' => null],
-                    ["column_name" => 'last_name', "table_id" => $customModuleTable->id, "auto_increment" => 0, "type" => 'varchar', "length" => 255, 'not_null' => 0, 'index' => null, 'default' => null],
-                    ["column_name" => 'staff_mobile', "table_id" => $customModuleTable->id, "auto_increment" => 0, "type" => 'varchar', "length" => 255, 'not_null' => 0, 'index' => null, 'default' => null],
-                    ["column_name" => 'email', "table_id" => $customModuleTable->id, "auto_increment" => 0, "type" => 'varchar', "length" => 255, 'not_null' => 0, 'index' => null, 'default' => null],
-                ]);
+                        "column_name" => $colName,
+                        "table_id" => $customModuleTable->id,
+                        "auto_increment" => 0, 
+                        "type" => 'varchar',
+                        "length" => 255,
+                        'not_null' => 0,
+                        'index' => null,
+                        'default' => null,
+                        'created_at'=>now()
+                    ]);
             }
-        } else {
-            $tableColumn->where([
-                ['column_name', 'first_name'],
-                ['column_name', 'middle_name'],
-                ['column_name', 'last_name'],
-                ['column_name', 'staff_mobile'],
-                ['column_name', 'email']
-            ])->delete();
         }
+        
+        // added on 25-03-2025 by uma end 
 
         if (isset($request->division)) {
             $tableColumn = $tableColumn->where('column_name', 'Division')->first();
@@ -217,8 +266,7 @@ class CustomModuleController extends Controller
         return is_mobile($type, "custom-module.tables", $res, "redirect");
     }
 
-    public
-    function tableDelete(Request $request, $id)
+    public function tableDelete(Request $request, $id)
     {
         $type = $request->input('type');
         $i=0;
