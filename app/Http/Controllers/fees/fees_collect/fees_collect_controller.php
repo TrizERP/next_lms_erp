@@ -3510,7 +3510,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
         $syear = $request->syear;
         $nextYear = ($syear+1);
         $previousYear = ($syear-1);
-        $apiStatus = 0;
+        $apiStatus = 1;
         $status = 0;
         $message = "Opps Something went wrong !";
         
