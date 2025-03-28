@@ -8311,7 +8311,7 @@ private function buildDisciplineTable($decipline_data,$both_term)
         $term_name = DB::table('academic_year')->whereRaw($extra_term)->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->get()->toArray();
 
         // get subject
-        $PASSING_MARKS = 35;
+        $PASSING_MARKS = 33;
         $get_subject = $this->get_subject($sub_institute_id,$syear,$student_id,$standard_id);
         $exam_created = $this->get_exam_name($sub_institute_id,$syear,$standard_id,$extra_exam);
         $exam_marks = $this->get_exam_marks($sub_institute_id,$student_id,'examWise',$syear);
