@@ -17,10 +17,10 @@
             </div>                    
         </div>
         <div class="card">
-            @if(!empty($data['message']))
-            <div class="alert alert-success alert-block">
+        @if ($sessionData = Session::get('data'))
+            <div class="alert {{($sessionData['status_code'] == 1) ? 'alert-success' : 'alert-danger'}} alert-block">
                 <button type="button" class="close" data-dismiss="alert">×</button>
-                <strong>{{ $data['message'] }}</strong>
+                <strong>{{ $sessionData['message'] }}</strong>
             </div>
             @endif
             <div class="row">                
