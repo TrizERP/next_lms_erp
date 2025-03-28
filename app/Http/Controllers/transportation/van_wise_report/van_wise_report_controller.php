@@ -9,6 +9,10 @@ use Illuminate\Support\Facades\DB;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use function App\Helpers\is_mobile;
+use function App\Helpers\send_FCM_Notification;
+use function App\Helpers\sendNotification;
+use App\Models\school_setup\SchoolModel;
+use Validator;
 
 class van_wise_report_controller extends Controller
 {
@@ -179,7 +183,94 @@ class van_wise_report_controller extends Controller
      */
     public function store(Request $request)
     {
-        //
+        // echo "<pre>";print_r($request->all());exit;
+        $type = $request->input('type');
+
+        $syear = session()->get('syear');
+        $sub_institute_id = session()->get('sub_institute_id');
+        $user_id = session()->get('user_id');
+        $message = $request->notificationText;
+
+        if($type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');     
+            $user_id = $request->get('user_id');     
+
+            $validator = validator::make($request->all,[
+                'sub_institute_id'=>'required|number',
+                'syear'=>'require|number',
+                'user_id'=>'require|number',
+                'notificationText'=>'require',
+            ]);     
+            if ($validator->fails()) {
+                $response['status'] = '0';
+                $response['message'] = $validator->messages()->first();
+                return response()->json($response, 401);
+            }
+        }
+        $schoolData = SchoolModel::where(['id' => $sub_institute_id])->get()->toArray();
+        $schoolName = $schoolData[0]['SchoolName'];
+        $schoolLogo = $_SERVER['APP_URL'].'/admin_dep/images/'.$schoolData[0]['Logo'];
+
+        foreach ($request->studentData as $studentId => $mobile) {
+            $app_notification_content = [
+                'NOTIFICATION_TYPE'        => 'TansportNotification',
+                'NOTIFICATION_DATE'        => now(),
+                'STUDENT_ID'               => $studentId,
+                'NOTIFICATION_DESCRIPTION' => $message,
+                'STATUS'                   => 0,
+                'SUB_INSTITUTE_ID'         => $sub_institute_id,
+                'SYEAR'                    => $syear,
+                'SCREEN_NAME'              => 'general',
+                'CREATED_BY'               => $user_id,
+                'CREATED_IP'               => $_SERVER['REMOTE_ADDR'],
+            ];
+    
+            $gcm_data = DB::table('gcm_users')->where('mobile_no', $mobile)
+                ->where('sub_institute_id', $sub_institute_id)->get()->toArray();
+    
+            $gcmRegIds = [];
+            if (count($gcm_data) > 0) {
+                foreach ($gcm_data as $key1 => $val1) {
+                    $gcmRegIds[] = $val1->gcm_regid;
+                }
+            }
+    
+            $pushMessage = $message;
+    
+            $bunch_arr = array_chunk($gcmRegIds, 1000);
+            sendNotification($app_notification_content);
+            
+            if (! empty($bunch_arr)) {
+                $i++;
+                foreach ($bunch_arr as $val) {
+                    if (isset($val, $pushMessage)) {
+                        $type1 = 'TansportNotification';
+                        $message = [
+                            'body'  => $pushMessage, 'TYPE' => $type1, 'USER_ID' => $studentId,
+                            'title' => $schoolName, 'image' => $schoolLogo,
+                        ];
+                        $pushStatus = send_FCM_Notification($val, $message, $sub_institute_id);
+                        // sendNotification($app_notification_content);
+                    }
+                }
+                
+            }
+        }
+        
+        $response = ['status_code' => 200, 'message' => 'Notification sent successfull.'];
+        return is_mobile($type, "van_wise_report.index", $response);
     }
 
     /**
