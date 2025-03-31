@@ -587,13 +587,13 @@ Route::get('/get-fields', function (Request $request) {
         ]);
     }
 
-    $reportDynamics = ReportDynamic::where('report_name', $reportType)->get();
+    $sYear = session()->get('syear');
+    $reportDynamics = ReportDynamic::where('report_name', $reportType)->where('syear',$sYear)->get();
     
     $xFieldsArray = [];
     $yFieldsArray = [];
     $reportName = null;
     $dataType = null;
-    $sYear = null;
     $countType = null;
     foreach ($reportDynamics as $reportDynamic) {
         if (!$reportName) {

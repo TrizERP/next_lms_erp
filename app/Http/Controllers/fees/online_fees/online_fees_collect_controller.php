@@ -307,18 +307,17 @@ class online_fees_collect_controller extends Controller
             $school_amount = $mission_amount = 0;
 
             $studentBk = $this->breakOffAmounts($_REQUEST,$student_id,$sub_institute_id,$syear);
+            
+            if(isset($studentBk['typewise_total']['school'])){
+                $school_amount = $studentBk['typewise_total']['school'];
+            }
 
             if(isset($studentBk['typewise_total']['mission'])){
                 $mission_amount = $studentBk['typewise_total']['mission'];
             }
-
-            if(isset($studentBk['typewise_total']['mission'])){
-                $mission_amount = $studentBk['typewise_total']['school'];
-            }
-            $split_json = json_encode([
-                "split_tdr_charge_type"=>'M',
-                'merComm'=>'2.0',
-                'split_data_list'=>array(
+            $spliArr = [];
+            if($school_amount!=0 && $mission_amount!=0){
+                $spliArr = array(
                     [
                     'splitAmount'=>$school_amount,
                     'subAccId'=>'2954-1',
@@ -327,10 +326,34 @@ class online_fees_collect_controller extends Controller
                         'splitAmount'=>$mission_amount,
                         'subAccId'=>'2954-2',
                         ]
-                )
+                    );
+            }
+            elseif($school_amount>0 && $mission_amount==0){
+                $spliArr = array(
+                    [
+                    'splitAmount'=>$school_amount,
+                    'subAccId'=>'2954-1',
+                    ]
+                    );
+            }
+            elseif($school_amount==0 && $mission_amount>0){
+                $spliArr = array(
+                    [
+                        'splitAmount'=>$mission_amount,
+                        'subAccId'=>'2954-2',
+                        ]
+                    );
+            }
+           
+            $split_json = json_encode([
+                "split_tdr_charge_type"=>'M',
+                'merComm'=>'2.0',
+                'split_data_list'=>$spliArr
             ]);
             // echo '<pre>';
             // print_r($split_json);
+            // print_r($amount);
+
             // exit;
             // breakoffend 29-03-2025
 
@@ -341,7 +364,7 @@ class online_fees_collect_controller extends Controller
         // $working_key = "94C918B28626FB1A085AAB522E32A402"; //Shared by CCAVENUES
         $access_code = $get_map_bank_detail[0]->access_code;
         // $access_code = "AVPL86GG59BJ25LPJB";
-        $return_url = $this->site_name() . "fees/hdfc/hdfc_response_handler_ssmission";
+        $return_url = $this->site_name()."fees/hdfc/online_fees_hdfcResponseHandler_ssmission";
         $send_arr = array(
             "merchant_id" => $get_map_bank_detail[0]->merchant_id,
             "order_id" => $orderId,
@@ -372,7 +395,10 @@ class online_fees_collect_controller extends Controller
         }
         $merchant_data = rtrim($merchant_data, '&');
         $encrypted_data = $this->hdfc_encrypt($merchant_data, $working_key); // Method for encrypting the data.
-
+        echo '<pre>';
+            print_r($send_arr);
+            print_r($merchant_data);
+            exit;
         //Insert Raw data in fees_payment table
         $in_arr = array(
             "student_id" => $_REQUEST["student_id"],
@@ -628,7 +654,7 @@ class online_fees_collect_controller extends Controller
             ->where($where_arr)
             ->update($update_arr);
         if ($order_status == "Success") {
-           
+           return "Payment in progress...";
         } else {
             // echo '<pre>'; print_r(session()->all()); exit;
             $type = $request->input('type');
