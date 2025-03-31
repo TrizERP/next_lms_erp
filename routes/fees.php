@@ -234,6 +234,9 @@ Route::controller(online_fees_collect_controller::class)->group(function () {
     Route::post('fees/hdfc/online_fees_collect', 'hdfc')->name("hdfc_fees_collect");
     Route::post('fees/hdfc/online_fees_hdfcRequestHandler', 'hdfc_request_handler')->name("hdfc_request_handler");
     Route::post('fees/hdfc/online_fees_hdfcResponseHandler', 'hdfc_response_handler')->name("hdfc_response_handler");
+    // for ssmission
+    Route::post('fees/hdfc/hdfc_request_handler_ssmission', 'hdfc_request_handler_ssmission')->name("hdfc_request_handler_ssmission");
+    Route::post('fees/hdfc/online_fees_hdfcResponseHandler_ssmission', 'hdfc_response_handler_ssmission')->name("hdfc_response_handler_ssmission");
 
     Route::post('fees/axis/online_fees_collect', 'axis')->name("axis_fees_collect");
     Route::post('fees/axis/online_fees_axisRequestHandler', 'axis_request_handler')->name("axis_request_handler");

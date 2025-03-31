@@ -129,7 +129,16 @@
                                 </tr>
                             </table>
                         </div>
-                        <form action="{{ route('hdfc_request_handler') }}" enctype="multipart/form-data" method="post">
+                        @php
+                            if(session()->get('sub_institute_id') == 76) {
+                                $collectUrl = route('hdfc_request_handler_ssmission');
+                            } else {
+                                $collectUrl = route('hdfc_request_handler');
+                            }
+                        @endphp
+
+                        <form action="{{ $collectUrl }}" enctype="multipart/form-data" method="post">
+
                             @csrf
                             <input type="hidden" name="grade_id" value="<?php echo $data['stu_data']['grade_id']; ?>">
                             <input type="hidden" name="standard_id" value="<?php echo $data['stu_data']['std_id']; ?>">
@@ -202,7 +211,7 @@
                                                  foreach ($data['final_fee'] as $id => $val) { ?>
                                                     
                                                     <tr>
-                                                        <td style="width: 20%" class="allField1" id="{{$id}}">{{$id}}</td>
+                                                        <td style="width: 20%" class="allField1" id="{{$id}}" data-val="{{$val}}">{{$id}}</td>
                                                         
                                                         <td style="width: 20%">{{$val}}</td>
 
@@ -281,6 +290,7 @@
                                     <?php } ?>
                                 </table>
                             </div>
+                            <div class="addFeesHeads"></div>
                             <div class="table-responsive col-md-12">
                                 <div class="col-md-4 text-center form-group"></div>
                                 <div class="col-md-4 text-center form-group">
@@ -513,12 +523,16 @@
                     
                     calculateTotal();
                         // 26/08/2021 Start Added for The Millennium School for Advanced Imprest Collection payment .prop('disabled')
+                        $('.addFeesHeads').empty();
+
                         $('.allField1').each(function() {
                             var new_name = $(this).attr('name');
+                            var values = $(this).attr('data-val');
                             amount = $('input[name="' + new_name + '"]').val();
                             if (amount < 0) {
                                 $(this).attr('readonly', true);
                             }
+                            $('.addFeesHeads').append(`<input type="text" name="fees_heads[${$(this).attr('id')}]" value="${values}">`);
                         });
                         // 26/08/2021 END Added for The Millennium School for Advanced Imprest Collection payment
                         @if(session()->get('sub_institute_id') == 257)
