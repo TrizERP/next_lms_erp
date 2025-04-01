@@ -51,6 +51,9 @@ use App\Http\Controllers\lms\lmsSyllabusController;
 use App\Http\Controllers\lms\content_library\contentLibraryController;
 use App\Http\Controllers\lms\curriculum\curriculumLessonplanController;
 use App\Http\Controllers\lms\library\skillLibraryController;
+use App\Http\Controllers\lms\library\jobOccupationController;
+use App\Http\Controllers\lms\library\jobroleSkillController;
+use App\Http\Controllers\lms\library\jobroleTaskController;
 use Illuminate\Support\Facades\Route;
 
 Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
@@ -93,6 +96,10 @@ Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute',
     Route::resource('lo_category', locategoryController::class);
 
     Route::resource('skill_library',skillLibraryController::class);
+    Route::resource('jobroleOccupation',jobOccupationController::class); // added on 01-04-2025
+    Route::resource('jobroleSkill',jobroleSkillController::class); // added on 01-04-2025
+    Route::resource('jobroleTask',jobroleTaskController::class); // added on 01-04-2025
+    
     Route::get('skill_library/{id}/delete', [skillLibraryController::class, 'destroy']);
     Route::get('skill_library/{id}/show', [skillLibraryController::class, 'show']);
 
