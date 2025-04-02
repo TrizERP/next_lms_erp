@@ -363,7 +363,7 @@ class feesReportController extends Controller
                 ->when($request->has('from_date') && $request->has('to_date'),function($q) use($request){
                     $q->whereBetween('fc.receiptdate',[$request->from_date,$request->to_date]);
                 })
-                ->where('fc.is_deleted','N')->groupBy(['fc.student_id', 'fc.receipt_no'])->orderBy('fc.receiptdate')
+                ->where('fc.is_deleted','N')->groupBy(['fc.student_id', 'fc.receipt_no'])
                 ->unionAll(function ($query)  use($other_columns,$sub_institute_id,$syear,$request){
                     $query->selectRaw("fp.id,fp.student_id,CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name) AS student_name,
                     ts.enrollment_no,ts.admission_year,ts.mobile,ts.email,date_format(ts.dob,'%d-%m-%Y') AS dob,a.title AS section,
@@ -397,19 +397,24 @@ class feesReportController extends Controller
                         ->when($request->has('from_date') && $request->has('to_date'),function($q) use($request){
                             $q->whereBetween('fp.receiptdate',[$request->from_date,$request->to_date]);
                         })
-                        ->where('fp.is_deleted','N')->groupBy(['fp.student_id','fp.reciept_id'])->orderBy('fp.receiptdate');
+                        ->where('fp.is_deleted','N')->groupBy(['fp.student_id','fp.reciept_id']);
                 });
             })
             ->selectRaw("id,student_id,student_name,
             enrollment_no,admission_year,mobile,email,dob,section,
            std_name,short_standard_name,div_name,stu_qouta, ".$columns."
            SUM(total_fine) as total_fine,SUM(tot_disc) as tot_disc,receipt_no,sum(total_amt) as amount,student_batch_name,receiptdate,payment_mode,cheque_bank_name,bank_branch,cheque_no,cheque_date,bank_name as institute_type,user_name,remarks,STR_TO_DATE(receiptdate, '%d-%m-%Y') as formatted_receiptdate")
-            ->groupBy(['student_id','receiptdate','payment_mode','cheque_bank_name','cheque_no'])
-            ->orderBy('formatted_receiptdate')
+            ->groupBy(['student_id','receiptdate','institute_type','cheque_bank_name','cheque_no'])
+            ->orderByRaw('formatted_receiptdate,CAST(receipt_no AS UNSIGNED)')
             ->get()->toArray();
             // dd(DB::getQueryLog($fees_data));
             // echo "<pre>";print_r($fees_data);exit;
-
+            // if(!empty($fees_data)){
+            //     usort($fees_data, function ($a, $b) {
+            //         return $a->receipt_no - $b->receipt_no;
+            //     });
+            // }
+            
             foreach ($fees_data as $key => $value) {
                 $value->total_amount = 0;
                 foreach ($request->fees_head as $key => $feeTitleId) {

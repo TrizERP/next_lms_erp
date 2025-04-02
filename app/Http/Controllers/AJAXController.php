@@ -7,6 +7,7 @@ use App\Models\tblmenumasterModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\Schema;
 use PHPMailer\PHPMailer;
 use function App\Helpers\FeeBreackoff;
 use function App\Helpers\FeeBreakoffHeadWise;
@@ -2425,6 +2426,11 @@ class AJAXController extends Controller
 
         // Fetch data
         $data = $query->get();
+
+        // Check if data is empty
+	    if ($data->isEmpty()) {
+	        return response()->json(['message' => 'Data not found'], 404);
+	    }
 
         return response()->json($data);
     }

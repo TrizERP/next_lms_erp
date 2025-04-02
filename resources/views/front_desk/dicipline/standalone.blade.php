@@ -33,7 +33,7 @@
         </div>   
         <div class="col-md-3">
         <label for="grade">Select Grade</label>
-            <select name="grade" id="grade" class="form-control" required>
+            <select name="grade" id="grade1" class="form-control" >
                 <option value=''>Select Grade</option>
                 @foreach($data['gradeList'] as $key=>$gradeList)
                     @php 
@@ -48,15 +48,20 @@
         </div>
         <div class="col-md-3">
         <label for="standard">Select standard</label>
-            <select name="standard" id="standard" class="form-control" required>
+            <select name="standard" id="standard1" class="form-control" >
                 
             </select>
         </div>
         <div class="col-md-3">
         <label for="division">Select Division</label>
-            <select name="division" id="division" class="form-control" required>
+            <select name="division" id="division1" class="form-control">
              
             </select>
+        </div>
+
+        <div class="col-md-3">
+            <label for="">GR No</label>
+            <input type="text" name="grNo" class="form-control" @if(isset($data['grno'])) value="{{$data['grno']}}" @endif>
         </div>
         <div class="col-md-3">
             <label for="user">Select User</label>
@@ -129,13 +134,13 @@
                                             class="form-control">
                                         <option value="">Select</option>
                                         @foreach ($data['dd'] as $id => $name)
-                                            <option value="{{ $name}}">{{ $name}}</option>
+                                            <option value="{{ $name}}" @if($name=="Bad") selected @endif>{{ $name}}</option>
                                         @endforeach
                                     </select>
                                 </td>
                                 <td>
                                     <textarea name="{{ 'values[text]['.$col_arr['student_id'].']'}}"
-                                              class="form-control"></textarea>
+                                              class="form-control">Yout Ward is late Today.</textarea>
                                 </td>
                             </tr>
                             @endforeach
@@ -178,16 +183,16 @@
         @endif
 
         $('#syear').change(function () {
-           $('#grade').val('');
-           $('#standard').empty();
-           $('#division').empty();
+           $('11').val('');
+           $('#standard1').empty();
+           $('#division1').empty();
         })
 
-        $('#grade').change(function () {
+        $('#grade1').change(function () {
             getStandard($(this).val(),sub_institute_id,syear);
         })
 
-        $('#standard').change(function () {
+        $('#standard1').change(function () {
             getDivision($(this).val(),sub_institute_id,syear);
         })
     })
@@ -199,19 +204,20 @@
                 type : 'GET',
                 success : function(res){
                     if (res) {
-                        $("#standard").empty();
-                        $("#standard").append('<option value="">Select</option>');
+                        $("#standard1").empty();
+                        $("#standard1").append('<option value="">Select</option>');
                         $.each(res, function (key, value) {
                             var selected = '';
                             if(selVal!='' && selVal==key){
                                 selected = 'selected';
                             }
-                            $("#standard").append('<option value="' + key + '" '+selected+'>' + value + '</option>');
+                            $("#standard1").append('<option value="' + key + '" '+selected+'>' + value + '</option>');
                         });
-                        $("#division").empty();
+                        $("#division1").empty();
 
                     } else {
-                        $("#standard").empty();
+                        $("#standard1").empty();
+                        alert('failed to fetch standard');
                     }
                 }
             })
@@ -223,18 +229,18 @@
                 type : 'GET',
                 success : function(res){
                     if (res) {
-                        $("#division").empty();
-                        $("#division").append('<option value="">Select</option>');
+                        $("#division1").empty();
+                        $("#division1").append('<option value="">Select</option>');
                         $.each(res, function (key, value) {
                             var selected = '';
                             if(selVal!='' && selVal==key){
                                 selected = 'selected';
                             }
-                            $("#division").append('<option value="' + key + '" '+selected+'>' + value + '</option>');
+                            $("#division1").append('<option value="' + key + '" '+selected+'>' + value + '</option>');
                         });
 
                     } else {
-                        $("#division").empty();
+                        $("#division1").empty();
                     }
                 }
             })

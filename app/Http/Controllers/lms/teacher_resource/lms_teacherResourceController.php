@@ -257,7 +257,9 @@ class lms_teacherResourceController extends Controller
             $chapter_id = $TRdata[0]['chapter_id'];
             $file_folder = $TRdata[0]['file_folder'];
             $file_name = $TRdata[0]['file_name'];
-            unlink(public_path('storage'.$file_folder.'/'.$file_name));
+            if(file_exists(public_path('storage'.$file_folder.'/'.$file_name))){
+                unlink(public_path('storage'.$file_folder.'/'.$file_name));
+            }
         }
 
         teacherResourceModel::where(["id" => $id])->delete();

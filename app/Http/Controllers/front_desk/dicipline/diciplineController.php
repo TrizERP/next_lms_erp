@@ -75,11 +75,15 @@ class diciplineController extends Controller
             $sub_institute_id = $request->get('sub_institute_id');
             $syear = $request->get('syear'); 
         }
-        $student_data = SearchStudent($_REQUEST['grade'], $_REQUEST['standard'], $_REQUEST['division'],$sub_institute_id,$syear);
+        $grade_id = isset($_REQUEST['grade']) ? $_REQUEST['grade'] : '';
+        $standard = isset($_REQUEST['standard']) ? $_REQUEST['standard'] : '';
+        $division = isset($_REQUEST['division']) ? $_REQUEST['division'] : '';
 
-        $responce_arr['grade'] = $_REQUEST['grade'];
-        $responce_arr['standard'] = $_REQUEST['standard'];
-        $responce_arr['division'] = $_REQUEST['division'];
+        $student_data = SearchStudent($grade_id, $standard, $division,$sub_institute_id,$syear, "", "", "", "", $request->grNo);
+
+        $responce_arr['grade'] = $grade_id;
+        $responce_arr['standard'] = $standard;
+        $responce_arr['division'] = $division;
         foreach ($student_data as $id => $arr) {
 
             $responce_arr['stu_data'][$id]['sr.no'] = $id + 1;
@@ -106,6 +110,7 @@ class diciplineController extends Controller
             $responce_arr['standard'] = $request->standard;
             $responce_arr['division'] = $request->division;
             $responce_arr['user_id'] = $request->user_id;
+            $responce_arr['grno'] = $request->grNo;
 
             // echo "<pre>";print_r($responce_arr);exit;
 
