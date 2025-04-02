@@ -151,8 +151,8 @@
                             <tr>
                                 <td>{{$key+1}}</td>
                                 <td>{{$value->receipt_no}}</td>
-                                <td>{{$value->student_name}}</td>
-                                <td>{{$value->short_standard_name}} - {{$value->div_name}}</td>
+                                <td>{{ strtoupper($value->student_name)}}</td>
+                                <td>{{ strtoupper($value->short_standard_name)}} - {{$value->div_name}}</td>
                                 @if($data['selPaymentMode']!='CASH')
                                 <td>{{$value->cheque_bank_name}}</td>
                                 <td>{{$value->cheque_no}}</td>
@@ -263,7 +263,7 @@ document.addEventListener("DOMContentLoaded", function () {
         var printWindow = window.open("", "", "width=800,height=600");
 
         printWindow.document.write('<html><head><title>Print</title>');
-        printWindow.document.write('<style>@page{margin:0}@media print{ table{border:0.8px solid #ddd;width:100%;} th,td{border:0.8px solid #ddd;padding:4px;} .schoolData{margin-left:8px} }</style>');
+        printWindow.document.write('<style>@page{margin:0}@media print{ table{border:0.8px solid #ddd;width:100%;} th,td{border:0.8px solid #ddd;padding:0px;font-size:14px;} .schoolData{margin-left:8px} }</style>');
         printWindow.document.write('</head><body>');
         printWindow.document.write(printContents);
         printWindow.document.write('</body></html>');

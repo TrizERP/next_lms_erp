@@ -56,7 +56,7 @@ class admissionReportController extends Controller
             }
             // echo "<pre>";print_r($customFields);exit;
 
-            if(in_array($sub_institute_id,[47,48,49,62,69,72,195,201,202,203,204,233,254])){
+            if(in_array($sub_institute_id,[47,48,49,62,69,72,195,201,202,203,204,324,326,327,233,254])){
               $select = "ai.enquiry_no, DATE_FORMAT(ai.created_on, '%d-%m-%Y %h:%i:%s') as created_on, DATE_FORMAT(ai.followup_date, '%d-%m-%Y') as followup_date, ai.first_name, ai.middle_name, ai.last_name,
                 ai.gender, ai.mobile, ai.email, ai.address, DATE_FORMAT(ai.date_of_birth, '%d-%m-%Y') as date_of_birth, ai.age, ai.syear, ai.previous_school_name,s_previous.name as previous_standard,
                 s.name as admission_standard, ai.remarks,fu.status as enquiry_status, ai.source_of_enquiry, ai.created_by,
@@ -389,7 +389,7 @@ class admissionReportController extends Controller
             }
             // echo "<pre>";print_r($customFields);exit;
 
-            if(in_array($sub_institute_id,[47,48,49,62,69,72,195,201,202,203,204,233,254])){
+            if(in_array($sub_institute_id,[47,48,49,62,69,72,195,201,202,203,204,324,326,327,233,254])){
                 $select = "ai.enquiry_no,ai.first_name, ai.middle_name, ai.last_name, ai.gender,
                 ai.mobile, ai.email,s.name AS admission_standard,d.name AS div_name,sq.title AS stu_quota,
                 ar.place_of_birth,ar.enrollment_no,ar.payment_mode,ar.bank_name,ar.bank_branch,ar.cheque_no,

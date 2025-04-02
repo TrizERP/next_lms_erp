@@ -2139,6 +2139,12 @@ class PayrollController extends Controller
                 // echo "<pre>";print_r($value);
             }
         }
+//echo "<pre>";
+//print_r($weekOffDates);
+//print_r($holidays);
+//print_r($leaveDates);
+//print_r($presentDates);
+//die();
 
 //START SANDWICH LEAVE
 $sandwichLeaveCount = 0;
@@ -2182,7 +2188,12 @@ $sandwichLeaveCount = $this->calculateLeaveCounts($from_date,$to_date,$weekDays,
     {
         $allDates = [];
         $sandwichLeaveCount = 0;
-
+//echo "<pre>";
+//print_r($weekOffDates);
+//print_r($holidays);
+//print_r($leaveDates);
+//print_r($presentDates);
+//die();
         // Identify absent days
         $allDates = array_unique(array_merge($weekOffDates, $holidays));
 
@@ -2191,7 +2202,15 @@ $sandwichLeaveCount = $this->calculateLeaveCounts($from_date,$to_date,$weekDays,
             $prevDay = date('Y-m-d', strtotime('-1 day', strtotime($allDate)));
             $nextDay = date('Y-m-d', strtotime('+1 day', strtotime($allDate)));
 
-            if (!in_array($prevDay, $presentDates) && !in_array($nextDay, $presentDates) && !in_array($allDate, $leaveDates)) {
+            if (    
+                !in_array($prevDay, $allDates) && 
+                !in_array($nextDay, $allDates) &&
+
+                    !in_array($prevDay, $presentDates) && 
+                    !in_array($nextDay, $presentDates) && 
+                    !in_array($allDate, $leaveDates)
+                ) 
+            {
                 $sandwichLeaveCount++;
                 //$holidayCount = max(0, $holidayCount - ($allDate == $holidays ? 1 : 0));
                 //$weekoffCount = max(0, $weekoffCount - (in_array($allDate, $weekOffDates) ? 1 : 0));
@@ -2209,4 +2228,26 @@ $sandwichLeaveCount = $this->calculateLeaveCounts($from_date,$to_date,$weekDays,
         ];
         */
     }
+    public function calculateLeaveCounts_01($startDate, $endDate, $weekOffDates, $holidays, $leaveDates, $presentDates)
+    {
+        $sandwichLeaveCount = 0;
+
+        foreach ($leaveDates as $leaveDate) {
+            $prevDay = date('Y-m-d', strtotime('-1 day', strtotime($leaveDate)));
+            $nextDay = date('Y-m-d', strtotime('+1 day', strtotime($leaveDate)));
+
+            // Check if leave is sandwiched between a holiday/weekoff on both sides
+            if (
+                (in_array($prevDay, $weekOffDates) || in_array($prevDay, $holidays)) &&
+                (in_array($nextDay, $weekOffDates) || in_array($nextDay, $holidays)) &&
+                !in_array($prevDay, $presentDates) && 
+                !in_array($nextDay, $presentDates)
+            ) {
+                $sandwichLeaveCount++;
+            }
+        }
+
+        return $sandwichLeaveCount;
+    }
+
 }

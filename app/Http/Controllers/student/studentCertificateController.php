@@ -530,7 +530,20 @@ LIMIT 1");
             $result_remarks = $stu_remarks_input;
         }
         // echo "<pre>";print_r($result_remarks);exit;
-        
+        $curr_std_medium = (isset($next_std->medium)) ? $next_std->medium: '';
+        $nextStdName = (isset($next_std->name)) ? $next_std->name: '';
+        $nextStdStream = (isset($next_std->school_stream)) ? $next_std->school_stream: '';
+        $nextStdShortName = (isset($next_std->short_name)) ? $next_std->short_name: '';
+
+        $html_content = str_replace(htmlspecialchars("<<next_std_name>>"),
+        strtoupper($nextStdName), $html_content);
+        $html_content = str_replace(htmlspecialchars("<<next_std_stream>>"),
+        strtoupper($nextStdStream), $html_content);
+        $html_content = str_replace(htmlspecialchars("<<next_std_short_name>>"),
+        strtoupper($nextStdShortName), $html_content);
+        $html_content = str_replace(htmlspecialchars("<<current_medium>>"),
+        strtoupper($curr_std_medium), $html_content);
+
         $html_content = str_replace(htmlspecialchars("<<annual_value_result>>"),
         strtoupper($result_remarks), $html_content);
         $failPass = 'CLASS '.$nextStd.'-'.$stu_remarks_input;

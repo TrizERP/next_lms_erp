@@ -3531,7 +3531,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                             break;
                         }
                         // previous month and current month pending fees 
-                        $currentFees += $value['remain'];
+                        // $currentFees += $currentFees; // commented on 02-04-2025
                     }
                }
             }

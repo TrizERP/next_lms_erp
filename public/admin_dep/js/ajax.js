@@ -512,7 +512,7 @@ if ($("#ajax_PDF_Certificate").length != 0)
                 url: path,
                 success: function(response){
                     //added if condition 22-03-2025
-                    if(response.status_code==0){
+                    if(response.status_code===0){
                         alert(response.message);
                         window.location.href = "/student/student_certificate?status_code=0&message="+response.message;
                     }

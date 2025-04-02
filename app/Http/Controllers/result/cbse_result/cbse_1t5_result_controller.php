@@ -788,15 +788,14 @@ else
             $stu_arr = array(
                 "0" => $request->get('student_id')
             );
-            $reg_bk_off = FeeBreackoff($stu_arr);
+            $reg_bk_off = FeeBreackoff($stu_arr, null, $request->get('syear'), $request->get('sub_institute_id'));
+
             $total_bf = 0;
 
             foreach ($reg_bk_off as $key => $val) 
             {
-                if(($val->month_id == '42024' || $val->month_id == '72024') && $val->student_quota != '2383') 
-                //Condition added by Rajesh 21_07_2022 only Quarter-1 fees paid to display result 
-                //Condition added by jinal 07_10_2022 only Quarter-2 fees paid to display result
-                //condition remove by rajesh 29-07-2023  || $val->month_id == '102023' for Altius
+                if($val->student_quota != '2383') 
+                //($val->month_id == '42025' || $val->month_id == '72025') && 
                     $total_bf = $total_bf + $val->bkoff;
                 else
                     break;
@@ -826,7 +825,7 @@ else
                                     INNER JOIN academic_section g ON g.id = se.grade_id
                                     INNER JOIN standard st ON st.id = se.standard_id
                                     LEFT JOIN division d ON d.id = se.section_id
-                                    INNER JOIN fees_paid_other fpo ON (fpo.student_id = s.id AND fpo.is_deleted = 'N')
+                                    INNER JOIN fees_paid_other fpo ON (fpo.student_id = s.id AND fpo.is_deleted = 'N' AND fpo.syear = '".$request->get('syear')."')
                                     WHERE s.sub_institute_id = '".$request->get('sub_institute_id')."' AND s.id = '".$request->get('student_id')."'
                                     GROUP BY s.id
                                     ) temp_table
@@ -839,7 +838,7 @@ else
             {
                 $total_paid_amt = $paid_fees_data[0]['paid_amt'];
             }
-
+            
             $remaining_amt = $total_bf - $total_paid_amt;
 
 //Previous Year Display Result
