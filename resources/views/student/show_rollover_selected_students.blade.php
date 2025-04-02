@@ -175,7 +175,7 @@ use DB;
                 <button class="btn btn-danger" style="pointer-events: none;" type="button" disabled="">Note</button>
             </span>
                             <form method="POST" action="{{ route('rollover.store') }}"
-                                  id="submit_form_for_selected_students">
+                                  id="submit_form_for_selected_students"  onsubmit="return validateForm()">
                                 @csrf
                                 <div class="row mt-5">
                                     <div class="col-lg-12 col-sm-12 col-xs-12">
@@ -183,8 +183,7 @@ use DB;
                                             <table class="table table-box table-bordered">
                                                 <thead>
                                                 <tr>
-                                                    <th><input id="checkall" name="checkall" onchange="checkAll(this);"
-                                                               type="checkbox"></th>
+                                                    <th><input id="ckbCheckAll" name="checkall" type="checkbox"></th>
                                                     <th>Sr.No.</th>
                                                     <th>{{App\Helpers\get_string('studentname','request')}}</th>
                                                     <th>{{App\Helpers\get_string('grno','request')}}</th>
@@ -340,27 +339,32 @@ use DB;
         });
     }
 
-	function checkAll(ele) {
-         // var checkboxes = $("input[name='checkall']");
-         // alert(checkboxes);
-	     var checkboxes_new = document.getElementsByTagName('input');
-         // alert(checkboxes);
+    $(function () {
+        var $tblChkBox = $("input:checkbox");
+        $("#ckbCheckAll").on("click", function () {
+            // console.log('clicked');
+            $($tblChkBox).prop('checked', $(this).prop('checked'));
+        });
+    });
 
-        if (ele.checked) {
-	         for (var i = 0; i < checkboxes.length; i++) {
-	             if (checkboxes[i].type == 'checkbox') {
-	                 checkboxes[i].checked = true;
-	             }
-	         }
-	     } else {
-	         for (var i = 0; i < checkboxes.length; i++) {
-	             console.log(i)
-	             if (checkboxes[i].type == 'checkbox') {
-	                 checkboxes[i].checked = false;
-	             }
-	         }
-	     }
-	}
+
+    function validateForm() {
+        var checkboxes = document.querySelectorAll('input[name^="students["]');
+        var anyChecked = false;
+        
+        checkboxes.forEach(function(checkbox) {
+            if (checkbox.checked) {
+                anyChecked = true;
+            }
+        });
+        
+        if (!anyChecked) {
+            alert("Please select at least one checkbox");
+            return false; 
+        }
+        
+        return true;
+    }
 
 </script>
 @include('includes.footer')
