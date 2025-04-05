@@ -334,14 +334,30 @@ class ImportController extends Controller
                 if ($request->table_name == 'fees_collect') {
                     $prepareData['sub_institute_id'] = session()->get('sub_institute_id');
                     $prepareData['created_by'] = session()->get('user_id');
-                    $student_id = DB::table('tblstudent')->where([['enrollment_no', $prepareData['enrollment_no']], ['sub_institute_id', session()->get('sub_institute_id')]])->first();
+
+$student_id = DB::table('tblstudent as t')
+    ->join('tblstudent_enrollment as te', function ($join) {
+        $join->on('te.student_id', '=', 't.id')
+             ->where('te.syear', '=', session()->get('syear'));
+    })
+    ->join('standard as s', 's.id', '=', 'te.standard_id')
+    ->where([
+        ['t.enrollment_no', '=', $prepareData['enrollment_no']],
+        ['t.sub_institute_id', '=', session()->get('sub_institute_id')],
+        ['s.name', '=', $prepareData['standard_id']]
+    ])
+    ->select('t.id','te.standard_id')
+    ->first(); // Fetches the first matching result    
+
+/*$student_id = DB::table('tblstudent')->where([['enrollment_no', $prepareData['enrollment_no']], ['sub_institute_id', session()->get('sub_institute_id')]])->first();*/
                     if ($student_id) {
-                        $standard_id = DB::table('tblstudent_enrollment')->select('standard_id')->where([['student_id', $student_id->id], ['sub_institute_id', session()->get('sub_institute_id')], ['syear', session()->get('syear')]])->first();
-                        if ($standard_id) {
-                            $prepareData['standard_id'] = $standard_id;
-                            $prepareData['standard_id'] = $standard_id->standard_id;
+                        /*$standard_id = DB::table('tblstudent_enrollment')->select('standard_id')->where([['student_id', $student_id->id], ['sub_institute_id', session()->get('sub_institute_id')], ['syear', session()->get('syear')]])->first();*/
+                        //if ($standard_id) {
+                            //$prepareData['standard_id'] = $standard_id;
+                            //$prepareData['standard_id'] = $standard_id->standard_id;
+                            $prepareData['standard_id'] = $student_id->standard_id;
                             $prepareData['student_id'] = $student_id->id;
-                        }
+                        //}
                         unset($prepareData['enrollment_no'],$condition['enrollment_no'],$condition['standard_id']);
                         $fees_receipt_data = [];
                         $fees_receipt_data['STANDARD'] = $prepareData['standard_id'] ?? null;

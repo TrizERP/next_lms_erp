@@ -15,13 +15,13 @@
                        
                     <div class="col-lg-12 col-sm-12 col-xs-12">  
                         <form action="
-                          @if (isset($data))
-                          {{ route('add_hostel_master.update',['$data->id']) }}
+                          @if (isset($data->id))
+                          {{ route('add_hostel_master.update',[$data->id]) }}
                           @else
                           {{ route('add_hostel_master.store') }}
                           @endif" method="post">
 
-                        @if(!isset($data))
+                        @if(!isset($data->id))
                         {{ method_field("POST") }}
                         @else
                         {{ method_field("PUT") }}

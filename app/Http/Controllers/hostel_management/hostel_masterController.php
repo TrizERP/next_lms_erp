@@ -136,7 +136,18 @@ class hostel_masterController extends Controller
 
         }
 
-        $hostel = new hostel_masterModel([
+        // $hostel = new hostel_masterModel([
+        //     'code'             => $request->get('code'),
+        //     'name'             => $request->get('name'),
+        //     'description'      => $request->get('description'),
+        //     'warden'           => $request->get('warden'),
+        //     'warden_contact'   => $request->get('warden_contact'),
+        //     'hostel_type_id'   => $request->get('hostel_type_id'),
+        //     'sub_institute_id' => $sub_institute_id,
+        // ]);
+        // $hostel->save();
+
+        $hostel = hostel_masterModel::insert([
             'code'             => $request->get('code'),
             'name'             => $request->get('name'),
             'description'      => $request->get('description'),
@@ -144,17 +155,23 @@ class hostel_masterController extends Controller
             'warden_contact'   => $request->get('warden_contact'),
             'hostel_type_id'   => $request->get('hostel_type_id'),
             'sub_institute_id' => $sub_institute_id,
+            'created_at'        => now(),
         ]);
-        $hostel->save();
 
-        $res['status_code'] = 1;
-        $res['message'] = "Hostel Details Added Succesfully.";
+        if($hostel){
+            $res['status_code'] = 1;
+            $res['message'] = "Hostel Details Added Succesfully.";}
+        else{
+            $res['status_code'] = 0;
+            $res['message'] = "Hostel Details Failed To Add.";
+        }
 //        $res['data'] = $data;
         $res = hostel_masterModel::where(['sub_institute_id' => $sub_institute_id])->get();
 
         $type = $request->input('type');
 
-        return is_mobile($type, "hostel_management/add_hostel_master", $res, "view");
+        // return is_mobile($type, "hostel_management/add_hostel_master", $res, "view");
+        return is_mobile($type, "add_hostel_master.index", $res);
     }
 
     public function edit(Request $request, $id)
@@ -164,8 +181,11 @@ class hostel_masterController extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $editdata = hosteltypemasterModel::where(['sub_institute_id' => $sub_institute_id])->get();
         view()->share('menu', $editdata);
-
-        return view('hostel_management/add_hostel_master', ['data' => $data]);
+        $data['menu'] = $editdata;
+        // echo "<pre>";print_r($editdata);exit;
+        // $data['menu'] = hosteltypemasterModel::where(['sub_institute_id' => $sub_institute_id])->get();
+        // return view('hostel_management/add_hostel_master', ['data' => $data]);
+        return is_mobile($type, "hostel_management/add_hostel_master", $data, "view");
     }
 
     public function update(Request $request, $id)
@@ -181,12 +201,18 @@ class hostel_masterController extends Controller
             'hostel_type_id' => $request->get('hostel_type_id'),
         ];
 
-        hostel_masterModel::where(["id" => $id])->update($data);
-
-        $message['status_code'] = "1";
-        $message = [
-            "message" => "Data Updated Successfully",
-        ];
+        $update = hostel_masterModel::where(["id" => $id])->update($data);
+        if($update){
+            $message['status_code'] = "1";
+            $message = [
+                "message" => "Data Updated Successfully",
+            ];
+        }else{
+             $message['status_code'] = "0";
+            $message = [
+                "message" => "Data Update Failed",
+            ];
+        }
         $type = $request->input('type');
 
         return is_mobile($type, "add_hostel_master.index", $message, "redirect");
