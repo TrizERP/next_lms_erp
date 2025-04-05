@@ -35,7 +35,7 @@
                           
                         <div class="col-md-4 form-group" id="for_material_resource">
                             <label for="">Material Resource</label>
-                            <select id="material_resource" class="form-control" name="material_resource">
+                            <select id="material_resource" class="form-control" name="material_resource"  onchange="makeShow('book_type',this.value)">
                                 <option value="">All</option>
                                 @foreach ($data['get_material_resource_type'] as $key => $value)
                                     @if (!empty($value->material_resource_type))
@@ -44,7 +44,16 @@
                                 @endforeach
                             </select>
                         </div>
-
+                        @if(session()->get('sub_institute_id')==47)
+                        <div class="col-md-4 form-group hide" id="book_type">
+                            <label for="">Book Type</label>
+                            <select id="book_type_input" class="form-control" name="book_type">
+                                <option value="">All</option>
+                                <option value="purchase" @if(isset($data['book_type']) && $data['book_type']=="purchase") selected @endif>Purchase</option>
+                                <option value="donate" @if(isset($data['book_type']) && $data['book_type']=="donate") selected @endif>Donate</option>
+                            </select>
+                        </div>
+                        @endif
                         <div class="col-md-4 form-group" id="for_author">
                             <label for="">Author/Editor</label>
                             <select id="author" class="form-control" name="author">
@@ -216,6 +225,7 @@
        ids.forEach(element => {
            $(element).hide();
        });
+   
     })
 @endif
 
@@ -275,5 +285,20 @@
             } );
         } );
     } );
+
+    // 05-04-2025 
+    @if(isset($data['book_type']) && in_array($data['book_type'],["purchase","donate"]))
+        $('#book_type').removeClass('hide');
+        $('#book_type').addClass('show');
+     @endif
+    function makeShow(divId,values){
+        if(values=="book"){
+            $('#'+divId).removeClass('hide');
+            $('#'+divId).addClass('show');
+        }else{
+            $('#'+divId).addClass('hide');
+            $('#'+divId).removeClass('show');
+        }
+    }
 </script>
 @include('includes.footer')
