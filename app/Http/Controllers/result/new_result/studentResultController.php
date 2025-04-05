@@ -7560,7 +7560,7 @@ private function buildDisciplineTable($decipline_data,$both_term)
                 $remarksText = "Aim higher";
             } else {
                 $appText = "GOOD";
-                if (isset($mainTotalArr['10F'])) {
+                if ($avgFail) {
                     if ($avgFail == 1) {
                         $appText = "Fair";
                         $passText = "Promoted to Class : $sortNextStd&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
@@ -8094,7 +8094,7 @@ private function buildDisciplineTable($decipline_data,$both_term)
             $grade_arr = $this->getGradeScale($standard_id, '');
             // echo "<pre>";print_r($examArr);exit;
             $grandTotal = [];
-            $grandTotAnuualOut = $grandTotAnnualObt =$grandAvgOut = $grandAvgPass = $grandAvgObt =0;
+            $grandTotAnuualOut = $grandTotAnnualObt =$grandAvgOut = $grandAvgPass = $grandAvgObt = $avgFailed =0;
             foreach ($get_subject as $subkey => $subjectData) {
                 $table .= '<tr>
                             <td>'.$subjectData->subject_name.'</td>';// subject send start
@@ -8171,6 +8171,10 @@ private function buildDisciplineTable($decipline_data,$both_term)
                                     $grandAvgOut = ($grandAvgOut+$avgOutMarks);
                                     $grandAvgPass = ($grandAvgPass + $avgPassMarks);
                                     $grandAvgObt = ($grandAvgObt + $avgMarks);
+
+                                    if($avgMarks < $avgPassMarks){
+                                        $avgFailed+=1;
+                                    }
                                 }
                             
                             $table .= '<td class="data_center annual" '.$annualOut.'>'.$annualoutOf.'</td>';
@@ -8236,10 +8240,13 @@ private function buildDisciplineTable($decipline_data,$both_term)
             $avgrank = isset($avgrankArr[$student_id]) ? $avgrankArr[$student_id]['rank'] : 0;
             $rankTerm1 = isset($rankTerm1Arr[$student_id]) ? $rankTerm1Arr[$student_id]['rank'] : 0;
             $rankTerm2 = isset($rankTerm2Arr[$student_id]) ? $rankTerm2Arr[$student_id]['rank'] : 0;
-            $avgFail = isset($avgrankArr[$student_id]) ? $avgrankArr[$student_id]['failed'] : 0;
+            $avgFail = $avgFailed;
             $FailTerm1 = isset($rankTerm1Arr[$student_id]) ? $rankTerm1Arr[$student_id]['failed'] : 0;
             $FailTerm2 = isset($rankTerm2Arr[$student_id]) ? $rankTerm2Arr[$student_id]['failed'] : 0;
             $mainTotalArr= [];
+            // if($student_id==235314){
+            // echo "<pre>";print_r($avgrankArr[$student_id]);exit;
+            // }
             // echo "<pre>";print_r($avgrank[$student_id]);
             // echo "<pre>";print_r($rankTerm1[$student_id]);
             $nextStd = DB::table('standard as std')->selectRaw('(select short_name from standard where id = std.next_standard_id) as next_sort_std,(select name from standard where id = std.next_standard_id) as next_std')->where('std.id',$standard_id)->whereNotNull('next_standard_id')->first();
@@ -8281,7 +8288,7 @@ private function buildDisciplineTable($decipline_data,$both_term)
                     $table .='<td>'.$application.'</td>';
                 }
             }
-            $table .='<td colspan="5" style="text-align:right" '.json_encode($avgrankArr[$student]).'><b>'.$appText.'</b></td>
+            $table .='<td colspan="5" style="text-align:right" '.json_encode($avgrankArr[$student_id]).'><b>'.$appText.'</b></td>
             </tr>';
 
             $table .='<tr>
@@ -8380,7 +8387,7 @@ private function buildDisciplineTable($decipline_data,$both_term)
             $grade_arr = $this->getGradeScale($standard_id, '');
             // echo "<pre>";print_r($examArr);exit;
             $grandTotal = [];
-            $grandTotAnuualOut = $grandTotAnnualObt =$grandAvgOut = $grandAvgPass = $grandAvgObt =0;
+            $grandTotAnuualOut = $grandTotAnnualObt =$grandAvgOut = $grandAvgPass = $grandAvgObt = $avgFailed =0;
             foreach ($get_subject as $subkey => $subjectData) {
                 $table .= '<tr>
                             <td>'.$subjectData->subject_name.'</td>';// subject send start
@@ -8470,6 +8477,9 @@ private function buildDisciplineTable($decipline_data,$both_term)
                                     $grandAvgOut = ($grandAvgOut+$avgOutMarks);
                                     $grandAvgPass = ($grandAvgPass + $avgPassMarks);
                                     $grandAvgObt = ($grandAvgObt + $avgMarks);
+                                    if($avgMarks < $avgPassMarks){
+                                        $avgFailed +=1;
+                                    }
                                 }
                             
                             $table .= '<td class="data_center annual" '.$annualOut.'>'.$annualoutOf.'</td>';
@@ -8535,11 +8545,13 @@ private function buildDisciplineTable($decipline_data,$both_term)
             $avgrank = isset($avgrankArr[$student_id]) ? $avgrankArr[$student_id]['rank'] : 0;
             $rankTerm1 = isset($rankTerm1Arr[$student_id]) ? $rankTerm1Arr[$student_id]['rank'] : 0;
             $rankTerm2 = isset($rankTerm2Arr[$student_id]) ? $rankTerm2Arr[$student_id]['rank'] : 0;
-            $avgFail = isset($avgrankArr[$student_id]) ? $avgrankArr[$student_id]['failed'] : 0;
+            $avgFail = $avgFailed;
             $FailTerm1 = isset($rankTerm1Arr[$student_id]) ? $rankTerm1Arr[$student_id]['failed'] : 0;
             $FailTerm2 = isset($rankTerm2Arr[$student_id]) ? $rankTerm2Arr[$student_id]['failed'] : 0;
             $mainTotalArr= [];
-            // echo "<pre>";print_r($avgrank[$student_id]);
+            // if($student_id==234474){
+            //     echo "<pre>";print_r($avgrankArr[$student_id]);exit;
+            // }
             // echo "<pre>";print_r($rankTerm1[$student_id]);
             $nextStd = DB::table('standard as std')->selectRaw('(select short_name from standard where id = std.next_standard_id) as next_sort_std,(select name from standard where id = std.next_standard_id) as next_std')->where('std.id',$standard_id)->whereNotNull('next_standard_id')->first();
             $sortNextStd = isset($nextStd->next_sort_std) ? $nextStd->next_sort_std : 0;
@@ -8579,7 +8591,7 @@ private function buildDisciplineTable($decipline_data,$both_term)
                     $table .='<td>'.$application.'</td>';
                 }
             }
-            $table .='<td colspan="5" style="text-align:right"><b>'.$appText.'</b></td>
+            $table .='<td colspan="5" style="text-align:right" '.$avgFailed.' '.json_encode($avgrankArr[$student_id]).'><b>'.$appText.'</b></td>
             </tr>';
 
             $table .='<tr>
@@ -8623,7 +8635,7 @@ private function buildDisciplineTable($decipline_data,$both_term)
                         $appText = "Not Satisfactory";
                         $passText = "";
                     } else {
-                        $appText = "Good";
+                        $appText = "GOOD";
                         $passText = "Passed & Promoted to Class : $sortNextStd&nbsp;&nbsp;&nbsp;&nbsp;";
                     }
                 } else {
@@ -8632,7 +8644,7 @@ private function buildDisciplineTable($decipline_data,$both_term)
 //                    $remarksText = "Keep it up";
             } else if ($avgrank >= 4 && $avgrank <= 10) {
                 $appText = "V. GOOD";
-                if (isset($mainTotalArr['10F'])) {
+                if ($avgFail) {
                     if ($avgFail == 1) {
                         $appText = "Fair";
                         $passText = "Promoted to Class : $sortNextStd&nbsp;&nbsp;&nbsp;&nbsp;";
@@ -8643,17 +8655,17 @@ private function buildDisciplineTable($decipline_data,$both_term)
                         $appText = "Not Satisfactory";
                         $passText = "";
                     } else {
-                        $appText = "Good";
+                        $appText = "GOOD";
                         $passText = "Passed & Promoted to Class : $sortNextStd&nbsp;&nbsp;&nbsp;&nbsp;";
                     }
                 } else {
-                    $appText = "Good";
+                    $appText = "GOOD";
                     $passText = "Passed & Promoted to Class : $sortNextStd&nbsp;&nbsp;&nbsp;&nbsp;";
                 }
 //                    $remarksText = "Aim higher";
             } else {
                 $appText = "GOOD";
-                if (isset($mainTotalArr['10F'])) {
+                if ($avgFail) {
                     if ($avgFail == 1) {
                         $appText = "Fair";
                         $passText = "Promoted to Class : $sortNextStd&nbsp;&nbsp;&nbsp;&nbsp;";
@@ -8664,7 +8676,7 @@ private function buildDisciplineTable($decipline_data,$both_term)
                         $appText = "Not Satisfactory";
                         $passText = "";
                     } else {
-                        $appText = "Good";
+                        $appText = "GOOD";
                         $passText = "Passed & Promoted to Class : $sortNextStd&nbsp;&nbsp;&nbsp;&nbsp;";
                     }
                 } else {
@@ -8680,52 +8692,52 @@ private function buildDisciplineTable($decipline_data,$both_term)
                 else
                     $pass1Text = "Aim higher";
 
-                if (isset($mainTotalArr['1F'])) {
-                    if (count($mainTotalArr['1F']) == 1) {
+                if ($avgFail) {
+                    if ($avgFail == 1) {
                         $app1Text = "Fair";
                          $pass1Text = "Work hard in failed subject(s).";
-                    } else if (count($mainTotalArr['1F']) == 2) {
+                    } else if ($avgFail == 2) {
                         $app1Text = "Satisfactory";
                         $pass1Text = "Work hard in failed subject(s).";
-                    } else if (count($mainTotalArr['1F']) >= 3) {
+                    } else if ($avgFail >= 3) {
                         $app1Text = "Not Satisfactory";
                         $pass1Text = "Work hard in failed subject(s).";
                     } else {
-                        $app1Text = "Good";
+                        $app1Text = "GOOD";
                     }
                 }
             } else if ($rankTerm1 >= 4 && $rankTerm1 <= 10) {
                 $app1Text = "V. GOOD";
                 $pass1Text = "Aim higher";
-                if (isset($mainTotalArr['1F'])) {
-                    if (count($mainTotalArr['1F']) == 1) {
+                if (isset($avgFail)) {
+                    if ($avgFail == 1) {
                         $app1Text = "Fair";
                         $pass1Text = "Work hard in failed subject(s).";
-                    } else if (count($mainTotalArr['1F']) == 2) {
+                    } else if ($avgFail == 2) {
                         $app1Text = "Satisfactory";
                         $pass1Text = "Work hard in failed subject(s).";
-                    } else if (count($mainTotalArr['1F']) >= 3) {
+                    } else if ($avgFail >= 3) {
                         $app1Text = "Not Satisfactory";
                         $pass1Text = "Work hard in failed subject(s).";
                     } else {
-                        $app1Text = "Good";
+                        $app1Text = "GOOD";
                     }
                 }
             } else {
                 $app1Text = "GOOD";
                 $pass1Text = "Can do better";
-                if (isset($mainTotalArr['1F'])) {
-                    if (count($mainTotalArr['1F']) == 1) {
+                if (isset($avgFail)) {
+                    if ($avgFail == 1) {
                         $app1Text = "Fair";
                         $pass1Text = "Work hard in failed subject(s).";
-                    } else if (count($mainTotalArr['1F']) == 2) {
+                    } else if ($avgFail == 2) {
                         $app1Text = "Satisfactory";
                         $pass1Text = "Work hard in failed subject(s).";
-                    } else if (count($mainTotalArr['1F']) >= 3) {
+                    } else if ($avgFail >= 3) {
                         $app1Text = "Not Satisfactory";
                         $pass1Text = "Work hard in failed subject(s).";
                     } else {
-                        $app1Text = "Good";
+                        $app1Text = "GOOD";
                     }
                 }
             }
@@ -8736,89 +8748,89 @@ private function buildDisciplineTable($decipline_data,$both_term)
                 else
                     $pass2Text = "Aim higher";
 
-                if (isset($mainTotalArr['2F'])) {
-                    if (count($mainTotalArr['2F']) == 1) {
+                if ($avgFail) {
+                    if ($avgFail == 1) {
                         $app2Text = "Fair";
                         $pass2Text = "Work hard in failed subject(s).";
-                    } else if (count($mainTotalArr['2F']) == 2) {
+                    } else if ($avgFail == 2) {
                         $app2Text = "Satisfactory";
                         $pass2Text = "Work hard in failed subject(s).";
-                    } else if (count($mainTotalArr['2F']) >= 3) {
+                    } else if ($avgFail >= 3) {
                         $app2Text = "Not Satisfactory";
                         $pass2Text = "Work hard in failed subject(s).";
                     } else {
-                        $app2Text = "Good";
+                        $app2Text = "GOOD";
                     }
                 }
             } else if ($rankTerm2 >= 4 && $rankTerm2 <= 10) {
                 $app2Text = "V. GOOD";
                 $pass2Text = "Aim higher";
-                if (isset($mainTotalArr['2F'])) {
-                    if (count($mainTotalArr['2F']) == 1) {
+                if ($avgFail) {
+                    if ($avgFail == 1) {
                         $app2Text = "Fair";
                         $pass2Text = "Work hard in failed subject(s).";
-                    } else if (count($mainTotalArr['2F']) == 2) {
+                    } else if ($avgFail == 2) {
                         $app2Text = "Satisfactory";
                         $pass2Text = "Work hard in failed subject(s).";
-                    } else if (count($mainTotalArr['2F']) >= 3) {
+                    } else if ($avgFail >= 3) {
                         $app2Text = "Not Satisfactory";
                         $pass2Text = "Work hard in failed subject(s).";
                     } else {
-                        $app2Text = "Good";
+                        $app2Text = "GOOD";
                     }
                 }
             } else {
                 $app2Text = "GOOD";
                 $pass2Text = "Can do better";
-                if (isset($mainTotalArr['2F'])) {
-                    if (count($mainTotalArr['2F']) == 1) {
+                if ($avgFail) {
+                    if ($avgFail == 1) {
                         $app2Text = "Fair";
                         $pass2Text = "Work hard in failed subject(s).";
-                    } else if (count($mainTotalArr['2F']) == 2) {
+                    } else if ($avgFail == 2) {
                         $app2Text = "Satisfactory";
                         $pass2Text = "Work hard in failed subject(s).";
-                    } else if (count($mainTotalArr['2F']) >= 3) {
+                    } else if ($avgFail >= 3) {
                         $app2Text = "Not Satisfactory";
                         $pass2Text = "Work hard in failed subject(s).";
                     } else {
-                        $app2Text = "Good";
+                        $app2Text = "GOOD";
                     }
                 }
             }
 
         }
-    //  prep remarks 
+    //  prep or Higher remarks 
     else{
 
         if ($avgrank >= 1 && $avgrank <= 3) {
             $appText = "EXCELLENT";
             $passText = "Passed & Promoted to Class : $sortNextStd&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
             $remarksText = "Keep it up";
-            } else if ($avgrank >= 4 && $avgrank <= 10) {
-                $appText = "V. GOOD";
-                $passText = "Passed & Promoted to Class : $sortNextStd&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
-                $remarksText = "Aim higher";
-            } else {
-                $appText = "GOOD";
-                if (isset($mainTotalArr['10F'])) {
-                    if ($avgFail == 1) {
-                        $appText = "Fair";
-                        $passText = "Promoted to Class : $sortNextStd&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
-                    } else if ($avgFail == 2) {
-                        $appText = "Satisfactory";
-                        $passText = "Promoted to Class : $sortNextStd&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
-                    } else if ($avgFail >= 3) {
-                        $appText = "Not Satisfactory";
-                        $passText = "";
-                    } else {
-                        $appText = "Good";
-                        $passText = "Passed & Promoted to Class : $sortNextStd&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
-                    }
+        } else if ($avgrank >= 4 && $avgrank <= 10) {
+            $appText = "V. GOOD";
+            $passText = "Passed & Promoted to Class : $sortNextStd&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+            $remarksText = "Aim higher";
+        } else {
+            $appText = "GOOD";
+            if ($avgFail>0) {
+                if ($avgFail == 1) {
+                    $appText = "Fair";
+                    $passText = "Promoted to Class : $sortNextStd&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+                } else if ($avgFail == 2) {
+                    $appText = "Satisfactory";
+                    $passText = "Promoted to Class : $sortNextStd&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+                } else if ($avgFail >= 3) {
+                    $appText = "Not Satisfactory";
+                    $passText = "";
                 } else {
+                    $appText = "GOOD";
                     $passText = "Passed & Promoted to Class : $sortNextStd&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
                 }
-                $remarksText = "Can do better";
+            } else {
+                $passText = "Passed & Promoted to Class : $sortNextStd&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
             }
+            $remarksText = "Can do better";
+        }
 
             if ($rankTerm1 >= 1 && $rankTerm1 <= 3) {
                 $app1Text = "EXCELLENT";
@@ -8922,7 +8934,7 @@ private function buildDisciplineTable($decipline_data,$both_term)
                         $app2Text = "Not Satisfaction";
                         $pass2Text = 'Work Hard in Failed Subjects';
                     } else {
-                        $app2Text = "Good";
+                        $app2Text = "GOOD";
                         $pass2Text = 'Work Hard in Failed Subjects';
                     }
                 }
@@ -8983,30 +8995,34 @@ private function buildDisciplineTable($decipline_data,$both_term)
             ->get()->toarray();
 
         $rank_data = json_decode(json_encode($rank_data), true);
-
+        
         $percentageArr = [];
+        $faieldArr = [];
         $i = 1;
         foreach ($rank_data as $key => $val) {
             if (!isset($percentageArr[$val['percentage']])) {
                 $percentageArr[$val['percentage']] = $i;
                 $i++;
             }
+            if (!isset($faieldArr[$val['failed']])) {
+                $faieldArr[$val['failed']] = 0;
+            }
+
+            $failed = ($val['totalMarks'] > 0) ? ($val['obtainedMarks'] / $val['totalMarks'] * 100) : 0;
+            if($failed < $passing_ratio){
+                $faieldArr[$val['failed']] += 1;
+            }
+            
         }
         $rankArr = [];
-        if($exam_title!=''){
-            foreach ($rank_data as $key => $val) {
-                $rankArr[$val['student_id']][$exam_title] = $val;
-                $rankArr[$val['student_id']][$exam_title]['rank'] = $percentageArr[$val['percentage']];
-                $rankArr[$val['student_id']][$exam_title]['failed'] = $val['failed'];
-            }
-        }else{
-            foreach ($rank_data as $key => $val) {
-                $rankArr[$val['student_id']] = $val;
-                $rankArr[$val['student_id']]['rank'] = $percentageArr[$val['percentage']];
-                $rankArr[$val['student_id']]['failed'] = $val['failed'];
-            }
+      
+        foreach ($rank_data as $key => $val) {
+            $rankArr[$val['student_id']] = $val;
+            $rankArr[$val['student_id']]['rank'] = $percentageArr[$val['percentage']];
+            $rankArr[$val['student_id']]['failed'] = $faieldArr[$val['failed']];
+            $rankArr[$val['student_id']]['passing_ratio']=$passing_ratio;
         }
-
+        
         return $rankArr;
     }
     // 04-03-2025 frangelo end 

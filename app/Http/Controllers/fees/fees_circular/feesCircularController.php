@@ -618,11 +618,11 @@ public function getBk(Request $request, $id)
                 $hillsterm = session()->get('term_id');
                 if (count($feesCircularMaster) > 0) {
                     $res['feesCircularMaster'] = $feesCircularMaster[0];
-                    if($hillsterm=='146' ||$hillsterm=='144' ){
+                    if($hillsterm=='146' || $hillsterm=='144' || $hillsterm=='1'){
                         $res['display_month_name'] = 'First Term';
-                    }elseif($hillsterm=='147' || $hillsterm=='145'){
+                    }elseif($hillsterm=='147' || $hillsterm=='145' || $hillsterm=='2'){
                         $res['display_month_name'] = 'Second Term';
-                    }elseif($hillsterm=='148' || $hillsterm=='149'){
+                    }elseif($hillsterm=='148' || $hillsterm=='149' || $hillsterm=='3'){
                         $res['display_month_name'] = 'Third Term';
                     }//$display_month_name;
                     $res['fees_circular_amount'] = $fees_circular_amount;

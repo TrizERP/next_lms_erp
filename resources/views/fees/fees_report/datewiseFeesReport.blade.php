@@ -94,10 +94,10 @@
                     }
                     $academicYear = session()->get('syear').'-'.(session()->get('syear')+1);
                 @endphp 
-            <div style="width:100%;display:flex;justify-content:center;flex-wrap:wrap;text-align:center;margin-bottom:8px">
+            <div style="width:100%;display:flex;justify-content:center;flex-wrap:wrap;text-align:center;margin-bottom:8px;margin-top:15px">
                     <div><img style="height:50px;" src="https://erp.triz.co.in/storage/fees/{{$data['school_details']->receipt_logo}}"></div>
                     <div class="schoolData" style="text-align:left;">
-                        <p style="margin:0px;"><b>{{$instituteName}}</b></p>
+                        <h4 style="margin:0px;"><b>{{$instituteName}}</b></h4>
                         <p style="margin:0px;"><b>{{$data['school_details']->receipt_line_3}}</b></p>
                         <p style="margin:0px;">
                         <b> {{--DATE : {{date('d-m-y',strtotime($from_date))}} to {{date('d-m-y',strtotime($to_date))}}--}}
@@ -114,7 +114,7 @@
                     $pay_mode = $explode[1] ?? '-';
                     $colspan = 9;
                 @endphp
-                <div class="table-responsive" style="margin-bottom:20px;width:100%;">
+                <div class="table-responsive" style="margin:auto;width:85%">
                 <table class="table table-striped">
                     <thead>
                         <tr>
@@ -177,6 +177,7 @@
                 </table>
                 </div>
             @endforeach 
+            <br/><br/>
                 <div class="mt-4" style="display:inline-grid;justify-content:center;width:100%" id="paymentDetails">
 					<div class="table-responsive">
 						<table class="table table-bordered">
@@ -263,7 +264,7 @@ document.addEventListener("DOMContentLoaded", function () {
         var printWindow = window.open("", "", "width=800,height=600");
 
         printWindow.document.write('<html><head><title>Print</title>');
-        printWindow.document.write('<style>@page{margin:0}@media print{ table{border:0.8px solid #ddd;width:100%;} th,td{border:0.8px solid #ddd;padding:0px;font-size:14px;} .schoolData{margin-left:8px} }</style>');
+        printWindow.document.write('<style>@page{margin:20px}@media print{ table{border:0.8px solid #ddd;width:100%;} th,td{border:0.8px solid #ddd;padding:0px;font-size:14px;} .schoolData{margin-left:8px;} }</style>');
         printWindow.document.write('</head><body>');
         printWindow.document.write(printContents);
         printWindow.document.write('</body></html>');

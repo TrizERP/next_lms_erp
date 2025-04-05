@@ -3553,7 +3553,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
         
         // echo "<pre>";print_r($feesData);exit;
 
-        $pendingFees = [];
+        $pendingFees = $feesMonths = [];
         $currentFees = 0;
         if(!empty($feesData) && isset($feesData['total_fees'])){
             $feesBreakOff = $feesData['total_fees'];
@@ -3563,21 +3563,22 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                     $getMonthYear = explode('/',$value['month']);
                     $feesMonth = isset($getMonthYear[1]) ? $getMonthYear[1] : 0;
                     if(($feesMonth == $syear || $feesMonth== $nextYear) && array_key_exists($currentMonth,$allFeesMonth)){
+                        $feesMonths[] = $value['month_id'];
                         $pendingFees[] = $value;
                         if($value['month_id'] == $currentMonth){
                             $currentFees += $value['remain'];
                             break;
                         }
                         // previous month and current month pending fees 
-                        // $currentFees += $currentFees; // commented on 02-04-2025
+                        $currentFees += $currentFees; // commented on 02-04-2025
                     }
                }
             }
             $status = 1;
             $message = "Student Fees Data Found";
         }
-        $previousFees = (!empty($feesData) && isset($feesData['previous_fees'])) ? $feesData['previous_fees']['Previous Fees'] : 0;
-        $previousFees = isset($hillPreviousFineArr['total']) ? ($previousFees+$hillPreviousFineArr['total']) : $previousFees;
+        $previousFees = (!empty($feesData) && isset($feesData['previous_fees']) && $feesData['previous_fees'] > 0) ? $feesData['previous_fees']['Previous Fees'] : 0;
+        $previousFees = (isset($hillPreviousFineArr['total']) && $previousFees>0) ? ($previousFees+$hillPreviousFineArr['total']) : $previousFees;
         // currnt and previous is 0 then hide 
         if($previousFees==0 && $currentFees==0){
             $apiStatus = 0;
@@ -3585,8 +3586,9 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
         $res['status'] = $status;
         $res['message'] = $message;
         $res['api_status'] = $apiStatus;
-        $res['previous_fees'] = $previousFees;
+        $res['previous_fees'] = ($previousFees > 0) ? $previousFees : 0;
         $res['current_fees'] = $currentFees;
+        $res['fees_months'] = $feesMonths;
         $res['studentData'] = (!empty($feesData) && isset($feesData['stu_data'])) ? $feesData['stu_data'] : []; 
 
         return response()->json($res);

@@ -530,7 +530,7 @@ LIMIT 1");
             $result_remarks = $stu_remarks_input;
         }
         // echo "<pre>";print_r($result_remarks);exit;
-        $curr_std_medium = (isset($next_std->medium)) ? $next_std->medium: '';
+        $curr_std_medium = (isset($curr_std->medium)) ? $curr_std->medium: '';
         $nextStdName = (isset($next_std->name)) ? $next_std->name: '';
         $nextStdStream = (isset($next_std->school_stream)) ? $next_std->school_stream: '';
         $nextStdShortName = (isset($next_std->short_name)) ? $next_std->short_name: '';
