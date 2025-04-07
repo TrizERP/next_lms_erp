@@ -55,6 +55,7 @@ class LibraryReportController extends Controller
     
         $data['report']=$report_of = $request->input('report_of');
         $data['material_resource']=$material_resource = $request->input('material_resource');
+        $data['book_type']=$book_type = $request->input('book_type');
         $data['author']=$author = $request->input('author');
         $data['publisher_name']=$publisher_name = $request->input('publisher_name');
         $data['publishing_place']=$publishing_place = $request->input('publishing_place');
@@ -66,8 +67,17 @@ class LibraryReportController extends Controller
         ->join('library_items as li','li.book_id','=','lb.id')
         ->where("lb.sub_institute_id", "=", $sub_institute_id)
         ->where("li.sub_institute_id", "=", $sub_institute_id)        
-        ->when($request->material_resource,function($q) use($material_resource){
-            $q->where("lb.material_resource_type", "=", $material_resource);
+        ->when($request->material_resource,function($q) use($material_resource,$sub_institute_id,$book_type){
+            $q->where("lb.material_resource_type", "=", $material_resource)
+            // for mmis book type wise search purchase or donate 05-04-2025
+            ->when($sub_institute_id==47 && $book_type && $book_type !='',function($subQ) use($book_type){
+                if($book_type=="donate"){
+                    $subQ->whereRaw('li.item_code like "D%"');
+                }
+                elseif($book_type=="purchase"){
+                    $subQ->whereRaw('li.item_code like "A%"');
+                }
+            });
             })
         ->when($author,function($q) use($author){
                 $q->where("author_name", "=", $author);
