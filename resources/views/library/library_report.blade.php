@@ -48,7 +48,7 @@
                         <div class="col-md-4 form-group hide" id="book_type">
                             <label for="">Book Type</label>
                             <select id="book_type_input" class="form-control" name="book_type">
-                                <option value="">All</option>
+                                <option value="all">All</option>
                                 <option value="purchase" @if(isset($data['book_type']) && $data['book_type']=="purchase") selected @endif>Purchase</option>
                                 <option value="donate" @if(isset($data['book_type']) && $data['book_type']=="donate") selected @endif>Donate</option>
                             </select>
