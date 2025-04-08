@@ -529,7 +529,10 @@ LIMIT 1");
         else if($stu_remarks_input!=''){
             $result_remarks = $stu_remarks_input;
         }
-        // echo "<pre>";print_r($result_remarks);exit;
+        else{
+            $result_remarks = isset($value['last_school_board']) ? strtoupper($value['last_school_board']) : 'Passed & Promoted to Class ' . $nextStd;
+        }
+        // echo "<pre>";print_r($value);exit;
         $curr_std_medium = (isset($curr_std->medium)) ? $curr_std->medium: '';
         $nextStdName = (isset($next_std->name)) ? $next_std->name: '';
         $nextStdStream = (isset($next_std->school_stream)) ? $next_std->school_stream: '';
@@ -545,10 +548,11 @@ LIMIT 1");
         strtoupper($curr_std_medium), $html_content);
 
         $html_content = str_replace(htmlspecialchars("<<annual_value_result>>"),
-        strtoupper($result_remarks), $html_content);
-        $failPass = 'CLASS '.$nextStd.'-'.$stu_remarks_input;
+        strtoupper($result_remarks), $html_content); 
+
+        $failPass = 'CLASS '.$nextStd;
         if(isset($value['whether_failed']) && in_array($value['whether_failed'],['Yes','YES','yes','Y'])){
-            $failPass = "CLASS ".$currentStd.'-'.$value['division_name'];
+            $failPass = "CLASS ".$currentStd;
         }
         $html_content = str_replace(htmlspecialchars("<<whether_qualified_value_result>>"),
         strtoupper($failPass), $html_content);
