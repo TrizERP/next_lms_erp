@@ -76,7 +76,7 @@
                         @endphp
 
                         <div class="card">
-                            <form method="POST" action="show_student_certificate">
+                            <form method="POST" action="show_student_certificate" onsubmit="check_validation()">
                                 @csrf
                                 <div class="row">
                                     <div class="col-md-4 form-group">
@@ -137,7 +137,7 @@
                                             <input type="hidden" name="grade_id" @if(isset($data['grade_id'])) value="{{$data['grade_id']}}" @endif">
                         	<input type="hidden" name="standard_id" @if(isset($data['standard_id'])) value="{{$data['standard_id']}}" @endif
                                             ">
-                                            <input type="submit" name="submit" value="Submit" class="btn btn-success" onclick="check_validation()">
+                                            <input type="submit" name="submit" value="Submit" class="btn btn-success">
                                         </center>
                                     </div>
                                 </div>
@@ -170,18 +170,20 @@
     {
         var checked_questions = err = 0;
 
-        $("input[name='students[]']:checked").each(function ()
-        {
-            checked_questions = checked_questions + 1;
-        });
-        if(checked_questions == 0)
-        {
-            alert("Please Select Atleast one question in paper from search");
-            err = 1;
-            return false;
-        }else{
-            return true;
-        }
+		$("input[name='students[]']:checked").each(function() {
+		checked_questions = checked_questions + 1;
+		});
+
+		if (checked_questions == 0) {
+		alert("Please Select Atleast one Student from search");
+		err = 1;
+		}
+
+		if (err == 1) {
+		event.preventDefault();
+		}
+
+		return err;      
     }
 </script>
 

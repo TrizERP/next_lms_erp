@@ -408,15 +408,34 @@ LIMIT 1");
         $html_content = str_replace(htmlspecialchars("<<daughter_or_son>>"), $daughter_son, $html_content);
 
         //Start Bonafide certificate Tags
+
+        $student_full_name = strtoupper($value['student_full_name']);
+        $student_first_name = strtoupper($value['student_first_name']);
+        $student_middle_name = strtoupper($value['student_middle_name']);
+        $student_last_name = strtoupper($value['student_last_name']);
+        $father_name = strtoupper($value['father_name']);
+        $mother_name = strtoupper($value['mother_name']);
+        $nationality = strtoupper($value['nationality']);
+
+        // make first letter capital only for ssmission school added on 08-04-2025
+        if(in_array($sub_institute_id,[76])){
+            $firstLetterArr = ['student_full_name','student_first_name','student_middle_name','student_last_name','father_name','mother_name','nationality'];
+            foreach ($firstLetterArr as $fkey => $fvalue) {
+                $explodeFval = explode(' ', strtolower($value[$fvalue]));
+                $explodeFval = array_map('ucwords', array_map('trim', $explodeFval));
+                $$fvalue = implode(' ', $explodeFval);
+            }
+        }
+
         $html_content = str_replace(htmlspecialchars("<<student_image_value>>"), $student_image_path, $html_content);
-        $html_content = str_replace(htmlspecialchars("<<student_name_value>>"), strtoupper($value['student_full_name']),
-            $html_content);
-        $html_content = str_replace(htmlspecialchars("<<student_first_name_value>>"), strtoupper($value['student_first_name']),
-        $html_content);
-        $html_content = str_replace(htmlspecialchars("<<student_middle_name_value>>"), strtoupper($value['student_middle_name']),
-            $html_content);
-        $html_content = str_replace(htmlspecialchars("<<student_last_name_value>>"), strtoupper($value['student_last_name']),
-            $html_content);
+        $html_content = str_replace(htmlspecialchars("<<student_name_value>>"), $student_full_name,$html_content);
+        $html_content = str_replace(htmlspecialchars("<<student_first_name_value>>"), $student_first_name,$html_content);
+        $html_content = str_replace(htmlspecialchars("<<student_middle_name_value>>"), $student_middle_name,$html_content);
+        $html_content = str_replace(htmlspecialchars("<<student_last_name_value>>"), $student_last_name,$html_content);
+        $html_content = str_replace(htmlspecialchars("<<father_name_value>>"), $father_name,$html_content);
+        $html_content = str_replace(htmlspecialchars("<<mother_name_value>>"), $mother_name,$html_content);
+        $html_content = str_replace(htmlspecialchars("<<nationality_value>>"), $nationality,$html_content);
+        
         $html_content = str_replace(htmlspecialchars("<<student_enrollment_value>>"), $value['enrollment_no'],
             $html_content);
         $html_content = str_replace(htmlspecialchars("<<student_roll_no_value>>"), $value['roll_no'],
@@ -457,6 +476,12 @@ LIMIT 1");
             $last_school_board = $transfer_details->last_school_board;
             $reason_for_leave = $transfer_details->reason_leaving_school;
         }
+        // for ssmission first letter capital values
+        if(in_array($sub_institute_id,[76])){
+            $candidate_belongs_to = explode(' ', strtolower($candidate_belongs_to));
+            $candidate_belongs_to = array_map('ucwords', array_map('trim', $candidate_belongs_to));
+            $candidate_belongs_to = implode(' ', $candidate_belongs_to);
+        }
 
         $html_content = str_replace(htmlspecialchars("<<candidate_belongs_to>>"), $candidate_belongs_to,$html_content);
         $html_content = str_replace(htmlspecialchars("<<whether_failed>>"), $whether_failed,$html_content);
@@ -472,14 +497,9 @@ LIMIT 1");
             $html_content);
         $html_content = str_replace(htmlspecialchars("<<school_code_value>>"), strtoupper($value['school_code']),
             $html_content);
-        $html_content = str_replace(htmlspecialchars("<<nationality_value>>"), strtoupper($value['nationality']),
-            $html_content);
         $html_content = str_replace(htmlspecialchars("<<place_of_birth_value>>"), strtoupper($value['place_of_birth']),
             $html_content);
-        $html_content = str_replace(htmlspecialchars("<<father_name_value>>"), strtoupper($value['father_name']),
-            $html_content);
-        $html_content = str_replace(htmlspecialchars("<<mother_name_value>>"), strtoupper($value['mother_name']),
-            $html_content);
+  
         $html_content = str_replace(htmlspecialchars("<<religion_name_value>>"), strtoupper($value['religion_name']),
             $html_content);
             $caste_name = $value['caste_name'];
@@ -557,9 +577,15 @@ LIMIT 1");
         $html_content = str_replace(htmlspecialchars("<<whether_qualified_value_result>>"),
         strtoupper($failPass), $html_content);
         // for mmis auto fetch remarks from end
-        $html_content = str_replace(htmlspecialchars("<<subjects_studied_value>>"),strtoupper($value['subjects_studied']), $html_content);
-        $html_content = str_replace(htmlspecialchars("<<candidate_belongs_to_value>>"),
-            strtoupper($value['candidate_belongs_to']), $html_content);
+        $subjects_studied = strtoupper($value['subjects_studied']);
+        // for ssmission make only first letter capital on 08-04-2025
+        if(in_array($sub_institute_id,[76])){
+            $subjects = explode(',', strtolower($value['subjects_studied']));
+            $subjects = array_map('ucwords', array_map('trim', $subjects));
+            $subjects_studied = implode(', ', $subjects);
+        }
+        $html_content = str_replace(htmlspecialchars("<<subjects_studied_value>>"),$subjects_studied, $html_content);
+        $html_content = str_replace(htmlspecialchars("<<candidate_belongs_to_value>>"),$candidate_belongs_to, $html_content); // ssmission first letter capital
         $html_content = str_replace(htmlspecialchars("<<date_of_first_admission_value>>"),
             strtoupper($value['date_of_first_admission']), $html_content);
         $html_content = str_replace(htmlspecialchars("<<class_in_which_pupil_last_studied_value>>"),
