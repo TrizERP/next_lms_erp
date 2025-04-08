@@ -416,10 +416,11 @@ LIMIT 1");
         $father_name = strtoupper($value['father_name']);
         $mother_name = strtoupper($value['mother_name']);
         $nationality = strtoupper($value['nationality']);
+        $place_of_birth_value = strtoupper($value['place_of_birth_value']);
 
         // make first letter capital only for ssmission school added on 08-04-2025
         if(in_array($sub_institute_id,[76])){
-            $firstLetterArr = ['student_full_name','student_first_name','student_middle_name','student_last_name','father_name','mother_name','nationality'];
+            $firstLetterArr = ['student_full_name','student_first_name','student_middle_name','student_last_name','father_name','mother_name','nationality','place_of_birth_value'];
             foreach ($firstLetterArr as $fkey => $fvalue) {
                 $explodeFval = explode(' ', strtolower($value[$fvalue]));
                 $explodeFval = array_map('ucwords', array_map('trim', $explodeFval));
@@ -435,6 +436,7 @@ LIMIT 1");
         $html_content = str_replace(htmlspecialchars("<<father_name_value>>"), $father_name,$html_content);
         $html_content = str_replace(htmlspecialchars("<<mother_name_value>>"), $mother_name,$html_content);
         $html_content = str_replace(htmlspecialchars("<<nationality_value>>"), $nationality,$html_content);
+        $html_content = str_replace(htmlspecialchars("<<place_of_birth_value>>"), $place_of_birth_value,$html_content);
         
         $html_content = str_replace(htmlspecialchars("<<student_enrollment_value>>"), $value['enrollment_no'],
             $html_content);
@@ -497,8 +499,6 @@ LIMIT 1");
             $html_content);
         $html_content = str_replace(htmlspecialchars("<<school_code_value>>"), strtoupper($value['school_code']),
             $html_content);
-        $html_content = str_replace(htmlspecialchars("<<place_of_birth_value>>"), strtoupper($value['place_of_birth']),
-            $html_content);
   
         $html_content = str_replace(htmlspecialchars("<<religion_name_value>>"), strtoupper($value['religion_name']),
             $html_content);
@@ -557,18 +557,25 @@ LIMIT 1");
         $nextStdName = (isset($next_std->name)) ? $next_std->name: '';
         $nextStdStream = (isset($next_std->school_stream)) ? $next_std->school_stream: '';
         $nextStdShortName = (isset($next_std->short_name)) ? $next_std->short_name: '';
+        // make first letter capital only for ssmission school added on 08-04-2025
+        $next_std_name = strtoupper($nextStdName);
+        $next_std_stream = strtoupper($nextStdStream);
+        $next_std_short_name = strtoupper($nextStdShortName);
+        
+        if(in_array($sub_institute_id,[76])){
+            $firstLetterArr = ['next_std_name','next_std_stream','next_std_short_name'];
+            foreach ($firstLetterArr as $fkey => $fvalue) {
+                $explodeFval = explode(' ', strtolower($value[$fvalue]));
+                $explodeFval = array_map('ucwords', array_map('trim', $explodeFval));
+                $$fvalue = implode(' ', $explodeFval);
+            }
+        }
+        $html_content = str_replace(htmlspecialchars("<<next_std_name>>"),$next_std_name, $html_content);
+        $html_content = str_replace(htmlspecialchars("<<next_std_stream>>"),$next_std_stream, $html_content);
+        $html_content = str_replace(htmlspecialchars("<<next_std_short_name>>"),$next_std_short_name, $html_content);
+        $html_content = str_replace(htmlspecialchars("<<current_medium>>"),strtoupper($curr_std_medium), $html_content);
 
-        $html_content = str_replace(htmlspecialchars("<<next_std_name>>"),
-        strtoupper($nextStdName), $html_content);
-        $html_content = str_replace(htmlspecialchars("<<next_std_stream>>"),
-        strtoupper($nextStdStream), $html_content);
-        $html_content = str_replace(htmlspecialchars("<<next_std_short_name>>"),
-        strtoupper($nextStdShortName), $html_content);
-        $html_content = str_replace(htmlspecialchars("<<current_medium>>"),
-        strtoupper($curr_std_medium), $html_content);
-
-        $html_content = str_replace(htmlspecialchars("<<annual_value_result>>"),
-        strtoupper($result_remarks), $html_content); 
+        $html_content = str_replace(htmlspecialchars("<<annual_value_result>>"),strtoupper($result_remarks), $html_content); 
 
         $failPass = 'CLASS '.$nextStd;
         if(isset($value['whether_failed']) && in_array($value['whether_failed'],['Yes','YES','yes','Y'])){
