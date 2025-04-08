@@ -7433,11 +7433,14 @@ private function buildDisciplineTable($decipline_data,$both_term)
             foreach($exam_created as $key => $examData){
                 foreach ($exam_marks as $exam_markskey => $exam_marksvalue) {
                     if($examData->ExamId==$exam_marksvalue->exam_id && $examData->subject_id==$exam_marksvalue->subject_id){
-                        $examArr[$exam_marksvalue->subject_id][$exam_marksvalue->exam_id]['OBT'][] = in_array($exam_marksvalue->is_absent,['AB','N.A.','EX']) ? $exam_marksvalue->is_absent : $exam_marksvalue->points;
-                        $examArr[$exam_marksvalue->subject_id][$exam_marksvalue->exam_id]['POINTS'][] = $exam_marksvalue->weightage;
-                        $examArr[$exam_marksvalue->subject_id][$exam_marksvalue->exam_id]['PASSING'][] = $PASSING_MARKS;
-                        $examArr[$exam_marksvalue->subject_id][$exam_marksvalue->exam_id]['create_id'][] = $exam_marksvalue->create_exam;
-                        $examArr[$exam_marksvalue->subject_id][$exam_marksvalue->exam_id]['student_id'][] = $exam_marksvalue->student_id;
+                        $examArr[$exam_marksvalue->subject_id][$exam_marksvalue->exam_id]['OBT'][] = in_array($exam_marksvalue->is_absent,['AB','N.A.','EX']) ? 0 : $exam_marksvalue->points;
+                         $examArr[$exam_marksvalue->subject_id][$exam_marksvalue->exam_id]['is_absent'][] = in_array($exam_marksvalue->is_absent,['AB','N.A.','EX']) ? $exam_marksvalue->is_absent : '-';
+                         $examArr[$exam_marksvalue->subject_id][$exam_marksvalue->exam_id]['POINTS'][] = $exam_marksvalue->weightage;
+                         $examArr[$exam_marksvalue->subject_id][$exam_marksvalue->exam_id]['CREATE_POINTS'][] = $exam_marksvalue->total_points;
+                         $examArr[$exam_marksvalue->subject_id][$exam_marksvalue->exam_id]['PASSING'][] = $PASSING_MARKS;
+                         $examArr[$exam_marksvalue->subject_id][$exam_marksvalue->exam_id]['is_elective'][] = $exam_marksvalue->elective_subject;
+                         $examArr[$exam_marksvalue->subject_id][$exam_marksvalue->exam_id]['create_id'][] = $exam_marksvalue->create_exam;
+                         $examArr[$exam_marksvalue->subject_id][$exam_marksvalue->exam_id]['student_id'][] = $exam_marksvalue->student_id;
                     }
                 }
                 // $examArr[$examData->subject_id][$examData->ExamId][] = 0;
@@ -7470,7 +7473,7 @@ private function buildDisciplineTable($decipline_data,$both_term)
             $grade_arr = $this->getGradeScale($standard_id, '');
             // echo "<pre>";print_r($examArr);exit;
             $grandTotPoints = $grandTotPassing = $grandTotObt = [];
-            $avgMarks= $avgPoints= $grandTotAvg = $grandTotAvgPoints =0;
+            $avgMarks= $avgPoints= $grandTotAvg = $grandTotAvgPoints = $avgFailed =0;
             foreach ($get_subject as $subkey => $subjectData) {
                 $table .= '<tr>
                             <td>'.$subjectData->subject_name.'</td>';// subject send start
@@ -7513,6 +7516,9 @@ private function buildDisciplineTable($decipline_data,$both_term)
                                $grandTotObt[$examkey]+=$obtMarks;
                                $grandTotAvg+=$avgMarks;
                                $grandTotAvgPoints+=$avgPoints;
+                               if($avgMarks<$PASSING_MARKS){
+                                $avgFailed +=1;
+                               }
                             }
                             $avgGrade = $this->getGrade($grade_arr,$avgPoints, $avgMarks);
                             $table .= '<td colspan="3" class="data_center" '.$avgMarks.'>'.$avgGrade.'</td>';
@@ -7541,7 +7547,7 @@ private function buildDisciplineTable($decipline_data,$both_term)
             $avgrank = isset($avgrankArr[$student_id]) ? $avgrankArr[$student_id]['rank'] : 0;
             $rankTerm1 = isset($rankTerm1Arr[$student_id]) ? $rankTerm1Arr[$student_id]['rank'] : 0;
             $rankTerm2 = isset($rankTerm2Arr[$student_id]) ? $rankTerm2Arr[$student_id]['rank'] : 0;
-            $avgFail = isset($avgrankArr[$student_id]) ? $avgrankArr[$student_id]['failed'] : 0;
+            $avgFail = $avgFailed;
             $FailTerm1 = isset($rankTerm1Arr[$student_id]) ? $rankTerm1Arr[$student_id]['failed'] : 0;
             $FailTerm2 = isset($rankTerm2Arr[$student_id]) ? $rankTerm2Arr[$student_id]['failed'] : 0;
             $mainTotalArr= [];
@@ -7549,144 +7555,13 @@ private function buildDisciplineTable($decipline_data,$both_term)
             // echo "<pre>";print_r($rankTerm1[$student_id]);
             $nextStd = DB::table('standard as std')->selectRaw('(select short_name from standard where id = std.next_standard_id) as next_sort_std,(select name from standard where id = std.next_standard_id) as next_std')->where('std.id',$standard_id)->whereNotNull('next_standard_id')->first();
             $sortNextStd = isset($nextStd->next_sort_std) ? $nextStd->next_sort_std : 0;
-            // echo "<pre>";print_r($nextStd->next_sort_std);exit;
-            if ($avgrank >= 1 && $avgrank <= 3) {
-            $appText = "EXCELLENT";
-            $passText = "Passed & Promoted to Class : $sortNextStd&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
-            $remarksText = "Keep it up";
-            } else if ($avgrank >= 4 && $avgrank <= 10) {
-                $appText = "V. GOOD";
-                $passText = "Passed & Promoted to Class : $sortNextStd&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
-                $remarksText = "Aim higher";
-            } else {
-                $appText = "GOOD";
-                if ($avgFail) {
-                    if ($avgFail == 1) {
-                        $appText = "Fair";
-                        $passText = "Promoted to Class : $sortNextStd&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
-                    } else if ($avgFail == 2) {
-                        $appText = "Satisfactory";
-                        $passText = "Promoted to Class : $sortNextStd&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
-                    } else if ($avgFail >= 3) {
-                        $appText = "Not Satisfactory";
-                        $passText = "";
-                    } else {
-                        $appText = "Good";
-                        $passText = "Passed & Promoted to Class : $sortNextStd&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
-                    }
-                } else {
-                    $passText = "Passed & Promoted to Class : $sortNextStd&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
-                }
-                $remarksText = "Can do better";
-            }
-
-            if ($rankTerm1 >= 1 && $rankTerm1 <= 3) {
-                $app1Text = "EXCELLENT";
-                $remarks1Text = "Keep it up";
-                if ($rankTerm1 == 1) {
-                    $remarks1Text = "Keep it up";
-                } else {
-                    $remarks1Text = "Aim higher";
-                }
-                if (isset($FailTerm1)) {
-                    if ($FailTerm1 == 1) {
-                        $app1Text = "Fair";
-                        $remarks1Text = 'Work Hard in Failed Subject';
-                    } else if ($FailTerm1 == 2) {
-                        $app1Text = "Satisfaction";
-                        $remarks1Text = 'Work Hard in Failed Subjects';
-                    } else if ($FailTerm1 >= 3) {
-                        $app1Text = "Not Satisfaction";
-                        $remarks1Text = 'Work Hard in Failed Subjects';
-                    }
-                }
-            } else if ($rankTerm1 >= 4 && $rankTerm1 <= 10) {
-                $app1Text = "V. GOOD";
-                $remarks1Text = "Aim higher";
-                if (isset($FailTerm1)) {
-                    if ($FailTerm1 == 1) {
-                        $app1Text = "Fair";
-                        $remarks1Text = 'Work Hard in Failed Subject';
-                    } else if ($FailTerm1 == 2) {
-                        $app1Text = "Satisfactory";
-                        $remarks1Text = 'Work Hard in Failed Subjects';
-                    } else if ($FailTerm1 >= 3) {
-                        $app1Text = "Not Satisfactory";
-                        $remarks1Text = 'Work Hard in Failed Subjects';
-                    }
-                }
-            } else {
-                $app1Text = "GOOD";
-                $remarks1Text = "Can do better";
-                if (isset($FailTerm1)) {
-                    if ($FailTerm1 == 1) {
-                        $app1Text = "Fair";
-                        $remarks1Text = 'Work Hard in Failed Subject';
-                    } else if ($FailTerm1 == 2) {
-                        $app1Text = "Satisfaction";
-                        $remarks1Text = 'Work Hard in Failed Subjects';
-                    } else if ($FailTerm1 >= 3) {
-                        $app1Text = "Not Satisfaction";
-                        $remarks1Text = 'Work Hard in Failed Subjects';
-                    }
-                }
-            }
-
-            if ($rankTerm2 >= 1 && $rankTerm2 <= 3) {
-                $app2Text = "EXCELLENT";
-                $remarks2Text = "Keep it up";
-                if ($rankTerm2 == 1) {
-                    $remarks2Text = "Keep it up";
-                } else {
-                    $remarks2Text = "Aim higher";
-                }
-
-                if (isset($FailTerm2)) {
-                    if ($FailTerm2 == 1) {
-                        $app2Text = "Fair";
-                        $remarks2Text = 'Work Hard in Failed Subject';
-                    } else if ($FailTerm2 == 2) {
-                        $app2Text = "Satisfaction";
-                        $remarks2Text = 'Work Hard in Failed Subjects';
-                    } else if ($FailTerm2 >= 3) {
-                        $app2Text = "Not Satisfaction";
-                        $remarks2Text = 'Work Hard in Failed Subjects';
-                    }
-                }
-            } else if ($rankTerm2 >= 4 && $rankTerm2 <= 10) {
-                $app2Text = "V. GOOD";
-                $remarks2Text = "Aim higher";
-                if (isset($FailTerm2)) {
-                    if ($FailTerm2 == 1) {
-                        $app2Text = "Fair";
-                        $remarks2Text = 'Work Hard in Failed Subject';
-                    } else if ($FailTerm2 == 2) {
-                        $app2Text = "Satisfaction";
-                        $remarks2Text = 'Work Hard in Failed Subjects';
-                    } else if ($FailTerm2 >= 3) {
-                        $app2Text = "Not Satisfaction";
-                        $remarks2Text = 'Work Hard in Failed Subjects';
-                    }
-                }
-            } else {
-                $app2Text = "GOOD";
-                $remarks2Text = "Can do better";
-                if (isset($FailTerm2)) {
-                    if ($FailTerm2 == 1) {
-                        $app2Text = "Fair";
-                        $remarks2Text = 'Work Hard in Failed Subject';
-                    } else if ($FailTerm2 == 2) {
-                        $app2Text = "Satisfaction";
-                        $remarks2Text = 'Work Hard in Failed Subjects';
-                    } else if ($FailTerm2 >= 3) {
-                        $app2Text = "Not Satisfaction";
-                        $remarks2Text = 'Work Hard in Failed Subjects';
-                    } else {
-                        $app2Text = "Good";
-                        $remarks2Text = 'Work Hard in Failed Subjects';
-                    }
-                }
-            }
+            $getRemarks = $this->getFrangeloRemarks($sortNextStd,$avgrank,$rankTerm1,$rankTerm2,$avgFail,$FailTerm1,$FailTerm2,$mainTotalArr);
+            $appText = $getRemarks['appText'];
+            $app1Text = $getRemarks['app1Text'];
+            $app2Text = $getRemarks['app2Text'];
+            $passText = $getRemarks['passText'];
+            $pass1Text = $getRemarks['pass1Text'];
+            $pass2Text = $getRemarks['pass2Text'];
             
             $table .='<tr>
             <td><b>CONDUCT</b></td>';
@@ -7709,10 +7584,10 @@ private function buildDisciplineTable($decipline_data,$both_term)
             $table .='<tr>
             <td><b>Remarks</b></td>';
             if(!empty($examMasters)){
-                $table .='<td colspan="3">'.$remarks1Text.'</td>
-                <td colspan="3">'.$remarks2Text.'</td>';
+                $table .='<td colspan="3">'.$pass1Text.'</td>
+                <td colspan="3">'.$pass2Text.'</td>';
             }
-            $table .='<td colspan="3" class="data_center">'.$remarksText.'</td>
+            $table .='<td colspan="3" class="data_center">'.$passText.'</td>
             </tr>';
         
             $table .= '</tbody>
@@ -8394,108 +8269,137 @@ private function buildDisciplineTable($decipline_data,$both_term)
                             // check exam has marks or not 
                             $annualOut= $annualObt=0;
                             foreach ($examMasters as $examkey => $examData) {
-                                $obtMarks = $pointMarks = $gradePoints = $passingMarks = '0';
+
+                                $obtMarks = $pointMarks = $gradePoints = $passingMarks = '0'; // intialize all marks as 0
+                                // get student obtained marks 
                                if(isset($examArr[$subjectData->subject_id][$examkey]['OBT'])){
                                     $obtMarks = array_sum($examArr[$subjectData->subject_id][$examkey]['OBT']);
                                }
+                                // get exam crated points 
                                if(isset($examArr[$subjectData->subject_id][$examkey]['CREATE_POINTS'])){
                                     $gradePoints = array_sum($examArr[$subjectData->subject_id][$examkey]['CREATE_POINTS']);
                                 }
-                               if(isset($examData['weightage'])){
-                                $pointMarks = $examData['weightage'];
-                                if($subjectData->elective_subject=="Yes"){
-                                    $pointMarks = $gradePoints;
+                                // get exam master weightage 
+                                if(isset($examData['weightage'])){
+                                        $pointMarks = $examData['weightage'];
+                                        // if subject is optional the it will be counted by cretaed exam point instead of weightage
+                                        if($subjectData->elective_subject=="Yes" && !in_array($standard_id,[798,799,800,801])){
+                                            $pointMarks = $gradePoints;
+                                        }
                                 }
-                               }
-                               if(isset($examArr[$subjectData->subject_id][$examkey]['PASSING'])){
-                                    $passingMarks = array_sum($examArr[$subjectData->subject_id][$examkey]['PASSING']);
-                               }
+                                //    get passing marks for all subjects 
+                                if(isset($examArr[$subjectData->subject_id][$examkey]['PASSING'])){
+                                        $passingMarks = array_sum($examArr[$subjectData->subject_id][$examkey]['PASSING']);
+                                }
 
-                               $pointsGrade = $this->getGrade($grade_arr, $pointMarks, $pointMarks);
-                               $passingGrade = $this->getGrade($grade_arr, $pointMarks, $passingMarks);
-                            //   if(isset($examArr[$subjectData->subject_id][$examkey]['OBT'])){
-                                $obtGrade = $this->getGrade($grade_arr, $pointMarks, $obtMarks);
-                            //    }
+                                $pointsGrade = $this->getGrade($grade_arr, $pointMarks, $pointMarks);  // for prep
+                                $passingGrade = $this->getGrade($grade_arr, $pointMarks, $passingMarks); // for prep
+                                //   if(isset($examArr[$subjectData->subject_id][$examkey]['OBT'])){
+                                $obtGrade = $this->getGrade($grade_arr, $pointMarks, $obtMarks); // for optional subjects
+                                //    }
 
-                               $allArr = json_encode(['student_id'=>$student_id,'standard_id'=>$standard_id,'subject'=>$subjectData->subject_id,'exam_id'=>$examkey,'PassingMark'=>$PASSING_MARKS]);
+                                // below json is added to <td> for developers to find details on inspect
+                                $allArr = json_encode(['student_id'=>$student_id,'standard_id'=>$standard_id,'subject'=>$subjectData->subject_id,'exam_id'=>$examkey,'PassingMark'=>$PASSING_MARKS]);
 
-                            //    $table .= '<td class="data_center" json=`'.$allArr.'` '.$pointMarks.'>'.$pointsGrade.'</td>';
-                            //    $table .= '<td class="data_center" '.$passingMarks.'>'.$passingGrade.'</td>';
-                            //    $table .= '<td class="data_center" '.$obtMarks.'>'.$obtGrade.'</td>';
+                                //    $table .= '<td class="data_center" json=`'.$allArr.'` '.$pointMarks.'>'.$pointsGrade.'</td>';
+                                //    $table .= '<td class="data_center" '.$passingMarks.'>'.$passingGrade.'</td>';
+                                //    $table .= '<td class="data_center" '.$obtMarks.'>'.$obtGrade.'</td>';
+
+                                // set grand total exam wise 0
                                 if(!isset($grandTotal[$examkey])){
                                     $grandTotal[$examkey]['point'] = 0;
                                     $grandTotal[$examkey]['pass'] = 0;
                                     $grandTotal[$examkey]['obt'] = 0;
-                               }
-                                $tdVal =$obtMarks;
+                                }
                                 
+                                // set obatined marks in <td> for all subjects
+                                $tdVal =$obtMarks;
+                                // if student has AB,EX or NA then change <td> value to it
                                 if(!empty($examArr[$exam_marksvalue->subject_id][$exam_marksvalue->exam_id]['is_absent']) && $obtMarks==0 && in_array($examArr[$exam_marksvalue->subject_id][$exam_marksvalue->exam_id]['is_absent'],['AB','N.A.','EX'])){
                                     $tdVal =$examArr[$exam_marksvalue->subject_id][$exam_marksvalue->exam_id]['is_absent'][0];
                                 }
-                                    // if($subjectData->elective_subject=="Yes"){
-                                    //     if(isset($examArr[$subjectData->subject_id][$examkey]['OBT'])){
-                                    //         $tdVal = $obtGrade;
-                                    //     }
-                                    //     else{
-                                    //         $tdVal = '';
-                                    //     }
-                                    // }
-                                    // else{
-                                        $grandTotal[$examkey]['point']=($grandTotal[$examkey]['point']+$examData['weightage']);
-                                        $grandTotal[$examkey]['pass']=($grandTotal[$examkey]['pass']+$passingMarks);
-                                        $grandTotal[$examkey]['obt']=($grandTotal[$examkey]['obt']+$obtMarks);
-                                    // }
-
-                                    
+                                //  this if condition is for std 9th optional subjects. set <td> as grade if no marks found then '-'
+                                if($subjectData->elective_subject=="Yes"  && !in_array($standard_id,[798,799,800,801])){
                                     if(isset($examArr[$subjectData->subject_id][$examkey]['OBT'])){
-                                        // for ab,na and ex
-                                        $tdVal = (count($examArr[$subjectData->subject_id][$examkey]['OBT'])==1 && in_array($examArr[$subjectData->subject_id][$examkey]['OBT'][0],['AB','N.A.','EX'])) ? $examArr[$subjectData->subject_id][$examkey]['OBT'][0] : $tdVal;
-                                   }
-                                  
-                                   if($obtMarks==0 && $gradePoints==0){
-                                    $tdVal = '-';
-                                   }
+                                        $tdVal = $obtGrade;
+                                    }
+                                    else{
+                                        $tdVal = '';
+                                    }
+                                }
 
-                                    $table .= '<td class="data_center" json=`'.$allArr.'` '.$gradePoints.' '.$obtMarks.'>'.$tdVal.'</td>';
-                                    $annualOut +=$examData['weightage'];
-                                    $annualObt +=$obtMarks;
-                                    if(!in_array($subjectData->subject_id,[5307,5306,5305,5308])){
+                                // for std 11th practical subjects. Do not count in grand total
+                                if(!in_array($subjectData->subject_id,[5307,5306,5305,5308]) && in_array($standard_id,[798,799,800,801])){
+                                    $grandTotal[$examkey]['point']=($grandTotal[$examkey]['point']+$pointMarks);
+                                    $grandTotal[$examkey]['pass']=($grandTotal[$examkey]['pass']+$passingMarks);
+                                    $grandTotal[$examkey]['obt']=($grandTotal[$examkey]['obt']+$obtMarks);
+                                }
+                                else if($subjectData->elective_subject!="Yes" && !in_array($standard_id,[798,799,800,801])){
+                                    $grandTotal[$examkey]['point']=($grandTotal[$examkey]['point']+$pointMarks);
+                                    $grandTotal[$examkey]['pass']=($grandTotal[$examkey]['pass']+$passingMarks);
+                                    $grandTotal[$examkey]['obt']=($grandTotal[$examkey]['obt']+$obtMarks);
+                                }
+
+                                if(isset($examArr[$subjectData->subject_id][$examkey]['OBT'])){
+                                    // for ab,na and ex
+                                    $tdVal = (count($examArr[$subjectData->subject_id][$examkey]['OBT'])==1 && in_array($examArr[$subjectData->subject_id][$examkey]['OBT'][0],['AB','N.A.','EX'])) ? $examArr[$subjectData->subject_id][$examkey]['OBT'][0] : $tdVal;
+                                }
+                                // if obtained mark and grade point both is 0 then then <td> value '-'
+                                if($obtMarks==0 && $gradePoints==0){
+                                    $tdVal = '-';
+                                }
+
+                                // print <td> here for marks
+                                $table .= '<td class="data_center" json=`'.$allArr.'` '.$gradePoints.' '.$obtMarks.'>'.$tdVal.'</td>';
+
+                                $annualOut +=$examData['weightage'];
+                                $annualObt +=$obtMarks;
+                                // for std 11th practical subjects. Do not count in Annual total
+                                if(!in_array($subjectData->subject_id,[5307,5306,5305,5308]) && in_array($standard_id,[798,799,800,801])){
                                     $grandTotAnuualOut+=$examData['weightage'];
                                     $grandTotAnnualObt+=$obtMarks;
-                                    }
                                 }
-
-                                $AnnualGrade = $this->getGrade($grade_arr,$annualOut, $annualObt);
-                                if(in_array($subjectData->subject_id,[5307,5306,5305,5308])){
-                                    $annualVal = $annualoutOf =$avgMarks =$avgPassMarks = $avgOutMarks= '';
-                                }else{
-                                    $annualoutOf =$annualOut;
-                                    $annualVal = $annualObt;
-                                    $avgMarks = ($annualVal!='') ? round($this->getPer($annualVal, $annualoutOf),0) : '';
-                                    $avgPassMarks =33;
-                                    $avgOutMarks = 100;
-                                    $grandAvgOut = ($grandAvgOut+$avgOutMarks);
-                                    $grandAvgPass = ($grandAvgPass + $avgPassMarks);
-                                    $grandAvgObt = ($grandAvgObt + $avgMarks);
-                                    if($avgMarks < $avgPassMarks){
-                                        $avgFailed +=1;
-                                    }
+                                else if($subjectData->elective_subject!="Yes" && !in_array($standard_id,[798,799,800,801])){
+                                    $grandTotAnuualOut+=$examData['weightage'];
+                                    $grandTotAnnualObt+=$obtMarks;
                                 }
-                            
-                            $table .= '<td class="data_center annual" '.$annualOut.'>'.$annualoutOf.'</td>';
-                            $table .= '<td class="data_center annual" '.$annualObt.'>'.$annualVal.'</td>';
+                            }
+                        // annual  part starts here
+                        $AnnualGrade = $this->getGrade($grade_arr,$annualOut, $annualObt);
+                        // for std 11th practical subjects. Do not count in annual total
+                        if(in_array($subjectData->subject_id,[5307,5306,5305,5308])  || ($subjectData->elective_subject=="Yes" && !in_array($standard_id,[798,799,800,801]))){
+                            $annualVal = $annualoutOf =$avgMarks =$avgPassMarks = $avgOutMarks= '';
+                        }else{
+                            $annualoutOf =$annualOut;
+                            $annualVal = $annualObt;
+                            $avgMarks = ($annualVal!='') ? round($this->getPer($annualVal, $annualoutOf),0) : '';
+                            $avgPassMarks =33;
+                            $avgOutMarks = 100;
+                            $grandAvgOut = ($grandAvgOut+$avgOutMarks);
+                            $grandAvgPass = ($grandAvgPass + $avgPassMarks);
+                            $grandAvgObt = ($grandAvgObt + $avgMarks);
+                            // if student have less then passing marks term 2 remarks will be counted according to failed subjects
+                            if($avgMarks < $avgPassMarks){
+                                $avgFailed +=1;
+                            }
+                        }
+                        // annual total <td>
+                        $table .= '<td class="data_center annual" '.$annualOut.'>'.$annualoutOf.'</td>';
+                        $table .= '<td class="data_center annual" '.$annualObt.'>'.$annualVal.'</td>';
 
-                            $table .= '<td class="data_center avg" 100>'.$avgOutMarks.'</td>';
-                            $table .= '<td class="data_center avg">'.$avgPassMarks.'</td>';
-                            $table .= '<td class="data_center avg" '.$avgMarks.'>'.$avgMarks.'</td>';
+                        $table .= '<td class="data_center avg" 100>'.$avgOutMarks.'</td>';
+                        $table .= '<td class="data_center avg">'.$avgPassMarks.'</td>';
+                        $table .= '<td class="data_center avg" '.$avgMarks.'>'.$avgMarks.'</td>';
                             
-                $table .= '</tr>'; // subject send
+                $table .= '</tr>';
+                // annual part ends here
             }
             // subject end here 
-            // grand total row
+
+            // grand total row start
             $table .='<tr>
             <td><b>Grand Total</b></td>';
-                // echo "<pre>";print_r($grandTotal);exit;
+            // grand total of obtained marks without optional subject and 11 std practical subjects
             foreach ($examMasters as $examId => $examTitle) {
                 $grandObt = $grandTotal[$examId]['obt'];
                 $table .= '
@@ -8520,13 +8424,14 @@ private function buildDisciplineTable($decipline_data,$both_term)
                 $grandpoint = $grandTotal[$examId]['point'];
                 $mainPer = '';
                 if($i==0){
+                    // for term 1 percentage
                     $mainPer = round($this->getPer($grandObt, $grandpoint),2);
                 }
                 $i++;
                 $table .= '
-                <td class="data_center"><b>'.$mainPer.'</b></td>';
+                <td class="data_center" '.$grandObt.' '.$grandpoint.'><b>'.$mainPer.'</b></td>';
             }
-            // $grandAvgGrade = $this->getGrade($grade_arr,$grandTotAvgPoints, $grandTotAvg);
+            // annual precentage and obtained
             $annualPer = round($this->getPer($grandTotAnnualObt, $grandTotAnuualOut),2);
 
             $table .='<td class="data_center annualOut"><b>&nbsp;<b></td>
