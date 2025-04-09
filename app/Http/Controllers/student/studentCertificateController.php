@@ -416,11 +416,11 @@ LIMIT 1");
         $father_name = strtoupper($value['father_name']);
         $mother_name = strtoupper($value['mother_name']);
         $nationality = strtoupper($value['nationality']);
-        $place_of_birth_value = strtoupper($value['place_of_birth_value']);
+        $place_of_birth = strtoupper($value['place_of_birth']);
 
         // make first letter capital only for ssmission school added on 08-04-2025
         if(in_array($sub_institute_id,[76])){
-            $firstLetterArr = ['student_full_name','student_first_name','student_middle_name','student_last_name','father_name','mother_name','nationality','place_of_birth_value'];
+            $firstLetterArr = ['student_full_name','student_first_name','student_middle_name','student_last_name','father_name','mother_name','nationality','place_of_birth'];
             foreach ($firstLetterArr as $fkey => $fvalue) {
                 $explodeFval = explode(' ', strtolower($value[$fvalue]));
                 $explodeFval = array_map('ucwords', array_map('trim', $explodeFval));
@@ -436,7 +436,7 @@ LIMIT 1");
         $html_content = str_replace(htmlspecialchars("<<father_name_value>>"), $father_name,$html_content);
         $html_content = str_replace(htmlspecialchars("<<mother_name_value>>"), $mother_name,$html_content);
         $html_content = str_replace(htmlspecialchars("<<nationality_value>>"), $nationality,$html_content);
-        $html_content = str_replace(htmlspecialchars("<<place_of_birth_value>>"), $place_of_birth_value,$html_content);
+        $html_content = str_replace(htmlspecialchars("<<place_of_birth_value>>"), $place_of_birth,$html_content);
         
         $html_content = str_replace(htmlspecialchars("<<student_enrollment_value>>"), $value['enrollment_no'],
             $html_content);
@@ -563,9 +563,9 @@ LIMIT 1");
         $next_std_short_name = strtoupper($nextStdShortName);
         
         if(in_array($sub_institute_id,[76])){
-            $firstLetterArr = ['next_std_name','next_std_stream','next_std_short_name'];
+            $firstLetterArr = ['nextStdName'=>'next_std_name','nextStdStream'=>'next_std_stream','nextStdShortName'=>'next_std_short_name'];
             foreach ($firstLetterArr as $fkey => $fvalue) {
-                $explodeFval = explode(' ', strtolower($value[$fvalue]));
+                $explodeFval = explode(' ', strtolower($$fkey));
                 $explodeFval = array_map('ucwords', array_map('trim', $explodeFval));
                 $$fvalue = implode(' ', $explodeFval);
             }
@@ -756,8 +756,14 @@ LIMIT 1");
             date('d-m-Y', strtotime($value['date_of_issue_of_certificate'])), $html_content);
         $html_content = str_replace(htmlspecialchars("<<reason_leaving_school_value>>"),
             strtoupper($value['reason_leaving_school']), $html_content);
-        $html_content = str_replace(htmlspecialchars("<<proof_for_dob_value>>"), strtoupper($value['proof_for_dob']),
-            $html_content);
+        $proof_for_dob = $value['proof_for_dob'];
+        if(in_array($sub_institute_id,[76])){
+            $explodeFval = explode(' ', strtolower($value['proof_for_dob']));
+            $explodeFval = array_map('ucwords', array_map('trim', $explodeFval));
+            $proof_for_dob = implode(' ', $explodeFval);
+        }
+    
+        $html_content = str_replace(htmlspecialchars("<<proof_for_dob_value>>"), $proof_for_dob,$html_content);
         $html_content = str_replace(htmlspecialchars("<<whether_school_is_under_goverment_value>>"),
             strtoupper($value['whether_school_is_under_goverment']), $html_content);
         $html_content = str_replace(htmlspecialchars("<<date_on_which_pupil_name_was_struck_value>>"),

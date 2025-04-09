@@ -1515,7 +1515,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                     }elseif(isset($fees_arr[$sort_order_id]['FOOD TRANSPORT ETC']) && $fees_arr[$sort_order_id]['FOOD TRANSPORT ETC']!=0 && $fees_arr[$sort_order_id]['FOOD TRANSPORT ETC']!=''){
                         $title_name='FOOD TRANSPORT ETC';
                     }
-                    elseif(isset($fees_arr[$sort_order_id]['HOSTEL FEE']) && $fees_arr[$sort_order_id]['HOSTEL FEE']!=0 && $fees_arr[$sort_order_id]['HOSTEL FEE']=''){
+                    elseif(isset($fees_arr[$sort_order_id]['HOSTEL FEE']) && $fees_arr[$sort_order_id]['HOSTEL FEE']!=0 && $fees_arr[$sort_order_id]['HOSTEL FEE']!=''){
                         $title_name='HOSTEL FEE';
                     }else{
                         // 10-02-2025 solve error on undefine $title_name
