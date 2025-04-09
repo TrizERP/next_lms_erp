@@ -47,7 +47,7 @@
                                             <a href="{{ url('custom-module/table-column-create/'.$data->id)}}" class="btn btn-info add-new">+</a>
                                             <a href="{{ url('custom-module/table-create/'.$data->id)}}" class="btn btn-info btn-outline"><i class="ti-pencil-alt"></i></a>
                                             @if ($data->is_exists)
-                                            <a href="{{ url('custom-module/'.$data->id)}}" class="btn btn-info btn-outline"><i class="fas fa-eye"></i></a>
+                                            <a href="{{ url('custom-module/table?id='.$data->id)}}" class="btn btn-info btn-outline"><i class="fas fa-eye"></i></a>
                                             @endif
                                         </div>
                                         <form class="d-inline" action="{{ route('custom_module_table.delete', $data->id)}}" method="post">

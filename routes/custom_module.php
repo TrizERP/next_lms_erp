@@ -16,6 +16,12 @@ Route::group(['prefix' => 'custom-module','middleware' => ['session', 'menu', 'l
 
 
     Route::get('/create-db-table/{id}',[CustomModuleController::class,'createDBTable']);
+    // get all tables 
+    $tableDetails = DB::table('custom_module_tables')->get()->toArray();
+    foreach ($tableDetails as $key => $value) {
+            $accessLink = (isset($value->access_link) && $value->access_link!='') ? $value->access_link : str_replace('_',' ',$value->module_name).'.index';
+            Route::get('table?id='.$value->id, [CustomModuleController::class, 'crudIndex'])->name($accessLink);
+    }
     Route::get('/{id}',[CustomModuleController::class,'crudIndex'])->name('custom_module_crud.index');
     Route::get('/create-view/{id}',[CustomModuleController::class,'crudCreate'])->name('custom_module_crud.create');
     Route::get('/create-view/{id}/update/{recordId}',[CustomModuleController::class,'crudCreate']);

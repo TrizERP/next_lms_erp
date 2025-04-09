@@ -167,6 +167,9 @@
                             <option value="text-field" {{$data['field_type'] == 'text-field' ? "selected": ''}}>Text
                                 Fields
                             </option>
+                            <option value="text-area" {{$data['field_type'] == 'text-area' ? "selected": ''}}>Text
+                                Area
+                            </option>
                             <option value="drop-down" {{$data['field_type'] == 'drop-down' ? "selected": ''}}>Drop
                                 Down
                             </option>
@@ -188,7 +191,7 @@
                         <label style="display: block">Action</label>
                         @if($data['column_id'] > 0)
                                 <button type="submit" name="submit" id="Submit" class="btn btn-info">
-                                    Add <i class="ti-pencil-alt"></i>
+                                    Edit <i class="ti-pencil-alt"></i>
                                 </button>
                         @else
                                 <input type="submit" name="submit" id="Submit" value="Add +" class="btn btn-success">

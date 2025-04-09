@@ -163,6 +163,7 @@ if(isset($data['tableCreated']) && $data['tableCreated'] ==1){
                     <div class="col-md-4 form-group">
                         <label>Access Link</label>
                         <input type="text" id='access_link' name="access_link" class="form-control" value="{{$data['access_link']}}">
+                        <span style="color: green">Example: menuName.index</span>
                         @error('access_link')
                         <span style="color: red">{{$message}}</span>
                         @enderror

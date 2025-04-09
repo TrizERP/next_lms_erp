@@ -135,6 +135,9 @@
                                 <input type="text" id="{{$column['column_name']}}"
                                        name="{{$column['column_name']}}" class="form-control mydatepicker"
                                        value="{{$data['data']['view'][$column['column_name']]}}">
+                            @elseif ($column['field_type'] == "text-area")
+                                <textarea id="{{$column['column_name']}}"
+                                       name="{{$column['column_name']}}" class="form-control resizableVertical">{{$data['data']['view'][$column['column_name']]}}</textarea>
                             @else
                                 <input type="text" id="{{$column['column_name']}}"
                                        name="{{$column['column_name']}}" class="form-control"
