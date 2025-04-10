@@ -164,22 +164,16 @@
                     <div class="col-md-2 mt-5">
                         <label>Field Type </label>
                         <select class="form-control" name="field_type">
-                            <option value="text-field" {{$data['field_type'] == 'text-field' ? "selected": ''}}>Text
-                                Fields
-                            </option>
-                            <option value="text-area" {{$data['field_type'] == 'text-area' ? "selected": ''}}>Text
-                                Area
-                            </option>
-                            <option value="drop-down" {{$data['field_type'] == 'drop-down' ? "selected": ''}}>Drop
-                                Down
-                            </option>
-                            <option value="checkbox" {{$data['field_type'] == 'checkbox' ? "selected": ''}}>Check Box
-                            </option>
-                            <option value="radio-button" {{$data['field_type'] == 'radio-button' ? "selected": ''}}>
-                                Radio Button
-                            </option>
+                            <option value="text-field" {{$data['field_type'] == 'text-field' ? "selected": ''}}>Text Fields</option>
+                            <option value="text-area" {{$data['field_type'] == 'text-area' ? "selected": ''}}>Text Area</option><!-- added by uma on 10-04-2025 -->
+                            <option value="drop-down" {{$data['field_type'] == 'drop-down' ? "selected": ''}}>Drop Down</option>
+                            <option value="checkbox" {{$data['field_type'] == 'checkbox' ? "selected": ''}}>Check Box</option>
+                            <option value="radio-button" {{$data['field_type'] == 'radio-button' ? "selected": ''}}>Radio Button</option>
                             <option value="File" {{$data['field_type'] == 'File' ? "selected": ''}}>File</option>
                             <option value="date" {{$data['field_type'] == 'date' ? "selected": ''}}>Date</option>
+                            <option value="number" {{$data['field_type'] == 'number' ? "selected": ''}}>Number</option> <!-- added by uma on 10-04-2025 -->
+                            <option value="mobile" {{$data['field_type'] == 'mobile' ? "selected": ''}}>Mobile</option><!-- added by uma on 10-04-2025 -->
+                            <option value="email" {{$data['field_type'] == 'email' ? "selected": ''}}>Email</option><!-- added by uma on 10-04-2025 -->
                         </select>
                     </div>
                     <div class="col-md-2 mt-5">

@@ -9,8 +9,8 @@
             </div>
         </div>
         <div class="card">
-            @if ($sessionData = Session::get('data'))
-                <div class="alert alert-success alert-block">
+             @if ($sessionData = Session::get('data'))
+                <div class="alert @if($sessionData['status']==1) alert-success @else alert-danger @endif alert-block">
                     <button type="button" class="close" data-dismiss="alert">×</button>
                     <strong>{{ $sessionData['message'] }}</strong>
                 </div>

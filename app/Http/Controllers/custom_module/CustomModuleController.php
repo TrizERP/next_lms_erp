@@ -439,7 +439,7 @@ class CustomModuleController extends Controller
                  'parent_menu_id'=>$getParentMenuMaster->id,
                  'level'=>2,
                  'status'=>1,
-                 'sort_order'=>1,
+                 'sort_order'=>40,
                  'link'=>$accessLink,
                  'icon'=>'mdi mdi-folder-plus-outline',
                  'sub_institute_id'=>$getParentMenuMaster->sub_institute_id,
