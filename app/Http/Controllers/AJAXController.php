@@ -1933,6 +1933,19 @@ class AJAXController extends Controller
             $html_array['fees_receipt_html'] = $fees_other_collection_data['paid_fees_html'];
         }
 
+        if ($action == 'donation_receipt') {
+
+            $get_data = DB::table('donation_collection')
+                ->where('sub_institute_id', $sub_institute_id)
+                ->where('id', $inserted_id)->get()->toArray();
+
+            $donation_collection = json_decode(json_encode($get_data), true);
+            $donation_collection = $donation_collection[0];
+
+            $html_array['student_id'] = $donation_collection['donar_id'];
+            $html_array['fees_receipt_html'] = $donation_collection['reciept_html'];
+        }
+
         if ($action == 'imprest_fees_cancel_refund_receipt') {
             $get_data = DB::table('imprest_fees_cancel')
                 ->where('sub_institute_id', $sub_institute_id)

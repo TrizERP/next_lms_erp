@@ -1,6 +1,7 @@
 <?php
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\custom_module\CustomModuleController;
+use App\Http\Controllers\custom_module\customMapModule\donationController;
 
 Route::group(['prefix' => 'custom-module','middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::get('/tables',[CustomModuleController::class,'tables'])->name('custom-module.tables');
@@ -28,4 +29,9 @@ Route::group(['prefix' => 'custom-module','middleware' => ['session', 'menu', 'l
     Route::post('/create-view-store/{id}',[CustomModuleController::class,'crudStore'])->name('custom_module_crud.store');
     Route::delete('/view-delete/{id}',[CustomModuleController::class,'viewDelete'])->name('custom_module_crud.delete');
 
+});
+
+// 10-04-2025
+Route::group(['middleware' => ['session', 'menu', 'logRoute','check_permissions']], function() {
+    Route::resource('donation_collection', donationController::class);
 });
