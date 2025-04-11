@@ -26,7 +26,7 @@ class donationController extends Controller
         }
         $res['donarLists'] = DB::table('Z_donarDetails')->where('sub_institute_id',$sub_institute_id)->groupBy('full_name')->get();
 
-        return is_mobile($type, "custom_modules\customMapModule\donation", $res, "view");
+        return is_mobile($type, "custom_modules.customMapModule.donation", $res, "view");
     }
 
     /**
@@ -70,7 +70,7 @@ class donationController extends Controller
         $res['full_name'] = $request->full_name;
         $res['mobile_number'] = $request->mobile_number;
 
-        return is_mobile($type, "custom_modules\customMapModule\donation", $res, "view");
+        return is_mobile($type, "custom_modules.customMapModule.donation", $res, "view");
     }
 
     /**
@@ -247,7 +247,7 @@ class donationController extends Controller
             $res['last_inserted_ids'] = $last_inserted_id;
             $res['message'] = "Donation collect successfully";
         // echo "<pre>";print_r($recHtml);exit;
-        return is_mobile($type, "custom_modules\customMapModule\donationReceipt", $res, "view");
+        return is_mobile($type, "custom_modules.customMapModule.donationReceipt", $res, "view");
     }
 
     /**
