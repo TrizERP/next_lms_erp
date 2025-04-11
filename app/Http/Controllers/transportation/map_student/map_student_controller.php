@@ -97,6 +97,7 @@ class map_student_controller extends Controller
             $responce_arr['stu_data'][$id]['mobile'] = $arr['mobile'];
             $responce_arr['stu_data'][$id]['std-div'] = $arr['standard_name'] . " / " . $arr['division_name'];
             $responce_arr['stu_data'][$id]['enrollment_no'] = $arr['enrollment_no'];
+            $responce_arr['stu_data'][$id]['address'] = $arr['address'];
         
             if (isset($request->id)) {
                 $responce_arr['stu_data'][$id]['address'] = $arr['address'];
