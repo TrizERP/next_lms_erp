@@ -135,10 +135,19 @@
                                 <input type="text" id="{{$column['column_name']}}"
                                        name="{{$column['column_name']}}" class="form-control mydatepicker"
                                        value="{{$data['data']['view'][$column['column_name']]}}">
+                        <!-- added by uma on 10-04-2025 -->
+                            @elseif ($column['field_type'] == "text-area")
+                                <textarea id="{{$column['column_name']}}"
+                                       name="{{$column['column_name']}}" class="form-control resizableVertical">{{$data['data']['view'][$column['column_name']]}}</textarea>
+                            @elseif ($column['field_type'] == "mobile")
+                            <input type="text" id="{{$column['column_name']}}" pattern="[1-9]{1}[0-9]{9}" name="{{$column['column_name']}}" class="form-control" value="{{$data['data']['view'][$column['column_name']]}}">
+                            @elseif ($column['field_type'] == "email")
+                                <input type="email" id="{{$column['column_name']}}" name="{{$column['column_name']}}" class="form-control" value="{{$data['data']['view'][$column['column_name']]}}">
+                           @elseif ($column['field_type'] == "number")
+                                <input type="number" id="{{$column['column_name']}}" name="{{$column['column_name']}}" class="form-control" value="{{$data['data']['view'][$column['column_name']]}}">
+                        <!-- added by uma on 10-04-2025 end -->
                             @else
-                                <input type="text" id="{{$column['column_name']}}"
-                                       name="{{$column['column_name']}}" class="form-control"
-                                       value="{{$data['data']['view'][$column['column_name']]}}">
+                                <input type="text" id="{{$column['column_name']}}" name="{{$column['column_name']}}" class="form-control" value="{{$data['data']['view'][$column['column_name']]}}">
                             @endif
                             @error($column['column_name'])
                             <div class="error" style="color: red">{{ $message }}</div>

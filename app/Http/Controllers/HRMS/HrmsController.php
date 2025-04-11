@@ -16,7 +16,7 @@ use function App\Helpers\is_mobile;
 use function App\Helpers\employeeDetails;
 use function App\Helpers\getSubCordinates;
 use DB;
-
+use Illuminate\Support\Facades\Validator;
 
 class HrmsController extends Controller
 {
@@ -133,11 +133,27 @@ class HrmsController extends Controller
             $userId = $request->input('user_id');
             $clientId = $request->input('client_id');
             $subInstituteId = $request->input('sub_institute_id');
+
+            $validator = Validator::make($request->all(), [
+                'sub_institute_id'=>'required|numeric',
+                'client_id'=>'required|numeric',
+                'user_id'=>'required|numeric',
+                'indate'=>'required',
+                'intime'=>'required',
+            ]);
+
+            if ($validator->fails()) {
+                $res['status'] = 0;
+                $res['message'] = $validator->messages()->first();
+                return is_mobile($type, "hrms_inout_time.index", $res, "redirect");
+            } 
+    
         } else{
             $userId = $request->session()->get('user_id');
             $clientId = $request->session()->get('client_id');
             $subInstituteId = $request->session()->get('sub_institute_id');
         }
+        
         $res['status_code']=0;
         $res['message']="Failed to time in";
         //return $request->all();
@@ -162,8 +178,24 @@ class HrmsController extends Controller
     public function hrmsOutTimeStore(Request $request)
     {
         $type = $request->input('type');
-        if ($type == 'API') $userId = $request->input('user_id');
-        else $userId = $request->session()->get('user_id');
+        if ($type == 'API'){
+            $validator = Validator::make($request->all(), [
+                'sub_institute_id'=>'required|numeric',
+                'client_id'=>'required|numeric',
+                'user_id'=>'required|numeric',
+                'outdate'=>'required',
+                'outtime'=>'required',
+            ]);
+            $userId = $request->input('user_id');
+            if ($validator->fails()) {
+                $res['status'] = 0;
+                $res['message'] = $validator->messages()->first();
+                return is_mobile($type, "hrms_inout_time.index", $res, "redirect");
+            } 
+        } 
+        else{
+            $userId = $request->session()->get('user_id');
+        } 
         $hrmsInOutTime = HrmsAttendance::where([['user_id', $userId], ['day', Carbon::now()->format('Y-m-d')], ['punchout_time', null]])->first();
         
         $res['status_code']=0;
