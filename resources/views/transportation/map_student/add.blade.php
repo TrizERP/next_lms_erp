@@ -27,7 +27,7 @@
                         {{csrf_field()}}
                 
                         <div class="table-responsive">
-                            <table class="table-bordered table" id="myTable" width="100%">
+                            <table class="table table-bordered" id="example">
                                 <tr>
                                     <th><input id="checkall" onchange="checkAll(this);" type="checkbox"></th>
                                     <th>Sr. No.</th>
@@ -35,6 +35,7 @@
                                     <th>Std/Div</th>
                                     <th>Enrollment No.</th>
                                     <th>Mobile</th>
+                                    <th style="max-width:120px !important">Address</th>
                                     <th>From Shift</th>
                                     <th>From Bus</th>
                                     <th>From</th>
@@ -58,6 +59,7 @@
                                     <td>{{$col_arr['std-div']}}</td>
                                     <td>{{$col_arr['enrollment_no']}}</td>
                                     <td class="{{ $col_arr['from_shift_id'] }}">@php echo $col_arr['mobile']; @endphp</td>
+                                    <td style="max-width:120px !important">{{$col_arr['address']}}</td>
                                     <td>
                                         <select name="values[{{$col_arr['student_id']}}][from_shift]" disabled="true" id="from_shift" data-from_shift="{{$col_arr['from_shift_id']}}" class="form-control from_shift from_shift_{{$col_arr['student_id']}}" required>
                                             <option value="">--Select--</option>
@@ -193,7 +195,7 @@
 
     });
 
-    $('#myTable').on('change', '.from_shift', function () {
+    $('#example').on('change', '.from_shift', function () {
         var selectedValue = $(this).val();
         var row = $(this).closest('tr'); // get the row
         var from_bus = row.find('.from_bus'); // get the other select in the same row
@@ -219,7 +221,7 @@
         });
     });
 
-    $('#myTable').on('change', '.from_bus', function () {
+    $('#example').on('change', '.from_bus', function () {
         var targetMSG = $(this).parent().find('span');
         var selectedValue = $(this).val();
 
@@ -302,7 +304,7 @@
         // added on 07-01-2025
     }
 
-    $('#myTable').on('change', '.to_shift', function () {
+    $('#example').on('change', '.to_shift', function () {
         var selectedValue = $(this).val();
         var row = $(this).closest('tr'); // get the row
         var to_bus = row.find('.to_bus'); // get the other select in the same row
@@ -329,7 +331,7 @@
 
         });
     });
-    $('#myTable').on('change', '.to_bus', function () {
+    $('#example').on('change', '.to_bus', function () {
 
         var selectedValue = $(this).val();
         var row = $(this).closest('tr'); // get the row
@@ -361,7 +363,7 @@
         }
     });
 
-    $('#myTable').on('change', '.from_stop', function () {
+    $('#example').on('change', '.from_stop', function () {
         var selectedValue = $(this).val();
         //START SET from stop value in to stop combo box        
         var student_id = $(this).attr("data-studentid");        
@@ -371,7 +373,7 @@
     });
 
    
-    $('#myTable').on('change', '.from_shift', function () {
+    $('#example').on('change', '.from_shift', function () {
         // console.log('change event called');
         
         var selectedOption = $(this).find(':selected');
