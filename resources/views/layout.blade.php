@@ -612,9 +612,10 @@
                   <div class="sub-drop-panel">
                      <div class="sub-drop-header d-flex align-items-center justify-content-between">
                         <li class="sub-drop-header d-flex align-items-center justify-content-between w-100">
-                           <a href="{{ route($submenuValue['link']) }}" onclick="sessionMenu({{ $submenuValue['id'] }});redirect_pages_soni('{{ route($submenuValue['link']) }}','{{ $submenuValue['id'] }}','{{ $i }}');" class="panel-click flex-fill">
-                           <i class="{{ $submenuValue['icon'] }} mr-1" data-icon="v"></i><span class="title">{{ $submenuValue['name'] }}</span>
-                           </a>
+                        @if(Route::has($submenuValue['link']))
+                        <a href="{{ route($submenuValue['link']) }}" onclick="sessionMenu({{ $submenuValue['id'] }});redirect_pages_soni('{{ route($submenuValue['link']) }}','{{ $submenuValue['id'] }}','{{ $i }}');" class="panel-click flex-fill">
+                                <i class="{{ $submenuValue['icon'] }} mr-1" data-icon="v"></i><span class="title">{{ $submenuValue['name'] }}</span>
+                            </a>
                            {{-- @if (!empty($submenuValue['quick_menu']) && !empty($quickmenuMaster[$submenuValue['id']]))
                            <div class="dot-sub-dropdown">
                               <span class="dot-icon">
@@ -634,6 +635,7 @@
                               </div>
                            </div>
                            @endif --}}
+                        @endif
                         </li>
                      </div>
                   </div>

@@ -99,7 +99,7 @@ class CustomModuleController extends Controller
         $customModuleTable->view = $request->view;
         $customModuleTable->storage = $request->storage;
         $customModuleTable->validation = $request->validation;
-        $customModuleTable->access_link = $request->access_link;
+        $customModuleTable->access_link = $request->has($request->access_link) ? str_replace(' ','_',$request->access_link) : $request->access_link;
         $customModuleTable->table_name = $prefixTableName;
         $customModuleTable->sub_institute_id = $subInstituteId;
         $customModuleTable->save();
@@ -273,6 +273,19 @@ class CustomModuleController extends Controller
         if ($id > 0) {
             $i=1;
             $table = CustomModuleTable::find($id);
+            // check in menumaster 09-04-2025
+            $accessLink = (isset($table->access_link) && $table->access_link!='') ? $table->access_link : str_replace('_',' ',$table->module_name).'.index';
+
+            $getMenu = DB::table('tblmenumaster')->where('link',$accessLink)->first();
+
+            if(!empty($getMenu) && isset($getMenu->id)){
+                $deletegroupwise = DB::table('tblgroupwise_rights')->where('menu_id',$getMenu->id)->delete();
+                $deleteindividual = DB::table('tblindividual_rights')->where('menu_id',$getMenu->id)->delete();
+                $deleteProfilewise = DB::table('tblprofilewise_menu')->where('menu_id',$getMenu->id)->delete();
+                $deletemenu = DB::table('tblmenumaster')->where('id',$getMenu->id)->delete();
+            }
+            // check in menumaster 09-04-2025 end
+
             if (!empty($table)) {
                 DB::statement('DROP TABLE IF EXISTS ' . $table->table_name);
             }
@@ -322,10 +335,18 @@ class CustomModuleController extends Controller
         return is_mobile($type, "custom_modules.tables.columns.index", $data, "view");
     }
 
-    public
-    function tableColumnStore(Request $request, $id)
+    public function tableColumnStore(Request $request, $id)
     {
         $type = $request->input('type');
+        $sub_institute_id =session()->get('sub_institute_id');
+        $user_id =session()->get('user_id');
+        $user_profile_id =session()->get('user_profile_id');
+        if(in_array($type,['API','JSON'])){
+            $sub_institute_id =$request->get('sub_institute_id');
+            $user_id =$request->get('user_id');
+            $user_profile_id =$request->get('user_profile_id');
+        }
+
         $request->validate([
             'column_name' => [
                 'required',
@@ -396,6 +417,78 @@ class CustomModuleController extends Controller
     public function createDBTable(Request $request, $id)
     {
         $type = $request->input('type');
+        $sub_institute_id =session()->get('sub_institute_id');
+        $user_id =session()->get('user_id');
+        $user_profile_id =session()->get('user_profile_id');
+        if(in_array($type,['API','JSON'])){
+            $sub_institute_id =$request->get('sub_institute_id');
+            $user_id =$request->get('user_id');
+            $user_profile_id =$request->get('user_profile_id');
+        }
+         // add route in tblmenumnaster 09-04-2025
+         $tableData = CustomModuleTable::find($id);
+         if(!empty($tableData) && isset($tableData->module_name)){
+             $accessLink = (isset($tableData->access_link) && $tableData->access_link!='') ? $tableData->access_link : str_replace('_',' ',$tableData->module_name).'.index';
+             $getParentMenuMaster = DB::table('tblmenumaster')->where('name',$tableData->display_under)->first();
+
+             $menuInsertData = [
+                 'name'=>$tableData->module_name,
+                 'menu_title'=>$tableData->display_under,
+                 'menu_sortorder'=>1,
+                 'description'=>$tableData->module_name,
+                 'parent_menu_id'=>$getParentMenuMaster->id,
+                 'level'=>2,
+                 'status'=>1,
+                 'sort_order'=>40,
+                 'link'=>$accessLink,
+                 'icon'=>'mdi mdi-folder-plus-outline',
+                 'sub_institute_id'=>$getParentMenuMaster->sub_institute_id,
+                 'client_id'=>$getParentMenuMaster->client_id,
+                 'created_at'=>now(),
+                 'menu_type'=>$tableData->module_type,
+             ];
+
+             // check if already insert
+             $checkMenuMaster = DB::table('tblmenumaster')->where('link',$accessLink)->first();
+
+             if(empty($checkMenuMaster) && !isset($checkMenuMaster->id)){
+                 // insert into tblmenumaster
+                $menuInserted = DB::table('tblmenumaster')->insert($menuInsertData);
+                $menuMasterData = DB::table('tblmenumaster')->where('link',$accessLink)->first();
+                // get all profile
+                $profiles = DB::table('tbluserprofilemaster')->where('sub_institute_id',$sub_institute_id)->where('status',1)->get()->toArray();
+
+             foreach ($profiles as $pk => $pv) {
+                     $checkProfilewise = DB::table('tblprofilewise_menu')->where(['menu_id'=>$menuMasterData->id,'user_profile_id'=>$pv->id])->first();
+
+                     if(empty($checkProfilewise) && !isset($checkProfilewise->id)){
+                     // insert into tblprofilewise_menu
+                         $profileInserted = DB::table('tblprofilewise_menu')->insert([
+                             'menu_id'=>$menuMasterData->id,
+                             'user_profile_id'=>$pv->id,
+                             'sub_institute_id'=>$sub_institute_id,
+                             'created_at'=>now(),
+                         ]);
+                     }
+             }
+             $checkGroupwise = DB::table('tblgroupwise_rights')->where(['menu_id'=>$menuMasterData->id,'profile_id'=>$user_profile_id])->first();
+             if(empty($checkGroupwise) && !isset($checkGroupwise->id)){
+                 // insert into tblprofilewise_menu
+                     $profileInserted = DB::table('tblgroupwise_rights')->insert([
+                         'menu_id'=>$menuMasterData->id,
+                         'profile_id'=>$user_profile_id,
+                         'can_view'=>1,
+                         'can_add'=>1,
+                         'can_edit'=>1,
+                         'can_delete'=>1,
+                         'sub_institute_id'=>$sub_institute_id,
+                         'created_at'=>now(),
+                     ]);
+                 }
+             // insert into tblprofilewise
+             }
+         }
+         // menu insert ends here 09-04-2025
         $getTableData = CustomModuleTable::with('columns')->whereId($id)->first();
         if ($getTableData) {
             if (!count($getTableData['columns'])) {
@@ -470,6 +563,8 @@ class CustomModuleController extends Controller
 
             // return "Table '{$tableName}' has been updated successfully.";
              // $res added by uma on 24-03-2025
+           
+            
              if($update==1){
                 $res['status']= 1;
                 $res['message']='Updated Table Successfully';
@@ -510,50 +605,61 @@ class CustomModuleController extends Controller
             if ($primaryKey) {
                 $prepareColumn[] = $primaryKey;
             }
-
+            $res['status']= 0;
+            $res['message']='Failed Create Table';
             $columns = implode(",\n", $prepareColumn);
             // Create table if it doesn't exist
             $i=0;
             try {
                 $i=1;
-                DB::statement("
+                // $created = DB::statement("
+                //     CREATE TABLE {$tableName} (
+                //         id BIGINT NOT NULL AUTO_INCREMENT,
+                //         " . rtrim($columns, ',') . ",
+                //         sub_institute_id INT NOT NULL DEFAULT '0',
+                //         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                //         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                //         PRIMARY KEY (id)
+                //     ) ENGINE=INNODB;
+                // "); // commented on 09-04-2025
+               $created = DB::statement("
                     CREATE TABLE {$tableName} (
                         id BIGINT NOT NULL AUTO_INCREMENT,
                         " . rtrim($columns, ',') . ",
-                        sub_institute_id INT NOT NULL DEFAULT '0',
+                        sub_institute_id INT NOT NULL DEFAULT 0,
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP NULL,
                         PRIMARY KEY (id)
                     ) ENGINE=INNODB;
                 ");
+            
+                if($created){
+                    $res['status']= 1;
+                    $res['message']='Table Created Successfully';
+                }
+    
             } catch (\Exception $e) {
-                $i=0;
+                $res['status']= 0;
+                $res['message']=$e->getMessage();
             }
             
             // DB::statement($sql);
 
             // return is_mobile($type, ["route" => "custom_module_table_column.create", "id" => $id], ['message' => "Table '{$tableName}' has been created successfully."], "redirect", ['message' => "Table '{$tableName}' has been created successfully."], 1);
             // $res added by uma on 24-03-2025
-            if($i){
-                $res['status']= 1;
-                $res['message']='Table Created Successfully';
-            }
-            else{
-                $res['status']= 0;
-                $res['message']='Failed Create Table';
-            }
+           
             return is_mobile($type, "/custom-module/table-column-create/".$id, $res, "route_with_id");
         }
 
 // sub_institute_id int NOT NULL DEFAULT '0',
     }
 
-    public
-    function crudIndex(Request $request, $id)
+    public function crudIndex(Request $request, $id)
     {
         $type = $request->input('type');
         $subInstituteId = $request->session()->get('sub_institute_id');
-        $data['data'] = CustomModuleTable::with('columns')->where([['sub_institute_id', $subInstituteId], ['id', $id]])->first();
+        $data['data'] = CustomModuleTable::with('columns')->where([['sub_institute_id', $subInstituteId], ['id', $request->id]])->first();
+
         $data['data']['view'] = DynamicModel::readRecords($data['data']['table_name']);
         $data['data']['division'] = divisionModel::where('sub_institute_id', $request->session()->get('sub_institute_id'))->get(['id', 'name']);
         $data['data']['standard'] = standardModel::where('sub_institute_id', $request->session()->get('sub_institute_id'))->get(['id', 'name']);
@@ -562,8 +668,7 @@ class CustomModuleController extends Controller
         return is_mobile($type, "custom_modules.cruds.index", $data, "view");
     }
 
-    public
-    function crudCreate(Request $request, $id, $viewId = 0)
+    public function crudCreate(Request $request, $id, $viewId = 0)
     {
         $data['data'] = CustomModuleTable::with('columns')->find($id);
         $prepareView = [];
@@ -584,8 +689,7 @@ class CustomModuleController extends Controller
         return is_mobile($type, "custom_modules.cruds.edit", $data, "view");
     }
 
-    public
-    function crudStore(Request $request, $id)
+    public function crudStore(Request $request, $id)
     {
         $getTable = CustomModuleTable::with('columns')->find($id);
         $fileKeys = collect($getTable['columns'])->where('field_type', 'File')->pluck('column_name')->toArray();
