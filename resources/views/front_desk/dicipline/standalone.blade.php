@@ -134,13 +134,13 @@
                                             class="form-control">
                                         <option value="">Select</option>
                                         @foreach ($data['dd'] as $id => $name)
-                                            <option value="{{ $name}}" @if($name=="Bad") selected @endif>{{ $name}}</option>
+                                            <option value="{{ $name}}" @if($name=="Check") selected @endif>{{ $name}}</option>
                                         @endforeach
                                     </select>
                                 </td>
                                 <td>
                                     <textarea name="{{ 'values[text]['.$col_arr['student_id'].']'}}"
-                                              class="form-control">Yout Ward is late Today.</textarea>
+                                              class="form-control">Your Ward is late Today.</textarea>
                                 </td>
                             </tr>
                             @endforeach
