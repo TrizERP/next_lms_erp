@@ -130,7 +130,7 @@
                             </table>
                         </div>
                         @php
-                            if(session()->get('sub_institute_id') == 76) {
+                            if(session()->get('sub_institute_id') == 1) {
                                 $collectUrl = route('hdfc_request_handler_ssmission');
                             } else {
                                 $collectUrl = route('hdfc_request_handler');

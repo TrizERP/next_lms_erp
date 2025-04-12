@@ -292,7 +292,9 @@ class online_fees_collect_controller extends Controller
         $get_map_bank_detail = DB::table("fees_hdffc")
             ->where(["sub_institute_id" => session()->get("sub_institute_id")])
             ->get();
-
+// echo '<pre>';
+//         print_r($get_map_bank_detail);
+//         exit;
         $amount = 0;
         if ($payment_acsept_type == "fix") {
             $amount = number_format(floatval($_REQUEST["total"]), 0, '.', '');
@@ -306,6 +308,19 @@ class online_fees_collect_controller extends Controller
             $syear = session()->get('syear');
             $school_amount = $mission_amount = 0;
 
+            // get receipt book master for sub account id
+            $receipt_book_master = DB::table('fees_receipt_book_master')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear,'standard_id'=>$_REQUEST['standard_id'],'status'=>1])->where('sort_order','!=',2)->first();
+
+            $schoolSubAccountID = '';
+            $missionSubAccountID = 'SHRISWAMI1';
+            if(!empty($receipt_book_master) && isset($receipt_book_master->id)){
+                if($receipt_book_master->sort_order==1){
+                    $schoolSubAccountID = 'SHARIACADE1';
+                }else{
+                    $schoolSubAccountID = 'SPRISCHOOL1';
+                }
+            }
+
             $studentBk = $this->breakOffAmounts($_REQUEST,$student_id,$sub_institute_id,$syear);
             
             if(isset($studentBk['typewise_total']['school'])){
@@ -315,39 +330,40 @@ class online_fees_collect_controller extends Controller
             if(isset($studentBk['typewise_total']['mission'])){
                 $mission_amount = $studentBk['typewise_total']['mission'];
             }
+
             $spliArr = [];
             if($school_amount!=0 && $mission_amount!=0){
                 $spliArr = array(
-                    [
-                    'splitAmount'=>$school_amount,
-                    'subAccId'=>'2954-1',
-                    ],
-                    [
-                        'splitAmount'=>$mission_amount,
-                        'subAccId'=>'2954-2',
+                        [
+                            'splitAmount'=>$school_amount,
+                            'subAccId'=>$schoolSubAccountID,
+                        ],
+                        [
+                            'splitAmount'=>$mission_amount,
+                            'subAccId'=>$missionSubAccountID,
                         ]
                     );
             }
             elseif($school_amount>0 && $mission_amount==0){
                 $spliArr = array(
-                    [
-                    'splitAmount'=>$school_amount,
-                    'subAccId'=>'2954-1',
-                    ]
+                        [
+                            'splitAmount'=>$school_amount,
+                            'subAccId'=>$schoolSubAccountID,
+                        ]
                     );
             }
             elseif($school_amount==0 && $mission_amount>0){
                 $spliArr = array(
-                    [
-                        'splitAmount'=>$mission_amount,
-                        'subAccId'=>'2954-2',
+                        [
+                            'splitAmount'=>$mission_amount,
+                            'subAccId'=>$missionSubAccountID
                         ]
                     );
             }
            
             $split_json = json_encode([
                 "split_tdr_charge_type"=>'M',
-                'merComm'=>'2.0',
+                'merComm'=>'0.0',
                 'split_data_list'=>$spliArr
             ]);
             // echo '<pre>';
@@ -369,7 +385,6 @@ class online_fees_collect_controller extends Controller
             "merchant_id" => $get_map_bank_detail[0]->merchant_id,
             "order_id" => $orderId,
             "currency" => "INR",
-            'split_data'=>$split_json,
             "amount" => $amount,
             "redirect_url" => $return_url,
             "cancel_url" => $return_url,
@@ -388,6 +403,7 @@ class online_fees_collect_controller extends Controller
             "merchant_param4" => session()->get("sub_institute_id"),
             "merchant_param5" => $fine,
             "tid" => strtotime(date('Y-m-d H:i:s')),
+            "split_data"=>$split_json,
         );
         $merchant_data = "";
         foreach ($send_arr as $key => $value) {
@@ -395,10 +411,10 @@ class online_fees_collect_controller extends Controller
         }
         $merchant_data = rtrim($merchant_data, '&');
         $encrypted_data = $this->hdfc_encrypt($merchant_data, $working_key); // Method for encrypting the data.
-        echo '<pre>';
-            print_r($send_arr);
-            print_r($merchant_data);
-            exit;
+        // echo '<pre>';
+        //     print_r($send_arr);
+        //     print_r($merchant_data);
+        //     exit;
         //Insert Raw data in fees_payment table
         $in_arr = array(
             "student_id" => $_REQUEST["student_id"],
