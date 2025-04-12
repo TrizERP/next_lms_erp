@@ -184,7 +184,7 @@ class donationController extends Controller
             $recHtml .= '   </td>';
             $recHtml .= '</tr>';
 
-            $total_amount_in_words = ucwords($this->convert_number_to_words($request->amountl));
+            $total_amount_in_words = ucwords($this->convert_number_to_words($request->amount));
             if ($total_amount_in_words != "") {
                 $total_amount_in_words_str = "Rupees " . $total_amount_in_words . " Only";
             } else {
