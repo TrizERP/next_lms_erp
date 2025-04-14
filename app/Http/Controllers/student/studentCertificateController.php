@@ -973,7 +973,7 @@ LIMIT 1");
     public function convert_number_to_words($number)
     {
         $hyphen = '-';
-        $conjunction = ' and ';
+        $conjunction = ' ';
         $separator = ', ';
         $negative = 'negative ';
         $decimal = ' point ';
@@ -1000,7 +1000,7 @@ LIMIT 1");
             19                  => 'nineteen',
             20                  => 'twenty',
             30                  => 'thirty',
-            40                  => 'fourty',
+            40                  => 'forty',
             50                  => 'fifty',
             60                  => 'sixty',
             70                  => 'seventy',
@@ -1008,79 +1008,62 @@ LIMIT 1");
             90                  => 'ninety',
             100                 => 'hundred',
             1000                => 'thousand',
-            1000000             => 'million',
-            1000000000          => 'billion',
-            1000000000000       => 'trillion',
-            1000000000000000    => 'quadrillion',
-            1000000000000000000 => 'quintillion',
+            100000              => 'lakh',
+            10000000            => 'crore',
         ];
 
-        if (! is_numeric($number)) {
-            return false;
-        }
-
-        if (($number >= 0 && (int) $number < 0) || (int) $number < 0 - PHP_INT_MAX) {
-            // overflow
-            trigger_error(
-                'convert_number_to_words only accepts numbers between -'.PHP_INT_MAX.' and '.PHP_INT_MAX,
-                E_USER_WARNING
-            );
-
+        if (!is_numeric($number)) {
             return false;
         }
 
         if ($number < 0) {
-            return $negative.$this->convert_number_to_words(abs($number));
+            return $negative . $this->convert_number_to_words(abs($number));
         }
 
-        $string = $fraction = null;
+        $string = '';
 
-        if (strpos($number, '.') !== false) {
-            list($number, $fraction) = explode('.', $number);
+        if ($number >= 10000000) {
+            $crores = floor($number / 10000000);
+            $number %= 10000000;
+            $string .= $this->convert_number_to_words($crores) . ' crore ';
         }
 
-        switch (true) {
-            case $number < 21:
-                $string = $dictionary[$number];
-                break;
-            case $number < 100:
-                $tens = ((int) ($number / 10)) * 10;
-                $units = $number % 10;
-                $string = $dictionary[$tens];
-                if ($units) {
-                    $string .= $hyphen.$dictionary[$units];
-                }
-                break;
-            case $number < 1000:
-                $hundreds = $number / 100;
-                $remainder = $number % 100;
-                $string = $dictionary[$hundreds].' '.$dictionary[100];
-                if ($remainder) {
-                    $string .= $conjunction.$this->convert_number_to_words($remainder);
-                }
-                break;
-            default:
-                $baseUnit = pow(1000, floor(log($number, 1000)));
-                $numBaseUnits = (int) ($number / $baseUnit);
-                $remainder = $number % $baseUnit;
-                $string = $this->convert_number_to_words($numBaseUnits).' '.$dictionary[$baseUnit];
-                if ($remainder) {
-                    $string .= $remainder < 100 ? $conjunction : $separator;
-                    $string .= $this->convert_number_to_words($remainder);
-                }
-                break;
+        if ($number >= 100000) {
+            $lakhs = floor($number / 100000);
+            $number %= 100000;
+            $string .= $this->convert_number_to_words($lakhs) . ' lakh ';
         }
 
-        if (null !== $fraction && is_numeric($fraction)) {
-            $string .= $decimal;
-            $words = [];
-            foreach (str_split((string) $fraction) as $number) {
-                $words[] = $dictionary[$number];
+        if ($number >= 1000) {
+            $thousands = floor($number / 1000);
+            $number %= 1000;
+            $string .= $this->convert_number_to_words($thousands) . ' thousand ';
+        }
+
+        if ($number >= 100) {
+            $hundreds = floor($number / 100);
+            $number %= 100;
+            $string .= $this->convert_number_to_words($hundreds) . ' hundred ';
+        }
+
+        if ($number > 0) {
+            if ($string !== '') {
+                $string .= $conjunction;
             }
-            $string .= implode(' ', $words);
+
+            if ($number < 21) {
+                $string .= $dictionary[$number];
+            } else {
+                $tens = floor($number / 10) * 10;
+                $units = $number % 10;
+                $string .= $dictionary[$tens];
+                if ($units) {
+                    $string .= $hyphen . $dictionary[$units];
+                }
+            }
         }
 
-        return $string;
+        return trim($string);
     }
 
 }

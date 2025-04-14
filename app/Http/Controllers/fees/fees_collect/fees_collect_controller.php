@@ -239,7 +239,12 @@ class fees_collect_controller extends Controller
                     }
                     else if($previous > 0){
                         // $arr->bkoff = ($previous > $remain) ? ($remain + $previous) : ($remain - $previous);        
-                        $arr->bkoff = ($previous > $remain) ? ($remain + $previous) : ($remain );              
+                        if(!in_array($sub_institute_id,[48,61])){
+                            $arr->bkoff = $remain;              
+                        }
+                        else{
+                            $arr->bkoff = ($remain + $previous);              
+                        }
                     } else {
                         if ($remain > 0){
                         $arr->bkoff = $remain;
