@@ -57,6 +57,7 @@ use App\Http\Controllers\fees\fees_reconciliation\fees_reconciliation_upload_she
 use App\Http\Controllers\fees\feesAIController;
 use App\Http\Controllers\fees\fees_report\monthwiseReceiptPdfController;
 use App\Http\Controllers\fees\fees_report\feesModificationController;
+use App\Http\Controllers\fees\online_fees\confirmOnlineFeesController;
 use Illuminate\Support\Facades\Route;
 
 Route::group(['prefix' => 'fees', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
@@ -111,6 +112,8 @@ Route::group(['prefix' => 'fees', 'middleware' => ['session', 'menu', 'logRoute'
     Route::resource('online_fees_split', online_fees_split_controller::class);
     Route::resource('cheque_reconciliation', ChequeReconciliationController::class);
     Route::resource('feesAI', feesAIController::class);    
+    // 12-04-2025 added by uma
+    Route::resource('confirm_online_fees', confirmOnlineFeesController::class);    
 
     // Route::get('online_fees\show_online_type', 'fees\online_fees\online_fees_collect_controller@showTypes')->name('online_show_type');
     Route::get('show_details', [ChequeReconciliationController::class, 'show_details'])->name('show_details');
@@ -234,6 +237,7 @@ Route::controller(online_fees_collect_controller::class)->group(function () {
     Route::post('fees/hdfc/online_fees_collect', 'hdfc')->name("hdfc_fees_collect");
     Route::post('fees/hdfc/online_fees_hdfcRequestHandler', 'hdfc_request_handler')->name("hdfc_request_handler");
     Route::post('fees/hdfc/online_fees_hdfcResponseHandler', 'hdfc_response_handler')->name("hdfc_response_handler");
+    Route::get('fees/hdfc/createSplitPayout', 'createSplitPayout')->name("createSplitPayout");
     // for ssmission
     Route::post('fees/hdfc/hdfc_request_handler_ssmission', 'hdfc_request_handler_ssmission')->name("hdfc_request_handler_ssmission");
     Route::post('fees/hdfc/online_fees_hdfcResponseHandler_ssmission', 'hdfc_response_handler_ssmission')->name("hdfc_response_handler_ssmission");
