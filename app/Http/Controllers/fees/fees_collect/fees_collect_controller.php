@@ -238,7 +238,8 @@ class fees_collect_controller extends Controller
                         $arr->bkoff = ($remain - $previous);
                     }
                     else if($previous > 0){
-                        $arr->bkoff = ($previous > $remain) ? ($remain + $previous) : ($remain - $previous);                    
+                        // $arr->bkoff = ($previous > $remain) ? ($remain + $previous) : ($remain - $previous);        
+                        $arr->bkoff = ($previous > $remain) ? ($remain + $previous) : ($remain );              
                     } else {
                         if ($remain > 0){
                         $arr->bkoff = $remain;

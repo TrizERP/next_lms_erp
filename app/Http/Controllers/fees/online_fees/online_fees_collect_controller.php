@@ -2383,12 +2383,12 @@ exit; */
             })
             ->whereNotNull('fp.razorpay_order_id')
             ->whereBetween('fp.created_at', [now()->subDays(3), now()->subMinutes(30)])
+            //->whereIn('fp.id', [55436,55442])
             //->where('fp.razorpay_order_id', 'LIKE', 'order_%')
             ->groupBy('fp.id')
             ->get(); // ->on('tse.syear', '=', 'fr.syear')
 
             //->whereIn('fp.sub_institute_id', [253])
-            //->whereIn('fp.student_id', [199428,199461,195283,195156,195227])
             //->limit($limit)
 
         if ( !empty($payment_data) ) {
@@ -2403,17 +2403,31 @@ exit; */
 
                 // initial razorpay api
                 $api = new Api($key_id, $key_secret);
-                //$payment = $api->payment->fetch($payment_id);
-                $paymentCollection = $api->order->fetch($order_id)->payments();
 
+$payment = null;
+$status = null;
+$payment_id = null;
+$json_response = [];
+$is_valid = false;
+
+// Detect ID type and fetch payment(s)
+if (Str::startsWith($order_id, 'pay_')) {
+    $payment = $api->payment->fetch($order_id);
+    if (!empty($payment) && $payment['id']) {
+        $is_valid = true;
+    }
+} elseif (Str::startsWith($order_id, 'order_')) {
+    $paymentCollection = $api->order->fetch($order_id)->payments();
+    if (!empty($paymentCollection) && $paymentCollection['count'] > 0) {
+        $payment = $paymentCollection['items'][0]; // First payment
+        $is_valid = true;
+    }
+}
                 //echo "<pre>";
-                //echo "RAJESH-".$paymentCollection['count'];
-                //print_r($paymentCollection);
+                //print_r($payment);
                 //exit();
 
-                if (!empty($paymentCollection) && $paymentCollection['count'] > 0) {
-                	
-                	$payment = $paymentCollection['items'][0]; // Access the first payment object
+                if ($is_valid && !empty($payment)) {
                     
                     $status = $payment['status'];
                     $payment_id = $payment['id'];
@@ -2523,6 +2537,17 @@ exit; */
                 $where_arr = array(
                     "id" => $_REQUEST["inserted_id"]
                 );
+
+
+                //START RAJESH 08-04-2025 = prevent second time success
+                if($get_all_data[0]->razorpay_payment_status == 'PS'){
+                    $school_data = array();
+                    $school_data["website"] = $this->site_name();
+                    $type = "web";
+                    return \App\Helpers\is_mobile($type, "fees/online_fees_collect/search_student", $school_data, "view");
+                }
+                //END RAJESH 08-04-2025
+
                 // echo "<pre>"; print_r($response); exit;
                 DB::table("fees_payment")
                     ->where($where_arr)
