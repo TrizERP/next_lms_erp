@@ -114,23 +114,32 @@ class donationController extends Controller
         if ($receipt_book_arr->receipt_logo != '') {
         $image_path = "http://" . $_SERVER['HTTP_HOST'] . "/storage/fees/" . $receipt_book_arr->receipt_logo;
         }
-            $recHtml = '<style>.fees-receipt{border:none !important;}</style>
-                    <br><br><table class="fees-receipt" style="margin:0 auto;" width="80%">
+            $recHtml = '<style>.fees-receipt{border:none !important;}.fees-receipt th,
+                            .fees-receipt td,
+                            .sc-hd{
+                            font-size:16px !important
+                            }</style>
+                    <br><br>
+                    <div style="padding:20px 30px 0px 80px;width:100%;">
+                    <table class="fees-receipt" border-collapse="collapse" style="margin:0 auto;border:0px !important" width="100%" cellspacing="0" border="0"%">
                     <tbody>
+                    <tr>
+                            <td colspan="4"> <br> <br> <br> <br> <br> <br><br></td>
+                        </tr>
       					<tr>
                         <td colspan="4" style="text-align:center !important;" align="center"> ';
         
             if ($receipt_book_arr->receipt_line_2 != '') {
-                $recHtml .= '<span class="ma-hd">' . $receipt_book_arr->receipt_line_2 . '</span><br>';
+                $recHtml .= '<span class="sc-hd" style="padding:2px;">' . $receipt_book_arr->receipt_line_2 . '</span><br>';
             }
             if ($receipt_book_arr->receipt_line_3 != '') {
-                $recHtml .= '<span class="rg-hd">' . $receipt_book_arr->receipt_line_3 . '</span><br>';
+                $recHtml .= '<span class="sc-hd" style="padding:2px;">' . $receipt_book_arr->receipt_line_3 . '</span><br>';
             }
             $recHtml .= '</td>';
             $recHtml .= '</tr>';
 
             $recHtml .= '<tr>
-            <td colspan="4"><hr style="border-top: 5px solid black !important;"></td>
+            <td colspan="4"><hr style="padding:2px;border:1px solid black"></td>
             </tr>';
 
             $syear1 = $syear;
@@ -168,10 +177,10 @@ class donationController extends Controller
             $recHtml .= '<tr>';
             $recHtml .= '   <td colspan="4" valign="top">';
             $recHtml .= '       <table class="particulars" width="100%" border="0">';
-            $recHtml .= '       <tr>';
-            $recHtml .= '               <td colspan="3" style="background:#ddd;"><b>PARTICULARS</b></td>';
-            $recHtml .= '               <td style="white-space:nowrap;background:#ddd;"><b>AMOUNT (Rs.)</b></td>  ';
-            $recHtml .= '           </tr>';
+            $recHtml .= '       <tr>
+                                    <td colspan="3" style="background-color:lightgray"><b>Particulars</b></td>
+                                    <td style="background-color:lightgray;white-space:nowrap;"><b>Amount (Rs.)</b></td>
+                                 </tr>';
             $recHtml .= '           <tr>';
             $recHtml .= '               <td align="left" colspan="3">AMOUNT</td>';
             $recHtml .= '               <td align="right" >' . $request->amount . '</td>';
@@ -193,14 +202,14 @@ class donationController extends Controller
 
             $recHtml .= '<tr>';
             $recHtml .= '   <td colspan="4" style="text-align:left !important;">';
-            $recHtml .= '       <label><b>In Words : </b></label>';
+            $recHtml .= '       <label><b>Amount In Words : </b></label>';
             $recHtml .= '       <span>' . $total_amount_in_words_str . '</span>';
             $recHtml .= '   </td>';
             $recHtml .= '</tr>';
 
             $recHtml .= '<tr>';
-            $recHtml .= '   <td colspan="4" class="padding" style="text-align:left !important;"><p><label><b>Payment By : </b></label>    <span><u>';
-            $recHtml .= '       <label><b>Payment By : </b></label>';
+            $recHtml .= '   <td colspan="4" class="padding" style="text-align:left !important;">';
+            $recHtml .= '       <label><b>Payment Mode : </b></label>';
             if ($request->payment_mode == 'Cash') {
                 $recHtml .= '       <span><u>' . strtoupper($request->payment_mode) . '</u></span>';
             } else {
@@ -217,7 +226,7 @@ class donationController extends Controller
             <td class="padding"> <label><b>SIGNATURE</b></label><br><label><b>'.session()->get('name').'</b></label> </td>
             </tr>';
 
-            $recHtml .= '</table>';
+            $recHtml .= '</tbody></table></div>';
             // insert values into table
             $inertArr = array(
                 'donar_id'=>$request->donar_id,
