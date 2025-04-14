@@ -1909,7 +1909,7 @@ class studentResultController extends Controller
                         }
                     }
                 }
-                // echo "<pre>";print_r($title_exam);
+                //echo "<pre>";print_r($title_exam);
                 $ob_main_mark = 0;
                 // for best of 2 exam wise 
                 if (!empty($title_exam)) {
@@ -1917,7 +1917,8 @@ class studentResultController extends Controller
                         $w_m = $to_weight[$titleexam_id] ?? 0; // Check if the key exists
                         $t_m = array_sum(array_intersect_key($to_marks[$titleexam_id] ?? [], $marksArray));
                         $obtained_mark_arr = $obtained_marks[$titleexam_id] ?? [];
-                        $obtained_mark_sum = array_sum($obtained_mark_arr);
+                        $numeric_marks = array_filter($obtained_mark_arr, 'is_numeric'); //ADDED BY RAJESH 08_04_2025
+                        $obtained_mark_sum = array_sum($numeric_marks);
                         // get mark for total mark 
                         $ob_main_mark += ($t_m !== 0) ? (($obtained_mark_sum / $t_m) * $w_m) : 0;
                         // convert marks if best of 2

@@ -128,7 +128,7 @@ class send_sms_parents_controller extends Controller
             }
             */
 
-            $url = $data['url'].$data['pram'].$template_id.$data['mobile_var'].$mobile.$data['text_var'].$text;
+            $url = $data['url'].$data['pram'].$template_id.$data['mobile_var'].$mobile.$data['text_var'].$text.$data['last_var'];
             //echo $url;
             //die();
             $ch = curl_init();
