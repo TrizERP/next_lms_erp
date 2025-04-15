@@ -386,7 +386,8 @@
         success: function (result) {
           if (result == 1) {
             $("#email_error_span").removeClass().addClass("email_error").text('Email already taken');
-            email_state = true;
+            // email_state = true; // 2025-04-15 by uma
+            email_state = false;
           }
           else {
             $("#email_error_span").removeClass().addClass("email_success").text('Email available');
