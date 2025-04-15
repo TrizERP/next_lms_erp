@@ -1700,7 +1700,7 @@ class AJAXController extends Controller
                             .fees-receipt tbody tr{
                                  page-break-inside: avoid;
                             }
-                            </style>';
+                            </style><body>';
 
                 // added on 15-04-2025 by uma
                     if($action=='donation_receipt'){
@@ -1711,17 +1711,17 @@ class AJAXController extends Controller
                             })->selectRaw('fc.* ,frc.css')
                             ->where('fc.sub_institute_id', $sub_institute_id)
                             ->where('fc.syear', $syear)->first();
-
-                            if(!empty($fees_config) && isset($fees_config->id) && $fees_config->id != ''){
-                                $dom .= $this->get_PageSetup($request->page_size);
+                            if(!empty($fees_config) && isset($fees_config->id) && $fees_config->fees_receipt_template != ''){
+                                $dom .= $this->get_PageSetup($fees_config->fees_receipt_template);
                             }
+                    }else{
+                            $dom .='<div style="page-break-inside: avoid">
+                            ##HTML_SEC##
+                        </div>';
                     }
                 // added on 15-04-2025 end
 
-                    $dom .='<body>
-                                <div style="page-break-inside: avoid">
-                                    ##HTML_SEC##
-                                </div>
+                    $dom .='
                             </body>
                         </html>';
                         
