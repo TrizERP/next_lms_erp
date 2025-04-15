@@ -1700,8 +1700,25 @@ class AJAXController extends Controller
                             .fees-receipt tbody tr{
                                  page-break-inside: avoid;
                             }
-                            </style>
-                            <body>
+                            </style>';
+
+                // added on 15-04-2025 by uma
+                    if($action=='donation_receipt'){
+
+                        $fees_config = DB::table('fees_config_master as fc')
+                            ->join('fees_receipt_css as frc', function ($join) {
+                                $join->whereRaw('frc.receipt_id = fc.fees_receipt_template');
+                            })->selectRaw('fc.* ,frc.css')
+                            ->where('fc.sub_institute_id', $sub_institute_id)
+                            ->where('fc.syear', $syear)->first();
+
+                            if(!empty($fees_config) && isset($fees_config->id) && $fees_config->id != ''){
+                                $dom .= $this->get_PageSetup($request->page_size);
+                            }
+                    }
+                // added on 15-04-2025 end
+
+                    $dom .='<body>
                                 <div style="page-break-inside: avoid">
                                     ##HTML_SEC##
                                 </div>

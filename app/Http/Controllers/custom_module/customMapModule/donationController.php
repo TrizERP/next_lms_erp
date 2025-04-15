@@ -121,7 +121,7 @@ class donationController extends Controller
                             }</style>
                     <br><br>
                     <div style="padding:20px 30px 0px 80px;width:100%;">
-                    <table class="fees-receipt" border-collapse="collapse" style="margin:0 auto;border:0px !important" width="100%" cellspacing="0" border="0"%">
+                    <table class="fees-receipt" border-collapse="collapse" style="margin:0 auto;border:0px !important" width="80%" cellspacing="0" border="0"%">
                     <tbody>
                     <tr>
                             <td colspan="4"> <br> <br> <br> <br> <br> <br><br></td>
@@ -239,7 +239,7 @@ class donationController extends Controller
                 'bank_branch'=>$request->bank_branch ?? null,
                 'remarks'=>$request->remarks ?? null,
                 'reciept_no'=>$RECEIPT_NO,
-                'reciept_html'=>$recHtml,
+                'reciept_html'=>$receipt_css . $recHtml,
                 'sub_institute_id'=>$sub_institute_id,
                 'created_by'=>$user_id,
                 'created_at'=>now()
