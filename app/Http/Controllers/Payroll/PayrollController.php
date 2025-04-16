@@ -344,7 +344,7 @@ class PayrollController extends Controller
         ->join('hrms_departments as hd',function($join){
             $join->on('hd.id','=','u.department_id'); // 27-04-24 by uma
         })
-        ->select('employee_salary_structures.*', DB::raw('CONCAT_ws(" ",COALESCE(u.first_name,"-"), COALESCE(u.last_name,"-")) as employee_name'),'u.employee_no',DB::raw('IFNULL(hd.department,"-") as department'))
+        ->select('employee_salary_structures.*', DB::raw('CONCAT_ws(" ",COALESCE(u.first_name,"-"),COALESCE(u.middle_name,"-"), COALESCE(u.last_name,"-")) as employee_name'),'u.employee_no',DB::raw('IFNULL(hd.department,"-") as department'))
         ->when($emp_id!=0,function($q) use($emp_id){
             $q->whereRaw('employee_salary_structures.employee_id in ('.$emp_id.')');
         })
@@ -615,7 +615,7 @@ class PayrollController extends Controller
         $date = \Carbon\Carbon::now()->format('F jS, Y');
 
         $get_all_details = DB::table('employee_salary_structures as ess')
-            ->selectRaw('ess.*,concat_ws(" ",u.first_name,u.middle_name,u.last_name) as employee_name,u.join_year as joining_year,hd.department as department_name,ss.SchoolName,u.gender')
+            ->selectRaw('ess.*,concat_ws(" ",COALESCE(u.first_name,"-"),COALESCE(u.middle_name,"-"), COALESCE(u.last_name,"-")) as employee_name,u.join_year as joining_year,hd.department as department_name,ss.SchoolName,u.gender')
             ->join('tbluser as u', 'u.id', '=', 'ess.employee_id')
             ->join('hrms_departments as hd', 'hd.id', '=', 'u.department_id')
             ->join('school_setup as ss', 'ss.id', '=', 'u.sub_institute_id')
