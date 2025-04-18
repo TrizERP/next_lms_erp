@@ -40,9 +40,11 @@
             <div class="col-md-12 form-group">
                 <center>
                      <div id="overlay" style="display:none;"><center><p style="margin-top: 273px;color:red;font-weight: 700;">Please do not refresh the page, while the process is going on.</p><img src="http://dev.triz.co.in/admin_dep/images/loader.gif"></center></div>
-                    <button class="btn btn-success" id="ajax_PDFBulk">Print Receipt</button>
+                    <button class="btn btn-success" id="ajax_PDF">Print Receipt</button>
+                  
                     <input type="hidden" name="action" id="action" value="donation_receipt">
-                    <input type="hidden" name="last_inserted_ids" id="last_inserted_ids" value="{{$data['last_inserted_ids']}}">
+                    <input type="hidden" name="receipt_id_html" id="receipt_id_html" value="{{$data['last_inserted_ids']}}">
+                    <input type="hidden" name="paper_size" id="paper_size" value="{{$data['pageSize']}}">
                 </center>
             </div>
         </div>
