@@ -947,7 +947,7 @@ class PayrollController extends Controller
         $employeeDetails = employeeDetails($sub_institute_id);
         $header = [];
         $months = Helpers::getMonths();
-        $years = Helpers::getYears();
+        $years = Helpers::getPairYears();
         $header['total_day'] = 'Total Day';
         $list = [];
         $totalDay = '';
@@ -1341,7 +1341,7 @@ class PayrollController extends Controller
             $sub_institute_id = $request->sub_institute_id;
         }
         $res['months'] = Helpers::getMonths();
-        $res['years']= Helpers::getYears();
+        $res['years']= Helpers::getPairYears();
 
         $employeeDetails = [];
         $res['month'] = date('M');
@@ -1493,7 +1493,7 @@ class PayrollController extends Controller
 
     public function employeePayrollHistory(Request $request)
     {
-        //return $request->all();
+        // return $request->all();exit;
         $type = $request->type;
         $sub_institute_id = $request->session()->get('sub_institute_id');
         if (in_array($type,['API','JSON'])){
@@ -1504,7 +1504,7 @@ class PayrollController extends Controller
         $payrollTypes = PayrollType::where('sub_institute_id',$sub_institute_id)->where('status', 1)->orderBy('sort_order')->get();
         $currentYearemployeeDetails = [];
         $nextYearemployeeDetails = [];
-        $years = Helpers::getYears();
+        $years = Helpers::getPairYears();
         $header = [];
         $list = [];
         $employeeDetails = [];
@@ -1619,7 +1619,7 @@ class PayrollController extends Controller
         }
         $res = session()->get('data');
         $res['months'] = Helpers::getMonths();
-        $res['years'] = Helpers::getYears();
+        $res['years'] = Helpers::getPairYears();
         $res['selYear'] = date('Y');
         $res['selMonth'] = date('M');
         // echo "<pre>";print_r(session()->all());exit;
@@ -1716,7 +1716,7 @@ class PayrollController extends Controller
         $res['header'] =$header;
         $res['employeeDetails'] = $newData;
         $res['months'] = Helpers::getMonths();
-        $res['years'] = Helpers::getYears();
+        $res['years'] = Helpers::getPairYears();
       
         // echo "<pre>";print_r($newData);exit;
         return is_mobile($type,'payroll.monthly_payroll_report.newIndex',$res,'view');

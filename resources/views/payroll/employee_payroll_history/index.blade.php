@@ -32,6 +32,10 @@
                                         $dep_id = $data['selDept'];
                                     }
 
+                                    if(isset($data['selYear']) && $data['selYear']){
+                                        $currentYear = $data['selYear'];
+                                    }
+
                                     if(isset($data['selEmp'])){
                                         $emp_id = $data['selEmp'];
                                     }
@@ -42,8 +46,8 @@
                                         <label>Select Year</label>
                                         <select id='year' name="year" class="form-control">
                                             <option value="0">Select Year</option>
-                                            @foreach($data['years'] as $year)
-                                                <option @if(isset($data['selYear']) && $data['selYear'] == $year) selected @elseif($year==$currentYear) Selected @endif>{{$year}}</option>
+                                            @foreach($data['years'] as $k=> $year)
+                                                <option @if($k==$currentYear) Selected @endif value="{{$k}}">{{$year}}</option>
                                             @endforeach
                                         </select>
                                     </div>
