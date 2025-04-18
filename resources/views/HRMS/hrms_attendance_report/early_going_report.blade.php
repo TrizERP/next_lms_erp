@@ -88,7 +88,13 @@
                                 <tr style="text-align:center;">
                                     <td>{{$j++}}</td>
                                     <td>{{ isset($hrmsAttendance['getUser']) ? $hrmsAttendance['getUser']['employee_no'] : '' }}</td>
-                                    <td>{{isset($hrmsAttendance['getUser']) ? $hrmsAttendance['getUser']['first_name'] .'-'.$hrmsAttendance['getUser']['last_name'] : ''}}</td>
+                                    <td>
+                                        {{
+                                            (isset($hrmsAttendance['getUser']['first_name']) ? $hrmsAttendance['getUser']['first_name'] : '-') . ' ' .
+                                            (isset($hrmsAttendance['getUser']['middle_name']) ? $hrmsAttendance['getUser']['middle_name'] : '-') . ' ' .
+                                            (isset($hrmsAttendance['getUser']['last_name']) ? $hrmsAttendance['getUser']['last_name'] : '-')
+                                        }}
+                                    </td>
                                     <td>{{ isset($get_hrms_department->department) ? $get_hrms_department->department : '-' }}</td>
                                     <td>{{ isset($hrmsAttendance->punchout_time) ? \Carbon\Carbon::parse($hrmsAttendance->punchout_time)->format('h:i A') : '-' }}</td>
                                     <td>{{ isset($hrmsAttendance['getUser']['monday_out_date']) ? \Carbon\Carbon::parse($hrmsAttendance['getUser']['monday_out_date'])->format('h:i A') : '-' }}</td>

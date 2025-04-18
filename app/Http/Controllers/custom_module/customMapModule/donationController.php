@@ -120,7 +120,7 @@ class donationController extends Controller
                             font-size:16px !important
                             }</style>
                     <br><br>
-                    <div style="padding:20px 30px 0px 80px;width:100%;">
+                    <div style="padding:20px 30px 0px 50px;width:100%;">
                     <table class="fees-receipt" border-collapse="collapse" style="margin:0 auto;border:0px !important" width="80%" cellspacing="0" border="0"%">
                     <tbody>
                     <tr>
@@ -254,6 +254,7 @@ class donationController extends Controller
             $res['status'] = "1";
             $res['receipt_html'] = $new_html;
             $res['last_inserted_ids'] = $last_inserted_id;
+            $res['pageSize'] = $fees_config->fees_receipt_template;
             $res['message'] = "Donation collect successfully";
         // echo "<pre>";print_r($recHtml);exit;
         return is_mobile($type, "custom_modules.customMapModule.donationReceipt", $res, "view");
