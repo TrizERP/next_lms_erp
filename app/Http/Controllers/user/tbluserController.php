@@ -363,11 +363,17 @@ class tbluserController extends Controller
         $res['subject_data_selected_arr'] = $subject_data_selected_arr;
         $res['user_profiles'] = $data;
         $res['new_emp_code'] = $new_emp_code;
+        // db::enableQueryLog();
+        $res['contactDetails'] =  DB::table('tbluser_contact_details')
+            ->where('user_id', $id)
+            ->where('sub_institute_id', $sub_institute_id)
+            ->first();
+            // dd(db::getQueryLog($res['contactDetails']));
         $res['data'] = $editData;
         // 10-01-2025 start supervisor rights
         $res['standardLists'] = standardModel::where('sub_institute_id',$sub_institute_id)->orderBy('sort_order')->get()->toArray();
         // 10-01-2025 end supervisor rights
-        // echo "<pre>";print_r($res['standardLists']);exit;
+        // echo "<pre>";print_r($res['contactDetails']);exit;
         return is_mobile($type, "user/edit_user", $res, "view");
     }
 

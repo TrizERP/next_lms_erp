@@ -6,6 +6,7 @@ use App\Http\Controllers\user\tblindividual_rightsController;
 use App\Http\Controllers\user\tbluserController;
 use App\Http\Controllers\user\tbluserPastEducationController;
 use App\Http\Controllers\user\tbluserprofilemasterController;
+use App\Http\Controllers\user\tbluserContactDetails;
 use App\Http\Controllers\user\userReportController;
 use App\Http\Controllers\user\tbluserProfileWiseMenuController;
 use App\Http\Controllers\user\tblmobileAppMenuRightsController;
@@ -17,6 +18,9 @@ Route::group(['prefix' => 'user', 'middleware' => ['session', 'menu', 'logRoute'
     Route::resource('add_mobileapp_menu_rights', mobileapp_menu_rightsController::class);
     Route::resource('add_user_past_education', tbluserPastEducationController::class);
     Route::resource('user_profile_wise_menu_rights', tbluserProfileWiseMenuController::class);
+
+    Route::resource('user_contact_details', tbluserContactDetails::class);
+    
     Route::get('mobile_app_menu_rights', [tblmobileAppMenuRightsController::class, 'create'])->name("mobile_app_menu_rights");
     Route::post('mobile_app_menu_rights/store', [tblmobileAppMenuRightsController::class, 'store'])->name("mobile_app_menu_rights.store");
     Route::post('mobile_app_menu_rights/update', [tblmobileAppMenuRightsController::class, 'store'])->name("mobile_app_menu_rights.update");

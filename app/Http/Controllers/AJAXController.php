@@ -1576,6 +1576,11 @@ class AJAXController extends Controller
         }
 
         // $fees_receipt_html = $this->get_FeesHtml($student_id, $action, $receipt_id);
+        if($action=="donation_receipt"){
+            $fees_receipt_html = $this->get_FeesHtml(0, $action, $receipt_id,$sub_institute_id,$syear);
+        }else{
+        $fees_receipt_html = $this->get_FeesHtml($student_id, $action, $receipt_id,$sub_institute_id,$syear);
+        }
         $fees_receipt_html = $this->get_FeesHtml($student_id, $action, $receipt_id,$sub_institute_id,$syear);
         $fees_css = $this->get_FeesCss($action);
         $fees_receipt_css = "<style>" . $fees_css . "</style>";
@@ -1617,8 +1622,16 @@ class AJAXController extends Controller
                 $save_path = $_SERVER['DOCUMENT_ROOT'] . '/storage/print_receipt_pdf';
             }
             $CUR_TIME = date('YmdHis');
-            $html_filename = $student_id . '_' . $CUR_TIME . ".html";
-            $pdf_filename = $student_id . '_' . $CUR_TIME . ".pdf";
+            if($action=="donation_receipt"){
+                $html_filename =  'donation_' . $CUR_TIME . "_donation.html";
+                $pdf_filename =  'donation_' . $CUR_TIME . "_donation.pdf";
+            }
+            else{
+                $html_filename = $student_id . '_' . $CUR_TIME . ".html";
+                $pdf_filename = $student_id . '_' . $CUR_TIME . ".pdf";
+            }
+            // $html_filename = $student_id . '_' . $CUR_TIME . ".html";
+            // $pdf_filename = $student_id . '_' . $CUR_TIME . ".pdf";
 
             $html = '';
             if (is_array($fees_receipt_html) == 1) {
@@ -1925,7 +1938,17 @@ class AJAXController extends Controller
                 }
             }
         }
+        if ($action == 'donation_receipt') {
 
+            $get_data = DB::table('donation_collection')
+                ->where('sub_institute_id', $sub_institute_id)
+                ->where('id', $receipt_id)->get()->toArray();
+
+            $donation_collection = json_decode(json_encode($get_data), true);
+            $donation_collection = $donation_collection[0];
+
+            $fees_receipt_html = $donation_collection['reciept_html'];
+        }
         return $fees_receipt_html;
     }
 
@@ -1950,18 +1973,7 @@ class AJAXController extends Controller
             $html_array['fees_receipt_html'] = $fees_other_collection_data['paid_fees_html'];
         }
 
-        if ($action == 'donation_receipt') {
-
-            $get_data = DB::table('donation_collection')
-                ->where('sub_institute_id', $sub_institute_id)
-                ->where('id', $inserted_id)->get()->toArray();
-
-            $donation_collection = json_decode(json_encode($get_data), true);
-            $donation_collection = $donation_collection[0];
-
-            $html_array['student_id'] = $donation_collection['donar_id'];
-            $html_array['fees_receipt_html'] = $donation_collection['reciept_html'];
-        }
+        
 
         if ($action == 'imprest_fees_cancel_refund_receipt') {
             $get_data = DB::table('imprest_fees_cancel')

@@ -385,7 +385,7 @@ class HrmsController extends Controller
         
         $hrmsList = DB::table('hrms_attendances as ha')
         ->join('tbluser as u', 'u.id', '=', 'ha.user_id')
-        ->selectRaw("DISTINCT ha.*, ha.id as atten_id,  u.*, CONCAT_WS(' ',u.first_name,u.last_name) AS employee_name ")
+        ->selectRaw("DISTINCT ha.*, ha.id as atten_id,  u.*, CONCAT_WS(' ',COALESCE(u.first_name,'-'),COALESCE(u.middle_name,'-'),COALESCE(u.last_name,'-')) AS employee_name ")
         ->where('ha.sub_institute_id', $sub_institute_id)
         ->whereBetween('ha.day', [$from_date_formatted, $to_date_formatted])
         ->where('ha.user_id', $employee_id)
@@ -396,7 +396,7 @@ class HrmsController extends Controller
         $get_hrms_emp_leaves = DB::table('hrms_emp_leaves as hel')
         ->join('tbluser as u', 'u.id', '=', 'hel.user_id')
         ->join('hrms_leave_types as hlt', 'hlt.id', '=', 'hel.leave_type_id')
-        ->selectRaw("hel.*, hlt.*, u.*, CONCAT_WS(' ',u.first_name,u.last_name) AS employee_name ,hel.leave_type_id as leave_id")
+        ->selectRaw("hel.*, hlt.*, u.*,CONCAT_WS(' ',COALESCE(u.first_name,'-'),COALESCE(u.middle_name,'-'),COALESCE(u.last_name,'-')) AS employee_name ,hel.leave_type_id as leave_id")
         ->where('hel.sub_institute_id', $sub_institute_id)
         ->where('hel.from_date','>=',$from_date_formatted)
         ->where('hel.to_date','<=',$to_date_formatted)
@@ -850,37 +850,37 @@ class HrmsController extends Controller
         // echo "<pre>";print_r($hrmsList);exit;
         $hrmsList = $hrmsList->map(function ($e) use ($day)
         {
-            if($day =='Mon' && $e->getUser['monday']==0) {
+            if($day =='Mon' && isset($e->getUser['monday'])  && $e->getUser['monday']==0) {
                 if($e->getUser['monday_out_date'] &&  $e->getUser['monday_out_date'] >  date('H:i:s',strtotime($e->punchout_time))) {
                     $e['is_late'] = 1;
                     $e['expected_time'] = $e->getUser['monday_out_date'];
                 }
             }
-            if($day =='Tue' && $e->getUser['tuesday']==0) {
+            if($day =='Tue' && isset($e->getUser['tuesday']) && $e->getUser['tuesday']==0) {
                 if($e->getUser['tuesday_out_date'] &&  $e->getUser['tuesday_out_date'] >  date('H:i:s',strtotime($e->punchout_time))) {
                     $e['is_late'] = 1;
                     $e['expected_time'] = $e->getUser['tuesday_out_date'];
                 }
             }
-            if($day =='Wed' && $e->getUser['wednesday']==0) {
+            if($day =='Wed' && isset($e->getUser['wednesday'])  && $e->getUser['wednesday']==0) {
                 if($e->getUser['wednesday_out_date'] &&  $e->getUser['wednesday_out_date'] >  date('H:i:s',strtotime($e->punchout_time))) {
                     $e['is_late'] = 1;
                     $e['expected_time'] = $e->getUser['wednesday_out_date'];
                 }
             }
-            if($day =='Thu' && $e->getUser['thursday']==0) {
+            if($day =='Thu' && isset($e->getUser['thursday']) && $e->getUser['thursday']==0) {
                 if($e->getUser['thursday_out_date'] &&  $e->getUser['thursday_out_date'] >  date('H:i:s',strtotime($e->punchout_time))) {
                     $e['is_late'] = 1;
                     $e['expected_time'] = $e->getUser['saturday_out_date'];
                 }
             }
-            if($day =='Fri' && $e->getUser['friday']==0) {
+            if($day =='Fri' && isset($e->getUser['friday']) && $e->getUser['friday']==0) {
                 if($e->getUser['friday_out_date'] &&  $e->getUser['friday_out_date'] >  date('H:i:s',strtotime($e->punchout_time))) {
                     $e['is_late'] = 1;
                     $e['expected_time'] = $e->getUser['friday_out_date'];
                 }
             }
-            if($day =='Sat' && $e->getUser['saturday']==0) {
+            if($day =='Sat' && isset($e->getUser['saturday']) && $e->getUser['saturday']==0) {
                 if($e->getUser['saturday_out_date'] &&  $e->getUser['saturday_out_date'] >  date('H:i:s',strtotime($e->punchout_time))) {
                     $e['is_late'] = 1;
                     $e['expected_time'] = $e->getUser['saturday_out_date'];
@@ -943,7 +943,7 @@ class HrmsController extends Controller
         ->leftJoin('hrms_holidays as hh',function($join) use($from_date,$to_date,$sub_institute_id){
             $join->on('hh.department','=','hd.id')->where('hh.from_date','>=',$from_date)->where('hh.to_date','<=',$to_date)->where(['hh.sub_institute_id'=>$sub_institute_id]);
         })
-        ->selectRaw('tu.id as user_id, tu.employee_no, CONCAT_WS(" ", COALESCE(tu.first_name, "-"), COALESCE(tu.last_name, "-")) as full_name, tu.sub_institute_id, IFNULL(upm.name, "-") as user_profile, hd.department, COUNT(DISTINCT ha.id) as total_att_day, GROUP_CONCAT(DISTINCT ha.id) as worked_days, COUNT(DISTINCT hel.id) as total_ab_day, GROUP_CONCAT(DISTINCT hel.id) as ab_days, COUNT(DISTINCT hh.id) as total_holidays, GROUP_CONCAT(DISTINCT hh.id) as holidays,GROUP_CONCAT(DISTINCT hd.id) as department_id')
+        ->selectRaw('tu.id as user_id, tu.employee_no, CONCAT_WS(" ", COALESCE(tu.first_name, "-"), COALESCE(tu.middle_name, "-"),COALESCE(tu.last_name, "-")) as full_name, tu.sub_institute_id, IFNULL(upm.name, "-") as user_profile, hd.department, COUNT(DISTINCT ha.id) as total_att_day, GROUP_CONCAT(DISTINCT ha.id) as worked_days, COUNT(DISTINCT hel.id) as total_ab_day, GROUP_CONCAT(DISTINCT hel.id) as ab_days, COUNT(DISTINCT hh.id) as total_holidays, GROUP_CONCAT(DISTINCT hh.id) as holidays,GROUP_CONCAT(DISTINCT hd.id) as department_id')
         ->where('tu.sub_institute_id', $sub_institute_id)
         ->when($department_ids != 0, function ($q) use ($department_ids) {
             $q->whereRaw('tu.department_id in (' . implode(',', $department_ids) . ')');
@@ -1145,7 +1145,7 @@ class HrmsController extends Controller
         $get_hrms_emp_leaves = DB::table('hrms_emp_leaves as hel')
         ->join('tbluser as u', 'u.id', '=', 'hel.user_id')
         ->join('hrms_leave_types as hlt', 'hlt.id', '=', 'hel.leave_type_id')
-        ->selectRaw("hel.*, hlt.*, u.*, CONCAT_WS(' ',u.first_name,u.last_name) AS employee_name ,hel.leave_type_id as leave_id")
+        ->selectRaw("hel.*, hlt.*, u.*, CONCAT_WS(' ',COALESCE(u.first_name,'-'),COALESCE(u.middle_name,'-'),COALESCE(u.last_name,'-')) AS employee_name ,hel.leave_type_id as leave_id")
         ->where('hel.sub_institute_id', $sub_institute_id)
         ->where('hel.from_date','>=',$from_date_formatted)
         ->where('hel.to_date','<=',$to_date_formatted)

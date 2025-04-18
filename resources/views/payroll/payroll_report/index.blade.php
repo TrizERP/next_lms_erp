@@ -44,8 +44,8 @@
                                     <label>Select Year</label>
                                     <select id='year' name="year" class="form-control">
                                         <option value="0">Select Year</option>
-                                        @foreach($data['years'] as $year)
-                                        <option @if((isset($data['year']) && $data['year'] == $year)) selected @endif>{{$year}}</option>
+                                        @foreach($data['years'] as $k=>$year)
+                                        <option @if((isset($data['year']) && $data['year'] == $k)) selected @endif value="{{$k}}">{{$year}}</option>
                                         @endforeach
                                     </select>
                                 </div>

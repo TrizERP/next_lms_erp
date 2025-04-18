@@ -62,7 +62,11 @@ br {
                             @if(!empty($data['salary_structure']))
                             <li class="nav-item"><a href="#section-linemove-3" class="nav-link" aria-selected="false" data-toggle="tab"><span>Salary</span></a></li>
                             @endif
+                           
                             <li class="nav-item"><a href="#section-linemove-4" class="nav-link" aria-selected="false" data-toggle="tab"><span>My Skills & Certifications</span></a></li>
+                            @if(session()->get('sub_institute_id')==47)
+                            <li class="nav-item"><a href="#section-linemove-5" class="nav-link" aria-selected="false" data-toggle="tab"><span>Contact Details</span></a></li>
+                            @endif
                         </ul>
                         </center>
                     @php
@@ -84,6 +88,7 @@ br {
                     $payrollTypes = $data['payroll_types'];
                     $salary_deposit = $data['salary_deposit'];
                     $SalaryStructure = $data['salary_structure'];
+                    $contactDetails = $data['contactDetails'];
                     $data = $data['data'];
                     @endphp
                     <!-- tabs starts  -->
@@ -685,6 +690,11 @@ br {
                         @include('lms.triz_skills')
                     </div>
                     <!-- tab 4 ends  -->
+                    <!-- tab 5 start  -->
+                    <div class="tab-pane p-3" id="section-linemove-5" role="tabpanel">
+                        @include('user.contactDetails')
+                    </div>
+                    <!-- tab 5 ends  -->
                 </div>
                 <!-- tabs ends  -->
                 </div>
