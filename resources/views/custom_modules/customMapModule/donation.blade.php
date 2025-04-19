@@ -1,5 +1,10 @@
 @extends('layout')
 @section('container')
+<style>
+    #donationTable th, #donationTable td {
+        width: 25% !important;
+    }
+</style>
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row bg-title">
@@ -7,158 +12,264 @@
                 <h4 class="page-title">Donation Collection</h4>
             </div>
         </div>
-       
+
         <div class="card">
             @if ($sessionData = Session::get('data'))
-                @if($sessionData['status'] == 1)
-                    <div class="alert alert-success alert-block">
-                @else
-                    <div class="alert alert-danger alert-block">
-                @endif
+                <div class="alert alert-{{ $sessionData['status'] == 1 ? 'success' : 'danger' }} alert-block">
                     <button type="button" class="close" data-dismiss="alert">×</button>
-                        <strong>{{ $sessionData['message'] }}</strong>
-                    </div>
-                @endif
-                @if (isset($data['status']) && $data['status']==0)
-                        <div class="alert alert-danger alert-block">
-                        <button type="button" class="close" data-dismiss="alert">×</button>
-                            <strong>{{ $data['message'] }}</strong>
-                        </div>
-                @endif
-                    <form action="{{ route('donation_collection.create') }}">
-                        @csrf
-                       <div class="row">
-                            <div class="col-md-6">
-                                <label for="name">Name</label>
-                                <input type="text" class="form-control" name="full_name" list="donarLists" placeholder="Enter Full Name" autocomplete="off" @if(isset($data['full_name']) && $data['full_name']!='') value="{{$data['full_name']}}" @endif>
-                                <datalist id="donarLists">
-                                    @foreach($data['donarLists'] as $k=>$v)
-                                    <option>{{$v->full_name}}</option>
-                                    @endforeach
-                                </datalist>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="mobile">Mobile Number</label>
-                                <input type="text" class="form-control" pattern="[1-9]{1}[0-9]{9}" name="mobile_number" placeholder="Enter Mobile Number" autocomplete="off" @if(isset($data['mobile_number']) && $data['mobile_number']!='') value="{{$data['mobile_number']}}" @endif>
-                            </div>
-                       </div>
-
-                        <div class="col-md-12 form-group mt-4">
-                            <center>
-                                <input type="submit" name="submit" value="Search" class="btn btn-success">
-                            </center>
-                        </div>
-                    </form>
+                    <strong>{{ $sessionData['message'] }}</strong>
                 </div>
+            @endif
 
-            <!-- searched data starts  -->
-             @if(isset($data['donarData']->id) && !empty($data['donarData']))
-                <div class="card">
-                    <!-- detail card starts  -->
-                    <div class="card" style="padding:10px 20px !important;box-shadow:none;">
-                        <div class="row">
-                            <div class="col-md-3">
-                                <div class="card" style="border:1px solid #ddd;padding:8px !important;">
-                                    <label for=""><b>Name :</b></label>
-                                    <p style="margin:0px !important">{{$data['donarData']->full_name}}</p>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="card" style="border:1px solid #ddd;padding:8px !important;">
-                                    <label for=""><b>PAN Number :</b></label>
-                                    <p style="margin:0px !important">{{$data['donarData']->pan_number}}</p>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="card" style="border:1px solid #ddd;padding:8px !important;">
-                                    <label for=""><b>Address :</b></label>
-                                    <p style="margin:0px !important">{{$data['donarData']->address}}</p>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="card" style="border:1px solid #ddd;padding:8px !important;">
-                                    <label for=""><b>Mobile :</b></label>
-                                    <p style="margin:0px !important">{{$data['donarData']->mobile_number}}</p>
-                                </div>
-                            </div>
+            @if (isset($data['status']) && $data['status'] == 0)
+                <div class="alert alert-danger alert-block">
+                    <button type="button" class="close" data-dismiss="alert">×</button>
+                    <strong>{{ $data['message'] }}</strong>
+                </div>
+            @endif
+
+            <form action="{{ route('donation_collection.create') }}">
+                @csrf
+                <div class="row">
+                    <div class="col-md-6">
+                        <label for="name">Name</label>
+                        <input type="text" class="form-control" name="full_name" list="donarLists" placeholder="Enter Full Name" autocomplete="off" value="{{ $data['full_name'] ?? '' }}">
+                        <datalist id="donarLists">
+                            @foreach($data['donarLists'] as $donar)
+                                <option>{{ $donar->full_name }}</option>
+                            @endforeach
+                        </datalist>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="mobile">Mobile Number</label>
+                        <input type="text" class="form-control" pattern="[1-9]{1}[0-9]{9}" name="mobile_number" placeholder="Enter Mobile Number" autocomplete="off" value="{{ $data['mobile_number'] ?? '' }}">
+                    </div>
+                </div>
+                <div class="col-md-12 form-group mt-4 text-center">
+                    <input type="submit" name="submit" value="Search" class="btn btn-success">
+                </div>
+            </form>
+        </div>
+
+        @if(!empty($data['donarData']) && isset($data['donarData']->id))
+            <div class="card">
+                @if(!empty($data['donationData']))
+                    <div class="row">
+                        <div class="col-md-12 text-right">
+                            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#donationDetailsModal">History <span class="mdi mdi-history"></span></button>
                         </div>
                     </div>
-                    <!-- detail card end  -->
+                @endif
 
-                    <!-- payment details starts  -->
-                     <div class="card" style="padding:10px 50px !important;box-shadow:none;">
-                        <form action="{{route('donation_collection.store')}}" method="post">
+                    <div class="row">
+                        @foreach(['Name' => 'full_name', 'PAN Number' => 'pan_number', 'Address' => 'address', 'Mobile' => 'mobile_number'] as $label => $field)
+                            <div class="col-md-3" style="margin: 10px 0;">
+                                <div class="card border" style="padding: 10px !important;">
+                                    <label><b>{{ $label }}:</b></label>
+                                    <p class="m-0">{{ $data['donarData']->$field }}</p>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+
+                <div class="card p-4">
+                    <form action="{{ route('donation_collection.store') }}" method="post">
                         @csrf
-                        <input type="hidden" name="donar_id" value="{{$data['donarData']->id}}">
-                        <input type="hidden" name="full_name" value="{{$data['donarData']->full_name}}">
-                        <input type="hidden" name="pan_number" value="{{$data['donarData']->pan_number}}">
-                        <input type="hidden" name="address" value="{{$data['donarData']->address}}">
-                        <input type="hidden" name="mobile_number" value="{{$data['donarData']->mobile_number}}">
+                        @foreach(['id', 'full_name', 'pan_number', 'address', 'mobile_number'] as $field)
+                            <input type="hidden" name="{{ $field }}" value="{{ $data['donarData']->$field }}">
+                        @endforeach
 
-                        <table class="table table-stripped">
+                        <table class="table table-striped" id="donationTable">
                             <tr>
-                                <td style="width:25% !important;">Date of Receipt</td>
-                                <td style="width:25% !important;"><input type="text" name="paid_date" id="paid_date" class="form-control mydatepicker" required></td>
-
-                                <td style="width:25% !important;">Amount</td>
-                                <td style="width:25% !important;"><input type="number" name="amount" id="amount" class="form-control" required placeholder="Enter amount"></td>
+                                <td>Date of Receipt</td>
+                                <td><input type="text" name="paid_date" class="form-control mydatepicker" required></td>
+                                <td>Amount</td>
+                                <td><input type="number" name="amount" class="form-control" required placeholder="Enter amount"></td>
                             </tr>
                             <tr>
-                                <td style="width:25% !important;">Payment Mode</td>
-                                <td style="width:25% !important;">
-                                    <select name="payment_mode" id="payment_mode" class="form-control">
-                                        @foreach($data['paymentModes'] as $pk=>$pv)
-                                        <option value="{{$pk}}">{{$pv}}</option>
+                                <td>Payment Mode</td>
+                                <td>
+                                    <select name="payment_mode" class="form-control">
+                                        @foreach($data['paymentModes'] as $key => $value)
+                                            <option value="{{ $key }}">{{ $value }}</option>
                                         @endforeach
                                     </select>
                                 </td>
-
-                                <td style="width:25% !important;">Remarks (if any)</td>
-                                <td style="width:25% !important;"><textarea name="remarks" id="remarks" class="form-control resizableVertical" placeholder="Add Remarks"></textarea></td>
+                                <td>Remarks</td>
+                                <td><textarea name="remarks" class="form-control" placeholder="Add Remarks"></textarea></td>
                             </tr>
                             <tr>
-                                <td style="width:25% !important;">Bank Name</td>
-                                <td style="width:25% !important;">
-                                    <select name="bank_name" id="bank_name" class="form-control">
+                                <td>Bank Name</td>
+                                <td>
+                                    <select name="bank_name" class="form-control">
                                         <option value="">Select Bank Name</option>
-										@if(!empty($data['bank_data'])) 
-                                            @foreach($data['bank_data'] as $key => $value)
-												<option value="{{$value['bank_name']}}">{{$value['bank_name']}}</option>
-										    @endforeach
-                                        @endif
+                                        @foreach($data['bank_data'] ?? [] as $bank)
+                                            <option value="{{ $bank['bank_name'] }}">{{ $bank['bank_name'] }}</option>
+                                        @endforeach
                                     </select>
                                 </td>
-
-                                <td style="width:25% !important;">Bank Brach</td>
-                                <td style="width:25% !important;"><input type="text" name="bank_branch" id="bank_branch" class="form-control" placeholder="Enter Bank Branch" value="N/A"></td>
+                                <td>Bank Branch</td>
+                                <td><input type="text" name="bank_branch" class="form-control" placeholder="Enter Bank Branch" value="N/A"></td>
                             </tr>
                             <tr>
-                                <td style="width:25% !important;">Cheque/DD No.</td>
-                                <td style="width:25% !important;"><input type="text" name="cheque_no" id="cheque_no" class="form-control" placeholder="Enter Cheque/DD No."></td>
-
-                                <td style="width:25% !important;">Cheque/DD Date</td>
-                                <td style="width:25% !important;"><input type="text" name="cheque_date" id="cheque_date" class="form-control mydatepicker"></td>
+                                <td>Cheque/DD No.</td>
+                                <td><input type="text" name="cheque_no" class="form-control" placeholder="Enter Cheque/DD No."></td>
+                                <td>Cheque/DD Date</td>
+                                <td><input type="text" name="cheque_date" class="form-control mydatepicker"></td>
                             </tr>
                         </table>
-                        <div class="row mt-4">
+                        <div class="text-center mt-4">
+                            <input type="submit" value="Submit" class="btn btn-success">
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+        <div class="modal fade" id="donationDetailsModal" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document" style="max-width: 1200px;">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Donation History</h5>
+                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        
+                            <div class="row">
+                                @foreach(['Name' => 'full_name', 'PAN Number' => 'pan_number', 'Address' => 'address', 'Mobile' => 'mobile_number'] as $label => $field)
+                                    <div class="col-md-3" style="margin: 10px 0;">
+                                        <div class="card border" style="padding: 10px !important;">
+                                            <label><b>{{ $label }}:</b></label>
+                                            <p class="m-0">{{ $data['donarData']->$field }}</p>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        <form action="{{route('donation_collection.destroy',[$data['donarData']->id])}}" method="post" onsubmit="validateForm(event)">
+                        @csrf
+                        @method('DELETE')
+                        <h5><b>Collection Data</b></h5>
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th><input id="ckbCheckAll" type="checkbox"> Sr No.</th>
+                                    <th>Date</th>
+                                    <th>Amount</th>
+                                    <th>Receipt No</th>
+                                    <th>Payment Mode</th>
+                                    <th>Remarks</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($data['donationData'] ?? [] as $index => $donation)
+                                    <tr>
+                                        <td><input type="checkbox" name="deleteData[]" value="{{$donation->id}}" class="ckbox1"> {{ $index + 1 }}</td>
+                                        <td>{{ \Carbon\Carbon::parse($donation->paid_date)->format('d-m-Y') }}</td>
+                                        <td>{{ $donation->donation_amount }}</td>
+                                        <td>{{ $donation->reciept_no }}</td>
+                                        <td>{{ $donation->payment_mode }}</td>
+                                        <td>{{ $donation->remarks }}</td>
+                                        <td>
+                                            <span class="mdi mdi-printer" onclick="downloadReceipt('{{ $donation->id }}', '{{ $data['fees_config']->fees_receipt_template ?? 0 }}');" style="font-size: 26px; color:#df9b24;"></span>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                        
+                        <div class="row">
                             <div class="col-md-12">
                                 <center>
-                                    <input type="submit" value="Submit" class="btn btn-success">
+                                    <input type="submit" value="Cancel Donation" class="btn btn-danger mt-2" onclick="return confirm('Are you sure you want to delete this record?');">
                                 </center>
                             </div>
                         </div>
                         </form>
-                     </div>
-                    <!-- payment details end  -->
+                        @if(isset($data['cancellData']) && !empty($data['cancellData']))
+                        <div class="row" style="padding:16px;">
+                            <h5><b>Cancelled Data</b></h5>
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Sr No.</th>
+                                        <th>Date</th>
+                                        <th>Amount</th>
+                                        <th>Receipt No</th>
+                                        <th>Payment Mode</th>
+                                        <th>Remarks</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($data['cancellData'] ?? [] as $index => $donation)
+                                        <tr>
+                                            <td>{{ $index + 1 }}</td>
+                                            <td>{{ \Carbon\Carbon::parse($donation->paid_date)->format('d-m-Y') }}</td>
+                                            <td>{{ $donation->donation_amount }}</td>
+                                            <td>{{ $donation->reciept_no }}</td>
+                                            <td>{{ $donation->payment_mode }}</td>
+                                            <td>{{ $donation->remarks }}</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                        @endif
 
+                    </div>
+                   
                 </div>
-             @endif
-            <!-- searched data end  -->
+            </div>
+        </div>
+        @endif
 
     </div>
 </div>
 
 @include('includes.footerJs')
+<script>
+    function downloadReceipt(receiptId, paperSize) {
+        $.ajax({
+            url: `/ajax_PDF_FeesReceipt?action=donation_receipt&receipt_id_html=${receiptId}&paper_size=${paperSize}`,
+            success: function(result) {
+                let newTab = window.open(result, '_blank');
+                if (newTab) {
+                    newTab.onload = function() {
+                        newTab.print();
+                    };
+                } else {
+                    alert("Pop-up blocked! Please allow pop-ups for this site.");
+                }
+            },
+            error: function() {
+                alert('Failed to get Receipt Data');
+            }
+        });
+    }
 
+    $(function () {
+        var $tblChkBox = $("input:checkbox");
+        $("#ckbCheckAll").on("click", function () {
+            // console.log('clicked');
+            $($tblChkBox).prop('checked', $(this).prop('checked'));
+        });
+    });
+
+    function validateForm(event){
+        var checkboxes = document.querySelectorAll('input[name^="deleteData["]');
+        var anyChecked = false;
+
+        checkboxes.forEach(function(checkbox) {
+            if (checkbox.checked) {
+                anyChecked = true;
+            }
+        });
+        
+        if (!anyChecked) {
+            alert("Please select at least one checkbox");
+            event.preventDefault();
+            return false;
+        }
+    }
+</script>
 @include('includes.footer')
 @endsection

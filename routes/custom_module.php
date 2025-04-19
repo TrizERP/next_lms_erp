@@ -34,4 +34,5 @@ Route::group(['prefix' => 'custom-module','middleware' => ['session', 'menu', 'l
 // 10-04-2025
 Route::group(['middleware' => ['session', 'menu', 'logRoute','check_permissions']], function() {
     Route::resource('donation_collection', donationController::class);
+    Route::get('donation_report', [donationController::class, 'donationReport'])->name('donation_report.index');
 });
