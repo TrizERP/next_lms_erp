@@ -1576,12 +1576,13 @@ class AJAXController extends Controller
         }
 
         // $fees_receipt_html = $this->get_FeesHtml($student_id, $action, $receipt_id);
+        // added on 18-04-2025 for donation receipt page size issue
         if($action=="donation_receipt"){
             $fees_receipt_html = $this->get_FeesHtml(0, $action, $receipt_id,$sub_institute_id,$syear);
         }else{
-        $fees_receipt_html = $this->get_FeesHtml($student_id, $action, $receipt_id,$sub_institute_id,$syear);
+            $fees_receipt_html = $this->get_FeesHtml($student_id, $action, $receipt_id,$sub_institute_id,$syear);
         }
-        $fees_receipt_html = $this->get_FeesHtml($student_id, $action, $receipt_id,$sub_institute_id,$syear);
+        // $fees_receipt_html = $this->get_FeesHtml($student_id, $action, $receipt_id,$sub_institute_id,$syear);
         $fees_css = $this->get_FeesCss($action);
         $fees_receipt_css = "<style>" . $fees_css . "</style>";
 

@@ -7,11 +7,15 @@ use Illuminate\Http\Request;
 use function App\Helpers\is_mobile;
 use App\Models\custom_module\customMapModule\donationModel;
 use App\Models\fees\bank_master\bankmasterModel;
+use GenTux\Jwt\GetsJwtToken;
 use Carbon\Carbon;
+use validator;
 use DB;
 
 class donationController extends Controller
 {
+    use GetsJwtToken;
+
     /**
      * Display a listing of the resource.
      *
@@ -22,7 +26,27 @@ class donationController extends Controller
         $type = $request->input('type');
         $sub_institute_id = session()->get('sub_institute_id');
         if(in_array($type,['API','JSON'])){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
             $sub_institute_id = $request->get('sub_institute_id');
+
+            $validator = validator::make($request->all(), [
+                'sub_institute_id' => 'required|integer',
+            ]);
+
+            if ($validator->fails()) {
+                $response = ['status' => '2', 'message' => $validator->errors()->first(), 'data' => []];
+                return response()->json($response, 400);
+            }
         }
         $res['donarLists'] = DB::table('Z_donarDetails')->where('sub_institute_id',$sub_institute_id)->groupBy('full_name')->get();
 
@@ -39,8 +63,33 @@ class donationController extends Controller
         // echo "<pre>";print_R($request->all());exit;
         $type = $request->input('type');
         $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+
         if(in_array($type,['API','JSON'])){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+
+            $validator = validator::make($request->all(), [
+                'sub_institute_id' => 'required|integer',
+                'syear' => 'required|integer',
+            ]);
+
+            if ($validator->fails()) {
+                $response = ['status' => '2', 'message' => $validator->errors()->first(), 'data' => []];
+                return response()->json($response, 400);
+            }
+
             $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');
         }
         $res['donarLists'] = DB::table('Z_donarDetails')->where('sub_institute_id',$sub_institute_id)->groupBy('full_name')->get();
         // DB::enableQueryLog();
@@ -53,6 +102,20 @@ class donationController extends Controller
                                 $q->where('mobile_number',$request->mobile_number);
                             })
                             ->first();
+
+        if(!empty($res['donarData']) && isset($res['donarData']->id)){
+            $res['donationData'] = DB::table('donation_collection')
+                ->where('sub_institute_id',$sub_institute_id)
+                ->where('donar_id',$res['donarData']->id)
+                ->whereNull('deleted_at')
+                ->get()->toArray();
+
+            $res['cancellData'] = DB::table('donation_collection')
+                ->where('sub_institute_id',$sub_institute_id)
+                ->where('donar_id',$res['donarData']->id)
+                ->whereNotNull('deleted_at')
+                ->get()->toArray();
+        }
         // dd(DB::getQueryLog($res['donarData']));
         // echo "<pre>";print_r($res['donarData']);exit;
         if(empty($res['donarData'])){
@@ -67,6 +130,14 @@ class donationController extends Controller
             $res['paymentModes'] = ['Cash'=>'Cash','Cheque'=>'Cheque','DD'=>'DD','Online'=>'Online','NACH'=>'NACH','UPI'=>'UPI','Swipe1'=>'Swipe1','Swipe2'=>'Swipe2','Swipe3'=>'Swipe3','POS'=>'POS'];
         }
         $res['bank_data'] = bankmasterModel::get()->toArray();
+
+        $res['fees_config'] = DB::table('fees_config_master as fc')
+        ->join('fees_receipt_css as frc', function ($join) {
+            $join->whereRaw('frc.receipt_id = fc.fees_receipt_template');
+        })->selectRaw('fc.* ,frc.css')
+        ->where('fc.sub_institute_id', $sub_institute_id)
+        ->where('fc.syear', $syear)->first();
+
         $res['full_name'] = $request->full_name;
         $res['mobile_number'] = $request->mobile_number;
 
@@ -86,9 +157,35 @@ class donationController extends Controller
         $syear = session()->get('syear');
         $user_id = session()->get('user_id');
         if(in_array($type,['API','JSON'])){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            
             $sub_institute_id = $request->get('sub_institute_id');
             $syear = $request->get('syear');
             $user_id = $request->get('user_id');
+
+            $validator = validator::make($request->all(), [
+                'sub_institute_id' => 'required|integer',
+                'syear' => 'required|integer',
+                'user_id' => 'required|integer',
+                'donar_id' => 'required|integer',
+                'amount' => 'required|numeric',
+                'paid_date' => 'required|date_format:d-m-Y',
+                'payment_mode' => 'required|string',
+            ]);
+            if ($validator->fails()) {
+                $response = ['status' => '2', 'message' => $validator->errors()->first(), 'data' => []];
+                return response()->json($response, 400);
+            }
         }
 
         $fees_config = DB::table('fees_config_master as fc')
@@ -300,11 +397,113 @@ class donationController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy($id)
+    public function destroy(Request $request,$id)
     {
-        //
+        // return $request->all();
+        $type= $request->input('type');
+        $sub_institute_id = session()->get('sub_institute_id');
+        $user_id = session()->get('user_id');
+        if(in_array($type,['API','JSON'])){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            
+            $sub_institute_id = $request->get('sub_institute_id');
+            $user_id = $request->get('user_id');
+
+            $validator = validator::make($request->all(), [
+                'sub_institute_id' => 'required|integer',
+                'user_id' => 'required|integer',
+                'deleteData' => 'required|array',
+                'deleteData.*' => 'required|integer',
+            ]);
+            if ($validator->fails()) {
+                $response = ['status' => '2', 'message' => $validator->errors()->first(), 'data' => []];
+                return response()->json($response, 400);
+            }
+        }
+        $i = 0;
+        foreach ($request->deleteData as $key => $value) {
+            $i++;
+            DB::table('donation_collection')->where('id',$value)->update(['deleted_at'=>now(),'deleted_by'=>$user_id]);
+        }
+
+        if($i>0){
+            $res['status'] = 1;
+            $res['message'] = 'Donation Deleted Successfully !';
+        }else{
+            $res['status'] = 0;
+            $res['message'] = 'Failed to Delete Donation !';
+        }
+        return is_mobile($type, "donation_collection.index", $res);
     }
 
+    public function donationReport(Request $request){
+        $type = $request->input('type');
+        $sub_institute_id = session()->get('sub_institute_id');
+
+        if(in_array($type,['API','JSON'])){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->get('sub_institute_id');
+
+            $validator = validator::make($request->all(), [
+                'sub_institute_id' => 'required|integer',
+            ]);
+
+            if ($validator->fails()) {
+                $response = ['status' => '2', 'message' => $validator->errors()->first(), 'data' => []];
+                return response()->json($response, 400);
+            }
+        }
+        if($request->has('Search') && $request->Search=='Search'){
+            $res['reportData'] = DB::table('donation_collection as dc')
+            ->join('Z_donarDetails as dd', function ($join) {
+                $join->on('dc.donar_id', '=', 'dd.id');
+            })
+            ->selectRaw('dd.*,dc.*,dc.id as id')
+            ->where('dc.sub_institute_id', $sub_institute_id)
+            ->when($request->has('full_name') && $request->full_name != '', function ($q) use ($request) {
+                $q->where('dd.full_name', $request->full_name);
+            })
+            ->when($request->has('mobile_number') && $request->mobile_number != '', function ($q) use ($request) {
+                $q->where('dd.mobile_number', $request->mobile_number);
+            })
+            ->when($request->has('from_date') && $request->from_date != '', function ($q) use ($request) {
+                $q->whereBetween('dc.paid_date', [$request->from_date,$request->to_date]);
+            })
+            ->whereNull('dc.deleted_at')
+            ->get()
+            ->toArray();
+        }
+        // echo "<pre>";print_r($res);exit;
+        $from_date = $request->from_date ?? now();
+        $to_date = $request->to_date ?? now();
+        $res['from_date'] = $from_date;
+        $res['to_date'] = $to_date;
+        $res['full_name'] = $request->full_name;
+        $res['mobile_number'] = $request->mobile_number;
+        $res['donarLists'] = DB::table('Z_donarDetails')->where('sub_institute_id',$sub_institute_id)->groupBy('full_name')->get();
+
+        return is_mobile($type, "custom_modules.customMapModule.donationReport", $res, "view");
+    }
     public function convert_number_to_words($number)
     {
         $hyphen = '-';
