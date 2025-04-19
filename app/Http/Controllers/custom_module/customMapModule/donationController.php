@@ -396,6 +396,64 @@ class donationController extends Controller
         //
     }
 
+    public function donationReport(Request $request){
+        $type = $request->input('type');
+        $sub_institute_id = session()->get('sub_institute_id');
+
+        if(in_array($type,['API','JSON'])){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->get('sub_institute_id');
+
+            $validator = validator::make($request->all(), [
+                'sub_institute_id' => 'required|integer',
+            ]);
+
+            if ($validator->fails()) {
+                $response = ['status' => '2', 'message' => $validator->errors()->first(), 'data' => []];
+                return response()->json($response, 400);
+            }
+        }
+        if($request->has('Search') && $request->Search=='Search'){
+            $res['reportData'] = DB::table('donation_collection as dc')
+            ->join('Z_donarDetails as dd', function ($join) {
+                $join->on('dc.donar_id', '=', 'dd.id');
+            })
+            ->selectRaw('dd.*,dc.*,dc.id as id')
+            ->where('dc.sub_institute_id', $sub_institute_id)
+            ->when($request->has('full_name') && $request->full_name != '', function ($q) use ($request) {
+                $q->where('dd.full_name', $request->full_name);
+            })
+            ->when($request->has('mobile_number') && $request->mobile_number != '', function ($q) use ($request) {
+                $q->where('dd.mobile_number', $request->mobile_number);
+            })
+            ->when($request->has('from_date') && $request->from_date != '', function ($q) use ($request) {
+                $q->whereBetween('dc.paid_date', [$request->from_date,$request->to_date]);
+            })
+            ->whereNull('dc.deleted_at')
+            ->get()
+            ->toArray();
+        }
+        // echo "<pre>";print_r($res);exit;
+        $from_date = $request->from_date ?? now();
+        $to_date = $request->to_date ?? now();
+        $res['from_date'] = $from_date;
+        $res['to_date'] = $to_date;
+        $res['full_name'] = $request->full_name;
+        $res['mobile_number'] = $request->mobile_number;
+        $res['donarLists'] = DB::table('Z_donarDetails')->where('sub_institute_id',$sub_institute_id)->groupBy('full_name')->get();
+
+        return is_mobile($type, "custom_modules.customMapModule.donationReport", $res, "view");
+    }
     public function convert_number_to_words($number)
     {
         $hyphen = '-';
