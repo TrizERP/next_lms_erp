@@ -105,10 +105,16 @@ class donationController extends Controller
 
         if(!empty($res['donarData']) && isset($res['donarData']->id)){
             $res['donationData'] = DB::table('donation_collection')
-                            ->where('sub_institute_id',$sub_institute_id)
-                            ->where('donar_id',$res['donarData']->id)
-                            ->whereNull('deleted_at')
-                            ->get()->toArray();
+                ->where('sub_institute_id',$sub_institute_id)
+                ->where('donar_id',$res['donarData']->id)
+                ->whereNull('deleted_at')
+                ->get()->toArray();
+
+            $res['cancellData'] = DB::table('donation_collection')
+                ->where('sub_institute_id',$sub_institute_id)
+                ->where('donar_id',$res['donarData']->id)
+                ->whereNotNull('deleted_at')
+                ->get()->toArray();
         }
         // dd(DB::getQueryLog($res['donarData']));
         // echo "<pre>";print_r($res['donarData']);exit;
@@ -391,9 +397,53 @@ class donationController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy($id)
+    public function destroy(Request $request,$id)
     {
-        //
+        // return $request->all();
+        $type= $request->input('type');
+        $sub_institute_id = session()->get('sub_institute_id');
+        $user_id = session()->get('user_id');
+        if(in_array($type,['API','JSON'])){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+            
+            $sub_institute_id = $request->get('sub_institute_id');
+            $user_id = $request->get('user_id');
+
+            $validator = validator::make($request->all(), [
+                'sub_institute_id' => 'required|integer',
+                'user_id' => 'required|integer',
+                'deleteData' => 'required|array',
+                'deleteData.*' => 'required|integer',
+            ]);
+            if ($validator->fails()) {
+                $response = ['status' => '2', 'message' => $validator->errors()->first(), 'data' => []];
+                return response()->json($response, 400);
+            }
+        }
+        $i = 0;
+        foreach ($request->deleteData as $key => $value) {
+            $i++;
+            DB::table('donation_collection')->where('id',$value)->update(['deleted_at'=>now(),'deleted_by'=>$user_id]);
+        }
+
+        if($i>0){
+            $res['status'] = 1;
+            $res['message'] = 'Donation Deleted Successfully !';
+        }else{
+            $res['status'] = 0;
+            $res['message'] = 'Failed to Delete Donation !';
+        }
+        return is_mobile($type, "donation_collection.index", $res);
     }
 
     public function donationReport(Request $request){

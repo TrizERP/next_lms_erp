@@ -51,7 +51,7 @@
             </form>
         </div>
 
-        @if(isset($data['donarData']->id))
+        @if(!empty($data['donarData']) && isset($data['donarData']->id))
             <div class="card">
                 @if(!empty($data['donationData']))
                     <div class="row">
@@ -124,7 +124,6 @@
                     </form>
                 </div>
             </div>
-        @endif
 
         <div class="modal fade" id="donationDetailsModal" tabindex="-1" role="dialog">
             <div class="modal-dialog modal-lg" role="document" style="max-width: 1200px;">
@@ -145,12 +144,14 @@
                                     </div>
                                 @endforeach
                             </div>
-                    
-
+                        <form action="{{route('donation_collection.destroy',[$data['donarData']->id])}}" method="post" onsubmit="validateForm(event)">
+                        @csrf
+                        @method('DELETE')
+                        <h5><b>Collection Data</b></h5>
                         <table class="table table-bordered">
                             <thead>
                                 <tr>
-                                    <th>Sr No.</th>
+                                    <th><input id="ckbCheckAll" type="checkbox"> Sr No.</th>
                                     <th>Date</th>
                                     <th>Amount</th>
                                     <th>Receipt No</th>
@@ -162,7 +163,7 @@
                             <tbody>
                                 @foreach($data['donationData'] ?? [] as $index => $donation)
                                     <tr>
-                                        <td>{{ $index + 1 }}</td>
+                                        <td><input type="checkbox" name="deleteData[]" value="{{$donation->id}}" class="ckbox1"> {{ $index + 1 }}</td>
                                         <td>{{ \Carbon\Carbon::parse($donation->paid_date)->format('d-m-Y') }}</td>
                                         <td>{{ $donation->donation_amount }}</td>
                                         <td>{{ $donation->reciept_no }}</td>
@@ -175,13 +176,52 @@
                                 @endforeach
                             </tbody>
                         </table>
+                        
+                        <div class="row">
+                            <div class="col-md-12">
+                                <center>
+                                    <input type="submit" value="Cancel Donation" class="btn btn-danger mt-2" onclick="return confirm('Are you sure you want to delete this record?');">
+                                </center>
+                            </div>
+                        </div>
+                        </form>
+                        @if(isset($data['cancellData']) && !empty($data['cancellData']))
+                        <div class="row" style="padding:16px;">
+                            <h5><b>Cancelled Data</b></h5>
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Sr No.</th>
+                                        <th>Date</th>
+                                        <th>Amount</th>
+                                        <th>Receipt No</th>
+                                        <th>Payment Mode</th>
+                                        <th>Remarks</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($data['cancellData'] ?? [] as $index => $donation)
+                                        <tr>
+                                            <td>{{ $index + 1 }}</td>
+                                            <td>{{ \Carbon\Carbon::parse($donation->paid_date)->format('d-m-Y') }}</td>
+                                            <td>{{ $donation->donation_amount }}</td>
+                                            <td>{{ $donation->reciept_no }}</td>
+                                            <td>{{ $donation->payment_mode }}</td>
+                                            <td>{{ $donation->remarks }}</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                        @endif
+
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                    </div>
+                   
                 </div>
             </div>
         </div>
+        @endif
+
     </div>
 </div>
 
@@ -204,6 +244,31 @@
                 alert('Failed to get Receipt Data');
             }
         });
+    }
+
+    $(function () {
+        var $tblChkBox = $("input:checkbox");
+        $("#ckbCheckAll").on("click", function () {
+            // console.log('clicked');
+            $($tblChkBox).prop('checked', $(this).prop('checked'));
+        });
+    });
+
+    function validateForm(event){
+        var checkboxes = document.querySelectorAll('input[name^="deleteData["]');
+        var anyChecked = false;
+
+        checkboxes.forEach(function(checkbox) {
+            if (checkbox.checked) {
+                anyChecked = true;
+            }
+        });
+        
+        if (!anyChecked) {
+            alert("Please select at least one checkbox");
+            event.preventDefault();
+            return false;
+        }
     }
 </script>
 @include('includes.footer')
