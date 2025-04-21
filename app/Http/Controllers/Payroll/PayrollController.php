@@ -1350,6 +1350,10 @@ class PayrollController extends Controller
         $newData=[];
         
         if ($request->year && $request->month) {
+            $searchedYear = $request->year;
+            if(isset($request->month) &&  in_array($request->month, ['Jan', 'Feb', 'Mar'])){
+                $searchedYear = ($request->year+1);
+            }
             $empData = EmployeeMonthlySalaryData::join('tbluser as u',function($join) use($request){
                 $join->on('u.id','=','employee_monthly_salary_data.employee_id')
                 ->when($request->department_id!=0,function($q) use($request){
@@ -1357,11 +1361,11 @@ class PayrollController extends Controller
                 });
             })
             ->selectRaw('employee_monthly_salary_data.*,u.id,CONCAT_WS(" ",COALESCE(u.first_name, "-"),COALESCE(u.middle_name, "-"),COALESCE(u.last_name, "-")) as full_name,u.employee_no,u.department_id as department_ids')
-            ->where([['employee_monthly_salary_data.month',$request->month],['employee_monthly_salary_data.year',$request->year],['employee_monthly_salary_data.sub_institute_id',$sub_institute_id]])
+            ->where([['employee_monthly_salary_data.month',$request->month],['employee_monthly_salary_data.year',$searchedYear],['employee_monthly_salary_data.sub_institute_id',$sub_institute_id]])
             ->get()->toArray();
 
-            $startOfMonth = Carbon::createFromFormat('M Y', $request->month . ' ' . $request->year)->startOfMonth()->format('Y-m-d');
-            $endOfMonth = Carbon::createFromFormat('M Y', $request->month . ' ' . $request->year)->endOfMonth()->format('Y-m-d'); 
+            $startOfMonth = Carbon::createFromFormat('M Y', $request->month . ' ' . $searchedYear)->startOfMonth()->format('Y-m-d');
+            $endOfMonth = Carbon::createFromFormat('M Y', $request->month . ' ' . $searchedYear)->endOfMonth()->format('Y-m-d'); 
 
             $employeeIds = array_map(function($employee) {
                 return $employee['employee_id'];
@@ -1514,6 +1518,9 @@ class PayrollController extends Controller
 
         if ($request->year) {
             $year = explode('-',$request->year);
+            // echo "<pre>";print_r($year);exit;
+            $Curryear = ($year[0]);
+            $nextYear =($year[0]+1);
             // $startYear = $year[0];
             // $endYear = $year[1];
             
@@ -1526,21 +1533,36 @@ class PayrollController extends Controller
                 ->when($request->emp_id!=0,function($q) use($request){
                     $q->where('employee_monthly_salary_data.employee_id',$request->emp_id);
                 })
-                ->where([['employee_monthly_salary_data.year',$year],['employee_monthly_salary_data.sub_institute_id',$sub_institute_id]])
+                ->where([['employee_monthly_salary_data.sub_institute_id',$sub_institute_id]])
                 ->whereIn('employee_monthly_salary_data.month',['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'])
+                ->whereIn('employee_monthly_salary_data.year',[$nextYear,$Curryear])
             ->get();
                 // echo "<pre>";print_r($currentYearemployeeDetails);exit;
-            $currentYearemployeeDetails = $currentYearemployeeDetails->map(function($employee){
+            $currentYearemployeeDetails = $currentYearemployeeDetails->map(function($employee) use($Curryear,$nextYear){
                 $data = [];
-                $data['employee_id'] = $employee->employee_id;
-                $data['employee_no'] = $employee->employee_no;
-                $data['employee_name'] = $employee->first_name . ' ' . $employee->middle_name . ' ' . $employee->last_name;
-                $data['data'] = json_decode($employee->employee_salary_data, true);
-                $data['total_day'] =$employee->total_day;
-                $data['month'] =$employee->month;
-                $data['year'] =$employee->year;
-                $data['total_deduction'] =$employee->total_deduction;
-                $data['total_payment'] =$employee->total_payment;
+                if(in_array($employee->month, ['Jan', 'Feb', 'Mar']) && $employee->year == $nextYear){
+                    $data['employee_id'] = $employee->employee_id;
+                    $data['employee_no'] = $employee->employee_no;
+                    $data['employee_name'] = $employee->first_name . ' ' . $employee->middle_name . ' ' . $employee->last_name;
+                    $data['data'] = json_decode($employee->employee_salary_data, true);
+                    $data['total_day'] =$employee->total_day;
+                    $data['month'] =$employee->month;
+                    $data['year'] =$employee->year;
+                    $data['total_deduction'] =$employee->total_deduction;
+                    $data['total_payment'] =$employee->total_payment;
+                }
+                else if($employee->year == $Curryear){
+                    $data['employee_id'] = $employee->employee_id;
+                    $data['employee_no'] = $employee->employee_no;
+                    $data['employee_name'] = $employee->first_name . ' ' . $employee->middle_name . ' ' . $employee->last_name;
+                    $data['data'] = json_decode($employee->employee_salary_data, true);
+                    $data['total_day'] =$employee->total_day;
+                    $data['month'] =$employee->month;
+                    $data['year'] =$employee->year;
+                    $data['total_deduction'] =$employee->total_deduction;
+                    $data['total_payment'] =$employee->total_payment;
+                }
+               
                 return $data;
             });
             // $nextYearemployeeDetails = EmployeeMonthlySalaryData::whereIn('month',[])->where([['year',$endYear],['sub_institute_id',$sub_institute_id],['employee_id',$request->employee_id]])->get();
@@ -1651,24 +1673,27 @@ class PayrollController extends Controller
 
         // empData with val 
         $newData = [];
- 
+        $searchedYear = $year;
+        if(isset($request->month) &&  in_array($request->month, ['Jan', 'Feb', 'Mar'])){
+            $searchedYear = ($request->year+1);
+        }
         foreach ($employeeDetails as $key => $value) {
             # store all details of employee
             $newData[$key] = $value;
             // get monthly salary Data and add into newData array
-            $newData[$key]['monthlyData'] = DB::table('employee_monthly_salary_data')->where(['sub_institute_id'=>$sub_institute_id,'year'=>$year])->where('employee_id',$value['id'])->where('month',$month)->first();
+            $newData[$key]['monthlyData'] = DB::table('employee_monthly_salary_data')->where(['sub_institute_id'=>$sub_institute_id,'year'=>$searchedYear])->where('employee_id',$value['id'])->where('month',$month)->first();
             if(isset($newData[$key]['monthlyData']->total_day)){
                 $newData[$key]['totalDay'] = round($newData[$key]['monthlyData']->total_day,2);
                 $newData[$key]['json'] = '';
             }else{
-                $year = $year ?? Carbon::now()->year;
+                $year = $searchedYear ?? Carbon::now()->year;
                 $month = $month ?? Carbon::now()->format('M');
 
                 $monthNumber = date('n', strtotime($month));
                 $currentMonth = date('n');
 
-                $from_date = Carbon::createFromDate($year, $monthNumber, 1);
-                if($currentMonth==$monthNumber && $year == date('Y')){
+                $from_date = Carbon::createFromDate($searchedYear, $monthNumber, 1);
+                if($currentMonth==$monthNumber && $searchedYear == date('Y')){
                     $to_date = now();
                 }else{
                     $to_date = $from_date->copy()->endOfMonth();
@@ -1726,9 +1751,12 @@ class PayrollController extends Controller
         // echo "<pre>";print_r($request->all());exit;
         $sub_institute_id = session()->get('sub_institute_id');
         $totalDay = $request->totalDay;
-        
+        $searchedYear = $request->year;
+        if(isset($request->month) &&  in_array($request->month, ['Jan', 'Feb', 'Mar'])){
+            $searchedYear = ($request->year+1);
+        }
         $payrollTypes = PayrollType::where('sub_institute_id',$sub_institute_id)->where('status', 1)->orderBy('sort_order')->get();
-        $employeeSalaryDetails = EmployeeSalaryStructure::where(['employee_id'=> $request->emp_id, 'sub_institute_id'=>$sub_institute_id,'year'=>$request->year])->first();
+        $employeeSalaryDetails = EmployeeSalaryStructure::where(['employee_id'=> $request->emp_id, 'sub_institute_id'=>$sub_institute_id,'year'=>$searchedYear])->first();
 
         if(empty($employeeSalaryDetails)){
             $res['status_code']=0;
@@ -1743,7 +1771,7 @@ class PayrollController extends Controller
             // for allowance
             if(isset($employeeSalaryDetails[$payrollType->id]) && $payrollType->payroll_type == 1) {
 
-                $checkAllowance = DB::table('hrms_emp_payroll_deduction')->where('employee_id',$request->emp_id)->where(['sub_institute_id'=>$sub_institute_id,'month'=>$request->month,'year'=>$request->year,'deduction_type'=>$payrollType->id])->first();
+                $checkAllowance = DB::table('hrms_emp_payroll_deduction')->where('employee_id',$request->emp_id)->where(['sub_institute_id'=>$sub_institute_id,'month'=>$request->month,'year'=>$searchedYear,'deduction_type'=>$payrollType->id])->first();
                 $payrollAmount=$employeeSalaryDetails[$payrollType->id];
                 if(isset($checkAllowance->deduction_amount)){
                     $payrollAmount = ($payrollAmount + $checkAllowance->deduction_amount);
@@ -1754,7 +1782,7 @@ class PayrollController extends Controller
             // for deduction
              else if (isset($employeeSalaryDetails[$payrollType->id])) {
 
-                $checkDeduction = DB::table('hrms_emp_payroll_deduction')->where('employee_id',$request->emp_id)->where(['sub_institute_id'=>$sub_institute_id,'month'=>$request->month,'year'=>$request->year,'deduction_type'=>$payrollType->id])->first();
+                $checkDeduction = DB::table('hrms_emp_payroll_deduction')->where('employee_id',$request->emp_id)->where(['sub_institute_id'=>$sub_institute_id,'month'=>$request->month,'year'=>$searchedYear,'deduction_type'=>$payrollType->id])->first();
                 // echo "<pre>";print_r($checkDeduction);exit;
                 if($request->month=="Feb" && $payrollType->id==2){
                     $payrollAmount=300;
@@ -1773,7 +1801,7 @@ class PayrollController extends Controller
         foreach ($preparPayrollType as $value){
             // for allowance
             $monthNo = date('n', strtotime($request->month)); // Converts months
-            $payrollMonthDays = Carbon::create($request->year, $monthNo)->daysInMonth;
+            $payrollMonthDays = Carbon::create($searchedYear, $monthNo)->daysInMonth;
             if(isset($value['allowance'])) {
                 $allowence =  $value['allowance'][0];
                 if($value['allowance'][1] == 1  && $value['allowance'][4]==0) {

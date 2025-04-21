@@ -8,9 +8,6 @@ trait Helpers
     public static function getMonths()
     {
         return [
-            "Jan",
-            "Feb",
-            "Mar",
             "Apr",
             "May",
             "Jun",
@@ -20,6 +17,9 @@ trait Helpers
             "Oct",
             "Nov",
             "Dec",
+            "Jan",
+            "Feb",
+            "Mar",
         ];
     }
 

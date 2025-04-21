@@ -74,7 +74,13 @@
             <form action="{{route('monthly_payroll.store')}}" method="post">
             @csrf
             <input type="hidden" name="month" @if(isset($data['selMonth'])) value="{{$data['selMonth']}}" @endif>
-            <input type="hidden" name="year" @if(isset($data['selYear'])) value="{{$data['selYear']}}" @endif>
+            @php
+                $searchedYear = $data['selYear'];
+                if(isset($data['selMonth']) && in_array($data['selMonth'], ['Jan', 'Feb', 'Mar'])){
+                    $searchedYear = ($data['selYear'] + 1);
+                }
+            @endphp
+            <input type="hidden" name="year" value="{{$searchedYear}}">
 
             <div class="table-responsive mt-20 tz-report-table">
                 <table id="example" class="table table-striped">
