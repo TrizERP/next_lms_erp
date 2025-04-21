@@ -58,16 +58,22 @@
                                 <td>{{ $col_arr['mobile']}}</td>
                                 <td>
                                     <select name="{{ 'values[dd]['.$col_arr['student_id'].']'}}"
-                                            class="form-control">
+                                            class="form-control titleSelect">
                                         <option value="">Select</option>
                                         @foreach ($data['dd'] as $id => $name)
-                                            <option value="{{ $name}}">{{ $name}}</option>
+                                            <option value="{{ $name}}" data-id="{{$id}}" data-student="{{$col_arr['student_id']}}">{{ $name}}</option>
                                         @endforeach
                                     </select>
                                 </td>
                                 <td>
-                                    <textarea name="{{ 'values[text]['.$col_arr['student_id'].']'}}"
-                                              class="form-control"></textarea>
+                                    @if(in_array(session()->get('sub_institute_id'),[195]))  
+                                    <select class="form-control" name="{{ 'values[text]['.$col_arr['student_id'].']'}}" id="messageSelect-{{$col_arr['student_id']}}">
+                                        <option value="">Please Select Title</option>
+                                    </select>
+                                    @else 
+                                    <textarea name="{{ 'values[textdd]['.$col_arr['student_id'].']'}}"
+                                              class="form-control resizableVertical"></textarea>
+                                    @endif
                                 </td>
                             </tr>
                             @endforeach
@@ -111,32 +117,60 @@
             $($tblChkBox).prop('checked', $(this).prop('checked'));
         });
     });
-</script>
-<script>
-$(document).ready(function() {
-    var table = $('#example').DataTable( {
-         select: true,          
-         lengthMenu: [ 
-            [100, 500, 1000, -1], 
-            ['100', '500', '1000', 'Show All'] 
-        ],
-        }); 
 
-        $('#example thead tr').clone(true).appendTo( '#example thead' );
-        $('#example thead tr:eq(1) th').each( function (i) {
-            var title = $(this).text();
-            $(this).html( '<input type="text" placeholder="Search '+title+'" />' );
+    @if(in_array(session()->get('sub_institute_id'),[195]))  
+    $('.titleSelect').on('change', function () {
+        var selectedValue = $(this).val();
+        var id = $(this).find(':selected').data('id');
+        var student = $(this).find(':selected').data('student');
 
-            $( 'input', this ).on( 'keyup change', function () {
-                if ( table.column(i).search() !== this.value ) {
-                    table
-                        .column(i)
-                        .search( this.value )
-                        .draw();
+        $.ajax({
+            url: `{{ route('dicipline-Master.show', '') }}/${id}`,
+            type: "GET",
+            success: function (data) {
+               alert(data);
+                var messageSelect = $('#messageSelect-' + student);
+                messageSelect.empty();
+                messageSelect.append('<option value="">Select</option>');
+                if (data['masterData'] && data['masterData'].length > 0) {
+                    $.each(data['masterData'], function (index, value) {
+                        messageSelect.append(`<option value='${value.message}'>${value.message}</option>`);
+                    });
+                } else {
+                    messageSelect.append('<option value="">No messages available</option>');
                 }
-            } );
-        } );
+            }
+        });
+    });
+    @endif
+    
+$(document).ready(function() {
+    var table = $('#example').DataTable({
+        select: true,
+        lengthMenu: [
+            [100, 500, 1000, -1],
+            ['100', '500', '1000', 'Show All']
+        ],
+    });
+
+    $('#example thead tr').clone(true).appendTo('#example thead');
+    $('#example thead tr:eq(1) th').each(function (i) {
+        var title = $(this).text();
+        $(this).html('<input type="text" placeholder="Search ' + title + '" />');
+
+        $('input', this).on('keyup change', function () {
+            if (table.column(i).search() !== this.value) {
+                table
+                    .column(i)
+                    .search(this.value)
+                    .draw();
+            }
+        });
+    });
+
 } );
+
+
 </script>
 
 @include('includes.footer')

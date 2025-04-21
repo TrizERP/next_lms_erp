@@ -93,7 +93,11 @@ class diciplineController extends Controller
             $responce_arr['stu_data'][$id]['standard_name'] = $arr['standard_name'];
             $responce_arr['stu_data'][$id]['division_name'] = $arr['division_name'];
         }
-        $dd = DB::table('dicipline_dd')->pluck('message', 'id');
+        $dd = DB::table('dicipline_dd')->where('sub_institute_id',$sub_institute_id)->whereNull('deleted_at')->pluck('message', 'id');
+        // echo "<pre>";print_r($dd);exit;
+        if(count($dd)==0){
+            $dd = DB::table('dicipline_dd')->where('sub_institute_id',0)->whereNull('deleted_at')->pluck('message', 'id');
+        }
         $responce_arr['dd'] = $dd;
         if($type=='webForm'){
             $responce_arr['syears'] = DB::table('academic_year')->where('sub_institute_id',$sub_institute_id)->orderBy('sort_order')->groupBy('syear')->get()->toArray();
@@ -127,7 +131,7 @@ class diciplineController extends Controller
      */
     public function store(Request $request)
     {
-
+            // echo "<pre>";print_r($request->all());exit;
         $type = $request->type;
         $user_id = session()->get('user_id');
         $sub_institute_id = session()->get('sub_institute_id');

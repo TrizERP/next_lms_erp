@@ -155,9 +155,49 @@ class diciplineMasterController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show($id)
+    public function show(Request $request,$id)
     {
-        //
+        $type = $request->type;
+        $sub_institute_id = session()->get('sub_institute_id');
+        $user_id = session()->get('user_id');
+        
+        if(in_array($type,["API","JSON"])){
+            try {
+                if (! $this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+    
+                    return response()->json($response, 401);
+                }
+                
+              $sub_institute_id = $request->input('sub_institute_id');
+                $user_id = $request->input('user_id');
+              $validator = Validator::make($request->all(), [
+                    'sub_institute_id'  => 'required|numeric',
+                    'user_id'  => 'required|numeric',
+                ]);
+                
+                if ($validator->fails()) {
+                    $response['status'] = '0';
+                    $response['response'] = $validator->messages()->first();
+                    return response()->json($res, 401);
+                } 
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+    
+                return response()->json($response, 401);
+            }
+        }
+        $data = null;
+        $response['status'] = '0';
+        $response['message'] = 'Something went wrong';
+
+        $response['masterData'] = diciplineMaster::where('dicipline_id', $id)->whereNull('deleted_at')->get();
+        
+        if($data){
+            $response['status'] = '1';
+            $response['message'] = 'Data deleted successfully';
+        }
+        return response()->json($response, 200);
     }
 
     /**
