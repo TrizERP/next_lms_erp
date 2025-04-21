@@ -71,7 +71,7 @@
                                         <option value="">Please Select Title</option>
                                     </select>
                                     @else 
-                                    <textarea name="{{ 'values[textdd]['.$col_arr['student_id'].']'}}"
+                                    <textarea name="{{ 'values[text]['.$col_arr['student_id'].']'}}"
                                               class="form-control resizableVertical"></textarea>
                                     @endif
                                 </td>
