@@ -12,6 +12,13 @@
                     <strong>{{ $data['message'] }}</strong>
                 </div>
                 @endif
+                @if(session()->get('sub_institute_id') == 195)
+                <div class="row mb-2">
+                    <div class="col-md-12 text-right">
+                        <a href="{{ route('dicipline-Master.index') }}" class="btn btn-primary" target="_blank">Add Master</a>
+                    </div>
+                </div>
+                @endif
                 <div class="col-lg-12 col-sm-12 col-xs-12">
                     <form action="{{ route('dicipline.create') }}" enctype="multipart/form-data" method="post">
                         {{ method_field("GET") }}

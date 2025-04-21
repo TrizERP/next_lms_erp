@@ -29,6 +29,15 @@
                                     @endforeach
                                 </select>
                             </div>
+                            {{-- Exam Master Selection added on 22-04-2025--}}
+                            <div class="col-md-4 form-group">
+                                <label for="title">Select Exam Master:</label>
+                                <select name="exam_master" id="exam_master" class="form-control" required>
+                                    <option value="">Select</option>
+                                  
+                                </select>
+                            </div>
+
 
                             <div class="col-md-4 form-group">
                                 <label for="title">Select Exam:</label>
@@ -161,205 +170,157 @@
 
 @include('includes.footerJs')
 <script>
-    $(document).ready(function () {
-        var standardID = $("#standard").val();
-        var divisionID = $("#division").val();
-       
-        if (standardID) {
-            $.ajax({
-                type: "GET",
-                url: "/api/get-subject-list?standard_id=" + standardID + "&division_id="+ divisionID,
-                success: function (res) {
-                    if (res) {
-                        $("#subject").empty();
-                        $("#subject").append('<option value="">Select</option>');
-                        $.each(res, function (key, value) {
-                            $("#subject").append('<option value="' + key + '">' + value + '</option>');
-                        });
 
-                    } else {
-                        $("#subject").empty();
-                    }
-                }
-            });
-        } else {
-            $("#subject").empty();
-        }
+    // Set required fields
+    $("#grade, #standard, #division, #subject, #exam").prop('required', true);
+
+    // Reset subject and exam on grade or standard change
+    $('#grade, #standard').change(function () {
+        resetDropdowns(['#subject', '#exam']);
     });
 
-    setTimeout(() => {
-        $('#subject').val({{ $data['subject'] }});
-    }, 1000);
-
-
-    var myArray = <?php echo json_encode($data['grd_data']); ?>;
-
-    jQuery('.att').on('change blur', function () {
-        var $row = jQuery(this).closest('tr');
-        var $att = $row.find('.att').val();
-        var $total_days = $row.find('.total_days').val();
-        if (isNaN($att)) {
-            $row.find('.at_grd_val').val("-");
-            $row.find(".at_grd").text("-");
-        } else if ($att > 500) {
-            alert("Marks Should Not Be Grater Then 500.");
-            $row.find('.att').val(0);
-            $row.find('.at_grd_val').val("-");
-            $row.find(".at_grd").text("-");
-        } else {
-            var $per = ($att * 100 / $total_days).toFixed(2);
-            $per = Math.round($per);
-            $.each(myArray, function (idx, obj) {
-                if (jQuery.inArray($per, obj) !== -1) {
-                    $row.find('.at_grd_val').val(idx);
-                    $row.find(".at_grd").text(idx);
-                }
-            });
-        }
-    });
-//    console.log(jArray);
-</script>
-<script>
-    jQuery('.att').on('change', function () {
-        var $row = jQuery(this).closest('tr');
-        var $att = $row.find('.att').val();
-        var $total_days = $row.find('.total_days').val();
-        if (isNaN($att)) {
-            $row.find('.at_per_val').val("-");
-            $row.find(".at_per").text("-");
-        } else if ($att > 500) {
-//            alert("Marks Should Not Be Grater Then 500.");
-              $row.find('.at_per_val').val("-");
-            $row.find(".at_per").text("-");
-        } else {
-//        console.log($att);
-//        console.log($total_days);
-            var $per = ($att * 100 / $total_days).toFixed(2);
-            $row.find('.at_per_val').val($per + "%");
-            $row.find(".at_per").text($per + "%");
-        }
-    });
-
-</script>
-<script>
-    $("#grade").prop('required', true);
-    $("#standard").prop('required', true);
-    $("#division").prop('required', true);
-    $("#subject").prop('required', true);
-    $("#term").prop('required', true);
-    $("#exam").prop('required', true);
-    $('#term').change(function () {
-        $("#grade").val("");
-        $("#standard").empty();
-        $("#standard").append('<option value="">Select</option>');
-        $("#division").empty();
-        $("#division").append('<option value="">Select</option>');
-        $("#subject").empty();
-        $("#subject").append('<option value="">Select</option>');
-        $("#exam").empty();
-        $("#exam").append('<option value="">Select</option>');
-    });
-    $('#grade').change(function () {
-        $("#subject").empty();
-        $("#subject").append('<option value="">Select</option>');
-        $("#exam").empty();
-        $("#exam").append('<option value="">Select</option>');
-    });
-    $('#standard').change(function () {
-        $("#subject").empty();
-        $("#subject").append('<option value="">Select</option>');
-        $("#exam").empty();
-        $("#exam").append('<option value="">Select</option>');
-    });
+    // Fetch subjects based on division
     $('#division').on('change', function () {
-        $("#exam").empty();
-        $("#exam").append('<option value="">Select</option>');
-        var standardID = $("#standard").val();
-        var divisionID = $("#division").val();
-        if (standardID) {
-            $.ajax({
-                type: "GET",
-                url: "/api/get-subject-list?standard_id=" + standardID + "&division_id="+ divisionID,
-                success: function (res) {
-                    if (res) {
-                        $("#subject").empty();
-                        $("#subject").append('<option value="">Select</option>');
-                        $.each(res, function (key, value) {
-                            $("#subject").append('<option value="' + key + '">' + value + '</option>');
-                        });
-
-                    } else {
-                        $("#subject").empty();
-                    }
-                }
-            });
-        } else {
-            $("#subject").empty();
-        }
-
+        fetchDropdownData('/api/get-subject-list', {
+            standard_id: $("#standard").val(),
+            division_id: $("#division").val()
+        }, '#subject');
     });
+
+    // Fetch exam master based on subject and term
+    $(document).ready(function () {
+        initializeExamMasterDropdown();
+    });
+
+    function initializeExamMasterDropdown() {
+        @if (isset($data['exam_master']) && $data['exam_master'] != null)
+            fetchDropdownData('/api/get-exam-master-list', {
+                standard_id: $("#standard").val(),
+                term_id: $("#term").val()
+            }, '#exam_master', "{{ $data['exam_master'] }}");
+        @endif
+
+        @if (isset($data['exam']) && $data['exam'] != null && isset($data['exam_master']) && $data['exam_master'] != null)
+            fetchDropdownData('/api/get-exam-list', {
+                standard_id: $("#standard").val(),
+                subject_id: $("#subject").val(),
+                term_id: $("#term").val(),
+                exam_id: {{ $data['exam_master'] }}
+            }, '#exam',"{{ $data['exam'] }}");
+        @endif
+    }
+
     $('#subject').on('change', function () {
-        var standardID = $("#standard").val();
-        var subjectID = $("#subject").val();
-        var termID = $("#term").val();
+                fetchDropdownData('/api/get-exam-master-list', {
+                    standard_id: $("#standard").val(),
+                    term_id: $("#term").val()
+                }, '#exam_master');
+        $('#exam').empty().append('<option value="">Select</option>');
+    });
 
-        if (standardID && subjectID && termID) {
+    // Fetch exams based on exam master
+    $('#exam_master').on('change', function () {
+        fetchDropdownData('/api/get-exam-list', {
+            standard_id: $("#standard").val(),
+            subject_id: $("#subject").val(),
+            term_id: $("#term").val(),
+            exam_id: $("#exam_master").val()
+        }, '#exam');
+    });
+
+    // Helper function to reset dropdowns
+    function resetDropdowns(selectors) {
+        selectors.forEach(selector => {
+            $(selector).empty().append('<option value="">Select</option>');
+        });
+    }
+
+    // Helper function to fetch dropdown data
+    function fetchDropdownData(url, params, target, salVal = '') {
+        if (Object.values(params).every(val => val)) {
             $.ajax({
                 type: "GET",
-                url: "/api/get-exam-list?standard_id=" + standardID +
-                        "&subject_id=" + subjectID + "&term_id=" + termID,
+                url: url + '?' + $.param(params),
                 success: function (res) {
                     if (res) {
-                        $("#exam").empty();
-                        $("#exam").append('<option value="">Select</option>');
+                        $(target).empty().append('<option value="">Select</option>');
                         $.each(res, function (key, value) {
-                            $("#exam").append('<option value="' + key + '">' + value + '</option>');
+                            if (salVal && key == salVal) {
+                                $(target).append('<option value="' + key + '" selected>' + value + '</option>');
+                            } else {
+                                $(target).append('<option value="' + key + '">' + value + '</option>');
+                            }
                         });
-
                     } else {
-                        $("#exam").empty();
+                        $(target).empty().append('<option value="">Select</option>');
                     }
                 }
             });
         } else {
-            $("#exam").empty();
-            $("#exam").append('<option value="">Select</option>');
-            if (termID == "") {
-                alert("Please Select Term.");
-            }
+            $(target).empty().append('<option value="">Select</option>');
+        }
+    }
+    const gradeData = @json($data['grd_data']);
+
+    function updateGradeAndPercentage(row) {
+        const marks = parseFloat(row.find('.att').val());
+        const totalMarks = parseFloat(row.find('.total_days').val());
+
+        if (isNaN(marks) || marks > 500) {
+            alert("Marks should not exceed 500 or be invalid.");
+            row.find('.att').val(0);
+            row.find('.at_grd_val, .at_per_val').val("-");
+            row.find(".at_grd, .at_per").text("-");
+            return;
         }
 
+        const percentage = ((marks / totalMarks) * 100).toFixed(2);
+        row.find('.at_per_val').val(`${percentage}%`);
+        row.find(".at_per").text(`${percentage}%`);
+
+        let grade = "-";
+        $.each(gradeData, (key, range) => {
+            if (range.includes(Math.round(percentage))) {
+                grade = key;
+            }
+        });
+
+        row.find('.at_grd_val').val(grade);
+        row.find(".at_grd").text(grade);
+    }
+
+    function validateInput(input, maxMarks) {
+        const values = input.value.trim().split(/\s+/);
+        let total = 0;
+        let isValid = true;
+
+        values.forEach(value => {
+            if (!["AB", "N.A.", "EX"].includes(value) && isNaN(parseInt(value))) {
+                isValid = false;
+            } else if (!isNaN(parseInt(value))) {
+                total += parseInt(value);
+            }
+        });
+
+        if (total > maxMarks) {
+            alert(`Total value cannot exceed ${maxMarks}.`);
+            input.value = 0;
+        }
+
+        if (!isValid) {
+            alert("Enter valid values: digits or 'AB', 'N.A.', 'EX'.");
+            input.value = 0;
+        }
+    }
+
+    $('.att').on('change blur', function () {
+        const row = $(this).closest('tr');
+        updateGradeAndPercentage(row);
     });
 
-    function check_input(inputElement,outof) {
-    var inputValue = inputElement.value;
-    var values = inputValue.trim().split(/\s+/); 
-    var totalValue = 0;
-    var isValidValue = 0;
-
-    var isValidValue = false;
-
-    for (var i = 0; i < values.length; i++) {
-        var intValue = parseInt(values[i]);
-        if (!isNaN(intValue)) {
-            totalValue += intValue;
-        } else if (values[i] !== "AB" && values[i] !== "N.A." && values[i] !== "EX") {
-            isValidValue = true;
-            break;
-        }
+    function check_input(inputElement, maxMarks) {
+        validateInput(inputElement, maxMarks);
     }
-
-    if (totalValue > outof) {
-        alert("Total value cannot be greater than " + outof + ".");
-        inputElement.value =0;    
-        }
-
-    if (isValidValue) {
-        alert("Enter value must be a digit or 'AB', 'N.A.', or 'EX'.");
-        inputElement.value = 0;
-    }
-}
-
 </script>
 @include('includes.footer')
 @endsection

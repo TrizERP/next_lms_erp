@@ -247,7 +247,8 @@ class marks_entry_controller extends Controller
         $responce_arr['division'] = $_REQUEST['division'];
         $responce_arr['subject_dd'] = $this->getSubjectDD($_REQUEST["standard"]);
         $responce_arr['subject'] = $_REQUEST['subject'];
-        $responce_arr['exam_dd'] = $this->getExamDD($_REQUEST["term"], $_REQUEST["standard"], $_REQUEST['subject']);
+        $responce_arr['exam_master'] = $_REQUEST['exam_master']; // added by uma on 20-04-2025
+        $responce_arr['exam_dd'] = $this->getExamDD($_REQUEST["term"], $_REQUEST["standard"], $_REQUEST['subject'],$_REQUEST['exam_master']);
         $responce_arr['exam'] = $_REQUEST['exam'];
         $responce_arr['grd_data'] = $grd_data;
 
@@ -282,8 +283,9 @@ class marks_entry_controller extends Controller
                 $responce_arr['division'] = $_REQUEST['division'];
                 $responce_arr['subject_dd'] = $this->getSubjectDD($_REQUEST["standard"]);
                 $responce_arr['subject'] = $_REQUEST['subject'];
+                $responce_arr['exam_master'] = $_REQUEST['exam_master']; // added by uma on 20-04-2025
                 $responce_arr['exam_dd'] = $this->getExamDD($_REQUEST["term"], $_REQUEST["standard"],
-                    $_REQUEST['subject']);
+                    $_REQUEST['subject'],$_REQUEST['exam_master']);
                 $responce_arr['exam'] = $_REQUEST['exam'];
                 $responce_arr['grd_data'] = $grd_data;
 
@@ -410,7 +412,7 @@ class marks_entry_controller extends Controller
             ->pluck('sub_std_map.display_name', 'subject.id');
     }
 
-    public function getExamDD($term, $std, $sub)
+    public function getExamDD($term, $std, $sub,$examId='')
     {
         $where = [
             "re.sub_institute_id" => session()->get('sub_institute_id'),
@@ -418,6 +420,7 @@ class marks_entry_controller extends Controller
             "re.term_id"          => $term,
             "re.standard_id"      => $std,
             "re.subject_id"       => $sub,
+            're.exam_id'          => $examId, // added by uma on 20-04-2025
         ];
 
         return DB::table('result_create_exam as re')
