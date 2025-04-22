@@ -1681,6 +1681,8 @@ function send_FCM_Notification($to, $message, $sub_institute_id)
 {
     if($sub_institute_id==254){
         $serviceAccount = json_decode(file_get_contents(public_path('firebase/hills-high-ab947-7471f8ddfe23.json')), true);
+    }else if($sub_institute_id==76){
+        $serviceAccount = json_decode(file_get_contents(public_path('firebase/swaminarayanmission-56b2d27e74.json')), true);
     }else if($sub_institute_id==48){
         $serviceAccount = json_decode(file_get_contents(public_path('firebase/chanderbala-modi-academy-f4a3c8b00930.json')), true);
     }else{

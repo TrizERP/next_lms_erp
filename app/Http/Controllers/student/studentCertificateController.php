@@ -290,7 +290,7 @@ class studentCertificateController extends Controller
         $date_in_word = ucwords($number_controller->toWords(date('dS', strtotime($value['dob'])))." of ".
             date('F', strtotime($value['dob']))." ".
             $this->convert_number_to_words(date('Y', strtotime($value['dob']))));
-        if($sub_institute_id==47){
+        if(in_array($sub_institute_id,[47,76])){
             $date_in_word = str_replace([' And ', ' Of '], ' ', $date_in_word);
         }
         // echo "<pre>";print_r($date_in_word);exit;
@@ -517,7 +517,7 @@ LIMIT 1");
 		$html_content = str_replace(htmlspecialchars("<<short_standard_name_value>>"), strtoupper($value['short_standard_name']), $html_content);
         //$standard_array = ['I' => 1,'II' => 2,'III' => 3,'IV' => 4,'V' => 5,'VI' => 6,'VII' => 7,'VIII' => 8,'IX' => 9,'X' => 10,'XI' => 11,'XII' => 12];
         //$std = $standard_array[$value['short_standard_name']] ?? 0;
-        $html_content = str_replace(htmlspecialchars("<<short_standard_name_in_word_value>>"), strtoupper($value['school_stream']), $html_content);
+        $html_content = str_replace(htmlspecialchars("<<short_standard_name_in_word_value>>"), $value['school_stream'], $html_content);
         /*if($sub_institute_id==254){
             $html_content = str_replace(htmlspecialchars("<<subjects_studied_system>>"),strtoupper($subject_names),$html_content);
         }else*/{
@@ -529,7 +529,7 @@ LIMIT 1");
         $next_std = DB::table('standard')->where('id', $curr_std->next_standard_id)->first();
         $getRemarks = DB::table('result_remarks')->where('student_id', $value['id'])->where('syear',$syear)->latest()->first();
         $nextStd = (isset($next_std->school_stream) && $next_std->school_stream!='') ? $next_std->school_stream: '';
-        $currentStd = (isset($curr_std->school_stream) && $curr_std->school_stream!='') ? $curr_std->school_stream: '';
+        $currentStd = (isset($curr_std->school_stream) && $curr_std->school_stream!='') ? $curr_std->school_stream : '';
 
         $result_remarks = $stu_remarks = $stu_remarks_input = '';
         if(!empty($getRemarks) && isset($getRemarks->result_remarks)){
@@ -554,6 +554,8 @@ LIMIT 1");
         }
         // echo "<pre>";print_r($value);exit;
         $curr_std_medium = (isset($curr_std->medium)) ? $curr_std->medium: '';
+        $next_std_medium = (isset($next_std->medium)) ? $next_std->medium: '';
+
         $nextStdName = (isset($next_std->name)) ? $next_std->name: '';
         $nextStdStream = (isset($next_std->school_stream)) ? $next_std->school_stream: '';
         $nextStdShortName = (isset($next_std->short_name)) ? $next_std->short_name: '';
@@ -573,7 +575,8 @@ LIMIT 1");
         $html_content = str_replace(htmlspecialchars("<<next_std_name>>"),$next_std_name, $html_content);
         $html_content = str_replace(htmlspecialchars("<<next_std_stream>>"),$next_std_stream, $html_content);
         $html_content = str_replace(htmlspecialchars("<<next_std_short_name>>"),$next_std_short_name, $html_content);
-        $html_content = str_replace(htmlspecialchars("<<current_medium>>"),strtoupper($curr_std_medium), $html_content);
+        $html_content = str_replace(htmlspecialchars("<<current_medium>>"),$curr_std_medium, $html_content);
+        $html_content = str_replace(htmlspecialchars("<<next_medium>>"),$next_std_medium, $html_content);
 
         $html_content = str_replace(htmlspecialchars("<<annual_value_result>>"),strtoupper($result_remarks), $html_content); 
 
@@ -592,9 +595,9 @@ LIMIT 1");
             $subjects_studied = implode(', ', $subjects);
         }
         $html_content = str_replace(htmlspecialchars("<<subjects_studied_value>>"),$subjects_studied, $html_content);
-        $html_content = str_replace(htmlspecialchars("<<candidate_belongs_to_value>>"),$candidate_belongs_to, $html_content); // ssmission first letter capital
-        $html_content = str_replace(htmlspecialchars("<<date_of_first_admission_value>>"),
-            strtoupper($value['date_of_first_admission']), $html_content);
+        $html_content = str_replace(htmlspecialchars("<<candidate_belongs_to_value>>"),$candidate_belongs_to, $html_content); 
+        // ssmission first letter capital
+        $html_content = str_replace(htmlspecialchars("<<date_of_first_admission_value>>"),$value['date_of_first_admission'], $html_content);
         $html_content = str_replace(htmlspecialchars("<<class_in_which_pupil_last_studied_value>>"),
             strtoupper($value['class_in_which_pupil_last_studied']), $html_content);
         $html_content = str_replace(htmlspecialchars("<<last_school_board_value>>"),

@@ -169,8 +169,8 @@
               <th>Chapter Name</th>
               <th>Topic Name</th>
               <th>Title</th>
-              <th>Resource</th>
-              <th>Activity</th>
+              <!--<th>Resource</th>-->
+              <!--<th>Activity</th>-->
               <th>File</th>
               <th>Mapped Values</th>
               @if(isset($data['data']['custom_fields']))
@@ -193,11 +193,17 @@
               <td>{{$tdata['chapter_name']}}</td>
               <td>@if(isset($tdata['topic_name'])){{$tdata['topic_name']}} @else- @endif</td>
               <td>{{$tdata['title']}}</td>
-              <td>{{$tdata['description']}}</td>
-              <td>{{$tdata['activity']}}</td>
+              <!--<td>{{$tdata['description']}}</td>-->
+              <!--<td>{{$tdata['activity']}}</td>-->
               <td>
-                <a href="{{ Storage::disk('digitalocean')->url('public'.$tdata['file_folder'].'/'.$tdata['file_name'])}}"
-                  target="_blank">View</a>
+@php
+if ($tdata['file_name'] != '' && $tdata['file_type']=='link') {
+    $content_file_url = $tdata['file_name'];
+} else {
+    $content_file_url = Storage::disk('digitalocean')->url('public'.$tdata['file_folder'].'/'.$tdata['file_name']);
+}
+@endphp
+                <a href="{{ $content_file_url }}" target="_blank">View</a>
               </td>
               <td>
                 @php 

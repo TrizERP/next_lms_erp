@@ -79,7 +79,9 @@ class apiController extends Controller
                 $sub_institute_id = $data[0]->sub_institute_id;
                 if ($_REQUEST['mobile'] == '9979176562' || $_REQUEST['mobile'] == '9824154142') {
                     $otp = "123456";
-                } else {
+                } else if($sub_institute_id == 328){
+                    $otp = date('dmy', strtotime($data[0]->dob));
+                }else{
                     //$text = "Dear Parent, Your OTP is ".$otp;
                     if ($sub_institute_id == 49 || $sub_institute_id == 232 || $sub_institute_id == 233) {
                         $text = "Dear Student Your Application Login OTP is ".$otp;
@@ -95,7 +97,8 @@ class apiController extends Controller
                     if ($res["error"] == 1) {
                         $errorMessage = "Please add api details first.";
                         if ($res["error"] == $errorMessage) {
-                            $otp = "123456";
+                            //$otp = "123456";
+                            $otp = date('dmy', strtotime($data[0]->dob));
                         }
 
                     }
@@ -159,6 +162,8 @@ class apiController extends Controller
                 $sub_institute_id = $data['sub_institute_id'];
                 if ($_REQUEST['mobile'] == '9979176562' || $_REQUEST['mobile'] == '9824154142') {
                     $otp = "123456";
+                }else if($sub_institute_id == 328){
+                    $otp = date('dmy', strtotime($data['birthdate']));
                 } else {
 
                     if ($sub_institute_id == 49 || $sub_institute_id == 232 || $sub_institute_id == 233) {

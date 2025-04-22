@@ -80,9 +80,9 @@ class studentSearchController extends Controller
         if ($user_profile_name == 'Student') {
             $extraRaw .= " AND tblstudent.id = '".$user_id."' ";
         }
-        if ($including_inactive != 'Yes') {
-            $extraRaw .= " AND tblstudent_enrollment.end_date is NULL";
-        }
+        // if ($including_inactive != 'Yes') {
+        //     $extraRaw .= " AND tblstudent_enrollment.end_date is NULL";
+        // }
         if ($including_inactive == 'Yes') {
             $inactive_colour = ' if(tblstudent_enrollment.end_date != "","pink","") as inactive_colour ';
         } else {
@@ -145,6 +145,11 @@ class studentSearchController extends Controller
             ->join('division', 'division.id', '=', 'tblstudent_enrollment.section_id')
             ->join('student_quota', 'student_quota.id', '=', 'tblstudent_enrollment.student_quota')
             ->where($extraSearchArray)
+            ->when($including_inactive!='Yes', function ($query) {
+                $query->whereRaw('tblstudent_enrollment.end_date is NULL');
+            },function ($query) {
+                $query->whereRaw('tblstudent_enrollment.end_date is NOT NULL');
+            })
             ->whereRaw($extraRaw)
             ->get();
 
