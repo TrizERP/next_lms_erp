@@ -73,19 +73,30 @@ if(isset($data['tableCreated']) && $data['tableCreated'] ==1){
 
                     <div class="col-md-4 form-group">
                         <label>Display under </label>
-                        <select name="display_under" class="form-control" >
-                            <option value="Institute" {{$data['display_under'] == 'Institute' ? "selected" : "" }}>Institute</option>
+                        <select name="display_under" class="form-control display_under" id="display_under" required>
+                            <option value="">select any one</option>
+                            @foreach($data['DisplayUnder'] as $key => $value)
+                                @if($data['display_under'] == $value->id)
+                                    <option value="{{$value->id}}" selected>{{$value->name}}</option>
+                                @else
+                                    <option value="{{$value->id}}">{{$value->name}}</option>
+                                @endif
+                            @endforeach
+                            {{-- <option value="Institute" {{$data['display_under'] == 'Institute' ? "selected" : "" }}>Institute</option>
                             <option value="Student" {{$data['display_under'] == 'Student' ? "selected" : "" }}>Student</option>
                             <option value="Teacher" {{$data['display_under'] == 'Teacher' ? "selected" : "" }}>Teacher</option>
                             <option value="LMS" {{$data['display_under'] == 'LMS' ? "selected" : "" }}>LMS</option>
                             <option value="HRMS" {{$data['display_under'] == 'HRMS' ? "selected" : "" }}>HRMS</option>
-                            <option value="Library" {{$data['display_under'] == 'Library' ? "selected" : "" }}>Library</option>
+                            <option value="Library" {{$data['display_under'] == 'Library' ? "selected" : "" }}>Library</option> --}}
                         </select>
                         @error('module_name')
                         <span style="color: red">{{$message}}</span>
                         @enderror
                     </div>
-
+                    <div class="col-md-4 form-group">
+                        <label for="level_2">Level 2</label>
+                        <select name="level_2" id="level_2" class="form-control"></select>
+                    </div>
                     <div class="col-md-4 form-group">
                         <label>Table Name </label>
                         <input type="text" id='table_name' required name="table_name" class="form-control" value="{{$data['table_name']}}" {{$tableExists}}>
@@ -168,6 +179,24 @@ if(isset($data['tableCreated']) && $data['tableCreated'] ==1){
                         <span style="color: red">{{$message}}</span>
                         @enderror
                     </div>
+
+                    <div class="col-md-4 form-group">
+                        <label>Helper Function</label>
+                        <select name="helper_function" id="helper_function" class="form-control">
+                            <option value="">Select Function</option>
+                            @forEach($data['helperFunctions'] as $key => $value)
+                            <option value="{{$value}}" @if($data['helper_function']==$value) selected @endif>{{$value}}</option>
+                            @endforeach
+                        </select>
+
+                        @error('access_link')
+                        <span style="color: red">{{$message}}</span>
+                        @enderror
+                    </div>
+                    <div class="col-md-4">
+                        <label for="syear">Include Syear Wise</label><br>
+                        <input type="checkbox" name="syear_wise" id="syear_wise" @if($data['syear_wise'] == 1) checked @endif value="1">
+                    </div>
                     <?php
                         $student = false;
                         $staff = false;
@@ -235,6 +264,41 @@ if(isset($data['tableCreated']) && $data['tableCreated'] ==1){
             new CBPFWTabs(el);
         });
     })();
+    $(document).ready(function() {
+        @if(isset($data['level_2']) && $data['level_2'] != null)
+            getLevel2({{$data['display_under']}},{{$data['level_2']}});
+        @endif
+
+        $('.display_under').on('change', function() {
+            var id = $(this).val();
+           getLevel2(id);
+        });
+    })
+
+    function getLevel2(id,salVal=''){
+        $.ajax({
+                url: "{{ route('menuLevel2.index') }}",
+                type: "GET",
+                data: {
+                    id: id,
+                    _token: '{{ csrf_token() }}'
+                },
+                success: function(data) {
+                    $('#level_2').empty();
+                    $('#level_2').append(`<option value=''>Select any one</option>`);
+                    data.forEach(function(item) {
+                        if(salVal!='' && salVal == item.id){
+                            $('#level_2').append(`<option value='${item.id}' selected>${item.name}</option>`);
+                        }else{
+                            $('#level_2').append(`<option value='${item.id}'>${item.name}</option>`);
+                        }
+                    });
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error fetching data:', error);
+                }
+            });
+    }
 </script>
 <script src="../../../plugins/bower_components/dropify/dist/js/drsopify.min.js"></script>
 @include('includes.footer')

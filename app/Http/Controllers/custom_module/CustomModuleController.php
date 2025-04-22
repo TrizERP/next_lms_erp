@@ -35,35 +35,36 @@ class CustomModuleController extends Controller
     public function tableCreate(Request $request, $id = 0)
     {
         $type = $request->input('type');
-        if ($id) {
-            $customModuleTable = CustomModuleTable::with('whereColumns')->find($id);
-            $tableName = $customModuleTable['table_name'];
+        $customModuleTable = $id ? CustomModuleTable::with('whereColumns')->find($id) : new CustomModuleTable();
+        $customModuleTable['table_name'] = $customModuleTable['table_name'] ?? '';
+        $customModuleTable['module_name'] = $customModuleTable['module_name'] ?? '';
+        $customModuleTable['module_type'] = $customModuleTable['module_type'] ?? '';
+        $customModuleTable['display_under'] = $customModuleTable['display_under'] ?? '';
+        $customModuleTable['migration'] = $customModuleTable['migration'] ?? '';
+        $customModuleTable['seeder'] = $customModuleTable['seeder'] ?? '';
+        $customModuleTable['model'] = $customModuleTable['model'] ?? '';
+        $customModuleTable['controller'] = $customModuleTable['controller'] ?? '';
+        $customModuleTable['route'] = $customModuleTable['route'] ?? '';
+        $customModuleTable['view'] = $customModuleTable['view'] ?? '';
+        $customModuleTable['storage'] = $customModuleTable['storage'] ?? '';
+        $customModuleTable['validation'] = $customModuleTable['validation'] ?? '';
+        $customModuleTable['access_link'] = $customModuleTable['access_link'] ?? '';
+        $customModuleTable['id'] = $id;
+        $customModuleTable['level_2'] = $customModuleTable['level_2'] ?? '';
+        $customModuleTable['helper_function'] = $customModuleTable['helper_function'] ?? '';
+        $customModuleTable['syear_wise'] = $customModuleTable['syear_wise'] ?? '';
+        $customModuleTable['helperFunctions'] = ['Grade,Standard,Division', 'Grade,Standard', 'Term,Grade,Standard,Division', 'Department,Employee'];
+        $customModuleTable['DisplayUnder'] = DB::table('tblmenumaster')
+            ->where(['parent_menu_id' => 0, 'level' => 1, 'status' => 1])
+            ->whereRaw("(menu_type!='MASTER' OR menu_type IS NULL)")
+            ->orderBy('sort_order', 'asc')
+            ->get()
+            ->toArray();
 
-            if (Schema::hasTable($tableName)) {
-                $customModuleTable['tableCreated'] = 1;
-            } else {
-                $customModuleTable['tableCreated'] = 0;
-            }
-            // echo "<pre>";print_r($customModuleTable);exit;
-            // added $customModuleTable in is_mobile on 24-03-2025
-            return is_mobile($type, "custom_modules.tables.create-edit", $customModuleTable, "view", 'compact');
-            //return view('HRMS.hrms_job_title.create', compact('hrmsJobTitle'));
+        if ($id) {
+            $customModuleTable['tableCreated'] = Schema::hasTable($customModuleTable['table_name']) ? 1 : 0;
         }
-        $customModuleTable['table_name'] = '';
-        $customModuleTable['module_name'] = '';
-        $customModuleTable['module_type'] = '';
-        $customModuleTable['display_under'] = '';
-        $customModuleTable['migration'] = '';
-        $customModuleTable['seeder'] = '';
-        $customModuleTable['model'] = '';
-        $customModuleTable['controller'] = '';
-        $customModuleTable['route'] = '';
-        $customModuleTable['view'] = '';
-        $customModuleTable['storage'] = '';
-        $customModuleTable['validation'] = '';
-        $customModuleTable['access_link'] = '';
-        $customModuleTable['id'] = 0;
-        // added $customModuleTable in is_mobile on 24-03-2025
+
         return is_mobile($type, "custom_modules.tables.create-edit", $customModuleTable, "view", 'compact');
     }
 
@@ -102,6 +103,11 @@ class CustomModuleController extends Controller
         $customModuleTable->access_link = $request->has($request->access_link) ? str_replace(' ','_',$request->access_link) : $request->access_link;
         $customModuleTable->table_name = $prefixTableName;
         $customModuleTable->sub_institute_id = $subInstituteId;
+        // added by uma start 22-04-2025
+        $customModuleTable->level_2 = $request->level_2 ?? null;
+        $customModuleTable->helper_function = $request->helper_function ?? null;
+        $customModuleTable->syear_wise = $request->syear_wise ?? null;
+        // added by uma end 22-04-2025
         $customModuleTable->save();
 
         $tableColumn = CustomModuleTableColumn::where('table_id', $customModuleTable->id);
@@ -236,6 +242,54 @@ class CustomModuleController extends Controller
         } else {
             $tableColumn->where('column_name', 'Division')->delete();
         }
+        // added on 22-04-2025 by uma 
+        if(isset($request->helper_function)){
+            $columArr = [];
+            if($request->helper_function=="Grade,Standard,Division"){
+                $columArr = ['grade','standard','division'];
+            }
+            if($request->helper_function=="Grade,Standard"){
+                $columArr = ['grade','standard'];
+            }
+            if($request->helper_function=="Term,Grade,Standard,Division"){
+                $columArr = ['term','grade','standard','division'];
+            }
+            if($request->helper_function=="Department,Employee"){
+                $columArr = ['department_id','employee_id'];
+            }  
+            if(!empty($columArr)){
+                foreach ($columArr as $key => $colName) {
+                    DB::table('custom_module_table_columns')->where('table_id',$customModuleTable->id)->where('column_name',$colName)->delete();
+                    DB::table('custom_module_table_columns')->insert([
+                        "column_name" => $colName,
+                            "table_id" => $customModuleTable->id,
+                            "auto_increment" => 0, 
+                            "type" => 'bigint',
+                            "length" => 0, // Length is not applicable for bigInteger
+                            'not_null' => 0,
+                            'index' => null,
+                            'default' => null,
+                            'created_at'=>now()
+                        ]);
+                }
+            }          
+        }
+
+        if(isset($request->syear_wise) && $request->syear_wise==1){
+            DB::table('custom_module_table_columns')->where('table_id',$customModuleTable->id)->where('column_name','syear')->delete();
+            DB::table('custom_module_table_columns')->insert([
+                "column_name" => 'syear',
+                "table_id" => $customModuleTable->id,
+                "auto_increment" => 0, 
+                "type" => 'bigint',
+                "length" => 0, // Length is not applicable for bigInteger
+                'not_null' => 0,
+                'index' => null,
+                'default' => null,
+                'created_at'=>now()
+                ]);
+        }
+// end 22-04-2025
         if (isset($request->standard)) {
             $tableColumn = $tableColumn->where('column_name', 'Standard')->first();
             if (!$tableColumn) {
@@ -381,6 +435,7 @@ class CustomModuleController extends Controller
             $res['status']= 0;
             $res['message']='Failed to Add Data';
         }
+        
         // $res added by uma on 24-03-2025
         // return is_mobile($type, ["route" => "custom_module_table_column.create", "id" => $id], $res, "redirect", '', 1);
         return is_mobile($type, "/custom-module/table-column-create/".$id, $res, "route_with_id");
@@ -429,15 +484,19 @@ class CustomModuleController extends Controller
          $tableData = CustomModuleTable::find($id);
          if(!empty($tableData) && isset($tableData->module_name)){
              $accessLink = (isset($tableData->access_link) && $tableData->access_link!='') ? $tableData->access_link : str_replace('_',' ',$tableData->module_name).'.index';
-             $getParentMenuMaster = DB::table('tblmenumaster')->where('name',$tableData->display_under)->first();
-
+             $getParentMenuMaster = DB::table('tblmenumaster')->where('id',$tableData->display_under)->first();
+             // added on 22-04-2025
+            if(isset($tableData->level_2) && $tableData->level_2!=''){
+                $getParentMenuMaster = DB::table('tblmenumaster')->where('id',$tableData->level_2)->first();
+            }
+            // echo "<pre>";print_r($getParentMenuMaster);exit;
              $menuInsertData = [
                  'name'=>$tableData->module_name,
-                 'menu_title'=>$tableData->display_under,
+                 'menu_title'=>$getParentMenuMaster->name,
                  'menu_sortorder'=>1,
                  'description'=>$tableData->module_name,
                  'parent_menu_id'=>$getParentMenuMaster->id,
-                 'level'=>2,
+                 'level'=>($getParentMenuMaster->level + 1),
                  'status'=>1,
                  'sort_order'=>40,
                  'link'=>$accessLink,
@@ -471,6 +530,7 @@ class CustomModuleController extends Controller
                          ]);
                      }
              }
+
              $checkGroupwise = DB::table('tblgroupwise_rights')->where(['menu_id'=>$menuMasterData->id,'profile_id'=>$user_profile_id])->first();
              if(empty($checkGroupwise) && !isset($checkGroupwise->id)){
                  // insert into tblprofilewise_menu
@@ -658,11 +718,14 @@ class CustomModuleController extends Controller
     {
         $type = $request->input('type');
         $subInstituteId = $request->session()->get('sub_institute_id');
+        $syear = $request->session()->get('syear');
+
         $data['data'] = CustomModuleTable::with('columns')->where([['sub_institute_id', $subInstituteId], ['id', $request->id]])->first();
 
         $data['data']['view'] = DynamicModel::readRecords($data['data']['table_name']);
         $data['data']['division'] = divisionModel::where('sub_institute_id', $request->session()->get('sub_institute_id'))->get(['id', 'name']);
         $data['data']['standard'] = standardModel::where('sub_institute_id', $request->session()->get('sub_institute_id'))->get(['id', 'name']);
+        $data['data']['term'] = DB::table('academic_year')->where(['sub_institute_id'=> $request->session()->get('sub_institute_id'),'syear'=>$syear])->get(['term_id', 'title']);
         $data['data']['academic_section'] = academic_sectionModel::where('sub_institute_id', $request->session()->get('sub_institute_id'))->get(['id', 'title', 'short_name', 'medium']);
         // echo "<pre>";print_r($data);exit;
         return is_mobile($type, "custom_modules.cruds.index", $data, "view");
@@ -805,5 +868,11 @@ class CustomModuleController extends Controller
         }
         // return is_mobile($type, ["route" => "custom_module_crud.index", "id" => $request->view_id], null, "redirect", '', 1);
         return is_mobile($type, "/custom-module/".$request->view_id, $res, "route_with_id");
+    }
+
+    public function menuLevel2(Request $request){
+        return DB::table('tblmenumaster')->where('parent_menu_id', '!=', 0)
+        ->where('parent_menu_id', $request->id)
+        ->whereRaw("level = 2 and status = 1 and (menu_type!='MASTER' or menu_type IS NULL)")->orderBy('sort_order')->get()->toArray();
     }
 }

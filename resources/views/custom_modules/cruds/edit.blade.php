@@ -26,6 +26,28 @@
                         Back </a>
                 </div>
                 <div class="row mt-3">
+                    @if(isset($data['data']['helper_function']) && $data['data']['helper_function'] != null)
+                    @php 
+                    $grd = isset($data['data']['view']['grade']) ? $data['data']['view']['grade'] : null;
+                    $std = isset($data['data']['view']['standard']) ? $data['data']['view']['standard'] : null;
+                    $div = isset($data['data']['view']['division']) ? $data['data']['view']['division'] : null;
+                    $term = isset($data['data']['view']['term']) ? $data['data']['view']['term'] : null;
+                
+                    @endphp
+                        @if($data['data']['helper_function'] == 'Grade,Standard,Division')
+                            {{ App\Helpers\SearchChain('4','single','grade,std,div',$grd,$std,$div)}}
+                        @endif
+                        @if($data['data']['helper_function'] == 'Term,Grade,Standard,Division')
+                            {{ App\Helpers\TermDD($term) }}
+                            {{ App\Helpers\SearchChain('4','single','grade,std,div',$grd,$std,$div)}}
+                        @endif
+                        @if($data['data']['helper_function'] == 'Grade,Standard')
+                        {{ App\Helpers\SearchChain('4','single','grade,std',$grd,$std)}}
+                         @endif
+                    @endif
+                    @if(isset($data['data']['syear_wise']) && $data['data']['syear_wise']==1)
+                            <input type="hidden"  name="syear" value="{{session()->get('syear')}}">
+                    @endif
                     @foreach($data['data']['columns'] as $column)
                             <?php
                             $fieldVal = json_decode($column['field_value'], true);
@@ -33,7 +55,8 @@
                         @if($column['column_name'] == 'id')
                             @continue
                         @endif
-                        <div class="col-md-6 mt-2">
+                        @if(!in_array($column['column_name'], ['syear','term', 'grade', 'standard', 'division', 'department_id', 'employee_id']))
+                        <div class="col-md-6">
                             <label>{{ ucwords(str_replace('_', ' ', $column['column_name'])) }}</label>
                             @if($column['field_type'] == 'File')
                                 <input type="file" id="{{$column['column_name']}}"
@@ -153,6 +176,8 @@
                             <div class="error" style="color: red">{{ $message }}</div>
                             @enderror
                         </div>
+                        @endif
+
                     @endforeach
                     <input type="text" hidden name="view_id" value="{{$data['data']['view']['id']}}"
                            class="btn btn-success">
