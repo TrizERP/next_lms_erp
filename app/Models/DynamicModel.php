@@ -100,7 +100,16 @@ class DynamicModel extends Model
      */
     public static function readRecords(string $table)
     {
+        // $instance = (new static())->initialize($table);
+        // return $instance->get();
         $instance = (new static())->initialize($table);
+
+        // Check if the table has an 'syear' column added by uma 22-04-2025
+        if (Schema::hasColumn($table, 'syear')) {
+            $currentYear = session('syear'); // Assuming 'syear' is stored in the session
+            return $instance->where('syear', $currentYear)->get();
+        }
+
         return $instance->get();
     }
 
