@@ -72,6 +72,8 @@ class adminapiController extends Controller
                 $sub_institute_id = $data['sub_institute_id'];
                 if ($_REQUEST['mobile'] == '9979176562') {
                     $otp = "123456";
+                }else if($sub_institute_id == 328){
+                    $otp = date('dmy', strtotime($data['birthdate']));
                 } else {
                     //$text = "Dear Parent, Your OTP is ".$otp;
                     if ($sub_institute_id == 49 || $sub_institute_id == 232 || $sub_institute_id == 233) {
