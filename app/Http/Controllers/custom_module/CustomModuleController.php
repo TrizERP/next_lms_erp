@@ -722,7 +722,12 @@ class CustomModuleController extends Controller
 
         $data['data'] = CustomModuleTable::with('columns')->where([['sub_institute_id', $subInstituteId], ['id', $request->id]])->first();
 
-        $data['data']['view'] = DynamicModel::readRecords($data['data']['table_name']);
+        if (isset($data['data']) && isset($data['data']['table_name'])) {
+            $data['data']['view'] = DynamicModel::readRecords($data['data']['table_name']);
+        } else {
+            $data['data']['view'] = [];
+        }
+        
         $data['data']['division'] = divisionModel::where('sub_institute_id', $request->session()->get('sub_institute_id'))->get(['id', 'name']);
         $data['data']['standard'] = standardModel::where('sub_institute_id', $request->session()->get('sub_institute_id'))->get(['id', 'name']);
         $data['data']['term'] = DB::table('academic_year')->where(['sub_institute_id'=> $request->session()->get('sub_institute_id'),'syear'=>$syear])->get(['term_id', 'title']);
