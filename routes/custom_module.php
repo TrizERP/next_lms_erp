@@ -36,3 +36,4 @@ Route::group(['middleware' => ['session', 'menu', 'logRoute','check_permissions'
     Route::resource('donation_collection', donationController::class);
     Route::get('donation_report', [donationController::class, 'donationReport'])->name('donation_report.index');
 });
+Route::get('menuLevel2', [CustomModuleController::class, 'menuLevel2'])->name('menuLevel2.index');

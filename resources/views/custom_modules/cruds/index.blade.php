@@ -28,7 +28,9 @@
                             <thead>
                             <tr>
                                 @foreach($data['data']['columns'] as $column)
+                                    @if($column['column_name']!='syear')
                                     <th>{{ucfirst(str_replace('_',' ',$column['column_name']))}}</th>
+                                    @endif
                                 @endforeach
                                 <th>Action</th>
                             </tr>
@@ -40,22 +42,28 @@
                             @foreach($data['data']['view'] as $key => $value)
                                 <tr>
                                     @foreach($data['data']['columns'] as $column)
-                                        @if($column['column_name'] == 'academic_section')
+                                        @if(in_array($column['column_name'],['academic_section','grade']))
                                             @foreach($data['data']['academic_section'] as $academic_section)
                                                 @if ($academic_section['id'] == $value[$column['column_name']])
                                                     <td>{{$academic_section['title']}}</td>
                                                 @endif
                                             @endforeach
-                                        @elseif($column['column_name'] == 'Division')
+                                        @elseif(in_array($column['column_name'],['Division','division']))
                                             @foreach($data['data']['division'] as $division)
                                                 @if ($division['id'] == $value[$column['column_name']])
                                                     <td>{{$division['name']}}</td>
                                                 @endif
                                             @endforeach
-                                        @elseif($column['column_name'] == 'Standard')
+                                        @elseif(in_array($column['column_name'],['Standard','standard']))
                                             @foreach($data['data']['standard'] as $standard)
                                                 @if ($standard['id'] == $value[$column['column_name']])
                                                     <td>{{$standard['name']}}</td>
+                                                @endif
+                                            @endforeach
+                                         @elseif(in_array($column['column_name'],['Term','term']))
+                                            @foreach($data['data']['term'] as $term)
+                                                @if ($term->term_id == $value->{$column['column_name']})
+                                                    <td>{{$term->title}}</td>
                                                 @endif
                                             @endforeach
                                         @elseif ($column['column_name'] == 'image')
@@ -63,7 +71,7 @@
                                             <td><a href="{{asset('images/'.$value[$column['column_name']])}}"
                                                    target="_blank">link</a>
                                             </td>
-                                        @else
+                                        @elseif($column['column_name'] != 'syear')
                                             <td>{{$value[$column['column_name']]}}</td>
                                         @endif
                                     @endforeach
