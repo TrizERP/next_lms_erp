@@ -75,6 +75,7 @@
                 <div class="card p-4">
                     <form action="{{ route('donation_collection.store') }}" method="post">
                         @csrf
+                        <input type="hidden" name="donar_id" value="{{ $data['donarData']->id }}">
                         @foreach(['id', 'full_name', 'pan_number', 'address', 'mobile_number'] as $field)
                             <input type="hidden" name="{{ $field }}" value="{{ $data['donarData']->$field }}">
                         @endforeach
@@ -82,7 +83,7 @@
                         <table class="table table-striped" id="donationTable">
                             <tr>
                                 <td>Date of Receipt</td>
-                                <td><input type="text" name="paid_date" class="form-control mydatepicker" required></td>
+                                <td><input type="text" name="paid_date" class="form-control mydatepicker"  autocomplete="off" required></td>
                                 <td>Amount</td>
                                 <td><input type="number" name="amount" class="form-control" required placeholder="Enter amount"></td>
                             </tr>
@@ -115,7 +116,7 @@
                                 <td>Cheque/DD No.</td>
                                 <td><input type="text" name="cheque_no" class="form-control" placeholder="Enter Cheque/DD No."></td>
                                 <td>Cheque/DD Date</td>
-                                <td><input type="text" name="cheque_date" class="form-control mydatepicker"></td>
+                                <td><input type="text" name="cheque_date" class="form-control mydatepicker" autocomplete="off"></td>
                             </tr>
                         </table>
                         <div class="text-center mt-4">
