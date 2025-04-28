@@ -57,6 +57,7 @@ use App\Http\Controllers\fees\fees_reconciliation\fees_reconciliation_upload_she
 use App\Http\Controllers\fees\feesAIController;
 use App\Http\Controllers\fees\fees_report\monthwiseReceiptPdfController;
 use App\Http\Controllers\fees\fees_report\feesModificationController;
+use App\Http\Controllers\fees\online_fees\confirmOnlineFeesController;
 use Illuminate\Support\Facades\Route;
 
 Route::group(['prefix' => 'fees', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
@@ -113,6 +114,7 @@ Route::group(['prefix' => 'fees', 'middleware' => ['session', 'menu', 'logRoute'
     Route::resource('feesAI', feesAIController::class);    
 
     // Route::get('online_fees\show_online_type', 'fees\online_fees\online_fees_collect_controller@showTypes')->name('online_show_type');
+    Route::resource('confirm_online_fees', confirmOnlineFeesController::class);   // for split payment confirm
     Route::get('show_details', [ChequeReconciliationController::class, 'show_details'])->name('show_details');
     Route::get('search_details', [ChequeReconciliationController::class, 'search_details'])->name('search_details');
 
