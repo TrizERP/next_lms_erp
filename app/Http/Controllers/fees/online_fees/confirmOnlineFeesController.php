@@ -76,7 +76,7 @@ class confirmOnlineFeesController extends Controller
                 ->selectRaw('fp.*')
                 ->where('fp.sub_institute_id', $sub_institute_id)
                 ->where('fp.syear', $syear)
-                ->where('fp.axis_bank_res', "0")
+                ->where('fp.axis_bank_res', "1")
                 ->whereBetween('fp.hdfc_payment_date', [$from_date, $to_date])
                 ->get()->toArray();
             // dd(DB::getQueryLog($searchedData));
