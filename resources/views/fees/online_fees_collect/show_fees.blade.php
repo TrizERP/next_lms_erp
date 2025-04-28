@@ -281,6 +281,13 @@
                                     <?php } ?>
                                 </table>
                             </div>
+                            {{-- added on 28-04-2025 for split payment  --}}
+                            <div class="addFeesHeads">
+                                @foreach ($data['final_fee'] as $id => $val)
+                                    <input type="hidden" name="fees_heads[{{$id}}]" value="{{$val}}">
+                                @endforeach
+                            </div>
+                            {{-- split payment end  --}}
                             <div class="table-responsive col-md-12">
                                 <div class="col-md-4 text-center form-group"></div>
                                 <div class="col-md-4 text-center form-group">
@@ -513,12 +520,15 @@
                     
                     calculateTotal();
                         // 26/08/2021 Start Added for The Millennium School for Advanced Imprest Collection payment .prop('disabled')
+                        $('.addFeesHeads').empty(); // added on 28-04-2025
                         $('.allField1').each(function() {
                             var new_name = $(this).attr('name');
+                            var values = $(this).attr('data-val');
                             amount = $('input[name="' + new_name + '"]').val();
                             if (amount < 0) {
                                 $(this).attr('readonly', true);
                             }
+                            $('.addFeesHeads').append(`<input type="hidden" name="fees_heads[${$(this).attr('id')}]" value="${values}">`);
                         });
                         // 26/08/2021 END Added for The Millennium School for Advanced Imprest Collection payment
                         @if(session()->get('sub_institute_id') == 257)

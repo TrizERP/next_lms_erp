@@ -261,6 +261,8 @@ Route::controller(online_fees_collect_controller::class)->group(function () {
 
     Route::post('fees/get_online_receipt', 'OnlineReceipt')->name("get_online_receipt");
 
+    Route::get('fees/hdfc/createSplitPayout', 'createSplitPayout')->name("createSplitPayout"); // split payment 28-04-2025
+
 });
 
 Route::controller(AJAXController::class)->group(function () {

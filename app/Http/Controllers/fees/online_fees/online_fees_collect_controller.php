@@ -14,6 +14,12 @@ use App\Models\fees\tblfeesConfigModel;
 use Illuminate\Support\Str;
 use function App\Helpers\fees_config;
 use Illuminate\Support\Facades\Crypt;
+use function App\Helpers\FeeBreackoff;
+use function App\Helpers\OtherBreackOff;
+use function App\Helpers\OtherBreackOfMonth;
+use function App\Helpers\OtherBreackOfMonthHead;
+use function App\Helpers\FeeBreakoffHeadWise;
+use function App\Helpers\FeeMonthId;
 use Validator;
 
 class online_fees_collect_controller extends Controller
@@ -136,6 +142,9 @@ class online_fees_collect_controller extends Controller
         // print_r($_REQUEST);
         // print_r(session()->all());
         // exit;
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+
         $searchArr = array(' ','"',"\'",',',"'");
         $replaceArr = array('','',"",' ',"");
         $student_id = $_REQUEST["student_id"];
@@ -185,6 +194,33 @@ class online_fees_collect_controller extends Controller
         // $working_key = "94C918B28626FB1A085AAB522E32A402"; //Shared by CCAVENUES
         $access_code = $get_map_bank_detail[0]->access_code;
         // $access_code = "AVPL86GG59BJ25LPJB";
+        
+        // get break off 28-04-2025
+        $school_amount = $mission_amount = 0;
+
+        // get receipt book master for sub account id
+        $receipt_book_master = DB::table('fees_receipt_book_master')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear,'standard_id'=>$_REQUEST['standard_id'],'status'=>1])->where('sort_order','!=',2)->first();
+
+        $schoolSubAccountID  = '';
+        $missionSubAccountID = 'SHRISWAMI1';
+        if(!empty($receipt_book_master) && isset($receipt_book_master->id)){
+            if($receipt_book_master->sort_order==1){
+                $schoolSubAccountID = 'SHARIACADE1';
+            }else{
+                $schoolSubAccountID = 'SPRISCHOOL1';
+            }
+        }
+
+        $studentBk = $this->breakOffAmounts($_REQUEST,$student_id,$sub_institute_id,$syear);
+        
+        if(isset($studentBk['typewise_total']['school'])){
+            $school_amount = $studentBk['typewise_total']['school'];
+        }
+
+        if(isset($studentBk['typewise_total']['mission'])){
+            $mission_amount = $studentBk['typewise_total']['mission'];
+        }
+        // end of 28-04-2025 
         $return_url = $this->site_name() . "fees/hdfc/online_fees_hdfcResponseHandler";
         $send_arr = array(
             "merchant_id" => $get_map_bank_detail[0]->merchant_id,
@@ -233,7 +269,14 @@ class online_fees_collect_controller extends Controller
             "created_at" => now(),
             "updated_at" => now()
         );
-        
+         // 28-04-2025 to store split amount in database to easy fetch
+         if($sub_institute_id==76){
+            $in_arr['axis_order_id'] = $school_amount; //split amount school
+            $in_arr['axis_plain_request']=$mission_amount; // mission amount
+            $in_arr['axis_encrypt_request']=$schoolSubAccountID; // school account
+            $in_arr['axis_payment_status']=$missionSubAccountID; // mission account
+        }
+        // 28-04-2025 end 
         DB::table("fees_payment")
             ->insert($in_arr);
         
@@ -365,6 +408,125 @@ class online_fees_collect_controller extends Controller
             // return \App\Helpers\is_mobile($type, "fees/online_fees_collect/axis_RequestHandler", $data, "view");
         }
     }
+
+    // split payment 28-04-2025
+    public function createSplitPayout(Request $request){
+        $allResponse = [];
+        $sub_institute_id = $request->sub_institute_id;
+        $syear = $request->syear;
+        $validate = Validator::make($request->all(), [
+            'syear' => 'required',
+            'sub_institute_id' => 'required',
+        ]);
+
+        if($validate->fails()){
+            $errorMessages = $validate->errors()->all();
+            return response()->json([
+                'status' => 0,
+                'message' => "Your Url is not proper",
+            ]); 
+        }
+        // get all student which have PS status
+        $getPaymentsPS = DB::table('fees_payment')
+        ->where('sub_institute_id',$sub_institute_id)
+        ->where('syear',$syear)
+        ->where('hdfc_payment_status','PS')
+        ->get()
+        ->toArray();
+
+         // get all student which have PS status
+         $hdfcData = DB::table('fees_hdffc')
+         ->where('sub_institute_id',$sub_institute_id)
+         ->first();
+
+        foreach ($getPaymentsPS as $key => $value) {
+            # code...
+            // Prepare the request data
+            // if($sub_institute_id==76){
+            //     $in_arr['axis_order_id'] = $school_amount; //split amount school
+            //     $in_arr['axis_plain_request']=$mission_amount; // mission amount
+            //     $in_arr['axis_encrypt_request']=$schoolSubAccountID; // school account
+            //     $in_arr['axis_payment_status']=$missionSubAccountID; // mission account
+            // }
+            $splitData = [
+                'reference_no' => $value->hdfc_order_id,
+                'split_tdr_charge_type' => 'M',
+                'merComm' => '0.0',
+                'split_data_list' => [
+                    [
+                        // school payment 
+                        'splitAmount' => $value->axis_order_id ?? 0,
+                        'subAccId' => $value->axis_encrypt_request
+                    ],
+                    [
+                        // mission payment 
+                        'splitAmount' => $value->axis_plain_request ?? 0,
+                        'subAccId' => $value->axis_payment_status
+                    ]
+                ]
+            ];
+
+            // Convert the split data to JSON
+            $merchantData = json_encode($splitData);
+
+            // Encrypt the data using the working key (AES encryption)
+            $encryptedData = $this->hdfc_encrypt($merchantData, $hdfcData->working_code);
+
+            $finalData = [
+                'request_type' => 'JSON',
+                'version' => '1.2',
+                'access_code' => $hdfcData->access_code,
+                'command' => 'createSplitPayout',
+                'response_type' => 'JSON',
+                'enc_request' => $encryptedData,
+            ];
+
+            // Make the POST request
+            // $response = Http::withOptions(['verify' => false]) // Disable SSL verification for testing
+            //     ->asForm()
+            //     ->post('https://apitest.ccavenue.com/apis/servlet/DoWebTrans', $finalData);
+                // ->post('https://api.ccavenue.com/apis/servlet/DoWebTrans', $finalData);
+                $response = Http::withOptions([
+                    'verify' => false, // Disable SSL verification temporarily (for testing)
+                    'timeout' => 60, // Increase the timeout duration (in seconds)
+                ])->asForm()
+                  ->post('https://apitest.ccavenue.com/apis/servlet/DoWebTrans', $finalData);
+                
+            // Check the response
+            $result = $response->body();
+
+            // $status = '';
+            // parse_str($result, $responseData);
+
+            // if (isset($responseData['enc_response'])) {
+            //     $status = $this->decrypt($responseData['enc_response']);
+            // }
+            // Take first element
+            // $responseData = $responseArray[0];
+
+            // Parse it
+            parse_str($result, $parsed);
+
+            // Get status
+            $status = $parsed['status'] ?? null;
+            if(isset($status) && $status==0){
+                $allResponse['status'] = "Success";
+                $allResponse['student'] = $value->hdfc_order_id;
+                $paidStatus = 1;
+            }
+            else{
+                $allResponse['status'] = "Failed";
+                $allResponse['student'] = $value->hdfc_order_id;
+                $paidStatus = 0;
+            }
+
+            $update = DB::table('fees_payment')->where('id',$value->id)->update(['axis_bank_res'=>$paidStatus]);
+
+        }
+
+        return $allResponse;
+    }
+    // end split payment 28-04-2025 
     public function hdfc_fetch_payment_status(Request $request)
     {
         $payment_data = DB::table('fees_payment AS fp')
@@ -2429,5 +2591,144 @@ if (Str::startsWith($order_id, 'pay_')) {
         $response = $_REQUEST;
         print_r($response);
         echo "ABCM APP";
+    }
+
+    // 28-04-2025 get split amounts 
+    public function breakOffAmounts($request,$student_id,$sub_institute_id,$syear){
+        $stu_arr[0] = $student_id;
+
+        // get all month name with month_id
+        $month_arr = FeeMonthId($syear,$sub_institute_id);
+        $currunt_month = date('m');
+        $currunt_year = date('Y');
+        $currunt_month_id = $currunt_month . $currunt_year;
+
+        $search_ids = [];
+        foreach ($month_arr as $id => $arr) {
+            if ($id == $currunt_month_id) {
+                $search_ids[] = $id;
+                // break;
+            } else {
+                $search_ids[] = $id;
+            }
+        }
+
+        $reg_bk_off = FeeBreackoff($stu_arr,'',$syear,$sub_institute_id);
+
+        // OtherBreackOff is for additional fee from helper.php
+        $other_bk_off = OtherBreackOff($stu_arr, $search_ids,'', null,null, $syear,$sub_institute_id);
+
+        //  OtherBreackOfMonth get additional fees monthwise from helper.php
+        $other_bk_off_month_wise = OtherBreackOfMonth($stu_arr,$syear,$sub_institute_id);
+
+        //  OtherBreackOfMonthHead additional fees_title from helper.php
+        $other_bk_off_month_head_wise = OtherBreackOfMonthHead($stu_arr, $search_ids);
+
+        //  FeeBreakoffHeadWise get fees_title from helper.php
+        $head_wise_fees = FeeBreakoffHeadWise($stu_arr, null, null, null, $syear,'',$sub_institute_id);
+
+        $ret_heds_with_id = DB::table('fees_title')->selectRaw('id,fees_title,display_name')
+        ->where('SUB_INSTITUTE_ID', $sub_institute_id)
+        ->where('syear', $syear)
+        ->orderBy('sort_order')->get()->toArray();
+
+        // changes fees heads 
+        $newFeesHeads = [];
+        foreach ($ret_heds_with_id as $key => $value) {
+           if(isset($request['fees_heads'][$value->display_name])){
+            $newFeesHeads[$value->fees_title] = $request['fees_heads'][$value->display_name];
+           }
+        }
+        // $newFeesHeads[$value->fees_title]
+    // echo "<pre>";print_r($newFeesHeads);exit;
+        $reg_fee_heads = $reg_fee_bk = [];
+        foreach ($head_wise_fees as $student_id => $detail_arr) {
+            $reg_fee_bk = $detail_arr['breakoff'];
+            foreach ($detail_arr['breakoff'] as $id => $arr) {
+                foreach ($arr as $head_name => $vals) {
+                    if (!in_array($head_name, $reg_fee_heads)) {
+                        $reg_fee_heads[] = $head_name;
+                    }
+                }
+            }
+        }
+
+        $other_fee_heads = [];
+        foreach ($newFeesHeads as $id => $vals) {
+            if (!in_array($id, $reg_fee_heads)) {
+                $other_fee_heads[] = $id;
+            }
+        }
+        //getting reg fee month_id that we need to pay
+        $reg_months_pay = [];
+        foreach ($reg_fee_bk as $month_id => $arr) {
+            if (in_array($month_id, $request['months'])) {
+                $reg_months_pay[] = $month_id;
+            }
+        }
+
+        $oth_months_pay = [];
+        foreach ($other_bk_off_month_wise as $month_id => $arr) {
+            if (in_array($month_id, $_REQUEST['months'])) {
+                $oth_months_pay[] = $month_id;
+            }
+        }
+
+        $reg_insert_arr = [];
+        foreach ($reg_fee_bk as $month => $bk_off) {
+            if (in_array($month, $reg_months_pay)) {
+                foreach ($bk_off as $title => $arr) {
+                    if (array_key_exists($title, $newFeesHeads)) {
+                        $insert_amount = 0;
+                        if ($newFeesHeads[$title] > $arr['amount']) {
+                            $newFeesHeads[$title] = $newFeesHeads[$title] - $arr['amount'];
+                            $insert_amount = $arr['amount'];
+                        } else {
+                            $insert_amount = $newFeesHeads[$title];
+                            $newFeesHeads[$title] = 0;
+                        }
+                        $reg_insert_arr[$month][$title] = $insert_amount;
+                    }
+                }
+            }
+        }
+        $controller = new fees_collect_controller;
+
+        $receipt_number = $controller->gunrate_receipt_number($sub_institute_id,$syear);
+
+      
+        $heds_with_id = [];
+        foreach ($ret_heds_with_id as $id => $arr) {
+            $heds_with_id[$arr->fees_title] = $arr->id;
+        }
+        $new_insert_arr = [];
+        $sort_orderFess = [];
+        foreach ($reg_insert_arr as $month_id => $arr) {
+            foreach ($arr as $id => $val) {
+                $head_id = $heds_with_id[$id];
+                foreach ($receipt_number as $temp_id => $arr_head_rid) {
+                    $heds = explode(',', $arr_head_rid['heds']);
+                    if (in_array($head_id, $heds)) {
+                        $receipt_number[$temp_id]['used'] = 1;
+                        $new_insert_arr[$month_id][$arr_head_rid['rid'] . '_' . $temp_id][$id] = $val;
+
+                        if($temp_id==2){
+                            if(!isset($sort_orderFess['mission'])){
+                                $sort_orderFess['mission'] = 0;
+                            }
+                            $sort_orderFess['mission'] += $val;
+                        }else{
+                            if(!isset($sort_orderFess['school'])){
+                                $sort_orderFess['school'] = 0;
+                            }
+                            $sort_orderFess['school'] += $val; 
+                        }
+                    }
+                }
+            }
+        }
+        $res['typewise'] = $new_insert_arr;
+        $res['typewise_total'] = $sort_orderFess;
+        return $res;
     }
 }
