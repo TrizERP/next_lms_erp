@@ -122,7 +122,7 @@
                         $j=1;
                         $total_breakoff = $total_paid = $total_unpaid = $total_discount = 0;
                         $totalSum = 0;
-                        $toSum = $regularTotal= $rgBusTotal =$transTotal = 0;
+                        $toSum = $regularTotal= $rgBusTotal =$transTotal = $busBk = $regBk =$differntBk= 0;
                         $feesTotal = [];
                         $displayNamesToExclude = !empty($data['other_fees_titles']) ? $data['other_fees_titles'] : [];
                         @endphp
@@ -138,7 +138,6 @@
                                 <td>{{isset($fees_value['stddiv']) ? $fees_value['stddiv'] : ''}}</td>
                                 <td>{{isset($fees_value['student_quota']) ? $fees_value['student_quota'] : ''}}</td>
                                 <td>{{isset($fees_value['mobile']) ? $fees_value['mobile'] : ''}}</td>
-                                <td style="background-color:#7befef;">{{ $fees_value['final_fee']['Transport Fees'] ?? 0 }}</td>
                                 @php
                                     $regBk = $fees_value['-']['bk'] ?? 0;
                                     $excFees = !empty($data['other_fees_titles']) ? $data['other_fees_titles'] : [];
@@ -153,12 +152,17 @@
                                     }
                                     $toSum = $regBk - $excSum;
 
+                                    $busBk = (isset($fees_value['regBus']['bus_amount_tot'])) ? $fees_value['regBus']['bus_amount_tot'] : 0;
+                                    $regBk = (isset($fees_value['regBus']['reg_amount_tot'])) ? $fees_value['regBus']['reg_amount_tot'] : 0;
+                                    $differntBk = ($regBk - $busBk);
+                                    
                                     $regbus = ($fees_value['final_fee']['Transport Fees'] ?? 0) + $toSum;
                                     $rgBusTotal +=$regbus;
-                                    $regularTotal += $toSum ?? 0;
-                                    $transTotal += $fees_value['final_fee']['Transport Fees'] ?? 0;
+                                    $regularTotal += $differntBk ?? 0;
+                                    $transTotal += $busBk;
                                 @endphp
-                                <td style="background-color:#7befef;">{{ $toSum ?? 0 }}</td>
+                                <td style="background-color:#7befef;">{{ $busBk }}</td>
+                                <td style="background-color:#7befef;">{{ $differntBk ?? 0 }}</td>
                                 <td style="background-color:#7befef;">{{ $regbus }}</td>
                                 @foreach($data['fees_titles'] as $values)
                                     @php

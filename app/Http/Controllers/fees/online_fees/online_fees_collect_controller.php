@@ -233,6 +233,7 @@ class online_fees_collect_controller extends Controller
             "created_at" => now(),
             "updated_at" => now()
         );
+        
         DB::table("fees_payment")
             ->insert($in_arr);
         
