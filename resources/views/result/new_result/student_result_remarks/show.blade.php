@@ -71,7 +71,8 @@
 												'Needs improvement',
 												'Passed Promoted to class 10',
 												'Detain',
-												'Essential repeat'
+												'Essential repeat',
+												'Promoted as per RTE Guidelines (Conditional Promotion)'
 												];
 										@endphp
 
