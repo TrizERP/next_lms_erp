@@ -62,21 +62,23 @@ class confirmOnlineFeesController extends Controller
 
         if($request->has('submit') && $request->submit=="Search"){
         
-            $from_date =$request->from_date;
-            $to_date =$request->to_date;
+            $from_date = Carbon::parse($request->from_date)->startOfDay();
+            $to_date = Carbon::parse($request->to_date)->endOfDay();
             // DB::enableQueryLog();
             $searchedData = DB::table('fees_payment as fp')
                 ->leftJoin('fees_collect as fc', function($join) use($sub_institute_id,$syear){
                     $join->on('fp.hdfc_order_id', '=', 'fc.cheque_no')
                     ->on('fp.student_id', '=', 'fc.student_id')
                     ->on('fc.sub_institute_id', '=', 'fp.sub_institute_id')
-                    ->on('fc.syear','=',  'fp.syear');
+                    ->on('fc.syear','=',  'fp.syear')
+                    ->whereNotNull('fc.cheque_no');
                 })
+                ->selectRaw('fp.*')
                 ->where('fp.sub_institute_id', $sub_institute_id)
                 ->where('fp.syear', $syear)
-                ->where('fp.hdfc_payment_status', 'PS')
-                ->whereNull('fc.cheque_no')
+                ->where('fp.axis_bank_res', "0")
                 ->whereBetween('fp.hdfc_payment_date', [$from_date, $to_date])
+                ->groupBy('fp.id')
                 ->get()->toArray();
             // dd(DB::getQueryLog($searchedData));
             $studentData = [];
@@ -91,7 +93,7 @@ class confirmOnlineFeesController extends Controller
                 }
                 $studentData[] = isset($studentDetails[0]) ? $studentDetails[0] : [];
             }
-            // echo "<pre>";print_r($studentData);die;
+            // echo "<pre>";print_r($searchedData);die;
             if(!empty($searchedData)){
                 $res['status'] = "1";
                 $res['message'] = "Student Found !"; 
@@ -163,14 +165,17 @@ class confirmOnlineFeesController extends Controller
         foreach ($students as $studentId => $paymentId) {
            // get student bk
            foreach ($paymentId as $key => $value) {
-                $bkStudent = $controller->getBk($request,$studentId);
+                // $bkStudent = $controller->getBk($request,$studentId);
                 // get payment details
                 $payementData = DB::table('fees_payment')
                     ->where('id', $paymentId)
                     ->first();
-                $order_id = $payementData->hdfc_order_id;
-                $mer_amount = $payementData->amount;
-                $data = $online_controller->pay_fees($request, $studentId, $syear, $sub_institute_id, $mer_amount, $order_id);
+                // $order_id = $payementData->hdfc_order_id;
+                // $mer_amount = $payementData->amount;
+                // $data = $online_controller->pay_fees($request, $studentId, $syear, $sub_institute_id, $mer_amount, $order_id);
+
+                // get  order and update fees_collect is_deleted
+                $getFeesCollect = DB::table('fees_collect')->where('cheque_no',$payementData->hdfc_order_id)->update(['is_deleted'=>'N']);
                 $i=1;
            }
            

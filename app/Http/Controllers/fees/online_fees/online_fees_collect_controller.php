@@ -142,6 +142,9 @@ class online_fees_collect_controller extends Controller
         // print_r($_REQUEST);
         // print_r(session()->all());
         // exit;
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+
         $searchArr = array(' ','"',"\'",',',"'");
         $replaceArr = array('','',"",' ',"");
         $student_id = $_REQUEST["student_id"];
@@ -191,6 +194,33 @@ class online_fees_collect_controller extends Controller
         // $working_key = "94C918B28626FB1A085AAB522E32A402"; //Shared by CCAVENUES
         $access_code = $get_map_bank_detail[0]->access_code;
         // $access_code = "AVPL86GG59BJ25LPJB";
+        
+        // get break off 28-04-2025
+        $school_amount = $mission_amount = 0;
+
+        // get receipt book master for sub account id
+        $receipt_book_master = DB::table('fees_receipt_book_master')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear,'standard_id'=>$_REQUEST['standard_id'],'status'=>1])->where('sort_order','!=',2)->first();
+
+        $schoolSubAccountID  = '';
+        $missionSubAccountID = 'SHRISWAMI1';
+        if(!empty($receipt_book_master) && isset($receipt_book_master->id)){
+            if($receipt_book_master->sort_order==1){
+                $schoolSubAccountID = 'SHARIACADE1';
+            }else{
+                $schoolSubAccountID = 'SPRISCHOOL1';
+            }
+        }
+
+        $studentBk = $this->breakOffAmounts($_REQUEST,$student_id,$sub_institute_id,$syear);
+        
+        if(isset($studentBk['typewise_total']['school'])){
+            $school_amount = $studentBk['typewise_total']['school'];
+        }
+
+        if(isset($studentBk['typewise_total']['mission'])){
+            $mission_amount = $studentBk['typewise_total']['mission'];
+        }
+        // end of 28-04-2025 
         $return_url = $this->site_name() . "fees/hdfc/online_fees_hdfcResponseHandler";
         $send_arr = array(
             "merchant_id" => $get_map_bank_detail[0]->merchant_id,
@@ -239,7 +269,14 @@ class online_fees_collect_controller extends Controller
             "created_at" => now(),
             "updated_at" => now()
         );
-        
+         // 28-04-2025 to store split amount in database to easy fetch
+         if($sub_institute_id==76){
+            $in_arr['axis_order_id'] = $school_amount; //split amount school
+            $in_arr['axis_plain_request']=$mission_amount; // mission amount
+            $in_arr['axis_encrypt_request']=$schoolSubAccountID; // school account
+            $in_arr['axis_payment_status']=$missionSubAccountID; // mission account
+        }
+        // 28-04-2025 end 
         DB::table("fees_payment")
             ->insert($in_arr);
         
@@ -251,6 +288,242 @@ class online_fees_collect_controller extends Controller
         // echo '<pre>'; print_r(session()->all()); exit;
         return \App\Helpers\is_mobile($type, "fees/online_fees_collect/hdfc_RequestHandler", $data, "view");
         // echo '<pre>'; print_r($data); exit;
+    }
+
+    public function hdfc_response_handler(Request $request)
+    {
+        // echo '<pre>';
+        // print_r($_REQUEST);
+        // print_r(session()->all());
+        // exit;
+        $searchArr = array('"', "'");
+        $replaceArr = array('\"', "\'");
+        $get_map_bank_detail = DB::table("fees_hdffc")
+            ->where(["sub_institute_id" => 48])
+            ->get();//session()->get("sub_institute_id")
+        //$working_key = "585414BED625F7D522B38C014074BE28"; //Shared by CCAVENUES 48 CMA
+        $working_key = $get_map_bank_detail[0]->working_code; //Shared by CCAVENUES
+        // $access_code = "AVPL86GG59BJ25LPJB";
+        // $workingKey = WORKING_CODE; //Working Key should be provided here.
+        $encResponse = $_POST["encResp"]; //This is the response sent by the CCAvenue Server
+        $rcvdString = $this->hdfc_decrypt($encResponse, $working_key); //Crypto Decryption used as per the specified working key.
+        $order_status = "";
+
+        $decryptValues = explode('&', $rcvdString);
+        $dataSize = sizeof($decryptValues);
+        for ($i = 0; $i < $dataSize; $i++) {
+            $information = explode('=', $decryptValues[$i]);
+            if ($i == 0) {
+                $order_id = $information[1];
+            } else if ($i == 1) {
+                $tracking_id = $information[1];
+            } else if ($i == 2) {
+                $bank_ref_no = $information[1];
+            } else if ($i == 3) {
+                $order_status = $information[1];
+            } else if ($i == 4) {
+                $failure_message = $information[1];
+            } else if ($i == 5) {
+                $payment_mode = $information[1];
+            } else if ($i == 7) {
+                $status_code = $information[1];
+            } else if ($i == 8) {
+                $status_message = str_replace($searchArr, $replaceArr, $information[1]);
+            } else if ($i == 10) {
+                $amount = $information[1];
+            } else if ($i == 26) {
+                $student_id = $information[1];
+            } else if ($i == 27) {
+                $syear = $information[1];
+            } else if ($i == 28) {
+                $txnid = $information[1];
+            } else if ($i == 29) {
+                $sub_institute_id = $information[1];
+            } else if ($i == 30) {
+                $fine = $information[1];
+            } else if ($i == 35) {
+                $mer_amount = $information[1];
+            }
+        }
+        $res_arr = array(
+            "order_id" => $order_id,
+            "tracking_id" => $tracking_id,
+            "bank_ref_no" => $bank_ref_no,
+            "order_status" => $order_status,
+            "failure_message" => $failure_message,
+            "payment_mode" => $payment_mode,
+            "status_code" => $status_code,
+            "status_message" => $status_message,
+            "amount" => $amount,
+            "student_id" => $student_id,
+            "syear" => $syear,
+            "txnid" => $txnid,
+            "sub_institute_id" => $sub_institute_id,
+            "fine" => $fine,
+            "mer_amount" => $mer_amount,
+        );
+        $res_josn = json_encode($res_arr);
+
+        $get_all_data = DB::table("fees_payment")
+            ->where(["hdfc_order_id" => $order_id])
+            ->get();
+        $payment_status = "PF";
+        if ($order_status == "Success") {
+            $payment_status = "PS";
+        }
+        $update_arr = array(
+            "hdfc_payment_status" => $payment_status,
+            "hdfc_bank_res" => $res_josn,
+            "updated_at" => now()
+        );
+        $where_arr = array(
+            "sub_institute_id" => $get_all_data[0]->sub_institute_id,
+            "syear" => $get_all_data[0]->syear,
+            "hdfc_order_id" => $order_id
+        );
+
+//START RAJESH 30-07-2024 = prevent second time success
+        if($get_all_data[0]->hdfc_payment_status == 'PS'){
+            $school_data = array();
+            $school_data["website"] = $this->site_name();
+            $type = "web";
+            return \App\Helpers\is_mobile($type, "fees/online_fees_collect/search_student", $school_data, "view");
+        }
+//END RAJESH 30-07-2024
+
+        // echo '<pre>'; print_r($where_arr); exit;
+        DB::table("fees_payment")
+            ->where($where_arr)
+            ->update($update_arr);
+        if ($order_status == "Success") {
+            $data = $this->pay_fees($request, $get_all_data[0]->student_id, $get_all_data[0]->syear, $get_all_data[0]->sub_institute_id, $mer_amount, $order_id);
+            $type = $request->input('type');
+            // return is_mobile($type, "fees/fees_collect/add", $res, "view");
+            return \App\Helpers\is_mobile($type, "fees/online_fees_collect/receipt_view", $data, "view");
+        } else {
+            // echo '<pre>'; print_r(session()->all()); exit;
+            $type = $request->input('type');
+            $school_data = array();
+            return \App\Helpers\is_mobile($type, "fees/online_fees_collect/show_error", $school_data, "view");
+            // return \App\Helpers\is_mobile($type, "fees/online_fees_collect/axis_RequestHandler", $data, "view");
+        }
+    }
+
+    // split payment 28-04-2025
+    public function createSplitPayout(Request $request){
+        $allResponse = [];
+        $sub_institute_id = $request->sub_institute_id ?? 76;
+        $syear = $request->syear ?? 2025;
+        // $validate = Validator::make($request->all(), [
+        //     'sub_institute_id' => 'required',
+        // ]);
+
+        // if($validate->fails()){
+        //     $errorMessages = $validate->errors()->all();
+        //     return response()->json([
+        //         'status' => 0,
+        //         'message' => "Your Url is not proper",
+        //     ]); 
+        // }
+        // get all student which have PS status
+        $getPaymentsPS = DB::table('fees_payment')
+        ->where('sub_institute_id',$sub_institute_id)
+        ->where('syear',$syear)
+        ->where('hdfc_payment_status','PS')
+        ->get()
+        ->toArray();
+
+         // get all student which have PS status
+         $hdfcData = DB::table('fees_hdffc')
+         ->where('sub_institute_id',$sub_institute_id)
+         ->first();
+
+        foreach ($getPaymentsPS as $key => $value) {
+            # code...
+            // Prepare the request data
+            // if($sub_institute_id==76){
+            //     $in_arr['axis_order_id'] = $school_amount; //split amount school
+            //     $in_arr['axis_plain_request']=$mission_amount; // mission amount
+            //     $in_arr['axis_encrypt_request']=$schoolSubAccountID; // school account
+            //     $in_arr['axis_payment_status']=$missionSubAccountID; // mission account
+            // }
+            $splitData = [
+                'reference_no' => $value->hdfc_order_id,
+                'split_tdr_charge_type' => 'M',
+                'merComm' => '0.0',
+                'split_data_list' => [
+                    [
+                        // school payment 
+                        'splitAmount' => $value->axis_order_id ?? 0,
+                        'subAccId' => $value->axis_encrypt_request
+                    ],
+                    [
+                        // mission payment 
+                        'splitAmount' => $value->axis_plain_request ?? 0,
+                        'subAccId' => $value->axis_payment_status
+                    ]
+                ]
+            ];
+
+            // Convert the split data to JSON
+            $merchantData = json_encode($splitData);
+
+            // Encrypt the data using the working key (AES encryption)
+            $encryptedData = $this->hdfc_encrypt($merchantData, $hdfcData->working_code);
+
+            $finalData = [
+                'request_type' => 'JSON',
+                'version' => '1.2',
+                'access_code' => $hdfcData->access_code,
+                'command' => 'createSplitPayout',
+                'response_type' => 'JSON',
+                'enc_request' => $encryptedData,
+            ];
+
+            // Make the POST request
+            // $response = Http::withOptions(['verify' => false]) // Disable SSL verification for testing
+            //     ->asForm()
+            //     ->post('https://apitest.ccavenue.com/apis/servlet/DoWebTrans', $finalData);
+                // ->post('https://api.ccavenue.com/apis/servlet/DoWebTrans', $finalData);
+                $response = Http::withOptions([
+                    'verify' => false, // Disable SSL verification temporarily (for testing)
+                    'timeout' => 60, // Increase the timeout duration (in seconds)
+                ])->asForm()
+                  ->post('https://apitest.ccavenue.com/apis/servlet/DoWebTrans', $finalData);
+                
+            // Check the response
+            $result = $response->body();
+
+            // $status = '';
+            // parse_str($result, $responseData);
+
+            // if (isset($responseData['enc_response'])) {
+            //     $status = $this->decrypt($responseData['enc_response']);
+            // }
+            // Take first element
+            // $responseData = $responseArray[0];
+
+            // Parse it
+            parse_str($result, $parsed);
+
+            // Get status
+            $status = $parsed['status'] ?? null;
+            if(isset($status) && $status==0){
+                $allResponse['status'] = "Success";
+                $allResponse['orderNo'] = $value->hdfc_order_id;
+                $paidStatus = 1;
+            }
+            else{
+                $allResponse['status'] = "Failed";
+                $allResponse['orderNo'] = $value->hdfc_order_id;
+                $paidStatus = 0;
+            }
+
+            $update = DB::table('fees_payment')->where('id',$value->id)->update(['axis_bank_res'=>$paidStatus]);
+
+        }
+
+        return $allResponse;
     }
 
     public function hdfc_request_handler_ssmission(Request $request)
@@ -447,125 +720,6 @@ class online_fees_collect_controller extends Controller
         // echo '<pre>'; print_r($data); exit;
     }
 
-    public function hdfc_response_handler(Request $request)
-    {
-        // echo '<pre>';
-        // print_r($_REQUEST);
-        // print_r(session()->all());
-        // exit;
-        $searchArr = array('"', "'");
-        $replaceArr = array('\"', "\'");
-        $get_map_bank_detail = DB::table("fees_hdffc")
-            ->where(["sub_institute_id" => 48])
-            ->get();//session()->get("sub_institute_id")
-        //$working_key = "585414BED625F7D522B38C014074BE28"; //Shared by CCAVENUES 48 CMA
-        $working_key = $get_map_bank_detail[0]->working_code; //Shared by CCAVENUES
-        // $access_code = "AVPL86GG59BJ25LPJB";
-        // $workingKey = WORKING_CODE; //Working Key should be provided here.
-        $encResponse = $_POST["encResp"]; //This is the response sent by the CCAvenue Server
-        $rcvdString = $this->hdfc_decrypt($encResponse, $working_key); //Crypto Decryption used as per the specified working key.
-        $order_status = "";
-
-        $decryptValues = explode('&', $rcvdString);
-        $dataSize = sizeof($decryptValues);
-        for ($i = 0; $i < $dataSize; $i++) {
-            $information = explode('=', $decryptValues[$i]);
-            if ($i == 0) {
-                $order_id = $information[1];
-            } else if ($i == 1) {
-                $tracking_id = $information[1];
-            } else if ($i == 2) {
-                $bank_ref_no = $information[1];
-            } else if ($i == 3) {
-                $order_status = $information[1];
-            } else if ($i == 4) {
-                $failure_message = $information[1];
-            } else if ($i == 5) {
-                $payment_mode = $information[1];
-            } else if ($i == 7) {
-                $status_code = $information[1];
-            } else if ($i == 8) {
-                $status_message = str_replace($searchArr, $replaceArr, $information[1]);
-            } else if ($i == 10) {
-                $amount = $information[1];
-            } else if ($i == 26) {
-                $student_id = $information[1];
-            } else if ($i == 27) {
-                $syear = $information[1];
-            } else if ($i == 28) {
-                $txnid = $information[1];
-            } else if ($i == 29) {
-                $sub_institute_id = $information[1];
-            } else if ($i == 30) {
-                $fine = $information[1];
-            } else if ($i == 35) {
-                $mer_amount = $information[1];
-            }
-        }
-        $res_arr = array(
-            "order_id" => $order_id,
-            "tracking_id" => $tracking_id,
-            "bank_ref_no" => $bank_ref_no,
-            "order_status" => $order_status,
-            "failure_message" => $failure_message,
-            "payment_mode" => $payment_mode,
-            "status_code" => $status_code,
-            "status_message" => $status_message,
-            "amount" => $amount,
-            "student_id" => $student_id,
-            "syear" => $syear,
-            "txnid" => $txnid,
-            "sub_institute_id" => $sub_institute_id,
-            "fine" => $fine,
-            "mer_amount" => $mer_amount,
-        );
-        $res_josn = json_encode($res_arr);
-
-        $get_all_data = DB::table("fees_payment")
-            ->where(["hdfc_order_id" => $order_id])
-            ->get();
-        $payment_status = "PF";
-        if ($order_status == "Success") {
-            $payment_status = "PS";
-        }
-        $update_arr = array(
-            "hdfc_payment_status" => $payment_status,
-            "hdfc_bank_res" => $res_josn,
-            "updated_at" => now()
-        );
-        $where_arr = array(
-            "sub_institute_id" => $get_all_data[0]->sub_institute_id,
-            "syear" => $get_all_data[0]->syear,
-            "hdfc_order_id" => $order_id
-        );
-
-//START RAJESH 30-07-2024 = prevent second time success
-        if($get_all_data[0]->hdfc_payment_status == 'PS'){
-            $school_data = array();
-            $school_data["website"] = $this->site_name();
-            $type = "web";
-            return \App\Helpers\is_mobile($type, "fees/online_fees_collect/search_student", $school_data, "view");
-        }
-//END RAJESH 30-07-2024
-
-        // echo '<pre>'; print_r($where_arr); exit;
-        DB::table("fees_payment")
-            ->where($where_arr)
-            ->update($update_arr);
-        if ($order_status == "Success") {
-            $data = $this->pay_fees($request, $get_all_data[0]->student_id, $get_all_data[0]->syear, $get_all_data[0]->sub_institute_id, $mer_amount, $order_id);
-            $type = $request->input('type');
-            // return is_mobile($type, "fees/fees_collect/add", $res, "view");
-            return \App\Helpers\is_mobile($type, "fees/online_fees_collect/receipt_view", $data, "view");
-        } else {
-            // echo '<pre>'; print_r(session()->all()); exit;
-            $type = $request->input('type');
-            $school_data = array();
-            return \App\Helpers\is_mobile($type, "fees/online_fees_collect/show_error", $school_data, "view");
-            // return \App\Helpers\is_mobile($type, "fees/online_fees_collect/axis_RequestHandler", $data, "view");
-        }
-    }
-
     public function hdfc_response_handler_ssmission(Request $request)
     {
         // echo '<pre>';
@@ -671,8 +825,9 @@ class online_fees_collect_controller extends Controller
         DB::table("fees_payment")
             ->where($where_arr)
             ->update($update_arr);
+            // (Request $request, $student_id, $syear, $sub_institute_id, $amount, $cheque_no = "",$fine="",$payment_mode = "",$discount="")
         if ($order_status == "Success") {
-            $data = $this->pay_fees($request, $get_all_data[0]->student_id, $get_all_data[0]->syear, $get_all_data[0]->sub_institute_id, $mer_amount, $order_id);
+            $data = $this->pay_fees($request, $get_all_data[0]->student_id, $get_all_data[0]->syear, $get_all_data[0]->sub_institute_id, $mer_amount, $order_id,"","","","inProcess");
             $type = $request->input('type');
             // return is_mobile($type, "fees/fees_collect/add", $res, "view");
             return \App\Helpers\is_mobile($type, "fees/online_fees_collect/receipt_view", $data, "view");
@@ -685,221 +840,6 @@ class online_fees_collect_controller extends Controller
         }
     }
 
-    // added by uma for split payment
-    public function createSplitPayout(Request $request)
-    {
-        $sub_institute_id = $request->sub_institute_id;
-        $syear = $request->syear;
-
-        $get_map_bank_detail = DB::table("fees_hdffc")
-        ->where(["sub_institute_id" => 76])
-        ->first();
-        
-        $workingKey = $get_map_bank_detail->working_code; //Working Key should be provided here.
-        $accessCode = $get_map_bank_detail->access_code;
-        $trackingId =  $get_map_bank_detail->access_code;
-
-        $get_map_bank_data = DB::table("fees_online_maping")
-        ->where(["sub_institute_id" => $sub_institute_id])
-        ->get();
-
-        $payment_acsept_type = $get_map_bank_data[0]->fees_type;
-        $controller = new fees_collect_controller;
-        // $data = $controller->getOnlinebk($request,$all_student[0]->,2020,16849);
-        $getStatus = DB::table('fees_payment')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear])->where('hdfc_payment_status','!=','PS')->get();
-        $fees_config = DB::table('fees_config_master')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear])->first();
-
-        $ajx_controller = new AJAXController;
-        $missionSplit = $schoolSplit = $godhaniSplit = 0;
-        foreach ($getStatus as $key => $value) {
-            $fees_bk_data = $controller->getOnlinebk($request, $sub_institute_id, $syear, $value->student_id);
-            // echo "<pre>";print_r($fees_bk_data);exit;
-            if ($payment_acsept_type == "fix") {
-                // creating month arr
-                $temp_amount = 0;
-                $pay_month = array();
-                if (isset($fees_bk_data["total_fees"])) {
-                    foreach ($fees_bk_data["total_fees"] as $id => $arr) {
-                        if ($arr["month"] == "Total") {
-                            continue;
-                        }
-                        $temp_amount = $temp_amount + $arr["remain"];
-                        $pay_month[$arr["month_id"]] = $arr["month_id"];
-                        if ($value->amount == $temp_amount) {
-                            break;
-                        }
-                    }
-                }
-                //echo '<pre>'; print_r($pay_month); exit;
-                // creating final fee arr
-                $arr["student_id"] = $value->student_id;
-                $arr["months"] = $pay_month;
-                $fees_month = $ajx_controller->getOnlineFeesMonth($arr);
-                $final_fees_arr = array();
-                if (!empty($fees_month)) {
-    
-                    $total_fees = $fees_month["Total"];
-                    unset($fees_month["Total"]);
-                    if (!empty($fees_month)) {
-                        foreach ($fees_month as $id => $val) {
-                            $final_fees_arr[$fees_bk_data["final_fee_name"][$id]] = $val;
-                        }
-                    }
-                    $final_fees_arr["fine"] = "";
-                }
-                //echo '<pre>'; print_r($final_fees_arr); exit;
-                //creating discount data and fine arr
-                $discount_data_arr = array();
-                $fine_data_arr = array();
-                foreach ($final_fees_arr as $id => $val) {
-                    $discount_data_arr[$id] = 0;
-                    $fine_data_arr[$id] = 0;
-                }
-                // echo "<pre>";print_r($final_fees_arr);exit;
-
-                // split fees into mission and school 
-                foreach ($final_fees_arr as $feesTitle => $paidAmt) {
-                    $getFeesID = DB::table('fees_title')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear])->where('fees_title',$feesTitle)->first();
-                    if(isset($getFeesID->id)){
-
-                        // get receipt sort_order 
-                        $getReceiptBook = DB::table('fees_receipt_book_master')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear,'standard_id'=>$fees_bk_data["stu_data"]['std_id']])->where('fees_head_id',$getFeesID->id)->where('status',1)->first();
-
-                        if($getReceiptBook->sort_order==2){ // mission
-                            $missionSplit += $paidAmt;
-                        }else if($getReceiptBook->sort_order==3){ // godhani
-                            $godhaniSplit += $paidAmt;
-                        }else{
-                            $schoolSplit += $paidAmt;
-                        }
-
-                    }
-                }
-                $splitArray = [];
-                // for academy and mission
-                if($schoolSplit>0 && $missionSplit > 0 && $godhaniSplit==0){
-
-                    $splitArray = [
-                        [
-                            'splitAmount' => $schoolSplit,
-                            'subAccId' => "SHARIACADE1",
-                        ],
-                        [
-                            'splitAmount' => $missionSplit,
-                            'subAccId' => "SHRISWAMI1",
-                        ],
-                    ];
-                }
-                // godhani and mission
-                else if($schoolSplit==0 && $missionSplit > 0 && $godhaniSplit>0){
-
-                    $splitArray = [
-                        [
-                            'splitAmount' => $godhaniSplit,
-                            'subAccId' => "SPRISCHOOL1",
-                        ],
-                        [
-                            'splitAmount' => $missionSplit,
-                            'subAccId' => "SHRISWAMI1",
-                        ],
-                    ];
-                }
-                // ONLY for academy
-                else if($schoolSplit>0 && $godhaniSplit==0 && $missionSplit==0){
-                    $splitArray = [
-                        
-                        [
-                            'splitAmount' => $schoolSplit,
-                            'subAccId' => "SHARIACADE1",
-                        ],
-                    ];
-                }
-                // only for godhani
-                else if($schoolSplit==0 && $godhaniSplit>0 && $missionSplit==0){
-                    $splitArray = [
-                        
-                        [
-                            'splitAmount' => $godhaniSplit,
-                            'subAccId' => "SPRISCHOOL1",
-                        ],
-                    ];
-                }
-                // only for mission
-                else if($schoolSplit==0 && $godhaniSplit==0 && $missionSplit>0){
-                    
-                    $splitArray = [
-                        [
-                            'splitAmount' => $missionSplit,
-                            'subAccId' => "SHRISWAMI1",
-                        ],
-                    ];
-                }
-
-                $requestPayload = [
-                    'reference_no' => $trackingId,
-                    'split_tdr_charge_type' => 'M',
-                    'merComm' => '0.0',
-                    'split_data_list' => $splitArray
-                ];
-                // echo "<pre>";print_r($requestPayload);exit;
-        
-                $merchantData = json_encode($requestPayload);
-
-                // Ensure merchantData is a valid JSON string
-                if (json_decode($merchantData) === null) {
-                    throw new \Exception("Invalid data for encryption: merchantData is not a valid JSON string.");
-                }
-
-                $encryptedData = openssl_encrypt($merchantData, 'AES-128-CBC', $workingKey, OPENSSL_RAW_DATA, str_repeat("\0", 16));
-                if ($encryptedData === false) {
-                    throw new \Exception("Encryption failed: " . openssl_error_string());
-                }
-                $encryptedData = bin2hex($encryptedData);
-                if (!ctype_xdigit($encryptedData)) {
-                    throw new \Exception("Invalid binary data for hex conversion.");
-                }
-                $finalData = [
-                    'request_type' => 'JSON',
-                    'version' => '1.2',
-                    'access_code' => $accessCode,
-                    'command' => 'createSplitPayout',
-                    'response_type' => 'JSON',
-                    'enc_request' => $encryptedData
-                ];
-                
-                $response = Http::withOptions([
-                    'verify' => false,
-                ])->withHeaders([
-                    'Content-Type' => 'application/x-www-form-urlencoded'
-                ])->asForm()->post("https://api.ccavenue.com/apis/servlet/DoWebTrans", $finalData);
-                
-                $result = $response->body();
-                echo "<pre>";print_r($result);exit;
-                // Parse enc_response
-                parse_str($result, $output);
-                if (isset($output['enc_response'])) {
-                    $enc_response = $output['enc_response'];
-                    $key = $workingKey;
-                    $key = hex2bin(md5($key));
-                    $initVector = pack("C*", 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f);
-                    if (ctype_xdigit($enc_response)) {
-                        $encryptedText = hex2bin($enc_response);
-                    } else {
-                        if (!ctype_xdigit($enc_response)) {
-                            return response()->json(['error' => 'Invalid input: enc_response is not a valid hexadecimal string.'], 400);
-                        }
-                    }
-                    $decryptedText = openssl_decrypt($encryptedText, 'AES-128-CBC', $key, OPENSSL_RAW_DATA, $initVector);
-                    return response()->json(json_decode($decryptedText, true));
-                }
-        
-            }
-
-            }
-            
-        
-        return response()->json(['error' => 'No response received', 'raw' => $result]);
-    }
     // end of ssmission split pyment 14-04-2025 
     public function hdfc_fetch_payment_status(Request $request)
     {
@@ -1717,7 +1657,7 @@ exit; */
         // echo '<pre>'; print_r($data); exit;
     }
 
-    public function pay_fees(Request $request, $student_id, $syear, $sub_institute_id, $amount, $cheque_no = "",$fine="",$payment_mode = "",$discount="")
+    public function pay_fees(Request $request, $student_id, $syear, $sub_institute_id, $amount, $cheque_no = "",$fine="",$payment_mode = "",$discount="",$inProcess="")// added inProcess on 29-04-2025 for ssmission 
     {
         //echo "<pre>"; print_r($request->all()); exit;
         $get_map_bank_data = DB::table("fees_online_maping")
@@ -1814,6 +1754,7 @@ exit; */
                 "bank_name" => $payment_mode,
                 "bank_branch" => "",
                 "send_sms"=>$send_sms,
+                "inProcess"=>$inProcess, // added on 29-04-2025 for ssmission 
                 "submit" => "Save",
             );
             // echo '<pre>';
@@ -1925,6 +1866,7 @@ exit; */
                 "bank_name" => $payment_mode,
                 "bank_branch" => "",
                 "send_sms"=>$send_sms,
+                "inProcess"=>$inProcess,// added on 29-04-2025 for ssmission 
                 "submit" => "Save",
             );
             /* echo '<pre>';
