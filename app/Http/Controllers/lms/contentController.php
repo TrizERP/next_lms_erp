@@ -681,11 +681,12 @@ class contentController extends Controller
         $contentdata = contentModel::where(["id" => $id])->get()->toArray();
         $chapter_id = $contentdata[0]['chapter_id'];
         $std = $contentdata[0]['standard_id'];
+        $subject = $contentdata[0]['subject_id'];
 
         contentModel::where(["id" => $id])->delete();
         $res['status_code'] = "1";
         $res['message'] = "Content Deleted Successfully";
-        return redirect()->route('topic_master.index', ['id' => $chapter_id,'standard_id' => $std,'perm'=>$sub_institute_id]);
+        return redirect()->route('chapter_master.index', ['standard_id' => $std,'subject_id' => $subject,'perm'=>$sub_institute_id]);
     }
 	
     public function ajax_LMS_MappingValue(Request $request)

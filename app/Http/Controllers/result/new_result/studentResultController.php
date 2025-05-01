@@ -7734,7 +7734,7 @@ private function buildDisciplineTable($decipline_data,$both_term)
                                         // for ab,na and ex
                                         $tdVal = (count($examArr[$subjectData->subject_id][$examkey]['OBT'])==1 && in_array($examArr[$subjectData->subject_id][$examkey]['OBT'][0],['AB','N.A.','EX'])) ? $examArr[$subjectData->subject_id][$examkey]['OBT'][0] : $tdVal;
                                    }
-                                    $table .= '<td class="data_center" json=`'.$allArr.'` '.$pointMarks.'>'.$tdVal.'</td>';
+                                    $table .= '<td class="data_center" json=`'.$allArr.'` '.$pointMarks.' '.$obtMarks.'>'.$tdVal.'</td>';
                                     $annualOut +=$examData['weightage'];
                                     $annualObt +=$obtMarks;
                                     if($subjectData->elective_subject!="Yes"){
