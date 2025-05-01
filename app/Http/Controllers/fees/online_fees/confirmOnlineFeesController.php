@@ -76,11 +76,7 @@ class confirmOnlineFeesController extends Controller
                 ->selectRaw('fp.*')
                 ->where('fp.sub_institute_id', $sub_institute_id)
                 ->where('fp.syear', $syear)
-<<<<<<< HEAD
                 ->where('fp.axis_order_id', "1")
-=======
-                ->where('fp.axis_bank_res', "0")
->>>>>>> a1b0aaa7ace6ed5f8d72af7c6bdad39dfe640465
                 ->whereBetween('fp.hdfc_payment_date', [$from_date, $to_date])
                 ->groupBy('fp.id')
                 ->get()->toArray();
@@ -177,7 +173,6 @@ class confirmOnlineFeesController extends Controller
                 // $order_id = $payementData->hdfc_order_id;
                 // $mer_amount = $payementData->amount;
                 // $data = $online_controller->pay_fees($request, $studentId, $syear, $sub_institute_id, $mer_amount, $order_id);
-<<<<<<< HEAD
                 if(isset($payementData->hdfc_order_id)){
                 $feesData = DB::table('fees_collect')->where('cheque_no',$payementData->hdfc_order_id)->get()->toArray();
                 foreach ($feesData as $keys => $values) {
@@ -191,11 +186,6 @@ class confirmOnlineFeesController extends Controller
                 ->where('id', $paymentId)
                 ->update(["axis_order_id"=>"2"]);
             }
-=======
-
-                // get  order and update fees_collect is_deleted
-                $getFeesCollect = DB::table('fees_collect')->where('cheque_no',$payementData->hdfc_order_id)->update(['is_deleted'=>'N']);
->>>>>>> a1b0aaa7ace6ed5f8d72af7c6bdad39dfe640465
                 $i=1;
            }
            
