@@ -612,6 +612,7 @@ class fees_collect_controller extends Controller
      */
     public function pay_fees(Request $request)
     {
+        // echo "<pre>";print_r($_REQUEST);exit;
         $fees_data = [];
         // $_REQUEST['fees_data'] has month_id,fees_title and amount in array
         foreach ($_REQUEST['fees_data'] as $id => $arr) {
@@ -982,8 +983,13 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
         $fees_receipt_insert['STANDARD'] = $_REQUEST['standard_id'];
         $fees_receipt_insert['CREATED_ON'] = date('Y-m-d');
         $insert_id = DB::table('fees_receipt')->insertGetId($fees_receipt_insert);
+        // added on 29-04-2025 for ssmission onlinr payment
+        $inProcess = '';
+        if(isset($_REQUEST['inprocess']) && $_REQUEST['inprocess']!=''){
+            $inProcess = $_REQUEST['inprocess'];
+        }
         // get html for receipt from receipt table and insert into tables
-        $receipt_html = $this->gunrate_receipt($insert_id, $receipt_number, $heds_with_id,$sub_institute_id,$syear);
+        $receipt_html = $this->gunrate_receipt($insert_id, $receipt_number, $heds_with_id,$sub_institute_id,$syear,$inProcess);
 
         $receipt_id_html = '';
         foreach ($receipt_number as $s_order => $val_number) {
@@ -1267,7 +1273,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
     }
 
     // function is used to genrate fees reciept html and insert into table return back to pay fees
-    public function gunrate_receipt($receipt_id, $receipt_arr, $id_heads,$sub_institute_id='',$syear='')
+    public function gunrate_receipt($receipt_id, $receipt_arr, $id_heads,$sub_institute_id='',$syear='',$inProcess='')
     {
         $months = [
             1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'May', 6 => 'Jun', 7 => 'Jul', 8 => 'Aug', 9 => 'Sep',
@@ -1767,6 +1773,8 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             if ($receipt_book_arr->receipt_line_4 != '') {
                 $receipt_line_4 =  $receipt_book_arr->receipt_line_4;
             }
+            $html_content = str_replace(htmlspecialchars("<<inprocess>>"),$inProcess,$html_content); // added on 29-04-2025 for ssmission online [payment]
+
             $html_content = str_replace(htmlspecialchars("<<receipt_line_1>>"),$receipt_line_1,$html_content);
             $html_content = str_replace(htmlspecialchars("<<receipt_line_2>>"),$receipt_line_2,$html_content);
             $html_content = str_replace(htmlspecialchars("<<receipt_line_3>>"),$receipt_line_3,$html_content);

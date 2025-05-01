@@ -271,10 +271,11 @@ class online_fees_collect_controller extends Controller
         );
          // 28-04-2025 to store split amount in database to easy fetch
          if($sub_institute_id==76){
-            $in_arr['axis_order_id'] = $school_amount; //split amount school
-            $in_arr['axis_plain_request']=$mission_amount; // mission amount
-            $in_arr['axis_encrypt_request']=$schoolSubAccountID; // school account
-            $in_arr['axis_payment_status']=$missionSubAccountID; // mission account
+            $in_arr['axis_order_id'] = 0; //split amount school
+            $in_arr['icici_order_id'] = $school_amount; //split amount school
+            $in_arr['icici_encrypt_request']=$mission_amount; // mission amount
+            $in_arr['icici_plain_request']=$schoolSubAccountID; // school account
+            $in_arr['icici_payment_status']=$missionSubAccountID; // mission account
         }
         // 28-04-2025 end 
         DB::table("fees_payment")
@@ -299,7 +300,7 @@ class online_fees_collect_controller extends Controller
         $searchArr = array('"', "'");
         $replaceArr = array('\"', "\'");
         $get_map_bank_detail = DB::table("fees_hdffc")
-            ->where(["sub_institute_id" => 48])
+            ->where(["sub_institute_id" => 76])
             ->get();//session()->get("sub_institute_id")
         //$working_key = "585414BED625F7D522B38C014074BE28"; //Shared by CCAVENUES 48 CMA
         $working_key = $get_map_bank_detail[0]->working_code; //Shared by CCAVENUES
@@ -374,6 +375,7 @@ class online_fees_collect_controller extends Controller
         $update_arr = array(
             "hdfc_payment_status" => $payment_status,
             "hdfc_bank_res" => $res_josn,
+            "aggre_pay_order_id" => $tracking_id,
             "updated_at" => now()
         );
         $where_arr = array(
@@ -396,8 +398,9 @@ class online_fees_collect_controller extends Controller
             ->where($where_arr)
             ->update($update_arr);
         if ($order_status == "Success") {
-            $data = $this->pay_fees($request, $get_all_data[0]->student_id, $get_all_data[0]->syear, $get_all_data[0]->sub_institute_id, $mer_amount, $order_id);
+            $data = $this->pay_fees($request, $get_all_data[0]->student_id, $get_all_data[0]->syear, $get_all_data[0]->sub_institute_id, $mer_amount, $order_id,"","","","In Processed");
             $type = $request->input('type');
+            // echo "<pre>";print_r($data);exit;
             // return is_mobile($type, "fees/fees_collect/add", $res, "view");
             return \App\Helpers\is_mobile($type, "fees/online_fees_collect/receipt_view", $data, "view");
         } else {
@@ -409,122 +412,178 @@ class online_fees_collect_controller extends Controller
         }
     }
 
-    // split payment 28-04-2025
-    public function createSplitPayout(Request $request){
+    public function createSplitPayout(Request $request)
+    {
         $allResponse = [];
         $sub_institute_id = $request->sub_institute_id ?? 76;
-        $syear = $request->syear ?? 2025;
-        // $validate = Validator::make($request->all(), [
-        //     'sub_institute_id' => 'required',
-        // ]);
-
-        // if($validate->fails()){
-        //     $errorMessages = $validate->errors()->all();
-        //     return response()->json([
-        //         'status' => 0,
-        //         'message' => "Your Url is not proper",
-        //     ]); 
-        // }
-        // get all student which have PS status
-        $getPaymentsPS = DB::table('fees_payment')
-        ->where('sub_institute_id',$sub_institute_id)
-        ->where('syear',$syear)
-        ->where('hdfc_payment_status','PS')
-        ->get()
-        ->toArray();
-
-         // get all student which have PS status
-         $hdfcData = DB::table('fees_hdffc')
-         ->where('sub_institute_id',$sub_institute_id)
-         ->first();
-
-        foreach ($getPaymentsPS as $key => $value) {
-            # code...
-            // Prepare the request data
-            // if($sub_institute_id==76){
-            //     $in_arr['axis_order_id'] = $school_amount; //split amount school
-            //     $in_arr['axis_plain_request']=$mission_amount; // mission amount
-            //     $in_arr['axis_encrypt_request']=$schoolSubAccountID; // school account
-            //     $in_arr['axis_payment_status']=$missionSubAccountID; // mission account
-            // }
-            $splitData = [
-                'reference_no' => $value->hdfc_order_id,
-                'split_tdr_charge_type' => 'M',
-                'merComm' => '0.0',
-                'split_data_list' => [
-                    [
-                        // school payment 
-                        'splitAmount' => $value->axis_order_id ?? 0,
-                        'subAccId' => $value->axis_encrypt_request
-                    ],
-                    [
-                        // mission payment 
-                        'splitAmount' => $value->axis_plain_request ?? 0,
-                        'subAccId' => $value->axis_payment_status
-                    ]
-                ]
-            ];
-
-            // Convert the split data to JSON
-            $merchantData = json_encode($splitData);
-
-            // Encrypt the data using the working key (AES encryption)
-            $encryptedData = $this->hdfc_encrypt($merchantData, $hdfcData->working_code);
-
-            $finalData = [
-                'request_type' => 'JSON',
-                'version' => '1.2',
-                'access_code' => $hdfcData->access_code,
-                'command' => 'createSplitPayout',
-                'response_type' => 'JSON',
-                'enc_request' => $encryptedData,
-            ];
-
-            // Make the POST request
-            // $response = Http::withOptions(['verify' => false]) // Disable SSL verification for testing
-            //     ->asForm()
-            //     ->post('https://apitest.ccavenue.com/apis/servlet/DoWebTrans', $finalData);
-                // ->post('https://api.ccavenue.com/apis/servlet/DoWebTrans', $finalData);
-                $response = Http::withOptions([
-                    'verify' => false, // Disable SSL verification temporarily (for testing)
-                    'timeout' => 60, // Increase the timeout duration (in seconds)
-                ])->asForm()
-                  ->post('https://apitest.ccavenue.com/apis/servlet/DoWebTrans', $finalData);
-                
-            // Check the response
-            $result = $response->body();
-
-            // $status = '';
-            // parse_str($result, $responseData);
-
-            // if (isset($responseData['enc_response'])) {
-            //     $status = $this->decrypt($responseData['enc_response']);
-            // }
-            // Take first element
-            // $responseData = $responseArray[0];
-
-            // Parse it
-            parse_str($result, $parsed);
-
-            // Get status
-            $status = $parsed['status'] ?? null;
-            if(isset($status) && $status==0){
-                $allResponse['status'] = "Success";
-                $allResponse['orderNo'] = $value->hdfc_order_id;
-                $paidStatus = 1;
-            }
-            else{
-                $allResponse['status'] = "Failed";
-                $allResponse['orderNo'] = $value->hdfc_order_id;
-                $paidStatus = 0;
-            }
-
-            $update = DB::table('fees_payment')->where('id',$value->id)->update(['axis_bank_res'=>$paidStatus]);
-
+    
+        // Get HDFC data with trimmed access code
+        $hdfcData = DB::table('fees_hdffc')
+            ->where('sub_institute_id', $sub_institute_id)
+            ->first();
+        
+        if (!$hdfcData) {
+            return ['error' => 'HDFC configuration not found'];
         }
+    
+        $access_code = trim($hdfcData->access_code);
+        $working_key = trim($hdfcData->working_code);
 
+        // Verify the access code and working key are not empty
+        if (empty($access_code) || empty($working_key)) {
+            return ['error' => 'Access code or working key is empty'];
+        }
+    
+        $getPaymentsPS = DB::table('fees_payment')
+            ->where('sub_institute_id', $sub_institute_id)
+            ->where(function($query) {
+		        $query->whereIn('hdfc_payment_status', ['PS'])
+		              ->orWhereIn('axis_payment_status', ['Shipped']);
+		    })
+            ->where('axis_order_id',0)
+            ->get();
+         //echo "<pre>";print_r($getPaymentsPS);exit;
+        foreach ($getPaymentsPS as $payment) {
+            try {
+                // Build the request data
+                $requestData = [
+                    'reference_no' => $payment->aggre_pay_order_id,
+                    'split_tdr_charge_type' => 'M',
+                    'merComm' => '0.0',
+                    'split_data_list' => [
+                        [
+                            'splitAmount' => $payment->icici_order_id,
+                            'subAccId' => $payment->icici_plain_request
+                        ],
+                        [
+                            'splitAmount' => $payment->icici_encrypt_request,
+                            'subAccId' => $payment->icici_payment_status
+                        ]
+                    ]
+                ];
+    
+                // Convert to merchant data string
+                $merchant_data = json_encode($requestData);
+
+                // Encrypt the data
+                $encRequest = $this->hdfc_encrypt($merchant_data, $working_key);
+    
+                $final_data = "request_type=JSON&version=1.2&access_code=" . $access_code . "&command=createSplitPayout&response_type=JSON&enc_request=" . $encRequest;
+    
+                // Send request
+                $ch = curl_init();
+                curl_setopt_array($ch, [
+                    CURLOPT_URL => 'https://api.ccavenue.com/apis/servlet/DoWebTrans',
+                    CURLOPT_POST => true,
+                    CURLOPT_POSTFIELDS => $final_data,
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_HTTPHEADER => ['Content-Type: application/x-www-form-urlencoded'],
+                    CURLOPT_SSL_VERIFYPEER => false,
+                    CURLOPT_SSL_VERIFYHOST => false,
+                    CURLOPT_TIMEOUT => 30
+                ]);
+    
+                $response = curl_exec($ch);
+                $error = curl_error($ch);
+                curl_close($ch);
+    
+                if ($error) {
+                    $allResponse[] = ['error' => $error];
+                    continue;
+                }
+    
+                // Parse response
+                parse_str($response, $parsedResponse);
+    
+                if (isset($parsedResponse['enc_response'])) {
+                    $decryptedResponse = $this->hdfc_decrypt_ssmission($parsedResponse['enc_response'], $working_key);
+                    $data = json_decode($decryptedResponse, true);
+                    $status = $data['Create_Split_Payout_Result']['status'] ?? 1;
+                    $reference_no = $data['Create_Split_Payout_Result']['reference_no'] ?? $payment->aggre_pay_order_id;
+                    
+                    // $allResponse[] = [
+                    //     'status' => 'success',
+                    //     'decrypted_response' => $decryptedResponse,
+                    //     'raw_response' => $response,
+                    //     'api_status'=>$status,
+                    // ];
+
+                    if($status==1){
+                        $allResponse[] = [
+                            'status'=>'failed',
+                            'reference_no'=>$reference_no,
+                            'decrypted_response'=>$decryptedResponse,
+                        ];
+                    }else{
+                        $allResponse[] = [
+                            'status'=>'success',
+                            'reference_no'=>$reference_no,
+                            'decrypted_response'=>$decryptedResponse,
+                        ];   
+                        $update = DB::table('fees_payment')->where('id',$payment->id)->update(['axis_order_id'=>1]); // update table for fees receipt
+                    }
+
+                    // $update = DB::table('fees_payment')->where('id',$value->id)->update(['axis_order_id'=>$paidStatus]);
+                } else {
+                    $allResponse[] = [
+                        'status' => 'error',
+                        'message' => 'Invalid API response',
+                        'raw_response' => $response
+                    ];
+                }
+            } catch (\Exception $e) {
+                $allResponse[] = [
+                    'status' => 'exception',
+                    'message' => $e->getMessage()
+                ];
+            }
+        }
         return $allResponse;
     }
+
+
+
+        public function hdfc_decrypt_ssmission($encryptedText, $key)
+    {
+        $key = $this->hdfc_hextobin_ssmission(md5($key));
+        $initVector = pack("C*", 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+                                0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f);
+
+        $encryptedBinary = $this->hdfc_hextobin_ssmission($encryptedText); // Convert hex to binary
+        $decrypted = openssl_decrypt($encryptedBinary, 'AES-128-CBC', $key, OPENSSL_RAW_DATA, $initVector);
+
+        return rtrim($decrypted, "\x00..\x10"); // Optional: remove padding
+    }
+
+    public function hdfc_hextobin_ssmission($hexString)
+    {
+        // Sanitize and validate input
+        $hexString = trim($hexString);
+
+        if (!ctype_xdigit($hexString)) {
+            return "-";
+        }
+    
+        return pack("H*", $hexString);
+    }
+    public function hdfc_encrypt_ssmission($plainText, $key)
+    {
+        $key = $this->hdfc_hextobin_ssmission(md5($key)); // Convert key to binary
+        $initVector = pack("C*", 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+                                0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f);
+
+        $plainText = $this->hdfc_pkcs5_pad_ssmission($plainText, 16); // AES block size = 16
+        $encrypted = openssl_encrypt($plainText, 'AES-128-CBC', $key, OPENSSL_RAW_DATA, $initVector);
+
+        return bin2hex($encrypted); // Convert binary to hex
+    }
+
+    public function hdfc_pkcs5_pad_ssmission($plainText, $blockSize)
+    {
+        $pad = $blockSize - (strlen($plainText) % $blockSize);
+        return $plainText . str_repeat(chr($pad), $pad);
+    }
+
 
     public function hdfc_request_handler_ssmission(Request $request)
     {
@@ -827,7 +886,7 @@ class online_fees_collect_controller extends Controller
             ->update($update_arr);
             // (Request $request, $student_id, $syear, $sub_institute_id, $amount, $cheque_no = "",$fine="",$payment_mode = "",$discount="")
         if ($order_status == "Success") {
-            $data = $this->pay_fees($request, $get_all_data[0]->student_id, $get_all_data[0]->syear, $get_all_data[0]->sub_institute_id, $mer_amount, $order_id,"","","","inProcess");
+            $data = $this->pay_fees($request, $get_all_data[0]->student_id, $get_all_data[0]->syear, $get_all_data[0]->sub_institute_id, $mer_amount, $order_id,"","","","In Processed");
             $type = $request->input('type');
             // return is_mobile($type, "fees/fees_collect/add", $res, "view");
             return \App\Helpers\is_mobile($type, "fees/online_fees_collect/receipt_view", $data, "view");
@@ -895,7 +954,8 @@ class online_fees_collect_controller extends Controller
                 $ch = curl_init();
 
                 // Set the URL
-                curl_setopt($ch, CURLOPT_URL, 'https://api.ccavenue.com/apis/servlet/DoWebTrans');
+                curl_setopt($ch, CURLOPT_URL, 'https://api.ccavenue.com/apis/servlet/DoWebTrans'); 
+                // curl_setopt($ch, CURLOPT_URL, 'https://api.ccavenue.com/apis/servlet/DoWebTrans'); 
 
                 // Set the cURL options
                 curl_setopt($ch, CURLOPT_POST, true);
@@ -942,12 +1002,14 @@ class online_fees_collect_controller extends Controller
                             $paydate = strtotime($dec_response['order_status_date_time']);
                             $trandate = date("Y-m-d", $paydate);
                             $PaymentMode = $dec_response['order_option_type'] ?? '-';
+                            $reference_no = $dec_response['reference_no'] ?? '-';
 
                             $update_arr = [
                                 "axis_encrypt_request" => "cron",
                                 "axis_payment_status" => $status,
                                 "axis_bank_res" => $trandate,
                                 "axis_plain_request" => $PaymentMode,
+                                "aggre_pay_order_id" => $reference_no,
                                 "hdfc_bank_res" => json_encode($dec_response),
                                 "updated_at" => now()
                             ];
@@ -970,7 +1032,7 @@ class online_fees_collect_controller extends Controller
 
                                 if (count($check) == 0) {
                                     //echo "Done-".$data->student_id."<br/>";
-                                    $this->pay_fees($request, $data->student_id, $data->syear, $data->sub_institute_id, $data->amount, $order_no,$fine,$PaymentMode,$discount);
+                                    $this->pay_fees($request, $data->student_id, $data->syear, $data->sub_institute_id, $data->amount, $order_no,$fine,$PaymentMode,$discount,"In Processed");
                                 }
                             }
                         }
@@ -981,6 +1043,8 @@ class online_fees_collect_controller extends Controller
                     echo "<br/>CCAvenue API Request Failed";
                 }
             }
+        }else{
+            echo "<br/>Failed to find payment data";
         }
         // exit;
     }
@@ -1754,7 +1818,7 @@ exit; */
                 "bank_name" => $payment_mode,
                 "bank_branch" => "",
                 "send_sms"=>$send_sms,
-                "inProcess"=>$inProcess, // added on 29-04-2025 for ssmission 
+                "inprocess"=>$inProcess, // added on 29-04-2025 for ssmission 
                 "submit" => "Save",
             );
             // echo '<pre>';
@@ -1866,7 +1930,7 @@ exit; */
                 "bank_name" => $payment_mode,
                 "bank_branch" => "",
                 "send_sms"=>$send_sms,
-                "inProcess"=>$inProcess,// added on 29-04-2025 for ssmission 
+                "inprocess"=>$inProcess,// added on 29-04-2025 for ssmission 
                 "submit" => "Save",
             );
             /* echo '<pre>';
