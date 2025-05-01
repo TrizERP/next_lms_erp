@@ -985,8 +985,13 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
         $insert_id = DB::table('fees_receipt')->insertGetId($fees_receipt_insert);
         // added on 29-04-2025 for ssmission onlinr payment
         $inProcess = '';
+<<<<<<< HEAD
         if(isset($_REQUEST['inprocess']) && $_REQUEST['inprocess']!=''){
             $inProcess = $_REQUEST['inprocess'];
+=======
+        if($request->has('inProcess') && $request->inProcess!=''){
+            $inProcess = 'In-Process';
+>>>>>>> a1b0aaa7ace6ed5f8d72af7c6bdad39dfe640465
         }
         // get html for receipt from receipt table and insert into tables
         $receipt_html = $this->gunrate_receipt($insert_id, $receipt_number, $heds_with_id,$sub_institute_id,$syear,$inProcess);
@@ -1773,7 +1778,11 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             if ($receipt_book_arr->receipt_line_4 != '') {
                 $receipt_line_4 =  $receipt_book_arr->receipt_line_4;
             }
+<<<<<<< HEAD
             $html_content = str_replace(htmlspecialchars("<<inprocess>>"),$inProcess,$html_content); // added on 29-04-2025 for ssmission online [payment]
+=======
+            $html_content = str_replace(htmlspecialchars("<<inProcess>>"),$inProcess,$html_content); // added on 29-04-2025 for ssmission online [payment]
+>>>>>>> a1b0aaa7ace6ed5f8d72af7c6bdad39dfe640465
 
             $html_content = str_replace(htmlspecialchars("<<receipt_line_1>>"),$receipt_line_1,$html_content);
             $html_content = str_replace(htmlspecialchars("<<receipt_line_2>>"),$receipt_line_2,$html_content);
