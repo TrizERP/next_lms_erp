@@ -51,6 +51,7 @@ use App\Http\Controllers\lms\lmsSyllabusController;
 use App\Http\Controllers\lms\content_library\contentLibraryController;
 use App\Http\Controllers\lms\curriculum\curriculumLessonplanController;
 use App\Http\Controllers\lms\library\skillLibraryController;
+use App\Http\Controllers\lms\library\H5PController;
 use Illuminate\Support\Facades\Route;
 
 Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
@@ -221,7 +222,8 @@ Route::post('show_question_wise_report',
     Route::get('searchContent', [contentLibraryController::class,'getSearchedContent'])->name('searchContent');
     //Route::get('questionReport', 'student\questionWiseReportController@index')->name('question_wise_report');
     //Route::post('show_question_wise_report', 'student\questionWiseReportController@show_question_wise_report')->name('show_question_wise_report');
-
+    // H5p Library
+    Route::resource('h5p',H5PController::class);
 });
 
 Route::controller(lms_apiController::class)->group(function () {
