@@ -426,13 +426,9 @@ class feesReportController extends Controller
                     }
                 }
 
-                if($value->total_amount>0 && $value->tot_disc){
-                    $value->total_amount = ($value->total_amount - $value->tot_disc);
-                }
-
-                if($value->total_amount!=0){ // commented on 23-04-2025 
+                if($value->total_amount!=0){
                     $datewiseData[$value->receiptdate.'||'.$value->payment_mode][]=$value;
-                } // commented on 23-04-2025
+                }
             }
             // echo "<pre>";print_r($datewiseData);exit;
             if(empty($datewiseData)){

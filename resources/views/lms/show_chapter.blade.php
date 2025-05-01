@@ -407,7 +407,7 @@ use DB;
                                     @method('DELETE')
                                     <button onclick="return confirmDelete();" type="submit"
                                             class="btn btn-outline-danger btn-sm mx-1" style="{{$readonly ?? ''}}">
-                                        <i class="mdi mdi-delete-outline"></i>RRRRR</button>
+                                        <i class="mdi mdi-delete-outline"></i></button>
                                 </form>
                             </div>
                             @endif

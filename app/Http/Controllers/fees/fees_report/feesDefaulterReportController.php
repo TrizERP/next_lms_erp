@@ -157,20 +157,6 @@ class feesDefaulterReportController extends Controller
             if (isset($bk_data['final_fee'])) {
                 $final_array[$value['id']]['final_fee'] = $bk_data['final_fee'];
             }
-            $bus_amount = $reg_amount = 0;
-            if (isset($bk_data['total_fees']) && !empty($bk_data['total_fees'])) {
-                foreach ($bk_data['total_fees'] as $bkk => $bkVal) {
-                   if(isset($bkVal['bus_amount']) && $bkVal['bus_amount']>0){
-                    $bus_amount+=$bkVal['bus_amount'];
-                   }
-                   if(isset($bkVal['bk']) && $bkVal['bk']>0){
-                    $reg_amount+=$bkVal['bk'];
-                   }
-                }
-            }
-            $regBus['bus_amount_tot'] = $bus_amount;
-            $regBus['reg_amount_tot'] = $reg_amount;
-            $final_array[$value['id']]['regBus'] =$regBus;
 
             if (isset($final_array[$value['id']])) {
                 $student_data = $final_array[$value['id']];
