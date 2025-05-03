@@ -67,12 +67,11 @@
                                 </td>
                                 <td>
                                     @if(in_array(session()->get('sub_institute_id'),[195]))  
-                                    <select class="form-control" name="{{ 'values[text]['.$col_arr['student_id'].']'}}" id="messageSelect-{{$col_arr['student_id']}}">
-                                        <option value="">Please Select Title</option>
-                                    </select>
+                                        <select class="form-control" name="{{ 'values[text]['.$col_arr['student_id'].']'}}" id="messageSelect-{{$col_arr['student_id']}}">
+                                            <option value="">Please Select Title</option>
+                                        </select>
                                     @else 
-                                    <textarea name="{{ 'values[text]['.$col_arr['student_id'].']'}}"
-                                              class="form-control resizableVertical"></textarea>
+                                        <textarea name="{{ 'values[text]['.$col_arr['student_id'].']'}}" class="form-control resizableVertical"></textarea>
                                     @endif
                                 </td>
                             </tr>
@@ -128,7 +127,7 @@
             url: `{{ route('dicipline-Master.show', '') }}/${id}`,
             type: "GET",
             success: function (data) {
-               alert(data);
+            //    alert(data);
                 var messageSelect = $('#messageSelect-' + student);
                 messageSelect.empty();
                 messageSelect.append('<option value="">Select</option>');
