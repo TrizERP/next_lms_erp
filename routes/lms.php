@@ -51,6 +51,7 @@ use App\Http\Controllers\lms\lmsSyllabusController;
 use App\Http\Controllers\lms\content_library\contentLibraryController;
 use App\Http\Controllers\lms\curriculum\curriculumLessonplanController;
 use App\Http\Controllers\lms\library\skillLibraryController;
+use App\Http\Controllers\lms\library\H5PController;
 use Illuminate\Support\Facades\Route;
 
 Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
@@ -63,7 +64,7 @@ Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute',
     Route::get('o-net-data-category/show-occupation-detail-list-summary',[\App\Http\Controllers\lms\ONetOnlineDataController::class,'showCategoryWiseOccupationDataListSummary'])->name('o-net-data.show-occupation-detail-list-summary');
 
     Route::get('career_counselling',[\App\Http\Controllers\lms\ONetOnlineDataController::class,'career_counselling'])->name('career_counselling');
-    Route::get('career_counselling_education',[\App\Http\Controllers\lms\ONetOnlineDataController::class,'career_counselling_edu'])->name('career_counselling_education');
+    Route::get('career_counselling_education',[\App\Http\Controllers\lms\ONetOnlineDataController::class,'career_counselling_education'])->name('career_counselling_education');
     Route::get('career_counselling_knowing-yourself',[\App\Http\Controllers\lms\ONetOnlineDataController::class,'career_counselling_ky'])->name('career_counselling_knowing-yourself');
     Route::get('career_report',[\App\Http\Controllers\lms\ONetOnlineDataController::class,'career_report'])->name('career_report');
 
@@ -221,7 +222,8 @@ Route::post('show_question_wise_report',
     Route::get('searchContent', [contentLibraryController::class,'getSearchedContent'])->name('searchContent');
     //Route::get('questionReport', 'student\questionWiseReportController@index')->name('question_wise_report');
     //Route::post('show_question_wise_report', 'student\questionWiseReportController@show_question_wise_report')->name('show_question_wise_report');
-
+    // H5p Library
+    Route::resource('h5p',H5PController::class);
 });
 
 Route::controller(lms_apiController::class)->group(function () {
@@ -284,6 +286,7 @@ Route::post('/ai/generateLessonPlanNew', [contentController::class, 'generateLes
 Route::post('/ai/generateSportsData', [contentController::class, 'generateSportsData'])->name('ai.generateSportsData');
 Route::post('/paraphraseNew', [ParaphraseController::class, 'paraphrase']);
 Route::post('/set-book-session',[contentController::class,'setBookSession'])->name('set-book-session');
+
 Route::get('/download-File', [contentLibraryController::class, 'downloadFile'])->name('downloadFile');
 
 // use App\Http\Controllers\lms\Neo4jSyncController;

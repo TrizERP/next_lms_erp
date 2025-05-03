@@ -196,7 +196,7 @@ class confirmOnlineFeesController extends Controller
             $res['message'] = "Opps ! Something went wrong.";
         }else{
             $res['status'] = "1";
-            $res['message'] = "Receipt Generated Successfully !";
+            $res['message'] = "Receipt Update Successfully !";
         }
         return is_mobile($type, "confirm_online_fees.index", $res);
     }

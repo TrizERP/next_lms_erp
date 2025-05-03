@@ -130,7 +130,7 @@
                             </table>
                         </div>
                         @php
-                            if(session()->get('sub_institute_id') == 76) {
+                            if(session()->get('sub_institute_id') == 1) {
                                 $collectUrl = route('hdfc_request_handler_ssmission');
                             } else {
                                 $collectUrl = route('hdfc_request_handler');
@@ -173,7 +173,7 @@
                                             <td>
                                                 <div class="checkbox checkbox-info">
                                                     <input id="<?php echo $id; ?>" name="months[<?php echo $id; ?>]" value="<?php echo $id; ?>" <?php echo $slected; ?> class="months" type="checkbox" 
-                                                    @php echo $disabled; echo 'data-no='.$no; @endphp>
+                                                    @php echo $disabled; echo 'data-no='.$no; @endphp checked>
                                                     <label for="<?php echo $id; ?>"><?php echo $val; ?></label>
                                                 </div>
                                             </td>
@@ -290,7 +290,11 @@
                                     <?php } ?>
                                 </table>
                             </div>
-                            <div class="addFeesHeads"></div>
+                            <div class="addFeesHeads">
+                                @foreach ($data['final_fee'] as $id => $val)
+                                    <input type="hidden" name="fees_heads[{{$id}}]" value="{{$val}}">
+                                @endforeach
+                            </div>
                             <div class="table-responsive col-md-12">
                                 <div class="col-md-4 text-center form-group"></div>
                                 <div class="col-md-4 text-center form-group">
@@ -532,7 +536,7 @@
                             if (amount < 0) {
                                 $(this).attr('readonly', true);
                             }
-                            $('.addFeesHeads').append(`<input type="text" name="fees_heads[${$(this).attr('id')}]" value="${values}">`);
+                            $('.addFeesHeads').append(`<input type="hidden" name="fees_heads[${$(this).attr('id')}]" value="${values}">`);
                         });
                         // 26/08/2021 END Added for The Millennium School for Advanced Imprest Collection payment
                         @if(session()->get('sub_institute_id') == 257)
@@ -620,6 +624,7 @@
             }
                 // end discount amount 14-06-2024
             }
+            
     </script>
     @if(app('request')->input('implementation') == 1)
     <script type="text/javascript">
