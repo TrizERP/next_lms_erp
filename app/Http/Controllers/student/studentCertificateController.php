@@ -391,6 +391,12 @@ LIMIT 1");
             $optionalImplode = implode(', ',$optionalSub);
             $subjectImplode = implode(', ',$mainSub);
             $tdOptionalData = $subjectImplode.'<br>'.$optionalImplode;
+            // added by uma on 05-05-2025 as per their requirement for manual entry for std 10 and 12 start MMIS
+            if(isset($value['subjects_studied']) && $value['subjects_studied'] !=''){
+                $tdOptionalData = $value['subjects_studied'];
+            }
+            // added by uma on 05-05-2025 as per their requirement for manual entry for std 10 and 12 end MMIS
+
         }else{
             $tdOptionalData = $get_standard_subjects[0]->subject_name ?? '-';
         }
@@ -537,7 +543,11 @@ LIMIT 1");
             $stu_remarks = (isset($explodeVal[0]) && $explodeVal[0]!='') ? $explodeVal[0] : '';
             $stu_remarks_input = (isset($explodeVal[1]) && $explodeVal[1]!='') ? $explodeVal[1] : '';
         }
-        if($stu_remarks!='' && $stu_remarks_input!=''){
+        // if manually enter then display other wise get it from result remarks 05-05-2025
+        if(isset($value['last_school_board']) && $value['last_school_board']!=''){
+            $result_remarks = strtoupper($value['last_school_board']);
+        }
+        else if($stu_remarks!='' && $stu_remarks_input!=''){
             $result_remarks = $stu_remarks.'-'.$stu_remarks_input;
         }
         else if ($stu_remarks=='' && $stu_remarks_input!='') {
@@ -549,9 +559,9 @@ LIMIT 1");
         else if($stu_remarks_input!=''){
             $result_remarks = $stu_remarks_input;
         }
-        else{
-            $result_remarks = isset($value['last_school_board']) ? strtoupper($value['last_school_board']) : 'Passed & Promoted to Class ' . $nextStd;
-        }
+        // else{
+        //     $result_remarks = isset($value['last_school_board']) ? strtoupper($value['last_school_board']) : 'Passed & Promoted to Class ' . $nextStd;
+        // }
         // echo "<pre>";print_r($value);exit;
         $curr_std_medium = (isset($curr_std->medium)) ? $curr_std->medium: '';
         $next_std_medium = (isset($next_std->medium)) ? $next_std->medium: '';
@@ -584,6 +594,12 @@ LIMIT 1");
         if(isset($value['whether_failed']) && in_array($value['whether_failed'],['Yes','YES','yes','Y'])){
             $failPass = "CLASS ".$currentStd;
         }
+        // added by uma on 05-05-2025 as per their requirement for manual entry for std 10 and 12 start MMIS
+        if(isset($value['whether_qualified']) && $value['whether_qualified']!=''){
+            $failPass = $value['whether_qualified'];
+        }
+        // added by uma on 05-05-2025 as per their requirement for manual entry for std 10 and 12 end MMIS
+
         $html_content = str_replace(htmlspecialchars("<<whether_qualified_value_result>>"),
         strtoupper($failPass), $html_content);
         // for mmis auto fetch remarks from end
