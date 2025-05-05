@@ -202,24 +202,24 @@
         });
 
 
-        $('#example thead tr').clone(true).appendTo('#example thead');
-        $('#example thead tr:eq(1) th').each(function(i) {
-            var title = $(this).text();
-            $(this).html('<input type="text" size="4" style="color:black !important;" placeholder="Search ' + title + '" />');
+        // $('#example thead tr').clone(true).appendTo('#example thead');
+        // $('#example thead tr:eq(1) th').each(function(i) {
+        //     var title = $(this).text();
+        //     $(this).html('<input type="text" size="4" style="color:black !important;" placeholder="Search ' + title + '" />');
 
-            $('input', this).on('keyup change', function() {
-                if (table.column(i).search() !== this.value) {
-                    table
-                        .column(i)
-                        .search(this.value)
-                        .draw();
-                }
-            });
-        });
+        //     $('input', this).on('keyup change', function() {
+        //         if (table.column(i).search() !== this.value) {
+        //             table
+        //                 .column(i)
+        //                 .search(this.value)
+        //                 .draw();
+        //         }
+        //     });
+        // });
 
-        $('#example').DataTable({
-            "pageLength": 100
-        });
+        // $('#example').DataTable({
+        //     "pageLength": 100
+        // });
         /*var table = $('#visitor_list').DataTable({
 		orderCellsTop: true,
         fixedHeader: true,
@@ -235,6 +235,31 @@
 
     });
 
+ $(document).ready(function() {
+    var table = $('#example').DataTable({
+        select: true,
+        lengthMenu: [
+            [100, 500, 1000, -1],
+            ['100', '500', '1000', 'Show All']
+        ],
+        
+    });
+
+        $('#example thead tr').clone(true).appendTo('#example thead');
+        $('#example thead tr:eq(1) th').each(function (i) {
+            var title = $(this).text();
+            $(this).html('<input type="text" placeholder="Search ' + title + '" />');
+
+            $('input', this).on('keyup change', function () {
+                if (table.column(i).search() !== this.value) {
+                    table
+                        .column(i)
+                        .search( this.value )
+                        .draw();
+                }
+            } );
+        } );
+    } );
 
 </script>
 @include('includes.footer')

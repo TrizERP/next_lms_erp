@@ -2954,11 +2954,11 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                         $remainDate = Carbon::createFromFormat('d-n-Y', '01-'.$remainMonthId.'-'.$remainYear);
 
                         if($value['remain'] > 0 && $remainDate->lessThanOrEqualTo($currentDate)){
-                            // get all fees late master
-                            $getLateDatas = DB::table('fees_late_master')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear,'standard_id'=>$stu_detail['std_id'],'status'=>1,'month_id'=>$value['month_id']])->first();
-                            if(!empty($getLateDatas)){
-                                $getLateData[] = $getLateDatas;
-                            }
+                            // get all fees late master commented on 01-05-2025 no migration found
+                            // $getLateDatas = DB::table('fees_late_master')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear,'standard_id'=>$stu_detail['std_id'],'status'=>1,'month_id'=>$value['month_id']])->first();
+                            // if(!empty($getLateDatas)){
+                            //     $getLateData[] = $getLateDatas;
+                            // }
                         }
                     }
                     // get only data of smallest date or month late entry

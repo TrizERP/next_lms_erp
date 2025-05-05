@@ -412,6 +412,62 @@ class online_fees_collect_controller extends Controller
         }
     }
 
+    // end of ssmission split pyment 14-04-2025 
+    public function getUTR(Request $request)
+    {
+
+        $working_code = '0E3D6A504AEB9E4D89A972E55771E378';
+        $access_code = 'AVDY63MD40AA59YDAA';
+        //$order_no = '02-05-2025';
+        $order_no = '1501252246';
+               /*$order_list = [
+                    'settlement_date' => $order_no
+               ];*/
+                
+               $order_list = [
+                    'pay_id' => $order_no
+               ];
+                $request_payload = json_encode($order_list);
+                
+                $enc_request = $this->hdfc_encrypt($request_payload, $working_code);
+
+                // Initialize cURL session
+                $ch = curl_init();
+
+                curl_setopt($ch, CURLOPT_URL, 'https://api.ccavenue.com/apis/servlet/DoWebTrans'); 
+
+                curl_setopt($ch, CURLOPT_POST, true);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query([
+                    'enc_request' => $enc_request,
+                    'access_code' => $access_code,
+                    'request_type' => 'JSON',
+                    //'command' => 'payoutSummary',
+                    'command' => 'payIdDetails',
+                    'version' => '1.2',
+                ]));
+
+                $response = curl_exec($ch);
+
+                curl_close($ch);
+                //print_r($response);
+
+                    if ($response !== false) {
+                        parse_str($response, $response_data);
+
+                        if (isset($response_data['status']) && $response_data['status'] == '0') {
+                            // $enc_type = $response_data['enc_response'];
+                            $enc_type = str_replace(array("\r", "\n", ' '), '', $response_data['enc_response']);
+                            $dec_response = $this->hdfc_decrypt($enc_type, $working_code);
+                            $dec_response = json_decode($dec_response, true);
+                            echo "<pre>";
+                            print_r($dec_response);
+                            //echo $dec_response['order_status'];
+                            exit;
+                        }
+                    }
+    }
+
     public function createSplitPayout(Request $request)
     {
         $allResponse = [];
@@ -441,30 +497,39 @@ class online_fees_collect_controller extends Controller
 		              ->orWhereIn('axis_payment_status', ['Shipped']);
 		    })
             ->where('axis_order_id',0)
+            ->whereBetween('created_at', [now()->subDays(3), now()->subMinutes(30)])
             ->get();
          //echo "<pre>";print_r($getPaymentsPS);exit;
         foreach ($getPaymentsPS as $payment) {
             try {
+
+                $splitDataList = [];
+
+                if ($payment->icici_order_id > 0) {
+                    $splitDataList[] = [
+                        'splitAmount' => $payment->icici_order_id,
+                        'subAccId' => $payment->icici_plain_request
+                    ];
+                }
+
+                if ($payment->icici_encrypt_request > 0) {
+                    $splitDataList[] = [
+                        'splitAmount' => $payment->icici_encrypt_request,
+                        'subAccId' => $payment->icici_payment_status
+                    ];
+                }
+
                 // Build the request data
                 $requestData = [
                     'reference_no' => $payment->aggre_pay_order_id,
                     'split_tdr_charge_type' => 'M',
                     'merComm' => '0.0',
-                    'split_data_list' => [
-                        [
-                            'splitAmount' => $payment->icici_order_id,
-                            'subAccId' => $payment->icici_plain_request
-                        ],
-                        [
-                            'splitAmount' => $payment->icici_encrypt_request,
-                            'subAccId' => $payment->icici_payment_status
-                        ]
-                    ]
+                    'split_data_list' => $splitDataList
                 ];
     
                 // Convert to merchant data string
                 $merchant_data = json_encode($requestData);
-
+                // echo "<pre>";print_r($merchant_data);exit;
                 // Encrypt the data
                 $encRequest = $this->hdfc_encrypt($merchant_data, $working_key);
     
@@ -501,29 +566,21 @@ class online_fees_collect_controller extends Controller
                     $status = $data['Create_Split_Payout_Result']['status'] ?? 1;
                     $reference_no = $data['Create_Split_Payout_Result']['reference_no'] ?? $payment->aggre_pay_order_id;
                     
-                    // $allResponse[] = [
-                    //     'status' => 'success',
-                    //     'decrypted_response' => $decryptedResponse,
-                    //     'raw_response' => $response,
-                    //     'api_status'=>$status,
-                    // ];
-
-                    if($status==1){
-                        $allResponse[] = [
-                            'status'=>'failed',
-                            'reference_no'=>$reference_no,
-                            'decrypted_response'=>$decryptedResponse,
-                        ];
-                    }else{
+                    if($status==0){
                         $allResponse[] = [
                             'status'=>'success',
                             'reference_no'=>$reference_no,
                             'decrypted_response'=>$decryptedResponse,
                         ];   
                         $update = DB::table('fees_payment')->where('id',$payment->id)->update(['axis_order_id'=>1]); // update table for fees receipt
+                    }else{
+                        $allResponse[] = [
+                            'status'=>'failed',
+                            'reference_no'=>$reference_no,
+                            'decrypted_response'=>$decryptedResponse,
+                        ];
                     }
 
-                    // $update = DB::table('fees_payment')->where('id',$value->id)->update(['axis_order_id'=>$paidStatus]);
                 } else {
                     $allResponse[] = [
                         'status' => 'error',
@@ -541,9 +598,7 @@ class online_fees_collect_controller extends Controller
         return $allResponse;
     }
 
-
-
-        public function hdfc_decrypt_ssmission($encryptedText, $key)
+    public function hdfc_decrypt_ssmission($encryptedText, $key)
     {
         $key = $this->hdfc_hextobin_ssmission(md5($key));
         $initVector = pack("C*", 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,

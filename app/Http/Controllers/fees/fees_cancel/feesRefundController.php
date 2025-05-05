@@ -118,7 +118,7 @@ class feesRefundController extends Controller
         $PAID_DATA = json_decode(json_encode($fees_paid_data), true);
 
         $paid_data_title_wise = array();
-        // echo "<pre>";print_r($fees_title);exit;                     
+        // echo "<pre>";print_r($getBk);exit;                     
         foreach ($PAID_DATA as $key => $val) {
             foreach ($fees_title as $fees_title_name => $fees_title_id) {
                 if(isset($val[$fees_title_id])){
@@ -138,6 +138,16 @@ class feesRefundController extends Controller
         $res['fees_config_data'] = tblfeesConfigModel::where([
             'sub_institute_id' => $sub_institute_id, 'syear' => $syear,
         ])->get()->toArray();
+        
+        if($res['stu_data']['student_id']==0){
+            $type = "web";
+            $res = [
+                "status_code" => 0,
+                "message"     => "Student Not Found. May be inactive please check!",
+            ];
+
+            return is_mobile($type, "fees_refund.index", $res, "redirect");
+        }
 
         if (count($res['fees_config_data']) > 0) {
             $res['fees_config_data'] = $res['fees_config_data'][0];
