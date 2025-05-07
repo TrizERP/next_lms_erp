@@ -180,7 +180,7 @@ class feesModificationController extends Controller
             ->selectRaw("fc.id,fc.student_id,CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name) AS student_name,
                 ts.enrollment_no,ts.admission_year,ts.mobile,ts.email,date_format(ts.dob,'%d-%m-%Y') AS dob,a.title AS section,
                 s.name AS std_name,d.name AS div_name,sq.title AS stu_qouta, $fees_columns
-                SUM(fc.fine) AS total_fine,SUM(fc.fees_discount) AS tot_disc,fc.receipt_no,sum(fc.amount) as total_amt,b.title as student_batch_name,date_format(fc.receiptdate,'%d-%m-%Y') AS receiptdate,fc.payment_mode,fc.cheque_bank_name,fc.bank_branch,fc.cheque_no,fc.cheque_date,'fees_collect' as fees_type")
+                SUM(fc.fine) AS total_fine,SUM(fc.fees_discount) AS tot_disc,group_concat(DISTINCT fc.receipt_no) as receipt_no,sum(fc.amount) as total_amt,b.title as student_batch_name,date_format(fc.receiptdate,'%d-%m-%Y') AS receiptdate,fc.payment_mode,fc.cheque_bank_name,fc.bank_branch,fc.cheque_no,fc.cheque_date,'fees_collect' as fees_type,group_concat(DISTINCT fc.bank_name) as institute_type")
             ->whereRaw($extraSearchArrayRaw)
             ->where('se.syear', $syear)
             ->where('fc.syear', $syear)
@@ -190,7 +190,7 @@ class feesModificationController extends Controller
                 $query->selectRaw("fp.id,fp.student_id,CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name) AS student_name,
                 ts.enrollment_no,ts.admission_year,ts.mobile,ts.email,date_format(ts.dob,'%d-%m-%Y') AS dob,a.title AS section,
                 s.name AS std_name,d.name AS div_name,sq.title AS stu_qouta, $other_columns
-                SUM(fp.fine) AS total_fine,SUM(fp.fees_discount) AS tot_disc,fp.reciept_id as receipt_no,sum(fp.actual_amountpaid) as total_amt,b.title as student_batch_name,date_format(fp.receiptdate,'%d-%m-%Y') AS receiptdate,fp.payment_mode,fp.bank_name AS cheque_bank_name,fp.bank_branch,fp.cheque_dd_no as cheque_no,fp.cheque_dd_date as cheque_date,'fees_paid' as fees_type")
+                SUM(fp.fine) AS total_fine,SUM(fp.fees_discount) AS tot_disc,group_concat(DISTINCT fp.reciept_id) as receipt_no,sum(fp.actual_amountpaid) as total_amt,b.title as student_batch_name,date_format(fp.receiptdate,'%d-%m-%Y') AS receiptdate,fp.payment_mode,fp.bank_name AS cheque_bank_name,fp.bank_branch,fp.cheque_dd_no as cheque_no,fp.cheque_dd_date as cheque_date,'fees_paid' as fees_type,'' as institute_type")
                     ->from('fees_paid_other as fp')
                     ->join('tblstudent as ts', function ($join) {
                         $join->whereRaw('ts.id = fp.student_id AND ts.sub_institute_id = fp.sub_institute_id');
@@ -217,13 +217,14 @@ class feesModificationController extends Controller
         ->selectRaw("id,student_id,student_name,
         enrollment_no,admission_year,mobile,email,dob,section,
        std_name,div_name,stu_qouta, ".$columns."
-       SUM(total_fine) as total_fine,SUM(tot_disc) as tot_disc,receipt_no,sum(total_amt) as amount,student_batch_name,receiptdate,payment_mode,cheque_bank_name,bank_branch,cheque_no,cheque_date,fees_type")
+       SUM(total_fine) as total_fine,SUM(tot_disc) as tot_disc,group_concat(DISTINCT receipt_no) as receipt_no,sum(total_amt) as amount,student_batch_name,receiptdate,payment_mode,cheque_bank_name,bank_branch,cheque_no,cheque_date,fees_type,group_concat(DISTINCT institute_type) as institute_type")
             ->groupBy(['student_id','receiptdate','payment_mode','cheque_bank_name','cheque_no'])->get()->toArray();
             // 7050
             // echo "<pre>";print_r($fees_data);exit;
         $fees_data = array_map(function ($value) {
             return (array)$value;
         }, $fees_data);
+        // echo "<pre>";print_r($fees_data);exit;
         
         $res['status_code'] = 1;
         $res['message'] = "Success";
@@ -289,18 +290,21 @@ class feesModificationController extends Controller
                 'cheque_date'=>$cheque_date
             ];
 
-            DB::enableQueryLog(); // store into access log
-
-            $update = DB::table('fees_collect')->where('id',$fees_id)->where('student_id',$student_id)->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear])->update($updateData);
-
-            $queries = DB::getQueryLog(); 
-            // dd($queries);
-            $sendQuery = end($queries);
-            accesslog_json($sendQuery,'update','Fees Modification',$updateData);
-
-            if($update){
+            // get fees details added on 07-05-2025 for modify school/mission receipt both
+            $checkFees = DB::table('fees_collect')->where('id',$fees_id)->where('is_deleted','N')->first();
+            if(isset($checkFees->receiptdate) && isset($checkFees->student_id)){
+                DB::enableQueryLog(); // store into access log
+                $update = DB::table('fees_collect')->where('receiptdate',$checkFees->receiptdate)->where('created_date',$checkFees->created_date)->where('student_id',$student_id)->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear])->update($updateData);
+                
+                $queries = DB::getQueryLog(); 
+                // dd($queries);
+                $sendQuery = end($queries);
+                accesslog_json($sendQuery,'update','Fees Modification',$updateData);
                 $i++;
             }
+
+            // $update = DB::table('fees_collect')->where('id',$fees_id)->where('student_id',$student_id)->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear])->update($updateData);
+
         }
 
         if($i>0){
