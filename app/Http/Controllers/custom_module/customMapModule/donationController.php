@@ -449,6 +449,8 @@ class donationController extends Controller
     public function donationReport(Request $request){
         $type = $request->input('type');
         $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+        $payment_mode = $request->input('payment_mode');
 
         if(in_array($type,['API','JSON'])){
             try {
@@ -473,8 +475,17 @@ class donationController extends Controller
                 return response()->json($response, 400);
             }
         }
+        $receipt_book= DB::table('fees_receipt_book_master')->where(['sub_institute_id' => $sub_institute_id,'status' => 1,'syear'=>$syear])
+        ->selectRaw('*,GROUP_CONCAT(DISTINCT standard_id) as standards,GROUP_CONCAT(DISTINCT fees_head_id) as heads')    
+        ->when($request->has('receipt_title'),function($q) use($request){
+             $q->where('sort_order',$request->receipt_title);
+         })
+         ->first();
+
+        $datewiseData = [];
+        $reportData = [];
         if($request->has('Search') && $request->Search=='Search'){
-            $res['reportData'] = DB::table('donation_collection as dc')
+            $reportData = DB::table('donation_collection as dc')
             ->join('Z_donarDetails as dd', function ($join) {
                 $join->on('dc.donar_id', '=', 'dd.id');
             })
@@ -489,13 +500,34 @@ class donationController extends Controller
             ->when($request->has('from_date') && $request->from_date != '', function ($q) use ($request) {
                 $q->whereBetween('dc.paid_date', [$request->from_date,$request->to_date]);
             })
+            ->when($request->has('payment_mode'),function($q) use($request){
+                    $q->where('dc.payment_mode',$request->payment_mode);
+            })
             ->whereNull('dc.deleted_at')
+            ->orderByRaw('dc.paid_date,CAST(reciept_no AS UNSIGNED)')
             ->get()
             ->toArray();
         }
+
+        foreach ($reportData as $key => $value) {
+            if($value->donation_amount!=0){
+                $datewiseData[$value->paid_date.'||'.$value->payment_mode][]=$value;
+            }
+        }
+        // echo "<pre>";print_r($datewiseData);exit;
+        if(empty($datewiseData)){
+            $res['status']=0;
+            $res['message']='No Data Found';
+        }
+
+        $res['payment_mode'] = ['Cash'=>'CASH','Cheque'=>'CHEQUE','POS'=>'POS','Online'=>'ONLINE','UPI'=>'UPI','RTGS/NEFT'=>'RTGS/NEFT'];
+
+        $res['datewiseData'] = $datewiseData;
+        $res['school_details'] = $receipt_book;
         // echo "<pre>";print_r($res);exit;
         $from_date = $request->from_date ?? now();
         $to_date = $request->to_date ?? now();
+        $res['selPaymentMode'] = isset($request->payment_mode) ? $request->payment_mode : '';
         $res['from_date'] = $from_date;
         $res['to_date'] = $to_date;
         $res['full_name'] = $request->full_name;
