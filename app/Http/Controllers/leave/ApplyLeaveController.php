@@ -61,6 +61,7 @@ class ApplyLeaveController extends Controller
             $res['sandwichLeave'] = DB::table('general_data')->where('sub_institute_id',$sub_institute_id)->where('fieldname', 'sandwich_leave')->first();
             $res['causualLeave'] =DB::table('general_data')->where('sub_institute_id',$sub_institute_id)->where('fieldname', 'casual_leave_apply')->first();
             $res['earnedLeave'] = DB::table('general_data')->where('sub_institute_id',$sub_institute_id)->where('fieldname', 'earned_leave_apply')->first();
+            $res['half_days_allowed'] = DB::table('general_data')->where('sub_institute_id',$sub_institute_id)->where('fieldname', 'half_days_allowed')->first();
             // echo "<pre>";print_r($res['earnedLeave']);exit;
             // return view('leave.apply_leave', compact('departments', 'users', 'leave_types'));
             return is_mobile($type, "leave.apply_leave", $res, "view");

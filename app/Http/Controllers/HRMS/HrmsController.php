@@ -513,7 +513,9 @@ class HrmsController extends Controller
         $get_casual_leave_data = DB::table('general_data')->where(['fieldname' => 'casual_leave_apply', 'sub_institute_id' => $sub_institute_id])->first();
 
         $get_earned_leave_data = DB::table('general_data')->where(['fieldname' => 'earned_leave_apply', 'sub_institute_id' => $sub_institute_id])->first();
-
+        // get leave types rather then casual and earne
+        $leaveTypeArr = DB::table('hrms_leave_types')->whereNotIn('leave_type_id',['LTY001','LTY009'])->where(['status'=>1,'sub_institute_id'=>$sub_institute_id])->orderBy('sort_order')->get()->toArray();
+        // echo "<pre>";print_r($leaveTypes);exit;
 
         $get_parent_communication = DB::table('general_data')->where(['fieldname' => 'parent_communication', 'sub_institute_id' => $sub_institute_id])->first();
 
@@ -528,6 +530,9 @@ class HrmsController extends Controller
         $get_studentName = DB::table('general_data')->where(['fieldname' => 'student_name', 'sub_institute_id' => $sub_institute_id])->first();
         $get_previousAdmission = DB::table('general_data')->where(['fieldname' => 'previous_year_admission', 'sub_institute_id' => $sub_institute_id])->first();
 
+        $getallow_leave_days=DB::table('general_data')->where(['fieldname' => 'allow_leave_days', 'sub_institute_id' => $sub_institute_id])->first();
+
+        $res['leaveTypeArr'] = $leaveTypeArr;
         $res['get_sandwich_leave_data'] = $get_sandwich_leave_data;
         $res['get_casual_leave_data'] = $get_casual_leave_data;
         $res['get_earned_leave_data'] = $get_earned_leave_data;
@@ -538,6 +543,8 @@ class HrmsController extends Controller
         $res['get_bulkDiscount']=$get_bulkDiscount;
         $res['get_studentName']=$get_studentName;
         $res['get_previousAdmission']=$get_previousAdmission;
+        $res['getallow_leave_days']=$getallow_leave_days;
+
          
         // echo "<pre>";print_r($res);exit;  
 
@@ -569,6 +576,8 @@ class HrmsController extends Controller
         
         $studentName = $request->input('studentName');   
         $previousAdmission = $request->previousAdmission; 
+
+        $half_days_allowed = $request->half_days_allowed; // added on 08-05-2025
 
         if ($sandwich_leave !== null) {
             // Check if a record with fieldname 'sandwich_leave' and sub_institute_id exists
@@ -613,6 +622,36 @@ class HrmsController extends Controller
                 $general_data->save();
             }
         }
+        // added on 08-05-2025
+        if ($allow_leave_days !== null) {
+            // Check if a record with fieldname 'casual_leave_apply' and sub_institute_id exists
+            $updateAllowedLeaveDay = general_dataModel::where('fieldname', 'allow_leave_days')
+                ->where('sub_institute_id', $subInstituteId)
+                ->first();
+            $leaveIds = '';
+            if(isset($request->leave_types) && !empty($request->leave_types)){
+                $leaveIds = json_encode($request->leave_types,true);
+            }
+            // echo "<pre>";print_r($leaveIds);exit;
+
+            if ($updateAllowedLeaveDay) {
+                // If exists, update the record
+                $updateAllowedLeaveDay->fieldvalue = $half_days_allowed;
+                $updateAllowedLeaveDay->extra_field1 = $leaveIds;
+                $updateAllowedLeaveDay->save();
+            } else {
+                // If not exists, insert a new record
+                $general_data = new general_dataModel();
+                $general_data->fieldname = 'half_days_allowed';
+                $general_data->fieldvalue = $half_days_allowed ?? 0;
+                $general_data->extra_field1 = $leaveIds;
+                $general_data->sub_institute_id = $subInstituteId;
+                $general_data->client_id = $clientId;
+                $general_data->type = 'hrms';
+                $general_data->save();
+            }
+        }
+        // end on 08-05-2025
         // earned_leave_days
         if ($earned_leave_days !== null) {
             // Check if a record with fieldname 'earned_leave_apply' and sub_institute_id exists
