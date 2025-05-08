@@ -1,6 +1,3 @@
-{{--@include('includes.headcss')
-@include('includes.header')
-@include('includes.sideNavigation')--}}
 @extends('layout')
 @section('container')
 <div id="page-wrapper">
@@ -73,7 +70,7 @@
                         <input type="text" id="last_name" value="{{$last_name}}" name="last_name" class="form-control">
                     </div>
                     <div class="col-md-4 form-group">
-                        <label>Enrollment No</label>
+                        <label>{{App\Helpers\get_string('grno','request')}}</label>
                         <input type="text" id="enrollment_no" name="enrollment_no" value="{{$enrollment_no}}" class="form-control">
                     </div>
                     <div class="col-md-4 form-group">
@@ -88,11 +85,11 @@
                     {{ App\Helpers\SearchChain('4','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
                     <div class="col-md-4 form-group">
                         <label>From Date</label>
-                        <input type="text" id="from_date" name="from_date" value="{{$from_date}}" class="form-control mydatepicker">
+                        <input type="text" id="from_date" name="from_date" value="{{$from_date}}" class="form-control mydatepicker" autocomplete="off">
                     </div>
                     <div class="col-md-4 form-group">
                         <label>To Date</label>
-                        <input type="text" id="to_date" name="to_date" value="{{$to_date}}" class="form-control mydatepicker">
+                        <input type="text" id="to_date" name="to_date" value="{{$to_date}}" class="form-control mydatepicker" autocomplete="off">
                     </div>
                     <div class="col-md-12 form-group">
                         <center>
@@ -122,14 +119,14 @@
                             <th>{{App\Helpers\get_string('studentname','request')}}</th>
                             <th>{{App\Helpers\get_string('standard','request')}}</th>
                             <th>{{App\Helpers\get_string('division','request')}}</th>
-                            <th>Batch</th>
                             <th>{{App\Helpers\get_string('studentquota','request')}}</th>
+                            <th>Type</th>
+                            <th>Receipt No.</th>
                             <th>Payment Mode</th>
                             <th>Bank Name</th>
                             <th>Bank Branch</th>
                             <th>Cheque No</th>
                             <th>Cheque Date</th>
-                            <th>Receipt No.</th>
                             <th>Receipt Date</th>
                             @if(isset($data['fees_heads']))
                                 @foreach($data['fees_heads'] as $key => $val)
@@ -171,13 +168,14 @@
                             <td>{{App\Helpers\sortStudentName($fees_value['student_name'])}}</td>
                             <td>{{$fees_value['std_name']}}</td>
                             <td>{{$fees_value['div_name']}}</td>
-                            <td>{{$fees_value['student_batch_name']}}</td>
                             <td>{{$fees_value['stu_qouta']}}</td>
+                            <td>{{$fees_value['institute_type']}}</td>
+                            <td>{{$fees_value['receipt_no']}}</td>
                             <td>
                                 <select id="payment_mode_{{$fees_value['id']}}" name="payment_mode[{{$fees_value['id']}}]" class="form-control payment_mode" disabled="true">
                                     <option value="">select Mode</option>
                                     @foreach($paymentModes as $k=>$p)
-                                    <option value="{{$p}}" @if(isset($fees_value['payment_mode']) && $fees_value['payment_mode']==$p) selected @endif>{{$p}}</option>
+                                    <option value="{{$k}}" @if(isset($fees_value['payment_mode']) && $fees_value['payment_mode']==$k) selected @endif>{{$p}}</option>
                                     @endforeach
                                 </select>
                             </td>
@@ -193,7 +191,6 @@
                             <td>
                                 <input type="text" class="form-control mydatepicker cheque_date" id="cheque_date_{{$fees_value['id']}}" name="cheque_date[{{$fees_value['id']}}]" value="{{$fees_value['cheque_date']}}" disabled="true">
                             </td>
-                            <td>{{$fees_value['receipt_no']}}</td>
                             <td>{{$fees_value['receiptdate']}}</td>
                             @if(isset($data['fees_heads']))
                                 @foreach($data['fees_heads'] as $k => $val)
@@ -256,7 +253,7 @@
                     </tbody>
                 </table>
             </div>
-            <div class="col-md-12">
+            <div class="col-md-12 mt-2">
                 <center>
                     <input type="submit" value="Update" class="btn btn-success">
                 </center>

@@ -5,7 +5,7 @@
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row bg-title">
-            <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
+            <div class="col-lg-3 col-md-6 col-sm-4 col-xs-12">
                 <h4 class="page-title">General Setting</h4>
             </div>
         </div>
@@ -39,8 +39,8 @@
                                 <th>Are you applying for sandwich leave in your institute?</th>
                                 <td>
                                     <div class="row">
-                                        <div class="col-md-4 form-group" style="margin-left: 0px !important">
-                                            <select id='sandwich_leave' name="sandwich_leave" class="form-control" style="margin-left: 50px;">
+                                        <div class="col-md-6 form-group" style="margin-left: 0px !important">
+                                            <select id='sandwich_leave' name="sandwich_leave" class="form-control" >
                                                 <option>-- Select --</option>
                                                 @foreach($sandwich_leave as $key=>$value)
                                                     <option value="{{$value}}" @if(isset($data['get_sandwich_leave_data']->fieldvalue) && $data['get_sandwich_leave_data']->fieldvalue === $value) selected @endif>{{$value}}</option>
@@ -55,8 +55,8 @@
                                 <th>How Many days allowed for casual leave at one time?</th>
                                 <td>
                                     <div class="row">
-                                        <div class="col-md-4 form-group" style="margin-left: 0px !important">
-                                            <select id='casual_leave_at_one_time' name="casual_leave_at_one_time" class="form-control" style="margin-left: 50px;">
+                                        <div class="col-md-6 form-group" style="margin-left: 0px !important">
+                                            <select id='casual_leave_at_one_time' name="casual_leave_at_one_time" class="form-control" >
                                             @foreach($casual_leave as $key=>$value)
                                                     <option value="{{$value}}" @if(isset($data['get_casual_leave_data']->fieldvalue) && $data['get_casual_leave_data']->fieldvalue == $value) selected @endif>{{$value}}</option>
                                             @endforeach
@@ -65,16 +65,42 @@
                                     </div>
                                 </td>
                             </tr>
-                            <!-- causual leave  -->
+                            <!-- Earned leave  -->
                             <tr>
                                 <th>How Many days allowed for Earned Leave at one time?</th>
                                 <td>
                                     <div class="row">
-                                        <div class="col-md-4 form-group" style="margin-left: 0px !important">
-                                            <select id='earned_leave_days' name="earned_leave_days" class="form-control" style="margin-left: 50px;">
+                                        <div class="col-md-6 form-group" style="margin-left: 0px !important">
+                                            <select id='earned_leave_days' name="earned_leave_days" class="form-control" >
                                             @foreach($casual_leave as $key=>$value)
                                                     <option value="{{$value}}" @if(isset($data['get_earned_leave_data']->fieldvalue) && $data['get_earned_leave_data']->fieldvalue == $value) selected @endif>{{$value}}</option>
                                             @endforeach
+                                            </select>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <!-- Half Day and Other leave  -->
+                            <tr>
+                                <th>How Many days allowed for Half day Leave at one time?</th>
+                                <td>
+                                    <div class="row">
+                                        <div class="col-md-6 form-group" style="margin-left: 0px !important">
+                                            <input type="number" name="half_days_allowed" id="half_days_allowed" class="form-control" @if(!empty($data['getallow_leave_days']) && isset($data['getallow_leave_days']->fieldvalue)) value="{{$data['getallow_leave_days']->fieldvalue}}" @endif>
+                                        </div>
+                                        @php 
+                                        $leaveTypeArr = [];
+                                        if(!empty($data['getallow_leave_days']) && $data['getallow_leave_days']->extra_field1!=''){
+                                            $leaveTypeArr = json_decode($data['getallow_leave_days']->extra_field1,true);
+                                            // echo $data['getallow_leave_days']->extra_field1;
+                                        }
+                                        @endphp
+                                        <div class="col-md-6">
+                                            <select name="leave_types[]" id="leave_types" class="form-control" multiple>
+                                                <option value="">select Type</option>
+                                                @foreach($data['leaveTypeArr'] as $k=>$val)
+                                                <option value="{{$val->id}}" @if(in_array($val->id,$leaveTypeArr)) selected @endif>{{$val->leave_type}}</option>
+                                                @endforeach
                                             </select>
                                         </div>
                                     </div>
@@ -85,8 +111,8 @@
                                 <th>System to display parent communication class-teacher wise</th>
                                 <td>
                                     <div class="row">
-                                        <div class="col-md-4 form-group" style="margin-left: 0px !important">
-                                            <select id='parent_communication' name="parent_communication" class="form-control" style="margin-left: 50px;">
+                                        <div class="col-md-6 form-group" style="margin-left: 0px !important">
+                                            <select id='parent_communication' name="parent_communication" class="form-control" >
                                             <option>-- Select --</option>
                                               @foreach($parent_communication as $key => $value)
                                               <option value="{{$key}}" @if(isset($data['get_parent_communication']->fieldvalue) && $data['get_parent_communication']->fieldvalue === $key)  selected @endif>{{$value}}</option>
@@ -101,8 +127,8 @@
                                 <th>Do you want to enable multiple logins?</th>
                                 <td>
                                     <div class="row">
-                                        <div class="col-md-4 form-group" style="margin-left: 0px !important">
-                                            <select id='multi_login' name="multi_login" class="form-control" style="margin-left: 50px;">
+                                        <div class="col-md-6 form-group" style="margin-left: 0px !important">
+                                            <select id='multi_login' name="multi_login" class="form-control" >
                                             @foreach($multi_login as $value)
                                                 <option value="{{ $value }}" {{ isset($data['get_multi_login']->fieldvalue) && $data['get_multi_login']->fieldvalue === $value ? 'selected' : '' }}>
                                                     {{ $value }}
@@ -119,8 +145,8 @@
                                 <th>Display all teachers in creating timetable? </th>
                                 <td>
                                     <div class="row">
-                                        <div class="col-md-4 form-group" style="margin-left: 0px !important">
-                                            <select id='timetable_teacher' name="timetable_teacher" class="form-control" style="margin-left: 50px;">
+                                        <div class="col-md-6 form-group" style="margin-left: 0px !important">
+                                            <select id='timetable_teacher' name="timetable_teacher" class="form-control" >
                                             <option>--Select--</option>
                                             @foreach($timeTableTeacher as $value)
                                                 <option value="{{ $value }}" {{ isset($data['get_timetable_teacher']->fieldvalue) && $data['get_timetable_teacher']->fieldvalue === $value ? 'selected' : '' }}>
@@ -137,8 +163,8 @@
                                 <th>Display all teachers in AI timetable? </th>
                                 <td>
                                     <div class="row">
-                                        <div class="col-md-4 form-group" style="margin-left: 0px !important">
-                                            <select id='timetable_ai' name="timetable_ai" class="form-control" style="margin-left: 50px;">
+                                        <div class="col-md-6 form-group" style="margin-left: 0px !important">
+                                            <select id='timetable_ai' name="timetable_ai" class="form-control" >
                                             <option>--Select--</option>
                                             @foreach($timetable_ai as $key=>$value)
                                                 <option value="{{ $key }}" @if(isset($data['get_timetable_ai']->fieldvalue) && $data['get_timetable_ai']->fieldvalue == $key) selected @endif >
@@ -155,9 +181,9 @@
                                 <th>If students pay 3 months fees at once, should we give a discount?<br>And if yes, how much should we give?</th>
                                 <td>
                                     <div class="row">
-                                        <div class="col-md-4 form-group" style="margin-left: 0px !important">
-                                            <label for="" style="margin-left: 50px;">Select Discount</label>
-                                            <select id='bulkDiscount' name="bulkDiscount" class="form-control" style="margin-left: 50px;" onchange="makeAmountReq()">
+                                        <div class="col-md-6 form-group" style="margin-left: 0px !important">
+                                            <label for="" >Select Discount</label>
+                                            <select id='bulkDiscount' name="bulkDiscount" class="form-control"  onchange="makeAmountReq()">
                                             @foreach($bulkDiscount as $key=>$value)
                                                 <option value="{{ $value }}" @if(isset($data['get_bulkDiscount']->fieldvalue) && $data['get_bulkDiscount']->fieldvalue == $value) selected @endif >
                                                     {{ $value }}
@@ -165,7 +191,7 @@
                                             @endforeach
                                             </select>
                                         </div>
-                                        <div class="col-md-4 form-group" style="margin-left: 0px !important">
+                                        <div class="col-md-6 form-group" style="margin-left: 0px !important">
                                            <label for="">Discount Percentage</label>
                                            <input type="number" name="bulkDiscountAmt" id="bulkDiscountAmt" class="form-control" @if(isset($data['get_bulkDiscount']->extra_field1)) value="{{$data['get_bulkDiscount']->extra_field1}}" @endif>
                                         </div>
@@ -177,9 +203,9 @@
                                 <th>Student Name display format</th>
                                 <td>
                                     <div class="row">
-                                        <div class="col-md-4 form-group" style="margin-left: 0px !important">
-                                            <label for="" style="margin-left: 50px;">Select Discount</label>
-                                            <select id='studentName' name="studentName" class="form-control"  style="margin-left: 50px;">
+                                        <div class="col-md-6 form-group" style="margin-left: 0px !important">
+                                            <label for="" >Select Discount</label>
+                                            <select id='studentName' name="studentName" class="form-control"  >
                                             @foreach($studentNameFormat as $key=>$value)
                                                 <option value="{{ $key }}" @if(isset($data['get_studentName']->fieldvalue) && $data['get_studentName']->fieldvalue == $key) selected @endif >
                                                     {{ $value }}
@@ -195,9 +221,9 @@
                                 <th>Allow Previous Year Admission</th>
                                 <td>
                                     <div class="row">
-                                        <div class="col-md-4 form-group" style="margin-left: 0px !important">
-                                            <label for="" style="margin-left: 50px;">Select Discount</label>
-                                            <select id='previousAdmission' name="previousAdmission" class="form-control"  style="margin-left: 50px;">
+                                        <div class="col-md-6 form-group" style="margin-left: 0px !important">
+                                            <label for="" >Select Discount</label>
+                                            <select id='previousAdmission' name="previousAdmission" class="form-control"  >
                                             @foreach($previousAdmission as $key=>$value)
                                                 <option value="{{ $key }}" @if(isset($data['get_previousAdmission']->fieldvalue) && $data['get_previousAdmission']->fieldvalue == $key) selected @endif >
                                                     {{ $value }}
