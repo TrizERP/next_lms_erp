@@ -9,7 +9,7 @@
                 @if(!empty($data['message']))
                 <div class="alert alert-success alert-block">
                     <button type="button" class="close" data-dismiss="alert">×</button>
-                    <strong>{{ $data['message'] }}</strong>
+                    
                 </div>
                 @endif
                 @if(session()->get('sub_institute_id') == 195)
