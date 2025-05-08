@@ -380,12 +380,43 @@
     });
 </script>
 <script>
+     $(document).on('change', '#leave_type', function() 
+     {
+        $('#to_date').val('');
+        $('#without_sandwich_total_appear_days').empty();
+        $('#without_sandwich_criteria_validation').empty();
+        $('#criteria_validation').empty();
+        $('.btn-primary').hide();
+     })
+     $(document).on('change', '#day_type', function() 
+     {
+        $('#to_date').val('');
+        $('#without_sandwich_total_appear_days').empty();
+        $('#without_sandwich_criteria_validation').empty();
+        $('#criteria_validation').empty();
+        $('.btn-primary').hide();
+     })
+
     $(document).on('change', '#to_date', function() 
     {
         var fromDateValue = $('#from_date').val();
         var toDateValue = $(this).val();
         var leaveType = $('#leave_type').val(); // 22-01-2025
+        var day_type = $('#day_type').val(); // 08-05-2025
         var leaveTypeId = $('#leave_type option:selected').attr('data-leaveTypeId');
+        var HalfAllowedDays = "{{ (isset($data['half_days_allowed']->fieldvalue)) ? $data['half_days_allowed']->fieldvalue : ''}}";
+        var leaveIds = '{!! (isset($data['half_days_allowed']->extra_field1)) ? $data['half_days_allowed']->extra_field1 : []!!}';
+        // console.log('HalfAllowedDays='+HalfAllowedDays);
+        // console.log('leaveIds='+leaveIds);
+        // console.log('leaveType='+leaveType);
+        // console.log('leaveTypeId='+leaveTypeId);
+        if(leaveType===''){
+            alert('please select leave type');
+        }
+        if(day_type===''){
+            alert('please select day type');
+        }
+
         $('#total_appear_days').empty();
         $('#without_sandwich_total_appear_days').empty();
         $('#without_sandwich_criteria_validation').empty();
@@ -617,6 +648,11 @@
                         $('#without_sandwich_criteria_validation').addClass("error").text('Minimun Leave set by institute' + earnedLeaves.fieldvalue + '. The system will not allow less than the ' + earnedLeaves.fieldvalue + ' criteria set by the institute.');
                         $('.btn-primary').hide(); // hide and display save button
                     }
+                    else if(HalfAllowedDays!='' && HalfAllowedDays < SundayDiffDays && leaveIds.includes(leaveType) && $('#day_type').val()==="half"){
+                        $('#without_sandwich_criteria_validation').removeClass('success');
+                        $('#without_sandwich_criteria_validation').addClass("error").text('Minimun Leave set by institute is ' + HalfAllowedDays + '. The system will not allow less than the ' + HalfAllowedDays + ' criteria set by the institute.');
+                        $('.btn-primary').hide();
+                    } 
                     else if(sandwhichLeaves.fieldvalue == 'Yes'){
                         $('#without_sandwich_criteria_validation').removeClass('error');
                         $('#without_sandwich_total_appear_days').addClass("success").text('Appear leave - ' + nosaturdaysSundays + ' days');
