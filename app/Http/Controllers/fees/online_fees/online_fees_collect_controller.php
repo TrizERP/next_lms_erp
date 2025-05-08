@@ -412,60 +412,116 @@ class online_fees_collect_controller extends Controller
         }
     }
 
-    // end of ssmission split pyment 14-04-2025 
     public function getUTR(Request $request)
     {
-
         $working_code = '0E3D6A504AEB9E4D89A972E55771E378';
         $access_code = 'AVDY63MD40AA59YDAA';
-        //$order_no = '02-05-2025';
-        $order_no = '1501252246';
-               /*$order_list = [
-                    'settlement_date' => $order_no
-               ];*/
-                
-               $order_list = [
-                    'pay_id' => $order_no
-               ];
-                $request_payload = json_encode($order_list);
-                
-                $enc_request = $this->hdfc_encrypt($request_payload, $working_code);
 
-                // Initialize cURL session
-                $ch = curl_init();
+        $school_account = ['SHARIACADE1', 'SPRISCHOOL1'];
+        $mission_account = ['SHRISWAMI1'];
 
-                curl_setopt($ch, CURLOPT_URL, 'https://api.ccavenue.com/apis/servlet/DoWebTrans'); 
+        // Step 1: Call payoutSummary API
+        $payoutPayload = json_encode(['settlement_date' => date('d-m-Y')]);//date('03-05-2025')
+        $encRequest = $this->hdfc_encrypt($payoutPayload, $working_code);
 
-                curl_setopt($ch, CURLOPT_POST, true);
-                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query([
-                    'enc_request' => $enc_request,
-                    'access_code' => $access_code,
-                    'request_type' => 'JSON',
-                    //'command' => 'payoutSummary',
-                    'command' => 'payIdDetails',
-                    'version' => '1.2',
-                ]));
+        $summaryResponse = $this->callCCAvenueAPI($encRequest, $access_code, $working_code, 'payoutSummary');
 
-                $response = curl_exec($ch);
+        if (!$summaryResponse || !isset($summaryResponse['Payout_Summary_Result']['payout_summary_list']['payout_summary_details'])) {
+            return response()->json(['mesaage' => 'No payout summary'], 400);
+        }
 
-                curl_close($ch);
-                //print_r($response);
+        $summary_list = $summaryResponse['Payout_Summary_Result']['payout_summary_list']['payout_summary_details'] ?? [];
 
-                    if ($response !== false) {
-                        parse_str($response, $response_data);
+        // Normalize: make it always an array of records
+        $summaryDetails = isset($summary_list[0]) ? $summary_list : [$summary_list];
+//echo "<pre>";print_r($summaryDetails);exit();
 
-                        if (isset($response_data['status']) && $response_data['status'] == '0') {
-                            // $enc_type = $response_data['enc_response'];
-                            $enc_type = str_replace(array("\r", "\n", ' '), '', $response_data['enc_response']);
-                            $dec_response = $this->hdfc_decrypt($enc_type, $working_code);
-                            $dec_response = json_decode($dec_response, true);
-                            echo "<pre>";
-                            print_r($dec_response);
-                            //echo $dec_response['order_status'];
-                            exit;
-                        }
-                    }
+        // Step 2: Loop over payout_summary_details
+        foreach ($summaryDetails as $summary) {
+            $payId = $summary['pay_Id'];
+            $subAccId = $summary['sub_acc_Id'];
+            $utrNo = $summary['utr_no'];
+
+            $payIdPayload = json_encode(['pay_id' => $payId]);
+            $encPayIdRequest = $this->hdfc_encrypt($payIdPayload, $working_code);
+
+            // Step 3: Call payIdDetails API
+            $payIdResponse = $this->callCCAvenueAPI($encPayIdRequest, $access_code, $working_code,'payIdDetails');
+//echo "<pre>";print_r($payIdResponse);exit();
+
+            if (!$payIdResponse || !isset($payIdResponse['pay_id_details_Result']['pay_id_txn_details_list']['pay_id_txn_details'])) {
+                continue;
+            }
+            
+            // Normalize: make it always an array of records
+            $txn_list = $payIdResponse['pay_id_details_Result']['pay_id_txn_details_list']['pay_id_txn_details'] ?? [];
+            $txnDetails = isset($txn_list[0]) ? $txn_list : [$txn_list];
+
+            //Step 3. Determine bank_name
+            if (in_array($subAccId, $school_account)) {
+                $bankName = 'SCHOOL';
+            } elseif (in_array($subAccId, $mission_account)) {
+                $bankName = 'MISSION';
+            } else {
+                continue; // skip if unknown account type
+            }
+//echo "<pre>";print_r($txnDetails);exit();
+
+           // 4. Update DB records
+            foreach ($txnDetails as $txn) {
+                //echo "Rajesh".$txn['order_no'];exit();
+                $chequeNo = $txn['order_no'];
+                $variable = $subAccId.'-'.$payId;
+
+//echo "Rajesh";echo "chequeNo-".$chequeNo;echo "remarks-".$remarks;die();
+
+                $query = DB::table('fees_collect')
+                    ->where([
+                        ['sub_institute_id', '=', 76],
+                        ['cheque_no', '=', $chequeNo],
+                        ['bank_name', '=', $bankName],
+                        ['payment_mode', '=', 'Online'],
+                    ]);
+
+//echo "SQL Query: " . $query->toSql() . "<br>";
+//echo "Bindings: ";//print_r($query->getBindings());
+//die();
+                // Execute the update
+                $query->update(['remarks' => $utrNo,'created_ip_address' => $variable]);
+            }
+        }
+        return response()->json(['status' => 'success']);
+    }
+
+    // Helper function to send encrypted requests to CCAvenue
+    public function callCCAvenueAPI($encRequest, $accessCode, $workingCode, $command)
+    {
+        $ch = curl_init();
+
+        curl_setopt($ch, CURLOPT_URL, 'https://api.ccavenue.com/apis/servlet/DoWebTrans');
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query([
+            'enc_request' => $encRequest,
+            'access_code' => $accessCode,
+            'request_type' => 'JSON',
+            'command' => $command,
+            'version' => '1.2',
+        ]));
+
+        $response = curl_exec($ch);
+        curl_close($ch);
+
+        if ($response !== false) {
+            parse_str($response, $responseData);
+            if (isset($responseData['status']) && $responseData['status'] == '0') {
+                $encType = str_replace(["\r", "\n", ' '], '', $responseData['enc_response']);
+                $decResponse = $this->hdfc_decrypt($encType, $workingCode);
+                return json_decode($decResponse, true);
+            }
+        }
+
+        return null;
     }
 
     public function createSplitPayout(Request $request)

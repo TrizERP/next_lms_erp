@@ -39,7 +39,7 @@ class ONetOnlineDataController extends Controller
         return is_mobile($type, '/lms/counselling/career_counselling', null, "view");
     }
 
-    public function career_counselling_edu(Request $request)
+    public function career_counselling_education(Request $request)
     {
         $type = $request->input('type');
         return is_mobile($type, '/lms/counselling/career_counselling_education', null, "view");
