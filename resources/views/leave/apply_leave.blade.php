@@ -405,7 +405,7 @@
         var day_type = $('#day_type').val(); // 08-05-2025
         var leaveTypeId = $('#leave_type option:selected').attr('data-leaveTypeId');
         var HalfAllowedDays = "{{ (isset($data['half_days_allowed']->fieldvalue)) ? $data['half_days_allowed']->fieldvalue : ''}}";
-        var leaveIds = '{!! (isset($data['half_days_allowed']->extra_field1)) ? $data['half_days_allowed']->extra_field1 : []!!}';
+        var leaveIds = '{!! (isset($data['half_days_allowed']->extra_field1)) ? $data['half_days_allowed']->extra_field1 : ''!!}';
         // console.log('HalfAllowedDays='+HalfAllowedDays);
         // console.log('leaveIds='+leaveIds);
         // console.log('leaveType='+leaveType);
