@@ -38,6 +38,7 @@ class LeaveSummaryReportController extends Controller
         $res['departments']=$departments;
         $res['employee_id']=$employee_id;
         $res['department_id']=$department_id;
+        $res['years']=date('Y');
 
         return is_mobile($type,'leave/leave_summary_report/index',$res,'view');
         // return view('leave.leave_summary_report.index', compact('departments', 'employee_id', 'department_id'));
@@ -83,7 +84,7 @@ class LeaveSummaryReportController extends Controller
         $get_hrms_leave_types = DB::table('hrms_leave_types')->where('sub_institute_id', $sub_institute_id)->where('status',1)->orderBy('sort_order')->get()->toArray();
         
         // get_hrms_leave_allocations
-        $leaveAllocationsQuery = DB::table('hrms_leave_allocation')->where('sub_institute_id', $sub_institute_id);
+        $leaveAllocationsQuery = DB::table('hrms_leave_allocation')->whereNull('employee_id')->where('sub_institute_id', $sub_institute_id);
         /*if (isset($employee_id)) {
             $leaveAllocationsQuery->where('employee_id', $employee_id);
         }*/
@@ -161,12 +162,28 @@ class LeaveSummaryReportController extends Controller
             {
                 $op_datas = DB::table('hrms_leave_allocation')->where(['sub_institute_id'=>$sub_institute_id, 'leave_type_id'=>$value2->id])
                 ->where('department_id',$value->department_id ?? 0)
+                ->whereNull('employee_id')
+                ->where('year',$request->years)
                 ->first();
-                // prohabition to date
+
+                $empEarnedLeave = DB::table('hrms_leave_allocation')->where(['sub_institute_id'=>$sub_institute_id, 'leave_type_id'=>9])
+                ->where('department_id',$value->department_id ?? 0)
+                ->where('employee_id',$value->user_id ?? 0)
+                ->where('year',$request->years)
+                ->first();
+
+                $empCasualLeave = DB::table('hrms_leave_allocation')->where(['sub_institute_id'=>$sub_institute_id, 'leave_type_id'=>1])
+                ->where('department_id',$value->department_id ?? 0)
+                ->where('employee_id',$value->user_id ?? 0)
+                ->where('year',$request->years)
+                ->first();
+                // prohabition to date 
                 $probationto= $value->probation_period_to;
-                $elLeave = $value->openingleave ?? 0;
-                $clLeave = $value->CL_opening_leave ?? 0;
                 $leaveTypeId = $value2->leave_type_id ?? '-';
+                // $elLeave = $value->openingleave ?? 0; // commented on 09-05-2025 comming from tbluser
+                // $clLeave = $value->CL_opening_leave ?? 0; // commented on 09-05-2025 comming from tbluser
+                $elLeave = $empEarnedLeave->value ?? 0; // added on 09-05-2025 comming from leave allocation for yearwise
+                $clLeave = $empCasualLeave->value ?? 0; // added on 09-05-2025 comming from leave allocation for yearwise
                 $depLeave = $op_datas->value ?? 0;
 
                 $mainLeave = number_format($depLeave,2) ?? 0;
@@ -177,23 +194,22 @@ class LeaveSummaryReportController extends Controller
                 else if(isset($leaveTypeId) && $leaveTypeId=='LTY009'){
                     $mainLeave = ($depLeave + $elLeave);
                 }
-
+                // for casual leave if your have CL leave in profile but probation is greater then current date then it's profile value will be count otherwise departmentwise leave will br allocated
                 // LTY001 causual leave CL_opening_leave
                 if($clLeave > 0 && isset($leaveTypeId) && $leaveTypeId=='LTY001' && strtotime($probationto) > strtotime($date)){
-                    $mainLeave = $clLeave;
+                    $mainLeave = $clLeave; 
                 }
 
                 // leave should not be greater then set maixmum leave 
                 if($mainLeave > $maximumOpeningLeave){
                     $mainLeave = $maximumOpeningLeave;
                 }
-                
                 // store leave value in user_id
                 $op_data[$value2->leave_type][$value->user_id] = number_format($mainLeave,2);
             } 
 
         }
-        // echo "<pre>";print_r($new_data);exit;
+        // echo "<pre>";print_r($op_data);exit;
         $res['allyears'] = Helpers::getPairYears();
         $res['employee_id']=$employee_id;
         $res['department_id']=$department_id;
