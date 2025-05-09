@@ -530,7 +530,7 @@ class HrmsController extends Controller
         $get_studentName = DB::table('general_data')->where(['fieldname' => 'student_name', 'sub_institute_id' => $sub_institute_id])->first();
         $get_previousAdmission = DB::table('general_data')->where(['fieldname' => 'previous_year_admission', 'sub_institute_id' => $sub_institute_id])->first();
 
-        $getallow_leave_days=DB::table('general_data')->where(['fieldname' => 'allow_leave_days', 'sub_institute_id' => $sub_institute_id])->first();
+        $getallow_leave_days=DB::table('general_data')->where(['fieldname' => 'half_days_allowed', 'sub_institute_id' => $sub_institute_id])->first();
 
         $res['leaveTypeArr'] = $leaveTypeArr;
         $res['get_sandwich_leave_data'] = $get_sandwich_leave_data;
@@ -623,9 +623,9 @@ class HrmsController extends Controller
             }
         }
         // added on 08-05-2025
-        if ($allow_leave_days !== null) {
+        if ($half_days_allowed !== null) {
             // Check if a record with fieldname 'casual_leave_apply' and sub_institute_id exists
-            $updateAllowedLeaveDay = general_dataModel::where('fieldname', 'allow_leave_days')
+            $updateAllowedLeaveDay = general_dataModel::where('fieldname', 'half_days_allowed')
                 ->where('sub_institute_id', $subInstituteId)
                 ->first();
             $leaveIds = '';
