@@ -607,7 +607,9 @@ class AJAXController extends Controller
                 "re.sub_institute_id" => session()->get('sub_institute_id'),
                 "re.syear" => session()->get('syear'),
                 "re.standard_id"=>$request->standard_id,
-                "re.exam_id"=>$request->exam_id
+                "re.exam_id"=>$request->exam_id,
+                "re.subject_id" => $request->subject_id,
+                "re.term_id" => $request->term_id,
             ];
             $group = "re.title";
         }
