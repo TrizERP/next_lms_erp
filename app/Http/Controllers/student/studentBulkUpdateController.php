@@ -19,6 +19,7 @@ use function App\Helpers\SearchStudent;
 use function App\Helpers\FeeMonthId;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use App\Http\Controllers\leave\leave_summary_report\LeaveSummaryReportController;
 
 class studentBulkUpdateController extends Controller
 {
@@ -294,6 +295,104 @@ class studentBulkUpdateController extends Controller
         {
             $res['status'] = "0";
             $res['message'] = "No Changes Made.";
+        }
+        // earned Leave
+        if($request->has('leave_rollover') && $request->leave_rollover=="on"){
+            $getLeaveAllocation = DB::table('hrms_leave_allocation')
+            ->where('sub_institute_id',$sub_institute_id)
+            ->where('year',$syear)
+            ->where('leave_type_id',9)
+            ->whereNotNull('employee_id')
+            ->where('value','!=',0)
+            ->get()->toArray();
+
+            foreach($getLeaveAllocation as $key=>$allocateValue){
+                $checkExists = DB::table('hrms_leave_allocation')
+                ->where('sub_institute_id',$sub_institute_id)
+                ->where('year',($syear+1))
+                ->where('leave_type_id',9)
+                ->where('employee_id',$allocateValue->employee_id)
+                ->first();
+
+                if(empty($checkExists) && !isset($checkExists->employee_id)){
+                    $controller = new LeaveSummaryReportController;
+                    $request2 = new Request([
+                        'type'=>'API',
+                        'department_id'=>$allocateValue->department_id,
+                        'emp_id'=>$allocateValue->employee_id,
+                        'years'=>$syear,
+                        'sub_institute_id'=>$sub_institute_id,
+                    ]);
+                    $leaveFunction = json_decode($controller->leaveSummaryReportShow($request2),true);
+                    if(isset($leaveFunction) && !empty($leaveFunction) && isset($leaveFunction['new_data']['Earned Leave'][$allocateValue->employee_id])){
+                        $leaveSpend = $leaveFunction['new_data']['Earned Leave'][$allocateValue->employee_id];
+                        $mainLeave = ($allocateValue->value - $leaveSpend);
+                        if($mainLeave>0){
+                            DB::table('hrms_leave_allocation')->insert([
+                                'employee_id'=>$allocateValue->employee_id,
+                                'department_id'=>$allocateValue->department_id,
+                                'leave_type_id'=>9,
+                                'year'=>($syear+1),
+                                'value'=>$mainLeave,
+                                'sub_institute_id'=>$allocateValue->sub_institute_id,
+                                'created_at'=>now(),
+                            ]);
+                        }
+                        // echo "<pre>";print_r([$allocateValue->employee_id,$mainLeave]);
+                    }
+                }
+            }
+            // echo "<pre>";print_r($getLeaveAllocation);exit;
+        }
+        // casual leave 
+        if($request->has('cleave_rollover') && $request->cleave_rollover=="on"){
+            $getLeaveAllocation = DB::table('hrms_leave_allocation')
+            ->where('sub_institute_id',$sub_institute_id)
+            ->where('year',$syear)
+            ->where('leave_type_id',1)
+            ->whereNotNull('employee_id')
+            ->where('value','!=',0)
+            ->get()->toArray();
+
+            foreach($getLeaveAllocation as $key=>$allocateValue){
+                $checkExists = DB::table('hrms_leave_allocation')
+                ->where('sub_institute_id',$sub_institute_id)
+                ->where('year',($syear+1))
+                ->where('leave_type_id',1)
+                ->where('employee_id',$allocateValue->employee_id)
+                ->first();
+
+                if(empty($checkExists) && !isset($checkExists->employee_id)){
+                    $controller = new LeaveSummaryReportController;
+                    $request2 = new Request([
+                        'type'=>'API',
+                        'department_id'=>$allocateValue->department_id,
+                        'emp_id'=>$allocateValue->employee_id,
+                        'years'=>$syear,
+                        'sub_institute_id'=>$sub_institute_id,
+                    ]);
+                    $leaveFunction = json_decode($controller->leaveSummaryReportShow($request2),true);
+                    if(isset($leaveFunction) && !empty($leaveFunction) && isset($leaveFunction['new_data']['Earned Leave'][$allocateValue->employee_id])){
+                        $leaveSpend = $leaveFunction['new_data']['Earned Leave'][$allocateValue->employee_id];
+                        $mainLeave = ($allocateValue->value - $leaveSpend);
+                        if($mainLeave>0){
+                            DB::table('hrms_leave_allocation')->insert([
+                                'employee_id'=>$allocateValue->employee_id,
+                                'department_id'=>$allocateValue->department_id,
+                                'leave_type_id'=>1,
+                                'year'=>($syear+1),
+                                'value'=>$mainLeave,
+                                'sub_institute_id'=>$allocateValue->sub_institute_id,
+                                'created_at'=>now(),
+                            ]);
+                        }
+                        // echo "<pre>";print_r([$allocateValue->employee_id,$mainLeave]);
+                    }
+                }
+            }
+
+            $res['status'] = "1";
+            $res['message'] = "Data Rollover successfully!.";
         }
 
         $res['sel_bk_month'] = $bk_months;

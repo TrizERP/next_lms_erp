@@ -19,15 +19,31 @@
             <form action="{{route('designation_leave.update',$data['editData']->id)}}" class="row" method="post">
             {{method_field('PUT')}}
                 @csrf
-                <div class="col-md-4 form-group">
-                    <label for="">Select Departments</label>
-                    <select name="department_ids" id="department_ids" class="form-control" required>
-                        <option value="All">All</option>
-                        @foreach($data['departments'] as $key=>$value)
-                        <option value="{{$key}}" {{($data['editData']->department_id == $key) ? 'Selected' : ''}}>{{$value}}</option>
-                        @endforeach
-                    </select>
-                </div>
+                @if(isset($data['view']) && $data['view']=="employee")
+                    <input type="hidden" value="employee" name="formType">
+                    @php 
+                        $department_id = $emp_id = '';
+                            if(isset($data['editData']->department_id)){
+                                $department_id = $data['editData']->department_id;
+                            }
+                            if(isset($data['editData']->employee_id)){
+                                $emp_id = $data['editData']->employee_id;
+                            }
+                            $currentYear = date('Y');
+                        @endphp 
+                        {!! App\Helpers\HrmsDepartments("4","",$department_id,"",$emp_id,"") !!}
+                @else
+                    <input type="hidden" value="department" name="formType">
+                    <div class="col-md-4 form-group">
+                        <label for="">Select Departments</label>
+                        <select name="department_ids" id="department_ids" class="form-control" required>
+                            <option value="All">All</option>
+                            @foreach($data['departments'] as $key=>$value)
+                            <option value="{{$key}}" {{($data['editData']->department_id == $key) ? 'Selected' : ''}}>{{$value}}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                @endif
 
                 <div class="col-md-4 form-group">
                     <label for="">Select Leave Type</label>
@@ -42,7 +58,7 @@
                     <label for="">Select Year</label>
                     <select name="year" id="year" class="form-control" required>
                         @foreach($data['years'] as $key=>$value)
-                        <option value="{{$value}}" {{($data['editData']->year == $value) ? 'Selected' : ''}}>{{$value}}</option>
+                        <option value="{{$key}}" {{($data['editData']->year == $key) ? 'Selected' : ''}}>{{$value}}</option>
                         @endforeach
                     </select>
                 </div>
