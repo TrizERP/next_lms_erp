@@ -99,6 +99,24 @@
                                 </div>
                                 </td>
                             </tr>
+                             <!-- for Earned Levae no update  -->
+                             <tr>
+                                <td>Rollover Earned Opening Leaves: </td>
+                                <td>
+                                    <input type="checkbox" name="leave_rollover" id="leave_rollover">
+                                    <br> 
+                                    <span style="color:red;">Only current Year closed leave balance will be rollover to next year</span>
+                                </td>
+                            </tr>
+                            <!-- for roll no update  -->
+                            <tr>
+                                <td>Rollover Casual Opening Leaves: </td>
+                                <td>
+                                    <input type="checkbox" name="cleave_rollover" id="cleave_rollover">
+                                    <br> 
+                                    <span style="color:red;">Only current Year closed leave balance will be rollover to next year</span>
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -124,6 +142,20 @@ $(document).ready(function() {
         $('#attachment').prop('required',false);        
        }
     })
+    $('#leave_rollover').change(function() {
+        var leave_rollover = $('#leave_rollover').val();
+       if(leave_rollover !==''){
+        $('#division').prop('required', false);
+        $('#attachment').prop('required',false);        
+       }
+    })
+    $('#cleave_rollover').change(function() {
+        var cleave_rollover = $('#cleave_rollover').val();
+       if(cleave_rollover !==''){
+        $('#division').prop('required', false);
+        $('#attachment').prop('required',false);        
+       }
+    })
     $('#bk_month').change(function() {
         var standard = $('#bk_month').val();
        if(standard !==''){
@@ -136,6 +168,7 @@ $(document).ready(function() {
 function checked_input(){
     var student_bluk_update = $('#student_bluk_update').val(); 
     if(student_bluk_update===''){
+        $('#attachment').prop('required',false); 
     } 
     else if(student_bluk_update==1){
         $('#student_bluk_update').val(0);  

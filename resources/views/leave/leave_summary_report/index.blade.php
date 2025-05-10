@@ -57,7 +57,6 @@
                             if(isset($data['employee_id'])){
                                 $emp_id = $data['employee_id'];
                             }
-                            $currentYear = date('Y');
                         @endphp 
                         {!! App\Helpers\HrmsDepartments("4","",$department_id,"",$emp_id,"") !!}
 
@@ -65,7 +64,7 @@
                             <label>Year</label>
                             <select id='years' name="years" class="form-control">
                                 @foreach($data['allyears'] as $key=> $year)
-                                    <option @if(isset($data['years']) && $data['years'] == $key) selected @elseif($key==$currentYear) Selected @endif value="{{$key}}">{{$year}}</option>
+                                    <option @if(isset($data['years']) && $data['years'] == $key) Selected @endif value="{{$key}}">{{$year}}</option>
                                 @endforeach
                             </select>
                         </div>

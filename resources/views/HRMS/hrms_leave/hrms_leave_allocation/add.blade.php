@@ -18,16 +18,21 @@
             @endif
             <form action="{{route('designation_leave.store')}}" class="row" method="post">
                 @csrf
-                <div class="col-md-4 form-group">
-                    <label for="">Select Departments</label>
-                    <select name="department_ids" id="department_ids" class="form-control" required>
-                        <option value="All">All</option>
-                        @foreach($data['departments'] as $key=>$value)
-                        <option value="{{$key}}">{{$value}}</option>
-                        @endforeach
-                    </select>
-                </div>
-
+                @if(isset($data['view']) && $data['view']=="employee")
+                    <input type="hidden" value="employee" name="formType">
+                    {!! App\Helpers\HrmsDepartments("4") !!}
+                @else
+                <input type="hidden" value="department" name="formType">
+                    <div class="col-md-4 form-group">
+                        <label for="">Select Departments</label>
+                        <select name="department_id" id="department_id" class="form-control" required>
+                            <option value="All">All</option>
+                            @foreach($data['departments'] as $key=>$value)
+                            <option value="{{$key}}">{{$value}}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                @endif
                 <div class="col-md-4 form-group">
                     <label for="">Select Leave Type</label>
                     <select name="leave_type_ids[]" id="leave_type_ids" class="form-control" multiple required>
@@ -41,7 +46,7 @@
                     <label for="">Select Year</label>
                     <select name="year" id="year" class="form-control" required>
                         @foreach($data['years'] as $key=>$value)
-                        <option value="{{$value}}">{{$value}}</option>
+                        <option value="{{$key}}" @if($key==$data['selYear']) selected @endif>{{$value}}</option>
                         @endforeach
                     </select>
                 </div>
