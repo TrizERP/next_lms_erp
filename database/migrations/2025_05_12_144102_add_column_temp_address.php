@@ -1,0 +1,37 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     *
+     * @return void
+     */
+    public function up()
+    {
+        Schema::table('tbluser', function (Blueprint $table) {
+            //
+            $table->tinyText('temp_address')->nullable()->after('address');
+            $table->tinyText('temp_state')->nullable()->after('state');
+            $table->tinyText('temp_city')->nullable()->after('city');
+            $table->tinyText('temp_pincode')->nullable()->after('pincode');
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     *
+     * @return void
+     */
+    public function down()
+    {
+        Schema::table('tbluser', function (Blueprint $table) {
+            //
+            $table->dropColumn(['temp_address', 'temp_state', 'temp_city', 'temp_pincode']);
+        });
+    }
+};
