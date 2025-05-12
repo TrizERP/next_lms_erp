@@ -108,10 +108,6 @@
                         </select>
                     </div>
                     <div class="col-md-4 form-group">
-                        <label>Address</label>
-                        <textarea class="form-control" required name="address"></textarea>
-                    </div>
-                    <div class="col-md-4 form-group">
                         <label class="control-label">Gender</label>
                         <div class="radio-list">
                             <label class="radio-inline p-0">
@@ -129,17 +125,41 @@
                         </div>
                     </div>
                     <div class="col-md-4 form-group">
-                        <label>City</label>
-                        <input type="text" id='city' required name="city" class="form-control">
+                        <label>{{App\Helpers\get_string('user_address')}} @if(session()->get('sub_institute_id')==47) <input type="checkbox" id="copied_address" onchange="checkAddress();"> @endif</label>
+                        <textarea class="form-control" required name="address"></textarea>
                     </div>
                     <div class="col-md-4 form-group">
-                        <label>State</label>
-                        <input type="text" id='state' required name="state" class="form-control">
+                        <label>{{App\Helpers\get_string('user_city')}}</label>
+                        <input type="text" id='city' name="city" class="form-control">
                     </div>
                     <div class="col-md-4 form-group">
-                        <label>Pincode</label>
-                        <input type="number" id='pincode' required name="pincode" class="form-control">
+                        <label>{{App\Helpers\get_string('user_state')}}</label>
+                        <input type="text" id='state' name="state" class="form-control">
                     </div>
+                    <div class="col-md-4 form-group">
+                        <label>{{App\Helpers\get_string('user_pincode')}}</label>
+                        <input type="number" id='pincode' name="pincode" class="form-control">
+                    </div>
+                    {{-- 01-04-2025 start copy address for mmis  --}}
+                            @if(session()->get('sub_institute_id')==47)
+                                <div class="col-md-4 form-group" id="addressDiv">
+                                    <label>{{App\Helpers\get_string('temp_address')}}</label>
+                                    <textarea class="form-control" name="temp_address" id="temp_address"></textarea>
+                                </div>
+                                <div class="col-md-4 form-group" id="stateDiv">
+                                    <label>{{App\Helpers\get_string('temp_city')}}</label>
+                                    <input type="text" name="temp_state" id="temp_state" class="form-control">
+                                </div>
+                                <div class="col-md-4 form-group" id="cityDiv">
+                                    <label>{{App\Helpers\get_string('temp_state')}}</label>
+                                    <input type="text" name="temp_city" id="temp_city" class="form-control">
+                                </div>
+                                <div class="col-md-4 form-group" id="pincodeDiv">
+                                    <label>{{App\Helpers\get_string('temp_pincode')}}</label>
+                                    <input type="number" id='temp_pincode' name="temp_pincode" id="pincode" class="form-control">
+                                </div>
+                            @endif
+                            {{-- 01-04-2025 end copy address for mmis  --}}
                     <div class="col-md-4 form-group">
                         <label>User Profile</label>
                         <select name="user_profile_id" required id="user_profile_id" class="form-control">
@@ -689,7 +709,27 @@
         }
 
     });
-
+     $('#addressDiv,#cityDiv,#stateDiv,#pincodeDiv').hide();
+    function checkAddress() {
+        var checkbox = document.getElementById('copied_address');
+        if (checkbox.checked) {
+            $('#addressDiv,#cityDiv,#stateDiv,#pincodeDiv').show();
+            var address = $('textarea[name="address"]').val();
+            var city = $('input[name="city"]').val();
+            var state = $('input[name="state"]').val();
+            var pincode = $('input[name="pincode"]').val();
+            $('#temp_address').val(address);
+            $('#temp_city').val(city);
+            $('#temp_state').val(state);
+            $('#temp_pincode').val(pincode);
+        } else {
+            $('#temp_address').val('');
+            $('#temp_city').val('');
+            $('#temp_state').val('');
+            $('#temp_pincode').val('');
+            $('#addressDiv,#cityDiv,#stateDiv,#pincodeDiv').hide();
+        }
+    }
 </script>
 @include('includes.footer')
 @endsection
