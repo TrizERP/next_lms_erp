@@ -64,9 +64,9 @@ br {
                             @endif
                            
                             <li class="nav-item"><a href="#section-linemove-4" class="nav-link" aria-selected="false" data-toggle="tab"><span>My Skills & Certifications</span></a></li>
-                            @if(session()->get('sub_institute_id')==47)
+                            {{-- @if(session()->get('sub_institute_id')==47)
                             <li class="nav-item"><a href="#section-linemove-5" class="nav-link" aria-selected="false" data-toggle="tab"><span>Contact Details</span></a></li>
-                            @endif
+                            @endif --}}
                         </ul>
                         </center>
                     @php
@@ -122,7 +122,7 @@ br {
                             </div>
                             <div class="col-md-4 form-group">
                                 <label>User Name </label>
-                                <input type="text" value="@if(isset($data['user_name'])){{ $data['user_name'] }}@endif" id='user_name' required name="user_name" class="form-control">
+                                <input type="text" value="@if(isset($data['user_name']) && $data['user_name']!=''){{ $data['user_name'] }}@else - @endif" id='user_name' required name="user_name" class="form-control">
                             </div>
                             <div class="col-md-4 form-group">
                                 <label>Email</label>
@@ -182,21 +182,42 @@ br {
                                 </div>
                             </div>
                             <div class="col-md-4 form-group">
-                                <label>Address</label>
+                                <label>{{App\Helpers\get_string('user_address')}} @if(session()->get('sub_institute_id')==47) <input type="checkbox" id="copied_address" onchange="checkAddress();" @if(isset($data['temp_address']) && $data['temp_address']!='') checked @endif> @endif</label>
                                 <textarea class="form-control" required name="address">@if(isset($data['address'])){{ $data['address'] }}@endif</textarea>
                             </div>
                             <div class="col-md-4 form-group">
-                                <label>City</label>
-                                <input type="text" value="@if(isset($data['city'])){{ $data['city'] }}@endif" id='city' required name="city" class="form-control">
+                                <label>{{App\Helpers\get_string('user_city')}}</label>
+                                <input type="text" value="@if(isset($data['state'])){{ $data['state'] }}@endif" id='state' name="state" class="form-control">
                             </div>
                             <div class="col-md-4 form-group">
-                                <label>State</label>
-                                <input type="text" value="@if(isset($data['state'])){{ $data['state'] }}@endif" id='state' required name="state" class="form-control">
+                                <label>{{App\Helpers\get_string('user_state')}}</label>
+                                <input type="text" value="@if(isset($data['city'])){{ $data['city'] }}@endif" id='city' name="city" class="form-control">
                             </div>
                             <div class="col-md-4 form-group">
-                                <label>Pincode</label>
-                                <input type="number" value="@if(isset($data['pincode'])){{$data['pincode']}}@endif" id='pincode' required name="pincode" class="form-control">
+                                <label>{{App\Helpers\get_string('user_pincode')}}</label>
+                                <input type="number" value="@if(isset($data['pincode'])){{$data['pincode']}}@endif" id='pincode' name="pincode" class="form-control">
                             </div>
+                            {{-- 01-04-2025 start copy address for mmis  --}}
+                            @if(session()->get('sub_institute_id')==47)
+                                <div class="col-md-4 form-group" id="addressDiv">
+                                    <label>{{App\Helpers\get_string('temp_address')}}</label>
+                                    <textarea class="form-control" name="temp_address" id="temp_address">@if(isset($data['temp_address'])){{ $data['temp_address'] }}@endif</textarea>
+                                </div>
+                                <div class="col-md-4 form-group" id="stateDiv">
+                                    <label>{{App\Helpers\get_string('temp_city')}}</label>
+                                    <input type="text" name="temp_state" id="temp_state" class="form-control" @if(isset($data['temp_state']))value="{{ $data['temp_state'] }}"@endif>
+                                </div>
+                                <div class="col-md-4 form-group" id="cityDiv">
+                                    <label>{{App\Helpers\get_string('temp_state')}}</label>
+                                    <input type="text" name="temp_city" id="temp_city" class="form-control" @if(isset($data['temp_city']))value="{{ $data['temp_city'] }}"@endif>
+                                </div>
+                                <div class="col-md-4 form-group" id="pincodeDiv">
+                                    <label>{{App\Helpers\get_string('temp_pincode')}}</label>
+                                    <input type="number" id='temp_pincode' name="temp_pincode" id="pincode" class="form-control" @if(isset($data['temp_pincode'])) value="{{ $data['temp_pincode'] }}"@endif>
+                                </div>
+                            @endif
+                            {{-- 01-04-2025 end copy address for mmis  --}}
+
                             <div class="col-md-4 form-group">
                                 <label>User Profile</label>
                                 <select name="user_profile_id" required id="user_profile_id" class="form-control">
@@ -717,6 +738,11 @@ br {
 </script>
 <script src="../../../plugins/bower_components/dropify/dist/js/dropify.min.js"></script>
     <script>
+        @if(isset($data['temp_address']) && $data['temp_address']!='')
+            $('#addressDiv,#cityDiv,#stateDiv,#pincodeDiv').show();
+        @else
+            $('#addressDiv,#cityDiv,#stateDiv,#pincodeDiv').hide();
+        @endif
     $(document).ready(function() {
         var val1 = $.trim($("#user_profile_id").find("option:selected").text());
 
@@ -805,6 +831,26 @@ br {
         });
     });
 
+    function checkAddress() {
+        var checkbox = document.getElementById('copied_address');
+        if (checkbox.checked) {
+            $('#addressDiv,#cityDiv,#stateDiv,#pincodeDiv').show();
+            var address = $('textarea[name="address"]').val();
+            var city = $('input[name="city"]').val();
+            var state = $('input[name="state"]').val();
+            var pincode = $('input[name="pincode"]').val();
+            $('#temp_address').val(address);
+            $('#temp_city').val(city);
+            $('#temp_state').val(state);
+            $('#temp_pincode').val(pincode);
+        } else {
+            $('#temp_address').val('');
+            $('#temp_city').val('');
+            $('#temp_state').val('');
+            $('#temp_pincode').val('');
+            $('#addressDiv,#cityDiv,#stateDiv,#pincodeDiv').hide();
+        }
+    }
     </script>
 
 @include('includes.footer')
