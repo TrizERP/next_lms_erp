@@ -2617,7 +2617,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
         }
 
         // End Getting previous year imprest balance for The Millennium School Surat
-        $studentDetailsArr = SearchStudent("", "", "", $sub_institute_id, $syear , "",  "", "", "", "", $stu_arr[0] , "","");
+        $studentDetailsArr = SearchStudent("", "", "", $sub_institute_id, $syear , "",  "", "", "", "", $stu_arr[0] , "",1);
         // echo "<pre>";print_r($studentDetailsArr);exit;
         $first_name = isset($studentDetailsArr[0]['first_name']) ? $studentDetailsArr[0]['first_name'] : '-';
         $middle_name = isset($studentDetailsArr[0]['middle_name']) ? $studentDetailsArr[0]['middle_name'] : '-';
@@ -2837,11 +2837,10 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             }
         }
 
-
-        /* echo("<pre>");
-        print_r($left_bk_table);
-        echo("</pre>");
-        die; */
+        //  echo("<pre>");
+        // print_r($left_bk_table);
+        // echo("</pre>");
+        // die; 
         $full_bk["Total"] = ($total > 0 ) ? $total : 0;
         $full_bk_new["Total"] = ($total > 0 ) ? $total : 0;
        

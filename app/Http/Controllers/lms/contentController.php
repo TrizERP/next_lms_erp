@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
 use Illuminate\Support\Facades\Storage;
+use App\Services\OpenAIService;
 
 class contentController extends Controller
 {
@@ -797,28 +798,41 @@ class contentController extends Controller
             'main_topic_id'    => $main_topic_id,
         ])->get()->toArray();
     }
-        
+    // updated on 13-05-2025 by uma
 	public function processAIData(Request $request)
     {
-        $request->validate([
-            'standard_id' => 'required',
-            'subject_name' => 'required',
-            'chapter_name' => 'required',
-            'topic_name' => 'required',
-            'content_type' => 'required',
-            'content_category' => 'required',
-        ]);
-        $openAIService = new OpenAIService();
-        $generatedData = $openAIService->generateTitleAndDescription(
-        $request->topic_name,
-        $request->chapter_name,
-        $request->subject_name
-    );
+         return response()->json([
+                'title' => '',
+                'description' => '',
+            ]);
+        // $request->validate([
+        //     'standard_id' => 'required',
+        //     'subject_name' => 'required',
+        //     'chapter_name' => 'required',
+        //     'topic_name' => 'required',
+        //     'content_type' => 'required',
+        //     'content_category' => 'required',
+        // ]);
 
-    return response()->json([
-        'title' => $generatedData['title'],
-        'description' => $generatedData['description'],
-    ]);
+        // try {
+        //     $openAIService = new OpenAIService();
+        //     $generatedData = $openAIService->generateTitleAndDescription(
+        //         $request->topic_name,
+        //         $request->chapter_name,
+        //         $request->subject_name,
+        //         $request->content_category // Add the missing fourth argument
+        //     );
+
+        //     return response()->json([
+        //         'title' => $generatedData['title'],
+        //         'description' => $generatedData['description'],
+        //     ]);
+        // } catch (\Exception $e) {
+        //     return response()->json([
+        //         'title' => '',
+        //         'description' => '',
+        //     ]);
+        // }
     }
     public function generateSportsData(Request $request)
 {   
@@ -847,80 +861,88 @@ class contentController extends Controller
         return response()->json(['error' => 'Failed to generate.'], 500);
     }
 }catch (\Exception $e) {
-        Log::error('Error generating Data: ' . $e->getMessage());
+        // Log::error('Error generating Data: ' . $e->getMessage());
         return response()->json(['error' => 'Internal Server Error'], 500);
     }
 }
 public function generateLessonPlan(Request $request)
 {   
-    try {
-    $request->validate([
-        'standard_id' => 'required',
-        'subject_name' => 'required',
-        'chapter_name' => 'required',
-        'topic_name' => 'required',
-        'content_category' => 'required',
-        'content_type' => 'required',
-        'booklist_data' => 'required|array',
-    ]);
+//     try {
+//     $request->validate([
+//         'standard_id' => 'required',
+//         'subject_name' => 'required',
+//         'chapter_name' => 'required',
+//         'topic_name' => 'required',
+//         'content_category' => 'required',
+//         'content_type' => 'required',
+//         'booklist_data' => 'required|array',
+//     ]);
 
-    $openAIService = new OpenAIService();
-    $result = $openAIService->generateLessonPlan(
-        $request->topic_name,
-        $request->chapter_name,
-        $request->subject_name,
-        $request->content_category,
-        $request->content_type,
-        $request->booklist_data
-    );
-    if (isset($result['fileUrl']) && isset($result['prompt'])) {
-        return response()->json([
-            'file_url' => $result['fileUrl'],
-            'prompt' => $result['prompt']
+//     $openAIService = new OpenAIService();
+//     $result = $openAIService->generateLessonPlan(
+//         $request->topic_name,
+//         $request->chapter_name,
+//         $request->subject_name,
+//         $request->content_category,
+//         $request->content_type,
+//         $request->booklist_data
+//     );
+//     if (isset($result['fileUrl']) && isset($result['prompt'])) {
+//         return response()->json([
+//             'file_url' => $result['fileUrl'],
+//             'prompt' => $result['prompt']
+//         ]);
+//     } else {
+//         return response()->json(['error' => 'Failed to generate.'], 500);
+//     }
+// }catch (\Exception $e) {
+//         // Log::error('Error generating Data: ' . $e->getMessage());
+//         return response()->json(['error' => 'Internal Server Error'], 500);
+//     }
+return response()->json([
+            'file_url' => '',
+            'prompt' => ''
         ]);
-    } else {
-        return response()->json(['error' => 'Failed to generate.'], 500);
-    }
-}catch (\Exception $e) {
-        Log::error('Error generating Data: ' . $e->getMessage());
-        return response()->json(['error' => 'Internal Server Error'], 500);
-    }
 }
 public function generateLessonPlanNew(Request $request)
 {   
-    try {
-    $request->validate([
-        'standard_id' => 'required',
-        'subject_name' => 'required',
-        'chapter_name' => 'required',
-        'topic_name' => 'required',
-        'content_category' => 'required',
-        'content_type' => 'required',
-        'booklist_data' => 'required|array',
-        'prompt' => 'required'
-    ]);
-    $openAIService = new OpenAIService();
-    $result = $openAIService->generateLessonPlanNew(
-        $request->topic_name,
-        $request->chapter_name,
-        $request->subject_name,
-        $request->content_category,
-        $request->content_type,
-        $request->booklist_data,
-        $request -> prompt
-    );
-    if (isset($result['fileUrl']) && isset($result['prompt'])) {
-        return response()->json([
-            'file_url' => $result['fileUrl'],
-            'prompt' => $result['prompt']
+//     try {
+//     $request->validate([
+//         'standard_id' => 'required',
+//         'subject_name' => 'required',
+//         'chapter_name' => 'required',
+//         'topic_name' => 'required',
+//         'content_category' => 'required',
+//         'content_type' => 'required',
+//         'booklist_data' => 'required|array',
+//         'prompt' => 'required'
+//     ]);
+//     $openAIService = new OpenAIService();
+//     $result = $openAIService->generateLessonPlanNew(
+//         $request->topic_name,
+//         $request->chapter_name,
+//         $request->subject_name,
+//         $request->content_category,
+//         $request->content_type,
+//         $request->booklist_data,
+//         $request -> prompt
+//     );
+//     if (isset($result['fileUrl']) && isset($result['prompt'])) {
+//         return response()->json([
+//             'file_url' => $result['fileUrl'],
+//             'prompt' => $result['prompt']
+//         ]);
+//     } else {
+//         return response()->json(['error' => 'Failed to generate.'], 500);
+//     }
+// }catch (\Exception $e) {
+//         // Log::error('Error generating Data: ' . $e->getMessage());
+//         return response()->json(['error' => 'Internal Server Error'], 500);
+//     }
+ return response()->json([
+            'file_url' => '',
+            'prompt' =>''
         ]);
-    } else {
-        return response()->json(['error' => 'Failed to generate.'], 500);
-    }
-}catch (\Exception $e) {
-        Log::error('Error generating Data: ' . $e->getMessage());
-        return response()->json(['error' => 'Internal Server Error'], 500);
-    }
 }
 
 }
