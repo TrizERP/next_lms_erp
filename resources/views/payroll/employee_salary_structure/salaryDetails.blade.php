@@ -1,7 +1,7 @@
 @if(!empty($salary_deposit))
-<button type="button" class="btn btn-outline-info" data-toggle="modal" data-target="#exampleModalSalary" style="margin-bottom:16px">
+{{-- <button type="button" class="btn btn-outline-info" data-toggle="modal" data-target="#exampleModalSalary" style="margin-bottom:16px">
 Salary Deposit
-</button>
+</button> --}}
 @endif 
 
 <div class="modal fade" id="exampleModalSalary" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
@@ -26,13 +26,18 @@ Salary Deposit
                     </tr>
                 </thead>
                 <tbody>
+                    @php $totDeposit = 0; @endphp
                     @foreach($salary_deposit as $key => $value)
                     <tr>
                         <td>{{$value['year']}}</td>
                         <td>{{$value['month']}}</td>
-                        <td>{{$value['amount']}}</td>
+                        <td>{{$totDeposit+=$value['amount']}}</td>
                     </tr>
                     @endforeach
+                    <tr>
+                        <td colspan="2"><b>Total</b></td>
+                        <td>{{$totDeposit}}</td>
+                    </tr>
                 </tbody>
             </table>
             @endif
@@ -41,35 +46,72 @@ Salary Deposit
     </div>
   </div>
 </div>
-<!-- salary structure table -->
-<table class="table">
-    <thead>
-        <tr>
-            <th class="mainHead text-left" colspan="{{count($payrollTypes) + 1}}"><b>Employee Salary History</b></th>
-        </tr>
-        <tr>
-            <th class="subHead">Syear</th>
-            @foreach($payrollTypes as $k=>$v)
-            <th class="subHead">{{$v->payroll_name}}</th>
-            @endforeach
-        </tr>
-    </thead>
-    <tbody>
-        @foreach($SalaryStructure as $key=>$val)
-        <tr>
-            <td>{{$val->year}}</td>
-            <!-- decode json salary data -->
-            @php $decodedData = json_decode($val->employee_salary_data,true); @endphp
-            @foreach($payrollTypes as $k=>$v)
-            <td>
-                @if(isset($decodedData[$v->id]) && $decodedData[$v->id]!=null)
-                {{$decodedData[$v->id]}}
-                @else
-                0
-                @endif
-            </td>
-            @endforeach
-        </tr>
-        @endforeach
-    </tbody>
-</table>
+
+<div class="contentDiv">
+    @if(!empty($salary_deposit))
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th colspan="3" class="mainHead text-left"><b>Salary Deposit</b></th>
+                    </tr>
+                    <tr>
+                        <th class="subHead">Year</th>
+                        <th class="subHead">Moth</th>
+                        <th class="subHead text-left">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @php $totDeposit = 0; @endphp
+                    @foreach($salary_deposit as $key => $value)
+                    <tr>
+                        <td>{{$value['year']}}</td>
+                        <td>{{$value['month']}}</td>
+                        <td>{{$value['amount']}}</td>
+                        @php $totDeposit+=$value['amount']; @endphp
+                    </tr>
+                    @endforeach
+                    <tr>
+                        <td colspan="2"><b>Total</b></td>
+                        <td>{{$totDeposit}}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    @endif
+    <!-- salary structure table -->
+    <div class="table-responsive mt-4">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th class="mainHead text-left" colspan="{{count($payrollTypes) + 1}}"><b>Employee Salary History</b></th>
+                </tr>
+                <tr>
+                    <th class="subHead">Syear</th>
+                    @foreach($payrollTypes as $k=>$v)
+                    <th class="subHead">{{$v->payroll_name}}</th>
+                    @endforeach
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($SalaryStructure as $key=>$val)
+                <tr>
+                    <td>{{$val->year}}</td>
+                    <!-- decode json salary data -->
+                    @php $decodedData = json_decode($val->employee_salary_data,true); @endphp
+                    @foreach($payrollTypes as $k=>$v)
+                    <td>
+                        @if(isset($decodedData[$v->id]) && $decodedData[$v->id]!=null)
+                        {{$decodedData[$v->id]}}
+                        @else
+                        0
+                        @endif
+                    </td>
+                    @endforeach
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+
+</div>
