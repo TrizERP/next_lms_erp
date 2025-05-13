@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\lms;
 use App\Http\Controllers\Controller;
-use App\Services\OpenAIService;
 use App\Models\lms\chapterModel;
 use App\Models\lms\contentmappingtypeModel;
 use App\Models\lms\contentModel;
@@ -14,7 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Log;
+use App\Services\OpenAIService;
 
 class contentController extends Controller
 {
@@ -130,76 +129,40 @@ class contentController extends Controller
      * Create Chapter wise
      */
     public function createChapter(Request $request)
-{
-    $type = $request->input('type');
-    $sub_institute_id = $request->session()->get('sub_institute_id');
-    $data = array();
+    {
+        $type = $request->input('type');
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $data = array();
 
-    // Get LMS mapping types
-    $lms_mapping_type = DB::table('lms_mapping_type')
-        ->where('status', '=', 1)
-        ->where('parent_id', '=', 0)
-        ->where(function ($q) use ($request) {
-            $q->where('globally', '=', 1)
-              ->orWhere('chapter_id', $request->get('chapter_id'));
-        })->get()->toArray();
+        $lms_mapping_type = DB::table('lms_mapping_type')
+            ->where('status', '=', 1)
+            ->where('parent_id', '=', 0)
+            ->where(function ($q) use ($request) {
+                $q->where('globally', '=', 1)
+                    ->orWhere('chapter_id', $request->get('chapter_id'));
+            })->get()->toArray();
 
-    $lms_mapping_type = json_decode(json_encode($lms_mapping_type), true);
-    $data['lms_mapping_type'] = $lms_mapping_type;
+        $lms_mapping_type = json_decode(json_encode($lms_mapping_type), true);
+        $data['lms_mapping_type'] = $lms_mapping_type;
 
-    // Get Content Category
-    $data['content_category'] = lmsContentCategoryModel::where('status', '2')->get()->toArray();
+        //START Get Content Category
+        $data['content_category'] = lmsContentCategoryModel::where('status', '2')->get()->toArray(); //Rajesh = From chapterwise - Add Content to display content category
+        //END Get Content Category
 
-    // Get Breadcrumb Data
-    $data['breadcrum_data'] = $this->getBreadcrum($sub_institute_id, $request->get('chapter_id'));
+        $data['breadcrum_data'] = $this->getBreadcrum($sub_institute_id, $request->get('chapter_id'));
 
-    // Get Standard
-    $chapter_data = chapterModel::select('*')
-        ->where(['chapter_master.sub_institute_id' => $sub_institute_id, 'chapter_master.id' => $request->get('chapter_id')])
-        ->get()->toArray();
-
-    if (!empty($chapter_data)) {
-        $data['standard_id'] = $chapter_data[0]['standard_id'];
-        // Fetch the standard name using the standard_id
-        $standard = DB::table('standard')->where('id', $data['standard_id'])->first();
-        $data['standard_name'] = $standard->name ?? ''; // Store the standard name
-
-        $curriculum = DB::table('lms_curriculum')
-            ->where('standard_id', $data['standard_id'])
-            ->first();
+        //START Get Standard
+        $chapter_data = chapterModel::select('*')        
+        ->where(['chapter_master.sub_institute_id'=>$sub_institute_id,'chapter_master.id'=>$request->get('chapter_id')])         
+        ->get()->toArray(); 
         
-        if ($curriculum) {
-            $data['curriculum_alignment'] = $curriculum->curriculum_alignment;
-            $data['holistic_curriculum'] = $curriculum->holistic_curriculum;
-            $data['objective'] = $curriculum->objective;
-            $data['assessment_tool'] = $curriculum->assessment_tool;
-        } else {
-            $data['curriculum_alignment'] = '';
-            $data['holistic_curriculum'] = '';
-            $data['objective'] = '';
-            $data['assessment_tool'] = '';
-        }
-        $syllabus = DB::table('lms_syllabus')
-            ->where('standard_id', $data['standard_id'])
-            ->first();
-        if ($syllabus) {
-            $data['objective_one'] = $syllabus->objectives;
-            $data['learning_outcomes'] = $syllabus->learning_outcomes;
-            $data['suggested_materials'] = $syllabus->suggested_materials;
-            $data['assessment_plan'] = $syllabus->assessment_plan;
-        } else {
-            $data['objective_one'] = '';
-            $data['learning_outcomes'] = '';
-            $data['suggested_materials'] = '';
-            $data['assessment_plan'] = '';
-        }
-    } else {
-        $data['standard_id'] = null;
-        $data['standard_name'] = '';
-    }
+        $data['standard_id'] = $chapter_data[0]['standard_id'];
+        //END Get Standard
 
-    return is_mobile($type, 'lms/add_chapter_content', $data, "view");
-}
+        //$data['YouTubeSuggestionList'] = $this->getYouTubeSuggestion($data['breadcrum_data']->standard_name,$data['breadcrum_data']->subject_name,$data['breadcrum_data']->chapter_name);        
+        
+        return is_mobile($type,'lms/add_chapter_content',$data,"view");
+    }
 
     public function ajax_getYouTubeSuggestion(Request $request)
     {
@@ -719,11 +682,12 @@ class contentController extends Controller
         $contentdata = contentModel::where(["id" => $id])->get()->toArray();
         $chapter_id = $contentdata[0]['chapter_id'];
         $std = $contentdata[0]['standard_id'];
+        $subject = $contentdata[0]['subject_id'];
 
         contentModel::where(["id" => $id])->delete();
         $res['status_code'] = "1";
         $res['message'] = "Content Deleted Successfully";
-        return redirect()->route('topic_master.index', ['id' => $chapter_id,'standard_id' => $std,'perm'=>$sub_institute_id]);
+        return redirect()->route('chapter_master.index', ['standard_id' => $std,'subject_id' => $subject,'perm'=>$sub_institute_id]);
     }
 	
     public function ajax_LMS_MappingValue(Request $request)
@@ -834,33 +798,41 @@ class contentController extends Controller
             'main_topic_id'    => $main_topic_id,
         ])->get()->toArray();
     }
-        
+    // updated on 13-05-2025 by uma
 	public function processAIData(Request $request)
     {
-        $request->validate([
-            'standard_id' => 'required',
-            'subject_name' => 'required',
-            'chapter_name' => 'required',
-            // 'topic_name' => 'required',
-            'content_type' => 'required',
-            'content_category' => 'required',
-            // 'curriculum_alignment' => 'required',
-            // 'holistic_curriculum' => 'required',
-            // 'objective' => 'required',
-            // 'assessment_tool' => 'required',
-        ]);
-        $openAIService = new OpenAIService();
-        $generatedData = $openAIService->generateTitleAndDescription(
-        $request->topic_name,
-        $request->chapter_name,
-        $request->subject_name,
-        $request->standard_name
-    );
+         return response()->json([
+                'title' => '',
+                'description' => '',
+            ]);
+        // $request->validate([
+        //     'standard_id' => 'required',
+        //     'subject_name' => 'required',
+        //     'chapter_name' => 'required',
+        //     'topic_name' => 'required',
+        //     'content_type' => 'required',
+        //     'content_category' => 'required',
+        // ]);
 
-    return response()->json([
-        'title' => $generatedData['title'],
-        'description' => $generatedData['description'],
-    ]);
+        // try {
+        //     $openAIService = new OpenAIService();
+        //     $generatedData = $openAIService->generateTitleAndDescription(
+        //         $request->topic_name,
+        //         $request->chapter_name,
+        //         $request->subject_name,
+        //         $request->content_category // Add the missing fourth argument
+        //     );
+
+        //     return response()->json([
+        //         'title' => $generatedData['title'],
+        //         'description' => $generatedData['description'],
+        //     ]);
+        // } catch (\Exception $e) {
+        //     return response()->json([
+        //         'title' => '',
+        //         'description' => '',
+        //     ]);
+        // }
     }
     public function generateSportsData(Request $request)
 {   
@@ -889,97 +861,88 @@ class contentController extends Controller
         return response()->json(['error' => 'Failed to generate.'], 500);
     }
 }catch (\Exception $e) {
-        Log::error('Error generating Data: ' . $e->getMessage());
+        // Log::error('Error generating Data: ' . $e->getMessage());
         return response()->json(['error' => 'Internal Server Error'], 500);
     }
 }
 public function generateLessonPlan(Request $request)
 {   
-    try {
-    $request->validate([
-        'standard_id' => 'required',
-        'subject_name' => 'required',
-        'chapter_name' => 'required',
-        // 'topic_name' => 'required',
-        'content_category' => 'required',
-        'content_type' => 'required',
-        // 'booklist_data' => 'required|array',
-        // 'curriculum_alignment' => 'required',
-        // 'holistic_curriculum' => 'required',
-        // 'objective' => 'required',
-        // 'assessment_tool' => 'required',
-        // 'objective_one' => 'required',
-        // 'learning_outcomes' => 'required',
-        // 'suggested_materials' => 'required',
-        // 'assessment_plan' => 'required',
-    ]);
+//     try {
+//     $request->validate([
+//         'standard_id' => 'required',
+//         'subject_name' => 'required',
+//         'chapter_name' => 'required',
+//         'topic_name' => 'required',
+//         'content_category' => 'required',
+//         'content_type' => 'required',
+//         'booklist_data' => 'required|array',
+//     ]);
 
-    $openAIService = new OpenAIService();
-    $result = $openAIService->generateLessonPlan(
-        $request->topic_name,
-        $request->chapter_name,
-        $request->subject_name,
-        $request->content_category,
-        $request->content_type,
-        $request->booklist_data,
-        $request->curriculum_alignment,
-        $request->holistic_curriculum,
-        $request->objective,
-        $request->assessment_tool,
-        $request->objective_one,
-        $request->learning_outcomes,
-        $request->suggested_materials,
-        $request->assessment_plan,
-        $request->standard_name
-    );
-    if (isset($result['fileUrl']) && isset($result['prompt'])) {
-        return response()->json([
-            'file_url' => $result['fileUrl'],
-            'prompt' => $result['prompt']
+//     $openAIService = new OpenAIService();
+//     $result = $openAIService->generateLessonPlan(
+//         $request->topic_name,
+//         $request->chapter_name,
+//         $request->subject_name,
+//         $request->content_category,
+//         $request->content_type,
+//         $request->booklist_data
+//     );
+//     if (isset($result['fileUrl']) && isset($result['prompt'])) {
+//         return response()->json([
+//             'file_url' => $result['fileUrl'],
+//             'prompt' => $result['prompt']
+//         ]);
+//     } else {
+//         return response()->json(['error' => 'Failed to generate.'], 500);
+//     }
+// }catch (\Exception $e) {
+//         // Log::error('Error generating Data: ' . $e->getMessage());
+//         return response()->json(['error' => 'Internal Server Error'], 500);
+//     }
+return response()->json([
+            'file_url' => '',
+            'prompt' => ''
         ]);
-    } else {
-        return response()->json(['error' => 'Failed to generate.'], 500);
-    }
-}catch (\Exception $e) {
-        Log::error('Error generating Data: ' . $e->getMessage());
-        return response()->json(['error' => 'Internal Server Error'], 500);
-    }
 }
 public function generateLessonPlanNew(Request $request)
 {   
-    try {
-    $request->validate([
-        'standard_id' => 'required',
-        'subject_name' => 'required',
-        'chapter_name' => 'required',
-        // 'topic_name' => 'required',
-        'content_category' => 'required',
-        'content_type' => 'required',
-        // 'booklist_data' => 'required|array',
-        'prompt' => 'required'
-    ]);
-    $openAIService = new OpenAIService();
-    $result = $openAIService->generateLessonPlanNew(
-        $request->topic_name,
-        $request->chapter_name,
-        $request->subject_name,
-        $request->content_category,
-        $request->content_type,
-        $request->booklist_data,
-        $request -> prompt
-    );
-    if (isset($result['fileUrl']) && isset($result['prompt'])) {
-        return response()->json([
-            'file_url' => $result['fileUrl'],
-            'prompt' => $result['prompt']
+//     try {
+//     $request->validate([
+//         'standard_id' => 'required',
+//         'subject_name' => 'required',
+//         'chapter_name' => 'required',
+//         'topic_name' => 'required',
+//         'content_category' => 'required',
+//         'content_type' => 'required',
+//         'booklist_data' => 'required|array',
+//         'prompt' => 'required'
+//     ]);
+//     $openAIService = new OpenAIService();
+//     $result = $openAIService->generateLessonPlanNew(
+//         $request->topic_name,
+//         $request->chapter_name,
+//         $request->subject_name,
+//         $request->content_category,
+//         $request->content_type,
+//         $request->booklist_data,
+//         $request -> prompt
+//     );
+//     if (isset($result['fileUrl']) && isset($result['prompt'])) {
+//         return response()->json([
+//             'file_url' => $result['fileUrl'],
+//             'prompt' => $result['prompt']
+//         ]);
+//     } else {
+//         return response()->json(['error' => 'Failed to generate.'], 500);
+//     }
+// }catch (\Exception $e) {
+//         // Log::error('Error generating Data: ' . $e->getMessage());
+//         return response()->json(['error' => 'Internal Server Error'], 500);
+//     }
+ return response()->json([
+            'file_url' => '',
+            'prompt' =>''
         ]);
-    } else {
-        return response()->json(['error' => 'Failed to generate.'], 500);
-    }
-}catch (\Exception $e) {
-        Log::error('Error generating Data: ' . $e->getMessage());
-        return response()->json(['error' => 'Internal Server Error'], 500);
-    }
 }
 
 }

@@ -603,8 +603,8 @@
                         _token: '{{ csrf_token() }}'
                     },
                     success: function(response) {
-                        $('#title').val(response.title);
-                        $('#description').val(response.description);
+                        // $('#title').val(response.title);
+                        // $('#description').val(response.description);
                     },
                     error: function(xhr) {
                         console.error(xhr);
@@ -628,28 +628,28 @@
                     },
                     success: function(response) {
                         console.log(response.prompt);
-                        $("#test123").val("Prompt");
-                        $('#prompt').val(response.prompt);
-                        if (response.file_url) {
-                             $('#upload_div1').empty();
-                            var downloadLink = $('<a>', {
-                                href: response.file_url,
-                                text: 'Download ' + contentType.toUpperCase(),
-                                target: '_blank',
-                                download: ''
-                            });
-                            $('#upload_div1').append(downloadLink);
-                            console.log(contentType.toUpperCase() + ' URL:', response.file_url);
-                            downloadLink.css({
-                                display: 'block',
-                                margin: '10px 0',
-                                color: 'blue',
-                                textDecoration: 'underline'
-                            });
-                        } else {
-                            console.error(contentType.toUpperCase() + ' URL not found in response.');
-                            alert('An error occurred while generating the ' + contentType.toUpperCase() + '.');
-                        }
+                        // $("#test123").val("Prompt");
+                        // $('#prompt').val(response.prompt);
+                        // if (response.file_url) {
+                        //      $('#upload_div1').empty();
+                        //     var downloadLink = $('<a>', {
+                        //         href: response.file_url,
+                        //         text: 'Download ' + contentType.toUpperCase(),
+                        //         target: '_blank',
+                        //         download: ''
+                        //     });
+                        //     $('#upload_div1').append(downloadLink);
+                        //     console.log(contentType.toUpperCase() + ' URL:', response.file_url);
+                        //     downloadLink.css({
+                        //         display: 'block',
+                        //         margin: '10px 0',
+                        //         color: 'blue',
+                        //         textDecoration: 'underline'
+                        //     });
+                        // } else {
+                        //     console.error(contentType.toUpperCase() + ' URL not found in response.');
+                        //     alert('An error occurred while generating the ' + contentType.toUpperCase() + '.');
+                        // }
                     },
                     error: function(xhr) {
                         console.error(xhr);

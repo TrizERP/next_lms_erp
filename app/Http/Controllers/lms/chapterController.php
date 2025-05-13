@@ -159,13 +159,19 @@ class chapterController extends Controller
         // ->groupBy('content_master.id')
         // ->get()->toArray();
 
-        $content_data_array = [];
-        $mappedVal = explode(',',$request->mapped_value);
+         $content_data_array =[];
+        $mappedVals = explode(',',$request->mapped_value);
 
         if (!empty($content_data)) {
             foreach ($content_data as $content) {
-                if(isset($mappedVal[0]) && $mappedVal[0]!=''){
-                    $content_data_array[$content['chapter_id']][$content['content_category']][] =in_array($content['id'],$mappedVal) ? $content : [];
+                if(isset($mappedVals[0]) && $mappedVals[0]!=''){
+                    
+                    $mappedValArr = [];
+                    foreach($mappedVals as $mk=>$mv){
+                        $mappedValArr[] = DB::table('content_mapping_type')->where('content_id',$content['id'] ?? 0)->whereIn('mapping_value_id',$mappedVals)->value('content_id');   
+                    }
+                    // echo "<pre>";print_r($mappedValArr);exit;
+                    $content_data_array[$content['chapter_id']][$content['content_category']][] =in_array($content['id'],$mappedValArr) ? $content : [];
                 }else{
                     $content_data_array[$content['chapter_id']][$content['content_category']][] = $content;
                 }
