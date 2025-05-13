@@ -26,13 +26,18 @@ Salary Deposit
                     </tr>
                 </thead>
                 <tbody>
+                    @php $totDeposit = 0; @endphp
                     @foreach($salary_deposit as $key => $value)
                     <tr>
                         <td>{{$value['year']}}</td>
                         <td>{{$value['month']}}</td>
-                        <td>{{$value['amount']}}</td>
+                        <td>{{$totDeposit+=$value['amount']}}</td>
                     </tr>
                     @endforeach
+                    <tr>
+                        <td colspan="2"><b>Total</b></td>
+                        <td>{{$totDeposit}}</td>
+                    </tr>
                 </tbody>
             </table>
             @endif
@@ -57,13 +62,19 @@ Salary Deposit
                     </tr>
                 </thead>
                 <tbody>
+                    @php $totDeposit = 0; @endphp
                     @foreach($salary_deposit as $key => $value)
                     <tr>
                         <td>{{$value['year']}}</td>
                         <td>{{$value['month']}}</td>
                         <td>{{$value['amount']}}</td>
+                        @php $totDeposit+=$value['amount']; @endphp
                     </tr>
                     @endforeach
+                    <tr>
+                        <td colspan="2"><b>Total</b></td>
+                        <td>{{$totDeposit}}</td>
+                    </tr>
                 </tbody>
             </table>
         </div>
