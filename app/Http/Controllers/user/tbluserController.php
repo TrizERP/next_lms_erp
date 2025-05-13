@@ -330,19 +330,14 @@ class tbluserController extends Controller
         $getSalaryDeposit = DB::table('payroll_types')->where(['sub_institute_id'=>$sub_institute_id,'payroll_name'=>'Salary Deposit'])->first();
         if(!empty($getSalaryDeposit)){
             // get employee salary structure to get amount
-            $getSalaryMonthlyStructrue = DB::table('employee_monthly_salary_data')->where(['sub_institute_id'=>$sub_institute_id,'employee_id'=>$id])->get()->toArray();
-            foreach ($getSalaryMonthlyStructrue as $key => $value) {
-                $depositId=$getSalaryDeposit->id; // type id
-                $jsonData=json_decode($value->employee_salary_data,true); // json decode monthly salary data
-                // check employee have salary deposit or not 
-               if(isset($jsonData[$depositId]) && $jsonData[$depositId]!=null && $jsonData[$depositId]!=0 && $jsonData[$depositId]!=''){
+            $depositData = DB::table('hrms_emp_payroll_deduction')->where(['sub_institute_id'=>$sub_institute_id,'employee_id'=>$id])->where('deduction_amount','>',0)->get()->toArray();
+            foreach ($depositData as $key => $value) {
                 $depositArr = [
                     'year'=>$value->year,
                     'month'=>$value->month,
-                    'amount'=>$jsonData[$depositId],
+                    'amount'=>$value->deduction_amount,
                 ];
                 $SalaryDeposit[]=$depositArr;
-               }
             }
         // echo "<pre>";print_r($SalaryDeposit);exit;
         }
