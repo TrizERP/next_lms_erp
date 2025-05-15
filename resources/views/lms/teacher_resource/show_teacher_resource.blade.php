@@ -196,13 +196,13 @@
               <!--<td>{{$tdata['description']}}</td>-->
               <!--<td>{{$tdata['activity']}}</td>-->
               <td>
-@php
-if ($tdata['file_name'] != '' && $tdata['file_type']=='link') {
-    $content_file_url = $tdata['file_name'];
-} else {
-    $content_file_url = Storage::disk('digitalocean')->url('public'.$tdata['file_folder'].'/'.$tdata['file_name']);
-}
-@endphp
+                @php
+                if ($tdata['file_name'] != '' && $tdata['file_type']=='link') {
+                    $content_file_url = $tdata['file_name'];
+                } else {
+                    $content_file_url = Storage::disk('digitalocean')->url('public'.$tdata['file_folder'].'/'.$tdata['file_name']);
+                }
+                @endphp
                 <a href="{{ $content_file_url }}" target="_blank">View</a>
               </td>
               <td>
@@ -228,6 +228,7 @@ if ($tdata['file_name'] != '' && $tdata['file_type']=='link') {
               @endif
 
               <td style="@php echo $readonly ?? '' @endphp">
+                <a href="{{route('lms_teacherResource.edit',[$tdata['id']])}}" class="btn btn-outline-success"><i class="mdi mdi-pencil-outline m-0"></i></a>
                 <form action="{{ route('lms_teacherResource.destroy', $tdata['id'])}}" method="post">
                   @csrf
                   @method('DELETE')
@@ -253,6 +254,7 @@ if ($tdata['file_name'] != '' && $tdata['file_type']=='link') {
     </div>
   </div>
 </div>
+
 @include('includes.lmsfooterJs')
 <script>
   $(document).on('change', '.load_map_value', function () {
