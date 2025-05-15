@@ -229,16 +229,128 @@ class lms_teacherResourceController extends Controller
             'chapter_id'  => $request->get('hid_chapter_id'),
         ]);
     }
+    public function edit(Request $request,$id)
+    {
+        $type= $request->input('type');
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
 
+        $editData = teacherResourceModel::where('id',$id)->first();
+
+        // get mapped parent Values 28-02-2025
+        $mapParents = DB::table('lms_mapping_type')->where(['parent_id'=>0,'globally'=>1,'status'=>1])->get()->toArray();
+        $mapVal=$mapType=[];
+
+        foreach ($mapParents as $key => $value) {
+            $mapType[$value->id] =$value->name;
+            $mappedVals = DB::table('lms_mapping_type')->where(['parent_id'=>$value->id,'globally'=>1,'status'=>1])->get()->toArray();
+            foreach ($mappedVals as $key2 => $value2) {
+                $mapVal[$value->id][$value2->id] = $value2->name;
+            }
+        }
+
+        $res['mapType'] = $mapType;
+        $res['mapVal'] = $mapVal;
+        // get mapped parent Values 28-02-2025 end
+        $lms_mapping_type = DB::table('lms_mapping_type')
+            ->where('status', '=', 1)
+            ->where('parent_id', '=', 0)
+            ->where(function ($q) use ($editData) {
+                $q->where('globally', '=', 1)
+                    ->orWhere('chapter_id', $editData->chapter_id);
+            })->where(function ($q) use ($editData) {
+                $q->where('topic_id', '=', 0)
+                    ->orWhere('topic_id', $editData->topic_id);
+            })->get()->toArray();
+        // echo "<pre>";print_r($lms_mapping_type);exit;
+
+        $lms_mapping_type = json_decode(json_encode($lms_mapping_type), true);
+        $res['lms_mapping_type'] = $lms_mapping_type;
+        $res['editData'] = $editData;
+        // echo "<pre>";print_r($editData->title);exit;
+
+        return is_mobile($type,'lms/teacher_resource/edit',$res,"view");
+    }
     /**
      * Display the specified resource.
      *
      * @param  int  $id
      * @return void
      */
-    public function show($id)
+    public function update(Request $request,$id)
     {
         //
+        $type = $request->input('type');
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+        $user_id = session()->get('user_id');
+
+        $TR_data = array( 
+            'created_by' => $user_id,
+            'status' => '1',
+            'sub_institute_id' => $sub_institute_id,
+            'syear' => $syear
+        );
+        // echo"<pre>";print_r($request->all());exit;
+        $file_folder = $ext = $size = $newfilename = "";
+        if($request->hasFile('teacher_file'))
+        {           
+            $img = $request->file('teacher_file');
+            $filename = $img->getClientOriginalName();
+            $ext = $img->getClientOriginalExtension();
+            $size = $img->getSize();
+            $file_folder = '/lms_teacher_resource';
+            $newfilename = 'lms_'.date('Y-m-d_h-i-s').'.'.$ext;                        
+            //$img->move(public_path().'/lms_content_file/',$newfilename);
+            // $img->storeAs('public'.$file_folder.'/',$newfilename); 20-05-24
+            Storage::disk('digitalocean')->putFileAs('public/lms_teacher_resource/', $img, $newfilename, 'public');
+            $TR_data['file_name'] = $newfilename;
+            $TR_data['file_folder'] = $file_folder;
+            $TR_data['file_type'] = $ext;
+            $TR_data['file_size'] = $size;
+        } 
+
+        $newRequest = $request->post();
+        $mappingType = $mappingVal = [];
+        foreach($newRequest as $key =>$value)
+        {
+            if ($key != '_method' && $key != '_token' && $key != 'submit' && $key != 'mapping_type' && $key != 'mapping_value' ) {
+                if (strpos($key, 'hid') !== false) {
+                    $key = str_replace('hid_','',$key);
+                }
+                if (is_array($value)) {
+                    $value = implode(",", $value);
+                }
+                $TR_data[$key] = $value;
+            }
+            if($key == 'mapping_type'){
+               $mappingType = $value;
+            }
+            if($key == 'mapping_value'){
+                $mappingVal = $value;
+             }
+        }
+        $jsonArr = [];
+        if(!empty($mappingType) && !empty($mappingVal)){
+            foreach ($mappingType as $key => $value) {
+               if(isset($mappingVal[$key])){
+                $jsonArr[$value] = $mappingVal[$key];
+               }
+            }
+        }
+        $jsonDecodes = (!empty($jsonArr)) ? json_encode($jsonArr) : null;
+        if($jsonDecodes!=null){
+            $TR_data['mapping_value'] =  $jsonDecodes;
+        }
+        // echo "<pre>";print_r($TR_data);
+        // exit;
+        teacherResourceModel::where('id',$id)->update($TR_data);
+
+        $res = array(
+            "status_code" => 1,
+            "message"     => "Teacher Resource Added Successfully",
+        );
+        return redirect()->back()->with($res);
     }
 
     /**
