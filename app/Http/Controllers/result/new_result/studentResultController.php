@@ -109,14 +109,18 @@ class studentResultController extends Controller
         $last_insert_ids = '';
         $new_html = '';
         $all_stud_html = array();
+        $srNo=1;
         foreach ($data as $key => $value) {
             $html_content = $tData[0]['html_content'];
             $class = 'class="report-card-bg"';
             if($sub_institute_id==254){
                 $class = 'class="report-card-bg2"';
             }
-            
-            $new_html_content = '<div id="' . $value['id'] . '"><div ' . $class . ' style="page-break-before:avoid !important;page-break:always !important;">' . $this->create_html_content($syear, $sub_institute_id, $html_content, $value, $template, $result_trust, $format) . '</div></div>';
+            $style="page-break-before:avoid !important;page-break:always !important;";
+            if(in_array($template,[12,51,52])){ // added for mmis grandmarksheet
+                $style="";
+            }
+            $new_html_content = '<div id="' . $value['id'] . '"><div ' . $class . ' style="'.$style.'">' . $this->create_html_content($syear, $sub_institute_id, $html_content, $value, $template, $result_trust, $format,($srNo)) . '</div></div>';
 
             $new_html .= $new_html_content;
             if($sub_institute_id==47){ // for print sort order
@@ -124,6 +128,7 @@ class studentResultController extends Controller
             }else{
                 $all_stud_html[$value['id']] = $new_html_content;
             }
+            $srNo++;
         }
         $type = "";
         if ($format == "yearly") {
@@ -138,11 +143,12 @@ class studentResultController extends Controller
         $data['result_type'] = $result_type;
         $data['all_stud_html'] = $all_stud_html;
         $data['students_ids'] = $request->students;
+        $data['template'] = $template;
 
         return is_mobile($type, "result/new_result/student_results/result_view", $data, "view");
     }
 
-    public function create_html_content($syear, $sub_institute_id, $html_content, $value, $template, $result_trust, $format)
+    public function create_html_content($syear, $sub_institute_id, $html_content, $value, $template, $result_trust, $format,$srNo)
     {
         // echo "<pre>";print_r($value);exit;
         $height_large = array(47);
@@ -279,6 +285,7 @@ class studentResultController extends Controller
         $html_content = str_replace(htmlspecialchars("<<no_of_student_class>>"), $no_of_student, $html_content);
 
         //Start Bonafide certificate Tags
+        $html_content = str_replace(htmlspecialchars("<<sr_no>>"), $srNo, $html_content);
         $html_content = str_replace(htmlspecialchars("<<class_teacher_name>>"), isset($teacher_name->teacher_name) ? $teacher_name->teacher_name : ' ', $html_content);
         $html_content = str_replace(htmlspecialchars("<<class_teacher_lastname>>"), isset($teacher_name->last_name) ? $teacher_name->last_name : ' ', $html_content);
         $html_content = str_replace(htmlspecialchars("<<academic_years>>"), $display_year, $html_content);
@@ -440,6 +447,7 @@ class studentResultController extends Controller
             $html_content = str_replace(htmlspecialchars("<<teacher_remark>>"), $main_result['remark'], $html_content);
             $html_content = str_replace(htmlspecialchars("<<result>>"), $main_result['result'], $html_content);
             $html_content = str_replace(htmlspecialchars("<<custom_note_1>>"), $main_result['custom_note_1'], $html_content);
+            $html_content = str_replace(htmlspecialchars("<<simple_result>>"), $main_result['simple_result'], $html_content);
         }
 
         if (strpos($html_content, htmlspecialchars('<<scholastic_marks_mmis>>')) !== false) {
@@ -448,6 +456,7 @@ class studentResultController extends Controller
             $html_content = str_replace(htmlspecialchars("<<teacher_remark>>"), $main_result['remark'], $html_content);
             $html_content = str_replace(htmlspecialchars("<<result>>"), $main_result['result'], $html_content);
             $html_content = str_replace(htmlspecialchars("<<custom_note_1>>"), $main_result['custom_note_1'], $html_content);
+            $html_content = str_replace(htmlspecialchars("<<simple_result>>"), $main_result['simple_result'], $html_content);
         }
 
         if ((strpos($html_content, htmlspecialchars('<<scholastic_grade_marks>>')) !== false) || (strpos($html_content, htmlspecialchars('<<co_scholastic_grade_marks>>')) !== false)) {
@@ -489,6 +498,7 @@ class studentResultController extends Controller
             $html_content = str_replace(htmlspecialchars("<<scholastic_11_grade_marks>>"), $scholastic['scholastic_gradeRange'], $html_content);
             $html_content = str_replace(htmlspecialchars("<<conduct_remark>>"), $scholastic['conducted'], $html_content);
             $html_content = str_replace(htmlspecialchars("<<teacher_remark>>"), $scholastic['teacher_remark'], $html_content);
+            $html_content = str_replace(htmlspecialchars("<<simple_result>>"), $scholastic['simple_result'], $html_content);
         }
         if (strpos($html_content, htmlspecialchars('<<co_scholastic_11_marks>>')) !== false) {
             $co_result = $this->get_mmis11CoScholastic($standard_id, $value['id'], $format, '');
@@ -1001,6 +1011,7 @@ class studentResultController extends Controller
         }
     // Calculate the total marks for each term
         $res['result'] = $result;
+        $res['simple_result'] = $result;
         $table .= '</tr></tbody></table>';
         $res['table'] = $table;
         $res['remark'] = \App\Helpers\getGradeComment($grade_arr_mmis, 100, $per) ?? '-';
@@ -1345,6 +1356,7 @@ class studentResultController extends Controller
 
         // Calculate the total marks for each term
         $res['result'] = $res_school;
+        $res['simple_result'] = $result;
         $table .= '</tr></tbody></table>';
         $res['table'] = $table;
         $res['remark'] = \App\Helpers\getGradeComment($grade_arr_mmis, 100, $per) ?? '-';
@@ -7380,7 +7392,7 @@ private function buildDisciplineTable($decipline_data,$both_term)
         $res['scholastic_gradeRange']=$scholaticTableGrades;
         $res['conducted'] = \App\Helpers\getGradeComment($grade_arr, 100, $per) ?? '-';
         $res['teacher_remark'] = $result;
-
+        $res['simple_result'] = $result;
         return $res;
     }
 

@@ -608,6 +608,15 @@ class AJAXController extends Controller
                 "re.syear" => session()->get('syear'),
                 "re.standard_id"=>$request->standard_id,
                 "re.exam_id"=>$request->exam_id,
+            ];
+            $group = "re.title";
+        }
+        if(isset($request->exam_id) && $request->exam_id != '' && isset($request->subject_id) && isset($request->term_id) != ''){
+            $where = [
+                "re.sub_institute_id" => session()->get('sub_institute_id'),
+                "re.syear" => session()->get('syear'),
+                "re.standard_id"=>$request->standard_id,
+                "re.exam_id"=>$request->exam_id,
                 "re.subject_id" => $request->subject_id,
                 "re.term_id" => $request->term_id,
             ];
@@ -2445,8 +2454,8 @@ class AJAXController extends Controller
 
     public function lmsDataApi(Request $request){
     	
-        if (!$request->has('table')) {
-            return response()->json(['error' => 'Table name is required'], 400);
+        if (!$request->has('table') || empty($request->input('table'))) {
+            return response()->json(['message' => 'Table name is required'], 200);
         }
 
         // Get the table name from the request
@@ -2454,7 +2463,7 @@ class AJAXController extends Controller
 
         // Validate if the table exists
         if (!Schema::hasTable($table)) {
-            return response()->json(['error' => 'Invalid table name'], 400);
+            return response()->json(['message' => 'Invalid table name'], 200);
         }
 
         // Start query
@@ -2469,12 +2478,29 @@ class AJAXController extends Controller
             }
         }
 
+        // Apply order by if provided
+        if ($request->has('order_by') && is_array($request->order_by)) {
+            $orderColumn = $request->order_by['column'] ?? 'id';
+            $orderDirection = strtolower($request->order_by['direction'] ?? 'asc');
+
+            // Sanitize direction
+            if (!in_array($orderDirection, ['asc', 'desc'])) {
+                $orderDirection = 'asc';
+            }
+
+            if ($orderColumn && Schema::hasColumn($table, $orderColumn)) {
+                $query->orderBy($orderColumn, $orderDirection);
+            }
+        }
+
         // Fetch data
         $data = $query->get();
 
         // Check if data is empty
 	    if ($data->isEmpty()) {
-	        return response()->json(['message' => 'Data not found'], 404);
+	        return response()->json([
+                    ['message' => 'Data not found']
+                ], 200);
 	    }
 
         return response()->json($data);

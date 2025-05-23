@@ -157,6 +157,11 @@ class LeaveAuthorisationController extends Controller
                     'approved_by' => $user_name->employee_name,
                     'status' => $leaveStatuses,
                 ]);
+
+            // API response
+            $res['status_code'] = 1;
+            $res['message'] = "Leave update successfully";
+            return is_mobile($type, "leave-authorisation.index", $res);
         }
         else
         {
@@ -173,11 +178,9 @@ class LeaveAuthorisationController extends Controller
                         'status' => $leaveStatuses[$id],
                     ]);
             }
-        }
         
-        $request->session()->flash('success', 'Leave records updated successfully.');
-        
-        // return redirect()->route('leave-authorisation.index');
+        $request->session()->flash('success', 'Leave update successfully');
         return is_mobile($type, "leave-authorisation.index", null, "redirect");
+        }
     }
 }

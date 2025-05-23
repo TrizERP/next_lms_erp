@@ -192,7 +192,7 @@ class ApplyLeaveController extends Controller
                 'day_type' => $day_type,
                 'from_date' => $request->from_date,
                 'to_date' => $request->to_date,
-                'slot' => $request->slot ?? 'NULL',
+                'slot' => $request->slot,
                 'comment' => $request->comment,
                 'user_id' => ($request->emp_id!=0) ? $request->emp_id : $user_id,
                 'from_date' => $request->from_date,

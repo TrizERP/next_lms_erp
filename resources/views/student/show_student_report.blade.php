@@ -239,7 +239,15 @@
                    }
                },
                {extend: 'csv', text: ' CSV', title: 'Student Report'},
-               {extend: 'excel', text: ' EXCEL', title: 'Student Report'},
+               {extend: 'excel', text: ' EXCEL', title: 'Student Report',
+		            customizeData: function ( data ) {
+		                for (var i=0; i<data.body.length; i++){
+		                    for (var j=0; j<data.body[i].length; j++ ){
+		                        data.body[i][j] = '\u200C' + data.body[i][j];
+		                    }
+		                }
+		            } 
+	        	},
                {
                    extend: 'print',
                    text: ' PRINT',
