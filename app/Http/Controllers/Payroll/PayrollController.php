@@ -192,9 +192,13 @@ class PayrollController extends Controller
                     if($key!=0){
                        $payroll_type_id = $value[0];
 
-                       if($amount_type==1 && $Per_Flat!=0 && $value[1] > $Per_Flat){
+                       if($amount_type==1 && $Per_Flat!=0 && $value[1] > $Per_Flat && $sub_institute_id==47){
                         $amount = ($value[1]-$Per_Flat);
-                       }else{
+                       }
+                       elseif($amount_type==1 && $Per_Flat!=0){ // added for another institutes on 14-05-2025
+                        $amount = $Per_Flat;
+                       }
+                       else{
                         $amount = $value[1];
                        }
 
@@ -2167,12 +2171,14 @@ class PayrollController extends Controller
                 // echo "<pre>";print_r($value);
             }
         }
-//echo "<pre>";
-//print_r($weekOffDates);
-//print_r($holidays);
-//print_r($leaveDates);
-//print_r($presentDates);
-//die();
+//         if($request->emp_id==79){
+// echo "<pre>";
+// print_r($weekDays);
+// print_r($holidayDates);
+// print_r($leaveDates);
+// print_r($attArr);
+// die();
+//         }
 
 //START SANDWICH LEAVE
 $sandwichLeaveCount = 0;
@@ -2185,8 +2191,8 @@ $sandwichLeaveCount = $this->calculateLeaveCounts($from_date,$to_date,$weekDays,
             "weekoff_+" => $weekday_off,
             "tot_leave_+"=>$totLeaveDay,
             "sandwich_-"=> $sandwichLeaveCount,
-            //"noAtt_-"=>$noEnrty,
-            //"lwp_-"=> $tot_lwp_leave,
+            // "noAtt_-"=>$noEnrty,
+            // "lwp_-"=> $tot_lwp_leave,
         ];
         // echo "<pre>";print_r($weekDays);
         // echo "<pre>";print_r($holidayDates);
@@ -2226,18 +2232,37 @@ $sandwichLeaveCount = $this->calculateLeaveCounts($from_date,$to_date,$weekDays,
         $allDates = array_unique(array_merge($weekOffDates, $holidays));
 
         // Check for sandwich leave cases
-        foreach ($allDates as $allDate) {
+        // foreach ($allDates as $allDate) {
+        //     $prevDay = date('Y-m-d', strtotime('-1 day', strtotime($allDate)));
+        //     $nextDay = date('Y-m-d', strtotime('+1 day', strtotime($allDate)));
+
+        //     if (    
+        //         !in_array($prevDay, $allDates) && 
+        //         !in_array($nextDay, $allDates) &&
+
+        //             !in_array($prevDay, $presentDates) && 
+        //             !in_array($nextDay, $presentDates) && 
+        //             !in_array($allDate, $leaveDates)
+        //         ) 
+        //     {
+        //         $sandwichLeaveCount++;
+        //         //$holidayCount = max(0, $holidayCount - ($allDate == $holidays ? 1 : 0));
+        //         //$weekoffCount = max(0, $weekoffCount - (in_array($allDate, $weekOffDates) ? 1 : 0));
+        //     }
+        // }
+
+        // added by uma on 2025-05-20
+       foreach ($allDates as $allDate) {
             $prevDay = date('Y-m-d', strtotime('-1 day', strtotime($allDate)));
             $nextDay = date('Y-m-d', strtotime('+1 day', strtotime($allDate)));
 
-            if (    
-                !in_array($prevDay, $allDates) && 
-                !in_array($nextDay, $allDates) &&
-
-                    !in_array($prevDay, $presentDates) && 
-                    !in_array($nextDay, $presentDates) && 
-                    !in_array($allDate, $leaveDates)
-                ) 
+            if ( !in_array($prevDay, $allDates) && !in_array($nextDay, $allDates) && !in_array($prevDay, $presentDates) && !in_array($nextDay, $presentDates) && !in_array($allDate, $leaveDates)) 
+            {
+                $sandwichLeaveCount++;
+                //$holidayCount = max(0, $holidayCount - ($allDate == $holidays ? 1 : 0));
+                //$weekoffCount = max(0, $weekoffCount - (in_array($allDate, $weekOffDates) ? 1 : 0));
+            }
+            if (in_array($allDate, $leaveDates) && in_array($allDate,$holidays)) 
             {
                 $sandwichLeaveCount++;
                 //$holidayCount = max(0, $holidayCount - ($allDate == $holidays ? 1 : 0));

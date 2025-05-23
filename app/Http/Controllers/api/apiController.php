@@ -351,6 +351,7 @@ class apiController extends Controller
 
                     $send_data[$id] = [
                         'student_id'        => strtoupper($arr->id),
+                        'enrollment_no'     => $arr->enrollment_no,
                         'sub_institute_id'  => strtoupper($arr->sub_institute_id),
                         'mobile'            => $arr->mobile,
                         'otp'               => $arr->otp,

@@ -48,8 +48,7 @@ class HrmsController extends Controller
     public function hrmsStore(Request $request)
     {
 
-        $clientId = $request->session()->get('client_id');
-        $subInstituteId = $request->session()->get('sub_institute_id');
+        $sub_institute_id = $request->session()->get('sub_institute_id');
         $type = $request->input('type');
         $request->validate([
             'title' => 'required|unique:hrms_job_titles,title,' . $request->id,
@@ -63,8 +62,7 @@ class HrmsController extends Controller
         }
         $hrmsJobTitle->title = $request->title;
         $hrmsJobTitle->description = $request->description;
-        $hrmsJobTitle->sub_institute_id = $subInstituteId;
-        $hrmsJobTitle->client_id = $clientId;
+        $hrmsJobTitle->sub_institute_id = $sub_institute_id;
         $hrmsJobTitle->is_active = $request->status;
         $hrmsJobTitle->save();
         return is_mobile($type, "hrms_job_title.index", null, "redirect");
@@ -131,62 +129,83 @@ class HrmsController extends Controller
         $type = $request->input('type');
         if ($type == 'API'){
             $userId = $request->input('user_id');
-            $clientId = $request->input('client_id');
-            $subInstituteId = $request->input('sub_institute_id');
+            $sub_institute_id = $request->input('sub_institute_id');
+            $punchin_time = $request->input('punchin_time');
+            $address_in = $request->input('address_in');
+            $photo_in = $request->input('photo_in');
 
             $validator = Validator::make($request->all(), [
-                'sub_institute_id'=>'required|numeric',
-                'client_id'=>'required|numeric',
-                'user_id'=>'required|numeric',
-                'indate'=>'required',
-                'intime'=>'required',
+                'sub_institute_id' => 'required|numeric',
+                'user_id' => 'required|numeric',
+                'punchin_time' => 'required|date_format:Y-m-d H:i:s',
+                'address_in' => 'required',
+                'photo_in' => 'required',
             ]);
 
             if ($validator->fails()) {
                 $res['status'] = 0;
                 $res['message'] = $validator->messages()->first();
                 return is_mobile($type, "hrms_inout_time.index", $res, "redirect");
-            } 
+            }
     
         } else{
             $userId = $request->session()->get('user_id');
-            $clientId = $request->session()->get('client_id');
-            $subInstituteId = $request->session()->get('sub_institute_id');
+            $sub_institute_id = $request->session()->get('sub_institute_id');
+            $punchin_time = Carbon::now()->format('Y-m-d H:i:s'); // Default for web
+            $address_in = request()->ip();
+            $photo_in = null;
         }
         
-        $res['status_code']=0;
-        $res['message']="Failed to time in";
-        //return $request->all();
-        if ($request->indate && $request->intime) 
-        {
-            $hrmsInOutTime = new HrmsAttendance();
-            $hrmsInOutTime->user_id = $userId;
-            $hrmsInOutTime->day = Carbon::parse($request->indate)->format('Y-m-d');
-            $hrmsInOutTime->punchin_time = Carbon::now()->format('Y-m-d H:i:s');
-            $hrmsInOutTime->client_id = $clientId;
-            $hrmsInOutTime->sub_institute_id = $subInstituteId;
-            $hrmsInOutTime->save();
+        $day = Carbon::parse($punchin_time)->format('Y-m-d');
 
-            $res['status_code']=1;
-            $res['message']="Success to time in";
+        // Check if a punchin already exists for this user on the same day
+        $alreadyExists = HrmsAttendance::where('user_id', $userId)
+            ->whereDate('day', $day)
+            ->whereNotNull('punchin_time')
+            ->exists();
+
+        if ($alreadyExists) {
+            $res['status_code'] = 0;
+            $res['message'] = "Already punch in";
+            return is_mobile($type, "hrms_inout_time.index", $res, "redirect");
         }
-        
+
+        // Save the punch-in record
+        $hrmsInOutTime = new HrmsAttendance();
+        $hrmsInOutTime->user_id = $userId;
+        $hrmsInOutTime->sub_institute_id = $sub_institute_id;
+        $hrmsInOutTime->day = $day;
+        $hrmsInOutTime->punchin_time = $punchin_time;
+        $hrmsInOutTime->ipaddress_in = $address_in;
+        $hrmsInOutTime->photo_in = $photo_in;
+        $hrmsInOutTime->save();
+
+        $res['status_code'] = 1;
+        $res['message'] = "Success to time in";
+
         return is_mobile($type, "hrms_inout_time.index", $res, "redirect");
-        //return redirect('hrms-inout-time')->with(['message' =>'check In successfully']);
     }
 
     public function hrmsOutTimeStore(Request $request)
     {
         $type = $request->input('type');
+
         if ($type == 'API'){
+
+            $userId = $request->input('user_id');
+            $sub_institute_id = $request->input('sub_institute_id');
+            $punchout_time = $request->input('punchout_time');
+            $address_out = $request->input('address_out');
+            $photo_out = $request->input('photo_out');
+
             $validator = Validator::make($request->all(), [
                 'sub_institute_id'=>'required|numeric',
-                'client_id'=>'required|numeric',
                 'user_id'=>'required|numeric',
-                'outdate'=>'required',
-                'outtime'=>'required',
+                'punchout_time'=>'required',
+                'address_out' => 'required',
+                'photo_out' => 'required',                
             ]);
-            $userId = $request->input('user_id');
+
             if ($validator->fails()) {
                 $res['status'] = 0;
                 $res['message'] = $validator->messages()->first();
@@ -195,26 +214,46 @@ class HrmsController extends Controller
         } 
         else{
             $userId = $request->session()->get('user_id');
-        } 
-        $hrmsInOutTime = HrmsAttendance::where([['user_id', $userId], ['day', Carbon::now()->format('Y-m-d')], ['punchout_time', null]])->first();
-        
-        $res['status_code']=0;
-        $res['message']="Failed to time out";
+            $sub_institute_id = $request->session()->get('sub_institute_id');
+            $punchout_time = Carbon::now()->format('Y-m-d H:i:s'); // Default for web
+            $address_out = request()->ip();
+            $photo_out = null;
+        }
+
+        $day = Carbon::parse($punchout_time)->format('Y-m-d');
+
+        // Check if a punchin already exists for this user on the same day
+        $alreadyExists = HrmsAttendance::where('user_id', $userId)
+            ->whereDate('day', $day)
+            ->whereNotNull('punchout_time')
+            ->exists();
+
+        if ($alreadyExists) {
+            $res['status_code'] = 0;
+            $res['message'] = "Already punch out";
+            return is_mobile($type, "hrms_inout_time.index", $res, "redirect");
+        }
+
+        $hrmsInOutTime = HrmsAttendance::where([['user_id', $userId], ['sub_institute_id', $sub_institute_id], ['day', $day], ['punchout_time', null]])->first();
+
         if ($hrmsInOutTime) 
         {
-            $punchout_time = Carbon::parse($request->outdate.''.$request->outtime);
+            $punchout_time = Carbon::parse($punchout_time);
             $punchin_time = Carbon::parse($hrmsInOutTime->punchin_time);
 
-            $hrmsInOutTime->punchout_time = Carbon::parse($request->outdate .' '.$request->outtime)->format('Y-m-d H:i:s');
             $Min = $punchout_time->diffInMinutes($punchin_time);
             $diff= date('H:i', mktime(0,$Min));
+
+            $hrmsInOutTime->punchout_time = $punchout_time;
             $hrmsInOutTime->timestamp_diff = $diff;
+            $hrmsInOutTime->ipaddress_out = $address_out;
+            $hrmsInOutTime->photo_out = $photo_out;
             $hrmsInOutTime->save();
 
             $res['status_code']=1;
             $res['message']="Success to time out";
         }
-        return is_mobile($type, "hrms_inout_time.index", $res, "view");
+        return is_mobile($type, "hrms_inout_time.index", $res, "redirect");
         //return redirect('hrms-inout-time')->with(['message' =>'check Out successfully']);
     }
 
@@ -223,8 +262,8 @@ class HrmsController extends Controller
         $type = $request->input('type');
         // $hrmsAttendanceDetails = '';
 
-        if (in_array($type,['API','JSON'])) $subInstituteId = $request->input('sub_institute_id');
-        else   $subInstituteId = $request->session()->get('sub_institute_id');
+        if (in_array($type,['API','JSON'])) $sub_institute_id = $request->input('sub_institute_id');
+        else   $sub_institute_id = $request->session()->get('sub_institute_id');
 
         if ($request->employee_id) 
         {
@@ -258,7 +297,7 @@ class HrmsController extends Controller
             $hrmsAttendanceInOutTime['date'] = Carbon::now();
         }
 
-        $employeeLists = tbluserModel::where('sub_institute_id', $subInstituteId)->where('status', 1)->orderBy('first_name')->get();
+        $employeeLists = tbluserModel::where('sub_institute_id', $sub_institute_id)->where('status', 1)->orderBy('first_name')->get();
 
         $hrmsAttendanceInOutTime['id'] = 0;
         $hrmsAttendanceInOutTime['time'] = Carbon::now()->format('H:i:s');
@@ -279,12 +318,11 @@ class HrmsController extends Controller
         //return $request->all();
         //return Carbon::parse($request->indate)->format('Y-m-d');
         $type = $request->input('type');
+
         if (in_array($type,['API','JSON'])) {
-            $clientId = $request->input('client_id');
-            $subInstituteId = $request->input('sub_institute_id');
+            $sub_institute_id = $request->input('sub_institute_id');
         } else {
-            $clientId = $request->session()->get('client_id');
-            $subInstituteId = $request->session()->get('sub_institute_id');
+            $sub_institute_id = $request->session()->get('sub_institute_id');
         }
         $hrmsAttendanceInTime = new HrmsAttendance();
         $hrmsAttendanceInTime->user_id = $request->employee;
@@ -293,8 +331,7 @@ class HrmsController extends Controller
         $hrmsAttendanceInTime->day = Carbon::parse($request->indate)->format('Y-m-d');
         $hrmsAttendanceInTime->in_note = 1;
         $hrmsAttendanceInTime->ipaddress_in = $request->ip();
-        $hrmsAttendanceInTime->client_id = $clientId;
-        $hrmsAttendanceInTime->sub_institute_id = $subInstituteId;
+        $hrmsAttendanceInTime->sub_institute_id = $sub_institute_id;
         $hrmsAttendanceInTime->save();
 
         return is_mobile($type, "hrms_attendance.index", null, "redirect");
@@ -557,12 +594,10 @@ class HrmsController extends Controller
         $type = $request->input('type');
         if (in_array($type,['API','JSON'])){
             $userId = $request->input('user_id');
-            $clientId = $request->input('client_id');
-            $subInstituteId = $request->input('sub_institute_id');
+            $sub_institute_id = $request->input('sub_institute_id');
         } else{
             $userId = $request->session()->get('user_id');
-            $clientId = $request->session()->get('client_id');
-            $subInstituteId = $request->session()->get('sub_institute_id');
+            $sub_institute_id = $request->session()->get('sub_institute_id');
         }
         
         $sandwich_leave = $request->input('sandwich_leave');
@@ -582,7 +617,7 @@ class HrmsController extends Controller
         if ($sandwich_leave !== null) {
             // Check if a record with fieldname 'sandwich_leave' and sub_institute_id exists
             $existingSandwichLeave = general_dataModel::where('fieldname', 'sandwich_leave')
-                ->where('sub_institute_id', $subInstituteId)
+                ->where('sub_institute_id', $sub_institute_id)
                 ->first();
         
             if ($existingSandwichLeave) {
@@ -594,8 +629,7 @@ class HrmsController extends Controller
                 $general_data = new general_dataModel();
                 $general_data->fieldname = 'sandwich_leave';
                 $general_data->fieldvalue = $sandwich_leave;
-                $general_data->sub_institute_id = $subInstituteId;
-                $general_data->client_id = $clientId;
+                $general_data->sub_institute_id = $sub_institute_id;
                 $general_data->type = 'hrms';
                 $general_data->save();
             }
@@ -604,7 +638,7 @@ class HrmsController extends Controller
         if ($casual_leave_at_one_time !== null) {
             // Check if a record with fieldname 'casual_leave_apply' and sub_institute_id exists
             $existingCasualLeaveApply = general_dataModel::where('fieldname', 'casual_leave_apply')
-                ->where('sub_institute_id', $subInstituteId)
+                ->where('sub_institute_id', $sub_institute_id)
                 ->first();
         
             if ($existingCasualLeaveApply) {
@@ -616,8 +650,7 @@ class HrmsController extends Controller
                 $general_data = new general_dataModel();
                 $general_data->fieldname = 'casual_leave_apply';
                 $general_data->fieldvalue = $casual_leave_at_one_time ?? 0;
-                $general_data->sub_institute_id = $subInstituteId;
-                $general_data->client_id = $clientId;
+                $general_data->sub_institute_id = $sub_institute_id;
                 $general_data->type = 'hrms';
                 $general_data->save();
             }
@@ -626,7 +659,7 @@ class HrmsController extends Controller
         if ($half_days_allowed !== null) {
             // Check if a record with fieldname 'casual_leave_apply' and sub_institute_id exists
             $updateAllowedLeaveDay = general_dataModel::where('fieldname', 'half_days_allowed')
-                ->where('sub_institute_id', $subInstituteId)
+                ->where('sub_institute_id', $sub_institute_id)
                 ->first();
             $leaveIds = '';
             if(isset($request->leave_types) && !empty($request->leave_types)){
@@ -645,8 +678,7 @@ class HrmsController extends Controller
                 $general_data->fieldname = 'half_days_allowed';
                 $general_data->fieldvalue = $half_days_allowed ?? 0;
                 $general_data->extra_field1 = $leaveIds;
-                $general_data->sub_institute_id = $subInstituteId;
-                $general_data->client_id = $clientId;
+                $general_data->sub_institute_id = $sub_institute_id;
                 $general_data->type = 'hrms';
                 $general_data->save();
             }
@@ -656,7 +688,7 @@ class HrmsController extends Controller
         if ($earned_leave_days !== null) {
             // Check if a record with fieldname 'earned_leave_apply' and sub_institute_id exists
             $existingearnedLeaveApply = general_dataModel::where('fieldname', 'earned_leave_apply')
-                ->where('sub_institute_id', $subInstituteId)
+                ->where('sub_institute_id', $sub_institute_id)
                 ->first();
         
             if ($existingearnedLeaveApply) {
@@ -668,8 +700,7 @@ class HrmsController extends Controller
                 $general_data = new general_dataModel();
                 $general_data->fieldname = 'earned_leave_apply';
                 $general_data->fieldvalue = $earned_leave_days ?? 0;
-                $general_data->sub_institute_id = $subInstituteId;
-                $general_data->client_id = $clientId;
+                $general_data->sub_institute_id = $sub_institute_id;
                 $general_data->type = 'hrms';
                 $general_data->save();
             }
@@ -679,7 +710,7 @@ class HrmsController extends Controller
             $parent_communication = 'N';
         }
         $existingParentCommunication = general_dataModel::where('fieldname', 'parent_communication')
-        ->where('sub_institute_id', $subInstituteId)
+        ->where('sub_institute_id', $sub_institute_id)
         ->first();
         $general_data = new general_dataModel();
         
@@ -689,8 +720,7 @@ class HrmsController extends Controller
         }else{
             $general_data->fieldname = 'parent_communication';
             $general_data->fieldvalue = $parent_communication;
-            $general_data->sub_institute_id = $subInstituteId;
-            $general_data->client_id = $clientId;
+            $general_data->sub_institute_id = $sub_institute_id;
             $general_data->type = 'hrms';
             $general_data->save();        
         }
@@ -699,7 +729,7 @@ class HrmsController extends Controller
             $multi_login = 'Yes';
         }
         $existingmulti_login = general_dataModel::where('fieldname', 'multi_login')
-        ->where('sub_institute_id', $subInstituteId)
+        ->where('sub_institute_id', $sub_institute_id)
         ->first();
         $general_data = new general_dataModel();
         
@@ -709,14 +739,13 @@ class HrmsController extends Controller
         }else{
             $general_data->fieldname = 'multi_login';
             $general_data->fieldvalue = $multi_login;
-            $general_data->sub_institute_id = $subInstituteId;
-            $general_data->client_id = $clientId;
+            $general_data->sub_institute_id = $sub_institute_id;
             $general_data->type = 'hrms';
             $general_data->save();        
         }
         // get_timetable_teacher
         $existingTimetableTeacher = general_dataModel::where('fieldname', 'timetable_teacher')
-        ->where('sub_institute_id', $subInstituteId)
+        ->where('sub_institute_id', $sub_institute_id)
         ->first();
         $general_data = new general_dataModel();
         
@@ -726,8 +755,7 @@ class HrmsController extends Controller
         }else{
             $general_data->fieldname = 'timetable_teacher';
             $general_data->fieldvalue = ($timetable_teacher=='Yes') ? $timetable_teacher : 'No';
-            $general_data->sub_institute_id = $subInstituteId;
-            $general_data->client_id = $clientId;
+            $general_data->sub_institute_id = $sub_institute_id;
             $general_data->type = 'hrms';
             $general_data->save();        
         }
@@ -735,7 +763,7 @@ class HrmsController extends Controller
         // timetable AI
          // get_timetable_teacher
          $existingTimetableTeacher = general_dataModel::where('fieldname', 'timetable_ai')
-         ->where('sub_institute_id', $subInstituteId)
+         ->where('sub_institute_id', $sub_institute_id)
          ->first();
          $general_data = new general_dataModel();
          
@@ -745,15 +773,14 @@ class HrmsController extends Controller
          }else{
              $general_data->fieldname = 'timetable_ai';
              $general_data->fieldvalue = $request->timetable_ai;
-             $general_data->sub_institute_id = $subInstituteId;
-             $general_data->client_id = $clientId;
+             $general_data->sub_institute_id = $sub_institute_id;
              $general_data->type = 'hrms';
              $general_data->save();        
          }
 
          // Fees Bulk Discount
          $existingTimetableTeacher = general_dataModel::where('fieldname', 'fees_bulk_discount')
-         ->where('sub_institute_id', $subInstituteId)
+         ->where('sub_institute_id', $sub_institute_id)
          ->first();
          $general_data = new general_dataModel();
          
@@ -765,15 +792,14 @@ class HrmsController extends Controller
              $general_data->fieldname = 'fees_bulk_discount';
              $general_data->fieldvalue = $bulkDiscount;
              $general_data->extra_field1 = $bulkDiscountAmt;
-             $general_data->sub_institute_id = $subInstituteId;
-             $general_data->client_id = $clientId;
+             $general_data->sub_institute_id = $sub_institute_id;
              $general_data->type = 'hrms';
              $general_data->save();        
          }
 
           // Student Name
           $existingTimetableTeacher = general_dataModel::where('fieldname', 'student_name')
-          ->where('sub_institute_id', $subInstituteId)
+          ->where('sub_institute_id', $sub_institute_id)
           ->first();
           $general_data = new general_dataModel();
           
@@ -785,15 +811,14 @@ class HrmsController extends Controller
               $general_data->fieldname = 'student_name';
               $general_data->fieldvalue = $studentName;
               $general_data->extra_field1 = null;
-              $general_data->sub_institute_id = $subInstituteId;
-              $general_data->client_id = $clientId;
+              $general_data->sub_institute_id = $sub_institute_id;
               $general_data->type = 'hrms';
               $general_data->save();        
           }
 
            // Allow previous year admission
            $existingTimetableTeacher = general_dataModel::where('fieldname', 'previous_year_admission')
-           ->where('sub_institute_id', $subInstituteId)
+           ->where('sub_institute_id', $sub_institute_id)
            ->first();
            $general_data = new general_dataModel();
            
@@ -805,8 +830,7 @@ class HrmsController extends Controller
                $general_data->fieldname = 'previous_year_admission';
                $general_data->fieldvalue = $previousAdmission;
                $general_data->extra_field1 = null;
-               $general_data->sub_institute_id = $subInstituteId;
-               $general_data->client_id = $clientId;
+               $general_data->sub_institute_id = $sub_institute_id;
                $general_data->type = 'hrms';
                $general_data->save();        
            }

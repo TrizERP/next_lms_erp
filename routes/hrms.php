@@ -105,9 +105,9 @@ Route::group([ 'middleware' => ['session', 'menu', 'logRoute','check_permissions
     Route::post('/monthly-payroll-store', [PayrollController::class, 'monthlyPayrollStore'])->name('monthly_payroll.store');
 
     Route::post('/monthly-payroll-delete', [PayrollController::class, 'deleteMonthlyPayrolls'])->name('monthly_payroll.delete');
+    Route::get('/getMonthlyData', [PayrollController::class, 'getEmpMonthlyData'])->name('getMonthlyData');
 
-   // web.php
-   Route::get('/getMonthlyData', [PayrollController::class, 'getEmpMonthlyData'])->name('getMonthlyData');
+    Route::get('getTotalDays',[PayrollController::class, 'getTotalDays'])->name('getTotalDays');
 });
 
 Route::group(['prefix' => 'hrms', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
@@ -128,4 +128,5 @@ Route::group(['prefix' => 'hrms', 'middleware' => ['session', 'menu', 'logRoute'
     Route::get('daywise_attendance_report/create',[HrmsController::Class,'DaywiseAttendanceportCreate'])->name('daywise_attendance_report.create');
 });
 
-Route::get('getTotalDays',[PayrollController::class, 'getTotalDays'])->name('getTotalDays');
+    Route::get('hrms/myleave/{employeeId}', [HrmsLeaveController::class, 'getLeaveDashboard']);
+    Route::get('hrms/leavehistory/{employeeId}', [HrmsLeaveController::class, 'getLeaveHistory']);

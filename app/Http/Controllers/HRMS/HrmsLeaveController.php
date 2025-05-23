@@ -275,4 +275,100 @@ class HrmsLeaveController extends Controller
         
         return is_mobile($type, "designation_leave.index", $res);
     }
+
+    // 1. MY LEAVE SUMMARY API
+    public function getLeaveDashboard($employeeId)
+    {
+        // Assume employee validation fails
+        if (!$employeeId) {
+            return response()->json([
+                'status' => "0",
+                'message' => "Invalid employee ID",
+                'data' => []
+            ]);
+        }
+
+        // Sample data
+        $leaveSummary = [
+            'total_leaves' => '20',
+            'used_leaves' => '5',
+            'remaining_leaves' => '15',
+        ];
+
+        $leaveTypes = [
+            ['leave_type' => 'Casual Leave', 'used' => '7', 'total' => '14'],
+            ['leave_type' => 'Medical Leave', 'used' => '10', 'total' => '14'],
+            ['leave_type' => 'Earn Leave', 'used' => '40', 'total' => '60'],
+            ['leave_type' => 'Compassionate', 'used' => '3', 'total' => '3'],
+            ['leave_type' => 'Maternity', 'used' => '60', 'total' => '60'],
+            ['leave_type' => 'Replacement', 'used' => '1', 'total' => '1'],
+        ];
+
+        return response()->json([
+            'status' => "1",
+            'message' => "Success",
+            'data' => [
+                'leave_summary' => $leaveSummary,
+                'leave_types' => $leaveTypes
+            ]
+        ]);
+    }
+
+    // 2. LEAVE HISTORY API
+    public function getLeaveHistory($employeeId)
+    {
+        if (!$employeeId) {
+            return response()->json([
+                'status' => "0",
+                'message' => "Invalid employee ID",
+                'data' => []
+            ]);
+        }
+
+        // Example response; replace with actual DB query
+        $history = [
+            [
+                'from_date' => '2025-01-15',
+                'to_date' => '2025-01-16',
+                'leave_type' => 'Medical Leave',
+                'status' => 'Approved',
+                'status_color' => '#009900',
+                'day_type' => '2',
+                'comment' => 'Fever and rest',
+            ],
+            [
+                'from_date' => '2025-03-02',
+                'to_date' => '2025-01-02',
+                'leave_type' => 'Casual Leave',
+                'status' => 'Rejected',
+                'status_color' => '#ffc14d',
+                'day_type' => '1',
+                'comment' => 'Personal work',
+            ],
+            [
+                'from_date' => '2025-04-10',
+                'to_date' => '2025-01-14',
+                'leave_type' => 'Earn Leave',
+                'status' => 'Pending',
+                'status_color' => '#009900',
+                'day_type' => '5',
+                'comment' => 'Own Marriage',
+            ],
+            [
+                'from_date' => '2025-04-10',
+                'to_date' => '2025-01-14',
+                'leave_type' => 'Casual Leave',
+                'status' => 'Cancelled',
+                'status_color' => '#ff3333',
+                'day_type' => '5',
+                'comment' => 'Own Marriage',
+            ],
+        ];
+
+        return response()->json([
+            'status' => "1",
+            'message' => "Success",
+            'data' => $history
+        ]);
+    }
 }
