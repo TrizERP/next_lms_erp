@@ -2492,6 +2492,13 @@ class AJAXController extends Controller
                 $query->orderBy($orderColumn, $orderDirection);
             }
         }
+        // added by uma 30-05-2025
+        if ($request->has('group_by') && $request->group_by) {
+            // echo $request->group_by;exit;
+            if ($request->group_by && Schema::hasColumn($table, $request->group_by)) {
+                $query->groupBy($request->group_by);
+            }
+        }
 
         // Fetch data
         $data = $query->get();

@@ -185,13 +185,16 @@ class ApplyLeaveController extends Controller
         //     ]);
 
             // 16-10-2024 start for cancelled leave updated for same date and same user
+        
+            $to_date = ($day_type == '0.5') ? $request->from_date : $request->to_date;
+
             $inData = [
                 'sub_institute_id' => $subInstituteId,
                 'department_id' => $request->department_id,
                 'leave_type_id' => $request->leave_type,
                 'day_type' => $day_type,
                 'from_date' => $request->from_date,
-                'to_date' => $request->to_date,
+                'to_date' => $to_date,
                 'slot' => $request->slot,
                 'comment' => $request->comment,
                 'user_id' => ($request->emp_id!=0) ? $request->emp_id : $user_id,

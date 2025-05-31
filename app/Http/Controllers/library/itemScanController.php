@@ -292,9 +292,12 @@ class itemScanController extends Controller
         ->when($request->item_code!='',function($q) use($request){
             $q->where('item_scan_details.item_code',$request->item_code);
         })
-        ->when($request->year!='',function($q) use($request){
-            $q->where('item_scan_details.syear',$request->year);
+        /*
+        ->when($request->year!='',function($q) use($syear){
+            $q->where('item_scan_details.syear',$syear);//$request->year
         })
+        */
+        ->where('item_scan_details.syear',$syear)
         ->whereNull('item_scan_details.deleted_at')
         ->get()
         ->toArray(); 
@@ -339,22 +342,21 @@ class itemScanController extends Controller
         $res['all_year'] = session()->get('academicYears');
 
         $res['bookData'] = DB::table('library_items as li')
-        ->join('library_books as lb', function ($join) {
-            $join->on('li.book_id', '=', 'lb.id')
-                 ->on('li.sub_institute_id', '=', 'lb.sub_institute_id');
-        })
-        ->leftJoin('item_scan_details as isd', 'li.item_code', '=', 'isd.item_code')
-        ->selectRaw('isd.item_code as not_found,isd.syear,li.item_code,lb.title as book_title,lb.material_resource_type as collection_type')
-        ->where('li.sub_institute_id', $sub_institute_id)
-        ->when($request->item_code != '', function ($q) use ($request) {
-            $q->where('li.item_code', $request->item_code);
-        })
-        ->when($request->year!='',function($q) use($request){
-            $q->where('isd.syear',$request->year);
-        })
-        ->whereNull('isd.item_code')
-        ->get();
-    
+            ->join('library_books as lb', function ($join) {
+                $join->on('li.book_id', '=', 'lb.id')
+                     ->on('li.sub_institute_id', '=', 'lb.sub_institute_id');
+            })
+            ->leftJoin('item_scan_details as isd', function ($join) use ($syear) {
+                $join->on('li.item_code', '=', 'isd.item_code')
+                     ->where('isd.syear', '=', $syear); // move syear filter here
+            })
+            ->selectRaw('isd.item_code as not_found, isd.syear, li.item_code, lb.title as book_title, lb.material_resource_type as collection_type')
+            ->where('li.sub_institute_id', $sub_institute_id)
+            ->when($request->item_code != '', function ($q) use ($request) {
+                $q->where('li.item_code', $request->item_code);
+            })
+            ->whereNull('isd.item_code') // this ensures it's "not scanned"
+            ->get();
 
         return is_mobile($type, "library/bookVarification/varifyPending", $res, "view");    
     }

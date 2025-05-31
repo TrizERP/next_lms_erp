@@ -80,9 +80,14 @@
                                     <th>Sr No.</th>
                                     <th>Emp.No</th>
                                     <th>Emp.Name</th>
+                                    <!--<th>PF</th>
+                                    <th>PT</th>-->
                                     <th>Department</th>
                                     <th>Gender</th>
                                     @foreach ($data['payrollTypes'] as $payrollType)
+                                        @if ($payrollType->payroll_name === 'PF')
+                                            <th class="text-left"><b>Gross Total</b></th>
+                                        @endif
                                         <th class="text-left">{{$payrollType->payroll_name}}</th>
                                     @endforeach
                                 </tr>
@@ -94,10 +99,19 @@
                                         <td>{{$key+1}}</td>
                                         <td>{{$value['employee_no']}}</td>
                                         <td>{{$value['first_name'] .' '. $value['middle_name'] .' '.$value['last_name']}}</td>
+                                        <!--<td>{{$value['pf_deduction']}}</td>
+                                        <td>{{$value['pt_deduction']}}</td>-->
                                         <td>{{$value['department']}}</td>
                                         <td>{{$value['gender']}}<input type="hidden" name="emp[{{$value['id']}}][]" value="{{$value['gender']}}"></td>
-                                         
+
+                                        @php $gross_total = 0; @endphp
+                                        
                                         @foreach ($data['payrollTypes'] as $payrollType)
+
+                                            @if($payrollType->payroll_name == 'PF')
+                                                <td><b>{{ $gross_total }}</b></td>
+                                            @endif
+
                                             @if(($payrollType->payroll_name == 'PF' || $payrollType->payroll_name == 'PT') && Session::get('sub_institute_id') != '195')
                                                 
                                                 <td>
@@ -126,6 +140,9 @@
 
                                                     <input type="hidden" name="emp[{{$value['id']}}][{{$payrollType->id}}][]" value="{{$payrollType->payroll_type}}">
                                                 </td>
+                                                @php
+                                                    $gross_total += $data['employeeSalaryStructures'][$value['id']][$payrollType->id] ?? 0;
+                                                @endphp
                                             @endif
 
                                         @endforeach

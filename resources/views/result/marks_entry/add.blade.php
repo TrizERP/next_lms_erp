@@ -266,8 +266,8 @@
         const marks = parseFloat(row.find('.att').val());
         const totalMarks = parseFloat(row.find('.total_days').val());
 
-        if (isNaN(marks) || marks > 500) {
-            alert("Marks should not exceed 500 or be invalid.");
+        if (!["AB", "N.A.", "EX"].includes(value) && (isNaN(marks) || marks > totalMarks)) {
+            alert("Marks should not exceed "+totalMarks+" or be invalid.");
             row.find('.att').val(0);
             row.find('.at_grd_val, .at_per_val').val("-");
             row.find(".at_grd, .at_per").text("-");

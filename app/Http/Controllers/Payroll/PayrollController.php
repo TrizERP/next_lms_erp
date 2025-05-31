@@ -118,7 +118,10 @@ class PayrollController extends Controller
 
         $employeeLists= employeeDetails($sub_institute_id,"",$status,$department_id);
     //    echo "<pre>";print_r($employeeLists);exit;
-        $payrollTypes = PayrollType::where('sub_institute_id',$sub_institute_id)->where('status', 1)->orderBy('sort_order')->get();
+        $payrollTypes = PayrollType::where('sub_institute_id',$sub_institute_id)
+                    ->where('status', 1)
+                    ->where('day_count', 0) //added by rajesh Hide Extra Type as per 29-05-2025 excel issue
+                    ->orderBy('sort_order')->get();
         
         $employeeSalaryStructures = EmployeeSalaryStructure::where('sub_institute_id',$sub_institute_id)->where('year',$syear)->get();
        
@@ -202,7 +205,7 @@ class PayrollController extends Controller
                         $amount = $value[1];
                        }
 
-                       $payroll_type_name = $value[2];
+                       $payroll_type_name = $value[2] ?? '-';
                        $payroll_type = $value[3] ?? 0;
                     //    if($payroll_type_name=="BASIC" || $payroll_type_name=="D.A" || $payroll_type_name=="GRADE PAY"){
                     //     $totalAllowance += $amount;
@@ -258,10 +261,16 @@ class PayrollController extends Controller
                     // $getPT = ($hasPT == 2) ? Helpers::getPT($totalGrossSalary,$gender) : $getPTFlat; 
                 // }           
                 // echo "<pre>";print_r($getPT);
+                $employee = tbluserModel::where('id',$emp_ids)->first();
+                $pf_deduction = $employee->pf_deduction;
+                $pt_deduction = $employee->pt_deduction;
 
                 // 13-08-2024 claculate PT as per eligilble emp_ids
-                $getPF = ($hasPF == 2) ? Helpers::getPF($totalAllowance) : $getPfFlat; // getPfFlat is for set flat amounts
-                $getPT = ($hasPT == 2) ? Helpers::getPT($totalGrossSalary,$gender) : $getPTFlat; // getPtFlat is for set flat amounts
+                if($pf_deduction == 'Y')
+                    $getPF = ($hasPF == 2) ? Helpers::getPF($totalAllowance) : $getPfFlat; // getPfFlat is for set flat amounts
+                
+                if($pt_deduction == 'Y')
+                    $getPT = ($hasPT == 2) ? Helpers::getPT($totalGrossSalary,$gender) : $getPTFlat; // getPtFlat is for set flat amounts
                 // 13-08-2024 end 
                 // echo "<pre>";print_r($getPF);
                 // echo "<pre>";print_r($getPT);
@@ -2127,27 +2136,21 @@ class PayrollController extends Controller
                 // $leaveMonth = $leaveTo->format('Y-m');
                     if($checkMonth == $leaveMonth && $searchMonth==$leaveMonth){
                         // Leaves that are not in attendance and not holidays
-                        if(!in_array($checkLeave,$attArr) && !in_array($checkLeave,$holidayDates) && in_array($value->status,$leaveStatus)){
-                        // if(!in_array($checkLeave,$attArr) && $value->status != "approved_lwp" ){
+                        if(!in_array($checkLeave,$attArr) && in_array($value->status,$leaveStatus)
+                            && !in_array($checkLeave,$holidayDates) && !in_array($checkLeave,$weekDays)){
                             $totLeaveDay += $value->day_type;
                         }
-
-                        // Decrease $totLeaveDay if $checkLeave matches a holiday date
-					    if (in_array($checkLeave, $holidayDates) && $totLeaveDay > 0) {
-					        // $totLeaveDay--;
-					    }
-
-                        // if date not found in attdance and leave is approved lwp then minus, count only full day leave because half day will be in attandance == If leave is approved LWP and half-day
-                        if($value->status == "approved_lwp" && $value->day_type=="0.5" && !in_array($checkLeave,$holidayDates)){
-                            $totalAtt = ($totalAtt - $value->day_type);
+                        
+                        if($value->status == "approved_lwp" && $value->day_type=="0.5" && !in_array($checkLeave,$holidayDates) && !in_array($checkLeave,$weekDays)){ 
+                            $totalAtt -= $value->day_type;
                         }
-                        // !in_array($checkLeave,$attArr) &&  removed on 07-10-2024 for jojo if have lwp then do not count att
-                        else if(!in_array($checkLeave,$holidayDates) && $value->status == "approved_lwp"){
-                            $tot_lwp_leave = ($tot_lwp_leave+$value->day_type);
+
+                        if($value->status == "approved_lwp" && $value->day_type=="1" && in_array($checkLeave,$attArr)){
+                            $tot_lwp_leave += $value->day_type;
                         }
                         
                         // Adjust holiday count
-                        if(in_array($checkLeave,$holidayDates) && $tot_lwp_leave!=0){
+                        if(in_array($checkLeave,$holidayDates)){// && $tot_lwp_leave!=0
                             $holiday--;
                         }
 
@@ -2192,7 +2195,7 @@ $sandwichLeaveCount = $this->calculateLeaveCounts($from_date,$to_date,$weekDays,
             "tot_leave_+"=>$totLeaveDay,
             "sandwich_-"=> $sandwichLeaveCount,
             // "noAtt_-"=>$noEnrty,
-            // "lwp_-"=> $tot_lwp_leave,
+            "lwp_-"=> $tot_lwp_leave,
         ];
         // echo "<pre>";print_r($weekDays);
         // echo "<pre>";print_r($holidayDates);
@@ -2201,8 +2204,9 @@ $sandwichLeaveCount = $this->calculateLeaveCounts($from_date,$to_date,$weekDays,
         //echo $json;exit();
         $daysCount = $from_date->diffInDays($to_date);
 
-       $totalDays = ($totalAtt + $holiday + $weekday_off + $totLeaveDay - $sandwichLeaveCount); // + $noEnrty // 31 //+ $tot_lwp_leave by Rajesh 20-02-2025
-        //$totalDays = ($totalDays - $tot_lwp_leave - $noEnrty); // 16
+       $totalDays = ($totalAtt + $holiday + $weekday_off + $totLeaveDay - $sandwichLeaveCount - $tot_lwp_leave);
+       // + $noEnrty // 31 //+ $tot_lwp_leave by Rajesh 20-02-2025
+       //$totalDays = ($totalDays - $tot_lwp_leave - $noEnrty); // 16
         
         $totalDays = ($totalDays>0) ? $totalDays : 0; // totDays should not be in minus
         // if no attendance,no leave applied and no lwp 2024-10-11
@@ -2222,36 +2226,11 @@ $sandwichLeaveCount = $this->calculateLeaveCounts($from_date,$to_date,$weekDays,
     {
         $allDates = [];
         $sandwichLeaveCount = 0;
-//echo "<pre>";
-//print_r($weekOffDates);
-//print_r($holidays);
-//print_r($leaveDates);
-//print_r($presentDates);
-//die();
+
         // Identify absent days
         $allDates = array_unique(array_merge($weekOffDates, $holidays));
 
-        // Check for sandwich leave cases
-        // foreach ($allDates as $allDate) {
-        //     $prevDay = date('Y-m-d', strtotime('-1 day', strtotime($allDate)));
-        //     $nextDay = date('Y-m-d', strtotime('+1 day', strtotime($allDate)));
-
-        //     if (    
-        //         !in_array($prevDay, $allDates) && 
-        //         !in_array($nextDay, $allDates) &&
-
-        //             !in_array($prevDay, $presentDates) && 
-        //             !in_array($nextDay, $presentDates) && 
-        //             !in_array($allDate, $leaveDates)
-        //         ) 
-        //     {
-        //         $sandwichLeaveCount++;
-        //         //$holidayCount = max(0, $holidayCount - ($allDate == $holidays ? 1 : 0));
-        //         //$weekoffCount = max(0, $weekoffCount - (in_array($allDate, $weekOffDates) ? 1 : 0));
-        //     }
-        // }
-
-        // added by uma on 2025-05-20
+       // added by uma on 2025-05-20
        foreach ($allDates as $allDate) {
             $prevDay = date('Y-m-d', strtotime('-1 day', strtotime($allDate)));
             $nextDay = date('Y-m-d', strtotime('+1 day', strtotime($allDate)));
@@ -2259,27 +2238,17 @@ $sandwichLeaveCount = $this->calculateLeaveCounts($from_date,$to_date,$weekDays,
             if ( !in_array($prevDay, $allDates) && !in_array($nextDay, $allDates) && !in_array($prevDay, $presentDates) && !in_array($nextDay, $presentDates) && !in_array($allDate, $leaveDates)) 
             {
                 $sandwichLeaveCount++;
-                //$holidayCount = max(0, $holidayCount - ($allDate == $holidays ? 1 : 0));
-                //$weekoffCount = max(0, $weekoffCount - (in_array($allDate, $weekOffDates) ? 1 : 0));
             }
+            /* Add by Uma - ulta adapav Hide from rajesh
             if (in_array($allDate, $leaveDates) && in_array($allDate,$holidays)) 
             {
                 $sandwichLeaveCount++;
-                //$holidayCount = max(0, $holidayCount - ($allDate == $holidays ? 1 : 0));
-                //$weekoffCount = max(0, $weekoffCount - (in_array($allDate, $weekOffDates) ? 1 : 0));
             }
+            */
         }
 
         // Output results
         return $sandwichLeaveCount;
-        /*return [
-            'present' => $presentCount,
-            'holiday' => $holidayCount,
-            'weekoff' => $weekoffCount,
-            'tot_leave' => $totalLeaveCount,
-            'sandwich_leave' => $sandwichLeaveCount
-        ];
-        */
     }
     public function calculateLeaveCounts_01($startDate, $endDate, $weekOffDates, $holidays, $leaveDates, $presentDates)
     {

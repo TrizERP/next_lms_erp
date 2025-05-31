@@ -24,10 +24,11 @@
             <div>
                 <form action="{{route('verifiyPending_report.index')}}" class="row">
                     @csrf
-                    <div class="col-md-6 form-group">
+                    <div class="col-md-4 form-group">
                         <label for="item_code"><b>Item Code</b></label>
-                        <input type="text" class="form-control" name="item_code" id="item_code" @if(isset($data['searchedItem'])) value="{{$data['searchedItem']}}" @else placeholder="Search Item Status Name" @endif style="width:500px;">
+                        <input type="text" class="form-control" name="item_code" id="item_code" @if(isset($data['searchedItem'])) value="{{$data['searchedItem']}}" @else placeholder="Search Item Status Name" @endif ">
                     </div>
+                    <!--
                     <div class="col-md-4 form-group">
                         <label for="Academic Year"><b>Academic Year</b></label>
                         <select name="year" id="year" class="form-control">
@@ -37,9 +38,11 @@
                             @endforeach
                         </select>
                     </div>
+                -->
                     <div class="col-md-2">
                         <input type="submit" value="Search" name="submit" class="btn btn-primary" style="margin-top:22px">
                     </div>
+                    <div class="col-md-6 form-group"></div>
                 </form>
             </div>
 

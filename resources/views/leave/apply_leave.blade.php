@@ -56,7 +56,7 @@
                                     $year = session()->get('syear');
                                 @endphp
                                 <label for="">Type Leave</label>
-                                <select name="type_leave" id="type_leave" class="form-control">
+                                <select name="type_leave" id="type_leave" class="form-control" required>
                                     <option value="">Select Type Leave</option>
                                     @if($user_profile_name->user_profile_name != "Teacher")
                                         <option value="employee">Employee</option>
@@ -70,7 +70,7 @@
                             </div>
                             <div class="form-group">
                                 <label for="">Leave Type</label>
-                                <select name="leave_type" id="leave_type" class="form-control">
+                                <select name="leave_type" id="leave_type" class="form-control" required>
                                     <option value="">Select Leave Type</option>
                                     @foreach ($data['leave_types'] as $key => $row)
                                         <option value="{{ $row->id }}" data-leaveTypeId="{{ $row->leave_type_id }}">{{ $row->leave_type }}</option>
@@ -79,7 +79,7 @@
                             </div>
                             <div class="form-group">
                                 <label for="">Day Type</label>
-                                <select name="day_type" id="day_type" class="form-control">
+                                <select name="day_type" id="day_type" class="form-control" required>
                                     <option value="">Select Day Type</option>
                                     <option value="full">Full</option>
                                     <option value="half">Half</option>
@@ -88,7 +88,7 @@
                             <div class="form-group">
                                 <label>From Date</label>
                                 <div class="input-daterange input-group" id="date-range">
-                                    <input type="text" required class="form-control mydatepicker" placeholder="YYYY/MM/DD" name="from_date" id="from_date" autocomplete="off">
+                                    <input type="text" required class="form-control mydatepicker" name="from_date" id="from_date" autocomplete="off">
                                     <span class="input-group-addon"><i class="icon-calender"></i></span>
                                 </div>
                             </div>
@@ -97,10 +97,10 @@
                                 $casualLeaves = $data['causualLeave'];
                                 $earnedLeaves = $data['earnedLeave'];
                             @endphp
-                            <div class="form-group">
+                            <div class="form-group to_date ">
                                 <label>To Date</label>
                                 <div class="input-daterange input-group" id="date-range">
-                                    <input type="text" required class="form-control mydatepicker" placeholder="YYYY/MM/DD" name="to_date" id="to_date" autocomplete="off">
+                                    <input type="text" required class="form-control mydatepicker" name="to_date" id="to_date" autocomplete="off">
                                     <span class="input-group-addon"><i class="icon-calender"></i></span>
                                 </div>
                                     <span id="total_appear_days"></span>
@@ -122,7 +122,7 @@
                             </div>
                             <div class="form-group">
                                 <label for="">Comment</label>
-                                <textarea name="comment" id="comment" cols="30" rows="10" class="form-control"></textarea>
+                                <textarea name="comment" id="comment" cols="30" rows="10" class="form-control" required></textarea>
                             </div>
                             <div class="modal-footer">
                                 <button type="submit" class="btn btn-primary">Save</button>
@@ -288,10 +288,12 @@
 
         $(document).on("change", "#day_type", function(e) {
             if ($(this).val() == 'half') {
-                $('.to_date').addClass('d-none');
-                $('.slot').removeClass('d-none');
+                $('.to_date').addClass('d-none');// Hide to_date
+                $('#to_date').prop('readonly', true);// Make readonly
+                $('.slot').removeClass('d-none');// Show slot
             } else {
                 $('.to_date').removeClass('d-none');
+                $('#to_date').prop('readonly', false);// Remove readonly
                 $('.slot').addClass('d-none');
             }
         });
@@ -395,6 +397,12 @@
         $('#without_sandwich_criteria_validation').empty();
         $('#criteria_validation').empty();
         $('.btn-primary').hide();
+     })
+    
+    $(document).on('change', '#slot', function() 
+     {
+        //$('#to_date').val('');
+        $('.btn-primary').show(); 
      })
 
     $(document).on('change', '#to_date', function() 
