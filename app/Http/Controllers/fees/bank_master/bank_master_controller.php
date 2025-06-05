@@ -29,7 +29,7 @@ class bank_master_controller extends Controller
 
     public function getData($request)
     {
-        $data['bank_data'] = bankmasterModel::get()->toArray();
+        $data['bank_data'] = bankmasterModel::orderBy('bank_name', 'asc')->get()->toArray();
 
         return $data;
     }

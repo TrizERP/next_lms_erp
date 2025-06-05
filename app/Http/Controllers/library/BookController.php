@@ -227,7 +227,7 @@ class BookController extends Controller
                     if($request->no_of_items!=0){
                         for ($i = 1; $i <= $request->no_of_items; $i++) {
                             $lastItem = LibraryItem::orderBy('id', 'desc')->where('sub_institute_id',$sub_institute_id)->where('item_code','like','%L%')->first();
-                                if($sub_institute_id!=47){
+                            if(!in_array($sub_institute_id,[47,254])){
                                 if ($lastItem) {
                                     // Extract the numeric part of the item_code and increment it
                                     $lastItemCode = substr($lastItem->item_code, 1); // Remove the 'L' prefix
@@ -238,6 +238,15 @@ class BookController extends Controller
                                     // If no previous items exist, start with L00001
                                     $nextItemCode = 'L00001';
                                 }
+                            }elseif($sub_institute_id==254){
+                                $hillsItemCode = LibraryItem::where('sub_institute_id',$sub_institute_id)->orderBy('id', 'desc')->first();
+
+                                if ($hillsItemCode) {
+                                $nextItemCode = ($hillsItemCode->item_code + 1);
+                                }else{
+                                    $nextItemCode = "0";
+                                }
+        
                             }else{
                                 if($i==1){
                                     $nextItemCode = $request->item_code_value;

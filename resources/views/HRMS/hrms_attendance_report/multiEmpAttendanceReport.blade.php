@@ -204,16 +204,38 @@
                                         $att_status = 'background-color:#99D699;';
                                     }
                                 @endphp
-                                <tr style="{{ $att_status }}">
-                                    <td>{{$i++}}</td>
-                                    <td>{{\Carbon\Carbon::parse($date)->format('d-m-Y')}}</td>
-                                    <td>{{$value['employee_no'] ?? '-'}}</td>
-                                    <td>{{$value['depName'] ?? '-'}}</td>
-                                    <td>{{$value['full_name']  ?? '-'}}</td>
-                                    <td>{{$get_format_punchin_time  ?? '-'}}</td>
-                                    <td>{{$get_format_punchout_time  ?? '-'}}</td>
-                                    <td class="text-left">{{ isset($value['timestamp_diff']) ? \Carbon\Carbon::parse($value['timestamp_diff'])->format('H:i') : '-' }}</td>
-                                </tr>
+<tr style="{{ $att_status }}">
+    <td>{{ $i++ }}</td>
+    <td>{{ \Carbon\Carbon::parse($date)->format('d-m-Y') }}</td>
+    <td>{{ $value['employee_no'] ?? '-' }}</td>
+    <td>{{ $value['depName'] ?? '-' }}</td>
+    <td>{{ $value['full_name'] ?? '-' }}</td>
+    <td>
+        {{-- Check if ipaddress_in exists, is not empty, and its length is greater than 15 --}}
+        @if(isset($value['ipaddress_in']) && !empty($value['ipaddress_in']) && strlen($value['ipaddress_in']) > 15)
+            <a href="javascript:void(0);" onclick="openMapPopup('{{ $value['ipaddress_in'] }}')">
+                {{-- Display punchin_time, formatted, or '-' if not set --}}
+                {{$get_format_punchin_time}}
+            </a>
+        @else
+            {{-- If conditions are not met, just display punchin_time --}}
+            {{$get_format_punchin_time}}
+        @endif
+    </td>
+    <td>
+        {{-- Check if ipaddress_out exists, is not empty, and its length is greater than 15 --}}
+        @if(isset($value['ipaddress_out']) && !empty($value['ipaddress_out']) && strlen($value['ipaddress_out']) > 15)
+            <a href="javascript:void(0);" onclick="openMapPopup('{{ $value['ipaddress_out'] }}')">
+                {{-- Display punchout_time, formatted, or '-' if not set --}}
+                {{$get_format_punchout_time}}
+            </a>
+        @else
+            {{-- If conditions are not met, just display punchout_time --}}
+            {{$get_format_punchout_time}}
+        @endif
+    </td>
+    <td class="text-left">{{ $timediff }}</td>
+</tr>
                                 @endforeach
                             @endforeach
                         @endif
@@ -293,6 +315,18 @@
                 }
             });
         });
+function openMapPopup(coords, searchTerm = '') {
+    const baseUrl = 'https://www.google.com/maps/search/?api=1&query=';
+    
+    let url;
+    if (searchTerm) {
+        url = `${baseUrl}${encodeURIComponent(searchTerm)},${coords}`;
+    } else {
+        url = `https://www.google.com/maps/place/${coords}/@${coords},15z/data=!4m2!3m1!1s0x0:0x0`;
+    }
+
+    window.open(url, 'mapPopup', 'width=1024,height=600,resizable=yes,scrollbars=yes');
+}    
 </script>
 @include('includes.footer')
 @endsection

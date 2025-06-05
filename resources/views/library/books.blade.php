@@ -106,8 +106,10 @@
                                     <table id="tblBooks" class="table table-striped table-bordered" style="width:100%">
                                         <thead>
                                             <tr>
+                                                <!--
                                                 <th data-toggle="tooltip" title="Select All"><input type="checkbox"
                                                         name="" id="checkedAll"></th>
+                                                -->
                                                 <th data-toggle="tooltip" title="No">No</th>
                                                 <th data-toggle="tooltip" title="Image">Image</th>
                                                 <th data-toggle="tooltip" title="item_codes">Item Code</th>
@@ -417,18 +419,22 @@
             processing: true,
             serverSide: true,
             ajax: "{{ route('books.index') }}",
-            columns: [{
+            columns: [
+                /*{
                     data: 'checkbox',
                     name: 'checkbox',
                     orderable: false,
                     searchable: false
-                }, {
+                },*/
+                {
                     data: 'DT_RowIndex',
                     name: 'DT_RowIndex'
-                }, {
+                },
+                {
                     data: 'image',
                     name: 'image'
-                },{
+                },
+                {
                     data: 'item_codes',
                     name: 'item_codes'
                 },

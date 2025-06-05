@@ -206,25 +206,29 @@
                     <div class="form-group">
                         <label for="">Holiday Name</label>
                         <input type="hidden" name="holiday_id" id="holiday_id" value="">
-                        <input type="text" name="holiday_name" id="holiday_name">
+                        <input type="text" name="holiday_name" id="holiday_name" required>
                     </div>
                     <div class="form-group">
                         <label for="">From Date</label>
-                        <input class="form-control" type="date" name="from_date" id="from_date">
+                        <input class="form-control mydatepicker" type="text" name="from_date" id="from_date" required>
                     </div>
+                    <!--
                     <div class="form-group">
                         <label for="">To Date</label>
                         <input class="form-control" type="date" name="to_date" id="to_date">
                     </div>
+                	-->
+                	<!--
                     <div class="form-group">
                         <label for="">Day Type</label>
-                        <select name="day_Type" id="day_Type" class="form-control">
+                        <select name="day_Type" id="day_Type" class="form-control" required>
                             <option value="full">
                                 Full Day</option>
                             <option value="half">
                                 Half Day</option>
                         </select>
                     </div>
+                	-->
                     <div class="form-group">
                         <label for="">Department</label>
                         <select name="department[]" id="department" class="form-control" multiple>

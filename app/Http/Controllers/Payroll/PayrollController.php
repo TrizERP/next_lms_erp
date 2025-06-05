@@ -1661,7 +1661,7 @@ class PayrollController extends Controller
 
         $res['employee_id'] = $employee_id= ($request->emp_id!=0) ? implode(',',$request->emp_id) : '';
         $res['department_id'] = $department_id= ($request->department_id!=0) ? implode(',',$request->department_id) : '';
-        
+        //echo $request->year."-".$request->month;exit;
         $res['selYear'] = $year = $request->year;
         $res['selMonth'] = $month = $request->month;
 
@@ -1692,16 +1692,18 @@ class PayrollController extends Controller
             }else{
                 $year = $searchedYear ?? Carbon::now()->year;
                 $month = $month ?? Carbon::now()->format('M');
-
-                $monthNumber = date('n', strtotime($month));
+//echo $year."-".$month;exit;
+                $monthNumber = date('n', strtotime("1-".$month));
                 $currentMonth = date('n');
-
+//echo $currentMonth."-".$monthNumber;exit;
                 $from_date = Carbon::createFromDate($searchedYear, $monthNumber, 1);
                 if($currentMonth==$monthNumber && $searchedYear == date('Y')){
                     $to_date = now();
                 }else{
                     $to_date = $from_date->copy()->endOfMonth();
                 }
+
+                //echo $from_date."-".$to_date;exit;
                 // $emp_att = DB::table('hrms_attendances')->whereBetween('day',[$from_date,$to_date])->where('user_id',$value['id'])->count();
               
                 $request2 = new Request(['type'=>"API",'sub_institute_id'=>$sub_institute_id ,'syear'=>$syear,'from_date'=>$from_date,'to_date'=>$to_date,'department_id'=>$value['department_id'],'emp_id'=>$value['id']]);
@@ -2029,7 +2031,7 @@ class PayrollController extends Controller
 
         $from_date = $request->input('from_date') ? Carbon::parse($request->input('from_date')) : null;
         $to_date = $request->input('to_date') ? Carbon::parse($request->input('to_date')) : null;
-        
+        //echo $from_date."-".$to_date;exit;
         $user_id=$request->emp_id;
         $department_id=$request->department_id;
         // getUserData 
@@ -2230,6 +2232,7 @@ $sandwichLeaveCount = $this->calculateLeaveCounts($from_date,$to_date,$weekDays,
 //die();
         // Identify absent days
         $allDates = array_unique(array_merge($weekOffDates, $holidays));
+        sort($allDates); // Sorts in ascending order
 
         // Check for sandwich leave cases
         // foreach ($allDates as $allDate) {
@@ -2258,6 +2261,13 @@ $sandwichLeaveCount = $this->calculateLeaveCounts($from_date,$to_date,$weekDays,
 
             if ( !in_array($prevDay, $allDates) && !in_array($nextDay, $allDates) && !in_array($prevDay, $presentDates) && !in_array($nextDay, $presentDates) && !in_array($allDate, $leaveDates)) 
             {
+                /*echo "<pre>";
+                print_r($allDates);
+                print_r($presentDates);
+                print_r($leaveDates);
+
+                echo "prevDay:".$prevDay."-nextDay:".$nextDay;
+                */
                 $sandwichLeaveCount++;
                 //$holidayCount = max(0, $holidayCount - ($allDate == $holidays ? 1 : 0));
                 //$weekoffCount = max(0, $weekoffCount - (in_array($allDate, $weekOffDates) ? 1 : 0));
@@ -2281,26 +2291,4 @@ $sandwichLeaveCount = $this->calculateLeaveCounts($from_date,$to_date,$weekDays,
         ];
         */
     }
-    public function calculateLeaveCounts_01($startDate, $endDate, $weekOffDates, $holidays, $leaveDates, $presentDates)
-    {
-        $sandwichLeaveCount = 0;
-
-        foreach ($leaveDates as $leaveDate) {
-            $prevDay = date('Y-m-d', strtotime('-1 day', strtotime($leaveDate)));
-            $nextDay = date('Y-m-d', strtotime('+1 day', strtotime($leaveDate)));
-
-            // Check if leave is sandwiched between a holiday/weekoff on both sides
-            if (
-                (in_array($prevDay, $weekOffDates) || in_array($prevDay, $holidays)) &&
-                (in_array($nextDay, $weekOffDates) || in_array($nextDay, $holidays)) &&
-                !in_array($prevDay, $presentDates) && 
-                !in_array($nextDay, $presentDates)
-            ) {
-                $sandwichLeaveCount++;
-            }
-        }
-
-        return $sandwichLeaveCount;
-    }
-
 }

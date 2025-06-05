@@ -82,6 +82,18 @@
 
                         <table class="table table-striped" id="donationTable">
                             <tr>
+                                <td>Donation Head</td>
+                                <td>
+                                    <select name="donation_head" class="form-control" required>
+                                        <option value="">Select Donation Head</option>
+                                        @foreach($data['donation_head'] as $key => $value)
+                                            <option value="{{ $key }}">{{ $value }}</option>
+                                        @endforeach
+                                    </select>
+                                </td>
+                                <td></td>
+                                <td></td>
+                            <tr>
                                 <td>Date of Receipt</td>
                                 <td><input type="text" name="paid_date" class="form-control mydatepicker"  autocomplete="off" required></td>
                                 <td>Amount</td>
@@ -90,7 +102,8 @@
                             <tr>
                                 <td>Payment Mode</td>
                                 <td>
-                                    <select name="payment_mode" class="form-control">
+                                    <select name="payment_mode" class="form-control" onchange="sh_bankDetail(this.value);" required>
+                                        <option value="">Select Payment Mode</option>
                                         @foreach($data['paymentModes'] as $key => $value)
                                             <option value="{{ $key }}">{{ $value }}</option>
                                         @endforeach
@@ -99,7 +112,7 @@
                                 <td>Remarks</td>
                                 <td><textarea name="remarks" class="form-control" placeholder="Add Remarks"></textarea></td>
                             </tr>
-                            <tr>
+                            <tr class="bankDetail">
                                 <td>Bank Name</td>
                                 <td>
                                     <select name="bank_name" class="form-control">
@@ -112,7 +125,7 @@
                                 <td>Bank Branch</td>
                                 <td><input type="text" name="bank_branch" class="form-control" placeholder="Enter Bank Branch" value="N/A"></td>
                             </tr>
-                            <tr>
+                            <tr class="bankDetail">
                                 <td>Cheque/DD No.</td>
                                 <td><input type="text" name="cheque_no" class="form-control" placeholder="Enter Cheque/DD No."></td>
                                 <td>Cheque/DD Date</td>
@@ -269,6 +282,14 @@
             alert("Please select at least one checkbox");
             event.preventDefault();
             return false;
+        }
+    }
+
+    function sh_bankDetail(selectedVal) {
+        if (selectedVal == 'Cash') {
+            $('.bankDetail').hide();
+        } else {
+            $('.bankDetail').show();
         }
     }
 </script>
