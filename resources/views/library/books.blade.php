@@ -329,7 +329,60 @@
                                             <input type="file" name="file_att" id="file_att" class="form-control" placeholder="Enter File Attachment">
                                         </div>
                                     </div>
+                            @if(isset($customFields))
+                                @foreach($customFields as $key => $value)
+                                <div class="col-md-4 form-group">
+                                    <label>{{ $value['field_label'] }}</label>
+                                    @if($value['field_type'] == 'file')
+                                   
+                                    @elseif($value['field_type'] == 'date')
+                                    <div class="input-daterange input-group" >
+                                    <input type="text" class="form-control mydatepicker" placeholder="dd/mm/yyyy" autocomplete="off" id="{{ $value['field_name'] }}" @if($value['required'] == 1) required @endif name="{{ $value['field_name'] }}" class="form-control"><span class="input-group-addon"><i class="icon-calender"></i></span>
+                                    </div>
+                                    @elseif($value['field_type'] == 'checkbox')
+                                    <div class="checkbox-list">
+                                        @if(isset($data['data_fields'][$value['id']]))
+                                        @foreach($data['data_fields'][$value['id']] as $keyData => $valueData )
+                                            <label class="checkbox-inline">
+                                                <div class="checkbox checkbox-success">
+                                                    <input type="checkbox" name="{{ $value['field_name'] }}[]" value="{{ $valueData['display_value'] }}"  id="{{ $valueData['display_value'] }}" @if($value['required'] == 1) required @endif>
+                                                    <label for="{{ $valueData['display_value'] }}">{{ $valueData['display_text'] }}</label>
+                                                </div>
+                                            </label>
+                                            @endforeach
+                                        @endif
+                                    </div>
+                                    @elseif($value['field_type'] == 'dropdown')
+
+                                            <!-- <div class="custom-select"> -->
+                                            <select name="{{ $value['field_name'] }}" class="form-control" @if($value['required'] == 1) required @endif id="{{ $value['field_name'] }}">
+                                                <option value=""> SELECT {{ strtoupper($value['field_label']) }} </option>
+
+                                            @if(isset($data['data_fields'][$value['id']]))
+                                                @foreach($data['data_fields'][$value['id']] as $keyData => $valueData)
+                                                @php
+                                                    $selected = '';
+                                                @endphp
+                                               
+                                                <option value="{{ $valueData['display_value'] }}" {{$selected}} > {{ $valueData['display_text'] }} </option>
+                                                @endforeach
+                                            @endif
+                                            </select>
+                                            <!-- </div> -->
+                                            
+                                    @elseif($value['field_type'] == 'textarea')
+                                    <textarea id="{{ $value['field_name'] }}" class="form-control" @if($value['required'] == 1) required @endif name="{{ $value['field_name'] }}">
+                                    
+                                    </textarea>
+                                    @else
+                                    <input type="{{ $value['field_type'] }}" id="{{ $value['field_name'] }}" placeholder="{{ $value['field_message'] }}" @if($value['required'] == 1) required @endif name="{{ $value['field_name'] }}" class="form-control">
+                                    @endif
                                 </div>
+                                @endforeach
+                                @endif
+
+                                </div>
+                               
                                 <div class="modal-footer">
                                     <button type="submit" class="btn btn-primary">Save changes</button>
                                 </div>
@@ -650,6 +703,17 @@
                         $('#review').val(data.data[0].review);
                         $('#image').val(data.data[0].image);
                         $('#file_att').val(data.data[0].file_att);
+                            console.log('upp'+data.data[0].bill_no);
+
+                        @if(isset($customFields))
+                        @foreach($customFields as $key => $value)
+                            // Correctly get the field name into a JavaScript variable
+                            var fieldId = "{{ $value['field_name'] }}";
+                            
+                            // Set the value of the input field dynamically
+                            $('#' + fieldId).val(data.data[0][fieldId]);
+                        @endforeach
+                    @endif
                     } else{
                         alert('Something went wrong');
                     }  
