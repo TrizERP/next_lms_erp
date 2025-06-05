@@ -46,11 +46,11 @@
                             </div>
                             <div class="col-md-4 form-group">
                                 <label>Receipt Prefix </label>
-                                <input type="text" id='receipt_prefix' value="@if(isset($data['receipt_prefix'])){{ $data['receipt_prefix'] }}@endif"  name="receipt_prefix" class="form-control">
+                                <input type="text" id='receipt_prefix' value="@if(isset($data['receipt_prefix'])){{ $data['receipt_prefix'] }}@endif"  name="receipt_prefix" class="form-control" readonly="readonly">
                             </div>
                             <div class="col-md-4 form-group">
                                 <label>Receipt Postfix </label>
-                                <input type="text" id='receipt_postfix' value="@if(isset($data['receipt_postfix'])){{ $data['receipt_postfix'] }}@endif"  name="receipt_postfix" class="form-control">
+                                <input type="text" id='receipt_postfix' value="@if(isset($data['receipt_postfix'])){{ $data['receipt_postfix'] }}@endif"  name="receipt_postfix" class="form-control" readonly="readonly">
                             </div>
                             <div class="col-md-4 form-group">
                                 <label>Account Number </label>
@@ -58,11 +58,11 @@
                             </div>
                             <div class="col-md-4 form-group">
                                 <label>Sort Order </label>
-                                <input type="text" id='sort_order' value="@if(isset($data['sort_order'])){{ $data['sort_order'] }}@endif" required name="sort_order" class="form-control">
+                                <input type="text" id='sort_order' value="@if(isset($data['sort_order'])){{ $data['sort_order'] }}@endif" required name="sort_order" class="form-control" readonly="readonly">
                             </div>
                             <div class="col-md-4 form-group">
                                 <label>Last Receipt Number </label>
-                                <input type="number" id='last_receipt_number' value="@if(isset($data['last_receipt_number'])){{ $data['last_receipt_number'] }}@endif"  name="last_receipt_number" class="form-control">
+                                <input type="number" id='last_receipt_number' value="@if(isset($data['last_receipt_number'])){{ $data['last_receipt_number'] }}@endif"  name="last_receipt_number" class="form-control" readonly="readonly">
                             </div>
                             <div class="col-md-4 form-group">
                                 <label>Pan </label>

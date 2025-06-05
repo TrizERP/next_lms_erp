@@ -123,13 +123,15 @@ class donationController extends Controller
             $res['message'] = 'Failed to Find Details !';
         }
 
+        $res['donation_head'] = ['CORP./CONST.'=>'CORP./CONST.','EDUCATION'=>'EDUCATION','FOOD'=>'FOOD','OTHERS'=>'OTHERS'];
+
         if($sub_institute_id==76){
             $res['paymentModes'] = ['Cash'=>'CASH','Cheque'=>'CHEQUE','POS'=>'POS','Online'=>'ONLINE','UPI'=>'UPI','RTGS/NEFT'=>'RTGS/NEFT'];
         }
         else{
             $res['paymentModes'] = ['Cash'=>'Cash','Cheque'=>'Cheque','DD'=>'DD','Online'=>'Online','NACH'=>'NACH','UPI'=>'UPI','Swipe1'=>'Swipe1','Swipe2'=>'Swipe2','Swipe3'=>'Swipe3','POS'=>'POS'];
         }
-        $res['bank_data'] = bankmasterModel::get()->toArray();
+        $res['bank_data'] = bankmasterModel::orderBy('bank_name', 'asc')->get()->toArray();
 
         $res['fees_config'] = DB::table('fees_config_master as fc')
         ->join('fees_receipt_css as frc', function ($join) {
@@ -181,6 +183,7 @@ class donationController extends Controller
                 'amount' => 'required|numeric',
                 'paid_date' => 'required|date_format:d-m-Y',
                 'payment_mode' => 'required|string',
+                'donation_head' => 'required|string',
             ]);
             if ($validator->fails()) {
                 $response = ['status' => '2', 'message' => $validator->errors()->first(), 'data' => []];
@@ -279,7 +282,7 @@ class donationController extends Controller
                                     <td style="background-color:lightgray;white-space:nowrap;"><b>Amount (Rs.)</b></td>
                                  </tr>';
             $recHtml .= '           <tr>';
-            $recHtml .= '               <td align="left" colspan="3">AMOUNT</td>';
+            $recHtml .= '               <td align="left" colspan="3">' . $request->donation_head . '</td>';
             $recHtml .= '               <td align="right" >' . $request->amount . '</td>';
             $recHtml .= '           </tr>';
             $recHtml .= '           <tr>';
@@ -328,6 +331,7 @@ class donationController extends Controller
             $inertArr = array(
                 'donar_id'=>$request->donar_id,
                 'paid_date'=>Carbon::createFromFormat('d-m-Y', $request->paid_date)->format('Y-m-d'),
+                'donation_head'=>$request->donation_head,
                 'donation_amount'=>$request->amount,
                 'payment_mode'=>$request->payment_mode,
                 'cheque_number'=>$request->cheque_no ?? null,

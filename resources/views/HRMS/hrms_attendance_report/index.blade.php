@@ -205,16 +205,32 @@
                                             $att_status = 'background-color:#99D699;';
                                         }
                                     @endphp
+<tr>
+    <td>{{ $j++ }}</td>
+    <td>{{ date('d-m-Y', strtotime($date)) }}</td>
+    <td>{{ isset($hrmsAttendance->employee_no) ? $hrmsAttendance->employee_no : '' }}</td>
+    <td>{{ isset($hrmsAttendance->employee_name) ? $hrmsAttendance->employee_name : '' }}</td>
+    <td>
+        @if(isset($hrmsAttendance->ipaddress_in) && strlen($hrmsAttendance->ipaddress_in) > 15)
+            <a href="javascript:void(0);" onclick="openMapPopup('{{ $hrmsAttendance->ipaddress_in }}')">
+                {{ isset($hrmsAttendance->punchin_time) ? \Carbon\Carbon::parse($hrmsAttendance->punchin_time)->format('h:i A') : '-' }}
+            </a>
+        @else
+            {{ isset($hrmsAttendance->punchin_time) ? \Carbon\Carbon::parse($hrmsAttendance->punchin_time)->format('h:i A') : '-' }}
+        @endif
+    </td>
+    <td>
+        @if(isset($hrmsAttendance->ipaddress_out) && strlen($hrmsAttendance->ipaddress_out) > 15)
+            <a href="javascript:void(0);" onclick="openMapPopup('{{ $hrmsAttendance->ipaddress_out }}')">
+                {{ isset($hrmsAttendance->punchout_time) ? \Carbon\Carbon::parse($hrmsAttendance->punchout_time)->format('h:i A') : '-' }}
+            </a>
+        @else
+            {{ isset($hrmsAttendance->punchout_time) ? \Carbon\Carbon::parse($hrmsAttendance->punchout_time)->format('h:i A') : '-' }}
+        @endif
+    </td>
+    <td>{{ isset($hrmsAttendance->timestamp_diff) ? \Carbon\Carbon::parse($hrmsAttendance->timestamp_diff)->format('H:i') : '-' }}</td>
+</tr>
 
-                                    <tr style="{{ $att_status }}">
-                                        <td>{{ $j++ }}</td>
-                                        <td>{{date('d-m-Y',strtotime($date))}}</td>
-                                        <td>{{ isset($hrmsAttendance->employee_no) ? $hrmsAttendance->employee_no : '' }}</td>
-                                        <td>{{ isset($hrmsAttendance->employee_name) ? $hrmsAttendance->employee_name : '' }}</td>
-                                        <td>{{ isset($hrmsAttendance->punchin_time) ? \Carbon\Carbon::parse($hrmsAttendance->punchin_time)->format('h:i A') : '-' }}</td>
-                                        <td>{{ isset($hrmsAttendance->punchout_time) ? \Carbon\Carbon::parse($hrmsAttendance->punchout_time)->format('h:i A') : '-' }}</td>
-                                        <td>{{ isset($hrmsAttendance->timestamp_diff) ? \Carbon\Carbon::parse($hrmsAttendance->timestamp_diff)->format('H:i') : '-' }}</td>
-                                    </tr>
                                 @endforeach
                             </tbody>
                         </form>
@@ -246,7 +262,7 @@
             buttons: [
                 {
                     extend: 'pdfHtml5',
-                    title: 'Student Report',
+                    title: 'Hrms Attendance Reports',
                     orientation: 'landscape',
                     pageSize: 'LEGAL',
                     pageSize: 'A0',
@@ -254,9 +270,9 @@
                         columns: ':visible'
                     },
                 },
-                {extend: 'csv', text: ' CSV', title: 'Student Report'},
-                {extend: 'excel', text: ' EXCEL', title: 'Student Report'},
-                {extend: 'print', text: ' PRINT', title: 'Student Report'},
+                {extend: 'csv', text: ' CSV', title: 'Hrms Attendance Reports'},
+                {extend: 'excel', text: ' EXCEL', title: 'Hrms Attendance Reports'},
+                {extend: 'print', text: ' PRINT', title: 'Hrms Attendance Reports'},
                 'pageLength'
             ],
         });
@@ -314,5 +330,17 @@ $(document).ready(function () {
         });
     });
 });
+function openMapPopup(coords, searchTerm = '') {
+    const baseUrl = 'https://www.google.com/maps/search/?api=1&query=';
+    
+    let url;
+    if (searchTerm) {
+        url = `${baseUrl}${encodeURIComponent(searchTerm)},${coords}`;
+    } else {
+        url = `https://www.google.com/maps/place/${coords}/@${coords},15z/data=!4m2!3m1!1s0x0:0x0`;
+    }
+
+    window.open(url, 'mapPopup', 'width=1024,height=600,resizable=yes,scrollbars=yes');
+}
 </script>
 @include('includes.footer')

@@ -220,7 +220,7 @@ Route::get('payphi', function ($id = null) {
     // added new report for ssmission
     Route::get('fees_report_datewise', [feesReportController::class, 'datewiseReportIndex'])->name('fees_report_datewise.index');
     Route::get('getFeesTitle', [feesReportController::class, 'getFeesTitle'])->name('getFeesTitle');
-
+    Route::get('fees_donation_records', [feesReportController::class, 'fees_donation_records'])->name('fees_donation_records.index');
 });
 
 Route::post('api/', [AJAXController::class, 'getOnlineFees'])->name('get-online-fees-list');

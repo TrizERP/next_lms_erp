@@ -83,25 +83,40 @@ class HolidayController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
-            'holiday_name' => 'required',
-            'from_date' => 'required|date',
-            'to_date' => 'required|date|after_or_equal:' . $request->from_date,
-            'day_Type' => 'required|in:full,half',
-            'department' => 'required|array',
+            // Step 1: Validate input
+        $validated = $request->validate([
+            'holiday_name'  => 'required|string|max:255',
+            'from_date'     => 'required|date',
+            // 'to_date'    => 'required|date|after_or_equal:from_date',
+            // 'day_type'   => 'required|in:full,half',
+            'department'    => 'required|array',
         ]);
 
+        // Step 2: Prepare data
+        $holidayData = [
+            'holiday_name'    => $request->holiday_name,
+            'to_date'         => $request->from_date, // use to_date if dynamic later
+            // 'day_type'      => $request->day_type,
+            'department'      => implode(',', $request->department),
+        ];
+
+        $conditions = [
+            'from_date'       => $request->from_date,
+            'to_date'         => $request->from_date,
+            'sub_institute_id'=> session()->get('sub_institute_id'),
+            'department'      => implode(',', $request->department),
+        ];
+
+        // Step 3: Store or update record
         try {
-            HrmsHoliday::updateOrCreate(['from_date' => $request->from_date,'sub_institute_id'=>session()->get('sub_institute_id')],
-                [
-                    'holiday_name' => $request->holiday_name,
-                    'to_date' => $request->to_date,
-                    'day_type' => $request->day_Type,
-                    'department' => implode(',', $request->department),
-                ]);
-            return response()->json(['message' => 'Holiday saved successfully !!'], 200);
+            HrmsHoliday::updateOrCreate($conditions, $holidayData);
+
+            return response()->json(['message' => 'Holiday saved successfully!'], 200);
         } catch (Exception $e) {
-            return response()->json($e->getMessage(), 500);
+            return response()->json([
+                'error' => 'An error occurred while saving the holiday.',
+                'details' => $e->getMessage()
+            ], 500);
         }
     }
 

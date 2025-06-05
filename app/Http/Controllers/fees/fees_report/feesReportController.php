@@ -498,5 +498,41 @@ class feesReportController extends Controller
 
         return $data;
     }
-    
+
+    public function fees_donation_records(Request $request){
+        $type = $request->input("type");
+        $syear = $request->session()->get('syear');
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $bankName = 'MISSION';
+
+        $records = DB::table('fees_collect as fc')
+            ->select(
+                'fc.receipt_no',
+                't.pan_card',
+                DB::raw("DATE_FORMAT(fc.receiptdate, '%d-%b-%Y') as receiptdate"),
+                't.first_name',
+                't.middle_name',
+                't.last_name',
+                't.address',
+                'fc.payment_mode',
+                'fc.amount'
+            )
+            ->join('tblstudent as t', 't.id', '=', 'fc.student_id')
+            ->join('tblstudent_enrollment as te', function ($join) {
+                $join->on('te.student_id', '=', 't.id')
+                     ->on('te.syear', '=', 'fc.syear');
+            })
+            ->where([
+                ['fc.sub_institute_id', '=', $sub_institute_id],
+                ['fc.syear', '=', $syear],
+                ['fc.bank_name', '=', $bankName],
+                ['fc.amount', '>', 0],
+                ['fc.IS_DELETED', '=', 'N'],
+            ])
+            ->orderByRaw('CAST(fc.receipt_no AS UNSIGNED)')
+            ->get();
+
+        //return is_mobile($type, "fees/fees_report/fees_donation_records", $records, "view");
+        return view('fees/fees_report/fees_donation_records', ['records' => $records]);
+    }
 }
