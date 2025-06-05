@@ -200,7 +200,10 @@ class LibraryReportController extends Controller
         }
         else{
             $data = DB::table('library_items as li')
-            ->join('library_books as lb','lb.id','=','li.book_id')
+            // ->join('library_books as lb','lb.id','=','li.book_id')
+             ->join('library_books as lb',function($join) use($sub_institute_id){
+                $join->on('lb.id','=','li.book_id')->where('lb.sub_institute_id',$sub_institute_id);
+            })
             ->selectRaw('li.id,li.item_code,lb.title as book_title,lb.classification')
             ->when($search_by,function ($q) use($search_by) {
                 $q->where('li.item_code',$search_by);
@@ -364,12 +367,15 @@ class LibraryReportController extends Controller
             // return response($imageData)->header('Content-Type', 'image/png');exit;
             
             if ($request->print_type == "member") {
-                $barcodes[] = ['code' => $value, 'image' => $imageData, 'title' => $request->print_text[$key],'other'=>$request->print_type];
+                $barcodes[] = ['code' => $value, 'image' => $imageData, 'title' => $request->print_text[$value],'other'=>$request->print_type];
             } else {
-                $barcodes[] = ['code' => $value, 'image' => $imageData, 'title' => $request->print_text[$key], 'other' => $request->print_code[$key]];
+                $barcodes[] = ['code' => $value, 'image' => $imageData, 'title' => $request->print_text[$value], 'other' => $request->print_code[$value]];
             }
         }
         // exit;
+        // if($sub_institute_id==254){
+        //     echo "<pre>";print_r($barcodes);exit;
+        // }
         // Generate PDF
         $pdf = PDF::loadView('library.reports.barcodes', ['barcodes' => $barcodes,'print_type'=>$request->print_type]);
         return $pdf->stream('barcodes.pdf');

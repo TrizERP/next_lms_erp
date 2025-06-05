@@ -89,8 +89,8 @@
                         @endphp     
                         <tr>
                                 <td><input id="{{$itemCodeId}}" value="{{$itemCodeId}}" name="check_id[]" type="checkbox">
-                                <input type="hidden" name="print_text[]" value="{{$value->book_title}}">
-                                <input type="hidden" name="print_code[]" value="{{$value->classification}}">
+                                <input type="hidden" name="print_text[{{$itemCodeId}}]" value="{{$value->book_title}}">
+                                <input type="hidden" name="print_code[{{$itemCodeId}}]" value="{{$value->classification}}">
                                 </td>                            
                                 <td>{{$value->item_code}}</td>
                                 <td>{{$value->book_title}}</td>
