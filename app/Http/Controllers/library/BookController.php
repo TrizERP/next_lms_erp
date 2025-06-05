@@ -7,6 +7,7 @@ use App\Models\LibraryBook;
 use App\Models\LibraryBookCirculation;
 use App\Models\LibraryItem;
 use App\Models\student\tblstudentModel;
+use App\Models\settings\tblcustomfieldsModel;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -138,8 +139,10 @@ class BookController extends Controller
                 $nextItemCode = "0";
             }
         }
-
-        return view('library.books',compact('subjects','publisher_names','author_names','nextItemCode','DonateCode'));
+        $customFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "library_books"])
+        ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1) and user_type="" ')
+        ->get();
+        return view('library.books',compact('subjects','publisher_names','author_names','nextItemCode','DonateCode','customFields'));
     }
 
     public function generateBarcode(Request $request, $id)
@@ -205,6 +208,23 @@ class BookController extends Controller
             $createBook->notes = $request->notes;
             $createBook->review = $request->review;
             $createBook->sub_institute_id = $sub_institute_id;
+
+            // Fetch custom fields
+            $dataCustomFields = tblcustomfieldsModel::select('field_name')
+                ->where(['status' => "1", 'table_name' => "library_books"])
+                ->whereRaw('(sub_institute_id = ' . $sub_institute_id . ' OR common_to_all = 1) and user_type= "" ')
+                ->get()
+                ->toArray(); // This converts the collection of models to an array of arrays
+
+            // Iterate through the fetched custom fields
+            foreach ($dataCustomFields as $fieldData) { // Renamed $value to $fieldData for clarity
+                // Extract the actual field name string from the array
+                $fieldName = $fieldData['field_name'];
+                if (isset($request->$fieldName)) { // It's good practice to check if the request field exists
+                    $createBook->$fieldName = $request->$fieldName;
+                }
+            }
+            
             if ($request->image) {
                 $img = $request->image;
                 $filename = $img->getClientOriginalName();
