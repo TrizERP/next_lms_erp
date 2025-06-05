@@ -118,17 +118,21 @@
 @include('includes.footer') @include('includes.footerJs')
 <script>
 	 $(document).ready(function () {
+        var pageRow = 24;
+        @if(isset($data['print_type']) && $data['print_type']=="member")
+         pageRow = 65;
+        @endif
         var table = $('#example').DataTable({
             select: true,
             lengthMenu: [
-                [24,100, 500, 1000, -1],
-                ['24','100', '500', '1000', 'Show All']
+                [pageRow,100, 500, 1000, -1],
+                [pageRow,'100', '500', '1000', 'Show All']
             ],
             dom: 'Bfrtip',
             buttons: [
                 {
                     extend: 'pdfHtml5',
-                    title: 'Fees Monthly Report',
+                    title   : 'Fees Monthly Report',
                     orientation: 'landscape',
                     pageSize: 'LEGAL',
                     pageSize: 'A0',
