@@ -359,8 +359,93 @@
                                     <div class="modal-footer">
                                         <button type="submit" class="btn btn-primary">Save changes</button>
                                     </div>
+                            @if(isset($customFields))
+                                @foreach($customFields as $key => $value)
+                                <div class="col-md-4 form-group">
+                                    <label>{{ $value['field_label'] }}</label>
+                                    @if($value['field_type'] == 'file')
+                                   
+                                    @elseif($value['field_type'] == 'date')
+                                    <div class="input-daterange input-group" >
+                                    <input type="text" class="form-control mydatepicker" placeholder="dd/mm/yyyy" autocomplete="off" id="{{ $value['field_name'] }}" @if($value['required'] == 1) required @endif name="{{ $value['field_name'] }}" class="form-control"><span class="input-group-addon"><i class="icon-calender"></i></span>
+                                    </div>
+                                    @elseif($value['field_type'] == 'checkbox')
+                                    <div class="checkbox-list">
+                                        @if(isset($data['data_fields'][$value['id']]))
+                                        @foreach($data['data_fields'][$value['id']] as $keyData => $valueData )
+                                            <label class="checkbox-inline">
+                                                <div class="checkbox checkbox-success">
+                                                    <input type="checkbox" name="{{ $value['field_name'] }}[]" value="{{ $valueData['display_value'] }}"  id="{{ $valueData['display_value'] }}" @if($value['required'] == 1) required @endif>
+                                                    <label for="{{ $valueData['display_value'] }}">{{ $valueData['display_text'] }}</label>
+                                                </div>
+                                            </label>
+                                            @endforeach
+                                        @endif
+                                    </div>
+                                    @elseif($value['field_type'] == 'dropdown')
+
+                                            <!-- <div class="custom-select"> -->
+                                            <select name="{{ $value['field_name'] }}" class="form-control" @if($value['required'] == 1) required @endif id="{{ $value['field_name'] }}">
+                                                <option value=""> SELECT {{ strtoupper($value['field_label']) }} </option>
+
+                                            @if(isset($data['data_fields'][$value['id']]))
+                                                @foreach($data['data_fields'][$value['id']] as $keyData => $valueData)
+                                                @php
+                                                    $selected = '';
+                                                @endphp
+                                               
+                                                <option value="{{ $valueData['display_value'] }}" {{$selected}} > {{ $valueData['display_text'] }} </option>
+                                                @endforeach
+                                            @endif
+                                            </select>
+                                            <!-- </div> -->
+                                            
+                                    @elseif($value['field_type'] == 'textarea')
+                                    <textarea id="{{ $value['field_name'] }}" class="form-control" @if($value['required'] == 1) required @endif name="{{ $value['field_name'] }}">
+                                    
+                                    </textarea>
+                                    @else
+                                    <input type="{{ $value['field_type'] }}" id="{{ $value['field_name'] }}" placeholder="{{ $value['field_message'] }}" @if($value['required'] == 1) required @endif name="{{ $value['field_name'] }}" class="form-control">
+                                    @endif
                                 </div>
-                            </form>
+                                @endforeach
+                                @endif
+
+                                </div>
+                               
+                                <div class="modal-footer">
+                                    <button type="submit" class="btn btn-primary">Save changes</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <!-- Tabs content -->
+        </div>
+    </div>
+    <div class="modal fade" id="mdlCirculation" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalTitle"></h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <form class="form-group" id="frmCirculation" method="post">
+                    <div class="modal-body">
+                        @csrf
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label for="">Student Enroll No</label>
+                                <input type="hidden" name="bookId" id="bookId" value="">
+                                <input type="text" name="enroll_no" id="enroll_no" placeholder="Enter Enroll No." class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <button type="button" class="btn btn-primary mt-4 fetch-stud">Fetch Details</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -793,11 +878,87 @@
                 });
                 deleteBook(ids)
             });
+                     
+        })
+        $(document).on("click", ".btn-edit", function(e) {
+           
+            var id = $(this).data('id')
+            var url = "{{ route('books.edit', ':id') }}";
+            var url = url.replace(':id', id);
+                        
+            $.ajax({
+                type: "get",
+                url: url,
+                cache: false,
+                contentType: false,
+                processData: false,
+                success: function(data) {
+                    console.log(data);
+                    if(data.data.length > 0){
+                        var newInput = $('<input>').attr({
+                            type: 'hidden',
+                            name: 'id', // Set a unique name for the new input
+                            class: 'form-control',
+                            value: data.data[0].id
+                        });
 
-            $(document).on("click", ".delete-item", function(e) {
-                e.preventDefault();
-                var id = $(this).data('id');
-                deleteItem(id);
+                        // Add the new input element after the existing input with id 'title'
+                        $('#title').after(newInput);
+                        $('#no_span').remove();                                       
+                        $('#no_of_items').after(`<span id="no_span" style="color:red;font-size:12px">To Add new Item Code "No Of Items" must be greater then 0 <span>`);
+                        $('#navLinkList').removeClass('active')
+                        $('#navLinkCreate').addClass('active')
+                        $('#right-tab-2').removeClass('active')
+                        $('#right-tab-1').addClass('active')
+                        $('#title').val(data.data[0].title);
+                        $('#sub_title').val(data.data[0].sub_title);
+                        $('#material_resource_type').val(data.data[0].material_resource_type);
+                        $('#edition').val(data.data[0].edition);
+                        $('#tags').val(data.data[0].tags);
+                        $('#no_of_items').val(data.data[0].no_of_items);
+                        $('#no_of_items').prop('readonly',true);
+                        $('#item_code_value').val(data.data[0].item_codes);
+                        @if(session()->get('sub_institute_id')==47) 
+                        $('#mmisItemCOde').hide();
+                        $('#otherItemCOde').show();
+                        @endif
+                        $('#author_name').val(data.data[0].author_name);
+                        $('#isbn_issn').val(data.data[0].isbn_issn);
+                        $('#classification').val(data.data[0].classification);
+                        $('#publisher_name').val(data.data[0].publisher_name);
+                        $('#publish_year').val(data.data[0].publish_year);
+                        $('#publish_place').val(data.data[0].publish_place);
+                        $('#pages').val(data.data[0].pages);
+                        $('#series_title').val(data.data[0].series_title);
+                        $('#call_number').val(data.data[0].call_number);
+                        $('#language').val(data.data[0].language);
+                        $('#source').val(data.data[0].source);
+                        $('#subject').val(data.data[0].subject);
+                        $('#price').val(data.data[0].price);
+                        $('#price_currency').val(data.data[0].price_currency);
+                        $('#notes').val(data.data[0].notes);
+                        $('#review').val(data.data[0].review);
+                        $('#image').val(data.data[0].image);
+                        $('#file_att').val(data.data[0].file_att);
+                            console.log('upp'+data.data[0].bill_no);
+
+                        @if(isset($customFields))
+                        @foreach($customFields as $key => $value)
+                            // Correctly get the field name into a JavaScript variable
+                            var fieldId = "{{ $value['field_name'] }}";
+                            
+                            // Set the value of the input field dynamically
+                            $('#' + fieldId).val(data.data[0][fieldId]);
+                        @endforeach
+                    @endif
+                    } else{
+                        alert('Something went wrong');
+                    }  
+                },
+                error: function(xhr) {
+                    console.log(xhr);
+                }
+
             });
             $(document).on("click", ".printBarcode", function(e) {
                 var ids = []

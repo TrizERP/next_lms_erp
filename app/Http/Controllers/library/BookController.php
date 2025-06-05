@@ -7,6 +7,7 @@ use App\Models\LibraryBook;
 use App\Models\LibraryBookCirculation;
 use App\Models\LibraryItem;
 use App\Models\student\tblstudentModel;
+use App\Models\settings\tblcustomfieldsModel;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -148,7 +149,10 @@ class BookController extends Controller
             }
         }
 
-        return view('library.books',compact('subjects','publisher_names','author_names','nextItemCode','DonateCode', 'data'));
+        $customFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "library_books"])
+        ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1) and user_type="" ')
+        ->get();
+        return view('library.books',compact('subjects','publisher_names','author_names','nextItemCode','DonateCode','customFields'));
     }
 
     public function generateBarcode(Request $request, $id)
@@ -189,9 +193,81 @@ class BookController extends Controller
 {
     DB::beginTransaction();          // keep the whole operation atomic
 
-    try {
-        $sub_institute_id = session()->get('sub_institute_id');
-        $itemStatus       = $request->status;   // 1 = available / YES
+            $createBook = LibraryBook::find($request->id) ?? new LibraryBook();
+            $createBook->title = $request->title;
+            $createBook->sub_title = $request->sub_title;
+            $createBook->material_resource_type = $request->material_resource_type;
+            $createBook->edition = $request->edition;
+            $createBook->tags = $request->tags;
+            $createBook->author_name = $request->author_name;
+            $createBook->isbn_issn = $request->isbn_issn;
+            $createBook->classification = $request->classification;
+            $createBook->publisher_name = $request->publisher_name;
+            $createBook->publish_year = $request->publish_year;
+            $createBook->publish_place = $request->publish_place;
+            $createBook->pages = $request->pages;
+            $createBook->series_title = $request->series_title;
+            $createBook->call_number = $request->call_number;
+            $createBook->language = $request->language;
+            $createBook->source = $request->source;
+            $createBook->subject = $request->subject;
+            $createBook->price = $request->price;
+            $createBook->price_currency = $request->price_currency;
+            $createBook->notes = $request->notes;
+            $createBook->review = $request->review;
+            $createBook->sub_institute_id = $sub_institute_id;
+
+            // Fetch custom fields
+            $dataCustomFields = tblcustomfieldsModel::select('field_name')
+                ->where(['status' => "1", 'table_name' => "library_books"])
+                ->whereRaw('(sub_institute_id = ' . $sub_institute_id . ' OR common_to_all = 1) and user_type= "" ')
+                ->get()
+                ->toArray(); // This converts the collection of models to an array of arrays
+
+            // Iterate through the fetched custom fields
+            foreach ($dataCustomFields as $fieldData) { // Renamed $value to $fieldData for clarity
+                // Extract the actual field name string from the array
+                $fieldName = $fieldData['field_name'];
+                if (isset($request->$fieldName)) { // It's good practice to check if the request field exists
+                    $createBook->$fieldName = $request->$fieldName;
+                }
+            }
+            
+            if ($request->image) {
+                $img = $request->image;
+                $filename = $img->getClientOriginalName();
+                $filepath = Storage::disk('books')->put($filename, file_get_contents($img->getRealPath()));
+                $createBook->image = $filepath ? $filename : '';
+            }
+            if ($request->file_att) {
+                $file_att = $request->file_att;
+                $filename = $file_att->getClientOriginalName();
+                $filepath = Storage::disk('books')->put($filename, file_get_contents($img->getRealPath()));
+                $createBook->file_att = $filepath ? $filename : '';
+            }
+            if ($createBook->save()) {
+                // only for add
+                if(!isset($request->id)){
+                    $itemCount = LibraryItem::where(['book_id' => $createBook->id, 'sub_institute_id' => $sub_institute_id])->get()->count();
+                    if ($request->no_of_items < $itemCount) {
+                        LibraryItem::where(['book_id' => $createBook->id, 'sub_institute_id' => $sub_institute_id])->where('item_code', '<', $request->no_of_items)->delete();
+                    }
+                    if($request->no_of_items!=0){
+                        for ($i = 1; $i <= $request->no_of_items; $i++) {
+                            $lastItem = LibraryItem::orderBy('id', 'desc')->where('sub_institute_id',$sub_institute_id)->where('item_code','like','%L%')->first();
+                            if(!in_array($sub_institute_id,[47,254])){
+                                if ($lastItem) {
+                                    // Extract the numeric part of the item_code and increment it
+                                    $lastItemCode = substr($lastItem->item_code, 1); // Remove the 'L' prefix
+                                    $nextItemCode = (int)$lastItemCode + 1;
+                                    $nextItemCode = str_pad($nextItemCode, 5, '0', STR_PAD_LEFT); // Ensure it's 5 digits
+                                    $nextItemCode = 'L' . $nextItemCode;
+                                } else {
+                                    // If no previous items exist, start with L00001
+                                    $nextItemCode = 'L00001';
+                                }
+                            }elseif($sub_institute_id==254){
+                                $hillsItemCode = LibraryItem::where('sub_institute_id',$sub_institute_id)->orderBy('id', 'desc')->first();
 
         /* -------------------------------------------------
            1.  BOOK : insert or update
