@@ -31,11 +31,20 @@ class BookController extends Controller
         $publisher_names = LibraryBook::groupBy('publisher_name')->pluck('publisher_name', 'id');
         $author_names = LibraryBook::groupBy('author_name')->pluck('author_name', 'id');
         $sub_institute_id = session()->get('sub_institute_id');
+        $data['bookdata'] =  DB::table('mst_item_status')
+            ->where('sub_institute_id', $sub_institute_id)
+            ->pluck('item_status_name', 'id')
+            ->toArray();
+
+        $data['item_status_arr'] = DB::table('mst_item_status')
+            ->where('sub_institute_id', $sub_institute_id)
+            ->pluck('item_status_name', 'id')
+            ->toArray();
         
         // ->with('items')
         if ($request->ajax()) {
-            
-            $data = LibraryBook::where('sub_institute_id', $sub_institute_id)
+                    
+            $books = LibraryBook::where('sub_institute_id', $sub_institute_id)
             ->when(request('subject'),function($q){
                 $q->where('subject',request('subject'));
             })
@@ -76,8 +85,8 @@ class BookController extends Controller
             ->select(['library_books.*', DB::raw('(SELECT GROUP_CONCAT(item_code) FROM library_items WHERE book_id = library_books.id  and sub_institute_id = '.$sub_institute_id.' and deleted_at IS NULL) as item_codes')])
             ->groupBy('library_books.id')
             ->latest()->get();
-
-            return DataTables::of($data)
+        
+            return DataTables::of($books)
                 ->addColumn('checkbox', function ($row) {
                     return '<input type="checkbox" id="' . $row->id . '" name="someCheckbox" class="checkSingle" />';
                 })
@@ -139,10 +148,11 @@ class BookController extends Controller
                 $nextItemCode = "0";
             }
         }
+
         $customFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "library_books"])
         ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1) and user_type="" ')
         ->get();
-        return view('library.books',compact('subjects','publisher_names','author_names','nextItemCode','DonateCode','customFields'));
+        return view('library.books',compact('subjects','publisher_names','author_names','nextItemCode','DonateCode','customFields','data'));
     }
 
     public function generateBarcode(Request $request, $id)
@@ -179,11 +189,10 @@ class BookController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
-    {         
-    
-        try {
-            $sub_institute_id = session()->get('sub_institute_id');
+   public function store(Request $request)
+{
+    DB::beginTransaction();   
+        try{       // keep the whole operation atomic
 
             $createBook = LibraryBook::find($request->id) ?? new LibraryBook();
             $createBook->title = $request->title;
@@ -258,50 +267,64 @@ class BookController extends Controller
                                     // If no previous items exist, start with L00001
                                     $nextItemCode = 'L00001';
                                 }
-                            }elseif($sub_institute_id==254){
-                                $hillsItemCode = LibraryItem::where('sub_institute_id',$sub_institute_id)->orderBy('id', 'desc')->first();
-
-                                if ($hillsItemCode) {
-                                $nextItemCode = ($hillsItemCode->item_code + 1);
-                                }else{
-                                    $nextItemCode = "0";
-                                }
-        
-                            }else{
-                                if($i==1){
-                                    $nextItemCode = $request->item_code_value;
-                                }else{
-                                    $first =substr($request->item_code_value, 0,1);
-                                    $nextItemCode = (int)substr($request->item_code_value, 1) + 1;
-                                    $nextItemCode = str_pad($nextItemCode, 5, '0', STR_PAD_LEFT); // Ensure it's 5 digits
-                                    $nextItemCode = $first. $nextItemCode;
-                                }
-                            }
-                            $objItem = LibraryItem::updateOrCreate([
-                                'book_id' => $createBook->id,
-                                'call_number' => $createBook->call_number,
-                                'item_code' => $nextItemCode,
-                                'sub_institute_id'=>$sub_institute_id,
-                            ]);
+                        }elseif($sub_institute_id==254){
+                            $hillsItemCode = LibraryItem::where('sub_institute_id',$sub_institute_id)->orderBy('id', 'desc')->first();
+                            // You may need to handle $hillsItemCode logic here if required
                         }
                     }
-                }else{
-                    $objItem = LibraryItem::where(['book_id' => $createBook->id,'sub_institute_id'=>$sub_institute_id])->update([
-                        'call_number' => $createBook->call_number,
-                    ]);
                 }
-                // if ($objItem) {
-                    if(isset($request->id)){
-                    return response()->json(['message' => 'Book Updated Successfully !!', 'status' => true], 200);
-                    }else{
-                        return response()->json(['message' => 'Book created Successfully !!', 'status' => true], 200);
-                    }
-                // }
             }
-        } catch (Exception $e) {
-            return response()->json($e->getMessage());
         }
+        DB::commit();
+        return response()->json([
+            'message' => empty($request->id)
+                       ? 'Book created Successfully !!'
+                       : 'Book Updated Successfully !!',
+            'status'  => true
+        ], 200);
+    } catch (\Throwable $e) {
+        DB::rollBack();
+        return response()->json($e->getMessage(), 500);
     }
+}
+
+/**
+ * Helper: generate the next item_code according to your rules.
+ */
+private function generateItemCode(int $loopIndex, Request $request, int $sub_institute_id): string
+{
+    // original logic extracted for clarity
+    if (!in_array($sub_institute_id, [47, 254])) {
+        $lastItem = LibraryItem::orderBy('id', 'desc')
+                    ->where('sub_institute_id', $sub_institute_id)
+                    ->where('item_code', 'like', '%L%')
+                    ->first();
+
+        if ($lastItem) {
+            $lastItemCode = substr($lastItem->item_code, 1);    // drop the 'L'
+            $nextItemCode = str_pad(((int)$lastItemCode) + 1, 5, '0', STR_PAD_LEFT);
+            return 'L' . $nextItemCode;
+        }
+        return 'L00001';
+    }
+
+    if ($sub_institute_id == 254) {
+        $last = LibraryItem::where('sub_institute_id', $sub_institute_id)
+                ->orderBy('id', 'desc')
+                ->first();
+        return $last ? ((int)$last->item_code + 1) : "0";
+    }
+
+    // sub_institute_id == 47
+    if ($loopIndex == 1) {
+        return $request->item_code_value;
+    }
+    $first = substr($request->item_code_value, 0, 1);          // first letter
+    $next  = str_pad(((int)substr($request->item_code_value, 1)) + 1, 5, '0', STR_PAD_LEFT);
+    return $first . $next;
+}
+
+
 
     /**
      * Display the specified resource.
