@@ -77,7 +77,6 @@
                                                         <option value="petty_cash##pc">petty_cash</option> 
                                                         <option value="hostel_master##hm">hostel_master</option>
                                                         <option value="lms_teacher_resource##ltr">lms_teacher_resource</option>
-                                                        <option value="library_books##lb">Library books</option>
                                                         <!--  <option value="fees_collect">fees_collect</option>-->                  
                                                     </select>
                                                 </div>
