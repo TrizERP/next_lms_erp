@@ -73,7 +73,7 @@ use App\Http\Controllers\lms\chapterController as LmsChapterController;
 use App\Http\Controllers\library\itemVerificationController;
 use App\Http\Controllers\library\itemScanController;
 use App\Http\Controllers\DataMigrationController;
-
+use App\Http\Controllers\BlogController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -626,7 +626,7 @@ Route::get('/get-fields', function (Request $request) {
     ]);
 });
 
-
+Route::resource('blogs', BlogController::class);
 Route::get('/migrate-data', [DataMigrationController::class, 'migrateDataToNeo4j']);
 // added hills nursey hc
 Route::post('getHillsHPCPDF', [AJAXController::class, 'getHillsHPCPDF'])->name('getHillsHPCPDF');
