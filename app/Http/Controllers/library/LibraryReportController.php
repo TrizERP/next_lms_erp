@@ -25,7 +25,7 @@ class LibraryReportController extends Controller
         $data = $this->getSelects($sub_institute_id);
     
         $type = $request->input('type');
-
+         
         return is_mobile($type, "library/library_report", $data, "view");
     }
      public function getSelects($sub_institute_id){
@@ -216,8 +216,174 @@ class LibraryReportController extends Controller
         return is_mobile($type, "library/reports/print_barcode", $res, "view");        
     }
 
-    public function generateBarcodePdf(Request $request){
+    // public function generateBarcodePdf(Request $request){
        
+    //     $barcodes = [];
+    //     $sub_institute_id = session()->get('sub_institute_id');
+    //     foreach ($request->check_id as $key => $value) {
+    //         $barcodeGenerator = new BarcodeGeneratorPNG();
+    //         $value = trim($value);
+    //         if($sub_institute_id==47){
+    //             if($request->print_type=="member"){
+    //                 $widthScale =2.5;
+    //                 $height =54; 
+    //             }else{
+    //                 $widthScale = 2; // Adjusted to match approx. 242px width
+    //                 $height = 54; // Approx. 34mm in pixels
+    //             }
+    //             $barcodeImageData = $barcodeGenerator->getBarcode($value, $barcodeGenerator::TYPE_CODE_128, $widthScale, $height);
+    //             $fontSize = 10;
+
+    //         }else{
+    //             $fontSize = 14;
+    //             $barcodeImageData = $barcodeGenerator->getBarcode($value, $barcodeGenerator::TYPE_CODE_128, 2, 60);
+    //         }
+        
+    //         // Create an image resource from the barcode data
+    //         $barcodeImage = imagecreatefromstring($barcodeImageData);
+            
+    //         // Get barcode dimensions
+    //         $barcodeWidth = imagesx($barcodeImage);
+    //         $barcodeHeight = imagesy($barcodeImage);
+            
+    //         // Create a new image with a white background
+    //         $newImage = imagecreatetruecolor($barcodeWidth, $barcodeHeight);
+            
+    //         // Allocate colors
+    //         $white = imagecolorallocate($newImage, 255, 255, 255);
+    //         $black = imagecolorallocate($newImage, 0, 0, 0);
+            
+    //         // Fill the new image with a white background
+    //         imagefill($newImage, 0, 0, $white);
+            
+    //         // Copy the barcode onto the white background
+    //         imagecopy($newImage, $barcodeImage, 0, 0, 0, 0, $barcodeWidth, $barcodeHeight);
+            
+    //         // Load a TrueType font
+    //         $fontPath = public_path('fonts/saira-semi-condensed-v4-latin-regular.ttf'); 
+    //         $sidePadding = 30;
+    //         $topPadding = 0;
+            
+
+    //         if($sub_institute_id==47){
+    //             if($request->print_type=="member"){
+    //                 // Calculate text width and height
+    //                 $bbox = imagettfbbox($fontSize, 0, $fontPath, $value);
+    //                 $textWidth = $bbox[2] - $bbox[0];
+    //                 $textHeight = abs($bbox[5] - $bbox[1]);
+                    
+    //                 // Set text background and position
+    //                 $backgroundWidth = $textWidth + $sidePadding * 2;
+    //                 $backgroundX = ($barcodeWidth - $backgroundWidth) / 2;
+    //                 $backgroundY = (($barcodeHeight - $topPadding) / 2) + 17;
+                    
+    //                 // Text position
+    //                 $textX = $backgroundX + $sidePadding;
+    //                 $textY = $backgroundY + $textHeight;
+                    
+    //                 // Draw a white rectangle behind the text
+    //                 $textPadding = 4;
+    //                 imagefilledrectangle(
+    //                     $newImage, 
+    //                     $textX - $textPadding, 
+    //                     $textY - $textHeight - $textPadding, 
+    //                     $textX + $textWidth + $textPadding, 
+    //                     $textY + $textPadding, 
+    //                     $white
+    //                 );
+                    
+    //                 // Add text inside the barcode (centered)
+    //                 imagettftext($newImage, $fontSize, 0, $textX, $textY, $black, $fontPath, $value);
+    //             }else{
+    //                 // Calculate text width and height
+    //                 $bbox = imagettfbbox($fontSize, 0, $fontPath, $value);
+    //                 $textWidth = 64+($bbox[2] - $bbox[0]);
+    //                 $textHeight = abs($bbox[5] - $bbox[1]);
+                    
+    //                 // Set text background and position
+    //                 $backgroundWidth = $textWidth + $sidePadding * 2;
+    //                 $backgroundX = ($barcodeWidth - $backgroundWidth);
+    //                 $backgroundY = (($barcodeHeight - $topPadding) / 2) + 17;
+                    
+    //                 // Text position
+    //                 $textX = $backgroundX + $sidePadding;
+    //                 $textY = $backgroundY + $textHeight;
+                    
+    //                 // Draw a white rectangle behind the text
+    //                 $textPadding =4;
+    //                 imagefilledrectangle(
+    //                     $newImage, 
+    //                     $textX - $textPadding, 
+    //                     $textY - $textHeight - $textPadding, 
+    //                     $textX + $textWidth + $textPadding, 
+    //                     $textY + $textPadding, 
+    //                     $white
+    //                 );
+                    
+    //                 // Add text inside the barcode (centered)
+    //                 imagettftext($newImage, $fontSize, 0,60, $textY, $black, $fontPath, $value);
+    //             }
+
+    //         }else{
+    //             // Calculate text width and height
+    //             $bbox = imagettfbbox($fontSize, 0, $fontPath, $value);
+    //             $textWidth = $bbox[2] - $bbox[0];
+    //             $textHeight = abs($bbox[5] - $bbox[1]);
+                
+    //             // Set text background and position
+    //             $backgroundWidth = $textWidth + $sidePadding * 2;
+    //             $backgroundX = ($barcodeWidth - $backgroundWidth) / 2;
+    //             $backgroundY = (($barcodeHeight - $topPadding) / 2) + 17;
+                
+    //             // Text position
+    //             $textX = $backgroundX + $sidePadding;
+    //             $textY = $backgroundY + $textHeight;
+                
+    //             // Draw a white rectangle behind the text
+    //             $textPadding = 4;
+    //             imagefilledrectangle(
+    //                 $newImage, 
+    //                 $textX - $textPadding, 
+    //                 $textY - $textHeight - $textPadding, 
+    //                 $textX + $textWidth + $textPadding, 
+    //                 $textY + $textPadding, 
+    //                 $white
+    //             );
+                
+    //             // Add text inside the barcode (centered)
+    //             imagettftext($newImage, $fontSize, 0, $textX, $textY, $black, $fontPath, $value);
+    //         }
+    //         // Output the final image
+    //         ob_start();
+    //         imagepng($newImage);
+    //         $imageData = ob_get_contents();
+    //         ob_end_clean();
+            
+    //         // Free memory
+    //         imagedestroy($barcodeImage);
+    //         imagedestroy($newImage);
+            
+    //         // Return the image response
+    //         // return response($imageData)->header('Content-Type', 'image/png');exit;
+            
+    //         if ($request->print_type == "member") {
+    //             $barcodes[] = ['code' => $value, 'image' => $imageData, 'title' => $request->print_text[$value],'other'=>$request->print_type];
+    //         } else {
+    //             $barcodes[] = ['code' => $value, 'image' => $imageData, 'title' => $request->print_text[$value], 'other' => $request->print_code[$value]];
+    //         }
+    //     }
+    //     // exit;
+    //     // if($sub_institute_id==254){
+    //     //     echo "<pre>";print_r($barcodes);exit;
+    //     // }
+    //     // Generate PDF
+    //     $pdf = PDF::loadView('library.reports.barcodes', ['barcodes' => $barcodes,'print_type'=>$request->print_type]);
+    //     return $pdf->stream('barcodes.pdf');
+    //     // Download the PDF
+    //     // return $pdf->download('barcodes.pdf');
+    // }
+
+    public function generateBarcodePdf(Request $request){
         $barcodes = [];
         $sub_institute_id = session()->get('sub_institute_id');
         foreach ($request->check_id as $key => $value) {
@@ -367,9 +533,9 @@ class LibraryReportController extends Controller
             // return response($imageData)->header('Content-Type', 'image/png');exit;
             
             if ($request->print_type == "member") {
-                $barcodes[] = ['code' => $value, 'image' => $imageData, 'title' => $request->print_text[$value],'other'=>$request->print_type];
+                $barcodes[] = ['code' => $value, 'image' => $imageData, 'title' => $request->print_text[$value] ?? '-','other'=>$request->print_type];
             } else {
-                $barcodes[] = ['code' => $value, 'image' => $imageData, 'title' => $request->print_text[$value], 'other' => $request->print_code[$value]];
+                $barcodes[] = ['code' => $value, 'image' => $imageData, 'title' => $request->print_text[$value] ?? '-', 'other' => $request->print_code[$value]];
             }
         }
         // exit;
@@ -378,8 +544,7 @@ class LibraryReportController extends Controller
         // }
         // Generate PDF
         $pdf = PDF::loadView('library.reports.barcodes', ['barcodes' => $barcodes,'print_type'=>$request->print_type]);
+        //  echo "<pre>";print_r($pdf);exit;
         return $pdf->stream('barcodes.pdf');
-        // Download the PDF
-        // return $pdf->download('barcodes.pdf');
     }
 }
