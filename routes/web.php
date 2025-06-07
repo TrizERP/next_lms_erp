@@ -72,7 +72,7 @@ use App\Http\Controllers\ChatbotController;
 use App\Http\Controllers\lms\chapterController as LmsChapterController;
 use App\Http\Controllers\library\itemVerificationController;
 use App\Http\Controllers\library\itemScanController;
-
+use App\Http\Controllers\BlogController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -626,7 +626,7 @@ Route::get('/get-fields', function (Request $request) {
     ]);
 });
 
-
+Route::resource('blogs', BlogController::class);
 Route::get('/migrate-data', [DataMigrationController::class, 'migrateDataToNeo4j']);
 Route::get('dashboard_rights',[dashboardController::class,'dashboardRights'])->name('dashboard_rights'); // 13-03-2025 by uma
 // added hills nursey hc
