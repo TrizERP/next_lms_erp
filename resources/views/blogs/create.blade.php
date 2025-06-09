@@ -110,22 +110,22 @@
         <input type="file" name="image">
 
         <label>Title:</label>
-        <input type="text" name="title" placeholder="Title" value="{{ old('title') }}">
+        <input type="text" name="title" placeholder="Title" id="title" value="{{ old('title') }}">
 
         <label>Description:</label>
         <textarea name="description" id="editor">{{ old('description') }}</textarea>
 
         <label>Slug:</label>
-        <input type="text" name="slug" placeholder="Slug" value="{{ old('slug') }}">
+        <input type="text" name="slug" placeholder="Slug" id="slug" value="{{ old('slug') }}">
 
         <label>Meta Title:</label>
-        <input type="text" name="meta_title" placeholder="Meta_Title" value="{{ old('meta_title') }}">
+        <input type="text" name="meta_title" placeholder="Meta_Title" id="meta_title" value="{{ old('meta_title') }}">
 
         <label>Meta Description:</label>
-        <textarea name="meta_description" placeholder="Meta_Descripton">{{ old('meta_description') }}</textarea>
+        <textarea name="meta_description" placeholder="Meta_Descripton" id="meta_description">{{ old('meta_description') }}</textarea>
 
         <label>Meta Keywords:</label>
-        <input type="text" name="meta_keyword" placeholder="Meta_Keywords" value="{{ old('meta_keyword') }}">
+        <input type="text" name="meta_keyword" placeholder="Meta_Keywords" id="meta_keyword" value="{{ old('meta_keyword') }}">
 
         <label>Status:</label>
         <select name="status">
@@ -138,8 +138,60 @@
         <button type="submit">Save</button>
     </form>
 
-    <script>
-        CKEDITOR.replace('editor');
+   <script>
+            CKEDITOR.replace('editor');
+
+            // Auto-fill based on title
+            document.getElementById("title").addEventListener("input", function() {
+                const title = this.value.trim();
+
+                const slug = title
+                    .toLowerCase()
+                    .replace(/[^a-z0-9\s-]/g, "")
+                    .replace(/\s+/g, "-")
+                    .replace(/-+/g, "-");
+
+                document.getElementById("slug").value = slug;
+                document.getElementById("meta_title").value = title;
+                document.getElementById("meta_description").value = `Learn more about ${title.toLowerCase()} in this blog post.`;
+                document.getElementById("meta_keyword").value = title.toLowerCase().split(" ").join(", ");
+            });
+
+            // Validate before submitting
+            document.querySelector("form").addEventListener("submit", function(e) {
+                const requiredFields = [
+                    "type",
+                    "author",
+                    "title",
+                    "slug",
+                    "meta_title",
+                    "meta_description",
+                    "meta_keyword",
+                    "status"
+                ];
+
+                let isValid = true;
+                requiredFields.forEach(function(fieldId) {
+                    const field = document.getElementsByName(fieldId)[0];
+                    if (!field.value.trim()) {
+                        field.style.border = "2px solid red";
+                        isValid = false;
+                    } else {
+                        field.style.border = "none";
+                    }
+                });
+
+                const descriptionData = CKEDITOR.instances.editor.getData().trim();
+                if (!descriptionData) {
+                    alert("Please fill out the description field.");
+                    isValid = false;
+                }
+
+                if (!isValid) {
+                    e.preventDefault();
+                    alert("Please fill in all fields before submitting the form.");
+                }
+            });
     </script>
 </body>
 </html>

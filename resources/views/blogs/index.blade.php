@@ -119,7 +119,7 @@
                     <td>{{ $blog->slug }}</td>
                     <td>
                         @if ($blog->image)
-                            <img src="https://s3-triz.fra1.cdn.digitaloceanspaces.com/public/blogs/{{$blog->image}}" width="100" height="80">
+                            <img src="{{$blog->image}}" width="100" height="80">
                         @endif
                     </td>
                     <td>
