@@ -73,6 +73,7 @@ use App\Http\Controllers\lms\chapterController as LmsChapterController;
 use App\Http\Controllers\library\itemVerificationController;
 use App\Http\Controllers\library\itemScanController;
 use App\Http\Controllers\BlogController;
+use App\Http\Controllers\library\LostandDamage;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -455,6 +456,8 @@ Route::group(['middleware' => ['session', 'menu', 'logRoute','check_permissions'
     Route::get('leave-list', [LeaveSummaryReportController::class,'leaveLists'])->name('leavelist');
 
     Route::resource('books', BookController::class);
+    // use App\Http\Controllers\library\LostandDamage;
+    Route::resource('Lost_and_Damage', LostandDamage::class);
     Route::resource('item_verification_status', itemVerificationController::class); 
     Route::resource('scan_books', itemScanController::class); 
     Route::get('scan_books_remarks', [itemScanController::class,'remarksIndex'])->name('scan_books_remarks.index');
