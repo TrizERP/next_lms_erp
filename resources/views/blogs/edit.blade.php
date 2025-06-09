@@ -105,7 +105,7 @@
         <div style="display: flex; align-items: center; gap: 12px;">
             <input type="file" name="image" id="image">
             @if ($blog->image)
-                <a href="{{ asset($blog->image) }}" target="_blank" style="color: #3333ee; text-decoration: underline; font-weight: bold;">
+                <a href="{{$blog->image }}" target="_blank" style="color: #3333ee; text-decoration: underline; font-weight: bold;">
                     View
                 </a>
             @endif
@@ -142,6 +142,60 @@
     <script src="https://cdn.ckeditor.com/4.16.0/standard/ckeditor.js"></script>
     <script>
         CKEDITOR.replace('editor');
+
+        CKEDITOR.replace('editor');
+
+            // Auto-fill based on title
+            document.getElementById("title").addEventListener("input", function() {
+                const title = this.value.trim();
+
+                const slug = title
+                    .toLowerCase()
+                    .replace(/[^a-z0-9\s-]/g, "")
+                    .replace(/\s+/g, "-")
+                    .replace(/-+/g, "-");
+
+                document.getElementById("slug").value = slug;
+                document.getElementById("meta_title").value = title;
+                document.getElementById("meta_description").value = `Learn more about ${title.toLowerCase()} in this blog post.`;
+                document.getElementById("meta_keyword").value = title.toLowerCase().split(" ").join(", ");
+            });
+
+            // Validate before submitting
+            document.querySelector("form").addEventListener("submit", function(e) {
+                const requiredFields = [
+                    "type",
+                    "author",
+                    "title",
+                    "slug",
+                    "meta_title",
+                    "meta_description",
+                    "meta_keyword",
+                    "status"
+                ];
+
+                let isValid = true;
+                requiredFields.forEach(function(fieldId) {
+                    const field = document.getElementsByName(fieldId)[0];
+                    if (!field.value.trim()) {
+                        field.style.border = "2px solid red";
+                        isValid = false;
+                    } else {
+                        field.style.border = "none";
+                    }
+                });
+
+                const descriptionData = CKEDITOR.instances.editor.getData().trim();
+                if (!descriptionData) {
+                    alert("Please fill out the description field.");
+                    isValid = false;
+                }
+
+                if (!isValid) {
+                    e.preventDefault();
+                    alert("Please fill in all fields before submitting the form.");
+                }
+            });
     </script>
 </body>
 </html>

@@ -56,8 +56,9 @@ class BlogController extends Controller
 
         if($request->hasFile('image')){
             $file = $request->file('image');
-            $data['image'] = $filename = date('YmdHis').'_'.$file->getClientOriginalName();
+            $filename = date('YmdHis').'_'.$file->getClientOriginalName();
             Storage::disk('digitalocean')->putFileAs('public/blogs/', $file, $filename, 'public');
+            $data['image'] = "https://s3-triz.fra1.cdn.digitaloceanspaces.com/public/blogs/".$filename;
             // $data['image'] = $request->file('image')->store('blog_images', 'public');   
         }
         // echo "<pre>";print_r($data);exit;
@@ -109,9 +110,10 @@ class BlogController extends Controller
         $data = $request->all();
 
         if($request->hasFile('image')){
-             $file = $request->file('image');
-            $data['image'] = $filename = date('YmdHis').'_'.$file->getClientOriginalName();
+            $file = $request->file('image');
+            $filename = date('YmdHis').'_'.$file->getClientOriginalName();
             Storage::disk('digitalocean')->putFileAs('public/blogs/', $file, $filename, 'public');
+            $data['image'] = "https://s3-triz.fra1.cdn.digitaloceanspaces.com/public/blogs/".$filename;
             // $data['image'] = $request->file('image')->store('blog_images', 'public');   
         }
 
