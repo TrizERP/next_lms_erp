@@ -206,6 +206,18 @@
                                             </label>
                                         </div>
                                     </div>
+                                     <div class="col-md-4">
+                                            <label for="">Item Status</label>
+                                            <select class="form-control" name="item_status" id="item_status">
+                                                <option value="">Item Status</option>
+                                               
+                                                @foreach ($data['item_status_arr'] as $key => $value)
+                                                    <option value="{{ $key }}"
+                                                        @if (isset($data['item_status']) && $data['item_status'] == $key) selected @endif>
+                                                        {{ $value }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
                                     <div class="col-md-4">
                                         <div class="form-group">
                                             <label for="">Author/Editor Name</label>
@@ -622,18 +634,18 @@
             $('input[type="number"]').val('');   
             $('#no_span').remove();      
             $('#no_of_items').val(1);       
-            $('#no_of_items').prop('readonly',false);
+            // $('#no_of_items').prop('readonly',false);
             $('#item_code_value').val('{{$nextItemCode}}');
             @if(session()->get('sub_institute_id')!=47)
                 $('#mmisItemCOde').hide();
                 $('#otherItemCOde').show();
                 // added on 15-01-2025
-                $('#title,#item_code_value,#no_of_items,#author_name,#isbn_issn,#classification,#publisher_name,#publish_year,#publish_place,#pages,#series_title,#call_number,#language,#source,#subject,#price,#price_currency,#notes,#review, #edition, #tags, #no_of_items').prop('required', true);
+                $('#title,#item_code_value,#no_of_items,#author_name,#isbn_issn,#classification,#publisher_name,#publish_year,#publish_place,#pages,#series_title,#call_number,#language,#source,#subject,#price,#price_currency,#notes,#review, #edition, #tags, #no_of_items, #item_status').prop('required', true);
             @else
                 $('#otherItemCOde').hide();
                 $('#mmisItemCOde').show();
                 // added on 15-01-2025
-                $('#title,#no_of_items,input[name="item_code_value"]').prop('required', true);
+                $('#title,#no_of_items,input[name="item_code_value"], #item_status').prop('required', true);
             @endif
             $('#purchase').text('{{$nextItemCode}}');
             $('#donate').text('{{$DonateCode}}');
@@ -664,7 +676,7 @@
                             class: 'form-control',
                             value: data.data[0].id
                         });
-
+                        alert(data.data[0].item_status,' data.data[0].item_status');
                         // Add the new input element after the existing input with id 'title'
                         $('#title').after(newInput);
                         $('#no_span').remove();                                       
@@ -679,8 +691,11 @@
                         $('#edition').val(data.data[0].edition);
                         $('#tags').val(data.data[0].tags);
                         $('#no_of_items').val(data.data[0].no_of_items);
-                        $('#no_of_items').prop('readonly',true);
+                        // $('#no_of_items').prop('readonly',true);
                         $('#item_code_value').val(data.data[0].item_codes);
+                        $('#item_status').val(data.data[0].item_status);
+                        $('#mmisItemCOde').show();
+                        $('#otherItemCOde').hide();
                         @if(session()->get('sub_institute_id')==47) 
                         $('#mmisItemCOde').hide();
                         $('#otherItemCOde').show();
@@ -946,34 +961,34 @@
     });
 
     function getyearwise_holiday(year) {
-        $('#tblBooks').DataTable().ajax.url("?year=" + year).load();;
+        $('#tblBooks').DataTable().ajax.url("?year=" + year).load();
     }
 
     function getBooks(status) {
-        $('#tblBooks').DataTable().ajax.url("?book_status=" + status).load();;
+        $('#tblBooks').DataTable().ajax.url("?book_status=" + status).load();
     }
 
     function getSubjects(subject) {
-        $('#tblBooks').DataTable().ajax.url("?subject=" + subject).load();;
+        $('#tblBooks').DataTable().ajax.url("?subject=" + subject).load();
     }
 
     function getPublishers(publisher) {
-        $('#tblBooks').DataTable().ajax.url("?publisher_name=" + publisher).load();;
+        $('#tblBooks').DataTable().ajax.url("?publisher_name=" + publisher).load();
     }
     function getItemCode(item) {
-        $('#tblBooks').DataTable().ajax.url("?search_item=" + item).load();;
+        $('#tblBooks').DataTable().ajax.url("?search_item=" + item).load();
     }
 
     // 12-08-2024
     function getClassification(number) {
-        $('#tblBooks').DataTable().ajax.url("?classification_no=" + number).load();;
+        $('#tblBooks').DataTable().ajax.url("?classification_no=" + number).load();
     }
     function getIsbnIssn(number) {
-        $('#tblBooks').DataTable().ajax.url("?isbn_issn=" + number).load();;
+        $('#tblBooks').DataTable().ajax.url("?isbn_issn=" + number).load();
     }
     // 12-08-2024
     function getAuthors(author) {
-        $('#tblBooks').DataTable().ajax.url("?author_name=" + author).load();;
+        $('#tblBooks').DataTable().ajax.url("?author_name=" + author).load();
     }
 </script>
 @include('includes.footer')
