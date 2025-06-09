@@ -31,11 +31,20 @@ class BookController extends Controller
         $publisher_names = LibraryBook::groupBy('publisher_name')->pluck('publisher_name', 'id');
         $author_names = LibraryBook::groupBy('author_name')->pluck('author_name', 'id');
         $sub_institute_id = session()->get('sub_institute_id');
+        $data['bookdata'] =  DB::table('mst_item_status')
+            ->where('sub_institute_id', $sub_institute_id)
+            ->pluck('item_status_name', 'id')
+            ->toArray();
+
+        $data['item_status_arr'] = DB::table('mst_item_status')
+            ->where('sub_institute_id', $sub_institute_id)
+            ->pluck('item_status_name', 'id')
+            ->toArray();
         
         // ->with('items')
         if ($request->ajax()) {
-            
-            $data = LibraryBook::where('sub_institute_id', $sub_institute_id)
+                    
+            $books = LibraryBook::where('sub_institute_id', $sub_institute_id)
             ->when(request('subject'),function($q){
                 $q->where('subject',request('subject'));
             })
@@ -76,8 +85,8 @@ class BookController extends Controller
             ->select(['library_books.*', DB::raw('(SELECT GROUP_CONCAT(item_code) FROM library_items WHERE book_id = library_books.id  and sub_institute_id = '.$sub_institute_id.' and deleted_at IS NULL) as item_codes')])
             ->groupBy('library_books.id')
             ->latest()->get();
-
-            return DataTables::of($data)
+        
+            return DataTables::of($books)
                 ->addColumn('checkbox', function ($row) {
                     return '<input type="checkbox" id="' . $row->id . '" name="someCheckbox" class="checkSingle" />';
                 })
@@ -139,6 +148,7 @@ class BookController extends Controller
                 $nextItemCode = "0";
             }
         }
+
         $customFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "library_books"])
         ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1) and user_type="" ')
         ->get();
