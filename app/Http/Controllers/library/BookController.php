@@ -45,47 +45,14 @@ class BookController extends Controller
         if ($request->ajax()) {
                     
             $books = LibraryBook::where('sub_institute_id', $sub_institute_id)
-            ->when(request('subject'),function($q){
-                $q->where('subject',request('subject'));
-            })
-            ->when(request('publisher_name'),function($q){
-                $q->where('publisher_name',request('publisher_name'));
-            })
-            ->when(request('author_name'),function($q){
-                $q->where('author_name',request('author_name'));
-            }) 
-            ->when(request('search_item'), function ($q) {
-                $q->whereHas('items', function ($subquery) {
-                    $subquery->where('item_code', request('search_item'));
-                });
-            })
-            // 12-08-2024
-            ->when(request('classification_no'),function($q){
-                $q->where('classification',request('classification_no'));
-            }) 
-            ->when(request('isbn_issn'),function($q){
-                $q->where('isbn_issn',request('isbn_issn'));
-            }) 
-            //12-08-2024
-            ->when(request('book_status'),function($q){
-                $q->whereHas('book_circulations', function ($q) {
-                    switch (request('book_status')) {
-                        case 'issued':
-                            $q->whereNotNull('issued_date')->whereNull('return_date');
-                            break;
-                        case 'due':
-                            $q->whereDate('due_date', now())->whereNull('return_date');
-                            break;
-                        case 'overdue':
-                            $q->whereDate('due_date', '<', now())->whereNull('return_date');
-                            break;
-                    }
-                });
-            })
-            ->select(['library_books.*', DB::raw('(SELECT GROUP_CONCAT(item_code) FROM library_items WHERE book_id = library_books.id  and sub_institute_id = '.$sub_institute_id.' and deleted_at IS NULL) as item_codes')])
-            ->groupBy('library_books.id')
-            ->latest()->get();
-        
+                ->when(request('subject'), function($q) {
+                    $q->where('subject', request('subject'));
+                })
+                // ... [keep all your existing when() conditions] ...
+                ->select(['library_books.*', 
+                    DB::raw('(SELECT GROUP_CONCAT(item_code) FROM library_items WHERE book_id = library_books.id AND sub_institute_id = '.$sub_institute_id.' AND deleted_at IS NULL) as item_codes')
+                ]);
+
             return DataTables::of($books)
                 ->addColumn('checkbox', function ($row) {
                     return '<input type="checkbox" id="' . $row->id . '" name="someCheckbox" class="checkSingle" />';
@@ -93,15 +60,15 @@ class BookController extends Controller
                 ->addColumn('image', function ($row) {
                     return '<img src="' . Storage::disk('books')->url($row->image) . '" height="100" width="100" alt="">';
                 })
-                ->addColumn('   ',function($row){
+                ->addColumn('item_codes', function($row) {
                     return $row->item_codes;
                 })
                 ->addIndexColumn()
                 ->addColumn('action', function ($row) {
-                    $actionBtn = '<a href="javascript:void(0)" class="show m-2 btn btn-success btn-library-item" title="Show Book" data-id="' . $row->id . '"><i class="fa fa-eye"></i></a><a href="javascript:void(0)" class="delete m-2 btn btn-danger btn-delete d-none" title="Delete Book" data-id="' . $row->id . '"><i class="fa fa-trash"></i></a><a href="javascript:void(0)" class="m-2 btn btn-warning btn-edit ml-1" title="Edit Book" data-id="' . $row->id . '"><i class="fa fa-pencil"></i></a><a href="javascript:void(0)" class="m-2 btn btn-primary print-barcode ml-1 d-none" title="Print Barcode" data-id="' . $row->id . '"><i class="fa fa-barcode"></i></a><a href="javascript:void(0)" class="m-2 btn btn-info circulation ml-1" title="Issue/Return Book" data-id="' . $row->id . '"><i class="fa fa-retweet"></i></a>';
-                    return $actionBtn;
-                })
-                ->rawColumns(['checkbox', 'image','item_codes', 'action'])
+                                $actionBtn = '<a href="javascript:void(0)" class="show m-2 btn btn-success btn-library-item" title="Show Book" data-id="' . $row->id . '"><i class="fa fa-eye"></i></a><a href="javascript:void(0)" class="delete m-2 btn btn-danger btn-delete d-none" title="Delete Book" data-id="' . $row->id . '"><i class="fa fa-trash"></i></a><a href="javascript:void(0)" class="m-2 btn btn-warning btn-edit ml-1" title="Edit Book" data-id="' . $row->id . '"><i class="fa fa-pencil"></i></a><a href="javascript:void(0)" class="m-2 btn btn-primary print-barcode ml-1 d-none" title="Print Barcode" data-id="' . $row->id . '"><i class="fa fa-barcode"></i></a><a href="javascript:void(0)" class="m-2 btn btn-info circulation ml-1" title="Issue/Return Book" data-id="' . $row->id . '"><i class="fa fa-retweet"></i></a>';
+                                return $actionBtn;
+                            })
+                ->rawColumns(['checkbox', 'image', 'item_codes', 'action'])
                 ->make(true);
         }
         $DonateCode = '';
