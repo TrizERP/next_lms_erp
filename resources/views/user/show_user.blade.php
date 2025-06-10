@@ -20,11 +20,27 @@
             </div>
             @endif
             <div class="row">  
-                @if(in_array(session()->get('user_profile_name'),["Admin","Super Admin"]))              
+                {{-- @if(in_array(session()->get('user_profile_name'),["Admin","Super Admin"]))              
                 <div class="col-lg-3 col-sm-3 col-xs-3">
                     <a href="{{ route('add_user.create') }}" class="btn btn-info add-new"><i class="fa fa-plus"></i> Add New User </a>
                 </div>
-                @endif
+                @endif --}}
+                {{-- added on 05-06-2025 by uma, mmis want permission wise add button --}}
+                @php
+                $addPermission = "no";
+                if(!empty(session()->get('menu_permissions'))) {
+
+                    $permissions = session()->get('menu_permissions');
+                    if($permissions->can_add == 1){
+                        $addPermission = "yes";
+                    }
+                }
+                @endphp	
+                 @if($addPermission == "yes")              
+                <div class="col-lg-3 col-sm-3 col-xs-3">
+                    <a href="{{ route('add_user.create') }}" class="btn btn-info add-new"><i class="fa fa-plus"></i> Add New User </a>
+                </div>
+                @endif	
                 <div class="col-lg-12 col-sm-12 col-xs-12">
                     <div class="table-responsive">
                         <table id="example" class="table table-striped">

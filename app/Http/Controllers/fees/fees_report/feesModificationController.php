@@ -294,7 +294,13 @@ class feesModificationController extends Controller
             $checkFees = DB::table('fees_collect')->where('id',$fees_id)->where('is_deleted','N')->first();
             if(isset($checkFees->receiptdate) && isset($checkFees->student_id)){
                 DB::enableQueryLog(); // store into access log
-                $update = DB::table('fees_collect')->where('receiptdate',$checkFees->receiptdate)->where('created_date',$checkFees->created_date)->where('student_id',$student_id)->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear])->update($updateData);
+                $update = DB::table('fees_collect')
+                    ->where('receiptdate',$checkFees->receiptdate)
+                    ->where('receipt_no',$checkFees->receipt_no)
+                    ->where('bank_name',$checkFees->bank_name)
+                    ->where('student_id',$student_id)
+                    ->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear])
+                    ->update($updateData);
                 
                 $queries = DB::getQueryLog(); 
                 // dd($queries);

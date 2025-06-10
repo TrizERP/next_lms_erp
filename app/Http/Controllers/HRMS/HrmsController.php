@@ -138,8 +138,6 @@ class HrmsController extends Controller
                 'sub_institute_id' => 'required|numeric',
                 'user_id' => 'required|numeric',
                 'punchin_time' => 'required|date_format:Y-m-d H:i:s',
-                'address_in' => 'required',
-                'photo_in' => 'required',
             ]);
 
             if ($validator->fails()) {
@@ -201,9 +199,7 @@ class HrmsController extends Controller
             $validator = Validator::make($request->all(), [
                 'sub_institute_id'=>'required|numeric',
                 'user_id'=>'required|numeric',
-                'punchout_time'=>'required',
-                'address_out' => 'required',
-                'photo_out' => 'required',                
+                'punchout_time'=>'required|date_format:Y-m-d H:i:s',
             ]);
 
             if ($validator->fails()) {
