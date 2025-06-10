@@ -841,7 +841,7 @@
                             class: 'form-control',
                             value: data.data[0].id
                         });
-                        alert(data.data[0].item_status,' data.data[0].item_status');
+                        // alert(data.data[0].item_status,' data.data[0].item_status');
                         // Add the new input element after the existing input with id 'title'
                         $('#title').after(newInput);
                         $('#no_span').remove();                                       
