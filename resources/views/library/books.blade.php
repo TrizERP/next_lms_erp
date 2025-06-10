@@ -508,60 +508,34 @@
     <script>
         $(document).ready(function() {
             var table = $('#tblBooks').DataTable({
-                processing: true,
-                serverSide: true,
-                ajax: "{{ route('books.index') }}",
-                columns: [
-                    /*{
-                        data: 'checkbox',
-                        name: 'checkbox',
-                        orderable: false,
-                        searchable: false
-                    },*/
-                    {
-                        data: 'DT_RowIndex',
-                        name: 'DT_RowIndex'
-                    },
-                    {
-                        data: 'image',
-                        name: 'image'
-                    },
-                    {
-                        data: 'item_codes',
-                        name: 'item_codes'
-                    },
-                    {
-                        data: 'title',
-                        name: 'title'
-                    },
-                    {
-                        data: 'subject',
-                        name: 'subject'
-                    },
-                    {
-                        data: 'sub_title',
-                        name: 'sub_title'
-                    },
-                    {
-                        data: 'publisher_name',
-                        name: 'publisher_name'
-                    },
-                    {
-                        data: 'publish_year',
-                        name: 'publish_year'
-                    },
-                    {
-                        data: 'author_name',
-                        name: 'author_name'
-                    },
-                    {
-                        data: 'action',
-                        name: 'action',
-                        orderable: false,
-                        searchable: false
-                    },
-                ]
-            });
+    processing: true,
+    serverSide: true,
+    ajax: {
+        url: "{{ route('books.index') }}",
+        data: function (d) {
+            d.subject = $('#subject-filter').val();
+            d.publisher_name = $('#publisher-filter').val();
+            // Add all your filter parameters here
+        }
+    },
+    columns: [
+        {data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false},
+        {data: 'image', name: 'image', orderable: false, searchable: false},
+        {data: 'item_codes', name: 'item_codes'},
+        {data: 'title', name: 'title'},
+        {data: 'subject', name: 'subject'},
+        {data: 'sub_title', name: 'sub_title'},
+        {data: 'publisher_name', name: 'publisher_name'},
+        {data: 'publish_year', name: 'publish_year'},
+        {data: 'author_name', name: 'author_name'},
+        {data: 'action', name: 'action', orderable: false, searchable: false}
+    ]
+});
+
+// Add event listeners for your filters
+$('#subject-filter, #publisher-filter').change(function() {
+    table.ajax.reload();
+});
 
             $("#checkedAll").change(function() {
                 if (this.checked) {
@@ -779,10 +753,8 @@
                             $('#no_of_items').val(data.data[0].no_of_items);
                             $('#no_of_items').prop('readonly', true);
                             $('#item_code_value').val(data.data[0].item_codes);
-                            @if (session()->get('sub_institute_id') == 47)
-                                $('#mmisItemCOde').hide();
-                                $('#otherItemCOde').show();
-                            @endif
+                            $('#mmisItemCOde').hide();
+                            $('#otherItemCOde').show();
                             // Ensure the status value exists, is not null/undefined, and matches an option
                             var statusValue = (typeof data.data[0].status !== 'undefined' && data.data[0].status !== null) ? data.data[0].status : '';
                             if (statusValue && $('#status option[value="' + statusValue + '"]').length > 0) {
@@ -859,12 +831,10 @@
                         // $('#no_of_items').prop('readonly',true);
                         $('#item_code_value').val(data.data[0].item_codes);
                         $('#item_status').val(data.data[0].item_status);
-                        $('#mmisItemCOde').show();
-                        $('#otherItemCOde').hide();
-                        @if(session()->get('sub_institute_id')==47) 
+                        
                         $('#mmisItemCOde').hide();
                         $('#otherItemCOde').show();
-                        @endif
+                        
                         $('#author_name').val(data.data[0].author_name);
                         $('#isbn_issn').val(data.data[0].isbn_issn);
                         $('#classification').val(data.data[0].classification);
