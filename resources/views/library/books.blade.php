@@ -753,10 +753,8 @@ $('#subject-filter, #publisher-filter').change(function() {
                             $('#no_of_items').val(data.data[0].no_of_items);
                             $('#no_of_items').prop('readonly', true);
                             $('#item_code_value').val(data.data[0].item_codes);
-                            @if (session()->get('sub_institute_id') == 47)
-                                $('#mmisItemCOde').hide();
-                                $('#otherItemCOde').show();
-                            @endif
+                            $('#mmisItemCOde').hide();
+                            $('#otherItemCOde').show();
                             // Ensure the status value exists, is not null/undefined, and matches an option
                             var statusValue = (typeof data.data[0].status !== 'undefined' && data.data[0].status !== null) ? data.data[0].status : '';
                             if (statusValue && $('#status option[value="' + statusValue + '"]').length > 0) {
@@ -833,12 +831,10 @@ $('#subject-filter, #publisher-filter').change(function() {
                         // $('#no_of_items').prop('readonly',true);
                         $('#item_code_value').val(data.data[0].item_codes);
                         $('#item_status').val(data.data[0].item_status);
-                        $('#mmisItemCOde').show();
-                        $('#otherItemCOde').hide();
-                        @if(session()->get('sub_institute_id')==47) 
+                        
                         $('#mmisItemCOde').hide();
                         $('#otherItemCOde').show();
-                        @endif
+                        
                         $('#author_name').val(data.data[0].author_name);
                         $('#isbn_issn').val(data.data[0].isbn_issn);
                         $('#classification').val(data.data[0].classification);
