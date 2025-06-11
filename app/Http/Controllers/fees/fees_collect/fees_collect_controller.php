@@ -3327,9 +3327,9 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
         $data = DB::table(function ($query) use ($sub_institute_id, $syear, $extra_fo, $extra_fp) {
             $query->selectRaw('t.id as student_id, t.enrollment_no, te.roll_no, t.uniqueid, t.place_of_birth, '
                 . DB::raw("CONCAT_WS(' ', t.first_name, t.middle_name, t.last_name) as student_name") . ', g.title as grade, s.name as standard_name, d.name as division_name, fp.created_date, '
-                . DB::raw('CONCAT_WS(" ", u.first_name, u.last_name) AS user_name, fp.term_id, fp.receiptdate, fp.receipt_no, fp.payment_mode, '
+                . DB::raw('CONCAT_WS(" ", u.first_name, u.last_name) AS user_name, GROUP_CONCAT(fp.term_id) AS term_id, fp.receiptdate, fp.receipt_no, fp.payment_mode, '
                 . 'fp.cheque_bank_name, fp.bank_branch, fp.cheque_no, fp.cheque_date, b.title as batch, sq.title as quota, '
-                . 'SUM(IFNULL(fp.amount, 0)) AS actual_amountpaid,IFNULL(fp.fees_discount, 0) as discount,fp.remarks,GROUP_CONCAT(DISTINCT fp.bank_name ORDER BY fp.bank_name SEPARATOR "/ ") as bank_name'))
+                . 'SUM(IFNULL(fp.amount, 0)) AS actual_amountpaid,SUM(IFNULL(fp.fees_discount, 0)) as discount,fp.remarks,GROUP_CONCAT(DISTINCT fp.bank_name ORDER BY fp.bank_name SEPARATOR "/ ") as bank_name'))
                 ->from('tblstudent as t')
                 ->join('tblstudent_enrollment as te', function ($join) use($syear){
                     $join->on('te.student_id', '=', 't.id')->where('te.syear',$syear);

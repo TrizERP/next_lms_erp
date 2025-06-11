@@ -10,6 +10,7 @@ use App\Models\library\itemStatus;
 use GenTux\Jwt\GetsJwtToken;
 use Validator;
 use DB;
+use App\Models\LibraryItem;
 
 class itemScanController extends Controller
 {
@@ -103,8 +104,10 @@ class itemScanController extends Controller
                 $data['scan_status'] = "Yes";
                 $data['created_at']=now();
                 itemScanDetail::insert($data);
+                // LibraryItem::where('item_code',$item_code)->update(['item_status'=>0]);
             }else{
                 itemScanDetail::where('id',$checkData->id)->update(["updated_at"=>now()]);
+                // LibraryItem::where('item_code',$item_code)->update(['item_status'=>0]);
             }
 
             $res['status'] = "1";
@@ -225,7 +228,8 @@ class itemScanController extends Controller
         foreach ($checked as $key => $value) {
             $item_status = isset($item_statusArr[$key]) ? $item_statusArr[$key] : 0;
             $item_remarks = isset($item_remarksArr[$key]) ? $item_remarksArr[$key] : 0;
-
+            $geItemcode = itemScanDetail::where('id',$key)->first();
+            LibraryItem::where('item_code',$geItemcode->item_code)->update(['item_status'=>$item_status]);
             $update = itemScanDetail::where('id',$key)->update([
                 'remarks'=>$item_remarks,
                 'item_status_id'=>$item_status,

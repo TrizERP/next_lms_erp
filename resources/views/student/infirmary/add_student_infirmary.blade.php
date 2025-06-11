@@ -118,7 +118,7 @@
                 }, function (result, status) {
                     $('#studentSearchList').find('option').remove().end();
                     for (var i = 0; i < result.length; i++) {
-                        $("#studentSearchList").append($("<option></option>").val(result[i]['student'] + ' - ' + result[i]['id']).html(result[i]['student']));
+                        $("#studentSearchList").append($("<option></option>").val(result[i]['student'] + '|' + result[i]['id']).html(result[i]['student']));
                     }
                 });
             }

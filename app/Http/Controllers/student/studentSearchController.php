@@ -189,8 +189,11 @@ class studentSearchController extends Controller
     {
         $searchValue = $request->input('value');
         $sub_institute_id = $request->session()->get('sub_institute_id');
+        $syear = $request->session()->get('syear'); // added by uma on 10-06-2025 for multi record prevention syearwise
+
         $extraSearchArray = [];
         $extraSearchArray['tblstudent_enrollment.sub_institute_id'] = $sub_institute_id;
+        $extraSearchArray['tblstudent_enrollment.syear'] = $syear;
         $extraSearchArray['tblstudent.status'] = 1;
 
         return tblstudentModel::selectRaw('CONCAT(tblstudent.enrollment_no, " / ",CONCAT_WS(" ",tblstudent.first_name,
@@ -200,6 +203,7 @@ class studentSearchController extends Controller
             ->whereRaw('tblstudent.enrollment_no LIKE "%'.$searchValue.'%" OR CONCAT_WS(" ",tblstudent.first_name,
             tblstudent.middle_name,tblstudent.last_name) LIKE "%'.$searchValue.'%"')
             ->where($extraSearchArray)
+            ->groupBy('tblstudent.id')
             ->get()
             ->toArray();
     }

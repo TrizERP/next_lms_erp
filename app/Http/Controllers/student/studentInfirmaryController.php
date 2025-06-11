@@ -93,9 +93,11 @@ class studentInfirmaryController extends Controller
         $user_id = $request->session()->get('user_id');
 
         $finalArray = $request->except('_method', '_token', 'submit');
-
+        // if($sub_institute_id==254){
+        //     echo "<pre>";print_r($request->all());exit;
+        // }
         $STUDENT = $request->input("student_id");
-        $STUDENT = explode("-", $STUDENT);
+        $STUDENT = explode("|", $STUDENT);
         $student_id = trim($STUDENT[1] ?? '');
 
         if (empty($student_id)) {

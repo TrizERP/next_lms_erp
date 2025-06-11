@@ -1,18 +1,16 @@
-
-{{--@include('includes.headcss')
+{{-- @include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')--}}
+@include('includes.sideNavigation') --}}
 @extends('layout')
 <link rel="stylesheet" href="../../../tooltip/enjoyhint/jquery.enjoyhint.css">
 @section('container')
-
-<div id="page-wrapper">
-    <div class="container-fluid">
-        <div class="row bg-title">
-            <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
-                <h4 class="page-title">Books</h4>
+    <div id="page-wrapper">
+        <div class="container-fluid">
+            <div class="row bg-title">
+                <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
+                    <h4 class="page-title">Books</h4>
+                </div>
             </div>
-        </div>
 
         <div class="card">
             <div class="col-md-2">
@@ -206,6 +204,18 @@
                                             </label>
                                         </div>
                                     </div>
+                                     <div class="col-md-4">
+                                            <label for="">Item Status</label>
+                                            <select class="form-control" name="item_status" id="item_status">
+                                                <option value="">Item Status</option>
+                                               
+                                                @foreach ($data['item_status_arr'] as $key => $value)
+                                                    <option value="{{ $key }}"
+                                                        @if (isset($data['item_status']) && $data['item_status'] == $key) selected @endif>
+                                                        {{ $value }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
                                     <div class="col-md-4">
                                         <div class="form-group">
                                             <label for="">Author/Editor Name</label>
@@ -417,133 +427,136 @@
                                 <button type="button" class="btn btn-primary mt-4 fetch-stud">Fetch Details</button>
                             </div>
                         </div>
-                        <div class="row divUserDetail"></div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                        <button type="submit" class="btn btn-primary" id="issue_book_check">Issue Book</button>
+                </div>
+                <!-- Tabs content -->
+            </div>
+        </div>
+        <div class="modal fade" id="mdlCirculation" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+            aria-hidden="true">
+            <div class="modal-dialog modal-lg" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modalTitle"></h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
                     </div>
-                </form>
-            </div>
-        </div>
-    </div>
-    <div class="modal fade" id="mdlViewBarcode" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
-        aria-hidden="true">
-        <div class="modal-dialog modal-lg" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="modalTitle"> Barcode of Book</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
+                    <form class="form-group" id="frmCirculation" method="post">
+                        <div class="modal-body">
+                            @csrf
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label for="">Student Enroll No</label>
+                                    <input type="hidden" name="bookId" id="bookId" value="">
+                                    <input type="text" name="enroll_no" id="enroll_no" placeholder="Enter Enroll No."
+                                        class="form-control">
+                                </div>
+                                <div class="col-md-6">
+                                    <button type="button" class="btn btn-primary mt-4 fetch-stud">Fetch Details</button>
+                                </div>
+                            </div>
+                            <div class="row divUserDetail"></div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                            <button type="submit" class="btn btn-primary" id="issue_book_check">Issue Book</button>
+                        </div>
+                    </form>
                 </div>
-                <div class="mdlViewBarcode"></div>
             </div>
         </div>
-    </div>
-    <div class="modal fade" id="mdlItemBook" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
-        aria-hidden="true">
-        <div class="modal-dialog modal-lg" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="modalItemTitle"> Items of Book</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
+        <div class="modal fade" id="mdlViewBarcode" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+            aria-hidden="true">
+            <div class="modal-dialog modal-lg" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modalTitle"> Barcode of Book</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="mdlViewBarcode"></div>
                 </div>
-                <div class="mdlItemBook"></div>
+            </div>
+        </div>
+        <div class="modal fade" id="mdlItemBook" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+            aria-hidden="true">
+            <div class="modal-dialog modal-lg" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modalItemTitle"> Items of Book</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="mdlItemBook"></div>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-@include('includes.footerJs')
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-toast-plugin/1.3.2/jquery.toast.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-toast-plugin/1.3.2/jquery.toast.min.js"></script>
-<script type="text/javascript">
-    $(document).ready(function() {
-        $('[data-toggle="tooltip"]').tooltip();
-    });
-</script>
-
-<script>
-    $(document).ready(function() {
-        var table = $('#tblBooks').DataTable({
-            processing: true,
-            serverSide: true,
-            ajax: "{{ route('books.index') }}",
-            columns: [
-                /*{
-                    data: 'checkbox',
-                    name: 'checkbox',
-                    orderable: false,
-                    searchable: false
-                },*/
-                {
-                    data: 'DT_RowIndex',
-                    name: 'DT_RowIndex'
-                },
-                {
-                    data: 'image',
-                    name: 'image'
-                },
-                {
-                    data: 'item_codes',
-                    name: 'item_codes'
-                },
-                {
-                    data: 'title',
-                    name: 'title'
-                },
-                {
-                    data: 'subject',
-                    name: 'subject'
-                },
-                {
-                    data: 'sub_title',
-                    name: 'sub_title'
-                },
-                {
-                    data: 'publisher_name',
-                    name: 'publisher_name'
-                },
-                {
-                    data: 'publish_year',
-                    name: 'publish_year'
-                },
-                {
-                    data: 'author_name',
-                    name: 'author_name'
-                },
-                {
-                    data: 'action',
-                    name: 'action',
-                    orderable: false,
-                    searchable: false
-                },
-            ]
+    @include('includes.footerJs')
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-toast-plugin/1.3.2/jquery.toast.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-toast-plugin/1.3.2/jquery.toast.min.js"></script>
+    <script type="text/javascript">
+        $(document).ready(function() {
+            $('[data-toggle="tooltip"]').tooltip();
         });
+    </script>
 
-        $("#checkedAll").change(function() {
-            if (this.checked) {
-                $(".checkSingle").each(function() {
-                    this.checked = true;
-                });
-            } else {
-                $(".checkSingle").each(function() {
-                    this.checked = false;
-                });
-            }
-        });
+    <script>
+        $(document).ready(function() {
+            var table = $('#tblBooks').DataTable({
+    processing: true,
+    serverSide: true,
+    ajax: {
+        url: "{{ route('books.index') }}",
+        data: function (d) {
+            d.subject = $('#subject-filter').val();
+            d.publisher_name = $('#publisher-filter').val();
+            // Add all your filter parameters here
+        }
+    },
+    columns: [
+        {data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false},
+        {data: 'image', name: 'image', orderable: false, searchable: false},
+        {data: 'item_codes', name: 'item_codes'},
+        {data: 'title', name: 'title'},
+        {data: 'subject', name: 'subject'},
+        {data: 'sub_title', name: 'sub_title'},
+        {data: 'publisher_name', name: 'publisher_name'},
+        {data: 'publish_year', name: 'publish_year'},
+        {data: 'author_name', name: 'author_name'},
+        {data: 'action', name: 'action', orderable: false, searchable: false}
+    ]
+});
 
-        $(document).on("change", ".checkSingle", function(e) {
-            if ($(this).is(":checked")) {
-                var isAllChecked = 0;
+// Add event listeners for your filters
+$('#subject-filter, #publisher-filter').change(function() {
+    table.ajax.reload();
+});
 
-                $(".checkSingle").each(function() {
-                    if (!this.checked)
-                        isAllChecked = 1;
-                });
+            $("#checkedAll").change(function() {
+                if (this.checked) {
+                    $(".checkSingle").each(function() {
+                        this.checked = true;
+                    });
+                } else {
+                    $(".checkSingle").each(function() {
+                        this.checked = false;
+                    });
+                }
+            });
+
+            $(document).on("change", ".checkSingle", function(e) {
+                if ($(this).is(":checked")) {
+                    var isAllChecked = 0;
+
+                    $(".checkSingle").each(function() {
+                        if (!this.checked)
+                            isAllChecked = 1;
+                    });
 
                 if (isAllChecked == 0) {
                     $("#checkedAll").prop("checked", true);
@@ -553,37 +566,93 @@
             }
         });
 
-        $(document).on("submit", "#frmCirculation", function(e) {
-            e.preventDefault();
-            $('.error').remove()
-          
-            var url = "{{ route('books.issue') }}";
-            var formData = new FormData($("#frmCirculation")[0]);
-            /**Ajax code**/
-            $.ajax({
-                type: "post",
-                url: url,
-                dataType: 'json',
-                data: formData,
-                cache: false,
-                contentType: false,
-                processData: false,
-                success: function(data) {
-                    $('.divUserDetail').html(data.data);
-                },
-                error: function(xhr) {
-                    if (xhr.status == 422) {
-                        var errors = JSON.parse(xhr.responseText);
-                        $.each(errors.errors, function(i, error) {
-                            $('#' + i).after(
-                                '<span class="text-strong text-danger error text-capitalize">' +
-                                error + '</span>')
-                        })
-                    }
-                }
-            });
-        });
+            $(document).on("submit", "#frmCirculation", function(e) {
+                e.preventDefault();
+                $('.error').remove()
 
+                var url = "{{ route('books.issue') }}";
+                var formData = new FormData($("#frmCirculation")[0]);
+                /**Ajax code**/
+                $.ajax({
+                    type: "post",
+                    url: url,
+                    dataType: 'json',
+                    data: formData,
+                    cache: false,
+                    contentType: false,
+                    processData: false,
+                    success: function(data) {
+                        $('.divUserDetail').html(data.data);
+                    },
+                    error: function(xhr) {
+                        if (xhr.status == 422) {
+                            var errors = JSON.parse(xhr.responseText);
+                            $.each(errors.errors, function(i, error) {
+                                $('#' + i).after(
+                                    '<span class="text-strong text-danger error text-capitalize">' +
+                                    error + '</span>')
+                            })
+                        }
+                    }
+                });
+            });
+
+            $(document).on("submit", "#frmBookAdd", function(e) {
+                e.preventDefault();
+                $('.error').remove()
+                var formData = new FormData($("#frmBookAdd")[0]);
+                /**Ajax code**/
+                $.ajax({
+                    type: "post",
+                    url: "{{ route('books.store') }}",
+                    data: formData,
+                    cache: false,
+                    contentType: false,
+                    processData: false,
+                    success: function(data) {
+                        if (data.status) {
+                            alert(data.message);
+                            location.reload();
+                        }
+                        $('#tblLeaveType').DataTable().ajax.reload();
+                    },
+                    error: function(xhr) {
+                        if (xhr.status == 422) {
+                            var errors = JSON.parse(xhr.responseText);
+                            $.each(errors.errors, function(i, error) {
+                                $('#' + i).after(
+                                    '<span class="text-strong text-danger error text-capitalize">' +
+                                    error + '</span>')
+                            })
+                        }
+                    }
+                });
+            });
+            $(document).on("click", "#create-book", function(e) {
+                $('input[name="id"]').remove();
+                // Empty all input fields
+                $('input[type="text"]').val('');
+                $('input[type="number"]').val('');
+                $('#no_span').remove();
+                $('#no_of_items').val(1);
+                $('#no_of_items').prop('readonly', false);
+                $('#item_code_value').val('{{ $nextItemCode }}');
+                @if (session()->get('sub_institute_id') != 47)
+                    $('#mmisItemCOde').hide();
+                    $('#otherItemCOde').show();
+                    // added on 15-01-2025
+                    $('#title,#item_code_value,#no_of_items,#author_name,#isbn_issn,#classification,#publisher_name,#publish_year,#publish_place,#pages,#series_title,#call_number,#language,#source,#subject,#price,#price_currency,#notes,#review, #edition, #tags, #no_of_items')
+                        .prop('required', true);
+                @else
+                    $('#otherItemCOde').hide();
+                    $('#mmisItemCOde').show();
+                    // added on 15-01-2025
+                    $('#title,#no_of_items,input[name="item_code_value"]').prop('required', true);
+                @endif
+                $('#purchase').text('{{ $nextItemCode }}');
+                $('#donate').text('{{ $DonateCode }}');
+                $('.purchase').val('{{ $nextItemCode }}');
+                $('.donate').val('{{ $DonateCode }}');
         $(document).on("submit", "#frmBookAdd", function(e) {
             e.preventDefault();
             $('.error').remove()
@@ -622,24 +691,104 @@
             $('input[type="number"]').val('');   
             $('#no_span').remove();      
             $('#no_of_items').val(1);       
-            $('#no_of_items').prop('readonly',false);
+            // $('#no_of_items').prop('readonly',false);
             $('#item_code_value').val('{{$nextItemCode}}');
             @if(session()->get('sub_institute_id')!=47)
                 $('#mmisItemCOde').hide();
                 $('#otherItemCOde').show();
                 // added on 15-01-2025
-                $('#title,#item_code_value,#no_of_items,#author_name,#isbn_issn,#classification,#publisher_name,#publish_year,#publish_place,#pages,#series_title,#call_number,#language,#source,#subject,#price,#price_currency,#notes,#review, #edition, #tags, #no_of_items').prop('required', true);
+                $('#title,#item_code_value,#no_of_items,#author_name,#isbn_issn,#classification,#publisher_name,#publish_year,#publish_place,#pages,#series_title,#call_number,#language,#source,#subject,#price,#price_currency,#notes,#review, #edition, #tags, #no_of_items, #item_status').prop('required', true);
             @else
                 $('#otherItemCOde').hide();
                 $('#mmisItemCOde').show();
                 // added on 15-01-2025
-                $('#title,#no_of_items,input[name="item_code_value"]').prop('required', true);
+                $('#title,#no_of_items,input[name="item_code_value"], #item_status').prop('required', true);
             @endif
             $('#purchase').text('{{$nextItemCode}}');
             $('#donate').text('{{$DonateCode}}');
             $('.purchase').val('{{$nextItemCode}}');
             $('.donate').val('{{$DonateCode}}');
 
+                //    $('#title,#item_code_value,#no_of_items,#author_name,#isbn_issn,#classification,#publisher_name,#publish_year,#publish_place,#pages,#series_title,#call_number,#language,#source,#subject,#price,#price_currency,#notes,#review, #edition, #tags, #no_of_items').prop('required', true);     // commented on 15-01-2025
+
+            })
+            $(document).on("click", ".btn-edit", function(e) {
+
+                var id = $(this).data('id')
+                var url = "{{ route('books.edit', ':id') }}";
+                var url = url.replace(':id', id);
+
+                $.ajax({
+                    type: "get",
+                    url: url,
+                    cache: false,
+                    contentType: false,
+                    processData: false,
+                    success: function(data) {
+                        console.log(data);
+                        if (data.data.length > 0) {
+                            var newInput = $('<input>').attr({
+                                type: 'hidden',
+                                name: 'id', // Set a unique name for the new input
+                                class: 'form-control',
+                                value: data.data[0].id
+                            });
+
+                            // Add the new input element after the existing input with id 'title'
+                            $('#title').after(newInput);
+                            $('#no_span').remove();
+                            $('#no_of_items').after(
+                                `<span id="no_span" style="color:red;font-size:12px">To Add new Item Code "No Of Items" must be greater then 0 <span>`
+                            );
+                            $('#navLinkList').removeClass('active')
+                            $('#navLinkCreate').addClass('active')
+                            $('#right-tab-2').removeClass('active')
+                            $('#right-tab-1').addClass('active')
+                            $('#title').val(data.data[0].title);
+                            $('#sub_title').val(data.data[0].sub_title);
+                            $('#material_resource_type').val(data.data[0]
+                                .material_resource_type);
+                            $('#edition').val(data.data[0].edition);
+                            $('#tags').val(data.data[0].tags);
+                            $('#no_of_items').val(data.data[0].no_of_items);
+                            $('#no_of_items').prop('readonly', true);
+                            $('#item_code_value').val(data.data[0].item_codes);
+                            $('#mmisItemCOde').hide();
+                            $('#otherItemCOde').show();
+                            // Ensure the status value exists, is not null/undefined, and matches an option
+                            var statusValue = (typeof data.data[0].status !== 'undefined' && data.data[0].status !== null) ? data.data[0].status : '';
+                            if (statusValue && $('#status option[value="' + statusValue + '"]').length > 0) {
+                                $('#status').val(statusValue);
+                            } else {
+                                $('#status').prop('selectedIndex', 0); // fallback to first option
+                            }
+                            $('#author_name').val(data.data[0].author_name);
+                            $('#isbn_issn').val(data.data[0].isbn_issn);
+                            $('#classification').val(data.data[0].classification);
+                            $('#publisher_name').val(data.data[0].publisher_name);
+                            $('#publish_year').val(data.data[0].publish_year);
+                            $('#publish_place').val(data.data[0].publish_place);
+                            $('#pages').val(data.data[0].pages);
+                            $('#series_title').val(data.data[0].series_title);
+                            $('#call_number').val(data.data[0].call_number);
+                            $('#language').val(data.data[0].language);
+                            $('#source').val(data.data[0].source);
+                            $('#subject').val(data.data[0].subject);
+                            $('#price').val(data.data[0].price);
+                            $('#price_currency').val(data.data[0].price_currency);
+                            $('#notes').val(data.data[0].notes);
+                            $('#review').val(data.data[0].review);
+                            $('#image').val(data.data[0].image);
+                            $('#file_att').val(data.data[0].file_att);
+                        } else {
+                            alert('Something went wrong');
+                        }
+                    },
+                    error: function(xhr) {
+                        console.log(xhr);
+                    }
+                });
+            });
         //    $('#title,#item_code_value,#no_of_items,#author_name,#isbn_issn,#classification,#publisher_name,#publish_year,#publish_place,#pages,#series_title,#call_number,#language,#source,#subject,#price,#price_currency,#notes,#review, #edition, #tags, #no_of_items').prop('required', true);     // commented on 15-01-2025
                      
         })
@@ -664,7 +813,7 @@
                             class: 'form-control',
                             value: data.data[0].id
                         });
-
+                        // alert(data.data[0].item_status,' data.data[0].item_status');
                         // Add the new input element after the existing input with id 'title'
                         $('#title').after(newInput);
                         $('#no_span').remove();                                       
@@ -679,12 +828,13 @@
                         $('#edition').val(data.data[0].edition);
                         $('#tags').val(data.data[0].tags);
                         $('#no_of_items').val(data.data[0].no_of_items);
-                        $('#no_of_items').prop('readonly',true);
+                        // $('#no_of_items').prop('readonly',true);
                         $('#item_code_value').val(data.data[0].item_codes);
-                        @if(session()->get('sub_institute_id')==47) 
+                        $('#item_status').val(data.data[0].item_status);
+                        
                         $('#mmisItemCOde').hide();
                         $('#otherItemCOde').show();
-                        @endif
+                        
                         $('#author_name').val(data.data[0].author_name);
                         $('#isbn_issn').val(data.data[0].isbn_issn);
                         $('#classification').val(data.data[0].classification);
@@ -724,41 +874,41 @@
             });
         });
 
-        function deleteItem(id) {
-            if (confirm('Are you sure to delete item')) {
-                var url = "{{ route('books.items.destroy', ':id') }}";
-                url = url.replace(':id', id);
-                $.ajax({
-                    type: "delete",
-                    url: url,
-                    data: {
-                        id: id
-                    },
-                    success: function(data) {
-                        // console.log(data.book_id);
-                        $('#mdlItemBook').modal('toggle');
-                        $('.modal-backdrop').remove();
-                        showItemByBook(data.book_id)
-                    },
-                    error: function(xhr) {
-                        if (xhr.status == 422) {
-                            var errors = JSON.parse(xhr.responseText);
-                            $.each(errors.errors, function(i, error) {
-                                $('#' + i).after(
-                                    '<span class="text-strong text-danger">' +
-                                    error + '</span>')
-                            })
+            function deleteItem(id) {
+                if (confirm('Are you sure to delete item')) {
+                    var url = "{{ route('books.items.destroy', ':id') }}";
+                    url = url.replace(':id', id);
+                    $.ajax({
+                        type: "delete",
+                        url: url,
+                        data: {
+                            id: id
+                        },
+                        success: function(data) {
+                            // console.log(data.book_id);
+                            $('#mdlItemBook').modal('toggle');
+                            $('.modal-backdrop').remove();
+                            showItemByBook(data.book_id)
+                        },
+                        error: function(xhr) {
+                            if (xhr.status == 422) {
+                                var errors = JSON.parse(xhr.responseText);
+                                $.each(errors.errors, function(i, error) {
+                                    $('#' + i).after(
+                                        '<span class="text-strong text-danger">' +
+                                        error + '</span>')
+                                })
+                            }
                         }
-                    }
-                });
+                    });
+                }
             }
-        }
-        $(document).on("click", ".return-book", function(e) {
-            $('.error').remove()
-            var url = "{{ route('books.return', ':id') }}";
-            url = url.replace(':id', $(this).data('id'));
-            var enroll_no = $('#enroll_no').val();
-            var book_id = $('#bookId').val();
+            $(document).on("click", ".return-book", function(e) {
+                $('.error').remove()
+                var url = "{{ route('books.return', ':id') }}";
+                url = url.replace(':id', $(this).data('id'));
+                var enroll_no = $('#enroll_no').val();
+                var book_id = $('#bookId').val();
 
             /**Ajax code**/
             $.ajax({
@@ -865,64 +1015,38 @@
             printBarcode(ids)
         });
 
-        function showItemByBook(id) {
-            var url = "{{ route('books.item', ':id') }}";
-            url = url.replace(':id', id);
-            $.ajax({
-                type: "get",
-                url: url,
-                data: {
-                    id: id
-                },
-                success: function(data) {
-                    console.log(data.data);
-                    $('.mdlItemBook').html(data.data);
-                    $('#mdlItemBook').modal('toggle');
-                },
-                error: function(xhr) {
-                    if (xhr.status == 422) {
-                        var errors = JSON.parse(xhr.responseText);
-                        $.each(errors.errors, function(i, error) {
-                            $('#' + i).after(
-                                '<span class="text-strong text-danger">' +
-                                error + '</span>')
-                        })
+            function showItemByBook(id) {
+                var url = "{{ route('books.item', ':id') }}";
+                url = url.replace(':id', id);
+                $.ajax({
+                    type: "get",
+                    url: url,
+                    data: {
+                        id: id
+                    },
+                    success: function(data) {
+                        console.log(data.data);
+                        $('.mdlItemBook').html(data.data);
+                        $('#mdlItemBook').modal('toggle');
+                    },
+                    error: function(xhr) {
+                        if (xhr.status == 422) {
+                            var errors = JSON.parse(xhr.responseText);
+                            $.each(errors.errors, function(i, error) {
+                                $('#' + i).after(
+                                    '<span class="text-strong text-danger">' +
+                                    error + '</span>')
+                            })
+                        }
                     }
-                }
-            });
-        }
+                });
+            }
 
-        function printBarcode(ids) {
-            var url = "{{ route('books.barcode', ':id') }}";
-            url = url.replace(':id', ids);
-            $.ajax({
-                type: "get",
-                url: url,
-                data: {
-                    id: ids
-                },
-                success: function(data) {
-                    $('#tblBooks').DataTable().ajax.reload();
-                },
-                error: function(xhr) {
-                    if (xhr.status == 422) {
-                        var errors = JSON.parse(xhr.responseText);
-                        $.each(errors.errors, function(i, error) {
-                            $('#' + i).after(
-                                '<span class="text-strong text-danger">' +
-                                error + '</span>')
-                        })
-                    }
-                }
-            });
-        }
-
-        function deleteBook(ids) {
-            if (confirm('Are you sure to delete holiday')) {
-                var url = "{{ route('books.destroy', ':id') }}";
+            function printBarcode(ids) {
+                var url = "{{ route('books.barcode', ':id') }}";
                 url = url.replace(':id', ids);
                 $.ajax({
-                    type: "delete",
+                    type: "get",
                     url: url,
                     data: {
                         id: ids
@@ -942,38 +1066,64 @@
                     }
                 });
             }
-        }
-    });
+
+            function deleteBook(ids) {
+                if (confirm('Are you sure to delete holiday')) {
+                    var url = "{{ route('books.destroy', ':id') }}";
+                    url = url.replace(':id', ids);
+                    $.ajax({
+                        type: "delete",
+                        url: url,
+                        data: {
+                            id: ids
+                        },
+                        success: function(data) {
+                            $('#tblBooks').DataTable().ajax.reload();
+                        },
+                        error: function(xhr) {
+                            if (xhr.status == 422) {
+                                var errors = JSON.parse(xhr.responseText);
+                                $.each(errors.errors, function(i, error) {
+                                    $('#' + i).after(
+                                        '<span class="text-strong text-danger">' +
+                                        error + '</span>')
+                                })
+                            }
+                        }
+                    });
+                }
+            }
+        });
 
     function getyearwise_holiday(year) {
-        $('#tblBooks').DataTable().ajax.url("?year=" + year).load();;
+        $('#tblBooks').DataTable().ajax.url("?year=" + year).load();
     }
 
     function getBooks(status) {
-        $('#tblBooks').DataTable().ajax.url("?book_status=" + status).load();;
+        $('#tblBooks').DataTable().ajax.url("?book_status=" + status).load();
     }
 
     function getSubjects(subject) {
-        $('#tblBooks').DataTable().ajax.url("?subject=" + subject).load();;
+        $('#tblBooks').DataTable().ajax.url("?subject=" + subject).load();
     }
 
     function getPublishers(publisher) {
-        $('#tblBooks').DataTable().ajax.url("?publisher_name=" + publisher).load();;
+        $('#tblBooks').DataTable().ajax.url("?publisher_name=" + publisher).load();
     }
     function getItemCode(item) {
-        $('#tblBooks').DataTable().ajax.url("?search_item=" + item).load();;
+        $('#tblBooks').DataTable().ajax.url("?search_item=" + item).load();
     }
 
     // 12-08-2024
     function getClassification(number) {
-        $('#tblBooks').DataTable().ajax.url("?classification_no=" + number).load();;
+        $('#tblBooks').DataTable().ajax.url("?classification_no=" + number).load();
     }
     function getIsbnIssn(number) {
-        $('#tblBooks').DataTable().ajax.url("?isbn_issn=" + number).load();;
+        $('#tblBooks').DataTable().ajax.url("?isbn_issn=" + number).load();
     }
     // 12-08-2024
     function getAuthors(author) {
-        $('#tblBooks').DataTable().ajax.url("?author_name=" + author).load();;
+        $('#tblBooks').DataTable().ajax.url("?author_name=" + author).load();
     }
 </script>
 @include('includes.footer')
