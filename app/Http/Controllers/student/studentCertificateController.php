@@ -127,10 +127,14 @@ class studentCertificateController extends Controller
         foreach ($data as $key => $value) {
          // get certificate new number 
             $certificate_no_result = DB::table('certificate_history as c')
-                ->selectRaw('(IFNULL(MAX(cast(c.certificate_number AS UNSIGNED)),0) + 1) AS certificate_no')
+                ->selectRaw('(IFNULL(MAX(CAST(c.certificate_number AS UNSIGNED)), 0) + 1) AS certificate_no')
                 ->where('c.sub_institute_id', $sub_institute_id)
                 ->where('certificate_type', $template)
-                ->where('syear', $syear)->get()->toArray();
+                ->when($sub_institute_id != 47, function ($query) use ($syear) {
+                    return $query->where('syear', $syear);
+                })
+                ->get()
+                ->toArray();
             $certificate_no = $certificate_no_result[0]->certificate_no;
             
             if (in_array($template,['Transfer Certificate','Bonafide']) &&  $sub_institute_id==254) 
@@ -943,7 +947,10 @@ LIMIT 1");
                 ->selectRaw('(IFNULL(MAX(cast(c.certificate_number AS UNSIGNED)),0) + 1) AS certificate_no')
                 ->where('c.sub_institute_id', $sub_institute_id)
                 ->where('certificate_type', $template)
-                ->where('syear', $syear)->get()->toArray();
+                ->when($sub_institute_id != 47, function ($query) use ($syear) {
+                    return $query->where('syear', $syear);
+                })
+                ->get()->toArray();
 
             $certificate_no = $certificate_no_result[0]->certificate_no;
 
