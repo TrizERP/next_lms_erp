@@ -348,8 +348,22 @@ class bulkStudentController extends Controller
         $tblstandard = standardModel::where(["sub_institute_id" => $sub_institute_id])
             ->pluck("name", "id")->toArray();
 
-        $tbldivision = divisionModel::where(["sub_institute_id" => $sub_institute_id])
-            ->pluck("name", "id")->toArray();
+        // $validDivisions = ['A', 'B', 'C', 'D']; // Define your allowed division names
+
+        // $tbldivision = divisionModel::where("sub_institute_id", $sub_institute_id)
+        //     ->whereIn("name", $validDivisions) // Filter only valid names
+        //     ->pluck("name", "id")
+        //     ->toArray();
+        
+        // edit by riddhi 13/06/2025
+        $tbldivision = DB::table('std_div_map')
+            ->join('division', 'division.id', '=', 'std_div_map.division_id')
+            ->where("std_div_map.standard_id", $standard_id)
+            ->pluck("division.name", "division.id")
+            ->toArray();
+
+        // $tbldivision = divisionModel::where(["sub_institute_id" => $sub_institute_id])
+        //     ->pluck("name", "id")->toArray();
 
         $tblgrade = academic_sectionModel::where(["sub_institute_id" => $sub_institute_id])
             ->pluck("title", "id")->toArray();
