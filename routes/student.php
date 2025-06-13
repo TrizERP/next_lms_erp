@@ -111,9 +111,9 @@ Route::group(['prefix' => 'student', 'middleware' => ['session', 'menu', 'logRou
     Route::post('show_student_report', [studentReportController::class, 'searchStudent'])->name("show_student_report");
     Route::resource('missing_document_report', missingDocumentReportController::class);
     Route::resource('inactive_student_report', InactiveStudentReportController::class);
-    Route::post('show_bulk_student', [bulkStudentController::class, 'searchStudent'])->name("show_bulk_student");
+    Route::match(['get', 'post'],'show_bulk_student', [bulkStudentController::class, 'searchStudent'])->name("show_bulk_student");
     Route::post('show_student', [transferStudentController::class, 'searchStudent'])->name("show_student");
-    Route::post('bulk_update', [bulkStudentController::class, 'bulkUpdate'])->name("bulk_update");
+    Route::match(['get', 'post'],'bulk_update', [bulkStudentController::class, 'bulkUpdate'])->name("bulk_update");
     Route::post('transfer_student', [transferStudentController::class, 'transferStudent'])->name("transfer_student");
     Route::post('show_student_attendance', [studentAttendanceController::class, 'showStudent'])->name("show_student_attendance");
     Route::post('save_student_attendance', [studentAttendanceController::class, 'saveStudentAttendance'])->name("save_student_attendance");

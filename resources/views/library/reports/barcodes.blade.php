@@ -25,7 +25,8 @@
             display: flex;
             text-align: center;
             position: fixed; /* Keep header visible on top during print */
-            top: 0;
+            top: 14px;
+            /* bottom: 10px; */
             left: 0;
             padding: 10px 0;
             font-size: 10pt;
@@ -40,12 +41,13 @@
         .header-center {
             width:80%;
             white-space: nowrap;
+            font-size:0.8rem;
         }
 
         table {
             width: 88%;
             border-collapse: collapse;
-            margin: 0px 34px;
+            margin: 0px 43px;
             padding: 0px;
             align-items: center;
             text-align: center;
@@ -55,6 +57,7 @@
 
         tr {
             page-break-inside: avoid;
+            padding: 20px;
         }
 
         td {
@@ -89,7 +92,7 @@
         }
 
         .barcode-title {
-            font-size: 9pt; /* Adjust font size for title */
+            font-size: 8.5pt; /* Adjust font size for title */
             line-height: 1.1;
             font-weight: bold;
         }
