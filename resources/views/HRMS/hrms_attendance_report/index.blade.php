@@ -18,6 +18,47 @@
     .weekend { background-color: #99D699; }
     .holiday { background-color: #4591e0; }
     .punchsame { background-color: red; }
+/* quick view starts  */
+.profile-card {
+    background: #fff;
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+}
+.profile-card h2 {
+    font-size: 22px;
+    color: #333;
+    margin-bottom: 5px;
+}
+.profile-card p {
+    font-size: 16px;
+    color: #777;
+    margin-bottom: 15px;
+}
+.profile-section {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    margin-top: 15px;
+}
+.profile-img {
+    height: 400px;
+    object-fit: cover;
+    border: 3px solid #ddd;
+}
+.member {
+    text-align: center;
+}
+.member span {
+    display: block;
+    font-size: 14px;
+    color: #555;
+    margin-top: 5px;
+}
+.dropify-clear{
+    display:none !important;
+}
+/* quick view end  */    
 </style>
 @include('includes.sideNavigation')
 <div id="page-wrapper">
@@ -97,7 +138,8 @@
                             <th>Employee Name</th>
                             <th>In Time</th>
                             <th>Out Time</th>
-                            <th class="text-left">Duration</th>
+                            <th>Duration</th>
+                            <th class="text-left">Selfie</th>
                         </tr>
                         </thead>
                         @php
@@ -110,6 +152,7 @@
                         {
                             $report_data = $data['report_data'];
                         }
+                        $punch_in = $punch_out = '';
 
                        @endphp
                         <form action="{{route('payroll.store_monthly_payroll_report')}}" method="post">
@@ -229,6 +272,15 @@
         @endif
     </td>
     <td>{{ isset($hrmsAttendance->timestamp_diff) ? \Carbon\Carbon::parse($hrmsAttendance->timestamp_diff)->format('H:i') : '-' }}</td>
+    <td>
+        @if(isset($hrmsAttendance->photo_in) || isset($hrmsAttendance->photo_out))
+            <a href="#" data-toggle="modal" data-target="#quickView" style="color: #007bff;">View</a>
+            @php
+            $punch_in = $hrmsAttendance->photo_in;
+            $punch_out = $hrmsAttendance->photo_out;
+            @endphp
+        @endif
+        </td>
 </tr>
 
                                 @endforeach
@@ -239,6 +291,47 @@
             </div>
         @endif
     </div>
+</div>
+
+<!-- Quick View Modal -->
+<div class="modal fade" id="quickView" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document" style="max-width: 1200px;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLabel">Punch IN-OUT Selfie</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="profile-card">
+            @php 
+                if(isset($punch_in) && $punch_in!=''){
+                    $punch_in = "https://s3-triz.fra1.cdn.digitaloceanspaces.com/public/hrms/attendance_photo/".$punch_in;
+                }
+                if(isset($punch_out) && $punch_out!=''){
+                    $punch_out = "https://s3-triz.fra1.cdn.digitaloceanspaces.com/public/hrms/attendance_photo/".$punch_out;
+                }
+            @endphp
+            <div class="profile-section">
+                @if(isset($punch_in) && $punch_in!='')
+                <div class="member">
+                    <img src="{{$punch_in}}" alt="Punch IN Selfie" class="profile-img">
+                    <span>Punch IN</span>
+                </div>
+                @endif
+                @if(isset($punch_out) && $punch_out!='')
+                <div class="member">
+                    <img src="{{$punch_out}}" alt="Punch OUT Selfie" class="profile-img">
+                    <span>Punch OUT</span>
+                </div>
+                @endif
+            </div>
+            <hr>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 @include('includes.footerJs')

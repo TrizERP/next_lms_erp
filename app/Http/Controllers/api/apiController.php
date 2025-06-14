@@ -77,9 +77,10 @@ class apiController extends Controller
 				//End Added by rajesh 02-04-2024 same OTP send in exist mobile
                 
                 $sub_institute_id = $data[0]->sub_institute_id;
+                $sub_Array = [328,329,330,331];
                 if ($_REQUEST['mobile'] == '9979176562' || $_REQUEST['mobile'] == '9824154142') {
                     $otp = "123456";
-                } else if($sub_institute_id == 328 || $sub_institute_id == 331){
+                } else if(in_array($sub_institute_id, $sub_Array)){
                     $otp = date('dmy', strtotime($data[0]->dob));
                 }else{
                     //$text = "Dear Parent, Your OTP is ".$otp;
@@ -126,7 +127,7 @@ class apiController extends Controller
     public function teacherlogin(Request $request)
     {
         $send_data = [];
-        $response = ['status' => '0', 'message' => 'No Teacher Found', 'data' => $send_data];
+        $response = ['status' => '0', 'message' => 'No Staff Found', 'data' => $send_data];
         $validator = Validator::make($request->all(), [
             'mobile' => 'required|numeric',
         ]);
@@ -160,9 +161,10 @@ class apiController extends Controller
                 $otp = rand(100000, 999999);
 
                 $sub_institute_id = $data['sub_institute_id'];
+                $sub_Array = [328,329,330,331];
                 if ($_REQUEST['mobile'] == '9979176562' || $_REQUEST['mobile'] == '9824154142') {
                     $otp = "123456";
-                }else if($sub_institute_id == 328 || $sub_institute_id == 331){
+                }else if(in_array($sub_institute_id, $sub_Array)){
                     $otp = date('dmy', strtotime($data['birthdate']));
                 } else {
 
@@ -186,7 +188,8 @@ class apiController extends Controller
 
                 $data = DB::table("tbluser AS tu")
                     ->join('tbluserprofilemaster AS tpm', 'tpm.id', '=', 'tu.user_profile_id')
-                    ->where(["tu.mobile" => $_REQUEST['mobile'], "tpm.name" => 'Teacher'])
+                    ->where("tu.mobile", $_REQUEST['mobile'])
+    				->whereIn("tpm.name", ['Teacher', 'Employee'])
                     ->where('tu.status',1) // 23-04-24 by uma
                     ->update(["tu.otp" => $otp]);
 
