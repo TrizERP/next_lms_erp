@@ -1096,34 +1096,34 @@ $('#subject-filter, #publisher-filter').change(function() {
         });
 
     function getyearwise_holiday(year) {
-        $('#tblBooks').DataTable().ajax.url("?year=" + year).load();
+        $('#tblBooks').DataTable().ajax.url("?year=" + year).load();;
     }
 
     function getBooks(status) {
-        $('#tblBooks').DataTable().ajax.url("?book_status=" + status).load();
+        $('#tblBooks').DataTable().ajax.url("?book_status=" + status).load();;
     }
 
     function getSubjects(subject) {
-        $('#tblBooks').DataTable().ajax.url("?subject=" + subject).load();
+        $('#tblBooks').DataTable().ajax.url("?subject=" + subject).load();;
     }
 
     function getPublishers(publisher) {
-        $('#tblBooks').DataTable().ajax.url("?publisher_name=" + publisher).load();
+        $('#tblBooks').DataTable().ajax.url("?publisher_name=" + publisher).load();;
     }
     function getItemCode(item) {
-        $('#tblBooks').DataTable().ajax.url("?search_item=" + item).load();
+        $('#tblBooks').DataTable().ajax.url("?search_item=" + item).load();;
     }
 
     // 12-08-2024
     function getClassification(number) {
-        $('#tblBooks').DataTable().ajax.url("?classification_no=" + number).load();
+        $('#tblBooks').DataTable().ajax.url("?classification_no=" + number).load();;
     }
     function getIsbnIssn(number) {
-        $('#tblBooks').DataTable().ajax.url("?isbn_issn=" + number).load();
+        $('#tblBooks').DataTable().ajax.url("?isbn_issn=" + number).load();;
     }
     // 12-08-2024
     function getAuthors(author) {
-        $('#tblBooks').DataTable().ajax.url("?author_name=" + author).load();
+        $('#tblBooks').DataTable().ajax.url("?author_name=" + author).load();;
     }
 </script>
 @include('includes.footer')

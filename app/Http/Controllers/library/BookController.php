@@ -45,10 +45,43 @@ class BookController extends Controller
         if ($request->ajax()) {
                     
             $books = LibraryBook::where('sub_institute_id', $sub_institute_id)
-                ->when(request('subject'), function($q) {
-                    $q->where('subject', request('subject'));
+               ->when(request('subject'),function($q){
+                $q->where('subject',request('subject'));
                 })
-                // ... [keep all your existing when() conditions] ...
+                ->when(request('publisher_name'),function($q){
+                    $q->where('publisher_name',request('publisher_name'));
+                })
+                ->when(request('author_name'),function($q){
+                    $q->where('author_name',request('author_name'));
+                }) 
+                ->when(request('search_item'), function ($q) {
+                    $q->whereHas('items', function ($subquery) {
+                        $subquery->where('item_code', request('search_item'));
+                    });
+                })
+                // 12-08-2024
+                ->when(request('classification_no'),function($q){
+                    $q->where('classification',request('classification_no'));
+                }) 
+                ->when(request('isbn_issn'),function($q){
+                    $q->where('isbn_issn',request('isbn_issn'));
+                }) 
+                //12-08-2024
+                ->when(request('book_status'),function($q){
+                    $q->whereHas('book_circulations', function ($q) {
+                        switch (request('book_status')) {
+                            case 'issued':
+                                $q->whereNotNull('issued_date')->whereNull('return_date');
+                                break;
+                            case 'due':
+                                $q->whereDate('due_date', now())->whereNull('return_date');
+                                break;
+                            case 'overdue':
+                                $q->whereDate('due_date', '<', now())->whereNull('return_date');
+                                break;
+                        }
+                    });
+                })
                 ->select(['library_books.*', 
                     DB::raw('(SELECT GROUP_CONCAT(item_code) FROM library_items WHERE book_id = library_books.id AND sub_institute_id = '.$sub_institute_id.' AND deleted_at IS NULL) as item_codes')
                 ]);
