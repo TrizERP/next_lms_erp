@@ -67,9 +67,11 @@
                                 </td>
                                 <td>
                                     @if(in_array(session()->get('sub_institute_id'),[195]))  
-                                        <select class="form-control" name="{{ 'values[text]['.$col_arr['student_id'].']'}}" id="messageSelect-{{$col_arr['student_id']}}">
+                                        <!-- <select class="form-control" name="{{ 'values[text]['.$col_arr['student_id'].']'}}" id="messageSelect-{{$col_arr['student_id']}}">
                                             <option value="">Please Select Title</option>
-                                        </select>
+                                        </select> -->
+                                        <input type="text" list="messageSelect-{{$col_arr['student_id']}}" class="form-control interest-input" name="{{ 'values[text]['.$col_arr['student_id'].']'}}" autocomplete="off">
+                                        <datalist id="messageSelect-{{$col_arr['student_id']}}"></datalist>
                                     @else 
                                         <textarea name="{{ 'values[text]['.$col_arr['student_id'].']'}}" class="form-control resizableVertical"></textarea>
                                     @endif
@@ -133,7 +135,9 @@
                 messageSelect.append('<option value="">Select</option>');
                 if (data['masterData'] && data['masterData'].length > 0) {
                     $.each(data['masterData'], function (index, value) {
+                        // messageSelect.append(`<option value='${value.message}'>${value.message}</option>`);
                         messageSelect.append(`<option value='${value.message}'>${value.message}</option>`);
+                            // <label><input type="checkbox" value='${value.message}'>${value.message}</label>
                     });
                 } else {
                     messageSelect.append('<option value="">No messages available</option>');
