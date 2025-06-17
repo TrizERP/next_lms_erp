@@ -1,4 +1,5 @@
-@extends('layout') @section('container')
+@extends('layout') 
+@section('container')
 <div id="page-wrapper" style="color:#000;">
 	<div class="container-fluid">
 
@@ -77,7 +78,8 @@
                     @foreach($data['details'] as $key=>$value)                    
                         @if($data['print_type']=="member")
                             <tr>
-                                <td><input id="{{$value->enrollment_no}}" value="{{$value->enrollment_no}}" name="check_id[]" type="checkbox"><input type="hidden" name="print_text[]" value="{{$value->student_name}}"></td>                            
+                                <td><input id="{{$value->enrollment_no}}" value="{{$value->enrollment_no}}" name="check_id[]" type="checkbox">
+                                <input type="hidden" name="print_text[{{$value->enrollment_no}}]" value="{{$value->student_name}}"></td>                            
                                 <td>{{$value->enrollment_no}}</td>
                                 <td>{{$value->roll_no}}</td>
                                 <td>{{$value->student_name}}</td>
