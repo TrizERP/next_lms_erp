@@ -634,3 +634,6 @@ Route::get('/migrate-data', [DataMigrationController::class, 'migrateDataToNeo4j
 Route::get('dashboard_rights',[dashboardController::class,'dashboardRights'])->name('dashboard_rights'); // 13-03-2025 by uma
 // added hills nursey hc
 Route::post('getHillsHPCPDF', [AJAXController::class, 'getHillsHPCPDF'])->name('getHillsHPCPDF');
+
+
+

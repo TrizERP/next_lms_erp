@@ -51,3 +51,4 @@ Route::group(['prefix' => 'user', 'middleware' => ['session', 'menu', 'logRoute'
 
 Route::post('/teacherListAPI', [tbluserController::class, 'teacherListAPI']);
 
+
