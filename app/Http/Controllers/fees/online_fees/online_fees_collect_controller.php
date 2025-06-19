@@ -20,6 +20,7 @@ use function App\Helpers\OtherBreackOfMonth;
 use function App\Helpers\OtherBreackOfMonthHead;
 use function App\Helpers\FeeBreakoffHeadWise;
 use function App\Helpers\FeeMonthId;
+use Carbon\Carbon;
 use Validator;
 
 class online_fees_collect_controller extends Controller
@@ -421,7 +422,7 @@ class online_fees_collect_controller extends Controller
         $mission_account = ['SHRISWAMI1'];
 
         // Step 1: Call payoutSummary API
-        $payoutPayload = json_encode(['settlement_date' => date('d-m-Y')]);//date('03-05-2025')
+        $payoutPayload = json_encode(['settlement_date' => date('d-m-Y')]);//date('19-06-2025')
         $encRequest = $this->hdfc_encrypt($payoutPayload, $working_code);
 
         $summaryResponse = $this->callCCAvenueAPI($encRequest, $access_code, $working_code, 'payoutSummary');
@@ -471,9 +472,10 @@ class online_fees_collect_controller extends Controller
             foreach ($txnDetails as $txn) {
                 //echo "Rajesh".$txn['order_no'];exit();
                 $chequeNo = $txn['order_no'];
+                $settlementDate = Carbon::createFromFormat('d-m-Y', $txn['settlementDate'])->format('Y-m-d');
                 $variable = $subAccId.'-'.$payId;
 
-//echo "Rajesh";echo "chequeNo-".$chequeNo;echo "remarks-".$remarks;die();
+//echo "Rajesh";echo "chequeNo-".$chequeNo;echo "settlementDate-".$settlementDate;die();
 
                 $query = DB::table('fees_collect')
                     ->where([
@@ -484,10 +486,16 @@ class online_fees_collect_controller extends Controller
                     ]);
 
 //echo "SQL Query: " . $query->toSql() . "<br>";
-//echo "Bindings: ";//print_r($query->getBindings());
+//echo "Bindings: ";print_r($query->getBindings());
 //die();
                 // Execute the update
-                $query->update(['remarks' => $utrNo,'created_ip_address' => $variable]);
+                if (!empty($utrNo)) {
+                    $query->update([
+                        'remarks' => $utrNo,
+                        'receiptdate' => $settlementDate,
+                        'created_ip_address' => $variable,
+                    ]);
+                }
             }
         }
         return response()->json(['status' => 'success']);
