@@ -95,7 +95,7 @@ class studentReportController extends Controller
             'roll_no' => 'CAST(tblstudent_enrollment.roll_no AS INT)',
             'last_name' => 'tblstudent.last_name',
         ];
-        $defaultOrderBy = 'tblstudent.first_name';
+        $defaultOrderBy = 'tblstudent.first_name,tblstudent.middle_name,tblstudent.last_name';
 
         // Map dynamic fields and headers
         $res['dynamicFields'] = $dynamicFields = $request->input('dynamicFields') ?? [];

@@ -2238,6 +2238,7 @@ if (!function_exists('get_string')) {
     function get_school_details($grade = '', $std = '', $div = '')
     {
         $marking_period_id = session()->get('term_id');
+        $sub_institute_id = session()->get('sub_institute_id');
         $get_name_data = DB::table('academic_section as ac')
             ->join('standard as s', function ($join) use ($marking_period_id) {
                 $join->whereRaw('s.grade_id = ac.id AND ac.sub_institute_id = s.sub_institute_id');
@@ -2280,6 +2281,13 @@ if (!function_exists('get_string')) {
             $receipt_book_arr = $receipt_detail;
         }
 
+        if($sub_institute_id == 76){
+            $receipt_book_arr->receipt_line_1 = 'Shri Swaminarayan Mission Managed';
+            $receipt_book_arr->receipt_line_2 = 'Shri Ramkrishna Harikrishna Academy<br>Smt. G. N. Godhani Pre-Primary School';
+            $receipt_book_arr->receipt_line_3 = 'Valak Patia, Surat-Kamrej Road, Laskana, Surat - 395006';
+            $receipt_book_arr->receipt_line_4 = '';
+        }
+
         // $image_path = "http://" . $_SERVER['HTTP_HOST'] . "/storage/fees/" . $receipt_book_arr->receipt_logo;
         if (count($result) > 0) {
             $html .= '<table style="margin:0 auto;" width="80%">
@@ -2305,8 +2313,8 @@ if (!function_exists('get_string')) {
             $html .= '</td>';
             $html .= '</tr>';
             $html .= '<tr>
-    <td>&nbsp;</td>
-  </tr>';
+                    <td>&nbsp;</td>
+                    </tr>';
             $html .= '<tr>';
             if (isset($get_name_data) && !$std == '') {
 
