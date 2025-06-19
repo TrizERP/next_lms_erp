@@ -93,8 +93,14 @@ br {
                     @endphp
                     <!-- tabs starts  -->
                     <div class="tab-content">
+                        @if(session('success'))
+                            <div class="alert alert-success alert-block">
+                                <button type="button" class="close" data-dismiss="alert">×</button>
+                                <strong>{{ session('success') }}</strong>
+                            </div>
+                        @endif
                     <!-- tab 1 start  -->
-                    <div class="tab-pane p-3 active" id="section-linemove-1" role="tabpanel">      
+                    <div class="tab-pane p-3 active" id="section-linemove-1" role="tabpanel">     
                     <form action="{{ route('add_user.update', $data['id']) }}" enctype="multipart/form-data" method="post">
                     {{ method_field("PUT") }}
                     @csrf

@@ -529,7 +529,6 @@ class tbluserController extends Controller
             $res['fail'] = 0;
             $res['message'] = "Failed to Add Document";
         }
-
-        return is_mobile($type, "add_user.index", $res);
+        return redirect()->back()->with('success', 'Document updated successfully');
     }
 }
