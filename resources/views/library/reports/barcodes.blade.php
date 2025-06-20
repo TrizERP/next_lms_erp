@@ -235,13 +235,13 @@
 
         .barcode-image {
             display: block;
-            margin: 0 auto 2px auto;
-            width: 90%;
+            margin-left: 0 auto 2px auto;
+            width: 85%;
             height: 50%;
         }
 
         .barcode-title {
-            font-size: 6.3pt;
+            font-size: 6.0pt;
             font-weight: bold;
         }
     </style>
