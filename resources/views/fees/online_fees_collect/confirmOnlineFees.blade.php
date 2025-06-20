@@ -51,7 +51,9 @@
                     <thead>
                         <tr>
                             <th>Sr No. <input id="ckbCheckAll" type="checkbox"></th>
-                            <th>Enrollment No</th>
+                            <th>Payment Date</th>
+                            <th>Order No.</th>
+                            <th>GR No</th>
                             <th>Student Name</th>
                             <th>Mobile</th>
                             <th>Std/Div</th>
@@ -62,6 +64,8 @@
                         @foreach($data['searchedData'] as $key => $value)   
                         <tr>
                             <td><input type="checkbox" name="students[{{$value['student_id']}}][]" class="ckbox1" value="{{$value['payment_id']}}"> {{$key+1}}</td>
+                            <td>{{$value['hdfc_payment_date']}}</td>
+                            <td>{{$value['hdfc_order_id']}}</td>
                             <td>{{$value['enrollment_no']}}</td>
                             <td>{{ App\Helpers\sortStudentName('',$value['first_name'],$value['middle_name'],$value['last_name'])}}</td>
                             <td>{{$value['mobile']}}</td>
