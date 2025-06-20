@@ -12,6 +12,7 @@ use App\Models\general_dataModel;
 use App\Models\user\tbluserModel;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use function App\Helpers\is_mobile;
 use function App\Helpers\employeeDetails;
 use function App\Helpers\getSubCordinates;
@@ -83,7 +84,7 @@ class HrmsController extends Controller
     {
         $type = $request->input('type');
         // echo "<pre>";print_r(session()->get('data'));exit;
-        if ($type == 'API') $userId = $request->input('user_id');
+        if (in_array($type,['API','JSON'])) $userId = $request->input('user_id');
         else $userId = $request->session()->get('user_id');
         $hrmsInOutTimeDetails = HrmsAttendance::where([['user_id', $userId], ['day', Carbon::now()->format('Y-m-d')]])->get();
 
@@ -132,12 +133,18 @@ class HrmsController extends Controller
             $sub_institute_id = $request->input('sub_institute_id');
             $punchin_time = $request->input('punchin_time');
             $address_in = $request->input('address_in');
-            $photo_in = $request->input('photo_in');
+            // $photo_in = $request->input('photo_in');
+
+            $photo_in = null;
+
+            
 
             $validator = Validator::make($request->all(), [
                 'sub_institute_id' => 'required|numeric',
                 'user_id' => 'required|numeric',
                 'punchin_time' => 'required|date_format:Y-m-d H:i:s',
+                'address_in' => 'required',
+                // 'photo_in' => 'required',
             ]);
 
             if ($validator->fails()) {
@@ -154,6 +161,24 @@ class HrmsController extends Controller
             $photo_in = null;
         }
         
+        if ($request->hasFile('photo_in')) {
+            $file = $request->file('photo_in');
+
+            $timestamp = now()->format('YmdHis');
+            $extension = $file->getClientOriginalExtension();
+            $photoInFilename = 'In_'.$userId.'_' . $timestamp . '.' . $extension;
+
+            if ($request->has('oldPhotoIn')) {
+                $oldPath = 'public/hrms/attendance_photo/' . $request->get('oldPhotoIn');
+                    if (Storage::disk('digitalocean')->exists($oldPath)) {
+                        Storage::disk('digitalocean')->delete($oldPath);
+                    }
+            }
+
+            Storage::disk('digitalocean')->putFileAs('public/hrms/attendance_photo/', $file, $photoInFilename, 'public');
+
+            $photo_in = Storage::disk('digitalocean')->url('public/hrms/attendance_photo/' . $photoInFilename);
+        }
         $day = Carbon::parse($punchin_time)->format('Y-m-d');
 
         // Check if a punchin already exists for this user on the same day
@@ -194,12 +219,16 @@ class HrmsController extends Controller
             $sub_institute_id = $request->input('sub_institute_id');
             $punchout_time = $request->input('punchout_time');
             $address_out = $request->input('address_out');
-            $photo_out = $request->input('photo_out');
+            // $photo_out = $request->input('photo_out');
+
+            $photo_out = null;
 
             $validator = Validator::make($request->all(), [
                 'sub_institute_id'=>'required|numeric',
                 'user_id'=>'required|numeric',
-                'punchout_time'=>'required|date_format:Y-m-d H:i:s',
+                'punchout_time'=>'required',
+                'address_out' => 'required',
+                // 'photo_out' => 'required',                
             ]);
 
             if ($validator->fails()) {
@@ -216,6 +245,23 @@ class HrmsController extends Controller
             $photo_out = null;
         }
 
+        if ($request->hasFile('photo_out')) {
+                $file = $request->file('photo_out');
+                $timestamp = now()->format('YmdHis');
+                $extension = $file->getClientOriginalExtension();
+                $photoOutFilename = 'Out_'.$userId.'_' . $timestamp . '.' . $extension;
+
+                if ($request->has('oldPhotoOut')) {
+                    $oldPath = 'public/hrms/attendance_photo/' . $request->get('oldPhotoOut');
+                    if (Storage::disk('digitalocean')->exists($oldPath)) {
+                        Storage::disk('digitalocean')->delete($oldPath);
+                    }
+                }
+
+                Storage::disk('digitalocean')->putFileAs('public/hrms/attendance_photo/', $file, $photoOutFilename, 'public');
+
+                $photo_out = Storage::disk('digitalocean')->url('public/hrms/attendance_photo/' . $photoOutFilename);
+            }
         $day = Carbon::parse($punchout_time)->format('Y-m-d');
 
         // Check if a punchin already exists for this user on the same day
@@ -246,9 +292,10 @@ class HrmsController extends Controller
             $hrmsInOutTime->photo_out = $photo_out;
             $hrmsInOutTime->save();
 
+        }
+        
             $res['status_code']=1;
             $res['message']="Success to time out";
-        }
         return is_mobile($type, "hrms_inout_time.index", $res, "redirect");
         //return redirect('hrms-inout-time')->with(['message' =>'check Out successfully']);
     }
@@ -258,7 +305,7 @@ class HrmsController extends Controller
         $type = $request->input('type');
         // $hrmsAttendanceDetails = '';
 
-        if ($type == 'API') $sub_institute_id = $request->input('sub_institute_id');
+        if (in_array($type,['API','JSON'])) $sub_institute_id = $request->input('sub_institute_id');
         else   $sub_institute_id = $request->session()->get('sub_institute_id');
 
         if ($request->employee_id) 
@@ -314,7 +361,8 @@ class HrmsController extends Controller
         //return $request->all();
         //return Carbon::parse($request->indate)->format('Y-m-d');
         $type = $request->input('type');
-        if ($type == 'API') {
+
+        if (in_array($type,['API','JSON'])) {
             $sub_institute_id = $request->input('sub_institute_id');
         } else {
             $sub_institute_id = $request->session()->get('sub_institute_id');
@@ -362,7 +410,7 @@ class HrmsController extends Controller
     public function hrmsAttendanceReportIndex(Request $request) 
     {
         $type = $request->input('type');
-        if ($type == 'API') 
+        if (in_array($type,['API','JSON'])) 
         {
             $sub_institute_id = $request->input('sub_institute_id');
         } 
@@ -397,7 +445,7 @@ class HrmsController extends Controller
     public function hrmsAttendanceReport(Request $request) 
     {
         $type = $request->input('type');
-        if ($type == 'API') {
+        if (in_array($type,['API','JSON'])) {
             $sub_institute_id = $request->input('sub_institute_id');
         } else {
             $sub_institute_id = $request->session()->get('sub_institute_id');
@@ -531,7 +579,7 @@ class HrmsController extends Controller
     public function generalSettingIndex(Request $request) 
     {
         $type = $request->input('type');
-        if ($type == 'API') 
+        if (in_array($type,['API','JSON'])) 
         {
             $sub_institute_id = $request->input('sub_institute_id');
         } 
@@ -587,7 +635,7 @@ class HrmsController extends Controller
     {
         // echo "<pre>";print_r($request->all());exit;        
         $type = $request->input('type');
-        if ($type == 'API'){
+        if (in_array($type,['API','JSON'])){
             $userId = $request->input('user_id');
             $sub_institute_id = $request->input('sub_institute_id');
         } else{
@@ -839,7 +887,7 @@ class HrmsController extends Controller
     public function earlyGoingHrmsAttendanceReportIndex(Request $request) 
     {
         $type = $request->input('type');
-        if ($type == 'API') 
+        if (in_array($type,['API','JSON'])) 
         {
             $sub_institute_id = $request->input('sub_institute_id');
         } 
@@ -867,7 +915,7 @@ class HrmsController extends Controller
     public function earlyGoingHrmsAttendanceReport(Request $request) {
         // echo "<pre>";print_r($request->all());exit; 
         $type = $request->input('type');
-        if ($type == 'API') {
+        if (in_array($type,['API','JSON'])) {
             $sub_institute_id = $request->input('sub_institute_id');
         } else {
             $sub_institute_id = $request->session()->get('sub_institute_id');
@@ -981,7 +1029,7 @@ class HrmsController extends Controller
     public function departmentAttendanceReportCreate(Request $request){
         $type = $request->type;
         $sub_institute_id = session()->get('sub_institute_id');
-        if($type=="API"){
+        if(in_array($type,['API','JSON'])){
             $sub_institute_id = $request->sub_institute_id;
         }
         $res['selDepartments'] = $department_ids = $request->department_id;
@@ -1078,7 +1126,7 @@ class HrmsController extends Controller
                     }
                 }
             }
-            $holidays = $value->total_holidays ?? 0;
+            $holidays = $value->holidays ?? 0;
             $newEmpData[$key]->weekday_off = $countSundays;
             $newEmpData[$key]->totalDays = $totalDays;
             $newEmpData[$key]->workingDays = ($totalDays - $countSundays - $holidays);
@@ -1248,7 +1296,7 @@ class HrmsController extends Controller
             }
             $newHrmsAtt[$value->empId][$value->day]->att_punch_in = $punchin_time;
             $newHrmsAtt[$value->empId][$value->day]->att_punch_out = $punchout_time;
-            
+
             $newHrmsAtt[$value->empId][$value->day]->day_name = $day_name;
             $user_day_in = $day_name.'_in_date';
             $newHrmsAtt[$value->empId][$value->day]->in_time = $value->$user_day_in;
@@ -1260,7 +1308,6 @@ class HrmsController extends Controller
             if($punchin_time > $user_day_in){
                 $newHrmsAtt[$value->empId][$value->day]->is_late = 1;
             }
-                 
         }
         $empLeaves = $empHolidays = [];
         foreach ($get_hrms_emp_leaves as $value) {
@@ -1300,13 +1347,6 @@ class HrmsController extends Controller
                     } else {
                         $report_data[$from_date_new][$value->id] = (array) $value;
                     }
-                    $day_name =lcfirst(Carbon::parse($from_date_new)->format('l')); 
-                    // when they have day off 
-                    $report_data[$from_date_new][$value->id]['day_status'] = 'day';
-                    if($value->$day_name == 0){
-                        $report_data[$from_date_new][$value->id]['day_status'] = 'offday';
-                    }
-
                     if (isset($empLeaves[$value->id]) && array_key_exists($from_date_new, $empLeaves[$value->id])) 
                     {
                         $report_data[$from_date_new][$value->id]['leave'] = $empLeaves[$value->id][$from_date_new];
@@ -1358,7 +1398,7 @@ class HrmsController extends Controller
         $type= $request->type;
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
-        if($type=='API'){
+        if(in_array($type,['API','JSON'])){
             $sub_institute_id = $request->get('sub_institute_id');
             $syear = $request->get('syear');
         }
