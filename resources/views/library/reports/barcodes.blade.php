@@ -53,7 +53,7 @@
             align-items: center;
             text-align: center;
             /* Adjust margin-top to leave space for the fixed header */
-            margin-top: 88px; /* Increased to accommodate header */
+            margin-top: 110px; /* Increased to accommodate header */
         }
 
         tr {
@@ -204,7 +204,7 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            margin: 0 auto;
+            margin-top: 88px;
             padding: 0;
         }
 
