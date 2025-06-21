@@ -53,7 +53,7 @@
             align-items: center;
             text-align: center;
             /* Adjust margin-top to leave space for the fixed header */
-            margin-top: 88px; /* Increased to accommodate header */
+            margin-top: 110px; /* Increased to accommodate header */
         }
 
         tr {
@@ -204,7 +204,7 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            margin: 0 auto;
+            margin-top: 88px;
             padding: 0;
         }
 
@@ -235,13 +235,13 @@
 
         .barcode-image {
             display: block;
-            margin: 0 auto 2px auto;
-            width: 90%;
+            margin-left: 0 auto 2px auto;
+            width: 85%;
             height: 50%;
         }
 
         .barcode-title {
-            font-size: 6.3pt;
+            font-size: 6.0pt;
             font-weight: bold;
         }
     </style>
