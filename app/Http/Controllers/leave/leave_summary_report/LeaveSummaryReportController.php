@@ -257,4 +257,62 @@ class LeaveSummaryReportController extends Controller
         // dd(DB::getQueryLog($get_employee_leave_lists));
         return $get_employee_leave_lists;
     }
+
+    public function MyLeave(Request $request){
+        // Set required parameters for internal API-style call
+        $customRequest = new \Illuminate\Http\Request();
+        $customRequest->replace([
+            'sub_institute_id' => $request->sub_institute_id,
+            'department_id' => $request->department_id,
+            'emp_id' => $request->employee_id,  // 'emp_id' is the expected key
+            'years' => $request->years,
+            'type' => 'API'
+        ]);
+
+        // $leaveData = $this->leaveSummaryReportShow($customRequest);
+        // $jsonData = json_decode($leaveData);
+        // $usedLeaves = isset($jsonData->new_data) ? $jsonData->new_data : [];
+        // $totalLeaves = isset($jsonData->op_data) ? $jsonData->op_data : [];
+        // Call the existing LeaveSummaryReportShow method
+        // return $totalLeaves;
+
+        $leaveData = $this->leaveSummaryReportShow($customRequest);
+
+        $jsonString = (string) $leaveData; // ensure it's a string
+        $jsonData = json_decode($jsonString, true); // decode to array
+
+        $usedLeaves = $jsonData['new_data'] ?? [];
+        $totalLeaves = $jsonData['op_data'] ?? [];
+        $employeeId = (string) $request->employee_id;
+
+        $allLeaveTypes = array_unique(array_merge(array_keys($usedLeaves), array_keys($totalLeaves)));
+        $mergedLeaves = $overallCount = [];
+        $overallTotal = $overallUsed = $overallRemain = 0;
+        foreach ($allLeaveTypes as $leaveType) {
+            $used = isset($usedLeaves[$leaveType][$employeeId]) ? $usedLeaves[$leaveType][$employeeId] : 0;
+            $total = isset($totalLeaves[$leaveType][$employeeId]) ? $totalLeaves[$leaveType][$employeeId] : 0;
+
+            $remain = $total > 0 ? ($total - $used) : 0;
+            if($total > 0 && $used >0 && $remain>0){
+                $overallTotal +=$total;
+                $overallUsed +=$used;
+                $overallRemain +=$remain;
+            }
+            $mergedLeaves[$leaveType] = [
+                'total' => $total,
+                'used' => $used,
+                'remain' => $remain
+            ];
+        }
+        $overallCount = [
+                'overallTotal' => $overallTotal,
+                'overallUsed' => $overallUsed,
+                'overallRemain' => $overallRemain
+            ];
+            $mainArray = [
+                'overall_leave'=>$overallCount,
+                'leave_types'=>$mergedLeaves
+            ];
+        return response()->json($mainArray);
+    }
 }
