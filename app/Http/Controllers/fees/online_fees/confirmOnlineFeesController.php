@@ -89,7 +89,7 @@ class confirmOnlineFeesController extends Controller
                     $studentDetails[0]['payment_id'] = $value->id;
                     $studentDetails[0]['hdfc_payment_date'] = $value->hdfc_payment_date;
                     $studentDetails[0]['amount'] = $value->amount;
-                    $studentDetails[0]['hdfc_transaction_id'] = $value->hdfc_transaction_id;
+                    $studentDetails[0]['hdfc_order_id'] = $value->hdfc_order_id;
                 }
                 $studentData[] = isset($studentDetails[0]) ? $studentDetails[0] : [];
             }
@@ -174,11 +174,10 @@ class confirmOnlineFeesController extends Controller
                 // $mer_amount = $payementData->amount;
                 // $data = $online_controller->pay_fees($request, $studentId, $syear, $sub_institute_id, $mer_amount, $order_id);
                 if(isset($payementData->hdfc_order_id)){
-                $feesData = DB::table('fees_collect')->where('cheque_no',$payementData->hdfc_order_id)->get()->toArray();
+                $feesData = DB::table('fees_collect')->where('syear',$syear)->where('sub_institute_id',$sub_institute_id)->where('cheque_no',$payementData->hdfc_order_id)->get()->toArray();
                 foreach ($feesData as $keys => $values) {
                     $html = str_replace('In Processed',' ',$values->fees_html);
-                    $getFeesCollect = DB::table('fees_collect')->where('cheque_no',$payementData->hdfc_order_id)->update(['fees_html'=>$html]);
-
+                    $getFeesCollect = DB::table('fees_collect')->where('cheque_no',$payementData->hdfc_order_id)->where('id', $values->id)->update(['fees_html'=>$html]);
                 }
                 
                 // get  order and update fees_collect is_deleted

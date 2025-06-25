@@ -12,6 +12,7 @@ use App\Models\general_dataModel;
 use App\Models\user\tbluserModel;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use function App\Helpers\is_mobile;
 use function App\Helpers\employeeDetails;
 use function App\Helpers\getSubCordinates;
@@ -132,14 +133,18 @@ class HrmsController extends Controller
             $sub_institute_id = $request->input('sub_institute_id');
             $punchin_time = $request->input('punchin_time');
             $address_in = $request->input('address_in');
-            $photo_in = $request->input('photo_in');
+            // $photo_in = $request->input('photo_in');
+
+            $photo_in = null;
+
+            
 
             $validator = Validator::make($request->all(), [
                 'sub_institute_id' => 'required|numeric',
                 'user_id' => 'required|numeric',
                 'punchin_time' => 'required|date_format:Y-m-d H:i:s',
                 'address_in' => 'required',
-                'photo_in' => 'required',
+                // 'photo_in' => 'required',
             ]);
 
             if ($validator->fails()) {
@@ -156,6 +161,24 @@ class HrmsController extends Controller
             $photo_in = null;
         }
         
+        if ($request->hasFile('photo_in')) {
+            $file = $request->file('photo_in');
+
+            $timestamp = now()->format('YmdHis');
+            $extension = $file->getClientOriginalExtension();
+            $photoInFilename = 'In_'.$userId.'_' . $timestamp . '.' . $extension;
+
+            if ($request->has('oldPhotoIn')) {
+                $oldPath = 'public/hrms/attendance_photo/' . $request->get('oldPhotoIn');
+                    if (Storage::disk('digitalocean')->exists($oldPath)) {
+                        Storage::disk('digitalocean')->delete($oldPath);
+                    }
+            }
+
+            Storage::disk('digitalocean')->putFileAs('public/hrms/attendance_photo/', $file, $photoInFilename, 'public');
+
+            $photo_in = Storage::disk('digitalocean')->url('public/hrms/attendance_photo/' . $photoInFilename);
+        }
         $day = Carbon::parse($punchin_time)->format('Y-m-d');
 
         // Check if a punchin already exists for this user on the same day
@@ -196,14 +219,16 @@ class HrmsController extends Controller
             $sub_institute_id = $request->input('sub_institute_id');
             $punchout_time = $request->input('punchout_time');
             $address_out = $request->input('address_out');
-            $photo_out = $request->input('photo_out');
+            // $photo_out = $request->input('photo_out');
+
+            $photo_out = null;
 
             $validator = Validator::make($request->all(), [
                 'sub_institute_id'=>'required|numeric',
                 'user_id'=>'required|numeric',
                 'punchout_time'=>'required',
                 'address_out' => 'required',
-                'photo_out' => 'required',                
+                // 'photo_out' => 'required',                
             ]);
 
             if ($validator->fails()) {
@@ -220,6 +245,23 @@ class HrmsController extends Controller
             $photo_out = null;
         }
 
+        if ($request->hasFile('photo_out')) {
+                $file = $request->file('photo_out');
+                $timestamp = now()->format('YmdHis');
+                $extension = $file->getClientOriginalExtension();
+                $photoOutFilename = 'Out_'.$userId.'_' . $timestamp . '.' . $extension;
+
+                if ($request->has('oldPhotoOut')) {
+                    $oldPath = 'public/hrms/attendance_photo/' . $request->get('oldPhotoOut');
+                    if (Storage::disk('digitalocean')->exists($oldPath)) {
+                        Storage::disk('digitalocean')->delete($oldPath);
+                    }
+                }
+
+                Storage::disk('digitalocean')->putFileAs('public/hrms/attendance_photo/', $file, $photoOutFilename, 'public');
+
+                $photo_out = Storage::disk('digitalocean')->url('public/hrms/attendance_photo/' . $photoOutFilename);
+            }
         $day = Carbon::parse($punchout_time)->format('Y-m-d');
 
         // Check if a punchin already exists for this user on the same day
@@ -250,9 +292,10 @@ class HrmsController extends Controller
             $hrmsInOutTime->photo_out = $photo_out;
             $hrmsInOutTime->save();
 
+        }
+        
             $res['status_code']=1;
             $res['message']="Success to time out";
-        }
         return is_mobile($type, "hrms_inout_time.index", $res, "redirect");
         //return redirect('hrms-inout-time')->with(['message' =>'check Out successfully']);
     }

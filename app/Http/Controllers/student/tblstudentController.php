@@ -272,6 +272,7 @@ class tblstudentController extends Controller
             }
             // $file_name = $name.'.'.$ext;
             $father_image =  'father_'.$request->enrollment_no.'_'.$sub_institute_id.'.'.$ext;
+            // have to use this for image entering
             if($request->has('oldFatherImage')){
                 $file_path = 'public/parents_image/' .$request->get('oldFatherImage');
                 if (Storage::disk('digitalocean')->exists($file_path)) {
