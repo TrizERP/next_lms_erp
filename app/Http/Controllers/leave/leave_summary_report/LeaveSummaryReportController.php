@@ -259,27 +259,22 @@ class LeaveSummaryReportController extends Controller
     }
 
     public function MyLeave(Request $request){
-        // Set required parameters for internal API-style call
+
         $customRequest = new \Illuminate\Http\Request();
         $customRequest->replace([
             'sub_institute_id' => $request->sub_institute_id,
             'department_id' => $request->department_id,
-            'emp_id' => $request->employee_id,  // 'emp_id' is the expected key
+            'emp_id' => $request->employee_id,  
             'years' => $request->years,
             'type' => 'API'
         ]);
 
-        // $leaveData = $this->leaveSummaryReportShow($customRequest);
-        // $jsonData = json_decode($leaveData);
-        // $usedLeaves = isset($jsonData->new_data) ? $jsonData->new_data : [];
-        // $totalLeaves = isset($jsonData->op_data) ? $jsonData->op_data : [];
-        // Call the existing LeaveSummaryReportShow method
-        // return $totalLeaves;
+
 
         $leaveData = $this->leaveSummaryReportShow($customRequest);
 
-        $jsonString = (string) $leaveData; // ensure it's a string
-        $jsonData = json_decode($jsonString, true); // decode to array
+        $jsonString = (string) $leaveData; 
+        $jsonData = json_decode($jsonString, true); 
 
         $usedLeaves = $jsonData['new_data'] ?? [];
         $totalLeaves = $jsonData['op_data'] ?? [];
