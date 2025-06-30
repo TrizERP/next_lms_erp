@@ -288,7 +288,7 @@ class LeaveSummaryReportController extends Controller
             $total = isset($totalLeaves[$leaveType][$employeeId]) ? $totalLeaves[$leaveType][$employeeId] : 0;
 
             $remain = $total > 0 ? ($total - $used) : 0;
-            if($total > 0 && $used >0 && $remain>0){
+            if($total > 0 && $used >0 && $remain>0 && in_array($leaveType,["Casual Leave"])){
                 $overallTotal +=$total;
                 $overallUsed +=$used;
                 $overallRemain +=$remain;

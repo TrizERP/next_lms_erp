@@ -42,7 +42,7 @@
                         <div class="row">
                             <div class="col-md-4 form-group">
                                 <label>Employee List</label>
-                                <select id='employee_id' name="employee" class="form-control">
+                                <select id='employee_id' name="employee" class="form-control employee_id">
                                     <option value="">Select Employee</option>
                                     @foreach($data['employeeLists'] as $key => $employeeList)
                                         @if( $data['employee_id'] == $employeeList->id)
@@ -89,7 +89,7 @@
                         <div class="row">
                             <div class="col-md-4 form-group">
                                 <label>Employee List</label>
-                                <select id='employee_id' name="employee" class="form-control">
+                                <select id='employee_id' name="employee" class="form-control employee_id">
                                     <option value="">Select Employee</option>
                                     @foreach($data['employeeLists'] as $key => $employeeList)
                                         @if( $data['employee_id'] == $employeeList->id)
@@ -194,6 +194,13 @@
                 $('#outForm').show();
             @endif
 
+            $('.employee_id').on('change', function () {
+                const employeeId = $(this).val();
+                if (employeeId) {
+                    window.location.href = window.location.origin + '/hrms-attendance?employee_id=' + employeeId;
+                }
+            });
+
             @if(isset($data['hrms_attendance']->punchout_time))
                 $('.btn-hide').hide();
             @endif
@@ -253,21 +260,23 @@
             }
         });
 
-        var indate = document.getElementById('indate');
-        indate.addEventListener('change', function () {
-            var employeeId = document.getElementById('employee_id').value;
-            var date = document.getElementById('indate').value;
-            console.log(employeeId);
-            window.location.href = window.location.origin + '/hrms-attendance?employee_id=' + employeeId + '&date='+date;
-        }, false);
+        // var indate = document.getElementById('indate');
+        // indate.addEventListener('change', function () {
+        //     var employeeId = document.getElementById('employee_id').value;
+        //     var date = document.getElementById('indate').value;
+        //     console.log(employeeId);
+        //     window.location.href = window.location.origin + '/hrms-attendance?employee_id=' + employeeId + '&date='+date;
+        // }, false);
 
-        var select = document.getElementById('employee_id');
-        select.addEventListener('change', function () {
-            var employeeId = document.getElementById('employee_id').value;
-            console.log(employeeId);
-            window.location.href = window.location.origin + '/hrms-attendance?employee_id=' + employeeId;
-        }, false);
-        console.log("test")
+        // var select = document.getElementById('employee_id');
+        // select.addEventListener('change', function () {
+        //     var employeeId = document.getElementById('employee_id').value;
+        //     console.log(employeeId);
+        //     window.location.href = window.location.origin + '/hrms-attendance?employee_id=' + employeeId;
+        // }, false);
+        // console.log("test")
+      
+
     </script>
     <script src="../../../admin_dep/js/cbpFWTabs.js"></script>
     <script type="text/javascript">
