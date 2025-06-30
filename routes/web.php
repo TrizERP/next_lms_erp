@@ -635,5 +635,4 @@ Route::get('dashboard_rights',[dashboardController::class,'dashboardRights'])->n
 // added hills nursey hc
 Route::post('getHillsHPCPDF', [AJAXController::class, 'getHillsHPCPDF'])->name('getHillsHPCPDF');
 
-
-
+Route::get('/my-leave', [LeaveSummaryReportController::class, 'MyLeave'])->name('my-leave');
