@@ -37,6 +37,10 @@ Route::group(['prefix' => 'user', 'middleware' => ['session', 'menu', 'logRoute'
         [tbluserProfileWiseMenuController::class, 'displayUserProfileWiseRights'])->name('ajax_user_profile_wise_rights');
     Route::get('ajax_mobile_app_menu_rights',
         [tblmobileAppMenuRightsController::class, 'displayMobileAppMenuRights'])->name('ajax_mobile_app_menu_rights');
+    Route::post('add_experience/store',
+        [tbluserController::class, 'add_experience'])->name('add_experience.store');
+    Route::post('/experience-detail/{id}', [tbluserController::class, 'experience_destroy'])->name('experience_detail.destroy');
+
 
 });
 // chek permission
