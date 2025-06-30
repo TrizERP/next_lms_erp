@@ -19,6 +19,7 @@
         $division_id = $data['division_id'];
         }
         @endphp
+        
         <div class="card">
             @if ($sessionData = Session::get('data'))
             <div class="alert alert-success alert-block">
