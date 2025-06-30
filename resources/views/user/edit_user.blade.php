@@ -56,19 +56,25 @@ br {
                 <div class="col-lg-12 col-sm-12 col-xs-12">
                     <div class="sttabs tabs-style-linemove triz-verTab bg-white style2">
                         <center>
-                        <ul class="nav nav-tabs tab-title mb-4">
-                            <li class="nav-item"><a href="#section-linemove-1" class="nav-link active" aria-selected="true" data-toggle="tab"><span>Personal Details</span></a></li>
-                            <li class="nav-item"><a href="#section-linemove-2" class="nav-link" aria-selected="false" data-toggle="tab"><span>Upload Document</span></a></li>
-                            @if(!empty($data['salary_structure']))
-                            <li class="nav-item"><a href="#section-linemove-3" class="nav-link" aria-selected="false" data-toggle="tab"><span>Salary</span></a></li>
-                            @endif
-                           
-                            <li class="nav-item"><a href="#section-linemove-4" class="nav-link" aria-selected="false" data-toggle="tab"><span>My Skills & Certifications</span></a></li>
-                            {{-- @if(session()->get('sub_institute_id')==47)
+                       <ul class="nav nav-tabs tab-title mb-4">
+                                    <li class="nav-item"><a href="#section-linemove-1" class="nav-link active"
+                                            aria-selected="true" data-toggle="tab"><span>Personal Details</span></a></li>
+                                    <li class="nav-item"><a href="#section-linemove-2" class="nav-link"
+                                            aria-selected="false" data-toggle="tab"><span>Upload Document</span></a></li>
+                                    @if (!empty($data['salary_structure']))
+                                        <li class="nav-item"><a href="#section-linemove-3" class="nav-link"
+                                                aria-selected="false" data-toggle="tab"><span>Salary</span></a></li>
+                                    @endif
+                                    <li class="nav-item"><a href="#section-linemove-6" class="nav-link"
+                                            aria-selected="false" data-toggle="tab"><span>Experience details</span></a></li>
+                                    <li class="nav-item"><a href="#section-linemove-4" class="nav-link"
+                                            aria-selected="false" data-toggle="tab"><span>My Skills &
+                                                Certifications</span></a></li>
+                                    {{-- @if (session()->get('sub_institute_id') == 47)
                             <li class="nav-item"><a href="#section-linemove-5" class="nav-link" aria-selected="false" data-toggle="tab"><span>Contact Details</span></a></li>
                             @endif --}}
-                            <li class="nav-item"><a href="#section-linemove-6" class="nav-link" aria-selected="false" data-toggle="tab"><span>Experience details</span></a></li>
-                        </ul>
+
+                                </ul>
                         </center>
                     @php
                     $departments = $data['departments'];
@@ -774,9 +780,7 @@ br {
                     </td>
                 </tr>
                 @empty
-                <tr>
-                    <td colspan="7" class="text-center">No experience details found</td>
-                </tr>
+               
                 @endforelse
 
                 {{-- Blank Row for Add --}}
@@ -792,7 +796,7 @@ br {
                         <input type="date" name="joining_date[]" class="form-control">
                     </td>
                     <td>
-                        <input type="date" name="leaving_date[]" class="form-control">
+                        <input type="date" name="leaving_date[]" class="form-control" onchange="validateDays(this)">
                     </td>
                     <td>
                         <input type="text" name="experience[]" class="form-control">
