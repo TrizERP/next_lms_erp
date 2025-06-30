@@ -120,7 +120,7 @@ class PayrollController extends Controller
     //    echo "<pre>";print_r($employeeLists);exit;
         $payrollTypes = PayrollType::where('sub_institute_id',$sub_institute_id)
                     ->where('status', 1)
-                    ->where('day_count', 0) //added by rajesh Hide Extra Type as per 29-05-2025 excel issue
+                    // commented by uma 27-06-2025 //->where('day_count', 0) //added by rajesh Hide Extra Type as per 29-05-2025 excel issue
                     ->orderBy('sort_order')->get();
         
         $employeeSalaryStructures = EmployeeSalaryStructure::where('sub_institute_id',$sub_institute_id)->where('year',$syear)->get();
@@ -202,7 +202,7 @@ class PayrollController extends Controller
                         $amount = $Per_Flat;
                        }
                        else{
-                        $amount = $value[1];
+                        $amount = $value[1] ?? 0;
                        }
 
                        $payroll_type_name = $value[2] ?? '-';
@@ -1784,6 +1784,7 @@ class PayrollController extends Controller
         $totaldeduction = $totalallowance = 0;
         foreach ($payrollTypes as $payrollType) {
             // for allowance
+
             if(isset($employeeSalaryDetails[$payrollType->id]) && $payrollType->payroll_type == 1) {
 
                 $checkAllowance = DB::table('hrms_emp_payroll_deduction')->where('employee_id',$request->emp_id)->where(['sub_institute_id'=>$sub_institute_id,'month'=>$request->month,'year'=>$searchedYear,'deduction_type'=>$payrollType->id])->first();
@@ -1793,6 +1794,8 @@ class PayrollController extends Controller
                 }
 
                 $preparPayrollType[]['allowance'] = [$payrollAmount,$payrollType->amount_type,$payrollType->id,$payrollType->payroll_name,$payrollType->day_count];
+                $res['allowanceTypes'][] = [$payrollType->id=>$payrollType->payroll_name];
+
             }
             // for deduction
              else if (isset($employeeSalaryDetails[$payrollType->id])) {
@@ -1809,6 +1812,7 @@ class PayrollController extends Controller
                 }
 
                 $preparPayrollType[]['deduction'] = [$payrollAmount,$payrollType->amount_type,$payrollType->id,$payrollType->payroll_name,$payrollType->day_count];
+                $res['deductionTypes'][] = [$payrollType->id=>$payrollType->payroll_name];
             }
         }
         $employeefinalDisplayData = [];
@@ -1840,7 +1844,7 @@ class PayrollController extends Controller
             }
           
             // for deduction
-            if(isset($value['deduction'])) {
+            elseif(isset($value['deduction'])) {
                 // 13-08-2024 start
                     // check eligible
                     $getEligible = DB::table('tbluser')->where('id',$request->emp_id)->first(); 
@@ -2081,7 +2085,11 @@ class PayrollController extends Controller
         }
         //RAJESH 29-11-2024 make unique array of holiday
         $holidayDates = array_values(array_unique($holidayDates));
-        
+        // Remove holidays that fall on Sundays
+        // if date is holiday then remove  it from week day as per user att report added by uma 27-06-2025
+        $weekDays = array_values(array_diff($weekDays, $holidayDates));
+        $weekday_off = count($weekDays); // update Sunday count after removing holidays
+
         // echo "<br>Holidays<br>";
         //echo "<pre>";print_r($holidayDates);exit();
         // get users attandance
