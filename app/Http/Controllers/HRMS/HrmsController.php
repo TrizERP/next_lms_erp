@@ -358,54 +358,100 @@ class HrmsController extends Controller
             'indate' => 'required',
             'intime' => 'required'
         ]);
-        //return $request->all();
-        //return Carbon::parse($request->indate)->format('Y-m-d');
+
         $type = $request->input('type');
 
-        if (in_array($type,['API','JSON'])) {
+        if (in_array($type, ['API', 'JSON'])) {
             $sub_institute_id = $request->input('sub_institute_id');
         } else {
             $sub_institute_id = $request->session()->get('sub_institute_id');
         }
-        $hrmsAttendanceInTime = new HrmsAttendance();
-        $hrmsAttendanceInTime->user_id = $request->employee;
-        $hrmsAttendanceInTime->punchin_time = Carbon::parse($request->indate .' '.$request->intime)->format('Y-m-d H:i:s');
-        //return $hrmsAttendanceInTime->punchin_time;
-        $hrmsAttendanceInTime->day = Carbon::parse($request->indate)->format('Y-m-d');
-        $hrmsAttendanceInTime->in_note = 1;
-        $hrmsAttendanceInTime->ipaddress_in = $request->ip();
-        $hrmsAttendanceInTime->sub_institute_id = $sub_institute_id;
-        $hrmsAttendanceInTime->save();
 
-        return is_mobile($type, "hrms_attendance.index", null, "redirect");
-        //return redirect('hrms-attendance')->with(['message' =>'check In successfully']);
-    }
+        $formattedDate = Carbon::parse($request->indate)->format('Y-m-d');
 
-    public function hrmsAttendanceOutTimeStore(Request $request) {
-        $type = $request->input('type');
-        $request->validate([
-            'employee' => 'required',
-            'outdate' => 'required',
-            'outtime' => 'required'
-        ]);
-        $hrmsAttendanceOutTime = HrmsAttendance::where([['user_id', $request->employee],['punchout_time', null],['day' ,Carbon::parse($request->outdate)->format('Y-m-d') ]])->first();
-        if ($hrmsAttendanceOutTime) {
-//            return $request->all();
-            $punchout_time = Carbon::parse($request->outdate.''.$request->outtime);
-//            return $punchout_time;
-            $punchin_time = Carbon::parse($hrmsAttendanceOutTime->punchin_time);
-            $hrmsAttendanceOutTime->punchout_time =  Carbon::parse($request->outdate .' '.$request->outtime)->format('Y-m-d H:i:s');;
-            $hrmsAttendanceOutTime->ipaddress_out = $request->ip();
-            $Min = $punchout_time->diffInMinutes($punchin_time);
-            $diff= date('H:i', mktime(0,$Min));
-//            return $diff;
-            $hrmsAttendanceOutTime->out_note = 1;
-            $hrmsAttendanceOutTime->timestamp_diff = $diff;
-            $hrmsAttendanceOutTime->save();
+        $existingRecord = HrmsAttendance::where('user_id', $request->employee)
+            ->where('sub_institute_id', $sub_institute_id)
+            ->whereDate('day', $formattedDate)
+            ->first();
+
+        if ($existingRecord) {
+            $existingRecord->punchin_time = Carbon::now()->format('Y-m-d H:i:s');
+            $existingRecord->ipaddress_in = $request->ip();
+            $existingRecord->in_note = 1;
+            $existingRecord->save();
+        }
+        else {
+            $hrmsAttendanceInTime = new HrmsAttendance();
+            $hrmsAttendanceInTime->user_id = $request->employee;
+            $hrmsAttendanceInTime->punchin_time = Carbon::parse($request->indate . ' ' . $request->intime)->format('Y-m-d H:i:s');
+            $hrmsAttendanceInTime->day = $formattedDate;
+            $hrmsAttendanceInTime->in_note = 1;
+            $hrmsAttendanceInTime->ipaddress_in = $request->ip();
+            $hrmsAttendanceInTime->sub_institute_id = $sub_institute_id;
+            $hrmsAttendanceInTime->save();
         }
         return is_mobile($type, "hrms_attendance.index", null, "redirect");
-       // return redirect('hrms-attendance')->with(['message' =>'check Out successfully']);
     }
+
+   public function hrmsAttendanceOutTimeStore(Request $request)
+{
+    $request->validate([
+        'employee' => 'required',
+        'outdate' => 'required',
+        'outtime' => 'nullable'
+    ]);
+
+    $dateOnly = Carbon::parse($request->outdate)->format('Y-m-d');
+    $punchoutTime = $request->outtime ? Carbon::parse($request->outdate . ' ' . $request->outtime) : null;
+
+    // Find existing record (either with null punchout or latest for the day)
+    $attendance = HrmsAttendance::where('user_id', $request->employee)
+        ->where('day', $dateOnly)
+        ->when(!$punchoutTime, function($query) {
+            return $query->whereNull('punchout_time');
+        }, function($query) {
+            return $query->orderBy('id', 'desc');
+        })
+        ->first();
+
+    if ($attendance) {
+        $attendance->punchout_time = $punchoutTime?->format('Y-m-d H:i:s');
+        $attendance->ipaddress_out = $request->ip();
+        $attendance->out_note = 1;
+
+        if ($punchoutTime && $attendance->punchin_time) {
+            $minutes = $punchoutTime->diffInMinutes(Carbon::parse($attendance->punchin_time));
+            $attendance->timestamp_diff = date('H:i', mktime(0, $minutes));
+        }
+
+        $attendance->save();
+    }
+    else {
+        // ✅ Already punched out before — overwrite with current time
+        $existingRecord = HrmsAttendance::where([
+            ['user_id', $request->employee],
+            ['day', $dateOnly]
+        ])->orderBy('id', 'desc')->first();
+
+        if ($existingRecord && $existingRecord->punchin_time) {
+            $now = Carbon::now();
+            $punchin_time = Carbon::parse($existingRecord->punchin_time);
+
+            $existingRecord->punchout_time = ($request->outtime=="") ? null : $now->format('Y-m-d H:i:s');
+            $existingRecord->ipaddress_out = $request->ip();
+
+            $minutes = $now->diffInMinutes($punchin_time);
+            $diff = date('H:i', mktime(0, $minutes));
+
+            $existingRecord->out_note = 1;
+            $existingRecord->timestamp_diff = $diff;
+            $existingRecord->save();
+        }
+    }
+
+    return is_mobile($request->input('type'), "hrms_attendance.index", null, "redirect");
+}
+
 
     public function hrmsAttendanceReportIndex(Request $request) 
     {
@@ -1517,4 +1563,29 @@ class HrmsController extends Controller
         // exit;
         return is_mobile($type, "HRMS.hrms_attendance_report.daywiseAttendanceReport", $res,'view');
     }
+
+    public function edit($id){
+        $attendance = DB::table('hrms_attendance')->where('id', $id)->first();
+        $employeeLists = DB::table('tbluser')->where('status', 1)->get();
+
+        return view('HRMS.hrms_attendance.edit', compact('attendance', 'employeeLists'));
+    }
+
+    public function update(Request $request, $id){
+        DB::table('hrms_attendance')->where('id', $id)->update([
+            'user_id' => $request->employee,
+            'day' => $request->day,
+            'punchin_time' => $request->punchin_time,
+            'punchout_time' => $request->punchout_time,
+            'note' => $request->note,
+        ]);
+
+        return redirect()->route('hrms_attendance.index')->with('message', 'Attendance updated successfully.');
+    }
+
+    public function destroy($id){
+        DB::table('hrms_attendance')->where('id', $id)->delete();
+        return redirect()->route('hrms_attendance.index')->with('message', 'Attendance deleted successfully.');
+    }
+
 }
