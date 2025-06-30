@@ -59,7 +59,7 @@
     </div>
 </div>
 <div class="col-md-12">
-    <table class="table table-responsive">
+    <table class="table table-responsive table-striped table-bordered">
         <thead>
             <th>Book</th>
             <th>Item Code</th>

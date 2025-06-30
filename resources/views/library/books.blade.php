@@ -450,7 +450,7 @@
                     <form class="form-group" id="frmCirculation" method="post">
                         <div class="modal-body">
                             @csrf
-                            <div class="row">
+                            <div class="row" style="overflow-x:hidden">
                                 <div class="col-md-6">
                                     <label for="">Student Enroll No</label>
                                     <input type="hidden" name="bookId" id="bookId" value="">
@@ -460,6 +460,7 @@
                                 <div class="col-md-6">
                                     <button type="button" class="btn btn-primary mt-4 fetch-stud">Fetch Details</button>
                                 </div>
+                                <div class="row divUserDetail" style="padding:20px"></div>
                             </div>
                         </div>
                 </div>
@@ -490,7 +491,7 @@
                                     <button type="button" class="btn btn-primary mt-4 fetch-stud">Fetch Details</button>
                                 </div>
                             </div>
-                            <div class="row divUserDetail"></div>
+                            <div class="row divUserDetail" style="padding:20px"></div>
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>

@@ -39,7 +39,7 @@
                         <div class="row">
                         <div class="col-md-4 form-group">
                             <label>Standard</label>                            
-                            <select class="form-control standard_class" @if(!isset($data['mapped_data']['standard_id'])) multiple @endif  data-style="form-control" name="standard_id[]" id="standard_id[]">
+                            <select class="form-control standard_class" @if(!isset($data['mapped_data']['standard_id'])) multiple @endif  data-style="form-control" name="standard_id[]" id="standard_id[]" required>
                                 <option value="">Select</option>
                                 @foreach($data['std_data'] as $key =>$val)
                                 @php 
@@ -55,7 +55,7 @@
                         </div>
                         <div class="col-md-4 form-group">
                             <label>Subject</label>
-                            <select class="form-control" data-style="form-control" id="subject_id" name="subject_id">                               
+                            <select class="form-control" data-style="form-control" id="subject_id" name="subject_id" required>                               
                                 <option value="">Select</option>
                                 @foreach($data['sub_data'] as $key =>$val)
                                 @php 

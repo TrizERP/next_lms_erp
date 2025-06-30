@@ -62,7 +62,7 @@
                                     <label>Select Date</label>
                                     <input type="text" name="date" autocomplete="off"
                                            @if(isset($data['date'])) value="{{$data['date']}}"
-                                           @endif class="form-control mydatepicker" placeholder="Select Date">
+                                           @endif class="form-control mydatepicker" placeholder="Select Date" onchange="checkIfSunday(this)" required>
                                 </div>
                                 <div class="col-md-4 form-group mt-4">
                                     <center>
@@ -158,6 +158,16 @@
              }
          }
     }
+</script>
+<script>
+function checkIfSunday(input) {
+        const selectedDate = $('.mydatepicker').datepicker('getDate'); // returns Date object
+    
+    if (selectedDate.getDay() === 0) { // Sunday = 0
+        alert("Sunday is already a holiday, you can't take attendance on this day.");
+        input.value = ''; // Clear the field
+    }
+}
 </script>
 <script>
 
