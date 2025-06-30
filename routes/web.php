@@ -634,5 +634,4 @@ Route::get('/migrate-data', [DataMigrationController::class, 'migrateDataToNeo4j
 // added hills nursey hc
 Route::post('getHillsHPCPDF', [AJAXController::class, 'getHillsHPCPDF'])->name('getHillsHPCPDF');
 
-
-
+Route::get('/my-leave', [LeaveSummaryReportController::class, 'MyLeave'])->name('my-leave');
