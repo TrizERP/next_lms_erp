@@ -47,19 +47,20 @@
                     <h4 class="page-title">Edit User</h4>
                 </div>
             </div>
-            <div class="card">
-                <!-- @TODO: Create a saperate tmplate for messages and include in all tempate -->
-                @if ($message = Session::get('success'))
-                    <div class="alert alert-success alert-block">
-                        <button type="button" class="close" data-dismiss="alert">×</button>
-                        <strong>{{ $message }}</strong>
-                    </div>
-                @endif
-                <div class="row">
-                    <div class="col-lg-12 col-sm-12 col-xs-12">
-                        <div class="sttabs tabs-style-linemove triz-verTab bg-white style2">
-                            <center>
-                                <ul class="nav nav-tabs tab-title mb-4">
+        </div>
+        <div class="card">
+            <!-- @TODO: Create a saperate tmplate for messages and include in all tempate -->
+            @if ($message = Session::get('success'))
+            <div class="alert alert-success alert-block">
+                <button type="button" class="close" data-dismiss="alert">×</button>
+                <strong>{{ $message }}</strong>
+            </div>
+            @endif
+            <div class="row">
+                <div class="col-lg-12 col-sm-12 col-xs-12">
+                    <div class="sttabs tabs-style-linemove triz-verTab bg-white style2">
+                        <center>
+                       <ul class="nav nav-tabs tab-title mb-4">
                                     <li class="nav-item"><a href="#section-linemove-1" class="nav-link active"
                                             aria-selected="true" data-toggle="tab"><span>Personal Details</span></a></li>
                                     <li class="nav-item"><a href="#section-linemove-2" class="nav-link"
@@ -76,6 +77,87 @@
                                     {{-- @if (session()->get('sub_institute_id') == 47)
                             <li class="nav-item"><a href="#section-linemove-5" class="nav-link" aria-selected="false" data-toggle="tab"><span>Contact Details</span></a></li>
                             @endif --}}
+
+                                </ul>
+                        </center>
+                    @php
+                    $departments = $data['departments'];
+                    $new_emp_code = $data['new_emp_code'];
+                    $qualificationList = $data['qualificationList'];
+                    $masterSetups = $data['masterSetups'];
+                    $occupationList = $data['occupationList'];
+                    $documentTypeLists = $data['documentTypeLists'];
+                    $documentLists = $data['documentLists'];
+                    $employees = $data['employees'];
+                    $job_titles = $data['job_titles'];
+                    $user_profiles = $data['user_profiles'];
+                    $subject_data = $data['subject_data'];
+                    $standardLists = $data['standardLists'];
+                    $subject_data_selected_arr = $data['subject_data_selected_arr'];
+                    $custom_fields = $data['custom_fields'];
+                    $data_fields = $data['data_fields'];
+                    $payrollTypes = $data['payroll_types'];
+                    $salary_deposit = $data['salary_deposit'];
+                    $SalaryStructure = $data['salary_structure'];
+                    $contactDetails = $data['contactDetails'];
+                    $experience_details = $data['experience_details'];
+                    $data = $data['data'];
+                    @endphp
+                    <!-- tabs starts  -->
+                    <div class="tab-content">
+                        <!-- @if(session('success'))
+                            <div class="alert alert-success alert-block">
+                                <button type="button" class="close" data-dismiss="alert">×</button>
+                                <strong>{{ session('success') }}</strong>
+                            </div>
+                        @endif -->
+                    <!-- tab 1 start  -->
+                    <div class="tab-pane p-3 active" id="section-linemove-1" role="tabpanel">     
+                    <form action="{{ route('add_user.update', $data['id']) }}" enctype="multipart/form-data" method="post">
+                    {{ method_field("PUT") }}
+                    @csrf
+                        <div class="row">
+                            <div class="col-md-4 form-group">
+                                <label>Name Suffix</label>
+                                <select name="name_suffix" id="name_suffix" class="form-control" required>
+                                    <option> Select Name Suffix </option>
+                                    <option value="Mr." @if(isset($data))@if("Mr." == $data['name_suffix']) selected @endif  @endif> Mr. </option>
+                                    <option value="Mrs." @if(isset($data))@if("Mrs." == $data['name_suffix']) selected @endif  @endif> Mrs. </option>
+                                    <option value="Miss." @if(isset($data))@if("Miss." == $data['name_suffix']) selected @endif  @endif> Miss. </option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 form-group">
+                                <label>First Name </label>
+                                <input type="text" id='first_name' value="@if(isset($data['first_name'])){{ $data['first_name'] }}@endif" required name="first_name" class="form-control">
+                            </div>
+                            <div class="col-md-4 form-group">
+                                <label>Middle Name</label>
+                                <input type="text" value="@if(isset($data['middle_name'])){{ $data['middle_name'] }}@endif" id='middle_name' required name="middle_name" class="form-control">
+                            </div>
+                            <div class="col-md-4 form-group">
+                                <label>Last Name</label>
+                                <input type="text" onchange="getUsername();" value="@if(isset($data['last_name'])){{ $data['last_name'] }}@endif" id='last_name' required name="last_name" class="form-control">
+                            </div>
+                            <div class="col-md-4 form-group">
+                                <label>User Name </label>
+                                <input type="text" value="@if(isset($data['user_name']) && $data['user_name']!=''){{ $data['user_name'] }}@else - @endif" id='user_name' required name="user_name" class="form-control">
+                            </div>
+                            <div class="col-md-4 form-group">
+                                <label>Email</label>
+                                <!--<span><br><b>{{ $data['email'] }}</b></span>-->
+                                <input type="text" id='email' value="@if(isset($data['email'])){{ $data['email'] }}@endif" required name="email" class="form-control">
+                            </div>
+                            <div class="col-md-4 form-group">
+                                <label>Mobile</label>
+                                <input type="text" value="@if(isset($data['mobile'])){{ $data['mobile'] }}@endif" id='mobile' required name="mobile" class="form-control">
+                            </div>
+                            <div class="col-md-4 form-group">
+                                <label>Subject</label>
+                                <select name="subject_ids[]" id="subject_ids[]" class="form-control" multiple style="height:200px;">
+                                    <option value="0"> Select Subject </option>
+                                    @if(!empty($subject_data))
+                                    @foreach($subject_data as $key => $val)
+                                        <option value="{{ $val['id'] }}"
 
                                 </ul>
                             </center>
@@ -1045,6 +1127,118 @@
                             <!-- tabs ends  -->
                         </div>
                     </div>
+                    <!-- tab 1 ends  -->
+                    <!-- tab 2 start  -->
+                    <div class="tab-pane p-3" id="section-linemove-2" role="tabpanel">
+                        @include('user.documentModel')
+                    </div>
+                    <!-- tab 2 ends  -->
+                      <!-- tab 4 start  -->
+                      <div class="tab-pane p-3" id="section-linemove-3" role="tabpanel">
+                        @include('payroll.employee_salary_structure.salaryDetails')
+                    </div>
+                    <!-- tab 4 ends  -->
+                     <!-- tab 4 start  -->
+                    <div class="tab-pane p-3" id="section-linemove-4" role="tabpanel">
+                        @include('lms.triz_skills')
+                    </div>
+                    <!-- tab 4 ends  -->
+                    <!-- tab 5 start  -->
+                    <div class="tab-pane p-3" id="section-linemove-5" role="tabpanel">
+                        @include('user.contactDetails')
+                    </div>
+                    <!-- tab 5 ends  -->
+                    <!-- tab 6 start  -->
+                <div class="tab-pane p-3" id="section-linemove-6" role="tabpanel">
+    <form action="{{ route('add_experience.store', ['id' => $data['id'] ?? 0, 'dataType' => 'experience_detail']) }}" method="POST">
+        @csrf
+        <input type="hidden" name="user_id" value="{{ $data['id'] ?? 0 }}"/>
+
+        <table class="table" id="experienceDetails">
+            <thead>
+                <tr>
+                    <th>Institute Name</th>
+                    <th>Designation</th>
+                    <th>Joining Date</th>
+                    <th>Leaving Date</th>
+                    <th>Experience</th>
+                    <th>Remarks</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($experience_details ?? [] as $experience_detail)
+                <tr>
+                    <td>
+                        <input type="hidden" name="experience_detail_id[]" value="{{ $experience_detail->id }}">
+                        <input type="text" name="institute_name[]" class="form-control" value="{{ $experience_detail->institute_name }}">
+                    </td>
+                    <td>
+                        <input type="text" name="designation[]" class="form-control" value="{{ $experience_detail->designation }}">
+                    </td>
+                    <td>
+                        <input type="date" name="joining_date[]" class="form-control" value="{{ $experience_detail->joining_date }}">
+                    </td>
+                    <td>
+                        <input type="date" name="leaving_date[]" class="form-control" value="{{ $experience_detail->leaving_date }}"  onchange="validateDays(this)">
+                    </td>
+                    <td>
+                        <input type="text" name="experience[]" class="form-control" value="{{ $experience_detail->experience }}">
+                    </td>
+                    <td>
+                        <input type="text" name="remarks[]" class="form-control" value="{{ $experience_detail->remarks }}">
+                    </td>
+                      <td>
+    <button type="button" class="btn btn-danger" onclick="deleteExperience({{ $experience_detail->id }})">
+        <span class="mdi mdi-delete"></span>
+    </button>
+
+
+                    </td>
+                </tr>
+                @empty
+               
+                @endforelse
+
+                {{-- Blank Row for Add --}}
+                <tr>
+                    <td>
+                        <input type="hidden" name="experience_detail_id[]" value="0">
+                        <input type="text" name="institute_name[]" class="form-control">
+                    </td>
+                    <td>
+                        <input type="text" name="designation[]" class="form-control">
+                    </td>
+                    <td>
+                        <input type="date" name="joining_date[]" class="form-control">
+                    </td>
+                    <td>
+                        <input type="date" name="leaving_date[]" class="form-control" onchange="validateDays(this)">
+                    </td>
+                    <td>
+                        <input type="text" name="experience[]" class="form-control">
+                    </td>
+                    <td>
+                        <input type="text" name="remarks[]" class="form-control">
+                    </td>
+                    <td>
+                        <button type="button" class="btn btn-success addRow">
+                            <span class="mdi mdi-plus"></span>
+                        </button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="form-group text-center">
+            <button type="submit" class="btn btn-success">Save</button>
+        </div>
+    </form>
+</div>
+                    <!-- tab 6 ends  -->
+                </div>
+                
+                <!-- tabs ends  -->
                 </div>
 
             </div>
