@@ -67,6 +67,7 @@ br {
                             {{-- @if(session()->get('sub_institute_id')==47)
                             <li class="nav-item"><a href="#section-linemove-5" class="nav-link" aria-selected="false" data-toggle="tab"><span>Contact Details</span></a></li>
                             @endif --}}
+                            <li class="nav-item"><a href="#section-linemove-6" class="nav-link" aria-selected="false" data-toggle="tab"><span>Experience details</span></a></li>
                         </ul>
                         </center>
 
@@ -90,6 +91,7 @@ br {
                     $salary_deposit = $data['salary_deposit'];
                     $SalaryStructure = $data['salary_structure'];
                     $contactDetails = $data['contactDetails'];
+                    $experience_details = $data['experience_details'];
                     $data = $data['data'];
                     @endphp
                     <!-- tabs starts  -->
@@ -711,7 +713,98 @@ br {
                         @include('user.contactDetails')
                     </div>
                     <!-- tab 5 ends  -->
+                    <!-- tab 6 start  -->
+                <div class="tab-pane p-3" id="section-linemove-6" role="tabpanel">
+    <form action="{{ route('add_experience.store', ['id' => $data['id'] ?? 0, 'dataType' => 'experience_detail']) }}" method="POST">
+        @csrf
+        <input type="hidden" name="user_id" value="{{ $data['id'] ?? 0 }}"/>
+
+        <table class="table" id="experienceDetails">
+            <thead>
+                <tr>
+                    <th>Institute Name</th>
+                    <th>Designation</th>
+                    <th>Joining Date</th>
+                    <th>Leaving Date</th>
+                    <th>Experience</th>
+                    <th>Remarks</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($experience_details ?? [] as $experience_detail)
+                <tr>
+                    <td>
+                        <input type="hidden" name="experience_detail_id[]" value="{{ $experience_detail->id }}">
+                        <input type="text" name="institute_name[]" class="form-control" value="{{ $experience_detail->institute_name }}">
+                    </td>
+                    <td>
+                        <input type="text" name="designation[]" class="form-control" value="{{ $experience_detail->designation }}">
+                    </td>
+                    <td>
+                        <input type="date" name="joining_date[]" class="form-control" value="{{ $experience_detail->joining_date }}">
+                    </td>
+                    <td>
+                        <input type="date" name="leaving_date[]" class="form-control" value="{{ $experience_detail->leaving_date }}"  onchange="validateDays(this)">
+                    </td>
+                    <td>
+                        <input type="text" name="experience[]" class="form-control" value="{{ $experience_detail->experience }}">
+                    </td>
+                    <td>
+                        <input type="text" name="remarks[]" class="form-control" value="{{ $experience_detail->remarks }}">
+                    </td>
+                      <td>
+    <button type="button" class="btn btn-danger" onclick="deleteExperience({{ $experience_detail->id }})">
+        <span class="mdi mdi-delete"></span>
+    </button>
+
+
+                    </td>
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="7" class="text-center">No experience details found</td>
+                </tr>
+                @endforelse
+
+                {{-- Blank Row for Add --}}
+                <tr>
+                    <td>
+                        <input type="hidden" name="experience_detail_id[]" value="0">
+                        <input type="text" name="institute_name[]" class="form-control">
+                    </td>
+                    <td>
+                        <input type="text" name="designation[]" class="form-control">
+                    </td>
+                    <td>
+                        <input type="date" name="joining_date[]" class="form-control">
+                    </td>
+                    <td>
+                        <input type="date" name="leaving_date[]" class="form-control">
+                    </td>
+                    <td>
+                        <input type="text" name="experience[]" class="form-control">
+                    </td>
+                    <td>
+                        <input type="text" name="remarks[]" class="form-control">
+                    </td>
+                    <td>
+                        <button type="button" class="btn btn-success addRow">
+                            <span class="mdi mdi-plus"></span>
+                        </button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="form-group text-center">
+            <button type="submit" class="btn btn-success">Save</button>
+        </div>
+    </form>
+</div>
+                    <!-- tab 6 ends  -->
                 </div>
+                
                 <!-- tabs ends  -->
                 </div>
             </div>
@@ -737,6 +830,47 @@ br {
         @else
             $('#addressDiv,#cityDiv,#stateDiv,#pincodeDiv').hide();
         @endif
+
+        function validateDays(endDate){
+         var $row = $(endDate).closest('tr');
+        var joiningDate = $row.find('input[name="joining_date[]"]').val();
+        var leavingDate = $(endDate).val();
+
+        if (!joiningDate) {
+            alert('Please select the joining date first.');
+            $(leavingInput).val(''); // Optional: reset the leaving date
+            return;
+        }
+
+        // Calculate experience in years
+        var start = new Date(joiningDate);
+        var end = new Date(leavingDate);
+
+        if (start > end) {
+            alert('Leaving date cannot be before joining date.');
+            $(leavingInput).val('');
+            $row.find('input[name="experience[]"]').val('');
+            return;
+        }
+
+        var years = end.getFullYear() - start.getFullYear();
+        var months = end.getMonth() - start.getMonth();
+        var days = end.getDate() - start.getDate();
+
+        // Adjust months and years if necessary
+        if (days < 0) {
+            months--;
+            days += new Date(start.getFullYear(), start.getMonth() + 1, 0).getDate(); // Adjust days
+        }
+        if (months < 0) {
+            years--;
+            months += 12; // Adjust months
+        }
+
+        var experience = years + '.' + months; // Combine years and months
+        $row.find('input[name="experience[]"]').val(experience);
+    }
+
     $(document).ready(function() {
         var val1 = $.trim($("#user_profile_id").find("option:selected").text());
 
@@ -845,6 +979,54 @@ br {
             $('#addressDiv,#cityDiv,#stateDiv,#pincodeDiv').hide();
         }
     }
+    </script>
+    <script>
+        $(document).ready(function() {
+            // Add new row
+            $(document).on('click', '.addRow', function() {
+                var $table = $(this).closest('table');
+                var $lastRow = $table.find('tbody tr:last');
+                var $newRow = $lastRow.clone();
+                
+                // Clear all input values in the new row
+                $newRow.find('input').val('');
+                
+                // Ensure the experience_detail_id is set to 0 for new rows
+                $newRow.find('input[name="experience_detail_id[]"]').val('0');
+                
+                // Change add button to remove button in the new row
+                $newRow.find('.addRow')
+                    .removeClass('addRow btn-success')
+                    .addClass('removeRow btn-danger')
+                    .find('.mdi-plus')
+                    .removeClass('mdi-plus')
+                    .addClass('mdi-minus');
+                
+                // Insert the new row before the last row
+                $lastRow.before($newRow);
+            });
+            // Remove row
+            $(document).on('click', '.removeRow', function () {
+                $(this).closest('tr').remove();
+            });
+        });
+        function deleteExperience(id) {
+            if (!confirm("Are you sure you want to delete this record?")) {
+                return;
+            }
+
+            $.ajax({
+                url: '/user/experience-detail/' + id,
+                type: 'POST',
+                success: function (response) {
+                    alert(response.message);
+                    location.reload(); // or remove row dynamically
+                },
+                // error: function (xhr) {
+                //     alert("Something went wrong.");
+                // }
+            });
+        }
     </script>
 
 @include('includes.footer')
