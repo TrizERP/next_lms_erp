@@ -649,6 +649,8 @@ class HrmsController extends Controller
 
         $get_casual_leave_data = DB::table('general_data')->where(['fieldname' => 'casual_leave_apply', 'sub_institute_id' => $sub_institute_id])->first();
 
+        $get_sat_late_day = DB::table('general_data')->where(['fieldname' => 'sat_late_day', 'sub_institute_id' => $sub_institute_id])->first();
+
         $get_earned_leave_data = DB::table('general_data')->where(['fieldname' => 'earned_leave_apply', 'sub_institute_id' => $sub_institute_id])->first();
         // get leave types rather then casual and earne
         $leaveTypeArr = DB::table('hrms_leave_types')->whereNotIn('leave_type_id',['LTY001','LTY009'])->where(['status'=>1,'sub_institute_id'=>$sub_institute_id])->orderBy('sort_order')->get()->toArray();
@@ -672,6 +674,7 @@ class HrmsController extends Controller
         $res['leaveTypeArr'] = $leaveTypeArr;
         $res['get_sandwich_leave_data'] = $get_sandwich_leave_data;
         $res['get_casual_leave_data'] = $get_casual_leave_data;
+        $res['get_sat_late_day'] = $get_sat_late_day;
         $res['get_earned_leave_data'] = $get_earned_leave_data;
         $res['get_parent_communication']=$get_parent_communication;
         $res['get_multi_login']=$get_multi_login;
@@ -702,6 +705,7 @@ class HrmsController extends Controller
         
         $sandwich_leave = $request->input('sandwich_leave');
         $casual_leave_at_one_time = $request->input('casual_leave_at_one_time');
+        $sat_late_day = $request->input('sat_late_day');
         $earned_leave_days = $request->input('earned_leave_days');
         $parent_communication = $request->input('parent_communication');
         $multi_login = $request->input('multi_login');   
@@ -934,6 +938,26 @@ class HrmsController extends Controller
                $general_data->type = 'hrms';
                $general_data->save();        
            }
+
+           if ($sat_late_day !== null) {
+                $existingsat_late_day = general_dataModel::where('fieldname', 'sat_late_day')
+                    ->where('sub_institute_id', $sub_institute_id)
+                    ->first();
+            
+                if ($existingsat_late_day) {
+                    // If exists, update the record
+                    $existingsat_late_day->fieldvalue = $sat_late_day;
+                    $existingsat_late_day->save();
+                } else {
+                    // If not exists, insert a new record
+                    $general_data = new general_dataModel();
+                    $general_data->fieldname = 'sat_late_day';
+                    $general_data->fieldvalue = $sat_late_day ?? 0;
+                    $general_data->sub_institute_id = $sub_institute_id;
+                    $general_data->type = 'hrms';
+                    $general_data->save();
+                }
+            }
  
         $res['status_code']=1;
         $res['message']="General setting information add/updated successfully";

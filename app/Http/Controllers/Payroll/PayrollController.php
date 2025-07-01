@@ -2198,6 +2198,22 @@ $sandwichLeaveCount = 0;
 $sandwichLeaveCount = $this->calculateLeaveCounts($from_date,$to_date,$weekDays,$holidayDates,$leaveDates,$attArr);
 //END SANDWICH LEAVE
 
+//Start Saturday Late
+// 1. Get configured cutoff value (e.g., 1 for full day, 0.5 for half day)
+$sat_late_day = DB::table('general_data')
+    ->where('sub_institute_id', $sub_institute_id)
+    ->where('fieldname', 'sat_late_day')
+    ->first();
+
+// 2. Get the number of Saturday late occurrences
+$sat_late_count = $this->getSaturdayLateCount($from_date, $to_date, $user_id);
+
+// 3. Calculate cutoff (defaults to 0 if setting not found)
+$sat_cutoff_value = $sat_late_day->fieldvalue ?? 0;
+
+// 4. Final deduction based on policy
+$sat_late = $sat_cutoff_value * $sat_late_count;
+//End Saturday Late
         $arr = [
             "att_+" =>$totalAtt,
             "holidays_+" => $holiday,
@@ -2206,6 +2222,7 @@ $sandwichLeaveCount = $this->calculateLeaveCounts($from_date,$to_date,$weekDays,
             "sandwich_-"=> $sandwichLeaveCount,
             // "noAtt_-"=>$noEnrty,
             "lwp_-"=> $tot_lwp_leave,
+            "sat_late-"=> $sat_late,
         ];
         // echo "<pre>";print_r($weekDays);
         // echo "<pre>";print_r($holidayDates);
@@ -2214,7 +2231,7 @@ $sandwichLeaveCount = $this->calculateLeaveCounts($from_date,$to_date,$weekDays,
         //echo $json;exit();
         $daysCount = $from_date->diffInDays($to_date);
 
-       $totalDays = ($totalAtt + $holiday + $weekday_off + $totLeaveDay - $sandwichLeaveCount - $tot_lwp_leave);
+       $totalDays = ($totalAtt + $holiday + $weekday_off + $totLeaveDay - $sandwichLeaveCount - $tot_lwp_leave - $sat_late);
        // + $noEnrty // 31 //+ $tot_lwp_leave by Rajesh 20-02-2025
        //$totalDays = ($totalDays - $tot_lwp_leave - $noEnrty); // 16
         
@@ -2267,5 +2284,20 @@ $sandwichLeaveCount = $this->calculateLeaveCounts($from_date,$to_date,$weekDays,
 
         // Output results
         return $sandwichLeaveCount;
+    }
+    function getSaturdayLateCount($from_date, $to_date, $user_id)
+    {
+        $result = DB::table('hrms_attendances as a')
+            ->join('tbluser as u', function ($join) {
+                $join->on('u.id', '=', 'a.user_id')
+                    ->on('u.sub_institute_id', '=', 'a.sub_institute_id');
+            })
+            ->where('a.user_id', $user_id)
+            ->whereBetween('a.day', [$from_date, $to_date])
+            ->whereRaw('DAYOFWEEK(a.day) = 7') // Saturday = 7
+            ->whereRaw('TIME(a.punchin_time) > TIME(u.saturday_in_date)')
+            ->count();
+
+        return $result; // this is $sat_late
     }
 }
