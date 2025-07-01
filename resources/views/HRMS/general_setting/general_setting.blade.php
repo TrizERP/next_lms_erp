@@ -18,7 +18,8 @@
                     $timetable_ai = ["0"=>"Standard Wise","1"=>"Teacher wise"];
                     $sandwich_leave = $multi_login = $timeTableTeacher = $previousAdmission = ['Y'=>"Yes",'N'=>"No"];
                     $bulkDiscount = ["No","Yes"];
-                    $casual_leave = [0,1,2,3,4,5];  
+                    $casual_leave = [0,1,2,3,4,5];
+                    $sat_late_day = [0,0.5,1];
                     $studentNameFormat = [0=>"Student Name First",1=>"Last Name First"];                  
                 @endphp 
                 @if ($sessionData = Session::get('data'))
@@ -101,6 +102,21 @@
                                                 @foreach($data['leaveTypeArr'] as $k=>$val)
                                                 <option value="{{$val->id}}" @if(in_array($val->id,$leaveTypeArr)) selected @endif>{{$val->leave_type}}</option>
                                                 @endforeach
+                                            </select>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <!-- saturday late  -->
+                            <tr>
+                                <th>HRMS: Saturday Late Arrival - Day Cutoff Policy</th>
+                                <td>
+                                    <div class="row">
+                                        <div class="col-md-6 form-group" style="margin-left: 0px !important">
+                                            <select id='sat_late_day' name="sat_late_day" class="form-control" >
+                                            @foreach($sat_late_day as $key=>$value)
+                                                    <option value="{{$value}}" @if(isset($data['get_sat_late_day']->fieldvalue) && $data['get_sat_late_day']->fieldvalue == $value) selected @endif>{{$value}}</option>
+                                            @endforeach
                                             </select>
                                         </div>
                                     </div>
