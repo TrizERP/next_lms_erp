@@ -164,12 +164,13 @@ class HrmsController extends Controller
         if ($request->hasFile('photo_in')) {
             // echo "<pre>";print_r($request->all());exit;
             $file = $request->file('photo_in');
+/*
             if ($file->getSize() > 102400) { // 100 kb in bytes
                     $res['status'] = 0; 
                     $res['message'] = 'File Must be less or equal to 100 KB';
                     return is_mobile($type, "hrms_inout_time.index", $res, "redirect");
                 }
-
+*/
             $timestamp = now()->format('YmdHis');
             $extension = $file->getClientOriginalExtension();
             $photoInFilename = 'In_'.$userId.'_' . $timestamp . '.' . $extension;
@@ -253,11 +254,13 @@ class HrmsController extends Controller
 
         if ($request->hasFile('photo_out')) {
                 $file = $request->file('photo_out');
+/*
                   if ($file->getSize() > 102400) { // 100 kb in bytes
                     $res['status'] = 0; 
                     $res['message'] = 'File Must be less or equal to 100 KB';
                     return is_mobile($type, "hrms_inout_time.index", $res, "redirect");
                 }
+*/
                 $timestamp = now()->format('YmdHis');
                 $extension = $file->getClientOriginalExtension();
                 $photoOutFilename = 'Out_'.$userId.'_' . $timestamp . '.' . $extension;
