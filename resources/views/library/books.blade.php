@@ -462,7 +462,12 @@
                                 </div>
                                 <div class="row divUserDetail" style="padding:20px"></div>
                             </div>
+
                         </div>
+                         {{-- <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                            <button type="submit" class="btn btn-primary" id="issue_book_check">Issue Book</button>
+                        </div> --}}
                 </div>
                 <!-- Tabs content -->
             </div>
