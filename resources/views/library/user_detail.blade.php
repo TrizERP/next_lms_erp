@@ -60,11 +60,11 @@
         <input type="text" class="form-control mydatepicker" name="return_date" id="return_date">
     </div>
 </div>
-{{-- <div class="col-md-12 mb-4">
+<div class="col-md-12 mb-4">
     <center>
     <button type="submit" class="btn btn-primary" id="issue_book_check">Issue Book</button>
     </center>
-</div> --}}
+</div>
 <div class="col-md-12">
     <table class="table table-responsive table-striped table-bordered">
         <thead>
