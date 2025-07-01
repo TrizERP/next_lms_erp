@@ -207,6 +207,7 @@ class HrmsController extends Controller
                     return is_mobile($type, "hrms_inout_time.index", $res, "redirect");
                 }
 */
+*/
             $timestamp = now()->format('YmdHis');
             $extension = $file->getClientOriginalExtension();
             $photoInFilename = 'In_' . $userId . '_' . $timestamp . '.' . $extension;
