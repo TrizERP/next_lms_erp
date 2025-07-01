@@ -79,6 +79,21 @@
             bottom: 650px !important;
             background:#fff !important;
          }
+         /* Ensure autocomplete dropdown appears above the header */
+    .ui-autocomplete {
+        z-index: 9999 !important; /* Very high value to come above header */
+        position: absolute;
+        background-color: #fff;
+        max-height: 300px;
+        overflow-y: auto;
+        border: 1px solid #ccc;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    #search_menu {
+        position: relative;
+        z-index: 100;
+    }
    </style>
       <!-- Global site tag (gtag.js) - Google Analytics -->
       <script async src="https://www.googletagmanager.com/gtag/js?id=UA-153077517-1"></script>

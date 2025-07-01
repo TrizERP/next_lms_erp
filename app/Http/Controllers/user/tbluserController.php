@@ -17,6 +17,9 @@ use function App\Helpers\is_mobile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use  App\Models\school_setup\standardModel;
+use Illuminate\Support\Facades\Log;
+use App\Models\UserExperienceDetail;
+
 
 class tbluserController extends Controller
 {
@@ -375,6 +378,13 @@ class tbluserController extends Controller
         $res['standardLists'] = standardModel::where('sub_institute_id',$sub_institute_id)->orderBy('sort_order')->get()->toArray();
         // 10-01-2025 end supervisor rights
         // echo "<pre>";print_r($res['contactDetails']);exit;
+
+        $res['experience_details'] = DB::table('user_experience_details')
+        ->where('user_id', $id)
+        ->where('sub_institute_id', $sub_institute_id)
+        ->get()
+        ->toArray();
+
         return is_mobile($type, "user/edit_user", $res, "view");
     }
 
@@ -529,7 +539,63 @@ class tbluserController extends Controller
             $res['fail'] = 0;
             $res['message'] = "Failed to Add Document";
         }
+        return redirect()->back()->with('success', 'Document updated successfully');
+    }
 
-        return is_mobile($type, "add_user.index", $res);
+    public function add_experience(Request $request){
+        // return $request->all();
+        $sub_institute_id = session()->get('sub_institute_id');
+        $type = $request->type;
+        if($type=="API"){
+            $sub_institute_id= $request->sub_institute_id;
+        }
+        $userId = $request->user_id;
+        $ids = $request->experience_detail_id;
+        $institutes = $request->institute_name ?? []; // Matches your form
+        $designations = $request->designation ?? [];  // Not designation_name
+        $joiningDates = $request->joining_date;
+        $leavingDates = $request->leaving_date;
+        $experiences = $request->experience;
+        $remarks = $request->remarks;
+
+        foreach ($institutes as $index => $institute) {
+            if ($institute) {
+                $data = [
+                    'user_id' => $userId,
+                    'institute_name' => $institute,
+                    'designation' => $designations[$index],
+                    'joining_date' => $joiningDates[$index],
+                    'leaving_date' => $leavingDates[$index],
+                    'experience' => $experiences[$index],
+                    'remarks' => $remarks[$index],
+                    'sub_institute_id' => $sub_institute_id
+                ];
+
+                if ($ids[$index] != 0) {
+                    // Update existing
+                    \App\Models\UserExperienceDetail::where('id', $ids[$index])->update($data);
+                } else {
+                    // Create new
+                    \App\Models\UserExperienceDetail::create($data);
+                }
+            }
+        }
+
+        return redirect()->back()->with('success', 'Experience details saved successfully.');
+    }
+    
+    public function experience_destroy($id)
+    {
+        // return $id;
+
+        $experience = UserExperienceDetail::find($id);
+
+        if (!$experience) {
+            return response()->json(['status' => 0, 'message' => 'Record not found.']);
+        }
+
+        $experience->delete();
+
+        return response()->json(['status' => 1, 'message' => 'Experience deleted successfully.']);
     }
 }

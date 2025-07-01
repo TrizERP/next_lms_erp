@@ -210,7 +210,7 @@
                     </div>
                     <div class="form-group">
                         <label for="">From Date</label>
-                        <input class="form-control mydatepicker" type="text" name="from_date" id="from_date" required>
+                        <input class="form-control mydatepicker" type="text" name="from_date" id="from_date" onchange="checkIfSunday(this)" required>
                     </div>
                     <!--
                     <div class="form-group">
@@ -254,6 +254,16 @@
     $(document).ready(function() {
         $('[data-toggle="tooltip"]').tooltip();
     });
+</script>
+<script>
+function checkIfSunday(input) {
+        const selectedDate = $('.mydatepicker').datepicker('getDate'); // returns Date object
+    
+    if (selectedDate.getDay() === 0) { // Sunday = 0
+        alert("Sunday is already a holiday, you can't assign holiday on this day.");
+        input.value = ''; // Clear the field
+    }
+}
 </script>
 
 <script>
@@ -427,5 +437,6 @@
     function getyearwise_holiday(year) {
         $('#tblHoliday').DataTable().ajax.url("?year=" + year).load();;
     }
+
 </script>
 @include('includes.footer')

@@ -45,31 +45,60 @@ class BookController extends Controller
         if ($request->ajax()) {
                     
             $books = LibraryBook::where('sub_institute_id', $sub_institute_id)
-                ->when(request('subject'), function($q) {
-                    $q->where('subject', request('subject'));
-                })
-                // ... [keep all your existing when() conditions] ...
-                ->select(['library_books.*', 
-                    DB::raw('(SELECT GROUP_CONCAT(item_code) FROM library_items WHERE book_id = library_books.id AND sub_institute_id = '.$sub_institute_id.' AND deleted_at IS NULL) as item_codes')
-                ]);
+    ->when(request('subject'), function($q) {
+        $q->where('subject', request('subject'));
+    })
+    ->when(request('publisher_name'), function($q) {
+        $q->where('publisher_name', request('publisher_name'));
+    })
+    ->when(request('author_name'), function($q) {
+        $q->where('author_name', request('author_name'));
+    }) 
+    ->when(request('search_item'), function($q) {
+        $q->whereHas('items', function($subquery) {
+            $subquery->where('item_code', request('search_item'));
+        });
+    })
+    ->when(request('classification_no'), function($q) {
+        $q->where('classification', request('classification_no'));
+    }) 
+    ->when(request('isbn_issn'), function($q) {
+        $q->where('isbn_issn', request('isbn_issn'));
+    })
+    ->when(request('book_status'), function($q) {
+        $q->whereHas('book_circulations', function($q) {
+            switch (request('book_status')) {
+                case 'issued':
+                    $q->whereNotNull('issued_date')->whereNull('return_date');
+                    break;
+                case 'due':
+                    $q->whereDate('due_date', now())->whereNull('return_date');
+                    break;
+                case 'overdue':
+                    $q->whereDate('due_date', '<', now())->whereNull('return_date');
+                    break;
+            }
+        });
+    })
+    ->select([
+        'library_books.*', 
+        DB::raw('(SELECT GROUP_CONCAT(item_code) FROM library_items WHERE book_id = library_books.id AND sub_institute_id = '.$sub_institute_id.' AND deleted_at IS NULL) as item_codes')
+    ]);
 
-            return DataTables::of($books)
-                ->addColumn('checkbox', function ($row) {
-                    return '<input type="checkbox" id="' . $row->id . '" name="someCheckbox" class="checkSingle" />';
-                })
-                ->addColumn('image', function ($row) {
-                    return '<img src="' . Storage::disk('books')->url($row->image) . '" height="100" width="100" alt="">';
-                })
-                ->addColumn('item_codes', function($row) {
-                    return $row->item_codes;
-                })
-                ->addIndexColumn()
-                ->addColumn('action', function ($row) {
-                                $actionBtn = '<a href="javascript:void(0)" class="show m-2 btn btn-success btn-library-item" title="Show Book" data-id="' . $row->id . '"><i class="fa fa-eye"></i></a><a href="javascript:void(0)" class="delete m-2 btn btn-danger btn-delete d-none" title="Delete Book" data-id="' . $row->id . '"><i class="fa fa-trash"></i></a><a href="javascript:void(0)" class="m-2 btn btn-warning btn-edit ml-1" title="Edit Book" data-id="' . $row->id . '"><i class="fa fa-pencil"></i></a><a href="javascript:void(0)" class="m-2 btn btn-primary print-barcode ml-1 d-none" title="Print Barcode" data-id="' . $row->id . '"><i class="fa fa-barcode"></i></a><a href="javascript:void(0)" class="m-2 btn btn-info circulation ml-1" title="Issue/Return Book" data-id="' . $row->id . '"><i class="fa fa-retweet"></i></a>';
-                                return $actionBtn;
-                            })
-                ->rawColumns(['checkbox', 'image', 'item_codes', 'action'])
-                ->make(true);
+return DataTables::of($books)
+    ->addIndexColumn() // This adds the index column (0, 1, 2, etc.)
+    ->addColumn('checkbox', function($row) {
+        return '<input type="checkbox" id="' . $row->id . '" name="someCheckbox" class="checkSingle" />';
+    })
+    ->addColumn('image', function($row) {
+        return '<img src="' . Storage::disk('books')->url($row->image) . '" height="100" width="100" alt="">';
+    })
+    ->addColumn('action', function($row) {
+        $actionBtn = '<a href="javascript:void(0)" class="show m-2 btn btn-success btn-library-item" title="Show Book" data-id="' . $row->id . '"><i class="fa fa-eye"></i></a><a href="javascript:void(0)" class="delete m-2 btn btn-danger btn-delete d-none" title="Delete Book" data-id="' . $row->id . '"><i class="fa fa-trash"></i></a><a href="javascript:void(0)" class="m-2 btn btn-warning btn-edit ml-1" title="Edit Book" data-id="' . $row->id . '"><i class="fa fa-pencil"></i></a><a href="javascript:void(0)" class="m-2 btn btn-primary print-barcode ml-1 d-none" title="Print Barcode" data-id="' . $row->id . '"><i class="fa fa-barcode"></i></a><a href="javascript:void(0)" class="m-2 btn btn-info circulation ml-1" title="Issue/Return Book" data-id="' . $row->id . '"><i class="fa fa-retweet"></i></a>';
+        return $actionBtn;
+    })
+    ->rawColumns(['checkbox', 'image', 'action'])
+    ->make(true);
         }
         $DonateCode = '';
         if(!in_array($sub_institute_id,[47,254])){
@@ -392,161 +421,134 @@ class BookController extends Controller
         public function store(Request $request)
     {
         try {
-            $sub_institute_id = session()->get('sub_institute_id');
-            $syear = session()->get('syear');
-            $userId = session()->get('user_id');
+            // echo "<pre>";print_r($request->all());exit;
+                $sub_institute_id = session()->get('sub_institute_id');
+                $syear = session()->get('syear');
+                $user_id = session()->get('user_id');
+                $item_status_id = $request->item_status ?? 0;
 
-            // 1. Find or create the LibraryBook
-            $isUpdating = $request->filled('id');
-            $createBook = $isUpdating ? LibraryBook::find($request->id) : new LibraryBook();
+                $createBook = LibraryBook::find($request->id) ?? new LibraryBook();
+                $createBook->title = $request->title;
+                $createBook->sub_title = $request->sub_title;
+                $createBook->material_resource_type = $request->material_resource_type;
+                $createBook->edition = $request->edition;
+                $createBook->tags = $request->tags;
+                $createBook->author_name = $request->author_name;
+                $createBook->isbn_issn = $request->isbn_issn;
+                $createBook->classification = $request->classification;
+                $createBook->publisher_name = $request->publisher_name;
+                $createBook->publish_year = $request->publish_year;
+                $createBook->publish_place = $request->publish_place;
+                $createBook->pages = $request->pages;
+                $createBook->series_title = $request->series_title;
+                $createBook->call_number = $request->call_number;
+                $createBook->language = $request->language;
+                $createBook->source = $request->source;
+                $createBook->subject = $request->subject;
+                $createBook->price = $request->price;
+                $createBook->price_currency = $request->price_currency;
+                $createBook->notes = $request->notes;
+                $createBook->review = $request->review;
+                $createBook->sub_institute_id = $sub_institute_id;
 
-            if ($isUpdating && !$createBook) { // Only return 404 if updating and book not found
-                return response()->json(['message' => 'Book not found.', 'status' => false], 404);
-            }
+                // Fetch custom fields
+                $dataCustomFields = tblcustomfieldsModel::select('field_name')
+                    ->where(['status' => "1", 'table_name' => "library_books"])
+                    ->whereRaw('(sub_institute_id = ' . $sub_institute_id . ' OR common_to_all = 1) and user_type= "" ')
+                    ->get()
+                    ->toArray(); // This converts the collection of models to an array of arrays
 
-            // 2. Assign standard book fields using fill
-            // Ensure these fields are fillable in your LibraryBook model
-            $createBook->fill($request->only([
-                'title', 'sub_title', 'material_resource_type', 'edition', 'tags',
-                'author_name', 'isbn_issn', 'classification', 'publisher_name',
-                'publish_year', 'publish_place', 'pages', 'series_title',
-                'call_number', 'language', 'source', 'subject', 'price',
-                'price_currency', 'notes', 'review'
-            ]));
-
-            $createBook->sub_institute_id = $sub_institute_id;
-
-            // 3. Assign custom fields
-            $dataCustomFields = tblcustomfieldsModel::select('field_name')
-                ->where(['status' => "1", 'table_name' => "library_books"])
-                ->whereRaw('(sub_institute_id = ' . $sub_institute_id . ' OR common_to_all = 1) and user_type= "" ')
-                ->get()
-                ->toArray();
-
-            foreach ($dataCustomFields as $fieldData) {
-                $fieldName = $fieldData['field_name'];
-                if ($request->has($fieldName)) {
-                    $createBook->$fieldName = $request->$fieldName;
+                // Iterate through the fetched custom fields
+                foreach ($dataCustomFields as $fieldData) { // Renamed $value to $fieldData for clarity
+                    // Extract the actual field name string from the array
+                    $fieldName = $fieldData['field_name'];
+                    if (isset($request->$fieldName)) { // It's good practice to check if the request field exists
+                        $createBook->$fieldName = $request->$fieldName;
+                    }
                 }
-            }
+                
+                if ($request->image) {
+                    $img = $request->image;
+                    $filename = $img->getClientOriginalName();
+                    $filepath = Storage::disk('books')->put($filename, file_get_contents($img->getRealPath()));
+                    $createBook->image = $filepath ? $filename : '';
+                }
+                if ($request->file_att) {
+                    $file_att = $request->file_att;
+                    $filename = $file_att->getClientOriginalName();
+                    $filepath = Storage::disk('books')->put($filename, file_get_contents($img->getRealPath()));
+                    $createBook->file_att = $filepath ? $filename : '';
+                }
 
-            // 4. Handle image and file attachments
-            if ($request->hasFile('image')) {
-                $img = $request->file('image');
-                $filename = $img->getClientOriginalName();
-                // Store file and set the path/filename on the model
-                $createBook->image = Storage::disk('books')->putFileAs('', $img, $filename);
-            }
-            if ($request->hasFile('file_att')) {
-                $file_att = $request->file('file_att');
-                $filename = $file_att->getClientOriginalName();
-                // Store file and set the path/filename on the model
-                $createBook->file_att = Storage::disk('books')->putFileAs('', $file_att, $filename);
-            }
+                $lastInsertedBookId = 0;
+                $itemCode = $this->getItemCode($sub_institute_id,$request);
+                // echo "<pre>";print_r($request->all());exit;
+                $message = 'Book created Successfully !!';
+                $checkBookExists = LibraryBook::where('title', $request->title)
+                    ->where('sub_institute_id', $sub_institute_id)
+                    ->whereNull('deleted_at')
+                    ->first();
+                if (!isset($request->id) && !$checkBookExists && !isset($checkBookExists->id)) {
+                    $createBook->save();
+                    $lastInsertedBookId = $createBook->id;
+                }
+                else if($request->has('id')){
+                    $createBook->save();
+                    $lastInsertedBookId = $request->id;
+                    $message = 'Book updated Successfully !!';
+                }
+                
+                if($lastInsertedBookId!=0){
+                    $countItems = LibraryItem::where(['book_id' => $lastInsertedBookId, 'sub_institute_id' => $sub_institute_id])->get()->count();
+                    $itemToInsert = 0;
+                    if($countItems < $request->no_of_items){
+                        $itemToInsert = ($request->no_of_items - $countItems);
+                    }
+                    if($itemToInsert > 0){
+                        for ($i = 1; $i <= $itemToInsert; $i++) {
+                          $itemCode = $this->getItemCode($sub_institute_id,$request);
+                          $checkItemCodeNotExists = LibraryItem::where(['item_code' => $itemCode, 'sub_institute_id' => $sub_institute_id])->exists();
+                          if(!$checkItemCodeNotExists){
+                            $objItem = LibraryItem::create([
+                                'book_id' => $lastInsertedBookId,
+                                'call_number' => $createBook->call_number,
+                                'item_code' => $itemCode,
+                                'item_status' => $item_status_id,
+                                'sub_institute_id' => $sub_institute_id,
+                            ]);
 
-            // 5. Save the LibraryBook record
-            $createBook->save();
-
-            // 6. Handle LibraryItem creation/deletion/update and item_scan_details
-            if (!$isUpdating) { // Logic for adding new books/items
-                if ($request->no_of_items > 0) {
-                    for ($i = 0; $i < $request->no_of_items; $i++) {
-                        $nextItemCode = $this->getItemCode($sub_institute_id);
-
-                        // Create new LibraryItem
-                        LibraryItem::create([
-                            'book_id' => $createBook->id,
-                            'call_number' => $createBook->call_number,
-                            'item_code' => $nextItemCode,
-                            'item_status' => $request->item_status,
-                            'sub_institute_id' => $sub_institute_id,
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ]);
-
-                        // Ensure corresponding item_scan_details record exists/is updated
-                        DB::table('item_scan_details')->updateOrInsert(
-                            [
+                            // Insert into item_scan_details
+                            DB::table('item_scan_details')->insert([
                                 'syear' => $syear,
                                 'sub_institute_id' => $sub_institute_id,
-                                'item_code' => $nextItemCode,
-                            ],
-                            [
+                                'item_code' => $itemCode,
                                 'remarks' => '',
-                                'item_status_id' => $request->item_status,
-                                'created_by' => $userId,
+                                'item_status_id' => $item_status_id,
+                                'created_by' => $user_id,
                                 'created_at' => now(),
-                                'updated_at' => now(),
-                            ]
-                        );
+                            ]);
+                          }else{
+                                $objItem = LibraryItem::where(['book_id' => $lastInsertedBookId,'item_code' => $itemCode,'sub_institute_id' => $sub_institute_id])->update([
+                                    'book_id' => $lastInsertedBookId,
+                                    'call_number' => $createBook->call_number,
+                                    'item_code' => $itemCode,
+                                    'item_status' => $item_status_id,
+                                    'sub_institute_id' => $sub_institute_id,
+                                ]);
+
+                                // Insert into item_scan_details
+                                DB::table('item_scan_details')->where(['syear' => $syear,'sub_institute_id' => $sub_institute_id,'item_code' => $itemCode])->update([
+                                    'syear' => $syear,
+                                    'sub_institute_id' => $sub_institute_id,
+                                    'item_code' => $itemCode,
+                                    'remarks' => '',
+                                    'item_status_id' => $item_status_id,
+                                    'updated_at' => now(),
+                                ]);
+                          }
+                        }
                     }
                 }
-            } else { // Logic for updating existing books
-                $existingItems = LibraryItem::where(['book_id' => $createBook->id, 'sub_institute_id' => $sub_institute_id])->get();
-                $currentCount = $existingItems->count();
-                $requestedCount = $request->no_of_items;
-
-                // A. Handle item count changes (delete excess / add new)
-                if ($requestedCount < $currentCount) {
-                    // Delete excess items from LibraryItem and item_scan_details
-                    $itemsToDelete = $existingItems->skip($requestedCount);
-                    foreach ($itemsToDelete as $item) {
-                        $item->delete(); // Deletes from LibraryItem
-                        DB::table('item_scan_details')
-                            ->where(['syear' => $syear, 'sub_institute_id' => $sub_institute_id, 'item_code' => $item->item_code])
-                            ->delete(); // Deletes from item_scan_details
-                    }
-                } elseif ($requestedCount > $currentCount) {
-                    // Add new LibraryItem records
-                    for ($i = 0; $i < ($requestedCount - $currentCount); $i++) {
-                        $nextItemCode = $this->getItemCode($sub_institute_id);
-                        LibraryItem::create([
-                            'book_id' => $createBook->id,
-                            'call_number' => $createBook->call_number,
-                            'item_code' => $nextItemCode,
-                            'item_status' => $request->item_status,
-                            'sub_institute_id' => $sub_institute_id,
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ]);
-                        // item_scan_details for newly added items will be handled in step B.
-                    }
-                }
-
-                // B. Sync all associated LibraryItems with item_scan_details
-                // This ensures all LibraryItems (old and newly added in this update flow)
-                // have a corresponding item_scan_details entry, either updated or inserted.
-                $allCurrentItems = LibraryItem::where(['book_id' => $createBook->id, 'sub_institute_id' => $sub_institute_id])->get();
-
-                foreach ($allCurrentItems as $item) {
-                    // Update LibraryItem's call_number and item_status
-                    $item->update([
-                        'call_number' => $createBook->call_number,
-                        'item_status' => $request->item_status,
-                        'updated_at' => now(),
-                    ]);
-
-                    // Update or Insert into item_scan_details for each item
-                    DB::table('item_scan_details')->updateOrInsert(
-                        [
-                            'syear' => $syear,
-                            'sub_institute_id' => $sub_institute_id,
-                            'item_code' => $item->item_code, // Use the item's current item_code
-                        ],
-                        [
-                            'remarks' => '',
-                            'item_status_id' => $request->item_status,
-                            'created_by' => $userId,
-                            'created_at' => DB::raw('created_at'), // Preserve original created_at if exists
-                            'updated_at' => now(),
-                            // 'created_by' => $userId, // Only for new inserts if not existing
-                        ]
-                    );
-                }
-            }
-
-            // 7. Return success response
-            $message = $isUpdating ? 'Book Updated Successfully !!' : 'Book created Successfully !!';
             return response()->json(['message' => $message, 'status' => true], 200);
 
         } catch (Exception $e) {
@@ -555,8 +557,9 @@ class BookController extends Controller
         }
     }
 
-    public function getItemCode($sub_institute_id){
+    public function getItemCode($sub_institute_id,$request){
         $lastItem = LibraryItem::orderBy('id', 'desc')->where('sub_institute_id',$sub_institute_id)->where('item_code','like','%L%')->first();
+
         if(!in_array($sub_institute_id,[47,254])){
             if ($lastItem) {
                 // Extract the numeric part of the item_code and increment it
@@ -578,14 +581,14 @@ class BookController extends Controller
             }
 
         }else{
-            if($i==1){
-                $nextItemCode = $request->item_code_value;
-            }else{
+        //    if($i==1){
+        //         $nextItemCode = $request->item_code_value;
+        //     }else{
                 $first =substr($request->item_code_value, 0,1);
                 $nextItemCode = (int)substr($request->item_code_value, 1) + 1;
                 $nextItemCode = str_pad($nextItemCode, 5, '0', STR_PAD_LEFT); // Ensure it's 5 digits
                 $nextItemCode = $first. $nextItemCode;
-            }
+            // }
         }
 
         return $nextItemCode;

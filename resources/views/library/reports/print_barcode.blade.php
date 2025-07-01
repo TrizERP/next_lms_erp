@@ -1,4 +1,5 @@
-@extends('layout') @section('container')
+@extends('layout') 
+@section('container')
 <div id="page-wrapper" style="color:#000;">
 	<div class="container-fluid">
 
@@ -77,7 +78,8 @@
                     @foreach($data['details'] as $key=>$value)                    
                         @if($data['print_type']=="member")
                             <tr>
-                                <td><input id="{{$value->enrollment_no}}" value="{{$value->enrollment_no}}" name="check_id[]" type="checkbox"><input type="hidden" name="print_text[]" value="{{$value->student_name}}"></td>                            
+                                <td><input id="{{$value->enrollment_no}}" value="{{$value->enrollment_no}}" name="check_id[]" type="checkbox">
+                                <input type="hidden" name="print_text[{{$value->enrollment_no}}]" value="{{$value->student_name}}"></td>                            
                                 <td>{{$value->enrollment_no}}</td>
                                 <td>{{$value->roll_no}}</td>
                                 <td>{{$value->student_name}}</td>
@@ -122,8 +124,34 @@
         @if(isset($data['print_type']) && $data['print_type']=="member")
          pageRow = 65;
         @endif
+        // var table = $('#example').DataTable({
+        //     select: true,
+        //     lengthMenu: [
+        //         [pageRow,100, 500, 1000, -1],
+        //         [pageRow,'100', '500', '1000', 'Show All']
+        //     ],
+        //     dom: 'Bfrtip',
+        //     buttons: [
+        //         {
+        //             extend: 'pdfHtml5',
+        //             title   : 'Fees Monthly Report',
+        //             orientation: 'landscape',
+        //             pageSize: 'LEGAL',
+        //             pageSize: 'A0',
+        //             exportOptions: {
+        //                 columns: ':visible'
+        //             },
+        //         },
+        //         {extend: 'csv', text: ' CSV', title: 'Fees Monthly Report'},
+        //         {extend: 'excel', text: ' EXCEL', title: 'Fees Monthly Report'},
+        //         {extend: 'print', text: ' PRINT', title: 'Fees Monthly Report'},
+        //         'pageLength'
+        //     ],
+        // });
+
         var table = $('#example').DataTable({
             select: true,
+            ordering: false,
             lengthMenu: [
                 [pageRow,100, 500, 1000, -1],
                 [pageRow,'100', '500', '1000', 'Show All']
@@ -174,7 +202,7 @@
 				}
 			} else {
 				for (var i = 0; i < checkboxes.length; i++) {
-					console.log(i)
+					// console.log(i)
 					if (checkboxes[i].type == 'checkbox') {
 						checkboxes[i].checked = false;
 					}

@@ -539,8 +539,8 @@ class LibraryReportController extends Controller
             }
         }
         // exit;
-        // if($sub_institute_id==254){
-        //     echo "<pre>";print_r($barcodes);exit;
+        // if($sub_institute_id==47){
+        //     echo "<pre>";print_r($request->print_text);exit;
         // }
         // Generate PDF
         $pdf = PDF::loadView('library.reports.barcodes', ['barcodes' => $barcodes,'print_type'=>$request->print_type]);

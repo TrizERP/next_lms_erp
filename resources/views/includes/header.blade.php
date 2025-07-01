@@ -41,6 +41,23 @@
         bottom: 650px !important;
         background:#fff !important;
     }
+
+    /* Ensure autocomplete dropdown appears above the header */
+    .ui-autocomplete {
+        z-index: 9999 !important; /* Very high value to come above header */
+        position: absolute;
+        background-color: #fff;
+        max-height: 300px;
+        overflow-y: auto;
+        border: 1px solid #ccc;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    #search_menu {
+        position: relative;
+        z-index: 100;
+    }
+
 </style>
 
 <body class="fix-header">
@@ -114,7 +131,7 @@ $academicTerms = session()->get('academicTerms');
                     <div class="row">
                         <div class="{{$col_md}}">
                             <div class="ui-widget">
-                                <input type="text" name="search_menu" id="search_menu" value="" class="form-control mb-0" autocomplete="off" placeholder="Search Anything">
+                                <input type="text" name="search_menu" id="search_menu" value="" class="form-control mb-0" autocomplete="off" placeholder="Search Menu...">
                             </div>
                         </div>
 

@@ -2453,6 +2453,27 @@ class AJAXController extends Controller
     }
 
     public function lmsDataApi(Request $request){
+        // get whole tables in database
+        if($request->has('all_tables') && $request->all_tables==1){
+            $tables = DB::select('SHOW TABLES');
+
+            // If you want to convert it into a simple array
+            $tableList = array_map('current', $tables);
+            return $tableList;
+        }
+        // get table fields Details
+        if($request->has('table_data') && $request->has('table_name') && $request->table_data==1){
+            $columns = DB::select("
+                SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE, COLUMN_DEFAULT 
+                FROM INFORMATION_SCHEMA.COLUMNS 
+                WHERE TABLE_NAME = :table_name AND TABLE_SCHEMA = :database
+            ", [
+                'table_name' => $request->table_name,
+                'database' => env('DB_DATABASE') // Current database name
+            ]);
+
+            return $columns;
+        }
     	
         if (!$request->has('table') || empty($request->input('table'))) {
             return response()->json(['message' => 'Table name is required'], 200);

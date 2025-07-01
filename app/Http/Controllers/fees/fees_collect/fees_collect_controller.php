@@ -3575,6 +3575,10 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                if($value['remain'] > 0){
                     $getMonthYear = explode('/',$value['month']);
                     $feesMonth = isset($getMonthYear[1]) ? $getMonthYear[1] : 0;
+
+                    $feeYear = substr($value['month_id'], -4);  // "2025"
+                    $feeMonth = substr($value['month_id'], 0, strlen($value['month_id']) - 4);
+
                     if(($feesMonth == $syear || $feesMonth== $nextYear) && array_key_exists($currentMonth,$allFeesMonth)){
                         $feesMonths[] = $value['month_id'];
                         $pendingFees[] = $value;
@@ -3582,10 +3586,28 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                             $currentFees += $value['remain'];
                             break;
                         }
-                        // previous month and current month pending fees 
-                        $currentFees += $currentFees; // commented on 02-04-2025
+
+                        // previous month and current month pending fees  added condition on 30-06-2025 by uma
+                        if($value['month_id'] < $currentMonth && $value['month_id'] != $currentMonth && $feeYear <= date('Y')){
+                            $currentFees += $value['remain']; // commented on 02-04-2025
+                        }
                     }
                }
+               // old code
+            //    elseif($value['remain'] > 0){
+            //         $getMonthYear = explode('/',$value['month']);
+            //         $feesMonth = isset($getMonthYear[1]) ? $getMonthYear[1] : 0;
+            //         if(($feesMonth == $syear || $feesMonth== $nextYear) && array_key_exists($currentMonth,$allFeesMonth)){
+            //             $feesMonths[] = $value['month_id'];
+            //             $pendingFees[] = $value;
+            //             if($value['month_id'] == $currentMonth){
+            //                 $currentFees += $value['remain'];
+            //                 break;
+            //             }
+            //             // previous month and current month pending fees 
+            //             $currentFees += $currentFees; // commented on 02-04-2025
+            //         }
+            //    }
             }
             $status = 1;
             $message = "Student Fees Data Found";
