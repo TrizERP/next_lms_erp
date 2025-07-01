@@ -65,7 +65,7 @@ class confirmOnlineFeesController extends Controller
             $from_date = Carbon::parse($request->from_date)->startOfDay();
             $to_date = Carbon::parse($request->to_date)->endOfDay();
             // DB::enableQueryLog();
-            $searchedData = DB::table('fees_payment as fp')
+            $searchData = DB::table('fees_payment as fp')
                 ->Join('fees_collect as fc', function($join) use($sub_institute_id,$syear){
                     $join->on('fp.hdfc_order_id', '=', 'fc.cheque_no')
                     ->on('fp.student_id', '=', 'fc.student_id')
@@ -80,10 +80,10 @@ class confirmOnlineFeesController extends Controller
                 ->whereBetween('fp.hdfc_payment_date', [$from_date, $to_date])
                 ->groupBy('fp.id')
                 ->get()->toArray();
-            // dd(DB::getQueryLog($searchedData));
+            // dd(DB::getQueryLog($searchData));
             $studentData = [];
             // get student details
-            foreach($searchedData as $key => $value){
+            foreach($searchData as $key => $value){
                 $studentDetails = SearchStudent("","","", $sub_institute_id, $syear,"","","","","", $value->student_id);
                 if(isset($studentDetails[0])){
                     $studentDetails[0]['payment_id'] = $value->id;
@@ -93,15 +93,15 @@ class confirmOnlineFeesController extends Controller
                 }
                 $studentData[] = isset($studentDetails[0]) ? $studentDetails[0] : [];
             }
-            // echo "<pre>";print_r($searchedData);die;
-            if(!empty($searchedData)){
+            //echo "<pre>";print_r($studentData);die;
+            if(!empty($searchData)){
                 $res['status'] = "1";
                 $res['message'] = "Student Found !"; 
             }else{
                 $res['status'] = "0";
                 $res['message'] = "No Student Found !";
             }
-            $res['searchedData'] = $studentData;
+            $res['searchedData'] = array_filter($studentData, fn($item) => isset($item['student_id']) && isset($item['payment_id']));
             $res['from_date'] = $from_date;
             $res['to_date'] = $to_date;
         }

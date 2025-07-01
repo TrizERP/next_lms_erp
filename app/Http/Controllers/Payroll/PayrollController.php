@@ -97,7 +97,7 @@ class PayrollController extends Controller
         $employee_id= ($request->emp_id!=0) ? implode(',',$request->emp_id) : '';
         $department_id= ($request->department_id!=0) ? implode(',',$request->department_id) : '';
 
-        if (in_array($type,['API','JSON'])) {
+        if($type=="API"){
             try {
                 if (!$this->jwtToken()->validate()) {
                     $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
@@ -118,7 +118,10 @@ class PayrollController extends Controller
 
         $employeeLists= employeeDetails($sub_institute_id,"",$status,$department_id);
     //    echo "<pre>";print_r($employeeLists);exit;
-        $payrollTypes = PayrollType::where('sub_institute_id',$sub_institute_id)->where('status', 1)->orderBy('sort_order')->get();
+        $payrollTypes = PayrollType::where('sub_institute_id',$sub_institute_id)
+                    ->where('status', 1)
+                    // commented by uma 27-06-2025 //->where('day_count', 0) //added by rajesh Hide Extra Type as per 29-05-2025 excel issue
+                    ->orderBy('sort_order')->get();
         
         $employeeSalaryStructures = EmployeeSalaryStructure::where('sub_institute_id',$sub_institute_id)->where('year',$syear)->get();
        
@@ -148,7 +151,7 @@ class PayrollController extends Controller
         $year = session()->get('syear');
         $sub_institute_id =$request->session()->get('sub_institute_id');
         $type=$request->input('type');
-        if (in_array($type,['API','JSON'])){
+        if($type=="API"){
             try {
                 if (!$this->jwtToken()->validate()) {
                     $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
@@ -199,10 +202,10 @@ class PayrollController extends Controller
                         $amount = $Per_Flat;
                        }
                        else{
-                        $amount = $value[1];
+                        $amount = $value[1] ?? 0;
                        }
 
-                       $payroll_type_name = $value[2];
+                       $payroll_type_name = $value[2] ?? '-';
                        $payroll_type = $value[3] ?? 0;
                     //    if($payroll_type_name=="BASIC" || $payroll_type_name=="D.A" || $payroll_type_name=="GRADE PAY"){
                     //     $totalAllowance += $amount;
@@ -258,10 +261,16 @@ class PayrollController extends Controller
                     // $getPT = ($hasPT == 2) ? Helpers::getPT($totalGrossSalary,$gender) : $getPTFlat; 
                 // }           
                 // echo "<pre>";print_r($getPT);
+                $employee = tbluserModel::where('id',$emp_ids)->first();
+                $pf_deduction = $employee->pf_deduction;
+                $pt_deduction = $employee->pt_deduction;
 
                 // 13-08-2024 claculate PT as per eligilble emp_ids
-                $getPF = ($hasPF == 2) ? Helpers::getPF($totalAllowance) : $getPfFlat; // getPfFlat is for set flat amounts
-                $getPT = ($hasPT == 2) ? Helpers::getPT($totalGrossSalary,$gender) : $getPTFlat; // getPtFlat is for set flat amounts
+                if($pf_deduction == 'Y')
+                    $getPF = ($hasPF == 2) ? Helpers::getPF($totalAllowance) : $getPfFlat; // getPfFlat is for set flat amounts
+                
+                if($pt_deduction == 'Y')
+                    $getPT = ($hasPT == 2) ? Helpers::getPT($totalGrossSalary,$gender) : $getPTFlat; // getPtFlat is for set flat amounts
                 // 13-08-2024 end 
                 // echo "<pre>";print_r($getPF);
                 // echo "<pre>";print_r($getPT);
@@ -370,7 +379,7 @@ class PayrollController extends Controller
         $type = $request->input('type');
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
-        if (in_array($type,['API','JSON'])){
+        if($type=="API"){
             try {
                 if (!$this->jwtToken()->validate()) {
                     $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
@@ -416,7 +425,7 @@ class PayrollController extends Controller
     {
         // echo "<pre>";print_r($request->all());exit;
         $type = $request->input('type');
-        if (in_array($type,['API','JSON'])) {
+        if ($type == 'API') {
             $sub_institute_id = $request->input('sub_institute_id');
             $syear = $request->input('syear');
         } else {
@@ -517,7 +526,7 @@ class PayrollController extends Controller
     {
         // echo "<pre>";print_r($request->all());exit;
         $type = $request->input('type');
-        if (in_array($type,['API','JSON'])){
+        if ($type == 'API') {
             $sub_institute_id = $request->input('sub_institute_id');
         } else {
             $sub_institute_id = $request->session()->get('sub_institute_id');
@@ -942,7 +951,7 @@ class PayrollController extends Controller
         $type= $request->type;
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $user_profile = $request->session()->get('user_profile_name');
-        if (in_array($type,['API','JSON'])){
+        if($type=="API"){
             $sub_institute_id = $request->sub_institute_id;
             $user_profile = $request->user_profile_name;
         }
@@ -1330,7 +1339,7 @@ class PayrollController extends Controller
     {
         $type= $request->type;
         $sub_institute_id = $request->session()->get('sub_institute_id');
-        if (in_array($type,['API','JSON'])){
+        if($type=="API"){
             try {
                 if (!$this->jwtToken()->validate()) {
                     $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
@@ -1504,7 +1513,7 @@ class PayrollController extends Controller
         // return $request->all();exit;
         $type = $request->type;
         $sub_institute_id = $request->session()->get('sub_institute_id');
-        if (in_array($type,['API','JSON'])){
+        if($type=="API"){
             $sub_institute_id = $request->get('sub_institute_id');
         }
         $employeeLists = employeeDetails($sub_institute_id);
@@ -1639,7 +1648,7 @@ class PayrollController extends Controller
         $type=$request->type;
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
-        if (in_array($type,['API','JSON'])){
+        if($type=="API"){
             $sub_institute_id = $request->sub_institute_id;
             $syear = $request->syear;
         }
@@ -1665,7 +1674,7 @@ class PayrollController extends Controller
         $res['selYear'] = $year = $request->year;
         $res['selMonth'] = $month = $request->month;
 
-        if (in_array($type,['API','JSON'])){
+        if($type=="API"){
             $sub_institute_id = $request->sub_institute_id;
             $syear = $request->syear;
             $userProfile = $request->user_profile_name;
@@ -1775,6 +1784,7 @@ class PayrollController extends Controller
         $totaldeduction = $totalallowance = 0;
         foreach ($payrollTypes as $payrollType) {
             // for allowance
+
             if(isset($employeeSalaryDetails[$payrollType->id]) && $payrollType->payroll_type == 1) {
 
                 $checkAllowance = DB::table('hrms_emp_payroll_deduction')->where('employee_id',$request->emp_id)->where(['sub_institute_id'=>$sub_institute_id,'month'=>$request->month,'year'=>$searchedYear,'deduction_type'=>$payrollType->id])->first();
@@ -1784,6 +1794,8 @@ class PayrollController extends Controller
                 }
 
                 $preparPayrollType[]['allowance'] = [$payrollAmount,$payrollType->amount_type,$payrollType->id,$payrollType->payroll_name,$payrollType->day_count];
+                $res['allowanceTypes'][] = [$payrollType->id=>$payrollType->payroll_name];
+
             }
             // for deduction
              else if (isset($employeeSalaryDetails[$payrollType->id])) {
@@ -1800,6 +1812,7 @@ class PayrollController extends Controller
                 }
 
                 $preparPayrollType[]['deduction'] = [$payrollAmount,$payrollType->amount_type,$payrollType->id,$payrollType->payroll_name,$payrollType->day_count];
+                $res['deductionTypes'][] = [$payrollType->id=>$payrollType->payroll_name];
             }
         }
         $employeefinalDisplayData = [];
@@ -1831,7 +1844,7 @@ class PayrollController extends Controller
             }
           
             // for deduction
-            if(isset($value['deduction'])) {
+            elseif(isset($value['deduction'])) {
                 // 13-08-2024 start
                     // check eligible
                     $getEligible = DB::table('tbluser')->where('id',$request->emp_id)->first(); 
@@ -1966,7 +1979,7 @@ class PayrollController extends Controller
         $type= $request->type;
         $sub_institute_id = session()->get('sub_institute_id');
 
-        if (in_array($type,['API','JSON'])){
+        if($type=="API"){
             try {
                 if (!$this->jwtToken()->validate()) {
                     $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
@@ -2072,7 +2085,11 @@ class PayrollController extends Controller
         }
         //RAJESH 29-11-2024 make unique array of holiday
         $holidayDates = array_values(array_unique($holidayDates));
-        
+        // Remove holidays that fall on Sundays
+        // if date is holiday then remove  it from week day as per user att report added by uma 27-06-2025
+        $weekDays = array_values(array_diff($weekDays, $holidayDates));
+        $weekday_off = count($weekDays); // update Sunday count after removing holidays
+
         // echo "<br>Holidays<br>";
         //echo "<pre>";print_r($holidayDates);exit();
         // get users attandance
@@ -2129,27 +2146,21 @@ class PayrollController extends Controller
                 // $leaveMonth = $leaveTo->format('Y-m');
                     if($checkMonth == $leaveMonth && $searchMonth==$leaveMonth){
                         // Leaves that are not in attendance and not holidays
-                        if(!in_array($checkLeave,$attArr) && !in_array($checkLeave,$holidayDates) && in_array($value->status,$leaveStatus)){
-                        // if(!in_array($checkLeave,$attArr) && $value->status != "approved_lwp" ){
+                        if(!in_array($checkLeave,$attArr) && in_array($value->status,$leaveStatus)
+                            && !in_array($checkLeave,$holidayDates) && !in_array($checkLeave,$weekDays)){
                             $totLeaveDay += $value->day_type;
                         }
-
-                        // Decrease $totLeaveDay if $checkLeave matches a holiday date
-					    if (in_array($checkLeave, $holidayDates) && $totLeaveDay > 0) {
-					        // $totLeaveDay--;
-					    }
-
-                        // if date not found in attdance and leave is approved lwp then minus, count only full day leave because half day will be in attandance == If leave is approved LWP and half-day
-                        if($value->status == "approved_lwp" && $value->day_type=="0.5" && !in_array($checkLeave,$holidayDates)){
-                            $totalAtt = ($totalAtt - $value->day_type);
+                        
+                        if($value->status == "approved_lwp" && $value->day_type=="0.5" && !in_array($checkLeave,$holidayDates) && !in_array($checkLeave,$weekDays)){ 
+                            $totalAtt -= $value->day_type;
                         }
-                        // !in_array($checkLeave,$attArr) &&  removed on 07-10-2024 for jojo if have lwp then do not count att
-                        else if(!in_array($checkLeave,$holidayDates) && $value->status == "approved_lwp"){
-                            $tot_lwp_leave = ($tot_lwp_leave+$value->day_type);
+
+                        if($value->status == "approved_lwp" && $value->day_type=="1" && in_array($checkLeave,$attArr)){
+                            $tot_lwp_leave += $value->day_type;
                         }
                         
                         // Adjust holiday count
-                        if(in_array($checkLeave,$holidayDates) && $tot_lwp_leave!=0){
+                        if(in_array($checkLeave,$holidayDates)){// && $tot_lwp_leave!=0
                             $holiday--;
                         }
 
@@ -2194,7 +2205,7 @@ $sandwichLeaveCount = $this->calculateLeaveCounts($from_date,$to_date,$weekDays,
             "tot_leave_+"=>$totLeaveDay,
             "sandwich_-"=> $sandwichLeaveCount,
             // "noAtt_-"=>$noEnrty,
-            // "lwp_-"=> $tot_lwp_leave,
+            "lwp_-"=> $tot_lwp_leave,
         ];
         // echo "<pre>";print_r($weekDays);
         // echo "<pre>";print_r($holidayDates);
@@ -2203,8 +2214,9 @@ $sandwichLeaveCount = $this->calculateLeaveCounts($from_date,$to_date,$weekDays,
         //echo $json;exit();
         $daysCount = $from_date->diffInDays($to_date);
 
-       $totalDays = ($totalAtt + $holiday + $weekday_off + $totLeaveDay - $sandwichLeaveCount); // + $noEnrty // 31 //+ $tot_lwp_leave by Rajesh 20-02-2025
-        //$totalDays = ($totalDays - $tot_lwp_leave - $noEnrty); // 16
+       $totalDays = ($totalAtt + $holiday + $weekday_off + $totLeaveDay - $sandwichLeaveCount - $tot_lwp_leave);
+       // + $noEnrty // 31 //+ $tot_lwp_leave by Rajesh 20-02-2025
+       //$totalDays = ($totalDays - $tot_lwp_leave - $noEnrty); // 16
         
         $totalDays = ($totalDays>0) ? $totalDays : 0; // totDays should not be in minus
         // if no attendance,no leave applied and no lwp 2024-10-11
@@ -2224,37 +2236,12 @@ $sandwichLeaveCount = $this->calculateLeaveCounts($from_date,$to_date,$weekDays,
     {
         $allDates = [];
         $sandwichLeaveCount = 0;
-//echo "<pre>";
-//print_r($weekOffDates);
-//print_r($holidays);
-//print_r($leaveDates);
-//print_r($presentDates);
-//die();
+
         // Identify absent days
         $allDates = array_unique(array_merge($weekOffDates, $holidays));
         sort($allDates); // Sorts in ascending order
 
-        // Check for sandwich leave cases
-        // foreach ($allDates as $allDate) {
-        //     $prevDay = date('Y-m-d', strtotime('-1 day', strtotime($allDate)));
-        //     $nextDay = date('Y-m-d', strtotime('+1 day', strtotime($allDate)));
-
-        //     if (    
-        //         !in_array($prevDay, $allDates) && 
-        //         !in_array($nextDay, $allDates) &&
-
-        //             !in_array($prevDay, $presentDates) && 
-        //             !in_array($nextDay, $presentDates) && 
-        //             !in_array($allDate, $leaveDates)
-        //         ) 
-        //     {
-        //         $sandwichLeaveCount++;
-        //         //$holidayCount = max(0, $holidayCount - ($allDate == $holidays ? 1 : 0));
-        //         //$weekoffCount = max(0, $weekoffCount - (in_array($allDate, $weekOffDates) ? 1 : 0));
-        //     }
-        // }
-
-        // added by uma on 2025-05-20
+       // added by uma on 2025-05-20
        foreach ($allDates as $allDate) {
             $prevDay = date('Y-m-d', strtotime('-1 day', strtotime($allDate)));
             $nextDay = date('Y-m-d', strtotime('+1 day', strtotime($allDate)));
@@ -2269,26 +2256,16 @@ $sandwichLeaveCount = $this->calculateLeaveCounts($from_date,$to_date,$weekDays,
                 echo "prevDay:".$prevDay."-nextDay:".$nextDay;
                 */
                 $sandwichLeaveCount++;
-                //$holidayCount = max(0, $holidayCount - ($allDate == $holidays ? 1 : 0));
-                //$weekoffCount = max(0, $weekoffCount - (in_array($allDate, $weekOffDates) ? 1 : 0));
             }
+            /* Add by Uma - ulta adapav Hide from rajesh
             if (in_array($allDate, $leaveDates) && in_array($allDate,$holidays)) 
             {
                 $sandwichLeaveCount++;
-                //$holidayCount = max(0, $holidayCount - ($allDate == $holidays ? 1 : 0));
-                //$weekoffCount = max(0, $weekoffCount - (in_array($allDate, $weekOffDates) ? 1 : 0));
             }
+            */
         }
 
         // Output results
         return $sandwichLeaveCount;
-        /*return [
-            'present' => $presentCount,
-            'holiday' => $holidayCount,
-            'weekoff' => $weekoffCount,
-            'tot_leave' => $totalLeaveCount,
-            'sandwich_leave' => $sandwichLeaveCount
-        ];
-        */
     }
 }
