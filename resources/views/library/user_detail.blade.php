@@ -1,19 +1,20 @@
-@if($message !='')
-<div class="col-md-12 mt-3">
-    <div class="alert alert-success alert-block">
-        <button type="button" class="close" data-dismiss="alert">×</button>
-        <strong>{{ $message }}</strong>
+@if ($message != '')
+    <div class="col-md-12 mt-3">
+        <div class="alert alert-success alert-block">
+            <button type="button" class="close" data-dismiss="alert">×</button>
+            <strong>{{ $message }}</strong>
+        </div>
     </div>
-</div>
 @endif
 
-@if(isset($issue_status[0]) && $issue_status[0] !='')
-<div class="col-md-12 mt-3">
-    <div class="alert alert-danger alert-block">
-        <button type="button" class="close" data-dismiss="alert">×</button>
-        <strong>This Book already assigned to student -{{$issue_status[0]->student_name}} of standard {{$issue_status[0]->standard}} / {{$issue_status[0]->division}}</strong>
+@if (isset($issue_status[0]) && $issue_status[0] != '')
+    <div class="col-md-12 mt-3">
+        <div class="alert alert-danger alert-block">
+            <button type="button" class="close" data-dismiss="alert">×</button>
+            <strong>This Book already assigned to student -{{ $issue_status[0]->student_name }} of standard
+                {{ $issue_status[0]->standard }} / {{ $issue_status[0]->division }}</strong>
+        </div>
     </div>
-</div>
 @endif
 
 <div id="check_msg">
@@ -32,16 +33,16 @@
     <div class="form-group">
         <label for="">Item Code</label>
         <select name="item_codes" id="item_codes" class="form-control" onchange="checkIssue()" required>
-        @if(count($item_codes)==1 && session()->get('sub_institute_id')==254)
-            @foreach($item_codes as $key=>$value)
-                <option value="{{$value->id}}" selected>{{$value->item_code}}</option>
-            @endforeach
-        @else
-            <option value=''>Select Item Code</option>
-            @foreach($item_codes as $key=>$value)
-                <option value="{{$value->id}}">{{$value->item_code}}</option>
-            @endforeach
-        @endif
+            @if (count($item_codes) == 1 && session()->get('sub_institute_id') == 254)
+                @foreach ($item_codes as $key => $value)
+                    <option value="{{ $value->id }}" selected>{{ $value->item_code }}</option>
+                @endforeach
+            @else
+                <option value=''>Select Item Code</option>
+                @foreach ($item_codes as $key => $value)
+                    <option value="{{ $value->id }}">{{ $value->item_code }}</option>
+                @endforeach
+            @endif
         </select>
     </div>
 </div>
@@ -49,7 +50,8 @@
 <div class="col-md-6 mt-3">
     <div class="form-group">
         <label for="">Issue Date</label>
-        <input type="text" class="form-control mydatepicker" name="issue_date" id="issue_date" value="{{ date('d-m-Y') }}">
+        <input type="text" class="form-control mydatepicker" name="issue_date" id="issue_date"
+            value="{{ date('d-m-Y') }}">
     </div>
 </div>
 <div class="col-md-6 mt-3">
@@ -58,48 +60,58 @@
         <input type="text" class="form-control mydatepicker" name="return_date" id="return_date">
     </div>
 </div>
+<div class="col-md-12 mb-4">
+    <center>
+    <button type="submit" class="btn btn-primary" id="issue_book_check">Issue Book</button>
+    </center>
+</div>
 <div class="col-md-12">
     <table class="table table-responsive table-striped table-bordered">
         <thead>
             <th>Book</th>
             <th>Item Code</th>
-            <th>Issue Date</th>            
-            <th>Due Date</th>            
+            <th>Issue Date</th>
+            <th>Due Date</th>
             <th>Return Date</th>
             <th>Action</th>
         </thead>
         <tbody>
             @foreach ($details->issuedBookItem as $item)
-                @php 
+                @php
                     $return_date = null;
-                    if(isset($item->return_date) && $item->return_date != '0000-00-00 00:00:00'){
+                    if (isset($item->return_date) && $item->return_date != '0000-00-00 00:00:00') {
                         $return_date = \Carbon\Carbon::parse($item->return_date)->format('d-m-Y H:s:i');
                     }
                 @endphp
                 <tr>
                     <td>{{ $item->book->title ?? '' }}</td>
-                    <td>{{ $item->item_code ?? '' }}</td>                    
+                    <td>{{ $item->item_code ?? '' }}</td>
                     <td>{{ \Carbon\Carbon::parse($item->issued_date)->format('d-m-Y') ?? '' }}</td>
                     <td>{{ \Carbon\Carbon::parse($item->due_date)->format('d-m-Y') ?? '' }}</td>
                     <td>{{ $return_date }}</td>
-                    <td>@if( $return_date == null )<button type="button" class="btn btn-danger return-book" data-id="{{ $item->main_id }}" data-itemid="{{ $item->item_code_id }}">Return</button>@endif</td>
+                    <td>
+                        @if ($return_date == null)
+                            <button type="button" class="btn btn-danger return-book" data-id="{{ $item->main_id }}"
+                                data-itemid="{{ $item->item_code_id }}">Return</button>
+                        @endif
+                    </td>
                 </tr>
             @endforeach
         </tbody>
     </table>
 </div>
 <script>
-    $(document).ready(function(){
+    $(document).ready(function() {
         // Listen for change event on issue_date      
-        var book_id =$('#bookId').val();
+        var book_id = $('#bookId').val();
         $('#library_book_id').empty();
         $('#library_book_id').val(book_id);
 
         var selectedDate = $('#issue_date').val();
-        
+
         get_date(selectedDate);
 
-        $('#issue_date').change(function(){
+        $('#issue_date').change(function() {
             var selectedDate = $('#issue_date').val();
             // alert(selectedDate);
             // Get the selected date from issue_date input
@@ -128,40 +140,41 @@
             todayHighlight: true
         });
 
-        @if(isset($issue_status[0]) && $issue_status[0] !='')
+        @if (isset($issue_status[0]) && $issue_status[0] != '')
             $("#issue_book_check").prop("disabled", true);
         @else
             $("#issue_book_check").prop("disabled", false);
-         @endif
+        @endif
 
     });
 
     // check book already issued or not
 
-    function checkIssue(){
-        $("#issue_book_check").prop("disabled", false);        
+    function checkIssue() {
+        $("#issue_book_check").prop("disabled", false);
         $('#check_msg').empty();
         var book_id = $('#bookId').val();
-        var student_gr = $('#enroll_no').val();        
+        var student_gr = $('#enroll_no').val();
         // alert(book_id);
         var item_code = $('#item_codes').val();
-        @if(session()->get('sub_institute_id')==254)
-         var urls = '/check_issue?book_id='+book_id;
+        @if (session()->get('sub_institute_id') == 254)
+            var urls = '/check_issue?book_id=' + book_id;
         @else
-            var urls = '/check_issue?book_id='+book_id+'&item_code='+item_code;
+            var urls = '/check_issue?book_id=' + book_id + '&item_code=' + item_code;
         @endif
         $.ajax({
-            url : urls,
-            type:'GET',
-            success : function (result){
+            url: urls,
+            type: 'GET',
+            success: function(result) {
                 console.log(result);
-                if(result.length>0){
+                if (result.length > 0) {
                     $('.alert-success').hide();
                     $('#check_msg').show();
                     $('#check_msg').append(`<div class="col-md-12 mt-3">
                         <div class="alert alert-danger alert-block">
                             <button type="button" class="close" data-dismiss="alert">×</button>
-                            <strong>This Book already assigned to student - `+result[0].student_name+` of standard `+result[0].standard+`/`+result[0].division+`</strong>
+                            <strong>This Book already assigned to student - ` + result[0].student_name +
+                        ` of standard ` + result[0].standard + `/` + result[0].division + `</strong>
                         </div>
                     </div>`);
                     $("#issue_book_check").prop("disabled", true);
@@ -169,14 +182,15 @@
             }
         });
     }
-     function get_date(selectedDate){
-        if(selectedDate){
+
+    function get_date(selectedDate) {
+        if (selectedDate) {
             // Split the selected date into day, month, and year
             var dateParts = selectedDate.split("-");
             var returnDate = new Date(dateParts[2], dateParts[1] - 1, dateParts[0]);
-            
+
             // Check if the created Date object is valid
-            if(!isNaN(returnDate.getTime())) {
+            if (!isNaN(returnDate.getTime())) {
                 // Add 10 days to the returnDate
                 returnDate.setDate(returnDate.getDate() + 10);
 
