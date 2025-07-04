@@ -12,6 +12,7 @@ use App\Models\general_dataModel;
 use App\Models\user\tbluserModel;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Intervention\Image\Facades\Image;
 use Illuminate\Support\Facades\Storage;
 use function App\Helpers\is_mobile;
 use function App\Helpers\employeeDetails;
@@ -162,30 +163,60 @@ class HrmsController extends Controller
         }
         
         if ($request->hasFile('photo_in')) {
-            // echo "<pre>";print_r($request->all());exit;
             $file = $request->file('photo_in');
-/*
-            if ($file->getSize() > 102400) { // 100 kb in bytes
-                    $res['status'] = 0; 
-                    $res['message'] = 'File Must be less or equal to 100 KB';
-                    return is_mobile($type, "hrms_inout_time.index", $res, "redirect");
-                }
-*/
             $timestamp = now()->format('YmdHis');
             $extension = $file->getClientOriginalExtension();
-            $photoInFilename = 'In_'.$userId.'_' . $timestamp . '.' . $extension;
+            $photoInFilename = 'In_' . $userId . '_' . $timestamp . '.' . $extension;
 
+            // Delete old photo if exists
             if ($request->has('oldPhotoIn')) {
                 $oldPath = 'public/hrms/attendance_photo/' . $request->get('oldPhotoIn');
-                    if (Storage::disk('digitalocean')->exists($oldPath)) {
-                        Storage::disk('digitalocean')->delete($oldPath);
-                    }
+                if (Storage::disk('digitalocean')->exists($oldPath)) {
+                    Storage::disk('digitalocean')->delete($oldPath);
+                }
             }
 
-            Storage::disk('digitalocean')->putFileAs('public/hrms/attendance_photo/', $file, $photoInFilename, 'public');
+            // Resize/compress image to target max 200 KB
+            $image = Image::make($file->getRealPath());
+
+            // Optional: resize to limit dimensions (e.g., 800px width)
+            $image->resize(300, null, function ($constraint) {
+                $constraint->aspectRatio();
+                $constraint->upsize();
+            });
+
+            // Text content
+            //$location = $request->input('location', 'Unknown Location'); // or get from GPS API
+            $watermarkText = now()->format('d-m-Y H:i:s');//$location . ' | ' . 
+
+            // Add text to bottom-left
+            $image->text($watermarkText, 10, $image->height() - 10, function ($font) {
+                $font->file(public_path('fonts/saira-semi-condensed-v4-latin-regular.ttf')); // Make sure the font file exists
+                $font->size(15);
+                $font->color('#ffffff');
+                $font->align('left');
+                $font->valign('bottom');
+                $font->angle(0);
+            });
+
+            // Compress by reducing quality until under 200 KB
+            $quality = 90;
+            do {
+                $compressed = (string) $image->encode('jpg', $quality);
+                $sizeInKB = strlen($compressed) / 1024;
+                $quality -= 5;
+            } while ($sizeInKB > 100 && $quality > 10);
+
+            // Upload the compressed image to DigitalOcean Spaces
+            Storage::disk('digitalocean')->put(
+                'public/hrms/attendance_photo/' . $photoInFilename,
+                $compressed,
+                'public'
+            );
 
             $photo_in = Storage::disk('digitalocean')->url('public/hrms/attendance_photo/' . $photoInFilename);
         }
+
         $day = Carbon::parse($punchin_time)->format('Y-m-d');
 
         // Check if a punchin already exists for this user on the same day
@@ -253,29 +284,61 @@ class HrmsController extends Controller
         }
 
         if ($request->hasFile('photo_out')) {
-                $file = $request->file('photo_out');
-/*
-                  if ($file->getSize() > 102400) { // 100 kb in bytes
-                    $res['status'] = 0; 
-                    $res['message'] = 'File Must be less or equal to 100 KB';
-                    return is_mobile($type, "hrms_inout_time.index", $res, "redirect");
+            $file = $request->file('photo_out');
+            $timestamp = now()->format('YmdHis');
+            $extension = $file->getClientOriginalExtension();
+            $photoOutFilename = 'Out_' . $userId . '_' . $timestamp . '.jpg'; // Use jpg for compression
+
+            // Delete old photo if exists
+            if ($request->has('oldPhotoOut')) {
+                $oldPath = 'public/hrms/attendance_photo/' . $request->get('oldPhotoOut');
+                if (Storage::disk('digitalocean')->exists($oldPath)) {
+                    Storage::disk('digitalocean')->delete($oldPath);
                 }
-*/
-                $timestamp = now()->format('YmdHis');
-                $extension = $file->getClientOriginalExtension();
-                $photoOutFilename = 'Out_'.$userId.'_' . $timestamp . '.' . $extension;
-
-                if ($request->has('oldPhotoOut')) {
-                    $oldPath = 'public/hrms/attendance_photo/' . $request->get('oldPhotoOut');
-                    if (Storage::disk('digitalocean')->exists($oldPath)) {
-                        Storage::disk('digitalocean')->delete($oldPath);
-                    }
-                }
-
-                Storage::disk('digitalocean')->putFileAs('public/hrms/attendance_photo/', $file, $photoOutFilename, 'public');
-
-                $photo_out = Storage::disk('digitalocean')->url('public/hrms/attendance_photo/' . $photoOutFilename);
             }
+
+            // Resize and compress image to be under 200 KB
+            $image = Image::make($file->getRealPath());
+
+            // Resize to width max 800px while maintaining aspect ratio
+            $image->resize(300, null, function ($constraint) {
+                $constraint->aspectRatio();
+                $constraint->upsize();
+            });
+
+            // Text content
+            //$location = $request->input('location', 'Unknown Location'); // or get from GPS API
+            $watermarkText = now()->format('d-m-Y H:i:s');//$location . ' | ' . 
+
+            // Add text to bottom-left
+            $image->text($watermarkText, 10, $image->height() - 10, function ($font) {
+                $font->file(public_path('fonts/saira-semi-condensed-v4-latin-regular.ttf')); // Make sure the font file exists
+                $font->size(15);
+                $font->color('#ffffff');
+                $font->align('left');
+                $font->valign('bottom');
+                $font->angle(0);
+            });            
+
+            // Compress by reducing quality until size <= 200 KB
+            $quality = 90;
+            do {
+                $compressed = (string) $image->encode('jpg', $quality);
+                $sizeInKB = strlen($compressed) / 1024;
+                $quality -= 5;
+            } while ($sizeInKB > 100 && $quality > 10);
+
+            // Upload to DigitalOcean Spaces
+            Storage::disk('digitalocean')->put(
+                'public/hrms/attendance_photo/' . $photoOutFilename,
+                $compressed,
+                'public'
+            );
+
+            // Get URL of stored photo
+            $photo_out = Storage::disk('digitalocean')->url('public/hrms/attendance_photo/' . $photoOutFilename);
+        }
+
         $day = Carbon::parse($punchout_time)->format('Y-m-d');
 
         // Check if a punchin already exists for this user on the same day

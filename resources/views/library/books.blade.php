@@ -437,41 +437,7 @@
                 <!-- Tabs content -->
             </div>
         </div>
-        <div class="modal fade" id="mdlCirculation" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
-            aria-hidden="true">
-            <div class="modal-dialog modal-lg" role="document">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="modalTitle"></h5>
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                    </div>
-                    <form class="form-group" id="frmCirculation" method="post">
-                        <div class="modal-body">
-                            @csrf
-                            <div class="row" style="overflow-x:hidden">
-                                <div class="col-md-6">
-                                    <label for="">Student Enroll No</label>
-                                    <input type="hidden" name="bookId" id="bookId" value="">
-                                    <input type="text" name="enroll_no" id="enroll_no" placeholder="Enter Enroll No."
-                                        class="form-control">
-                                </div>
-                                <div class="col-md-6">
-                                    <button type="button" class="btn btn-primary mt-4 fetch-stud">Fetch Details</button>
-                                </div>
-                                <div class="row divUserDetail" style="padding:20px"></div>
-                            </div>
-
-                        </div>
-                         {{-- <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                            <button type="submit" class="btn btn-primary" id="issue_book_check">Issue Book</button>
-                        </div> --}}
-                </div>
-                <!-- Tabs content -->
-            </div>
-        </div>
+       
         <div class="modal fade" id="mdlCirculation" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
             aria-hidden="true">
             <div class="modal-dialog modal-lg" role="document">
