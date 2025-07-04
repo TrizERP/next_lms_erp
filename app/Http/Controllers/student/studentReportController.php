@@ -197,9 +197,10 @@ class studentReportController extends Controller
                 $join->on('transport_vehicle.id', '=', 'transport_map_student.from_bus_id')
                     ->where('transport_vehicle.sub_institute_id', '=', $sub_institute_id);
             })
-            ->leftJoin('student_optional_subject', function($join) use($syear){
+            ->leftJoin('student_optional_subject', function($join) use($syear,$sub_institute_id){
                 $join->on('student_optional_subject.student_id', '=', 'tblstudent.id')
-                    ->where('student_optional_subject.syear', $syear);
+                    ->where('student_optional_subject.syear', $syear)
+                    ->where('student_optional_subject.sub_institute_id', $sub_institute_id); // added on 02-07-2025 by uma for conflict with hills and mmis
             })
             ->leftJoin('subject', 'student_optional_subject.subject_id', '=', 'subject.id')
             ->leftJoin('transport_school_shift', 'transport_vehicle.school_shift', '=', 'transport_school_shift.id')

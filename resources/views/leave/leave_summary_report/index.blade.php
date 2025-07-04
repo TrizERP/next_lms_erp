@@ -101,7 +101,7 @@
                             <tr>
                                 @foreach($data['get_hrms_leave_types'] as $get_hrms_leave_type)
                                 @if($get_hrms_leave_type->leave_type_id=="LTY001" || $get_hrms_leave_type->leave_type_id=="LTY009")
-                                    <th>Op Balance</th>
+                                    <th @if($get_hrms_leave_type->leave_type_id=="LTY001") title="From leave Allocation Department wise" @else title="From leave Allocation Employee wise" @endif >Op Balance</th>
                                     <th>Taken</th>
                                     <th>Balance</th>
                                 @else

@@ -722,68 +722,142 @@ return DataTables::of($books)
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function issueBook(Request $request)
-    {
-        // echo "<pre>";print_r($request->all());exit;
-        $sub_institute_id = session()->get('sub_institute_id');
-        $request->validate([
-            'student_id' => 'required|exists:tblstudent,id',
-            'bookId' => 'required|exists:library_books,id',
-            'issue_date' => 'required|date',
-            'return_date' => 'required|date|after:issue_date',
-        ]);
-        $ids = $request->id;
-        $check_data = LibraryBookCirculation::where(
-            [
+    // public function issueBook(Request $request)
+    // {
+    //     // echo "<pre>";print_r($request->all());exit;
+    //     $sub_institute_id = session()->get('sub_institute_id');
+    //     $request->validate([
+    //         'student_id' => 'required|exists:tblstudent,id',
+    //         'bookId' => 'required',
+    //         'issue_date' => 'required|date',
+    //         'return_date' => 'required|date|after:issue_date',
+    //     ]);
+    //     $ids = $request->id;
+    //     $check_data = LibraryBookCirculation::where(
+    //         [
+    //             'student_id' => $request->student_id,
+    //             'book_id' => $request->bookId,
+    //             'item_code' => $request->item_codes,                                
+    //         ]
+    //     )->whereNull('return_date')->get()->toArray();
+
+    //     if(!empty($check_data)){
+    //         $update = LibraryBookCirculation::where(
+    //             [
+    //                 'student_id' => $request->student_id,
+    //                 'book_id' => $request->bookId,
+    //                 'item_code' => $request->item_codes,                                
+    //             ]
+    //         )->whereNull('return_date')->update([
+    //                 'issued_date' => \Carbon\parse($request->issue_date)->format('Y-m-d'),
+    //                 'due_date' => \Carbon\parse($request->return_date)->format('Y-m-d'),
+    //                 'sub_institute_id' => $sub_institute_id,
+    //                 'updated_at'=>now(),
+    //         ]);
+    //         $issueBook ='update';
+    //     }else{
+    //         $insert = LibraryBookCirculation::insert(
+    //             [
+    //                 'student_id' => $request->student_id,
+    //                 'book_id' => $request->bookId,
+    //                 'item_code' => $request->item_codes, 
+    //                 'issued_date' => \Carbon\parse($request->issue_date)->format('Y-m-d'),
+    //                 'due_date' => \Carbon\parse($request->return_date)->format('Y-m-d'),
+    //                 'sub_institute_id' => $sub_institute_id,
+    //                 'created_at'=>now(),                    
+    //         ]);
+    //         $issueBook ='insert';
+    //     }
+        
+    //     $message = "";
+    //     if(isset($issueBook) && $issueBook=="insert"){
+    //         $message = "Book Issued Successfully";
+    //     }
+    //     else if(isset($issueBook) && $issueBook=="update"){
+    //         $message = "Book Issue Updated Successfully";
+    //     }
+    //     $details = tblstudentModel::where('enrollment_no', $request->enroll_no)->with('issuedBook')->first();
+    //     $item_codes= DB::table('library_items')->where('book_id',$request->bookId)->where('sub_institute_id',$sub_institute_id)->whereNull('deleted_at')->get()->toArray();
+    //     $view = View::make('library.user_detail', compact('details','item_codes','message'))->render();
+    //     // $view = View::make('library.user_detail')->with(['details' => $details, 'message' => $message])->render();
+
+    //     return response()->json(['data' => $view], 200);
+    // }
+public function issueBook(Request $request)
+{
+    $sub_institute_id = session()->get('sub_institute_id');
+
+
+    $request->validate([
+        'student_id' => 'required|exists:tblstudent,id',
+        'bookId' => 'required',
+        'issue_date' => 'required|date_format:d-m-Y',
+        'return_date' => 'required|date_format:d-m-Y',
+    ]);
+    
+    // Convert dates to proper format for validation
+    $issue_date = ($request->issue_date) ? \Carbon\Carbon::createFromFormat('d-m-Y', $request->issue_date) : now();
+    $return_date = ($request->return_date) ? \Carbon\Carbon::createFromFormat('d-m-Y', $request->return_date) : now();
+    $check_data = LibraryBookCirculation::where([
+        'student_id' => $request->student_id,
+        'book_id' => $request->bookId,
+        'item_code' => $request->item_codes,                                
+    ])->whereNull('return_date')->get()->toArray();
+
+    try {
+        if (!empty($check_data)) {
+            $update = LibraryBookCirculation::where([
                 'student_id' => $request->student_id,
                 'book_id' => $request->bookId,
                 'item_code' => $request->item_codes,                                
-            ]
-        )->whereNull('return_date')->get()->toArray();
-
-        if(!empty($check_data)){
-            $update = LibraryBookCirculation::where(
-                [
-                    'student_id' => $request->student_id,
-                    'book_id' => $request->bookId,
-                    'item_code' => $request->item_codes,                                
-                ]
-            )->whereNull('return_date')->update([
-                    'issued_date' => \Carbon\parse($request->issue_date)->format('Y-m-d'),
-                    'due_date' => \Carbon\parse($request->return_date)->format('Y-m-d'),
-                    'sub_institute_id' => $sub_institute_id,
-                    'updated_at'=>now(),
+            ])->whereNull('return_date')->update([
+                'issued_date' => $issue_date->format('Y-m-d'),
+                'due_date' => $return_date->format('Y-m-d'),
+                'sub_institute_id' => $sub_institute_id,
+                'updated_at' => now(),
             ]);
-            $issueBook ='update';
-        }else{
-            $insert = LibraryBookCirculation::insert(
-                [
-                    'student_id' => $request->student_id,
-                    'book_id' => $request->bookId,
-                    'item_code' => $request->item_codes, 
-                    'issued_date' => \Carbon\parse($request->issue_date)->format('Y-m-d'),
-                    'due_date' => \Carbon\parse($request->return_date)->format('Y-m-d'),
-                    'sub_institute_id' => $sub_institute_id,
-                    'created_at'=>now(),                    
+            $issueBook = 'update';
+        } else {
+            $insert = LibraryBookCirculation::insert([
+                'student_id' => $request->student_id,
+                'book_id' => $request->bookId,
+                'item_code' => $request->item_codes, 
+                'issued_date' => $issue_date->format('Y-m-d'),
+                'due_date' => $return_date->format('Y-m-d'),
+                'sub_institute_id' => $sub_institute_id,
+                'created_at' => now(),                    
             ]);
-            $issueBook ='insert';
+            $issueBook = 'insert';
         }
         
         $message = "";
-        if(isset($issueBook) && $issueBook=="insert"){
+        if ($issueBook == "insert") {
             $message = "Book Issued Successfully";
-        }
-        else if(isset($issueBook) && $issueBook=="update"){
+        } else if ($issueBook == "update") {
             $message = "Book Issue Updated Successfully";
         }
-        $details = tblstudentModel::where('enrollment_no', $request->enroll_no)->with('issuedBook')->first();
-        $item_codes= DB::table('library_items')->where('book_id',$request->bookId)->where('sub_institute_id',$sub_institute_id)->whereNull('deleted_at')->get()->toArray();
-        $view = View::make('library.user_detail', compact('details','item_codes','message'))->render();
-        // $view = View::make('library.user_detail')->with(['details' => $details, 'message' => $message])->render();
+        
+        $details = tblstudentModel::where('enrollment_no', $request->enroll_no)
+                    ->with('issuedBook')
+                    ->first();
+                    
+        $item_codes = DB::table('library_items')
+                    ->where('book_id', $request->bookId)
+                    ->where('sub_institute_id', $sub_institute_id)
+                    ->whereNull('deleted_at')
+                    ->get()
+                    ->toArray();
+                    
+        $view = View::make('library.user_detail', compact('details', 'item_codes', 'message'))->render();
 
         return response()->json(['data' => $view], 200);
-    }
 
+    } catch (\Exception $e) {
+        return response()->json([
+            'error' => 'Error Occurred: ' . $e->getMessage()
+        ], 500);
+    }
+}
     public function QuickReturn(Request $request){
         $type = $request->type;
         $res=[];
