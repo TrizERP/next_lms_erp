@@ -190,7 +190,7 @@ class LeaveSummaryReportController extends Controller
                 // LTY009 earned Leave openingleave
                 if($elLeave > 0 && isset($leaveTypeId) && $leaveTypeId=='LTY009' && strtotime($probationto) > strtotime($date)){
                     $mainLeave = $elLeave;
-                }
+                } 
                 else if(isset($leaveTypeId) && $leaveTypeId=='LTY009'){
                     $mainLeave = ($depLeave + $elLeave);
                 }

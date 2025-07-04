@@ -324,6 +324,9 @@ class studentBulkUpdateController extends Controller
                         'sub_institute_id'=>$sub_institute_id,
                     ]);
                     $leaveFunction = json_decode($controller->leaveSummaryReportShow($request2),true);
+                    // if($allocateValue->department_id==20){
+                    //     echo "<pre>";print_r($allocateValue);exit;
+                    // }
                     if(isset($leaveFunction) && !empty($leaveFunction) && isset($leaveFunction['new_data']['Earned Leave'][$allocateValue->employee_id])){
                         $leaveSpend = $leaveFunction['new_data']['Earned Leave'][$allocateValue->employee_id];
                         $mainLeave = ($allocateValue->value - $leaveSpend);
@@ -340,8 +343,24 @@ class studentBulkUpdateController extends Controller
                         }
                         // echo "<pre>";print_r([$allocateValue->employee_id,$mainLeave]);
                     }
+                    // added on 01-07-2025 for if no leave taken then insert all value same
+                    else if(!empty($leaveFunction) && isset($leaveFunction['op_data']['Earned Leave'])){
+                        if($allocateValue->value>0){
+                            DB::table('hrms_leave_allocation')->insert([
+                                'employee_id'=>$allocateValue->employee_id,
+                                'department_id'=>$allocateValue->department_id,
+                                'leave_type_id'=>9,
+                                'year'=>($syear+1),
+                                'value'=>$allocateValue->value,
+                                'sub_institute_id'=>$allocateValue->sub_institute_id,
+                                'created_at'=>now(),
+                            ]);
+                        }
+                    }
                 }
             }
+             $res['status'] = "1";
+            $res['message'] = "Data Rollover successfully!.";
             // echo "<pre>";print_r($getLeaveAllocation);exit;
         }
         // casual leave 
@@ -353,7 +372,7 @@ class studentBulkUpdateController extends Controller
             ->whereNotNull('employee_id')
             ->where('value','!=',0)
             ->get()->toArray();
-
+//  echo "<pre>";print_r($getLeaveAllocation);exit;
             foreach($getLeaveAllocation as $key=>$allocateValue){
                 $checkExists = DB::table('hrms_leave_allocation')
                 ->where('sub_institute_id',$sub_institute_id)
@@ -372,6 +391,9 @@ class studentBulkUpdateController extends Controller
                         'sub_institute_id'=>$sub_institute_id,
                     ]);
                     $leaveFunction = json_decode($controller->leaveSummaryReportShow($request2),true);
+                    // if($allocateValue->department_id==20){
+                    //     echo "<pre>";print_r($leaveFunction);exit;
+                    // }
                     if(isset($leaveFunction) && !empty($leaveFunction) && isset($leaveFunction['new_data']['Earned Leave'][$allocateValue->employee_id])){
                         $leaveSpend = $leaveFunction['new_data']['Earned Leave'][$allocateValue->employee_id];
                         $mainLeave = ($allocateValue->value - $leaveSpend);
@@ -387,6 +409,20 @@ class studentBulkUpdateController extends Controller
                             ]);
                         }
                         // echo "<pre>";print_r([$allocateValue->employee_id,$mainLeave]);
+                    }
+                    // added on 01-07-2025 for if no leave taken then insert all value same
+                    else if(!empty($leaveFunction) && isset($leaveFunction['op_data']['Earned Leave'])){
+                        if($allocateValue->value>0){
+                            DB::table('hrms_leave_allocation')->insert([
+                                'employee_id'=>$allocateValue->employee_id,
+                                'department_id'=>$allocateValue->department_id,
+                                'leave_type_id'=>1,
+                                'year'=>($syear+1),
+                                'value'=>$allocateValue->value,
+                                'sub_institute_id'=>$allocateValue->sub_institute_id,
+                                'created_at'=>now(),
+                            ]);
+                        }
                     }
                 }
             }

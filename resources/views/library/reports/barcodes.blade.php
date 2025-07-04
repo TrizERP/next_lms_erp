@@ -53,7 +53,7 @@
             align-items: center;
             text-align: center;
             /* Adjust margin-top to leave space for the fixed header */
-            margin-top: 110px; /* Increased to accommodate header */
+            margin-top: 100px; /* RAJESH BOOK BARCODE MARGIN TOP IN PAGE HEAD*/
         }
 
         tr {
@@ -106,10 +106,12 @@
     </style>
 </head>
 <body>
+<!--
     <div class="header">
         <span class="header-left">{{ \Carbon\Carbon::now()->format('n/j/y, g:i A') }}</span>
         <span class="header-center">Item Barcode Label Print Result</span>
     </div>
+-->
     <div class="tableDiv">
     @php
         // Configuration based on print type
@@ -198,7 +200,7 @@
             text-align: center;
             margin: 0;
             padding: 0;
-            margin-top: 60px;
+            margin-top: 50px; /* rajesh member barcode page header */
         }
 
         table {

@@ -305,14 +305,6 @@
       </div>
       <div class="modal-body">
         <div class="profile-card">
-            @php 
-                if(isset($punch_in) && $punch_in!=''){
-                    $punch_in = "https://s3-triz.fra1.cdn.digitaloceanspaces.com/public/hrms/attendance_photo/".$punch_in;
-                }
-                if(isset($punch_out) && $punch_out!=''){
-                    $punch_out = "https://s3-triz.fra1.cdn.digitaloceanspaces.com/public/hrms/attendance_photo/".$punch_out;
-                }
-            @endphp
             <div class="profile-section">
                 @if(isset($punch_in) && $punch_in!='')
                 <div class="member">
