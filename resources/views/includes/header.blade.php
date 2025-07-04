@@ -198,7 +198,54 @@ $academicTerms = session()->get('academicTerms');
                     <div class="dropdown user-dropdown">
                         <button class="dropdown-toggle d-flex align-items-center" type="button" id="dropdownMenuButton"
                                 data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            <span class="user-photo"><img src="/storage/user/{{ $school_logo }}" alt=""></span>
+                          @php
+    $name = Session::get('name');
+    $photo = $school_logo ?? null;
+    $initials = '';
+    if ($name) {
+        $words = explode(' ', trim($name));
+        $first = strtoupper(substr($words[0], 0, 1));
+        $second = isset($words[1]) ? strtoupper(substr($words[1], 0, 1)) : '';
+        $initials = $first . $second;
+    }
+@endphp
+
+<style>
+    .user-photo {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        overflow: hidden;
+        background-color: #5A5A5A;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .user-photo img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .user-initials {
+        color: #fff;
+        font-weight: bold;
+        font-size: 14px;
+    }
+</style>
+
+<span class="user-photo">
+    @if(!empty($photo) && file_exists(public_path('storage/user/' . $photo)))
+        <img src="{{ asset('/storage/user/' . $photo) }}" alt="">
+    @else
+        <span class="user-initials">{{ $initials }}</span>
+    @endif
+</span>
+
+
+
+                            <!-- <span class="user-photo"><img src="/storage/user/{{ $school_logo }}" alt=""></span> -->
                             <span class="user-name">{{ Session::get('name') }}</span>
                         </button>
                         <div class="dropdown-menu dropdown-menu-right mt-3" aria-labelledby="dropdownMenuButton">
