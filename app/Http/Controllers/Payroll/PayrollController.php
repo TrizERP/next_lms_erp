@@ -2150,6 +2150,11 @@ class PayrollController extends Controller
                             && !in_array($checkLeave,$holidayDates) && !in_array($checkLeave,$weekDays)){
                             $totLeaveDay += $value->day_type;
                         }
+
+                        //RAJESH ADD 04-07-2025 for holiday or weekday - apply leave with approved status so TakeLeave++ [becoz below have already holiday-- & weekday--]
+                        if((in_array($checkLeave,$holidayDates) || in_array($checkLeave,$weekDays)) && in_array($value->status,$leaveStatus)){
+                            $totLeaveDay += $value->day_type;
+                        }
                         
                         if($value->status == "approved_lwp" && $value->day_type=="0.5" && !in_array($checkLeave,$holidayDates) && !in_array($checkLeave,$weekDays)){ 
                             $totalAtt -= $value->day_type;
