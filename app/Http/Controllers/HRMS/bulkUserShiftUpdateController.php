@@ -175,18 +175,18 @@ class bulkUserShiftUpdateController extends Controller
             if(isset($getEmployee) && isset($getEmployee)){
                 $startData = $endData = [];
                 foreach ($days as $key => $value) {
-                    if(isset($getEmploye->{$value.'_in_date'})){
-                        $startData[$value.'_in_date'] = $getEmploye->{$value.'_in_date'};
+                    if(isset($getEmployee->{$value.'_in_date'})){
+                        $startData[$value.'_in_date'] = $getEmployee->{$value.'_in_date'};
                     }
-                    if(isset($getEmploye->{$value.'_out_date'})){
-                        $endData[$value.'_out_date'] = $getEmploye->{$value.'_out_date'};
+                    if(isset($getEmployee->{$value.'_out_date'})){
+                        $endData[$value.'_out_date'] = $getEmployee->{$value.'_out_date'};
                     }
-
                     $updateData[$value.'_in_date'] = $start_time;
                     $updateData[$value.'_out_date'] = $end_time;
                 }
+                // echo "<pre>";print_r($startData);exit;
                 // add previous records in shift_record table
-                if(!empty($startData) && !empty($endData)){
+                if(!empty($startData) || !empty($endData)){
                     $records = [
                             'department_id'=>$getEmployee->department_id,
                             'employee_id'=>$getEmployee->id,
