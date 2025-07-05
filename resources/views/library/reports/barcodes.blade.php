@@ -46,9 +46,9 @@
         }
 
         table {
-            width: 88%;
+            width: 92%;
             border-collapse: collapse;
-            margin: 0px 43px;
+            margin: 0px 40px;
             padding: 0px;
             align-items: center;
             text-align: center;
@@ -58,14 +58,14 @@
 
         tr {
             page-break-inside: avoid;
-            padding: 20px;
+            /*padding: 20px;*/
         }
 
         td {
             text-align: center;
             vertical-align: top;
             overflow: hidden;
-            padding: 0; /* Remove default cell padding */
+            padding: 6px; /* Remove default cell padding */
         }
 
         .barcode-image {
@@ -75,7 +75,7 @@
 
         .labelStyle {
             width: 52mm;
-            height: 32mm;
+            height: 30mm;
             text-align: center;
             margin: 0px;
             border: 0px solid #000000;
@@ -200,13 +200,13 @@
             text-align: center;
             margin: 0;
             padding: 0;
-            margin-top: 50px; /* rajesh member barcode page header */
+            /*margin-top: 50px;*/
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 88px;
+            margin: 35px 0px 0px 5px; /*top right bottom left;*/
             padding: 0;
         }
 
@@ -217,19 +217,18 @@
         td {
             text-align: center;
             vertical-align: top;
-            padding: 0;
-            margin: 0;
+            padding: 10px 0px 0px 0px;/*top right bottom left;*/
         }
 
         .labelStyle {
-            width: 38mm;
-            height: 21mm;
+            width: 35mm;
+            height: 19mm;
             text-align: center;
-            margin: 0;
+            margin: 0;/*top right bottom left;*/
             padding: 0;
             display: inline-block;
             box-sizing: border-box;
-            vertical-align: top;
+            vertical-align: middle;
             overflow: hidden;
             font-size: 8pt;
             line-height: 1.1;
@@ -238,8 +237,8 @@
         .barcode-image {
             display: block;
             margin-left: 0 auto 2px auto;
-            width: 85%;
-            height: 50%;
+            width: 80%;
+            height: 45%;
         }
 
         .barcode-title {
@@ -254,7 +253,7 @@
         $items_per_row = 5;
         $rows_per_page = 13;
         $barcode_image_width = '90%';
-        $title_length = 25;
+        $title_length = 23;
         $total_items = count($barcodes);
         $items_per_page = $items_per_row * $rows_per_page;
         $page_count = ceil($total_items / $items_per_page);
