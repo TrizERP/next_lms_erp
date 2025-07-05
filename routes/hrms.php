@@ -7,6 +7,9 @@ use App\Http\Controllers\Payroll\PayrollController;
 use App\Http\Controllers\AJAXController;
 use App\Http\Controllers\leave\leaveEncashmentController;
 use App\Http\Controllers\HRMS\departmentController;
+use App\Http\Controllers\HRMS\shiftMasterController;
+use App\Http\Controllers\HRMS\bulkUserShiftUpdateController;
+
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -114,6 +117,8 @@ Route::group(['prefix' => 'hrms', 'middleware' => ['session', 'menu', 'logRoute'
     Route::resource('designation_leave', HrmsLeaveController::class);
     Route::resource('leave_encashment', leaveEncashmentController::class);
     Route::resource('add_department', departmentController::class);
+    Route::resource('user_shift_master', shiftMasterController::class);
+    Route::resource('user_bulk_shift_update', bulkUserShiftUpdateController::class);
     route::get('department-Emp-Lists',[departmentController::class, 'departmentEmpLists'])->name('departmentEmpLists');
     route::get('sub-department-list',[departmentController::class, 'subDepartmentList'])->name('subDepartmentList');
     route::get('department-employee-list',[departmentController::class, 'departmentEmployeeList'])->name('departmentEmployeeList');
