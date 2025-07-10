@@ -54,12 +54,12 @@ class bulkStudentController extends Controller
         // common field names
         $tblcustom_fields['enrollment_no']['name'] = get_string('grno', 'request');
         $tblcustom_fields['first_name']['name'] = get_string('studentname', 'request');
-        $tblcustom_fields['father_name']['name'] = get_string('fathername','request');
-        $tblcustom_fields['division']['name'] = get_string('division','request');
-        $tblcustom_fields['student_mobile']['name'] = get_string('studentmobile','request');
-        $tblcustom_fields['anuualincome']['name'] = get_string('annualincome','request');
-        $tblcustom_fields['uniqueid']['name'] = get_string('uniqueid','request');
-        $tblcustom_fields['cast']['name'] =  get_string('cast','request');
+        $tblcustom_fields['father_name']['name'] = get_string('fathername', 'request');
+        $tblcustom_fields['division']['name'] = get_string('division', 'request');
+        $tblcustom_fields['student_mobile']['name'] = get_string('studentmobile', 'request');
+        $tblcustom_fields['anuualincome']['name'] = get_string('annualincome', 'request');
+        $tblcustom_fields['uniqueid']['name'] = get_string('uniqueid', 'request');
+        $tblcustom_fields['cast']['name'] =  get_string('cast', 'request');
         $tblcustom_fields['middle_name']['name'] = 'Middle Name';
         $tblcustom_fields['last_name']['name'] = 'Surname';
         $tblcustom_fields['mother_name']['name'] = 'Mother Name';
@@ -106,7 +106,7 @@ class bulkStudentController extends Controller
         $tblcustom_fields['image']['type'] = 'file';
         $tblcustom_fields['uniqueid']['type'] = 'textbox';
         // not common
-        if($sub_institute_id != 257){
+        if ($sub_institute_id != 257) {
             // field 
             $tblcustom_fields['religion']['name'] = 'Religion';
             $tblcustom_fields['subcast']['name'] = 'Subcaste';
@@ -120,13 +120,11 @@ class bulkStudentController extends Controller
         }
 
         // only in cn
-        if($sub_institute_id == 257)
-        {
-            $tblcustom_fields['student_quota']['name'] = get_string('studentquota','request');
+        if ($sub_institute_id == 257) {
+            $tblcustom_fields['student_quota']['name'] = get_string('studentquota', 'request');
             $tblcustom_fields['student_quota']['type'] = 'dropdown';
         }
-        if($sub_institute_id == 195)
-        {
+        if ($sub_institute_id == 195) {
             $tblcustom_fields['student_height']['name'] = 'Student Height';
             $tblcustom_fields['student_height']['type'] = 'textbox';
 
@@ -136,7 +134,7 @@ class bulkStudentController extends Controller
         $tblcustoms = tblcustomfieldsModel::select(['field_name', 'field_label', 'field_type'])
             ->where(["status" => "1", "table_name" => "tblstudent"])
             ->whereRaw('(sub_institute_id = ' . $sub_institute_id . ' OR common_to_all = 1)')
-            ->where('user_type',"bulk_update")
+            ->where('user_type', "bulk_update")
             ->get()
             ->toArray();
         $customfieldArray = [];
@@ -148,7 +146,6 @@ class bulkStudentController extends Controller
         // echo "<pre>";print_r($tblcustom_fields);exit;
 
         return $tblcustom_fields;
-
     }
 
     /**
@@ -266,7 +263,9 @@ class bulkStudentController extends Controller
         ];
         //$header = array('student_name' => 'Student Name');
         $header = [
-            'standard' => 'Standard', 'division' => 'Division', 'grade' => 'Academic Section',
+            'standard' => 'Standard',
+            'division' => 'Division',
+            'grade' => 'Academic Section',
             'student_name' => 'Student Name',
         ];
         $searchArr = ['_'];
@@ -348,8 +347,22 @@ class bulkStudentController extends Controller
         $tblstandard = standardModel::where(["sub_institute_id" => $sub_institute_id])
             ->pluck("name", "id")->toArray();
 
-        $tbldivision = divisionModel::where(["sub_institute_id" => $sub_institute_id])
-            ->pluck("name", "id")->toArray();
+        // $validDivisions = ['A', 'B', 'C', 'D']; // Define your allowed division names
+
+        // $tbldivision = divisionModel::where("sub_institute_id", $sub_institute_id)
+        //     ->whereIn("name", $validDivisions) // Filter only valid names
+        //     ->pluck("name", "id")
+        //     ->toArray();
+
+        // edit by riddhi 13/06/2025
+        $tbldivision = DB::table('std_div_map')
+            ->join('division', 'division.id', '=', 'std_div_map.division_id')
+            ->where("std_div_map.standard_id", $standard_id)
+            ->pluck("division.name", "division.id")
+            ->toArray();
+
+        // $tbldivision = divisionModel::where(["sub_institute_id" => $sub_institute_id])
+        //     ->pluck("name", "id")->toArray();
 
         $tblgrade = academic_sectionModel::where(["sub_institute_id" => $sub_institute_id])
             ->pluck("title", "id")->toArray();
@@ -365,8 +378,10 @@ class bulkStudentController extends Controller
 
         $house = houseModel::where('sub_institute_id', $sub_institute_id)->pluck("house_name", "id")->toArray();
 
-        $student_quota = tblstudentQuotaModel::where('sub_institute_id', $sub_institute_id)->pluck("title",
-            "id")->toArray();
+        $student_quota = tblstudentQuotaModel::where('sub_institute_id', $sub_institute_id)->pluck(
+            "title",
+            "id"
+        )->toArray();
 
         $cast = casteModel::pluck("caste_name", "id")->toArray();
 
@@ -400,26 +415,27 @@ class bulkStudentController extends Controller
         return is_mobile($type, "student/bulk_student_update", $res, "view");
     }
 
-    public function bulkUpdate(Request $request) {
-        
+    public function bulkUpdate(Request $request)
+    {
+
         $type = $request->input('type');
         $syear = $request->session()->get('syear');
         $user_id = $request->session()->get('user_id');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $values = $request->post('values');
-        $file = $request->file('values');    
-        $currentDate = date('Y-m-d'); 
+        $file = $request->file('values');
+        $currentDate = date('Y-m-d');
 
-        $fileName = 'email/'.$sub_institute_id.'_'. $currentDate . '.txt';
-        
+        $fileName = 'email/' . $sub_institute_id . '_' . $currentDate . '.txt';
+
         $fileData = "{ User ID: {$request->session()->get('user_id')}, Sub Institute ID: {$request->session()->get('sub_institute_id')}, Current Date: " . date('Y-m-d H:i:s') . " }\n";
 
         // If $values is an array, convert it to string (e.g., JSON or formatted)
-		if (is_array($values)) {
-		    $fileData .= "Values: " . json_encode($values, JSON_PRETTY_PRINT) . "\n";
-		} else {
-		    $fileData .= "Values: " . $values . "\n";
-		}
+        if (is_array($values)) {
+            $fileData .= "Values: " . json_encode($values, JSON_PRETTY_PRINT) . "\n";
+        } else {
+            $fileData .= "Values: " . $values . "\n";
+        }
 
         if (Storage::exists($fileName)) {
             // Append data to the existing file
@@ -454,8 +470,8 @@ class bulkStudentController extends Controller
                 $studentEnrollment['roll_no'] = $value['roll_no'];
             }
 
-            if (count($studentEnrollment) > 0) {               
-                
+            if (count($studentEnrollment) > 0) {
+
                 $studentEnrollment['updated_on'] = date('Y-m-d H:i:s');
 
                 DB::enableQueryLog(); // 2024-08-24 required to convert query into sql for json
@@ -464,7 +480,7 @@ class bulkStudentController extends Controller
                 // 2024-08-23
                 $queries = DB::getQueryLog(); // 2024-08-24 required to convert query into sql for json
                 $sendQuery = end($queries); // 2024-08-24 required to convert query into sql for json 
-                accesslog_json($sendQuery,'update','Bulk Update Student',$studentEnrollment);
+                accesslog_json($sendQuery, 'update', 'Bulk Update Student', $studentEnrollment);
                 //2024-08-23
             }
 
@@ -476,107 +492,135 @@ class bulkStudentController extends Controller
             if (isset($value['student_weight'])) {
                 $healthData[$key]['student_weight'] = $value['student_weight'];
             }
-
-        }    
+        }
         // added on 2025-03-07 starts
-        if(!empty($healthData)){
-            foreach ($healthData as $student_id =>$val) {
-               $check = DB::table('student_height_weight')->where(['sub_institute_id'=>$sub_institute_id
-               ,'syear'=>$syear,'student_id'=>$student_id])->first();
+        if (!empty($healthData)) {
+            foreach ($healthData as $student_id => $val) {
+                $check = DB::table('student_height_weight')->where([
+                    'sub_institute_id' => $sub_institute_id,
+                    'syear' => $syear,
+                    'student_id' => $student_id
+                ])->first();
 
-               if(!empty($check) && isset($check->student_id)){
-                DB::table('student_height_weight')->where(['sub_institute_id'=>$sub_institute_id
-                ,'syear'=>$syear,'student_id'=>$student_id])->update([
-                    'height'=>$val['student_height'],
-                    'weight'=>$val['student_weight']
-                ]);
-               }else{
-                DB::table('student_height_weight')->insert([
-                    'height'=>$val['student_height'],
-                    'weight'=>$val['student_weight'],
-                    'sub_institute_id'=>$sub_institute_id,
-                    'syear'=>$syear,
-                    'student_id'=>$student_id,
-                    'created_on'=>now(),
-                    'created_by'=>$user_id,
-                ]);
-               }
+                if (!empty($check) && isset($check->student_id)) {
+                    DB::table('student_height_weight')->where([
+                        'sub_institute_id' => $sub_institute_id,
+                        'syear' => $syear,
+                        'student_id' => $student_id
+                    ])->update([
+                        'height' => $val['student_height'],
+                        'weight' => $val['student_weight']
+                    ]);
+                } else {
+                    DB::table('student_height_weight')->insert([
+                        'height' => $val['student_height'],
+                        'weight' => $val['student_weight'],
+                        'sub_institute_id' => $sub_institute_id,
+                        'syear' => $syear,
+                        'student_id' => $student_id,
+                        'created_on' => now(),
+                        'created_by' => $user_id,
+                    ]);
+                }
             }
         }
         // added on 2025-03-07 ends
 
         if (isset($file)) {
             foreach ($file as $student_id => $req) {
-                if(!isset($request->file('values')[$student_id]['image'])){
+                if (!isset($request->file('values')[$student_id]['image'])) {
 
                     $dataCustomFields = tblcustomfieldsModel::select('field_name')->where(['status' => "1", 'table_name' => "tblstudent", 'field_type' => "file"])
-                    ->whereRaw('(sub_institute_id = ' . $sub_institute_id . ' OR common_to_all = 1)')
-                    ->get()
-                    ->toArray();
+                        ->whereRaw('(sub_institute_id = ' . $sub_institute_id . ' OR common_to_all = 1)')
+                        ->get()
+                        ->toArray();
                 }
-                    
+
                 $files = array();
                 $studentEnrollmentData = array();
                 $studentEnrollmentData['id'] = $student_id;
-                
-                //For compulsory image field
-                foreach($req as $key1 => $val1)
-                {
-                    $files = $request->file('values')[$student_id];
-                if(!isset($request->file('values')[$student_id]['image'])){
-                    
-                    if( !in_array($key1,$dataCustomFields[0]) )
-                    {
-                        if (isset($files[$key1])) {                     
-                            $file = $files[$key1];
-                            $originalname = $file->getClientOriginalName();
-                            $ext = \File::extension($originalname);
-                            $file_name = $student_id . '.' . $ext;                      
-                            $path = $file->storeAs('public/student/', $file_name);
-                            $studentEnrollmentData[$key1] = $file_name;
-                        }
-                    }
-                    }    else{
-                         if (isset($files[$key1])) {                     
-                            $file = $files[$key1];
-                            $originalname = $file->getClientOriginalName();
-                            $ext = \File::extension($originalname);
-                            $file_name = $student_id . '.' . $ext;                      
-                            $path = $file->storeAs('public/student/', $file_name);
-                            $studentEnrollmentData[$key1] = $file_name;
-                        }
-                    }               
-                }
-                if(!isset($request->file('values')[$student_id]['image'])){
-                    //for custom image fields
-                foreach ($dataCustomFields as $key => $value) {
-                    foreach ($dataCustomFields as $key => $value) {
-                        $files = $request->file('values')[$student_id];
-    
-                        if (isset($files[$value['field_name']])) {
-                            $file = $files[$value['field_name']];
-                            $originalname = $file->getClientOriginalName();
-                            $name = $value['field_name'] . "_" . $student_id . "_" . date('YmdHis') . '_' . $originalname;
-    
-                            $file_name = $name;
-                            $path = $file->storeAs('public/student/', $file_name);
-                            $studentEnrollmentData[$value['field_name']] = $file_name;
-                        }
-    
-                    }
-                }
-                }else{
-                    $files = $request->file('values')[$student_id]['image'];
-                        $file = $request->file('values')[$student_id]['image'];
-                        $originalname = $file->getClientOriginalName();
-                        $name = $student_id . "_" . date('YmdHis') . '_' . $originalname;
 
-                        $file_name = $name;
-                        $path = $file->storeAs('public/student/', $file_name);
-                        $studentEnrollmentData['image'] = $file_name;
-            
+                //For compulsory image field
+                foreach ($req as $key1 => $val1) {
+
+                    $files = $request->file('values')[$student_id];
+                    if (!isset($request->file('values')[$student_id]['image']) && !in_array($key1, ['father_image', 'mother_image'])) {
+
+                        if (!in_array($key1, $dataCustomFields[0])) {
+                            if (isset($files[$key1])) {
+                                $file = $files[$key1];
+                                $originalname = $file->getClientOriginalName();
+                                $ext = \File::extension($originalname);
+                                $file_name = $student_id . '.' . $ext;
+                                $path = $file->storeAs('public/student/', $file_name);
+                                $studentEnrollmentData[$key1] = $file_name;
+                            }
+                        }
+                    } 
+                    // added on 10-07-2025 by uma
+                    elseif (in_array($key1, ['father_image', 'mother_image'])) {
+                        // echo "<pre>";print_r($files[$key1]);exit;
+                        if ($key1=="father_image") {
+                            $prefix = "father";
+                        }
+
+                        if ($key1=="mother_image") {
+                            $prefix = "mother";
+                        }
+                        $file = $files[$key1];
+                        $originalname = $file->getClientOriginalName();
+                        $file_size = $file->getSize();
+                        $ext = File::extension($originalname);
+                        // $file_name = $name.'.'.$ext;
+                        $parent_image =  $prefix . '_' . $student_id . '_' . $sub_institute_id . '.' . $ext;
+                        // have to use this for image entering
+                        $file_path = 'public/parents_image/' . $parent_image;
+                        if (Storage::disk('digitalocean')->exists($file_path)) {
+                            //  echo "<pre>";print_r($file_path);exit;
+                            Storage::disk('digitalocean')->delete($file_path);
+                        }
+
+                        Storage::disk('digitalocean')->putFileAs('public/parents_image/', $file, $parent_image, 'public');
+                        $studentEnrollmentData[$key1] = $parent_image;
+                    } else {
+                        if (isset($files[$key1])) {
+                            $file = $files[$key1];
+                            $originalname = $file->getClientOriginalName();
+                            $ext = \File::extension($originalname);
+                            $file_name = $student_id . '.' . $ext;
+                            $path = $file->storeAs('public/student/', $file_name);
+                            $studentEnrollmentData[$key1] = $file_name;
+                        }
+                    }
                 }
-               
+                if (!isset($request->file('values')[$student_id]['image']) && !in_array($key1, ['father_image', 'mother_image'])) {
+                    //for custom image fields
+                    foreach ($dataCustomFields as $key => $value) {
+                        foreach ($dataCustomFields as $key => $value) {
+                            $files = $request->file('values')[$student_id];
+
+                            if (isset($files[$value['field_name']])) {
+                                $file = $files[$value['field_name']];
+                                $originalname = $file->getClientOriginalName();
+                                $name = $value['field_name'] . "_" . $student_id . "_" . date('YmdHis') . '_' . $originalname;
+
+                                $file_name = $name;
+                                $path = $file->storeAs('public/student/', $file_name);
+                                $studentEnrollmentData[$value['field_name']] = $file_name;
+                            }
+                        }
+                    }
+                } elseif(!in_array($key1, ['father_image', 'mother_image'])) {
+                    $files = $request->file('values')[$student_id]['image'];
+                    $file = $request->file('values')[$student_id]['image'];
+                    $originalname = $file->getClientOriginalName();
+                    $name = $student_id . "_" . date('YmdHis') . '_' . $originalname;
+
+                    $file_name = $name;
+                    $path = $file->storeAs('public/student/', $file_name);
+                    $studentEnrollmentData['image'] = $file_name;
+                }
+
                 // dd($studentEnrollmentData);
                 $this->updateData($studentEnrollmentData);
             }
@@ -586,10 +630,10 @@ class bulkStudentController extends Controller
         $res['message'] = "Student updated successfully.";
 
         return is_mobile($type, "bulk_student_update.index", $res);
-
     }
 
-    public function updateData($data) {
+    public function updateData($data)
+    {
         $newRequest = $data;
         $student_id = $newRequest['id'];
         // $sub_institute_id = $request->session()->get('sub_institute_id');
@@ -603,8 +647,8 @@ class bulkStudentController extends Controller
                 if (is_array($value)) {
                     $value = implode(",", $value);
                 }
-                if ( $key == 'dob' || $key == 'admission_date') {
-                    if(isset($value))
+                if ($key == 'dob' || $key == 'admission_date') {
+                    if (isset($value))
                         $value = date('Y-m-d', strtotime($value));
                     else
                         $value = null;
@@ -613,17 +657,16 @@ class bulkStudentController extends Controller
             }
         }
         // dd($finalArray);
-        if(count($finalArray) > 0){
+        if (count($finalArray) > 0) {
             $finalArray['updated_on'] = date('Y-m-d H:i:s');
             DB::enableQueryLog(); // 2024-08-24 required to convert query into sql for json
             $data = tblstudentModel::where(['id' => $student_id])->update($finalArray);
             // 2024-08-23
             $queries = DB::getQueryLog(); // 2024-08-24 required to convert query into sql for json
             $sendQuery = end($queries); // 2024-08-24 required to convert query into sql for json 
-            accesslog_json($sendQuery,'update','Bulk Update Student',$finalArray);
+            accesslog_json($sendQuery, 'update', 'Bulk Update Student', $finalArray);
             //2024-08-23
         }
         return $data;
-
     }
 }
