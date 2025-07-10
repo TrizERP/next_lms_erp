@@ -321,7 +321,7 @@
                                             <div class="col-md-4 form-group">
                                                 <label>Password</label>
                                                 <input type="password"
-                                                    value="@if (isset($data['password'])) {{ $data['password'] }} @endif"
+                                                    value="{{ isset($data['password']) ? $data['password'] : ''}}"
                                                     id='password' required name="password" class="form-control">
                                             </div>
                                             <div class="col-md-4 form-group">
