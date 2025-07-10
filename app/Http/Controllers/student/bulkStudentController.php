@@ -576,6 +576,7 @@ class bulkStudentController extends Controller
                         // have to use this for image entering
                         $file_path = 'public/parents_image/' . $parent_image;
                         if (Storage::disk('digitalocean')->exists($file_path)) {
+                            //  echo "<pre>";print_r($file_path);exit;
                             Storage::disk('digitalocean')->delete($file_path);
                         }
 
