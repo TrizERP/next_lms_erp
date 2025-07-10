@@ -40,7 +40,7 @@ class studentBulkUpdateController extends Controller
         $res['standard_arr'] = DB::table('standard as std')
         ->join('academic_section as grade', 'grade.id', '=', 'std.grade_id')
         ->select('std.name as standard_name', 'std.id as standard_id', 'grade.title as grade_name', 'grade.id as grade_id')
-        ->where('grade.title', 'not like', '%PRE%')
+        ->where('grade.short_name', 'not like', '%PREP%')
         ->where('std.sub_institute_id', $sub_institute_id)
         ->get()
         ->toArray();
