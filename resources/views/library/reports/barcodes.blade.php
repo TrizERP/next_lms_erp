@@ -206,7 +206,7 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            margin: 35px 0px 0px 5px; /*top right bottom left;*/
+            margin: 45px 0px 0px 5px; /*top right bottom left; R*/
             padding: 0;
         }
 
@@ -217,7 +217,7 @@
         td {
             text-align: center;
             vertical-align: top;
-            padding: 10px 0px 0px 0px;/*top right bottom left;*/
+            padding: 7px 0px 0px 0px;/*top right bottom left; R*/
         }
 
         .labelStyle {

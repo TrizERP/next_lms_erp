@@ -235,6 +235,7 @@ class templateMasterController extends Controller
             'annual_value_result'=>'Remarks from remarks master', // added on 05-05-2025
             'total_working_days_system'=>'Count days from start date and end date academic year',// added on 05-05-2025
             'total_working_days_present_system'=>'Count days as per attendance taken',// added on 05-05-2025
+            'student_dise_uid_plus'=>'udise + number of student', // added on 11-07-2025 by uma for hill TC
         ];
 
         return is_mobile($type, 'settings/view_all_tag', $data, "view");

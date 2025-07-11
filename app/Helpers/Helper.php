@@ -1581,6 +1581,7 @@ if (!function_exists('getStudents')) {
             $student_data[$value->id]['section_id'] = $value->section_id;
             $student_data[$value->id]['grade_id'] = $value->grade_id;
             $student_data[$value->id]['dise_uid'] = $value->dise_uid;
+            $student_data[$value->id]['dise_uid_plus'] = $value->{'udise_+'};
             $student_data[$value->id]['unique_id'] = $value->uniqueid;
             $student_data[$value->id]['religion_name'] = $value->religion_name;
             $student_data[$value->id]['caste_name'] = $value->caste_name;
