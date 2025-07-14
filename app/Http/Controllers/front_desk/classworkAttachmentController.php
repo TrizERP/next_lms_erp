@@ -10,10 +10,13 @@ use function App\Helpers\sendNotification;
 use function App\Helpers\SearchStudent;
 use Illuminate\Support\Facades\Storage;
 use App\Models\front_desk\classWorkModel;
+use GenTux\Jwt\GetsJwtToken;
+use Illuminate\Support\Facades\Validator;
 use DB;
 
 class classworkAttachmentController extends Controller
 {
+    use GetsJwtToken;
     /**
      * Display a listing of the resource.
      *
@@ -74,7 +77,6 @@ class classworkAttachmentController extends Controller
         $type = $request->input('type');
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
-        $user_id = session()->get('user_id');
 
         if(in_array($type,['API','JSON'])){
              try {
@@ -91,7 +93,6 @@ class classworkAttachmentController extends Controller
             $validator = Validator::make($request->all(), [
                 'sub_institute_id' => 'required',
                 'syear' => 'required',
-                'user_id' => 'required',
             ]);
 
             if($validator->fails()){
@@ -102,7 +103,6 @@ class classworkAttachmentController extends Controller
 
             $sub_institute_id = $request->get('sub_institute_id');
             $syear = $request->get('syear');
-            $user_id = $request->get('user_id');
         }
         $res['from_date'] = $from_date = $request->has('from_date') ? $request->from_date : date('Y-m-d 00:00:00'); // Default: last 30 days
 
@@ -114,6 +114,9 @@ class classworkAttachmentController extends Controller
                 'syear' => $syear
             ])
             ->whereBetween('created_at', [$from_date, $to_date])
+            ->when($request->has('student_id'), function ($query) use ($request) {
+                return $query->where('student_id', $request->student_id);
+            })
             ->whereNull('deleted_at')
             ->get()
             ->toArray();
