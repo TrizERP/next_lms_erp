@@ -1664,5 +1664,89 @@ class HrmsController extends Controller
         DB::table('hrms_attendance')->where('id', $id)->delete();
         return redirect()->route('hrms_attendance.index')->with('message', 'Attendance deleted successfully.');
     }
+    public function updateUserAttendance(Request $request)
+    {
+        // echo "<pre>";print_r($request->all());exit;
+        $type = $request->type;
+        $res['status_code'] = 0;
+        $res['message'] = "Failed to Update";
+
+        if ($request->has('deleteAtt') && !empty($request->deleteAtt)) {
+            foreach ($request->deleteAtt as $attId => $value) {
+                $this->destroy($request, $attId);
+            }
+            $res['status_code'] = 1;
+            $res['message'] = "Deleted Successfully";
+        }
+        $i = 0;
+        if ($request->has('in_time') && !empty($request->in_time)) {
+            foreach ($request->in_time as $attDate => $inTimeData) {
+                foreach ($inTimeData as $empId => $inTime) {
+                    try {
+                        // echo "<pre>";print_r($empId);exit;
+                        $punchin_time = Carbon::parse($inTime);
+
+                        $updateArr = [
+                            'punchin_time' => Carbon::parse($attDate . ' ' . $punchin_time->format('H:i:s'))->format('Y-m-d H:i:s'),
+                            'in_note' => 1,
+                        ];
+
+                        // Check if out_time exists and is valid
+                        if (isset($request->out_time[$attDate][$empId])) {
+                            try {
+                                $outTime = $request->out_time[$attDate][$empId];
+                                $punchout_time = Carbon::parse($outTime);
+                                $minutesDiff = $punchout_time->diffInMinutes($punchin_time);
+                                $formattedDiff = sprintf('%02d:%02d', floor($minutesDiff / 60), $minutesDiff % 60);
+
+                               $updateArr['punchout_time'] = Carbon::parse($attDate . ' ' . $punchout_time->format('H:i:s'))->format('Y-m-d H:i:s');
+                                $updateArr['out_note'] = 1;
+                                $updateArr['timestamp_diff'] = $formattedDiff;
+                                $updateArr['updated_at'] = now();
+
+                            } catch (\Exception $e) {
+                                // Log invalid out_time format if needed
+                                continue;
+                            }
+                        }
+
+                        $exists = DB::table('hrms_attendances')
+                            ->where([
+                                'day' => $attDate,
+                                'user_id' => $empId,
+                            ])
+                            ->exists();
+// echo $empId."<pre>";print_r($updateArr);
+                        if ($exists) {
+                            DB::table('hrms_attendances')
+                                ->where([
+                                        'day' => $attDate,
+                                        'user_id' => $empId,
+                                    ])
+                                ->update($updateArr);
+                        } else {
+                            $updateArr['user_id'] = $empId;
+                            $updateArr['status'] = 1;
+                            $updateArr['day'] = $attDate;
+                            $updateArr['created_at'] = now();
+                            DB::table('hrms_attendances')
+                                ->insert($updateArr);
+                        }
+                        // echo $empId."<pre>";print_r($updateArr);
+                        $i++;
+                    } catch (\Exception $e) {
+                        // Log invalid in_time format if needed
+                        continue;
+                    }
+                }
+            }
+        }
+        // exit;
+        if ($i > 0) {
+            $res['status_code'] = 1;
+            $res['message'] = "Updated Successfully";
+        }
+        return is_mobile($type, 'multiple_attendance_report.index', $res);
+    }
 
 }
