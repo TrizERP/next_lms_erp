@@ -1664,6 +1664,7 @@ class HrmsController extends Controller
         DB::table('hrms_attendance')->where('id', $id)->delete();
         return redirect()->route('hrms_attendance.index')->with('message', 'Attendance deleted successfully.');
     }
+
     public function updateUserAttendance(Request $request)
     {
         // echo "<pre>";print_r($request->all());exit;
