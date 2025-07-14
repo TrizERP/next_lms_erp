@@ -10,6 +10,7 @@ use function App\Helpers\sendNotification;
 use function App\Helpers\SearchStudent;
 use Illuminate\Support\Facades\Storage;
 use App\Models\front_desk\classWorkModel;
+use App\Models\school_setup\SchoolModel;
 use GenTux\Jwt\GetsJwtToken;
 use Illuminate\Support\Facades\Validator;
 use DB;
@@ -230,7 +231,7 @@ class classworkAttachmentController extends Controller
                                         $app_notification_content = [
                                             'NOTIFICATION_TYPE'        => 'Classwork',
                                             'NOTIFICATION_DATE'        => now(),
-                                            'STUDENT_ID'               => $studentVal->id,
+                                            'STUDENT_ID'               => $studentVal['id'],
                                             'NOTIFICATION_DESCRIPTION' => $pushMessage,
                                             'STATUS'                   => 0,
                                             'SUB_INSTITUTE_ID'         => $sub_institute_id,
@@ -241,7 +242,7 @@ class classworkAttachmentController extends Controller
                                         ];
 
                                         $gcm_data = DB::table("gcm_users")
-                                            ->where("mobile_no", "=", $studentVal->mobile)
+                                            ->where("mobile_no", "=", $studentVal['mobile'])
                                             ->where("sub_institute_id", "=", $sub_institute_id)
                                             ->groupBy("gcm_regid")
                                             ->get()->toArray();
@@ -261,7 +262,7 @@ class classworkAttachmentController extends Controller
                                                     $noti_type = 'Classwork';
                                                     $message = [
                                                         'body'    => $pushMessage, 'TYPE' => $noti_type,
-                                                        'USER_ID' => $student_id, 'title' => $schoolName.' - '.$noti_type,
+                                                        'USER_ID' => $studentVal['id'], 'title' => $schoolName.' - '.$noti_type,
                                                         'image'   => $schoolLogo,
                                                     ];
                                                     /*
@@ -284,7 +285,7 @@ class classworkAttachmentController extends Controller
             $res['status'] = 1;
             $res['message'] = "Attachment(s) Sent successfully.";
         }
-        return is_mobile($type, "sendAttachment.index", $res);
+        return is_mobile($type, "send_attachment.index", $res);
     }
 
     /**
@@ -372,6 +373,6 @@ class classworkAttachmentController extends Controller
             $res['status'] = 1;
             $res['message'] = "Attachment(s) Deleted successfully.";
         }
-        return is_mobile($type, "sendAttachment.index", $res);
+        return is_mobile($type, "send_attachment.index", $res);
     }
 }
