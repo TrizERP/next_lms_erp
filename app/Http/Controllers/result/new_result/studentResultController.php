@@ -8472,6 +8472,7 @@ private function buildDisciplineTable($decipline_data,$both_term)
             // other table rows like grand total, conduct, applictaion,remarks
             $avgrankArr = $this->getRank($standard_id,$stuData['section_id'],$PASSING_MARKS,'');
             $rankTerm1Arr = $this->getRank($standard_id,$stuData['section_id'],$PASSING_MARKS,149);
+            // echo "<pre"
             $rankTerm2Arr = $this->getRank($standard_id,$stuData['section_id'],$PASSING_MARKS,150);
             $avgrank = isset($avgrankArr[$student_id]) ? $avgrankArr[$student_id]['rank'] : 0;
             $rankTerm1 = isset($rankTerm1Arr[$student_id]) ? $rankTerm1Arr[$student_id]['rank'] : 0;
@@ -8494,7 +8495,7 @@ private function buildDisciplineTable($decipline_data,$both_term)
             $pass1Text = $getRemarks['pass1Text'];
 
             $table .='<tr>
-            <td><b>CONDUCT</b></td>';
+            <td '.json_encode($rankTerm1Arr).'><b>CONDUCT</b></td>';
             if(!empty($examMasters)){
                 $j=0;
                 foreach ($examMasters as $key => $value) {
@@ -8551,7 +8552,7 @@ private function buildDisciplineTable($decipline_data,$both_term)
 
     public function getFrangeloRemarks($sortNextStd,$avgrank,$rankTerm1,$rankTerm2,$avgFail,$FailTerm1,$FailTerm2,$mainTotalArr,$stdType=''){
         $appText = $remarksText =$app2Text = $remarks2Text = $app2Text = $remarks2Text = $app2Text = $remarks2Text = $passText = $pass1Text = $pass2Text = '-';
-        if($stdType = "5to8"){
+        if($stdType == "5to8"){
 
             if ($avgrank >= 1 && $avgrank <= 3) {
                 $appText = "EXCELLENT";
@@ -8909,8 +8910,7 @@ private function buildDisciplineTable($decipline_data,$both_term)
             })
             ->selectRaw("s.id AS student_id,se.roll_no,concat_ws(' ',s.first_name,s.middle_name,s.last_name) as student_name,
     SUM(IFNULL(rm.points,0)) AS obtainedMarks,SUM(IFNULL(rc.points,0)) AS totalMarks,
-    ((SUM(IFNULL(rm.points,0))/ SUM(IFNULL(rc.points,0)))*100) AS percentage,COUNT(if(((IFNULL(rm.points,0)/rc.points)*100)
-    < " . $passing_ratio . ",1, NULL)) AS failed")
+    ((SUM(IFNULL(rm.points,0))/ SUM(IFNULL(rc.points,0)))*100) AS percentage,COUNT(if(((rm.points/rc.points)*100) < $passing_ratio ,1 ,NULL)) as failed ")
             ->where("se.syear", "=", $syear)
             ->where("se.standard_id", "=", $standard_id)
             ->where("se.section_id", "=", $division_id)
@@ -8939,9 +8939,11 @@ private function buildDisciplineTable($decipline_data,$both_term)
                 $faieldArr[$val['failed']] = 0;
             }
 
-            $failed = ($val['totalMarks'] > 0) ? ($val['obtainedMarks'] / $val['totalMarks'] * 100) : 0;
-            if($failed < $passing_ratio){
+            $percentage = ($percentageArr[$val['percentage']] > 0 && $percentageArr[$val['percentage']] < $passing_ratio) ? $percentageArr[$val['percentage']] : 0;
+            if($percentage < $passing_ratio){
                 $faieldArr[$val['failed']] += 1;
+            }else{
+                 $faieldArr[$val['failed']] = 0;
             }
             
         }

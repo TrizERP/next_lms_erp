@@ -109,7 +109,7 @@
                             </tr>
                             <!-- saturday late  -->
                             <tr>
-                                <th>HRMS: Saturday Late Arrival - Day Cutoff Policy</th>
+                                <th>HRMS: 2<sup>nd</sup> Saturday Late Arrival - Day Cutoff Policy</th>
                                 <td>
                                     <div class="row">
                                         <div class="col-md-6 form-group" style="margin-left: 0px !important">
