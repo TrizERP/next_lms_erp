@@ -15,6 +15,9 @@ use Psr\Container\NotFoundExceptionInterface;
 use function App\Helpers\is_mobile;
 use function App\Helpers\send_FCM_Notification;
 use function App\Helpers\sendNotification;
+use function App\Helpers\SearchStudent;
+use Illuminate\Support\Facades\Storage;
+use App\Models\front_desk\classWorkModel;
 
 class photo_video_gallaryController extends Controller
 {
