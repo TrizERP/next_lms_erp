@@ -2300,6 +2300,11 @@ $sat_late = $sat_cutoff_value * $sat_late_count;
             ->where('a.user_id', $user_id)
             ->whereBetween('a.day', [$from_date, $to_date])
             ->whereRaw('DAYOFWEEK(a.day) = 7') // Saturday = 7
+            ->whereRaw('
+                (
+                    WEEK(a.day, 1) - WEEK(DATE_SUB(a.day, INTERVAL DAYOFMONTH(a.day)-1 DAY), 1) + 1
+                ) IN (2)
+            ')
             ->whereRaw('TIME(a.punchin_time) > TIME(u.saturday_in_date)')
             ->count();
 
