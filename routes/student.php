@@ -10,6 +10,7 @@ use App\Http\Controllers\front_desk\leave_application\leaveApplicationController
 use App\Http\Controllers\front_desk\parentCommunication\parentCommunicationController;
 use App\Http\Controllers\front_desk\photo_video_gallary\photo_video_gallaryController;
 use App\Http\Controllers\front_desk\school_detail\schooldetailController;
+use App\Http\Controllers\front_desk\classworkAttachmentController;
 use App\Http\Controllers\hostel_management\tblhostelRoomAllocationController;
 use App\Http\Controllers\student\bulkStudentController;
 use App\Http\Controllers\student\studentStrengthReportController;
@@ -197,9 +198,10 @@ Route::group(['prefix' => 'front_desk', 'middleware' => ['session', 'menu', 'log
     Route::resource('dicipline_report', dicipline_reportController::class);
     Route::resource('photo_video_gallary', photo_video_gallaryController::class);
     Route::resource('exam_schedule', exam_scheduleController::class);
+    Route::resource('send_attachment', classworkAttachmentController::class);
 
     Route::post('search_by_circular_title', [circularController::class, 'searchCircularTitle'])->name("search_by_circular_title");
-
+    
 });
 Route::post('front_desk/leave_application/add_leave_application', [leaveApplicationController::class, 'add_leave']);
 Route::post('circular/fetchData', [circularController::class, 'fetchData']);
