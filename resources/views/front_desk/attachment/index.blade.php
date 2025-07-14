@@ -32,7 +32,7 @@
                     <input type="file" id="folderInput" name="files[]" webkitdirectory directory multiple required />
                 </div>
                 <div class="col-md-3">
-                    <input type="submit" value="Search" class="btn btn-success">
+                    <input type="submit" value="Submit" class="btn btn-success">
                 </div>
             </form>
         </div>
