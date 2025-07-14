@@ -35,10 +35,11 @@
         "yajra/laravel-datatables-oracle": "^10.4"
     },
     "require-dev": {
+        "barryvdh/laravel-debugbar": "^3.15",
         "fakerphp/faker": "^1.9.1",
+        "filp/whoops": "^2.14",
         "laravel/sail": "^1.0.1",
         "mockery/mockery": "^1.4.4",
-        "filp/whoops": "^2.14",
         "nunomaduro/collision": "^6.1",
         "phpunit/phpunit": "^9.5.10",
         "spatie/laravel-ignition": "^1.0"

@@ -1515,36 +1515,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             // echo "<Pre>";print_R($fees_arr);exit;
             foreach ($fees_arr as $sort_order_id => $arr) {
                 $order_id = explode('_', $sort_order_id);
-                if ($order_id[1] == $sort_order && $sub_institute_id==76) {
-                    // $fees_arr[$sort_order_id]['Fine'] = $total_fine;
-                    // $fees_arr[$sort_order_id][get_string('discount', 'request',$sub_institute_id)] = $total_discount;
-
-                     // start 08-01-2025 by uma for ssmission
-                    //  $title_name='';
-                    $title_name='';
-                    if(isset($fees_arr[$sort_order_id]['TUITION FEE']) && $fees_arr[$sort_order_id]['TUITION FEE']!=0 && $fees_arr[$sort_order_id]['TUITION FEE']!=''){
-                        $title_name='TUITION FEE';
-                    }elseif(isset($fees_arr[$sort_order_id]['FOOD TRANSPORT ETC']) && $fees_arr[$sort_order_id]['FOOD TRANSPORT ETC']!=0 && $fees_arr[$sort_order_id]['FOOD TRANSPORT ETC']!=''){
-                        $title_name='FOOD TRANSPORT ETC';
-                    }
-                    elseif(isset($fees_arr[$sort_order_id]['HOSTEL FEE']) && $fees_arr[$sort_order_id]['HOSTEL FEE']!=0 && $fees_arr[$sort_order_id]['HOSTEL FEE']!=''){
-                        $title_name='HOSTEL FEE';
-                    }else{
-                        // 10-02-2025 solve error on undefine $title_name
-                        foreach ($arr as $headName => $amount) {
-                            if($amount!=0 && $amount=''){
-                                $title_name = $headName;
-                            }
-                        }
-                    }
-
-                    if(isset($fees_arr[$sort_order_id][$title_name])){
-                        $fees_arr[$sort_order_id][$title_name]-=$total_fine;
-                        $fees_arr[$sort_order_id][$title_name]-=$total_discount;
-                    }
-                      // end 08-01-2025 by uma for ssmission
-                }
-                elseif ($order_id[1] == $sort_order) {
+                if ($order_id[1] == $sort_order) {
                     $fees_arr[$sort_order_id]['Fine'] = $total_fine;
                     $fees_arr[$sort_order_id][get_string('discount', 'request',$sub_institute_id)] = $total_discount;
                 }
@@ -1689,7 +1660,20 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                 }
                 $arr = $arrnew;
             }
-             
+            //echo "<pre>";print_r($arr);exit;
+            //14-07-2025 START RAJESH
+            if (isset($arr['Discount']) && $sub_institute_id == 76){
+                if(isset($arr['TUITION FEE']))
+                    $arr['TUITION FEE'] -= $arr['Discount'];
+                elseif(isset($arr['FOOD TRANSPORT ETC']))
+                    $arr['FOOD TRANSPORT ETC'] -= $arr['Discount'];
+                elseif(isset($arr['HOSTEL FEE']))
+                    $arr['HOSTEL FEE'] -= $arr['Discount'];
+
+                unset($arr['Discount']);
+            }
+            //14-07-2025 END RAJESH
+
             // 31/03/2021 END for Cumulative Fees Receipt
             foreach ($arr as $pkey => $pval) {
                 //  31/03/2021 - Start For Cumulative name
