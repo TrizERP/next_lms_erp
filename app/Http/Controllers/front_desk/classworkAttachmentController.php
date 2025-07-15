@@ -65,7 +65,7 @@ class classworkAttachmentController extends Controller
                 ->whereNull('deleted_at')
                 ->get()->toArray();
         // echo "<pre>";print_r($res['sentData']);exit;
-        return is_mobile($type, "front_desk/attachment/index", $res, "view");
+        return is_mobile($type, "front_desk/classwork/index", $res, "view");
     }
 
     /**
@@ -122,7 +122,7 @@ class classworkAttachmentController extends Controller
             ->get()
             ->toArray();
         // echo "<pre>";print_r($res['sentData']);exit;
-        return is_mobile($type, "front_desk/attachment/report", $res, "view");
+        return is_mobile($type, "front_desk/classwork/report", $res, "view");
     }
 
     /**

@@ -142,32 +142,32 @@
                                             <div class="col-md-4 form-group">
                                                 <label>Middle Name</label>
                                                 <input type="text"
-                                                    value="@if (isset($data['middle_name'])) {{ $data['middle_name'] }} @endif"
+                                                    value="@if(isset($data['middle_name'])){{ $data['middle_name'] }}@endif"
                                                     id='middle_name' required name="middle_name" class="form-control">
                                             </div>
                                             <div class="col-md-4 form-group">
                                                 <label>Last Name</label>
                                                 <input type="text" onchange="getUsername();"
-                                                    value="@if (isset($data['last_name'])) {{ $data['last_name'] }} @endif"
+                                                    value="@if(isset($data['last_name'])){{ $data['last_name'] }}@endif"
                                                     id='last_name' required name="last_name" class="form-control">
                                             </div>
                                             <div class="col-md-4 form-group">
                                                 <label>User Name </label>
                                                 <input type="text"
-                                                    value="@if (isset($data['user_name']) && $data['user_name'] != '') {{ $data['user_name'] }}@else - @endif"
+                                                    value="@if(isset($data['user_name']) && $data['user_name'] != ''){{ $data['user_name'] }}@else - @endif"
                                                     id='user_name' required name="user_name" class="form-control">
                                             </div>
                                             <div class="col-md-4 form-group">
                                                 <label>Email</label>
                                                 <!--<span><br><b>{{ $data['email'] }}</b></span>-->
                                                 <input type="text" id='email'
-                                                    value="@if (isset($data['email'])) {{ $data['email'] }} @endif"
+                                                    value="@if(isset($data['email'])){{ $data['email'] }}@endif"
                                                     required name="email" class="form-control">
                                             </div>
                                             <div class="col-md-4 form-group">
                                                 <label>Mobile</label>
                                                 <input type="text"
-                                                    value="@if (isset($data['mobile'])) {{ $data['mobile'] }} @endif"
+                                                    value="@if(isset($data['mobile'])){{ $data['mobile'] }}@endif"
                                                     id='mobile' required name="mobile" class="form-control">
                                             </div>
                                             <div class="col-md-4 form-group">
@@ -213,7 +213,7 @@
                                                     <label class="radio-inline p-0">
                                                         <div class="radio radio-success">
                                                             <input type="radio"
-                                                                @if (isset($data)) @if ('M' == $data['gender']) checked @endif
+                                                                @if(isset($data)) @if('M' == $data['gender']) checked @endif
                                                                 @endif name="gender" id="male"
                                                             value="M" required>
                                                             <label for="male">Male</label>
@@ -222,7 +222,7 @@
                                                     <label class="radio-inline">
                                                         <div class="radio radio-success">
                                                             <input type="radio"
-                                                                @if (isset($data)) @if ('F' == $data['gender']) checked @endif
+                                                                @if(isset($data))@if ('F' == $data['gender']) checked @endif
                                                                 @endif name="gender" id="female"
                                                             value="F" required>
                                                             <label for="female">Female</label>
@@ -234,29 +234,29 @@
                                                 <label>{{ App\Helpers\get_string('user_address') }} @if (session()->get('sub_institute_id') == 47) <input
                                                             type="checkbox" id="copied_address"
                                                             onchange="checkAddress();"
-                                                            @if (isset($data['temp_address']) && $data['temp_address'] != '') checked @endif>
+                                                            @if(isset($data['temp_address']) && $data['temp_address'] != '') checked @endif>
                                                     @endif
                                                 </label>
                                                 <textarea class="form-control" required name="address">
-@if (isset($data['address'])){{ $data['address'] }}@endif
-</textarea>
+                                                    @if (isset($data['address'])){{ $data['address'] }}@endif
+                                                </textarea>
                                             </div>
                                             <div class="col-md-4 form-group">
                                                 <label>{{ App\Helpers\get_string('user_city') }}</label>
                                                 <input type="text"
-                                                    value="@if (isset($data['state'])) {{ $data['state'] }} @endif"
+                                                    value="@if(isset($data['state'])){{ $data['state'] }}@endif"
                                                     id='state' name="state" class="form-control">
                                             </div>
                                             <div class="col-md-4 form-group">
                                                 <label>{{ App\Helpers\get_string('user_state') }}</label>
                                                 <input type="text"
-                                                    value="@if (isset($data['city'])) {{ $data['city'] }} @endif"
+                                                    value="@if(isset($data['city'])){{ $data['city'] }}@endif"
                                                     id='city' name="city" class="form-control">
                                             </div>
                                             <div class="col-md-4 form-group">
                                                 <label>{{ App\Helpers\get_string('user_pincode') }}</label>
                                                 <input type="number"
-                                                    value="@if (isset($data['pincode'])) {{ $data['pincode'] }} @endif"
+                                                    value="@if(isset($data['pincode'])){{ $data['pincode'] }}@endif"
                                                     id='pincode' name="pincode" class="form-control">
                                             </div>
                                             {{-- 01-04-2025 start copy address for mmis  --}}
@@ -264,8 +264,8 @@
                                                 <div class="col-md-4 form-group" id="addressDiv">
                                                     <label>{{ App\Helpers\get_string('temp_address') }}</label>
                                                     <textarea class="form-control" name="temp_address" id="temp_address">
-@if (isset($data['temp_address'])){{ $data['temp_address'] }}@endif
-</textarea>
+                                                        @if (isset($data['temp_address'])){{ $data['temp_address'] }}@endif
+                                                    </textarea>
                                                 </div>
                                                 <div class="col-md-4 form-group" id="stateDiv">
                                                     <label>{{ App\Helpers\get_string('temp_city') }}</label>
@@ -308,13 +308,13 @@
                                                 <label>Total Lectures</label>
                                                 <input type="number" id='total_lecture' name="total_lecture"
                                                     class="form-control"
-                                                    value="@if (isset($data['total_lecture'])) {{ $data['total_lecture'] }} @endif">
+                                                    value="@if(isset($data['total_lecture'])){{ $data['total_lecture'] }}@endif">
                                             </div>
                                             @if (session()->get('sub_institute_id') != 47)
                                                 <div class="col-md-4 form-group">
                                                     <label>Join Year</label>
                                                     <input type="number"
-                                                        value="@if (isset($data['join_year'])) {{ $data['join_year'] }} @endif"
+                                                        value="@if(isset($data['join_year'])){{ $data['join_year'] }}@endif"
                                                         id='join_year' required name="join_year" class="form-control">
                                                 </div>
                                             @endif
@@ -329,7 +329,7 @@
                                                 <div class="input-daterange input-group" id="date-range">
                                                     <input type="text" required class="form-control mydatepicker"
                                                         placeholder="dd/mm/yyyy"
-                                                        value="@if (isset($data['birthdate'])) {{ $data['birthdate'] }} @endif"
+                                                        value="@if(isset($data['birthdate'])){{ $data['birthdate'] }}@endif"
                                                         name="birthdate" autocomplete="off"><span
                                                         class="input-group-addon"><i class="icon-calender"></i></span>
                                                 </div>
@@ -358,14 +358,14 @@
                                                         @if ($value['field_type'] == 'file')
                                                             <input type="{{ $value['field_type'] }}" accept="image/*"
                                                                 id="input-file-now"
-                                                                data-default-file="@if (isset($data[$value['field_name']])) {{ '/storage/user/' . $data[$value['field_name']] }} @endif"
+                                                                data-default-file="@if(isset($data[$value['field_name']])){{ '/storage/user/' . $data[$value['field_name']] }}@endif"
                                                                 required name="{{ $value['field_name'] }}"
                                                                 class="form-control">
                                                         @elseif($value['field_type'] == 'date')
                                                             <div class="input-daterange input-group">
                                                                 <input type="text" class="form-control mydatepicker"
                                                                     placeholder="dd/mm/yyyy"
-                                                                    value="@if (isset($data[$value['field_name']])) {{ $data[$value['field_name']] }} @endif"
+                                                                    value="@if(isset($data[$value['field_name']])){{ $data[$value['field_name']] }}@endif"
                                                                     autocomplete="off" id="{{ $value['field_name'] }}"
                                                                     required name="{{ $value['field_name'] }}"
                                                                     class="form-control"><span
@@ -418,15 +418,12 @@
                                                             </select>
                                                         @elseif($value['field_type'] == 'textarea')
                                                             <textarea id="{{ $value['field_name'] }}" class="form-control" required name="{{ $value['field_name'] }}"
-                                                                placeholder="{{ $value['field_message'] }}">
-                                @if (isset($data[$value['field_name']]))
-{{ $data[$value['field_name']] }}
-@endif
-                                </textarea>
+                                                                placeholder="{{ $value['field_message'] }}">@if (isset($data[$value['field_name']])){{ $data[$value['field_name']] }}@endif
+                                                        </textarea>
                                                         @else
                                                             <input type="{{ $value['field_type'] }}"
                                                                 id="{{ $value['field_name'] }}"
-                                                                value="@if (isset($data[$value['field_name']])) {{ $data[$value['field_name']] }} @endif"
+                                                                value="@if(isset($data[$value['field_name']])){{ $data[$value['field_name']] }}@endif"
                                                                 placeholder="{{ $value['field_message'] }}" required
                                                                 name="{{ $value['field_name'] }}" class="form-control">
                                                         @endif
@@ -453,7 +450,7 @@
                                             <div class="col-md-4 form-group">
                                                 <label>Week Load</label>
                                                 <input type="number" id='load' name="load" class="form-control"
-                                                    value="@if (isset($data['load'])) {{ $data['load'] }} @endif">
+                                                    value="@if(isset($data['load'])){{ $data['load'] }}@endif">
                                             </div>
 
                                             <!-- employee department  -->
