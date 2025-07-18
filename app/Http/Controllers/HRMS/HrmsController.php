@@ -155,7 +155,7 @@ class HrmsController extends Controller
             $address_in = request()->ip();
             $photo_in = null;
         }
-
+/*
         if ($request->hasFile('photo_in')) {
             $file = $request->file('photo_in');
             $timestamp = now()->format('YmdHis');
@@ -210,8 +210,12 @@ class HrmsController extends Controller
 
             $photo_in = Storage::disk('digitalocean')->url('public/hrms/attendance_photo/' . $photoInFilename);
         }
+*/
+// Check if $punchin_time is set and not empty
+$punchin_time = !empty($punchin_time) ? $punchin_time : Carbon::now()->format('Y-m-d H:i:s');
 
-        $day = Carbon::parse($punchin_time)->format('Y-m-d');
+// Now parse the date part
+$day = Carbon::parse($punchin_time)->format('Y-m-d');
 
         // Check if a punchin already exists for this user on the same day
         $alreadyExists = HrmsAttendance::where('user_id', $userId)
@@ -275,7 +279,7 @@ class HrmsController extends Controller
             $address_out = request()->ip();
             $photo_out = null;
         }
-
+/*
         if ($request->hasFile('photo_out')) {
             $file = $request->file('photo_out');
             $timestamp = now()->format('YmdHis');
@@ -331,8 +335,12 @@ class HrmsController extends Controller
             // Get URL of stored photo
             $photo_out = Storage::disk('digitalocean')->url('public/hrms/attendance_photo/' . $photoOutFilename);
         }
+*/
+// Check if $punchout_time is set and not empty
+$punchout_time = !empty($punchout_time) ? $punchout_time : Carbon::now()->format('Y-m-d H:i:s');
 
-        $day = Carbon::parse($punchout_time)->format('Y-m-d');
+// Now parse the date part
+$day = Carbon::parse($punchout_time)->format('Y-m-d');        
 
         // Check if a punchin already exists for this user on the same day
         $alreadyExists = HrmsAttendance::where('user_id', $userId)

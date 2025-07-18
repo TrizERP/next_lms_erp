@@ -7868,7 +7868,7 @@ private function buildDisciplineTable($decipline_data,$both_term)
             $pass1Text = $getRemarks['pass1Text'];
 
             $table .='<tr>
-            <td><b>CONDUCT</b></td>';
+            <td '.json_encode($avgrankArr[$student_id]).'><b>CONDUCT</b></td>';
             if(!empty($examMasters)){
                 $j=0;
                 foreach ($examMasters as $key => $value) {
@@ -8939,11 +8939,9 @@ private function buildDisciplineTable($decipline_data,$both_term)
                 $faieldArr[$val['failed']] = 0;
             }
 
-            $percentage = ($percentageArr[$val['percentage']] > 0 && $percentageArr[$val['percentage']] < $passing_ratio) ? $percentageArr[$val['percentage']] : 0;
-            if($percentage < $passing_ratio){
+            $failed = ($val['totalMarks'] > 0) ? ($val['obtainedMarks'] / $val['totalMarks'] * 100) : 0;
+            if($failed < $passing_ratio){
                 $faieldArr[$val['failed']] += 1;
-            }else{
-                 $faieldArr[$val['failed']] = 0;
             }
             
         }

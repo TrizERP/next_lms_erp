@@ -39,6 +39,47 @@
         .punchsame {
             background-color: red;
         }
+/* quick view starts  */
+.profile-card {
+    background: #fff;
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+}
+.profile-card h2 {
+    font-size: 22px;
+    color: #333;
+    margin-bottom: 5px;
+}
+.profile-card p {
+    font-size: 16px;
+    color: #777;
+    margin-bottom: 15px;
+}
+.profile-section {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    margin-top: 15px;
+}
+.profile-img {
+    height: 400px;
+    object-fit: cover;
+    border: 3px solid #ddd;
+}
+.member {
+    text-align: center;
+}
+.member span {
+    display: block;
+    font-size: 14px;
+    color: #555;
+    margin-top: 5px;
+}
+.dropify-clear{
+    display:none !important;
+}
+/* quick view end  */        
     </style>
     <div id="page-wrapper">
         <div class="container-fluid">
@@ -140,7 +181,8 @@
                                     <th>Employee Name</th>
                                     <th>In Time</th>
                                     <th>Out Time</th>
-                                    <th class="text-left">Duration</th>
+                                    <th>Duration</th>
+                                    <th class="text-left">Selfie</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -309,7 +351,49 @@
                                                     @endif
                                                 </td>
                                                 <td class="text-left">{{ $timediff }}</td>
+                                                <td>
+                                                @if(isset($value['photo_in']) || isset($value['photo_out']))
+                                                    <a href="#" data-toggle="modal" data-target="#quickView{{$i}}" style="color: #007bff;">View</a>
+                                                    @php
+                                                    $punch_in = $value['photo_in'];
+                                                    $punch_out = $value['photo_out'];
+                                                    @endphp
+                                                @endif
+                                                </td>
                                             </tr>
+
+<!-- Quick View Modal -->
+<div class="modal fade" id="quickView{{$i}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document" style="max-width: 1200px;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLabel">Punch IN-OUT Selfie</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="profile-card">
+            <div class="profile-section">
+                @if(isset($punch_in) && $punch_in!='')
+                <div class="member">
+                    <img src="{{$punch_in}}" alt="Punch IN Selfie" class="profile-img">
+                    <span>Punch IN</span>
+                </div>
+                @endif
+                @if(isset($punch_out) && $punch_out!='')
+                <div class="member">
+                    <img src="{{$punch_out}}" alt="Punch OUT Selfie" class="profile-img">
+                    <span>Punch OUT</span>
+                </div>
+                @endif
+            </div>
+            <hr>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
                                         @endforeach
                                     @endforeach
                                 @endif

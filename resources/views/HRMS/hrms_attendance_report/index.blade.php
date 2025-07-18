@@ -58,7 +58,7 @@
 .dropify-clear{
     display:none !important;
 }
-/* quick view end  */    
+/* quick view end  */
 </style>
 @include('includes.sideNavigation')
 <div id="page-wrapper">
@@ -274,7 +274,7 @@
     <td>{{ isset($hrmsAttendance->timestamp_diff) ? \Carbon\Carbon::parse($hrmsAttendance->timestamp_diff)->format('H:i') : '-' }}</td>
     <td>
         @if(isset($hrmsAttendance->photo_in) || isset($hrmsAttendance->photo_out))
-            <a href="#" data-toggle="modal" data-target="#quickView" style="color: #007bff;">View</a>
+            <a href="#" data-toggle="modal" data-target="#quickView{{$j}}" style="color: #007bff;">View</a>
             @php
             $punch_in = $hrmsAttendance->photo_in;
             $punch_out = $hrmsAttendance->photo_out;
@@ -282,19 +282,8 @@
         @endif
         </td>
 </tr>
-
-                                @endforeach
-                            </tbody>
-                        </form>
-                    </table>
-                </div>
-            </div>
-        @endif
-    </div>
-</div>
-
 <!-- Quick View Modal -->
-<div class="modal fade" id="quickView" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+<div class="modal fade" id="quickView{{$j}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
   <div class="modal-dialog" role="document" style="max-width: 1200px;">
     <div class="modal-content">
       <div class="modal-header">
@@ -325,6 +314,17 @@
     </div>
   </div>
 </div>
+
+                                @endforeach
+                            </tbody>
+                        </form>
+                    </table>
+                </div>
+            </div>
+        @endif
+    </div>
+</div>
+
 
 @include('includes.footerJs')
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-toast-plugin/1.3.2/jquery.toast.css">
