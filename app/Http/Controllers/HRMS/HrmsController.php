@@ -360,11 +360,23 @@ $day = Carbon::parse($punchout_time)->format('Y-m-d');
             $punchout_time = Carbon::parse($punchout_time);
             $punchin_time = Carbon::parse($hrmsInOutTime->punchin_time);
 
-            $Min = $punchout_time->diffInMinutes($punchin_time);
-            $diff = date('H:i', mktime(0, $Min));
+            $min = $punchout_time->diffInMinutes($punchin_time);
+            $diff = date('H:i', mktime(0, $min));
+
+            // Strat overtime calculation
+            $overtime = null;$overtimeMinutes = 0;
+            $standardMinutes = 9 * 60; // 9 hour standard worked hours
+            if($min > $standardMinutes){
+                $overtimeMinutes = $min - $standardMinutes;
+                $overtime = date('H:i', mktime(0, $overtimeMinutes));
+            }
+            // End overtime calculation
+
+//echo "Min-".$min."#";echo "overtimeMinutes-".$overtimeMinutes."#";echo "overtime-".$overtime."#";die();
 
             $hrmsInOutTime->punchout_time = $punchout_time;
             $hrmsInOutTime->timestamp_diff = $diff;
+            $hrmsInOutTime->overtime = $overtime;
             $hrmsInOutTime->ipaddress_out = $address_out;
             $hrmsInOutTime->photo_out = $photo_out;
             $hrmsInOutTime->save();

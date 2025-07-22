@@ -59,6 +59,10 @@
     display:none !important;
 }
 /* quick view end  */
+.overtime-col {
+    white-space: nowrap;
+    text-align: center;
+}
 </style>
 @include('includes.sideNavigation')
 <div id="page-wrapper">
@@ -113,6 +117,13 @@
                             <input type="submit" name="submit" value="Search" class="btn btn-success" onclick="checkEmp()">
                         </div>
                     </div>
+                    <div class="row">
+                        <div class="col-md-12 form-group text-left">
+                            <label>
+                                <input type="checkbox" id="toggleOvertime" onchange="toggleOvertimeColumn()"> Show Overtime
+                            </label>
+                        </div>
+                    </div>
                 </form>
             </div>
         </div>
@@ -139,6 +150,7 @@
                             <th>In Time</th>
                             <th>Out Time</th>
                             <th>Duration</th>
+                            <th class="overtime-col" style="display: none;">Overtime</th> <!-- Hidden by default -->
                             <th class="text-left">Selfie</th>
                         </tr>
                         </thead>
@@ -272,6 +284,7 @@
         @endif
     </td>
     <td>{{ isset($hrmsAttendance->timestamp_diff) ? \Carbon\Carbon::parse($hrmsAttendance->timestamp_diff)->format('H:i') : '-' }}</td>
+    <td class="overtime-col" style="display: none;">{{ isset($hrmsAttendance->overtime) ? \Carbon\Carbon::parse($hrmsAttendance->overtime)->format('H:i') : '-' }}</td> <!-- Overtime column -->
     <td>
         @if(isset($hrmsAttendance->photo_in) || isset($hrmsAttendance->photo_out))
             <a href="#" data-toggle="modal" data-target="#quickView{{$j}}" style="color: #007bff;">View</a>
@@ -427,5 +440,20 @@ function openMapPopup(coords, searchTerm = '') {
 
     window.open(url, 'mapPopup', 'width=1024,height=600,resizable=yes,scrollbars=yes');
 }
+</script>
+<script>
+    function toggleOvertimeColumn() {
+        var show = document.getElementById("toggleOvertime").checked;
+        var elements = document.querySelectorAll(".overtime-col");
+        elements.forEach(function(el) {
+            el.style.display = show ? "" : "none";
+        });
+    }
+
+    function checkEmp() {
+        // Your existing submit logic
+        // Optionally call toggleOvertimeColumn() again if needed
+        toggleOvertimeColumn(); 
+    }
 </script>
 @include('includes.footer')

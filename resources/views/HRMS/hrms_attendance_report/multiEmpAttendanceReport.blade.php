@@ -79,7 +79,11 @@
 .dropify-clear{
     display:none !important;
 }
-/* quick view end  */        
+/* quick view end  */
+.overtime-col {
+    white-space: nowrap;
+    text-align: center;
+}
     </style>
     <div id="page-wrapper">
         <div class="container-fluid">
@@ -143,6 +147,13 @@
                     <div class="col-md-3 col-sm-offset-4 text-center form-group">
                         <input type="submit" name="submit" value="Search" class="btn btn-success">
                     </div>
+                    <div class="row">
+                        <div class="col-md-12 form-group text-left">
+                            <label>
+                                <input type="checkbox" id="toggleOvertime" onchange="toggleOvertimeColumn()"> Show Overtime
+                            </label>
+                        </div>
+                    </div>
             </div>
             </form>
         </div>
@@ -182,6 +193,7 @@
                                     <th>In Time</th>
                                     <th>Out Time</th>
                                     <th>Duration</th>
+                                    <th class="overtime-col" style="display: none;">Overtime</th> <!-- Hidden by default -->
                                     <th class="text-left">Selfie</th>
                                 </tr>
                             </thead>
@@ -351,6 +363,8 @@
                                                     @endif
                                                 </td>
                                                 <td class="text-left">{{ $timediff }}</td>
+                                                <td class="overtime-col" style="display: none;">{{ isset($value['overtime'])
+ ? \Carbon\Carbon::parse($value['overtime'])->format('H:i') : '-'; }}</td> <!-- Overtime column -->
                                                 <td>
                                                 @if(isset($value['photo_in']) || isset($value['photo_out']))
                                                     <a href="#" data-toggle="modal" data-target="#quickView{{$i}}" style="color: #007bff;">View</a>
@@ -597,6 +611,21 @@
 
             window.open(url, 'mapPopup', 'width=1024,height=600,resizable=yes,scrollbars=yes');
         }
+    </script>
+    <script>
+    function toggleOvertimeColumn() {
+        var show = document.getElementById("toggleOvertime").checked;
+        var elements = document.querySelectorAll(".overtime-col");
+        elements.forEach(function(el) {
+            el.style.display = show ? "" : "none";
+        });
+    }
+
+    function checkEmp() {
+        // Your existing submit logic
+        // Optionally call toggleOvertimeColumn() again if needed
+        toggleOvertimeColumn(); 
+    }
     </script>
     @include('includes.footer')
 @endsection

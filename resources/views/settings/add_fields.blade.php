@@ -218,7 +218,17 @@
 
 @include('includes.footerJs')
 <script>
+$(document).ready(function() {
+    $('#field_name').on('keyup', function() {
+        const value = $(this).val();
+        const hasSpecialChar = /[+\-.*]/.test(value);
 
+        if (hasSpecialChar) {
+            alert("Please enter a valid field name. Special characters like +, -, *, . are not allowed.");
+            $(this).val('');
+        }
+    });
+});
 function setValue(value){
     document.getElementById('field_type').value = value;
 }
