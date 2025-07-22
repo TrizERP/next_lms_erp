@@ -243,14 +243,14 @@
                                     </tr>
                                     
                                     <?php if ($data["fees_type"] != "fix") { ?>
-                                        <tr>
+                                        <tr style="display:none">
                                             <td></td>
                                             <td>Discount</td>
                                             <td></td>
                                             <td><input type="text" name="totalDis" id="totalDiscount" readonly></td>
                                             
                                         </tr>
-                                        <tr>
+                                        <tr style="display:none">
                                             <td></td>
                                             <td>Fine</td>
                                             <td></td>

@@ -239,15 +239,23 @@
                    }
                },
                {extend: 'csv', text: ' CSV', title: 'Student Report'},
-               {extend: 'excel', text: ' EXCEL', title: 'Student Report',
-		            customizeData: function ( data ) {
-		                for (var i=0; i<data.body.length; i++){
-		                    for (var j=0; j<data.body[i].length; j++ ){
-		                        data.body[i][j] = '\u200C' + data.body[i][j];
-		                    }
-		                }
-		            } 
-	        	},
+               {
+                extend: 'excel',
+                text: ' EXCEL',
+                title: 'Student Report',
+                exportOptions: {
+                  columns: ':visible',
+                  format: {
+                    body: function (data, row, column, node) {
+                      // Check if the data is numeric and has more than 15 digits
+                      if (!isNaN(data) && data.toString().length > 15) {
+                        return "'" + data.toString(); // Convert to string for Excel
+                      }
+                      return data;
+                    }
+                  }
+                }
+              },
                {
                    extend: 'print',
                    text: ' PRINT',

@@ -422,7 +422,7 @@ class online_fees_collect_controller extends Controller
         $mission_account = ['SHRISWAMI1'];
 
         // Step 1: Call payoutSummary API
-        $payoutPayload = json_encode(['settlement_date' => date('d-m-Y')]);//date('14-07-2025')
+        $payoutPayload = json_encode(['settlement_date' => date('d-m-Y')]);//date('18-07-2025')
         $encRequest = $this->hdfc_encrypt($payoutPayload, $working_code);
 
         $summaryResponse = $this->callCCAvenueAPI($encRequest, $access_code, $working_code, 'payoutSummary');
