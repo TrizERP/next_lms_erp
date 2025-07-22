@@ -137,8 +137,8 @@
                                     </div>
                                     <div class="step mb-4">
                                         <h6 class="text-primary mb-1">Step 4: File Format & Naming</h6>
-                                        <p class="mb-0">📝 Files should be named with student enrollment numbers, e.g.
-                                            <code>123456.png</code>, <code>654321.pdf</code>, etc.</p>
+                                        <p class="mb-0">📝 Files should be named with standar_division_rollNo, e.g.
+                                            <code>2_A_11.png</code>, <code>5_A_22.pdf</code>, etc.</p>
                                     </div>
                                     <div class="step mb-0">
                                         <h6 class="text-primary mb-1">Step 4: Send Notifications</h6>

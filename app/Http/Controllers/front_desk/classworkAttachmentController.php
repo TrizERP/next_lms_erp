@@ -14,6 +14,7 @@ use App\Models\school_setup\SchoolModel;
 use GenTux\Jwt\GetsJwtToken;
 use Illuminate\Support\Facades\Validator;
 use DB;
+use App\HTTP\Controllers\AJAXController;
 
 class classworkAttachmentController extends Controller
 {
@@ -133,6 +134,7 @@ class classworkAttachmentController extends Controller
      */
     public function store(Request $request)
     {
+        // echo "<pre>";print_r($request->all());exit;
         $type = $request->input('type');
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
@@ -175,13 +177,43 @@ class classworkAttachmentController extends Controller
 
         foreach ($folderFiles as $key => $file) {
             $originalNameOfFile = $file->getClientOriginalName();
-            $enrollmentNo = pathinfo($originalNameOfFile, PATHINFO_FILENAME);
-            $fileExtension = $file->getClientOriginalExtension();
+            // $enrollmentNo = pathinfo($originalNameOfFile, PATHINFO_FILENAME);
+            // $fileExtension = $file->getClientOriginalExtension();
+
             $fileName = date('YmdHis')."_".$originalNameOfFile;
+            $chunkname = pathinfo($originalNameOfFile, PATHINFO_FILENAME);
+            $file_name = explode('_',$chunkname);
+            $std = $file_name[0] ?? '';
+            $div = $file_name[1] ?? '';
+            $roll_no = $file_name[2] ?? '';
+            // get table dataof standard 
+            $reqstd = new Request([
+            'table' => 'standard',
+            'filters' => [
+                'sub_institute_id' => $sub_institute_id,
+                'course_duration' => $std
+            ]
+            ]);
+            $reqdiv = new Request([
+                'table' => 'division',
+                'filters' => [
+                    'sub_institute_id' => $sub_institute_id,
+                    'name'=> $div,
+                ]
+            ]);
+
+            $controller = new AJAXController();
+            $stdData =$controller->lmsDataApi($reqstd)->getData(true);
+            $DivdData =$controller->lmsDataApi($reqdiv)->getData(true);
+            $gradeId = isset($stdData[0]) ? $stdData[0]['grade_id'] : '';
+            $stdId = isset($stdData[0]) ? $stdData[0]['id'] : '';
+            $divId = isset($DivdData[0]) ? $DivdData[0]['id'] : '';
+                    echo "<pre>";print_r([$gradeId,$stdId,$divId]);
+            $studentData =  SearchStudent($gradeId, $stdId, $divId, $sub_institute_id,$syear, $roll_no);
+            // echo "<pre>";print_r($studentData);exit;
             // get studentData 
-            $studentData = SearchStudent("", "", "", $sub_institute_id, $syear,"", "", "","", $enrollmentNo,"", "","");
-            // echo $key."<pre>";print_r([$enrollmentNo,$originalNameOfFile,$fileExtension]);
-            // echo $key."<pre>";print_r($studentData);
+            // $studentData = SearchStudent("", "", "", $sub_institute_id, $syear,"", "", "","", $enrollmentNo,"", "","");
+           
             // if student exits then send notifiction and store data into database and files into digital ocean classwork_attachment folder
             if(isset($studentData[0])){
                 $studentVal = $studentData[0];
