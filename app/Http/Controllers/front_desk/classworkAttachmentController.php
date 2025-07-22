@@ -14,7 +14,7 @@ use App\Models\school_setup\SchoolModel;
 use GenTux\Jwt\GetsJwtToken;
 use Illuminate\Support\Facades\Validator;
 use DB;
-use App\HTTP\Controllers\AJAXController;
+use App\Http\Controllers\AJAXController;
 
 class classworkAttachmentController extends Controller
 {
