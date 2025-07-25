@@ -91,7 +91,7 @@
   <!-- if condition starts "email","admission_year","state","city","cast","subcast" -->
                 <div class="col-md-4 form-group text-left" style="{{$visibleFields}}">
                   <label for="">{{$vals['field_label']}}</label> {!! $asterisk !!}
-                @if(!in_array($vals['field_name'],["email","admission_year","state","city","cast","subcast"]))
+                @if(!in_array($vals['field_name'],["email","admission_year","state","city","cast","subcast","religion"]))
               
                   @if($vals['field_type']=="textarea")
                     <textarea name="{{$vals['field_name']}}" id="{{$vals['field_name']}}" class="form-control" {{$requiredFields}}>{{$defaultValue}}</textarea>
@@ -158,6 +158,16 @@
                           <option value="{{ $value['state_name'] }}" @if(isset($data->state)) {{ $data->state == $value['state_name'] ? 'selected' : '' }} @endif> {{ $value['state_name'] }} </option>
                       @endforeach
                       @endif
+                    </select>
+                  @endif
+                  @if($vals['field_name']=="religion")
+                    <select id='religion' name="religion" class="form-control">
+                        <option value="">--Select--</option>  
+                        @if(isset($data['religion_data']))
+                            @foreach($data['religion_data'] as $key => $value)
+                                <option value="{{ $value['id'] }}">{{ $value['religion_name'] }}</option>
+                            @endforeach
+                        @endif                                                  
                     </select>
                   @endif
                   @if($vals['field_name']=="city")

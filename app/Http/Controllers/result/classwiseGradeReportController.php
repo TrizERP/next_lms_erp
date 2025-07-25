@@ -42,6 +42,7 @@ class classwiseGradeReportController extends Controller
 
     public function create(Request $request)
     {
+        // echo "<pre>";print_r($request->all());exit;
         $type = $request->input('type');
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
@@ -84,7 +85,10 @@ class classwiseGradeReportController extends Controller
                 $join->on("rm.exam_id","=" ,"e.id")->on("rm.sub_institute_id", "=", "e.sub_institute_id");
             })
             ->selectRaw("e.id,e.title AS ExamTitle, sum(e.points) AS total_points, e.subject_id,s.display_name AS subject_name,rm.student_id,round(SUM(rm.points),0) AS obtained_points,rm.is_absent,s.elective_subject")
-            ->where("e.term_id", "=", $term_id)
+            ->when($term_id!='', function ($q) use ($term_id) {
+                $q->where('e.term_id', $term_id);
+            })
+            // ->where("e.term_id", "=", $term_id)
             ->where("e.sub_institute_id", "=", $sub_institute_id)
             ->where("e.syear", "=", $syear)
             ->where("e.standard_id", "=", $standard_id)
@@ -99,15 +103,23 @@ class classwiseGradeReportController extends Controller
 
         $result = $result->groupByRaw('rm.student_id,rm.id')
             ->orderBy('rm.student_id')->get()->toArray();
-
         $grade_arr = \App\Helpers\getGradeScale($standard_id, $type);
 
         // getting data and making readable format student wise
         $studentResults = [];
         // echo "<pre>";print_r($result);exit;
         foreach ($result as $key => $value) {
+            $value->display_points='';
             if($value->elective_subject=="Yes"){
                 $value->obtained_points = \App\Helpers\getGrade($grade_arr, $value->total_points, $value->obtained_points);
+                $value->display_points ="<b>".$value->obtained_points."</b>";
+            }
+            // $grade_con = 0;
+            if(in_array($request->grade,[146,147]) && $value->elective_subject!="Yes"){
+                $value->display_points = $value->obtained_points.' <b>'.\App\Helpers\getGrade($grade_arr, $value->total_points, $value->obtained_points).'</b>';
+            }
+            else{
+                $value->display_points = $value->obtained_points;
             }
 
             $studentResults[$value->student_id][$value->ExamTitle][$value->subject_name] = $value;
@@ -136,7 +148,7 @@ class classwiseGradeReportController extends Controller
         $req = New Request(['stdId'=>$standard_id,'termID'=>$term_id,'title'=>$exam_create]);
 
         $getExamTitles = $this->getCreateExamName($req);
-        // echo "<pre>";print_r($exam_create);exit;
+        // echo "<pre>";print_r($exam_create);exit; 
 
         $examNames = [];
         foreach ($getExamTitles as $key => $value) {
@@ -238,10 +250,11 @@ class classwiseGradeReportController extends Controller
             }
 
             $getTermDates = DB::table('academic_year')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear,'term_id'=>$term_id])->first();
-            $att = DB::table('attendance_student')
-            ->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear,'attendance_code'=>'P','student_id'=>$arr['id']])
-            ->whereBetween('attendance_date',[$getTermDates->post_start_date,$getTermDates->post_end_date])
-            ->count();
+            
+            $att = 0; // DB::table('attendance_student')
+            // ->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear,'attendance_code'=>'P','student_id'=>$arr['id']])
+            // ->whereBetween('attendance_date',[$getTermDates->post_start_date,$getTermDates->post_end_date])
+            // ->count();
             $studentMarks[$id]['attendance'] = $att;
         }
         // echo "<pre>";print_r($studentMarks);
@@ -255,7 +268,10 @@ class classwiseGradeReportController extends Controller
         //     $join->on("rm.exam_id","=" ,"rce.id")->on("rm.sub_institute_id", "=", "rce.sub_institute_id");
         // }) // uncomment if only attempted exam to be display
         ->selectRaw('rce.id,rce.title,s.display_name as subject_name,s.id as subject_id')
-        ->where("rce.term_id", "=", $term_id)
+        // ->where("rce.term_id", "=", $term_id)
+        ->when($term_id!='', function ($q) use ($term_id) {
+            $q->where('rce.term_id', $term_id);
+        })
         ->where("rce.sub_institute_id", "=", $sub_institute_id)
         ->where("rce.syear", "=", $syear)
         ->where("rce.standard_id", "=", $standard_id)
@@ -264,7 +280,7 @@ class classwiseGradeReportController extends Controller
             $q->where('rce.title',$exam_create);
         })
         ->groupBy('s.display_name')
-        ->orderBy('s.sort_order')
+        ->orderBy('rce.sort_order')
         ->get()->toArray();
         
         // echo "<pre>";print_r($examSubject);exit;
@@ -292,11 +308,14 @@ class classwiseGradeReportController extends Controller
             $syear = $request->get('syear');            
         }
         // db::enableQueryLog();
-        $examName =DB::table('result_create_exam')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear,'standard_id'=>$standard_id,'term_id'=>$term_id])
+        $examName =DB::table('result_create_exam')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear,'standard_id'=>$standard_id])
+        ->when($term_id!='', function ($q) use ($term_id) {
+            $q->where('term_id', $term_id);
+        })
         ->when(isset($request->title),function($q) use($request){
             $q->where('title',$request->title);
         })
-        ->groupBy('title')->get()->toArray();
+        ->groupBy('title')->orderBy('sort_order')->get()->toArray();
         // dd(db::getQueryLog($examName));
         return $examName;
     }
@@ -320,8 +339,11 @@ class classwiseGradeReportController extends Controller
             })
             ->join('result_create_exam as rc', function ($join) use ($syear, $term_id) {
                 $join->whereRaw("rc.id = rm.exam_id AND rc.sub_institute_id = rm.sub_institute_id
-    AND rc.standard_id = se.standard_id AND rc.syear = '" . $syear . "' AND rc.term_id = '" . $term_id . "'");
-            })
+                AND rc.standard_id = se.standard_id AND rc.syear = '" . $syear . "'")
+                ->when($term_id!='', function ($q) use ($term_id) {
+                                $q->where('rc.term_id', $term_id);
+                        });
+                     })
             ->selectRaw("s.id AS student_id,se.roll_no,concat_ws(' ',s.first_name,s.middle_name,s.last_name) as student_name,
     SUM(IFNULL(rm.points,0)) AS obtainedMarks,SUM(IFNULL(rc.points,0)) AS totalMarks,
     ((SUM(IFNULL(rm.points,0))/ SUM(IFNULL(rc.points,0)))*100) AS percentage,COUNT(if(((IFNULL(rm.points,0)/rc.points)*100)

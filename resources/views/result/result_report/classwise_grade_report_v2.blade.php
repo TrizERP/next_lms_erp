@@ -127,6 +127,7 @@
                             <td>
                                 @php
                                 $obt_mark=0;
+                                $display_points ='';
                                 if(isset($all_data['examData'][$ev][$value->subject_name]->obtained_points)){
                                     $obt_mark = $all_data['examData'][$ev][$value->subject_name]->obtained_points;
                                     if(is_numeric($obt_mark)){
@@ -144,10 +145,12 @@
 
                                 if(isset($all_data['examData']['Grand Total'][$value->subject_name]) && $ev=='Grand Total'){
                                     $obt_mark = $all_data['examData'][$ev][$value->subject_name];
+                                    $display_points = ($all_data['examData'][$ev][$value->subject_name]>0) ? $all_data['examData'][$ev][$value->subject_name] : '';
                                     $examObt +=$obt_mark;
                                 }
                                 if(isset($all_data['examData']['Average'][$value->subject_name]) && $ev=='Average'){
                                     $obt_mark = ($all_data['examData']['Average'][$value->subject_name] > 0) ? number_format(($all_data['examData'][$ev][$value->subject_name] * $all_data['examData']['Grand Total'][$value->subject_name]) / 100,2) : 0;
+                                    $display_points = ($obt_mark>0) ? $obt_mark : '';
                                     $examObt +=$obt_mark;
                                     $examTotal += $all_data['examData']['Average'][$value->subject_name];
                                 }
@@ -160,8 +163,12 @@
                                     $obt_mark = '<b>'.$obt_mark.'</b>';
                                 }
 
+                                if(isset($all_data['examData'][$ev][$value->subject_name]->display_points)){
+                                    $display_points =$all_data['examData'][$ev][$value->subject_name]->display_points;
+                                }
+
                                 @endphp
-                                {!! $obt_mark !!}
+                                {!! $display_points !!}
                             </td>
                             @endforeach
                             @php

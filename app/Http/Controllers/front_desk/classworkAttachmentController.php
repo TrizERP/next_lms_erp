@@ -205,10 +205,10 @@ class classworkAttachmentController extends Controller
             $controller = new AJAXController();
             $stdData =$controller->lmsDataApi($reqstd)->getData(true);
             $DivdData =$controller->lmsDataApi($reqdiv)->getData(true);
-            $gradeId = isset($stdData[0]) ? $stdData[0]['grade_id'] : '';
-            $stdId = isset($stdData[0]) ? $stdData[0]['id'] : '';
-            $divId = isset($DivdData[0]) ? $DivdData[0]['id'] : '';
-                    echo "<pre>";print_r([$gradeId,$stdId,$divId]);
+            $gradeId = (isset($stdData[0]) && isset($stdData[0]['grade_id'])) ? $stdData[0]['grade_id'] : '';
+            $stdId = (isset($stdData[0]) && isset($stdData[0]['id'])) ? $stdData[0]['id'] : '';
+            $divId = (isset($DivdData[0])  && isset($DivdData[0]['id']))? $DivdData[0]['id'] : '';
+                    // echo "<pre>";print_r([$stdData,$stdId,$divId]);exit;
             $studentData =  SearchStudent($gradeId, $stdId, $divId, $sub_institute_id,$syear, $roll_no);
             // echo "<pre>";print_r($studentData);exit;
             // get studentData 

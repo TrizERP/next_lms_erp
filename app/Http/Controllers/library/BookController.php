@@ -488,6 +488,7 @@ return DataTables::of($books)
                     ->where('sub_institute_id', $sub_institute_id)
                     ->whereNull('deleted_at')
                     ->first();
+                    
                 if (!isset($request->id) && !$checkBookExists && !isset($checkBookExists->id)) {
                     $createBook->save();
                     $lastInsertedBookId = $createBook->id;
