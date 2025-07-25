@@ -172,6 +172,9 @@
 </body>
 </html>
 <!-- members barcode  -->
+
+
+
 @else 
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN""http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
@@ -204,27 +207,28 @@
         }
 
         table {
-            width: 100%;
+            width: 88%;
             border-collapse: collapse;
-            margin: 45px 0px 0px 5px; /*top right bottom left; R*/
+            margin: 50px 0px 0px 10px; /*top right bottom left; R*/
             padding: 0;
         }
 
         tr {
             page-break-inside: avoid;
         }
-
+        /* space between barcodes  */
         td {
             text-align: center;
-            vertical-align: top;
-            padding: 7px 0px 0px 0px;/*top right bottom left; R*/
+            /* vertical-align: top; */
+            padding: 3px 10px;/*top-bottom and left-right*/
         }
-
+        /* for text under barcode  */
         .labelStyle {
             width: 35mm;
             height: 19mm;
             text-align: center;
-            margin: 0;/*top right bottom left;*/
+            margin-top:0.6mm;/*top right bottom left;*/
+            margin-right:0.3mm;
             padding: 0;
             display: inline-block;
             box-sizing: border-box;
