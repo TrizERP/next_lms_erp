@@ -319,7 +319,7 @@ class donationController extends Controller
             $recHtml .= '</tr>';
 
              $recHtml .= ' <tr>
-            <td colspan="3" class="padding" style="font-size:12px !important;"><span>Has been Thanksfully Received by Shri Swaminarayan Mission
+            <td colspan="3" class="padding" style="font-size:14px !important;"><span>Has been Thanksfully Received by Shri Swaminarayan Mission
             <br><br>
             Income Tax Exemtion U/S 80G(5) No.AAAA53328NF20218/Tech/80G(5)/(05/1)
                 2008-09.<br>Dt.31-05-2021 Valid from 01/04/2021 to 31/03/2025 to and onwards</span></td>

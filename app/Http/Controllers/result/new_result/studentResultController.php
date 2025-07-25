@@ -2570,14 +2570,14 @@ class studentResultController extends Controller
     {
         $syear = session()->get('syear');
         $sub_institute_id = session()->get('sub_institute_id');
-        $tot_col =0;
+        $tot_col =$result_remark =0;
         $extra_term = $extra_exam = "1=1";
         $colspan_yearly=2;
         if ($format != "yearly") {
             $extra_term = "term_id = " . $format;
             $extra_exam = "rce.term_id = " . $format;
             $colspan_yearly=2;   
-            $tot_col =1;                     
+            $tot_col=$result_remark =1;                     
         }
         // get term_name 
         $term_name = DB::table('academic_year')->whereRaw($extra_term)->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->get()->toArray();
@@ -2825,19 +2825,22 @@ $overall_total = $overall_total / 2;
                     //START RAJESH HIDE BELOW CONDITION - Not know but give solution 20-03-2025
                     //if(isset($get_remark->remark) && $get_remark->remark!=''){
                         $next_std_name = DB::table('standard')->where('id',$get_next_std->next_standard_id)->first();
-                            $next_std =$next_std_name->short_name;
+                        $next_std = isset($next_std_name->short_name) ? $next_std_name->short_name : '';
                     /*    }else{
                             $next_std ='';
                         }
                     */
                     //END RAJESH HIDE BELOW CONDITION - Not know but give solution 20-03-2025
-
-                    if(isset($get_remark->remark)){
-                        $result = str_replace('|','',$get_remark->remark);
-                    }else if(in_array('Promoted',$pass_fail)){
-                        $result='Promoted to Grade : '.$next_std;
+                    if($result_remark==0){
+                        if(isset($get_remark->remark)){
+                            $result = '<b>Result : </b>'.str_replace('|','',$get_remark->remark);
+                        }else if(in_array('Promoted',$pass_fail)){
+                            $result='<b>Result : </b>Promoted to Grade : '.$next_std;
+                        }else{
+                            $result ='<b>Result : </b>Passed & Promoted to Grade : '.$next_std;
+                        }
                     }else{
-                        $result ='Passed & Promoted to Grade : '.$next_std;
+                        $result ='';
                     }
 //End Result Remark added by rajesh           
 

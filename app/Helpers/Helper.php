@@ -1200,7 +1200,9 @@ if (!function_exists('ClassTeacherSearch')) {
                         $q->whereRaw('1 != 1');
                     }
                 }
-            })->get()->toArray();
+            })
+            ->orderByRaw('s.sort_order,d.name') // by uma 2025-07-24
+            ->get()->toArray();
 
         $returnHtml = '<select name="standard_division" class="form-control" id="standard_division" required>';
         $returnHtml .= '<option value=""> Select Standard Division </option>';

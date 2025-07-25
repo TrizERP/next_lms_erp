@@ -127,7 +127,7 @@
                             <th style="text-align:center;"><b>STD.</b></th>
                             @if($data['selPaymentMode']!='CASH')
                             <th><b>BANK NAME</b></th>
-                            <th style="text-align:center;"><b>CHEQUE NO.</b></th>
+                            <th style="text-align:center;" title="CHEQUE NO./RRF NO."><b>CHEQUE NO./Ref No.</b></th>
                             @endif
                             <!-- <th><b>RECIEVED BY</b></th> -->
                             <th style="text-align:center;"><b>REMARKS</b></th>
