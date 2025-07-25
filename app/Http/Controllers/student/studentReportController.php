@@ -205,6 +205,11 @@ class studentReportController extends Controller
             ->leftJoin('subject', 'student_optional_subject.subject_id', '=', 'subject.id')
             ->leftJoin('transport_school_shift', 'transport_vehicle.school_shift', '=', 'transport_school_shift.id')
             ->leftJoin('tblstudent_bank_detail', 'tblstudent_bank_detail.student_id', '=', 'tblstudent.id')
+            ->leftJoin('tblstudent_tc_details', function($join) use($syear,$sub_institute_id){
+                $join->on('tblstudent_tc_details.student_id', '=', 'tblstudent.id')
+                    ->where('tblstudent_tc_details.syear', $syear)
+                    ->where('tblstudent_tc_details.sub_institute_id', $sub_institute_id);
+            })// adddd on 25-07-2025 by uma for conflict with tc details
             ->where($extraSearchArray)
             ->when($request->grade,function($q) use($request){
                 $q->where('tblstudent_enrollment.grade_id',$request->grade);
