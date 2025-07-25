@@ -138,7 +138,8 @@ class HrmsLeaveController extends Controller
         if($emp_id==''){
             foreach($leave_type_ids as $key=>$value){
                 // check alread exists or not 
-                $check = DB::table('hrms_leave_allocation')->where('sub_institute_id',$sub_institute_id)->where(['department_id'=>$department_ids,'year'=>$year,'leave_type_id'=>$value])->first();
+                $check = DB::table('hrms_leave_allocation')->where('sub_institute_id',$sub_institute_id)->where(['department_id'=>$department_ids,'year'=>$year,'leave_type_id'=>$value])->whereNull('employee_id')->first(); // added where null condition on 25-07-2025
+                // return $check;
                 if(empty($check)){
                     $i++;
                     $insert = DB::table('hrms_leave_allocation')->insert([

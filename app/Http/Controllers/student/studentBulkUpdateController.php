@@ -324,13 +324,16 @@ class studentBulkUpdateController extends Controller
                         'sub_institute_id'=>$sub_institute_id,
                     ]);
                     $leaveFunction = json_decode($controller->leaveSummaryReportShow($request2),true);
-                    // if($allocateValue->department_id==20){
-                    //     echo "<pre>";print_r($allocateValue);exit;
+                    // if($allocateValue->employee_id==73){
+                    //     echo "here=<pre>";print_r($leaveFunction);
                     // }
                     if(isset($leaveFunction) && !empty($leaveFunction) && isset($leaveFunction['new_data']['Earned Leave'][$allocateValue->employee_id])){
                         $leaveSpend = $leaveFunction['new_data']['Earned Leave'][$allocateValue->employee_id];
-                        $mainLeave = ($allocateValue->value - $leaveSpend);
+                        $opLeave = ($leaveFunction['op_data']['Earned Leave'][$allocateValue->employee_id]) ? $leaveFunction['op_data']['Earned Leave'][$allocateValue->employee_id] : 0;  // added on 25-07-2025
+                        // $mainLeave = ($allocateValue->value - $leaveSpend); // commented on 25-07-2025
+                        $mainLeave = ($opLeave>0 && $leaveSpend < $opLeave) ? ($opLeave - $leaveSpend) : ($allocateValue->value - $leaveSpend); // added on 25-07-2025
                         if($mainLeave>0){
+                            // echo "if emp-".$allocateValue->employee_id."<pre>";print_r([$allocateValue->employee_id,$mainLeave]);
                             DB::table('hrms_leave_allocation')->insert([
                                 'employee_id'=>$allocateValue->employee_id,
                                 'department_id'=>$allocateValue->department_id,
@@ -346,6 +349,7 @@ class studentBulkUpdateController extends Controller
                     // added on 01-07-2025 for if no leave taken then insert all value same
                     else if(!empty($leaveFunction) && isset($leaveFunction['op_data']['Earned Leave'])){
                         if($allocateValue->value>0){
+                            // echo "else emp-".$allocateValue->employee_id."<pre>";print_r([$allocateValue->employee_id,$mainLeave]);
                             DB::table('hrms_leave_allocation')->insert([
                                 'employee_id'=>$allocateValue->employee_id,
                                 'department_id'=>$allocateValue->department_id,
@@ -359,7 +363,8 @@ class studentBulkUpdateController extends Controller
                     }
                 }
             }
-             $res['status'] = "1";
+            // exit;
+            $res['status'] = "1";
             $res['message'] = "Data Rollover successfully!.";
             // echo "<pre>";print_r($getLeaveAllocation);exit;
         }
