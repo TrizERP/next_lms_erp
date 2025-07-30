@@ -63,6 +63,7 @@
 											$i=1;
 											$remarks = [
 												'Passed & Promoted',
+												'Promoted',
 												'Promoted with condition of improvement',
 												'Detained in class 9',
 												'*Passed with grace marks',

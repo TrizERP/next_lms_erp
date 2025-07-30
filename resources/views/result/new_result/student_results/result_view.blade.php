@@ -64,38 +64,34 @@ $student_id_arr = implode(",",array_values($data['students_ids']));
 </form>
 
 @include('includes.footerJs') 
-<script type="text/javascript">
-
-   function printMob(divName) {
-    var studentData = @php json_encode($data['all_stud_html']);@enphp;
-    // Loop through each student ID and associated HTML
+<script>
+function printMob(divName) {
+    var studentData = @json($data['all_stud_html']);
     for (var studentId in studentData) {
         if (studentData.hasOwnProperty(studentId)) {
             var html = studentData[studentId];
-       		var stu_id = studentId;
+            var stu_id = studentId;
             var ele_id = html;
-            // result_html = document.getElementById(stu_id).innerHTML;
             var result_html = document.getElementById(stu_id).outerHTML;       
-            result_html = result_html.replaceAll("'","\"");
+            result_html = result_html.replaceAll("'", "\"");
             $("#savehtml").append("<input type='hidden' name='html_"+stu_id+"' id='"+stu_id+"' value='"+result_html+"'>");
         }
     }
 
-	   var form = $("#savehtml");
-        var url = form.attr('action');
-        $.ajax({
-               type: "POST",
-               url: url,
-               data: form.serialize(), // serializes the form's elements.
-               success: function(data)
-               {
-				   console.log('saved');
-                   alert('Save Successfully');
-			    }
-         });
+    var form = $("#savehtml");
+    var url = form.attr('action');
+    $.ajax({
+           type: "POST",
+           url: url,
+           data: form.serialize(),
+           success: function(data) {
+               console.log('saved');
+               alert('Save Successfully');
+           }
+     });
 }
-
 </script>
+
 <script type="text/javascript">
    $(document).ready(function () {
     // Remove the 'table-hover' class from all tables

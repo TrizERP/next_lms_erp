@@ -481,9 +481,10 @@ class leaveApplicationController extends Controller
                 })
                 ->selectRaw("la.id as leave_app_id,concat_ws(' ',s.first_name,s.middle_name,s.last_name) as student_name,
                     if(s.image = '','',concat('https://".$_SERVER['SERVER_NAME']."/storage/student/',s.image)) as student_image,
-                    st.name as std_name,la.title,la.message,if(files = '','',concat('https://".$_SERVER['SERVER_NAME']."/storage/leave_application/',files))
+                    CONCAT('(',di.name,')',st.name) as std_name,la.title,la.message,if(files = '','',concat('https://".$_SERVER['SERVER_NAME']."/storage/leave_application/',files))
                     as file_name,la.apply_date,la.reply,la.reply_on,concat_ws(' ',u.first_name,u.middle_name,u.last_name) as reply_by,la.`status`")
                 ->where("la.syear", "=", $syear)
+                ->where("ct.syear", "=", $syear)
                 ->where("la.sub_institute_id", "=", $sub_institute_id)
                 ->where("ct.teacher_id", "=", $teacher_id)
                 ->get()->toarray();

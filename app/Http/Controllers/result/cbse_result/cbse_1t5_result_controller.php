@@ -794,7 +794,7 @@ else
 
             foreach ($reg_bk_off as $key => $val) 
             {
-                if($val->student_quota != '2383') 
+                if($val->student_quota != '2383' && ($val->month_id == '42025' || $val->month_id == '72025')) 
                 //($val->month_id == '42025' || $val->month_id == '72025') && 
                     $total_bf = $total_bf + $val->bkoff;
                 else
