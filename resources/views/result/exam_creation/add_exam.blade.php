@@ -54,6 +54,8 @@
                                             <tr>
                                                 <th>Name</th>
                                                 <th>Marks</th>
+                                                
+                                                <th>App Status</th>
                                                 <th>Sort Order</th>
                                                 <th>Exam Date</th>
                                             </tr>
@@ -68,7 +70,12 @@
                                                 </td>
 
                                                 <input type="hidden" name="marks_type" class="form-control" value="MARKS">
-                                                <input type="hidden" name="report_card_status" class="form-control" value="Y">
+                                                <td>
+                                                    <select name="report_card_status" class="form-control">
+                                                        <option value="Y" selected>Yes</option>
+                                                        <option value="N">No</option>
+                                                    </select>
+                                                </td>
 
                                                 <td>
                                                     <input type="text" name="sort_order[]" name="sort_order[]" class="form-control" />
