@@ -84,6 +84,16 @@
                             <input type="email" id='email'  name="email" class="form-control">
                         </div>
                         <div class="col-md-3 form-group">
+                            <label>Admission Standard </label>
+                            <select id='admission_standard' name="admission_standard" required class="form-control" onchange="display_link(this.value);add_data();">
+                            <option value=""> Select Standard </option>
+                                @foreach($data['standard'] as $key => $value)
+                                    <option value="{{$value['id']}}"> {{$value['name']}} </option>
+                                @endforeach
+                            </select>
+                            <input type="hidden" name="hidden_std_id" id="hidden_std_id" value="">
+                        </div>
+                        <div class="col-md-3 form-group">
                             <label>Date of Birth </label>
                             <input type="text" onchange="calculate_age(this.value);" id='date_of_birth' required name="date_of_birth" class="form-control mydatepicker" autocomplete="off">
                         </div>
@@ -221,14 +231,7 @@
                         @endif
 
                         <div class="col-md-3 form-group">
-                            <label>Admission Standard </label>
-                            <select id='admission_standard' name="admission_standard" required class="form-control" onchange="display_link(this.value);add_data();">
-                            <option value=""> Select Standard </option>
-                                @foreach($data['standard'] as $key => $value)
-                                    <option value="{{$value['id']}}"> {{$value['name']}} </option>
-                                @endforeach
-                            </select>
-                            <input type="hidden" name="hidden_std_id" id="hidden_std_id" value="">
+                            
                         </div>
 
                         @if (in_array(Session::get('sub_institute_id'), ['201','202','203','204','324','326','327']))
