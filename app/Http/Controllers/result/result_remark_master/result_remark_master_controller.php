@@ -50,7 +50,7 @@ class result_remark_master_controller extends Controller
             ]) */
             //->join('division', 'division.id', '=', 'result_master_confrigration.division_id')
             // ->select('result_remark_masters.*', 'academic_year.title as term_name')
-            ->where(['result_remark_masters.sub_institute_id' => $sub_institute_id,'result_remark_masters.syear' => $syear])
+            ->where(['result_remark_masters.sub_institute_id' => $sub_institute_id])//,'result_remark_masters.syear' => $syear
             ->get()->toArray();
     }
 

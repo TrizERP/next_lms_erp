@@ -134,7 +134,12 @@ class classworkAttachmentController extends Controller
      */
     public function store(Request $request)
     {
-        // echo "<pre>";print_r($request->all());exit;
+        
+    // Override PHP INI settings for this request
+    ini_set('max_file_uploads', 5000); // number of files
+    ini_set('upload_max_filesize', '512M'); // each file max size
+    ini_set('post_max_size', '2048M'); // total size
+
         $type = $request->input('type');
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
@@ -260,51 +265,51 @@ class classworkAttachmentController extends Controller
                  $pushMessage = $fileTitle." has been added in Classwork for date : ".date('d-m-Y',
                                                 strtotime(now()));
 
-                                        $app_notification_content = [
-                                            'NOTIFICATION_TYPE'        => 'Classwork',
-                                            'NOTIFICATION_DATE'        => now(),
-                                            'STUDENT_ID'               => $studentVal['id'],
-                                            'NOTIFICATION_DESCRIPTION' => $pushMessage,
-                                            'STATUS'                   => 0,
-                                            'SUB_INSTITUTE_ID'         => $sub_institute_id,
-                                            'SYEAR'                    => $syear,
-                                            'SCREEN_NAME'              => 'Classwork',
-                                            'CREATED_BY'               => $user_id,
-                                            'CREATED_IP'               => $_SERVER['REMOTE_ADDR'],
-                                        ];
+                $app_notification_content = [
+                    'NOTIFICATION_TYPE'        => 'Classwork',
+                    'NOTIFICATION_DATE'        => now(),
+                    'STUDENT_ID'               => $studentVal['id'],
+                    'NOTIFICATION_DESCRIPTION' => $pushMessage,
+                    'STATUS'                   => 0,
+                    'SUB_INSTITUTE_ID'         => $sub_institute_id,
+                    'SYEAR'                    => $syear,
+                    'SCREEN_NAME'              => 'Classwork',
+                    'CREATED_BY'               => $user_id,
+                    'CREATED_IP'               => $_SERVER['REMOTE_ADDR'],
+                ];
 
-                                        $gcm_data = DB::table("gcm_users")
-                                            ->where("mobile_no", "=", $studentVal['mobile'])
-                                            ->where("sub_institute_id", "=", $sub_institute_id)
-                                            ->groupBy("gcm_regid")
-                                            ->get()->toArray();
+                $gcm_data = DB::table("gcm_users")
+                    ->where("mobile_no", "=", $studentVal['mobile'])
+                    ->where("sub_institute_id", "=", $sub_institute_id)
+                    ->groupBy("gcm_regid")
+                    ->get()->toArray();
 
-                                        $gcmRegIds = [];
-                                        if (count($gcm_data) > 0) {
-                                            foreach ($gcm_data as $key1 => $val1) {
-                                                array_push($gcmRegIds, $val1->gcm_regid);
-                                            }
-                                        }
-                                        sendNotification($app_notification_content);
+                $gcmRegIds = [];
+                if (count($gcm_data) > 0) {
+                    foreach ($gcm_data as $key1 => $val1) {
+                        array_push($gcmRegIds, $val1->gcm_regid);
+                    }
+                }
+                sendNotification($app_notification_content);
 
-                                        $bunch_arr = array_chunk($gcmRegIds, 1000);
-                                        if (! empty($bunch_arr)) {
-                                            foreach ($bunch_arr as $val) {
-                                                if (isset($val, $pushMessage)) {
-                                                    $noti_type = 'Classwork';
-                                                    $message = [
-                                                        'body'    => $pushMessage, 'TYPE' => $noti_type,
-                                                        'USER_ID' => $studentVal['id'], 'title' => $schoolName.' - '.$noti_type,
-                                                        'image'   => $schoolLogo,
-                                                    ];
-                                                    /*
-                                                    Rajesh: stop push notification for photo-video gallery
-                                                    $pushStatus = send_FCM_Notification($val, $message, $sub_institute_id);
-                                                    */
-                                                    // sendNotification($app_notification_content);
-                                                }
-                                            }
-                                        }
+                $bunch_arr = array_chunk($gcmRegIds, 1000);
+                if (! empty($bunch_arr)) {
+                    foreach ($bunch_arr as $val) {
+                        if (isset($val, $pushMessage)) {
+                            $noti_type = 'Classwork';
+                            $message = [
+                                'body'    => $pushMessage, 'TYPE' => $noti_type,
+                                'USER_ID' => $studentVal['id'], 'title' => $schoolName.' - '.$noti_type,
+                                'image'   => $schoolLogo,
+                            ];
+                            /*
+                            Rajesh: stop push notification for photo-video gallery
+                            $pushStatus = send_FCM_Notification($val, $message, $sub_institute_id);
+                            */
+                            // sendNotification($app_notification_content);
+                        }
+                    }
+                }
                 // send notification end 
             }
             
