@@ -73,8 +73,8 @@ class student_attendance_master_controller extends Controller {
         );
         $where_result_remark = array(
             //'marking_period_id' => $_REQUEST["term"],
-            'sub_institute_id' => session()->get('sub_institute_id'),
-            'syear' => session()->get('syear')
+            'sub_institute_id' => session()->get('sub_institute_id')
+            //'syear' => session()->get('syear')
         );
         $responce_arr['term_id'] = $_REQUEST["term"];
         $responce_arr['standard'] = $_REQUEST["standard"];
