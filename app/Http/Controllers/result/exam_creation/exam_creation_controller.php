@@ -96,94 +96,83 @@ class exam_creation_controller extends Controller
      * @throws NotFoundExceptionInterface
      * @return Response
      */
-    public function store(Request $request)
-    {
-        $eroor = false;
-        $con_points = "";
-        $error_reson = "";
+   public function store(Request $request)
+{
+    $error = false;
+    $error_reason = "";
+    $error_co_point = false;
 
+    // Validate inputs (optional but recommended)
+    $request->validate([
+        'subject' => 'required|array',
+        'title' => 'required|array',
+        'app_disp_status' => 'required|array',
+        'points' => 'nullable|array',
+        'exam_date' => 'nullable|array',
+    ]);
+
+    // Check for duplicate exams
+    foreach ($request->get('subject') as $sub_id => $sub_val) 
+    {
+        foreach ($request->get('title') as $key => $value) 
+        {
+            $data = exam_creation::where([
+                'syear'            => session()->get('syear'),
+                'sub_institute_id' => session()->get('sub_institute_id'),
+                'term_id'          => $request->get('term'),
+                'exam_id'          => $request->get('exam'),
+                'standard_id'      => $request->get('standard'),
+                'subject_id'       => $sub_val,
+                'title'            => $value,
+            ])->exists();
+
+            if ($data) {
+                $error = true;
+                $error_reason = "Given Standard Already Has Exams.";
+                break 2; // Exit both loops if duplicate found
+            }
+        }
+    }
+
+    // Save data if no duplicates
+    if (!$error) 
+    {
         foreach ($request->get('subject') as $sub_id => $sub_val) 
         {
             foreach ($request->get('title') as $key => $value) 
             {
-                $data = exam_creation::where([
-                    'syear'            => session()->get('syear'),
-                    'sub_institute_id' => session()->get('sub_institute_id'),
-                    'term_id'          => $request->get('term'),
-                    'exam_id'          => $request->get('exam'),
-                    'standard_id'      => $request->get('standard'),
-                    'subject_id'       => $sub_val,
-                    'title'            => $value,
-                ])->get()->toArray();
-
-                if (count($data)) {
-                    $eroor = true;
-                    $error_reson = "Given Standard Have Exams.";
-                } 
-                else 
-                {
-                    $data = exam_creation::where([
-                        'syear'            => session()->get('syear'),
-                        'sub_institute_id' => session()->get('sub_institute_id'),
-                        'term_id'          => $request->get('term'),
-                        'exam_id'          => $request->get('exam'),
-                        'standard_id'      => $request->get('standard'),
-                        'subject_id'       => $sub_val,
-                    ])->get()->toArray();
-                }
+                exam_creation::create([
+                    'syear'              => session()->get('syear'),
+                    'sub_institute_id'   => session()->get('sub_institute_id'),
+                    'term_id'            => $request->get('term'),
+                    'medium'             => $request->get('medium'),
+                    'exam_id'            => $request->get('exam'),
+                    'standard_id'        => $request->get('standard'),
+                    'subject_id'         => $sub_val,
+                    'title'              => $value,
+                    'points'             => $request->get('points')[$key] ?? 0,
+                    'con_point'          => $request->get('con_point'),
+                    'marks_type'         => $request->get('marks_type'),
+                    'report_card_status' => $request->get('report_card_status'),
+                    'app_disp_status'    => $request->get('app_disp_status')[$key] ?? 'Y', // Fix: Access array index
+                    'sort_order'         => $request->get('sort_order')[$key] ?? 0,
+                    'exam_date'          => isset($request->get('exam_date')[$key]) 
+                        ? date("Y-m-d", strtotime($request->get('exam_date')[$key])) 
+                        : null,
+                ]);
             }
         }
-
-        if ($eroor == false) {
-            $sort = $request->get('sort_order');
-            
-            $error_co_point = false;
-
-            foreach ($request->get('subject') as $sub_id => $sub_val) 
-            {
-                foreach ($request->get('title') as $key => $value) 
-                {
-                    if ($error_co_point == false) 
-                    {
-                        $data = new exam_creation([
-                            'syear'              => session()->get('syear'),
-                            'sub_institute_id'   => session()->get('sub_institute_id'),
-                            'term_id'            => $request->get('term'),
-                            'medium'             => $request->get('medium'),
-                            'exam_id'            => $request->get('exam'),
-                            'standard_id'        => $request->get('standard'),
-                            'app_disp_status'    => $request->get('app_disp_status'),
-                            'subject_id'         => $sub_val,
-                            'title'              => $value,
-                            'points'             => $request->get('points')[$key] ?? 0,
-                            'con_point'          => $request->get('con_point'),
-                            'marks_type'         => $request->get('marks_type'),
-                            'report_card_status' => $request->get('report_card_status'),
-                            'sort_order'         => $sort[$key] ?? 0,
-                            'exam_date'          => isset($request->get('exam_date')[$key]) ? date("Y-m-d", strtotime($request->get('exam_date')[$key])) : null,
-                        ]);
-                        $data->save();
-                    }
-                }
-            }
-        }
-        if ($eroor || $error_co_point) {
-            $res = [
-                "status_code" => 0,
-                "message"     => $error_reson,
-            ];
-        } else {
-            $res = [
-                "status_code" => 1,
-                "message"     => "Data Saved",
-            ];
-        }
-
-        $type = $request->input('type');
-
-        return is_mobile($type, "exam_creation.index", $res, "redirect");
     }
 
+    // Return response
+    $res = [
+        "status_code" => $error ? 0 : 1,
+        "message"     => $error ? $error_reason : "Data Saved",
+    ];
+
+    $type = $request->input('type');
+    return is_mobile($type, "exam_creation.index", $res, "redirect");
+}
     /**
      * Display the specified resource.
      *
@@ -229,6 +218,7 @@ class exam_creation_controller extends Controller
             ->pluck("ExamTitle", "Id")->toArray();
         $data['exams'] = $exams;
         $data['report_card_status_arr']=["Y"=>"Yes","N"=>"No"];
+        $data['app_disp_status_arr'] = ["Y" => "Yes", "N" => "No"];
 
         return is_mobile($type, "result/exam_creation/edit_exam", $data, "view");
     }
