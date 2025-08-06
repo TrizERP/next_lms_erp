@@ -73,11 +73,11 @@
                                             <input type="text" name="exam_date" value="{{ $data['exam_date'] }}" class="form-control mydatepicker" autocomplete="off" />
                                         </td>
                                         <td>
-                                            <select name="app_status" class="form-control">
-                                                @foreach((array) $data['app_disp_status'] as $key => $value)
-                                                <option value="{{ $key }}" @if(isset($data['app_status']) && $data['app_status'] == $key) selected @endif>{{ $value }}</option>
-                                                @endforeach
-                                            </select>
+                                            <select name="app_disp_status" id="app_disp_status" class="form-control">
+                                @foreach($data['app_disp_status_arr'] as $key=>$value)
+                                <option value="{{$key}}" @if(isset($data['app_disp_status']) && $data['app_disp_status']==$key) Selected @endif>{{$value}}</option>
+                                @endforeach
+                            </select>
                                         </td>
                                     </tr>
                                 </tbody>

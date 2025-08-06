@@ -44,8 +44,8 @@
                             </div>
 
                             <input type="hidden" name="con_point" class="form-control" value="0">
+                            <input type="hidden" name="report_card_status" class="form-control" value="Y">
                         
-                            <input type="hidden" name="app_disp_status" value="Y" > 
 
                             <div class="col-md-12 form-group">
                                 <div class="table-responsive">
@@ -58,6 +58,7 @@
                                                 <th>App Status</th>
                                                 <th>Sort Order</th>
                                                 <th>Exam Date</th>
+                                                <th>Add </th>
                                             </tr>
                                         </thead>
                                         <tbody class="addButtonCheckbox">
@@ -71,7 +72,7 @@
 
                                                 <input type="hidden" name="marks_type" class="form-control" value="MARKS">
                                                 <td>
-                                                    <select name="report_card_status" class="form-control">
+                                                    <select name="app_disp_status[]" class="form-control">
                                                         <option value="Y" selected>Yes</option>
                                                         <option value="N">No</option>
                                                     </select>
@@ -213,6 +214,7 @@
         html += '<tbody class="addButtonCheckbox">';
         html += '<td><input type="text" name="title[]" class="form-control" /></td>';
         html += '<td><input type="text" name="points[]" class="form-control" /></td>';
+        html += '<td><select name="app_disp_status[]" class="form-control"><option value="Y" selected>Yes</option><option value="N">No</option></select></td>';
         html += '<td><input type="text" name="sort_order[]" class="form-control" /></td>';
         html += '<td><input type="text" name="exam_date[]" class="form-control mydatepicker" autocomplete="off"/></td>';
         html += '<td><a href="javascript:void(0);" onclick="removeNewRow();" class="btn btn-danger btn-sm mr-2   mb-0"><i class="mdi mdi-minus"></i></a></td>';
