@@ -59,6 +59,8 @@ class userReportController extends Controller
     public function searchUser(Request $request)
     {
         $profile = $request->input("profile");
+        $profileId = $request->input("profileId");
+        $employeeId = $request->input("employeeId");
         $status = $request->input("status");
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
@@ -104,13 +106,19 @@ class userReportController extends Controller
         $extraSearchArray = [];
         $extraSearchArray['tbluser.sub_institute_id'] = $sub_institute_id;
         $extraSearchArray['tbluser.status'] = $status;
-        $extraSearchArray['tbluser.user_profile_id'] = $profile;
+        // $extraSearchArray['tbluser.user_profile_id'] = $profile;
 
         $user_data = tbluserModel::select(DB::raw(strtolower(implode(',', $array))))
             ->join('tbluserprofilemaster', 'tbluser.user_profile_id', '=', 'tbluserprofilemaster.id')
             ->leftJoin('hrms_departments','hrms_departments.id','=','tbluser.department_id')
             ->leftJoin('tbluser_past_education','tbluser_past_education.user_id','=','tbluser.id')
             ->where($extraSearchArray)
+            ->when($request->has('profileId') && is_array($profileId) && !empty($profileId),function($q) use($profileId){
+                $q->whereIn('tbluser.user_profile_id',$profileId);
+            })
+            ->when($request->has('employeeId') && is_array($employeeId) && !empty($employeeId),function($q) use($employeeId){
+                $q->whereIn('tbluser.id',$employeeId);
+            })
             ->get();
             // echo "<pre>";print_r($header);exit;
         
@@ -122,8 +130,11 @@ class userReportController extends Controller
         $res['profiles'] = $tblProfiles;
         $res['profile'] = $profile;
         $res['status'] = $status;
+        $res['profileIds'] = $request->input('profileId');
+        $res['employeeIds'] = $request->input('employeeId');
         $res['dynamicFields']= $request->input('dynamicFields');
-
+        // echo "<pre>";
+        // print_r($res);exit;
         return is_mobile($type, "user/show_user_report", $res, "view");
 
     }

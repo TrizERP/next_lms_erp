@@ -23,8 +23,8 @@
                         @endif
                         <form action="{{ route('show_user_report') }}" method="post">
                             @csrf
-                            <div class="row">
-                                @if(isset($data['profiles']))
+                            <div class="row" style="padding:0px 10px;">
+                                {{-- @if(isset($data['profiles']))
                                     <div class="col-md-3 form-group ml-0">
                                         <label>User</label>
                                         <select name="profile" id="profile" required="required" class="form-control">
@@ -42,7 +42,19 @@
                                             @endforeach
                                         </select>
                                     </div>
-                                @endif
+                                @endif --}}
+                                @php 
+                                    $profileIds = $empIds = '';
+                                    if(isset($data['profileIds']) && !empty($data['profileIds'])){
+                                        $profileIds = $data['profileIds'];
+                                    }
+                                    if(isset($data['employeeIds']) && !empty($data['employeeIds'])){
+                                        $empIds = $data['employeeIds'];
+                                    }
+                                @endphp
+
+                                {!! App\Helpers\userProfileEmployee(3, $profileIds, 'multiple', $empIds, 'multiple') !!}
+
                                 <!-- added on 17-04-24 by uma -->
                                 <div class="col-md-3 form-group ml-0">
                                         <label>Status</label>
@@ -52,7 +64,8 @@
                                         </select>
                                     </div>
                                 <!-- end by uma -->
-
+                                <div class="col-md-12">
+                                <div class="dataDiv" style="padding:10px;max-height:350px;overflow-y:scroll;border:1px solid #ddd;">
                                 @php 
                                     $i=0;
                                  @endphp
@@ -85,7 +98,9 @@
                                           $i++;
                                     @endphp
                                     @endforeach
-                                <div class="col-md-12 form-group">
+                                </div>
+                                </div>
+                                <div class="col-md-12 pt-2 form-group">
                                     <input type="submit" name="submit" value="Search" class="btn btn-success">
                                 </div>
                             </div>
