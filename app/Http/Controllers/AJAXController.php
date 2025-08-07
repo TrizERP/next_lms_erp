@@ -2500,6 +2500,14 @@ class AJAXController extends Controller
                 }
             }
         }
+        // get multiple values
+        if ($request->has('multiple') && is_array($request->multiple)) {
+            foreach ($request->multiple as $column => $value) {
+                if (Schema::hasColumn($table, $column)) {
+                    $query->whereIn($column, explode(',',$value));
+                }
+            }
+        }
 
         // Apply order by if provided
         if ($request->has('order_by') && is_array($request->order_by)) {

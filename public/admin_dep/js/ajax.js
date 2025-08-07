@@ -88,11 +88,11 @@ if ($("#standardS").length != 0) {
             $.ajax({
                 type: "GET",
                 url: "/api/get-subject-list?standard_id=" + standardID,
-                success: function (res) {                    
-                    if (res) {                        
+                success: function (res) {
+                    if (res) {
                         $("#subject").empty();
                         $("#subject").append('<option value="">Select Subject</option>');
-                        $.each(res, function (key, value) {                            
+                        $.each(res, function (key, value) {
                             $("#subject").append('<option value="' + key + '">' + value + '</option>');
                         });
 
@@ -116,11 +116,11 @@ if ($("#prestandard").length != 0) {
             $.ajax({
                 type: "GET",
                 url: "/api/get-subject-list?standard_id=" + standardID,
-                success: function (res) {                    
-                    if (res) {                        
+                success: function (res) {
+                    if (res) {
                         $("#presubject").empty();
                         $("#presubject").append('<option value="">Select Subject</option>');
-                        $.each(res, function (key, value) {                            
+                        $.each(res, function (key, value) {
                             $("#presubject").append('<option value="' + key + '">' + value + '</option>');
                         });
 
@@ -132,7 +132,7 @@ if ($("#prestandard").length != 0) {
             });
         } else {
             $("#presubject").empty();
-            $("#presubject").append('<option value="">Select Subject</option>');           
+            $("#presubject").append('<option value="">Select Subject</option>');
 
             $("#prechapter").empty();
             $("#prechapter").append('<option value="">Select Chapter</option>');
@@ -155,7 +155,7 @@ if ($("#presubject").length != 0) {
                     if (res) {
                         $("#prechapter").empty();
                         $("#prechapter").append('<option value="">Select Chapter</option>');
-                        $.each(res, function (key, value) {                           
+                        $.each(res, function (key, value) {
                             $("#prechapter").append('<option value="' + key + '">' + value + '</option>');
                         });
 
@@ -174,7 +174,7 @@ if ($("#presubject").length != 0) {
 }
 if ($("#prechapter").length != 0) {
     $('#prechapter').on('change', function () {
-        var chapterID = $(this).val();        
+        var chapterID = $(this).val();
         if (chapterID) {
             $.ajax({
                 type: "GET",
@@ -183,7 +183,7 @@ if ($("#prechapter").length != 0) {
                     if (res) {
                         $("#pretopic").empty();
                         $("#pretopic").append('<option value="">Select Topic</option>');
-                        $.each(res, function (key, value) {                           
+                        $.each(res, function (key, value) {
                             $("#pretopic").append('<option value="' + key + '">' + value + '</option>');
                         });
 
@@ -210,11 +210,11 @@ if ($("#poststandard").length != 0) {
             $.ajax({
                 type: "GET",
                 url: "/api/get-subject-list?standard_id=" + standardID,
-                success: function (res) {                    
-                    if (res) {                        
+                success: function (res) {
+                    if (res) {
                         $("#postsubject").empty();
                         $("#postsubject").append('<option value="">Select Subject</option>');
-                        $.each(res, function (key, value) {                            
+                        $.each(res, function (key, value) {
                             $("#postsubject").append('<option value="' + key + '">' + value + '</option>');
                         });
 
@@ -249,7 +249,7 @@ if ($("#postsubject").length != 0) {
                     if (res) {
                         $("#postchapter").empty();
                         $("#postchapter").append('<option value="">Select Chapter</option>');
-                        $.each(res, function (key, value) {                           
+                        $.each(res, function (key, value) {
                             $("#postchapter").append('<option value="' + key + '">' + value + '</option>');
                         });
 
@@ -268,7 +268,7 @@ if ($("#postsubject").length != 0) {
 }
 if ($("#postchapter").length != 0) {
     $('#postchapter').on('change', function () {
-        var chapterID = $(this).val();        
+        var chapterID = $(this).val();
         if (chapterID) {
             $.ajax({
                 type: "GET",
@@ -277,7 +277,7 @@ if ($("#postchapter").length != 0) {
                     if (res) {
                         $("#posttopic").empty();
                         $("#posttopic").append('<option value="">Select Topic</option>');
-                        $.each(res, function (key, value) {                           
+                        $.each(res, function (key, value) {
                             $("#posttopic").append('<option value="' + key + '">' + value + '</option>');
                         });
 
@@ -304,11 +304,11 @@ if ($("#cross-curriculumstandard").length != 0) {
             $.ajax({
                 type: "GET",
                 url: "/api/get-subject-list?standard_id=" + standardID,
-                success: function (res) {                    
-                    if (res) {                        
+                success: function (res) {
+                    if (res) {
                         $("#cross-curriculumsubject").empty();
                         $("#cross-curriculumsubject").append('<option value="">Select Subject</option>');
-                        $.each(res, function (key, value) {                            
+                        $.each(res, function (key, value) {
                             $("#cross-curriculumsubject").append('<option value="' + key + '">' + value + '</option>');
                         });
 
@@ -343,7 +343,7 @@ if ($("#cross-curriculumsubject").length != 0) {
                     if (res) {
                         $("#cross-curriculumchapter").empty();
                         $("#cross-curriculumchapter").append('<option value="">Select Chapter</option>');
-                        $.each(res, function (key, value) {                           
+                        $.each(res, function (key, value) {
                             $("#cross-curriculumchapter").append('<option value="' + key + '">' + value + '</option>');
                         });
 
@@ -362,7 +362,7 @@ if ($("#cross-curriculumsubject").length != 0) {
 }
 if ($("#cross-curriculumchapter").length != 0) {
     $('#cross-curriculumchapter').on('change', function () {
-        var chapterID = $(this).val();        
+        var chapterID = $(this).val();
         if (chapterID) {
             $.ajax({
                 type: "GET",
@@ -371,7 +371,7 @@ if ($("#cross-curriculumchapter").length != 0) {
                     if (res) {
                         $("#cross-curriculumtopic").empty();
                         $("#cross-curriculumtopic").append('<option value="">Select Topic</option>');
-                        $.each(res, function (key, value) {                           
+                        $.each(res, function (key, value) {
                             $("#cross-curriculumtopic").append('<option value="' + key + '">' + value + '</option>');
                         });
 
@@ -393,31 +393,29 @@ if ($("#cross-curriculumchapter").length != 0) {
 
 /* Start Send single Email */
 
-if ($("#ajax_sendEmail").length != 0) 
-{
-    $('#ajax_sendEmail').on('click', function () 
-    {
-        $("#overlay").css("display","block");
+if ($("#ajax_sendEmail").length != 0) {
+    $('#ajax_sendEmail').on('click', function () {
+        $("#overlay").css("display", "block");
         var action = $("#action").val();
         var student_id = $("#student_id").val();
 
-        if(action == 'imprest_ledger_view'){
+        if (action == 'imprest_ledger_view') {
             var receipt_id_html = '';
-        }else{
+        } else {
             var receipt_id_html = $("#receipt_id_html").val();
         }
-    
+
         $.ajax({
-                url: "/ajax_sendEmailFeesReceipt?action="+action+"&student_id="+student_id+"&receipt_id_html="+receipt_id_html,                
-                success: function(result){ 
-                    if(result == 1){
-                        alert('Fees Receipt Mail Sent Successfully.');                       
-                    }
-                    if(result == 2){
-                        alert('Imprest Ledger Mail Sent Successfully.');                       
-                    }
-                    $("#overlay").css("display","none");
+            url: "/ajax_sendEmailFeesReceipt?action=" + action + "&student_id=" + student_id + "&receipt_id_html=" + receipt_id_html,
+            success: function (result) {
+                if (result == 1) {
+                    alert('Fees Receipt Mail Sent Successfully.');
                 }
+                if (result == 2) {
+                    alert('Imprest Ledger Mail Sent Successfully.');
+                }
+                $("#overlay").css("display", "none");
+            }
         });
     });
 }
@@ -425,24 +423,22 @@ if ($("#ajax_sendEmail").length != 0)
 /* End Send single Email */
 
 /* Start Send Bulk Email */
-if ($("#ajax_sendBulkEmail").length != 0) 
-{
-    $('#ajax_sendBulkEmail').on('click', function () 
-    {
-        $("#overlay").css("display","block");
+if ($("#ajax_sendBulkEmail").length != 0) {
+    $('#ajax_sendBulkEmail').on('click', function () {
+        $("#overlay").css("display", "block");
         var inserted_ids = $("#last_inserted_ids").val();
         var action = $("#action").val();
         $.ajax({
-                url: '/ajax_sendBulkEmailFeesReceipt?action='+action+'&inserted_ids='+inserted_ids,                
-                success: function(result){ 
-                    if(result == 1){
-                        alert('Other Fees Receipt Mail Sent Successfully.');
-                    }
-                    if(result == 2){
-                        alert('Fees Circular Mail Sent Successfully.');
-                    }
-                    $("#overlay").css("display","none");
+            url: '/ajax_sendBulkEmailFeesReceipt?action=' + action + '&inserted_ids=' + inserted_ids,
+            success: function (result) {
+                if (result == 1) {
+                    alert('Other Fees Receipt Mail Sent Successfully.');
                 }
+                if (result == 2) {
+                    alert('Fees Circular Mail Sent Successfully.');
+                }
+                $("#overlay").css("display", "none");
+            }
         });
     });
 }
@@ -450,22 +446,20 @@ if ($("#ajax_sendBulkEmail").length != 0)
 
 /* Start Open Fees Receipt PDF instead of print receipt */
 
-if ($("#ajax_PDF").length != 0) 
-{
-    $('#ajax_PDF').on('click', function () 
-    {
-        $("#overlay").css("display","block");
+if ($("#ajax_PDF").length != 0) {
+    $('#ajax_PDF').on('click', function () {
+        $("#overlay").css("display", "block");
         var action = $("#action").val();
         var student_id = $("#student_id").val();
         var receipt_id_html = $("#receipt_id_html").val();
         var paper_size = $("#paper_size").val();
-    
+
         $.ajax({
-                url: "/ajax_PDF_FeesReceipt?action="+action+"&student_id="+student_id+"&receipt_id_html="+receipt_id_html+"&paper_size="+paper_size,                
-                success: function(result){ 
-                    window.open(result, '_blank');
-                    $("#overlay").css("display","none");
-                }
+            url: "/ajax_PDF_FeesReceipt?action=" + action + "&student_id=" + student_id + "&receipt_id_html=" + receipt_id_html + "&paper_size=" + paper_size,
+            success: function (result) {
+                window.open(result, '_blank');
+                $("#overlay").css("display", "none");
+            }
         });
     });
 }
@@ -473,66 +467,96 @@ if ($("#ajax_PDF").length != 0)
 /* End Open Fees Receipt PDF instead of print receipt */
 
 /* Start Open Other Fees Receipt Bulk PDF instead of print receipt */
-if ($("#ajax_PDFBulk").length != 0) 
-{
-    $('#ajax_PDFBulk').on('click', function () 
-    {
-        $("#overlay").css("display","block");
+if ($("#ajax_PDFBulk").length != 0) {
+    $('#ajax_PDFBulk').on('click', function () {
+        $("#overlay").css("display", "block");
         var inserted_ids = $("#last_inserted_ids").val();
         var action = $("#action").val();
         $.ajax({
-                url: '/ajax_PDF_Bulk_OtherFeesReceipt?action='+action+'&inserted_ids='+inserted_ids,                
-                success: function(result){ 
-                    window.open(result, '_blank');
-                    $("#overlay").css("display","none");
-                }
+            url: '/ajax_PDF_Bulk_OtherFeesReceipt?action=' + action + '&inserted_ids=' + inserted_ids,
+            success: function (result) {
+                window.open(result, '_blank');
+                $("#overlay").css("display", "none");
+            }
         });
     });
 }
 /* End Open Other Fees Receipt Bulk PDF instead of print receipt */
 
 /* Start Open Student Certificate PDF instead of print receipt */
-if ($("#ajax_PDF_Certificate").length != 0) 
-{
-    $('#ajax_PDF_Certificate').on('click', function () 
-    {
+if ($("#ajax_PDF_Certificate").length != 0) {
+    $('#ajax_PDF_Certificate').on('click', function () {
         var confirmation = confirm("Are you sure you want to submit?");
-        
+
         // If the user confirms, return true to proceed with form submission
         if (!confirmation) {
             return false;
-        } else{
-        $("#overlay").css("display","block");
-        var action = $("#action").val();
-        var insert_student_ids = $("#insert_ids").val();
-        var template_name = $("#template_name").val();
-        var certificate_reason = $("#certificate_reason").val();
-        var path = '/ajax_saveData?insert_student_ids='+insert_student_ids+'&template='+template_name+'&certificate_reason='+certificate_reason;
-        $.ajax({
+        } else {
+            $("#overlay").css("display", "block");
+            var action = $("#action").val();
+            var insert_student_ids = $("#insert_ids").val();
+            var template_name = $("#template_name").val();
+            var certificate_reason = $("#certificate_reason").val();
+            var path = '/ajax_saveData?insert_student_ids=' + insert_student_ids + '&template=' + template_name + '&certificate_reason=' + certificate_reason;
+            $.ajax({
                 url: path,
-                success: function(response){
+                success: function (response) {
                     //added if condition 22-03-2025
-                    if(response.status_code===0){
+                    if (response.status_code === 0) {
                         alert(response.message);
-                        window.location.href = "/student/student_certificate?status_code=0&message="+response.message;
+                        window.location.href = "/student/student_certificate?status_code=0&message=" + response.message;
                     }
-                    
-                    else{
+
+                    else {
                         $.ajax({
-                                    url: '/ajax_PDF_Bulk_OtherFeesReceipt?action='+action+'&inserted_ids='+response.certificate_id,                
-                                    success: function(result){ 
-                                        window.open(result, '_blank');
-                                        $("#overlay").css("display","none");
-                                    }
-                            });   
-                        }
+                            url: '/ajax_PDF_Bulk_OtherFeesReceipt?action=' + action + '&inserted_ids=' + response.certificate_id,
+                            success: function (result) {
+                                window.open(result, '_blank');
+                                $("#overlay").css("display", "none");
+                            }
+                        });
                     }
-        });
+                }
+            });
         }
     });
 }
 /* End Open Student Certificate Bulk PDF instead of print receipt */
 
+// added on 2025-07-2025 by uma
+    $('.profileIds').on('change', function () {
+        var profileIds = $(this).val();
+        // alert(sub_institute_id);
+        if (!Array.isArray(profileIds)) {
+            profileIds = [profileIds];
+        }
+
+        if (profileIds.length > 1) {
+            var profileId_implode = profileIds.join(',');
+        } else {
+            profileId_implode = profileIds[0];
+        }
+
+       $('#employeeIds').empty();
+        $.ajax({
+            url: '/lms_data?table=tbluser&filters[status]=1&multiple[user_profile_id]=' + profileId_implode+'&order_by[column]=first_name',
+            type: 'GET',
+            success: function (result) {
+                console.log(result);
+                if (Array.isArray(result)) {
+                    $('#employeeIds').empty();
+                    $('#employeeIds').append(`<option value=''>Select Employee</option>`);
+                    result.forEach(value => {
+                        $('#employeeIds').append(`<option value="${value.id}">${value.first_name} ${value.middle_name} ${value.last_name}</option>`); // corrected the syntax here
+                    });
+                }
+            },
+            error: function (xhr, status, error) {
+                console.error('Error:', error);
+            }
+        });
+    })
+// added on 2025-07-2025 by uma end
 
 // depratmewnt and emp lists 
 // $('#department_ids').on('change',function(){
@@ -540,39 +564,39 @@ if ($("#ajax_PDF_Certificate").length != 0)
 //     var department_ids_str = department_ids.join(',');
 //     getEmpList(department_ids_str);
 // })
-$('#department_ids').on('change', function() {
+$('#department_ids').on('change', function () {
     var department_ids = $(this).val();
-    
+
     if (!Array.isArray(department_ids)) {
         department_ids = [department_ids];
     }
 
-     if (department_ids.length > 1) {
-         var department_ids_str = department_ids.join(',');
+    if (department_ids.length > 1) {
+        var department_ids_str = department_ids.join(',');
     } else {
-      department_ids_str = department_ids[0]; 
+        department_ids_str = department_ids[0];
     }
 
     getEmpList(department_ids_str);
-  });
-  
+});
 
-function getEmpList(department_id){
-    $('#emp_id').empty(); 
+
+function getEmpList(department_id) {
+    $('#emp_id').empty();
     $.ajax({
         url: '/departmentwise-emplist',
         data: { department_id: department_id },
         type: 'GET',
-        success: function(result) {
-            if (Array.isArray(result) && department_id!=0) {
-                $('#emp_id').empty(); 
+        success: function (result) {
+            if (Array.isArray(result) && department_id != 0) {
+                $('#emp_id').empty();
                 $('#emp_id').append(`<option value=0>select emp</option>`);
                 result.forEach(value => {
                     $('#emp_id').append(`<option value="${value.id}">${value.full_name} (${value.user_profile})</option>`); // corrected the syntax here
                 });
             }
         },
-        error: function(xhr, status, error) {
+        error: function (xhr, status, error) {
             console.error('Error:', error);
         }
     });

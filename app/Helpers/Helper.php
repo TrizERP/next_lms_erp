@@ -2776,4 +2776,86 @@ if (!function_exists('get_string')) {
             return $stu_name;
         }
     }
+
+
+    // search user profle and employee added on 25-07-2025
+   if (!function_exists('userProfileEmployee')) {
+
+        function userProfileEmployee($col = "", $profileIds = "", $profileType = "", $employeeIds = "", $employeeType = "")
+        {
+            $sub_institute_id = session()->get('sub_institute_id');
+
+            if ($col == "") {
+                $col = 3;
+            }
+
+            $userProfileLists = DB::table('tbluserprofilemaster')
+                ->where('sub_institute_id', $sub_institute_id)
+                ->where('status', 1)
+                ->orderBy('sort_order')
+                ->get()
+                ->toArray();
+
+            $userLists = DB::table('tbluser as tu')
+                ->join('tbluserprofilemaster as upm', 'upm.id', '=', 'tu.user_profile_id')
+                ->selectRaw('tu.*, upm.name as user_profile, CONCAT_WS(" ", COALESCE(tu.first_name, "-"), COALESCE(tu.middle_name, "-"), COALESCE(tu.last_name, "-")) as full_name')
+                ->where('tu.sub_institute_id', $sub_institute_id)
+                ->when($profileIds != "", function ($q) use ($profileIds, $profileType) {
+                    if ($profileType != "" && is_array($profileIds)) {
+                        $q->whereIn('tu.user_profile_id', $profileIds);
+                    } else {
+                        $q->where('tu.user_profile_id', $profileIds);
+                    }
+                })
+                ->where('tu.status', 1)
+                ->orderBy('tu.first_name')
+                ->get()
+                ->toArray();
+
+            $profileSelName = $profileType != '' ? 'profileId[]' : 'profileId';
+            $className = $profileType != '' ? 'resizable' : '';
+            $empSelName = $employeeType != '' ? 'employeeId[]' : 'employeeId';
+            $empClass = $employeeType != '' ? 'resizable' : '';
+
+            $selectHtml = "<div class='col-md-" . $col . " form-group'>
+                <label>Select User Profile</label>
+                <select class='form-control $className profileIds' name='" . $profileSelName . "' id='profileIds' " . $profileType . ">
+                <option value=''>Select Profile</option>";
+
+            foreach ($userProfileLists as $profile) {
+                $selected = '';
+                if ($profileType != '' && is_array($profileIds) && in_array($profile->id, $profileIds)) {
+                    $selected = 'selected';
+                } elseif ($profileIds == $profile->id) {
+                    $selected = 'selected';
+                }
+                $selectHtml .= "<option value='" . $profile->id . "' " . $selected . ">" . $profile->name . "</option>";
+            }
+
+            $selectHtml .= "</select>
+            </div>";
+
+            $selectHtml .= "<div class='col-md-" . $col . " form-group'>
+                <label>Select User</label>
+                <select class='form-control $empClass' name='" . $empSelName . "' id='employeeIds' " . $employeeType . ">
+                <option value=''>Select Employee</option>";
+
+            foreach ($userLists as $emp) {
+                $selected = '';
+                if ($employeeType != '' && is_array($employeeIds) && in_array($emp->id, $employeeIds)) {
+                    $selected = 'selected';
+                } elseif ($employeeIds == $emp->id) {
+                    $selected = 'selected';
+                }
+                $selectHtml .= "<option value='" . $emp->id . "' " . $selected . ">" . $emp->full_name . "</option>";
+            }
+
+            $selectHtml .= "</select>
+            </div>";
+
+            return $selectHtml;
+        }
+    }
+
+
 }
