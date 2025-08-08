@@ -124,7 +124,7 @@ class bulkStudentController extends Controller
             $tblcustom_fields['student_quota']['name'] = get_string('studentquota', 'request');
             $tblcustom_fields['student_quota']['type'] = 'dropdown';
         }
-        if ($sub_institute_id == 195) {
+        if (in_array($sub_institute_id,[195,254])) {
             $tblcustom_fields['student_height']['name'] = 'Student Height';
             $tblcustom_fields['student_height']['type'] = 'textbox';
 
