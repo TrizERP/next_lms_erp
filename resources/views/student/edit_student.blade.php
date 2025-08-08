@@ -1959,6 +1959,7 @@ datalist {
                                                     <th>From Date</th>
                                                     <th>To Date</th>
                                                     <th>Reply</th>
+                                                    <th>Reply On</th>
                                                     <th>Reply By</th>
                                                     <th>Status</th>
                                                 </thead>
@@ -1973,6 +1974,7 @@ datalist {
                                                             <td>{{ $leaveData->from_date }}</td>
                                                             <td>{{ $leaveData->to_date }}</td>
                                                             <td>{{ $leaveData->reply }}</td>
+                                                            <td>{{ $leaveData->reply_by }}</td>
                                                             <td>{{ $leaveData->reply_on }}</td>
                                                             <td>{{ $leaveData->status }}</td>
                                                         </tr>

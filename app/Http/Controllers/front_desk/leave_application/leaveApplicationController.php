@@ -112,7 +112,7 @@ class leaveApplicationController extends Controller
                     se.start_date,se.end_date,se.enrollment_code,se.drop_code,se.drop_remarks,se.drop_remarks,se.term_id,se.remarks,
                     se.admission_fees,se.house_id,se.lc_number,st.name standard_name,d.name as division_name,pc.id AS leave_app_id,
                     pc.syear,pc.student_id,pc.title,pc.message,pc.reply,pc.apply_date,ifnull(pc.status,'') status,pc.from_date,
-                    pc.to_date,pc.files,CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name) as reply_by")
+                    pc.to_date,pc.files,CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name) as reply_by,pc.reply_on")
             ->where("s.sub_institute_id", "=", session()->get('sub_institute_id'))
             ->where("se.syear", "=", session()->get('syear'))
             ->where(function ($q) use ($classteacher_data, $grades_ids, $standards_ids, $divisions_ids, $requestData) {
@@ -152,11 +152,12 @@ class leaveApplicationController extends Controller
             $responce_arr['stu_data'][$id]['message'] = $arr->message;
             $responce_arr['stu_data'][$id]['files'] = $arr->files;
             $responce_arr['stu_data'][$id]['status'] = $arr->status;
-            $responce_arr['stu_data'][$id]['apply_date'] = date("d-m-Y", strtotime($arr->apply_date));
+            $responce_arr['stu_data'][$id]['apply_date'] = date("d-m-Y H:i:s", strtotime($arr->apply_date));
             $responce_arr['stu_data'][$id]['from_date'] = date("d-m-Y", strtotime($arr->from_date));
             $responce_arr['stu_data'][$id]['to_date'] = date("d-m-Y", strtotime($arr->to_date));
             $responce_arr['stu_data'][$id]['reply'] = $arr->reply;
             $responce_arr['stu_data'][$id]['reply_by'] = $arr->reply_by;
+            $responce_arr['stu_data'][$id]['reply_on'] = date("d-m-Y H:i:s", strtotime($arr->reply_on));
         }
         $type = $request->input('type');
 
@@ -308,10 +309,9 @@ class leaveApplicationController extends Controller
             'sub_institute_id' => 'required|numeric',
             'message'          => 'required',
             'title'            => 'required',
-            'apply_date'       => 'required|date_format:Y-m-d',
             'from_date'        => 'required|date_format:Y-m-d',
             'to_date'          => 'required|date_format:Y-m-d',
-        ]);
+        ]);//'apply_date'       => 'required|date_format:Y-m-d',
         if ($validator->fails()) {
             $response['response'] = $validator->messages();
         } else {
@@ -332,7 +332,7 @@ class leaveApplicationController extends Controller
                 'student_id'       => $_REQUEST['student_id'],
                 'title'            => $_REQUEST['title'],
                 'message'          => $_REQUEST['message'],
-                'apply_date'       => $_REQUEST['apply_date'],
+                'apply_date'       => now(),//$_REQUEST['apply_date']
                 'from_date'        => $_REQUEST['from_date'],
                 'to_date'          => $_REQUEST['to_date'],
                 'sub_institute_id' => $_REQUEST['sub_institute_id'],
@@ -420,8 +420,11 @@ class leaveApplicationController extends Controller
         if ($student_id != "" && $sub_institute_id != "" && $syear != "") {
 
             $data = DB::table("leave_applications as l")
+            ->leftJoin('tbluser as u', function ($join) {
+                    $join->whereRaw("u.id=l.reply_by AND u.sub_institute_id = l.sub_institute_id");  // 23-04-24 by uma
+                })
                 ->selectRaw("l.title,l.message,if(l.files = '','',concat('https://".$_SERVER['SERVER_NAME']."/storage/leave_application/',
-                    l.files)) as files,l.apply_date,l.from_date,l.to_date,l.status,l.reply,l.reply_on")
+                    l.files)) as files,DATE_FORMAT(l.apply_date, '%d-%m-%Y %H:%i:%s') as apply_date,l.from_date,l.to_date,l.status,l.reply,concat_ws(' ',u.first_name,u.middle_name,u.last_name) as reply_by,DATE_FORMAT(l.reply_on, '%d-%m-%Y %H:%i:%s') as reply_on")
                 ->where("l.syear", "=", $syear)
                 ->where("l.sub_institute_id", "=", $sub_institute_id)
                 ->where("l.student_id", "=", $student_id)

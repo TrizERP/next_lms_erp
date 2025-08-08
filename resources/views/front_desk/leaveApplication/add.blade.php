@@ -42,6 +42,7 @@
                                         <th>File</th>
                                         <th>Reply</th>
                                         <th>Reply By</th>
+                                        <th>Reply On</th>
                                         <th>Status</th>
                                     </tr>
                                 </thead>
@@ -78,9 +79,8 @@
                                                 <textarea name="reply[<?php echo $col_arr['leave_app_id']; ?>]" >{{ $col_arr['reply'] }}</textarea>
                                             @endif
                                         </td>
-                                        <td>
-                                           {{ $col_arr['reply_by'] }}
-                                        </td>
+                                        <td>{{ $col_arr['reply_by'] }}</td>
+                                        <td>{{ $col_arr['reply_on'] }}</td>
                                         <td>
                                         @if(!empty($col_arr['status']))
                                             {{ $col_arr['status'] }}
