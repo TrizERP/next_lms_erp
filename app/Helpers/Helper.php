@@ -1105,6 +1105,8 @@ if (!function_exists('FeeBreakoffHeadWise')) {
             $student_data[$value->id]['id'] = $value->id;
             $student_data[$value->id]['enrollment_no'] = $value->enrollment_no;
             $student_data[$value->id]['surname'] = $value->last_name;
+            $student_data[$value->id]['first_name'] = $value->first_name; // added on 12-08-2025 by uma for full name in fees status report
+            $student_data[$value->id]['middle_name'] = $value->middle_name; // added on 12-08-2025 by uma for full name in fees status report
             $student_data[$value->id]['student_name'] = $value->first_name . " " . $value->middle_name;
             $student_data[$value->id]['gender'] = $value->gender;
             $student_data[$value->id]['mobile'] = $value->mobile;
