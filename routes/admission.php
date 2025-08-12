@@ -20,6 +20,8 @@ Route::group(['prefix' => 'admission', 'middleware' => ['session', 'menu', 'logR
     Route::resource('online_admission_confirm', onlineAdmissionConfirmController::class);
     Route::resource('admission_master', admissionMasterController::class); // 25-12-2024
 
+    Route::post('admissionAgeValidation', [admissionMasterController::class,'admissionAgeValidation'])->name('admissionAgeValidation');
+
     Route::get('admissionAI', [admissionEnquiryController::class,'admissionAI'])->name('admissionAI');
 
     Route::get('admission_registration_v1_report', [admissionRegistrationHillController::class,'registrationV1Reoprt'])->name('registration_v1_report.index');
