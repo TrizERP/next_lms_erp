@@ -136,7 +136,10 @@ class LibraryReportController extends Controller
         $res['report_type']=$report_type = $request->report_type;
       
         $student_data = LibraryBookCirculation::join('tblstudent as s','s.id','=','library_book_circulations.student_id')
-        ->join('tblstudent_enrollment as se','se.student_id','=','s.id')
+        ->join('tblstudent_enrollment as se', function ($join) {
+            $join->on('se.student_id', '=', 's.id')
+                 ->on('se.syear', '=', 'library_book_circulations.syear');
+        })
         ->join('standard as std','std.id','=','se.standard_id')
         ->join('division as d','d.id','=','se.section_id')        
         ->leftJoin('library_items as li',function($join) use ($sub_institute_id) {
