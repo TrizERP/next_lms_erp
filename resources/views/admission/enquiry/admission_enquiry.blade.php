@@ -77,15 +77,7 @@
                             <!--  pattern="/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/" -->
                             <input type="email" id='email'  name="email" class="form-control">
                         </div>
-                        <div class="col-md-3 form-group">
-                            <label>Date of Birth </label>
-                            <input type="date" onchange="calculate_age(this.value);" id='date_of_birth' required name="date_of_birth" class="form-control" autocomplete="off">
-                        </div>
-                        <div class="col-md-3 form-group">
-                            <label>Age </label>
-                            <input type="text" id='age' name="age" class="form-control">
-                        </div>
-                       
+                        
                         <div class="col-md-3 form-group">
                             <label>Address </label>
                             <textarea id='address' name="address" class="form-control"></textarea>
@@ -228,6 +220,16 @@
                             <input type="hidden" name="hidden_std_id" id="hidden_std_id" value="">
                         </div>
 
+                        <div class="col-md-3 form-group">
+                            <label>Date of Birth </label>
+                            <input type="date" onchange="calculate_age(this.value);" id='date_of_birth' required name="date_of_birth" class="form-control" autocomplete="off">
+                        </div>
+                        <div class="col-md-3 form-group">
+                            <label>Age </label>
+                            <input type="text" id='age' name="age" class="form-control">
+                            <span class="error_message" style="color:red;"></span>
+                        </div>
+                       
                         @if (in_array(Session::get('sub_institute_id'), ['201','202','203','204','324','326','327']))
                         <div class="col-md-3 form-group">
                             <label style="display: none;" id="label_for_fees_amount">Fees Amount </label>
@@ -242,7 +244,7 @@
 
                         <div class="col-md-12 form-group">
                             <center>
-                                <input type="submit" name="submit" id="submit" value="Save" class="btn btn-success" >
+                                <input type="submit" name="submit" id="submit" value="Save" class="btn btn-success save-btn" >
                             </center>
                         </div>
                     </div>
@@ -349,20 +351,58 @@
 
     function calculate_age(dateString)
     {
-        value = dateString;
+        // value = dateString;
+        // today = new Date();
+        // dob = new Date(value.replace(/(\d{2})-(\d{2})-(\d{4})/, "$2/$1/$3"));
+        // age = today.getFullYear() - dob.getFullYear(); //This is the update
+        // document.getElementById('age').value = age;
+        var ageValidation = @json($data['ageValidation']);
+        console.log(ageValidation);
+        $('.error_message').empty();
+        $('.save-btn').attr('disabled', false);
+        value = dateString; // Input date in "dd-mm-yyyy" format
         today = new Date();
         dob = new Date(value.replace(/(\d{2})-(\d{2})-(\d{4})/, "$2/$1/$3"));
-        age = today.getFullYear() - dob.getFullYear(); //This is the update
+
+        age = today.getFullYear() - dob.getFullYear();
+
+        if (
+            today.getMonth() < dob.getMonth() || 
+            (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate())
+        ) {
+            age--;
+        }
+
+        if(age<0){
+            age=0;
+        }
+
+        let standard = parseInt($('#admission_standard').val(), 10);
+        // check if key exists in object
+            if (ageValidation.hasOwnProperty(standard)) {
+                var standardData = ageValidation[standard];
+                console.log("Found:", standardData);
+
+                var standardDate = new Date(standardData.date); // this is '2020-02-06'
+                console.log("Standard Date:", standardDate);
+
+                // Now compare DOB
+                var dob = new Date(value.replace(/(\d{2})-(\d{2})-(\d{4})/, "$2/$1/$3"));
+                if (dob <= standardDate) {
+                    console.log("DOB is valid for this standard");
+                } else {
+                    let formattedDate = new Date(standardDate).toISOString().split('T')[0];
+                    $('.error_message').text(
+                        'DOB must be less than or equal to ' + formattedDate
+                    );
+                    $('.save-btn').attr('disabled', true);
+                }
+            } else {
+                console.log("Standard not found in validation array");
+            }
+
         document.getElementById('age').value = age;
 
-        // var today = new Date();
-        // var birthDate = new Date(dateString);
-        // var age = today.getFullYear() - birthDate.getFullYear();
-        // var m = today.getMonth() - birthDate.getMonth();
-        //   if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-        //     age--;
-        //   }
-        // document.getElementById('age').value = age;
     }
 
     function showMessageBox(x)

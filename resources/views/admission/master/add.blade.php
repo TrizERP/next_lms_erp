@@ -65,6 +65,7 @@
                         <li class="nav-item"><a href="#section-linemove-2" class="nav-link" aria-selected="false" data-toggle="tab"><span>Admission Registration</span></a></li>
                         <li class="nav-item"><a href="#section-linemove-3" class="nav-link" aria-selected="false" data-toggle="tab"><span>Admission Confirmation</span></a></li>
                         <li class="nav-item"><a href="#section-linemove-4" class="nav-link" aria-selected="false" data-toggle="tab"><span>Change Fields Name</span></a></li>
+                         <li class="nav-item"><a href="#section-linemove-5" class="nav-link" aria-selected="false" data-toggle="tab"><span>Age Validation</span></a></li>
                     </ul>
                     <!-- tabs list ends -->
 
@@ -217,6 +218,90 @@
                         </div>
                         <!-- tab 4 end  -->
 
+                        <!-- tab 5 start  -->
+                        <div class="tab-pane p-3" id="section-linemove-5" role="tabpanel">
+                            <div class="col-md-12">
+                                <form action="{{route('admissionAgeValidation')}}" method="post" class="row">
+                                    <input type="hidden" name="formType" value="add">
+                                    @csrf
+                                    <div class="col-md-4 form-group">
+                                        <label for="standard">Standard</label>
+                                        <select name="standard_id" id="standard_id" class="form-control" required>
+                                            <option value="">Select Standard</option>
+                                            @foreach($data['standard'] as $k=>$std)
+                                            <option value="{{$std->id}}">{{$std->name}}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4 form-group">
+                                        <label for="standard">Date</label>
+                                        <input type="text" name="date" id="date" class="form-control mydatepicker" required>
+                                    </div>
+                                    <div class="col-md-4 form-group">
+                                        <input type="submit" value="Submit" id="Submit" name="Submit" class="btn btn-primary">
+                                    </div>
+                                </form>
+                            </div>
+                            @if(isset($data['ageValidation']))
+                            <div class="col-md-12">
+                                <div class="table-responsive">
+                                    <table class="table table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th>#</th>
+                                                <th>Standard</th>
+                                                <th>Date</th>
+                                                <th>Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach($data['ageValidation'] as $index => $val)
+                                                <tr>
+                                                    <td>{{ $index + 1 }}</td>
+
+                                                    {{-- Standard dropdown --}}
+                                                    <td>
+                                                        <select name="standard_id" class="form-control">
+                                                            <option value="">Select Standard</option>
+                                                            @foreach($data['standard'] as $std)
+                                                                <option value="{{ $std->id }}" 
+                                                                    @if($std->id == $val->standard_id) selected @endif>
+                                                                    {{ $std->name }}
+                                                                </option>
+                                                            @endforeach
+                                                        </select>
+                                                    </td>
+
+                                                    {{-- Date picker --}}
+                                                    <td>
+                                                        <input type="text" 
+                                                            name="date" 
+                                                            class="form-control mydatepicker" 
+                                                            value="{{ $val->date }}">
+                                                    </td>
+
+                                                    {{-- Action button --}}
+                                                    <td>
+                                                        <span class="mdi mdi-pencil text-primary edit-row" 
+                                                            data-id="{{ $val->id }}" 
+                                                            style="cursor:pointer;">
+                                                        </span>
+                                                        <span class="mdi mdi-delete text-danger delete-row" 
+                                                            data-id="{{ $val->id }}" 
+                                                            style="cursor:pointer;color:red;">
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+
+                                </div>
+                            </div>
+                            @endif
+                        </div>
+                        <!-- tab 5 end  -->
+
                     </div>
                     <!-- tabs sections ends -->
                 </div>
@@ -227,6 +312,7 @@
 </div>
 @include('includes.footerJs')
 <script>
+
     $(document).ready(function(){
         @if(!empty($data['enquiryCustoms']))
             $('#enquiryChildDiv').show();
@@ -270,6 +356,89 @@
         $('#' + tableName + 'ChildDiv').hide();
     }
    }
+
+   $(document).on('click', '.edit-row', function() {
+    let row = $(this).closest('tr');
+    let id = $(this).data('id');
+    let standard_id = row.find('select[name="standard_id"]').val();
+    let date = row.find('input[name="date"]').val();
+    // Format date to YYYY-MM-DD if not already
+    if (date) {
+        let d = new Date(date);
+        if (!isNaN(d.getTime())) {
+            let month = ('0' + (d.getMonth() + 1)).slice(-2);
+            let day = ('0' + d.getDate()).slice(-2);
+            let year = d.getFullYear();
+            date = `${year}-${month}-${day}`;
+        }
+    }
+
+    $.ajax({
+        url: "{{ route('admissionAgeValidation') }}",
+        method: "POST",
+        data: {
+            _token: "{{ csrf_token() }}",
+            token: "{{ csrf_token() }}",
+            id: id,
+            type:'API',
+            standard_id: standard_id,
+            date: date,
+            sub_institute_id: {{session()->get('sub_institute_id')}},
+            syear: {{session()->get('syear')}},
+            user_id: {{session()->get('user_id')}},
+            formType:'edit',
+        },
+        success: function(response) {
+
+            // if(response.status==1){
+                alert('updated successfully!');
+                window.location.reload();
+            // }
+            // else{
+            //     alert('failed to add');
+            // }
+        },
+        error: function(xhr) {
+            alert("Something went wrong!");
+        }
+    });
+});
+
+$(document).on('click', '.delete-row', function() {
+    let row = $(this).closest('tr');
+    let id = $(this).data('id');
+    let standard_id = row.find('select[name="standard_id"]').val();
+    let date = row.find('input[name="date"]').val();
+
+    $.ajax({
+        url: "{{ route('admissionAgeValidation') }}",
+        method: "POST",
+        data: {
+            _token: "{{ csrf_token() }}",
+            token: "{{ csrf_token() }}",
+            id: id,
+            type:'API',
+            sub_institute_id: {{session()->get('sub_institute_id')}},
+            syear: {{session()->get('syear')}},
+            user_id: {{session()->get('user_id')}},
+            formType:'delete',
+        },
+        success: function(response) {
+
+            // if(response.status==1){
+                alert('updated successfully!');
+                window.location.reload();
+            // }
+            // else{
+            //     alert('failed to add');
+            // }
+        },
+        error: function(xhr) {
+            alert("Something went wrong!");
+        }
+    });
+});
+
 </script>
 @include('includes.footer')
 @endsection
