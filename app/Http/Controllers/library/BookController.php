@@ -787,7 +787,7 @@ return DataTables::of($books)
 public function issueBook(Request $request)
 {
     $sub_institute_id = session()->get('sub_institute_id');
-
+    $syear = session()->get('syear');
 
     $request->validate([
         'student_id' => 'required|exists:tblstudent,id',
@@ -802,7 +802,8 @@ public function issueBook(Request $request)
     $check_data = LibraryBookCirculation::where([
         'student_id' => $request->student_id,
         'book_id' => $request->bookId,
-        'item_code' => $request->item_codes,                                
+        'item_code' => $request->item_codes,
+        'syear' => $syear,
     ])->whereNull('return_date')->get()->toArray();
 
     try {
@@ -815,6 +816,7 @@ public function issueBook(Request $request)
                 'issued_date' => $issue_date->format('Y-m-d'),
                 'due_date' => $return_date->format('Y-m-d'),
                 'sub_institute_id' => $sub_institute_id,
+                'syear' => $syear,
                 'updated_at' => now(),
             ]);
             $issueBook = 'update';
@@ -826,6 +828,7 @@ public function issueBook(Request $request)
                 'issued_date' => $issue_date->format('Y-m-d'),
                 'due_date' => $return_date->format('Y-m-d'),
                 'sub_institute_id' => $sub_institute_id,
+                'syear' => $syear,
                 'created_at' => now(),                    
             ]);
             $issueBook = 'insert';
