@@ -100,6 +100,7 @@
                         <div class="col-md-3 form-group">
                             <label>Age </label>
                             <input type="text" id='age' name="age" class="form-control">
+                              <span class="error_message" style="color:red;"></span>
                         </div>
                         @if (Session::get('sub_institute_id') != '198')
                         <div class="col-md-3 form-group">
@@ -248,7 +249,7 @@
 
                         <div class="col-md-12 form-group">
                             <center>
-                                <input type="submit" name="submit" id="submit" value="Save" class="btn btn-success" >
+                                <input type="submit" name="submit" id="submit" value="Save" class="btn btn-success save-btn" >
                             </center>
                         </div>
                     </div>
@@ -359,7 +360,10 @@
         // dob = new Date(value.replace(/(\d{2})-(\d{2})-(\d{4})/, "$2/$1/$3"));
         // age = today.getFullYear() - dob.getFullYear(); //This is the update
         // document.getElementById('age').value = age;
-
+        var ageValidation = @json($data['ageValidation']);
+        console.log(ageValidation);
+        $('.error_message').empty();
+        $('.save-btn').attr('disabled', false);
         value = dateString; // Input date in "dd-mm-yyyy" format
         today = new Date();
         dob = new Date(value.replace(/(\d{2})-(\d{2})-(\d{4})/, "$2/$1/$3"));
@@ -376,6 +380,30 @@
         if(age<0){
             age=0;
         }
+
+        let standard = parseInt($('#admission_standard').val(), 10);
+        // check if key exists in object
+            if (ageValidation.hasOwnProperty(standard)) {
+                var standardData = ageValidation[standard];
+                console.log("Found:", standardData);
+
+                var standardDate = new Date(standardData.date); // this is '2020-02-06'
+                console.log("Standard Date:", standardDate);
+
+                // Now compare DOB
+                var dob = new Date(value.replace(/(\d{2})-(\d{2})-(\d{4})/, "$2/$1/$3"));
+                if (dob <= standardDate) {
+                    console.log("DOB is valid for this standard");
+                } else {
+                    let formattedDate = new Date(standardDate).toISOString().split('T')[0];
+                    $('.error_message').text(
+                        'DOB must be less than or equal to ' + formattedDate
+                    );
+                    $('.save-btn').attr('disabled', true);
+                }
+            } else {
+                console.log("Standard not found in validation array");
+            }
 
         document.getElementById('age').value = age;
 

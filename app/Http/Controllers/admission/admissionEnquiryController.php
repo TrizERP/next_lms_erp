@@ -171,6 +171,22 @@ class admissionEnquiryController extends Controller
         if (count($category) > 0) {
             $res['category'] = $category;
         }
+
+        $ageValidationRows = DB::table('admission_age_validation as aa')
+            ->join('standard as sd', 'sd.id', '=', 'aa.standard_id')
+            ->where(['aa.sub_institute_id' => $sub_institute_id, 'aa.syear' => $syear])
+            ->select('sd.name', 'aa.*')
+            ->get();
+
+        $res['ageValidation'] = [];
+        foreach ($ageValidationRows as $row) {
+            $res['ageValidation'][$row->standard_id] = [
+            'id' => $row->id,
+            'standard' => $row->name,
+            'date' => $row->date,
+            ];
+        }
+        // echo "<pre>";print_r($res['ageValidation']);exit;
         if($type=='webForm'){
             return is_mobile($type, 'admission/enquiry/admission_enquiry', $res, 'view');
         }else{

@@ -78,6 +78,11 @@ class admissionMasterController extends Controller
 
         $res['allAddedFields'] = $getAllFields;
 
+        $res['standard'] = DB::table('standard')->where('sub_institute_id',$sub_institute_id)->get()->toArray();
+        $res['ageValidation'] = DB::table('admission_age_validation as aa')
+        ->join('standard as sd','sd.id','=','aa.standard_id')
+        ->selectRaw('aa.*,sd.name')
+        ->where(['aa.sub_institute_id'=>$sub_institute_id,'aa.syear'=>$syear])->get()->toArray();
         // echo "<pre>";print_r($res['allAddedFields']);exit;
 
         return is_mobile($type, 'admission/master/add', $res, 'view');
@@ -261,6 +266,65 @@ class admissionMasterController extends Controller
         }
 
         return $data;
+    }
+
+    
+    // age validation added by uma for hills and other on 12-8-2025 by uma
+    public function admissionAgeValidation(Request $request){
+        // return $request; 
+        $type = $request->type;
+        $sub_institute_id = $request->session()->get("sub_institute_id");
+        $syear = session()->get("syear");
+        $user_id = session()->get("user_id");
+        $formType = $request->formType;
+        $standard_id = $request->standard_id;
+        $date = $request->date;
+
+        if($type=="API"){
+           
+            $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear'); 
+            $user_id = $request->get('user_id');            
+        }
+
+        $i=0;
+        if($request->has('formType') && $formType=="add"){
+            $checkExists = DB::table('admission_age_validation')->where(['sub_institute_id'=>$sub_institute_id,'standard_id'=>$standard_id,'syear'=>$syear])->first();
+
+            if(empty($checkExists) && !isset($checkExists->id)){
+                $i = DB::table('admission_age_validation')->insert([
+                    'sub_institute_id'=>$sub_institute_id,
+                    'standard_id'=>$standard_id,
+                    'date'=>$date,
+                    'syear'=>$syear,
+                    'created_by'=>$user_id,
+                    'created_at'=>now(),
+                ]);
+            }
+        }
+        else if($request->has('formType') && $formType=="edit" && $request->has('id')){
+
+             $i = DB::table('admission_age_validation')->where('id',$request->id)->update([
+                    'standard_id'=>$standard_id,
+                    'date'=>$date,
+                    'updated_by'=>$user_id,
+                    'updated_at'=>now(),
+                ]);
+        }
+        else if($formType=="delete"){
+            $i = DB::table('admission_age_validation')->where('id',$request->id)->delete();
+        }
+        
+        if($i!=0){
+            $res['status_code']=1;
+            $res['message']='Data Added Successfully';
+        }
+        else{
+            $res['status_code']=0;
+            $res['message']='Failed to Add Data, may be alreay exists';
+        }
+
+        return is_mobile($type, 'admission_master.index', $res);
     }
 
 }
