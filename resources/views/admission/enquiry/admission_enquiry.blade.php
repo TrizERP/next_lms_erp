@@ -229,7 +229,16 @@
                             <input type="text" id='age' name="age" class="form-control">
                             <span class="error_message" style="color:red;"></span>
                         </div>
-                       
+                       @if(in_array($_REQUEST['sub_institute_id'], ['1','254']))
+                       <div class="col-md-3 form-group">
+                            <label>Father Mobile No. </label>
+                            <input type="text" id='mobile_number_father' name="mobile_number_father" class="form-control">
+                        </div>
+                        <div class="col-md-3 form-group">
+                            <label>Mother Mobile No. </label>
+                            <input type="text" id='mobile_number_mother' name="mobile_number_mother" class="form-control">
+                        </div>
+                       @endif
                         @if (in_array(Session::get('sub_institute_id'), ['201','202','203','204','324','326','327']))
                         <div class="col-md-3 form-group">
                             <label style="display: none;" id="label_for_fees_amount">Fees Amount </label>

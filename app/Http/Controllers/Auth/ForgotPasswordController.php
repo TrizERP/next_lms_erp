@@ -36,7 +36,7 @@ class ForgotPasswordController extends Controller
     public function submitForgetPasswordForm(Request $request)
     {
         $request->validate([
-            'email' => 'required|email|exists:tbluser',
+            'email' => 'required|email|exists:tbluser,email',
         ]);
 
         $token = Str::random(64);
@@ -47,13 +47,29 @@ class ForgotPasswordController extends Controller
             'created_at' => Carbon::now(),
         ]);
 
-        Mail::send('email.forgetPassword', ['token' => $token, 'email' => $request->email],
-            function ($message) use ($request) {
+        try {
+            Mail::send('email.forgetPassword', [
+                'token' => $token,
+                'email' => $request->email
+            ], function ($message) use ($request) {
                 $message->to($request->email);
                 $message->subject('Reset Password');
             });
 
-        return back()->with('message', 'We have e-mailed your password reset link!');
+            // If mail sending has no exception
+            return response()->json([
+                'success' => true,
+                'message' => 'Password reset email sent successfully.'
+            ], 200);
+
+        } catch (\Exception $e) {
+            // If any mail sending error occurs
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to send password reset email.',
+                'error'   => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**

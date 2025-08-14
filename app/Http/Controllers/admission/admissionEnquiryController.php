@@ -188,6 +188,7 @@ class admissionEnquiryController extends Controller
         }
         // echo "<pre>";print_r($res['ageValidation']);exit;
         if($type=='webForm'){
+            // echo "<pre>";print_r($res['ageValidation']);exit;
             return is_mobile($type, 'admission/enquiry/admission_enquiry', $res, 'view');
         }else{
             return is_mobile($type, 'admission/enquiry/add_admission_enquiry', $res, 'view');
