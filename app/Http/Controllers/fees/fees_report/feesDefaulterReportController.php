@@ -81,7 +81,7 @@ class feesDefaulterReportController extends Controller
         if ($last_name != '') {
             $extraSearchArrayRaw .= "  AND tblstudent.last_name like '%" . $last_name . "%' ";
         }
-        $extraSearchArrayRaw .= "  AND tblstudent_enrollment.end_date IS NULL ";
+        //$extraSearchArrayRaw .= "  AND tblstudent_enrollment.end_date IS NULL ";
         $extraSearchArray['tblstudent_enrollment.syear'] = $syear;
         $extraSearchArray['tblstudent.sub_institute_id'] = $sub_institute_id;
 
@@ -124,7 +124,7 @@ class feesDefaulterReportController extends Controller
 
         foreach ($feesData as $key => $value) {
             $bk_data = $controller->getBk($request, $value['id']);
-            // echo "<pre>";print_r($bk_data);exit;
+            //echo "<pre>";print_r($bk_data);exit;
             if (count($bk_data) > 0) {
                 $final_array[$value['id']]['enrollment'] = $bk_data['stu_data']['enrollment'];
                 $final_array[$value['id']]['name'] = $bk_data['stu_data']['name'];
@@ -136,6 +136,7 @@ class feesDefaulterReportController extends Controller
                 $final_array[$value['id']]['student_quota'] = $bk_data['stu_data']['student_quota'];
                 $final_array[$value['id']]['uniqueid'] = $bk_data['stu_data']['uniqueid'];
                 $final_array[$value['id']]['roll_no'] = $bk_data['stu_data']['roll_no'];
+                $final_array[$value['id']]['end_date'] = $bk_data['stu_data']['end_date'];
                 $total_fees_array = array();
                 foreach ($bk_data as $stu_id => $total_fees) {
                     $total_fees_array[] = $total_fees;
