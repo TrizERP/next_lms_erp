@@ -143,7 +143,7 @@
                                 <td>{{isset($fees_value['student_quota']) ? $fees_value['student_quota'] : ''}}</td>
                                 <td>{{isset($fees_value['mobile']) ? $fees_value['mobile'] : ''}}</td>
                                 <td>{{isset($fees_value['end_date']) ? $fees_value['end_date'] : ''}}</td>
-                                <td style="background-color:#7befef;">{{ $fees_value['final_fee']['Transport Fees'] ?? 0 }}</td>
+                                <!--<td style="background-color:#7befef;">{{ $fees_value['final_fee']['Transport Fees'] ?? 0 }}</td>-->
                                 @php
                                     $regBk = $fees_value['-']['bk'] ?? 0;
                                     $excFees = !empty($data['other_fees_titles']) ? $data['other_fees_titles'] : [];
