@@ -4,6 +4,7 @@ namespace App\Http\Controllers\admission;
 
 use App\Http\Controllers\Controller;
 use App\Models\admission\admissionEnquiryModel;
+use App\Models\admission\admissionFormModel;
 use App\Models\castModel;
 use App\Models\fees\fees_circular\feesCircularMasterModel;
 use App\Models\school_setup\SchoolModel;
@@ -342,6 +343,16 @@ class admissionEnquiryController extends Controller
         else if($type=='webForm'){
             $sub_institute_id = $request->get('sub_institute_id');
             $syear = $request->get('syear');
+
+            $check = DB::table('admission_enquiry')->where(['sub_institute_id'=>$sub_institute_id,'first_name'=>$request->first_name,'last_name'=>$request->last_name,'mobile'=>$request->mobile])->first();
+            // return $check;
+
+            if(!empty($check) && isset($check->id)){
+                $res['status_code'] = 0;
+                $res['message'] = "Admission enquiry already exists";
+                $res['data'] = [];
+                return redirect('admission_enquiry?sub_institute_id='.$request->sub_institute_id.'&syear='.$request->syear.'&type=webForm')->with(['data'=>$res]);
+            }
         }
 
         $data = $request->except([
@@ -603,7 +614,14 @@ class admissionEnquiryController extends Controller
             $res['status_code'] = "1";
             $res['message'] = "Added successfully";
             if($type=='webForm'){
-                return redirect('admission_enquiry?sub_institute_id='.$sub_institute_id.'&syear='.$syear.'&type=webForm')->with(['data'=>$res]);
+                // return redirect('admission_enquiry?sub_institute_id='.$sub_institute_id.'&syear='.$syear.'&type=webForm')->with(['data'=>$res]);
+                $res['payment_type'] = $request->get('payment_type');
+                $res['enquiry_id'] = $last_inserted_id;
+                $res['sub_institute_id'] = $sub_institute_id;
+                $res['syear'] = $syear;
+                $res['enquiry_no'] = $request->enquiry_no;
+
+                return is_mobile($type, 'admission/enquiry/paymentProcess', $res, 'view');
             }else{
                 return is_mobile($type, "admission_enquiry.index", $res);
             }
@@ -884,5 +902,24 @@ class admissionEnquiryController extends Controller
             return is_mobile($type, 'admission/admissionAI', $res, 'view');
         }
     }
+    public function paymentProof(Request $request){        
+        // return $request;
+        //admission_payment
+        $file_name=null;
+        if ($request->hasFile('attachment')) {
+            $file = $request->file('attachment');
+			$originalname = $file->getClientOriginalName();
+			$file_size = $file->getSize();
+            $ext = pathinfo($originalname, PATHINFO_EXTENSION);
+            $file_name =  $request->enquiry_id.'.'.$ext;
+            \Illuminate\Support\Facades\Storage::disk('digitalocean')->putFileAs('public/admission_payment/', $file, $file_name, 'public');
 
+            admissionEnquiryModel::where(['id'=>$request->enquiry_id])->update(['payment_attachment' => $file_name]);
+        } 
+
+        $res['status_code'] = "1";
+        $res['message'] = "Thank you for your enquiry.";
+
+       return redirect('admission_enquiry?sub_institute_id='.$request->sub_institute_id.'&syear='.$request->syear.'&type=webForm')->with(['data'=>$res]);
+    }
 }

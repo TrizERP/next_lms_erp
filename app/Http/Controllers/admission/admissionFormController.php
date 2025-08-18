@@ -62,7 +62,9 @@ class admissionFormController extends Controller
             ->selectRaw('ae.*,COUNT(ts.id) AS total_student_count,ae.remarks AS enquiry_remark,s.name AS std_name,af.form_no,
                 af.admission_docket_no,af.registration_no,af.id as form_id,af.admission_form_fee,af.receipt_id,af.receipt_html,ar.transport_fees')
             ->where('ae.sub_institute_id', $sub_institute_id)
-            ->where('ae.syear', $syear)->groupBy('ae.id')->get()->toArray();
+            ->where('ae.syear', $syear)
+            ->where('ae.status','!=', 'cancel')
+            ->groupBy('ae.id')->get()->toArray();
 
         $data = array_map(function ($value) {
             return (array) $value;
