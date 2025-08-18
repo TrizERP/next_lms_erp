@@ -81,6 +81,12 @@
                                         @foreach($data['dataCustomFields'] as $k => $v)
                                         <th data-toggle="tooltip" title="{{$v['field_label']}}">{{$v['field_label']}}</th>
                                         @endforeach
+
+                                        @if(in_array($sub_institute_id,[254]))
+                                        <th>Payment Type</th>
+                                        <th>Approve Status</th>
+                                        <th>Payment Proof</th>
+                                        @endif
                                         <!-- 2024-10-08 hills admission  -->
                                     </tr>
                                 </thead>
@@ -182,6 +188,16 @@
                                         @endif 
                                         <!-- 2024-10-08 hills admission  -->
                                     @endforeach
+                                    @if(in_array($sub_institute_id,[254]))
+                                        <td>{{$data['payment_type']}}</td>
+                                        <td>{{$data['status']}}</td>
+                                        <td>
+                                            @if ($data['payment_attachment'] !== null)
+                                            <a href="{{ Storage::disk('digitalocean')->url('public/admission_payment/'.$data['payment_attachment'])}}" target="_blank">{{$data['payment_attachment']}}</a>
+                                            @endif
+                                        </td>
+                                        @endif
+
                                     </tr>
                                     @php
                                         $j++;

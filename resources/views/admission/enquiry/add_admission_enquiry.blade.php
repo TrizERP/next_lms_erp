@@ -92,6 +92,7 @@
                                 @endforeach
                             </select>
                             <input type="hidden" name="hidden_std_id" id="hidden_std_id" value="">
+                            <input type="hidden" name="status" value="approve"> <!-- 1 for approve added on 18-08-2025-->
                         </div>
                         <div class="col-md-3 form-group">
                             <label>Date of Birth </label>
