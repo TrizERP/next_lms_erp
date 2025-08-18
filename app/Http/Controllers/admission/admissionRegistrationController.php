@@ -64,6 +64,7 @@ class admissionRegistrationController extends Controller
             ->selectRaw("ae.*,COUNT(ts.id) AS total_student_count,ae.remarks AS enquiry_remark,s.name AS std_name,ar.transport_fees")
             ->where('ae.sub_institute_id', $sub_institute_id)
             ->where('ae.syear', $syear)
+            ->where('ae.status','!=', 'cancel')
             ->groupBy(['ae.first_name','ae.middle_name','ae.last_name'])
             ->get()->toArray();
 
