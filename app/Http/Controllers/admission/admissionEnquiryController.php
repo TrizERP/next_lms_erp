@@ -140,6 +140,10 @@ class admissionEnquiryController extends Controller
         // echo "<pre>";print_r($request->all());exit;
         $category = castModel::get()->toArray();
 
+        $schoolData = SchoolModel::where(['id' => $sub_institute_id])->get()->toArray();
+        $schoolName = $schoolData[0]['SchoolName'];
+        $schoolLogo = $_SERVER['APP_URL'].'/admin_dep/images/'.$schoolData[0]['Logo'];
+
         $dataCustomFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "admission_enquiry"])
             ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1) and user_type="" ')
             ->when($type=="webForm" && $sub_institute_id==254,function($q) use($request){
@@ -164,6 +168,7 @@ class admissionEnquiryController extends Controller
         $res['message'] = "Success";
         $res['enquiry_no'] = $FORM_NO;
         $res['standard'] = $standard;
+        $res['logo'] = $schoolLogo;
         $res['custom_fields'] = $dataCustomFields;
         if (count($finalfieldsData) > 0) {
             $res['data_fields'] = $finalfieldsData;

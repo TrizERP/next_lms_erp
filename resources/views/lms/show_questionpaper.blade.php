@@ -103,7 +103,7 @@
                                                     @endif
                                                 </td>
                                                 <td>
-                                                    @if ($show_block == 'YES')
+                                                    @if ($show_block == 'YES' || strtoupper($user_profile) == 'ADMIN')
                                                         <a target="_blank"
                                                            href="{{ route('question_paper.show', ['question_paper' => $quespaper->id]) }}"
                                                            class="btn btn-info btn-outline btn m-r-5">View</a>

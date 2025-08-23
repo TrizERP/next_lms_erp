@@ -167,25 +167,29 @@
                                         <!-- 2024-10-08 hills admission  -->
                                         @foreach($dataCustomFields as $k => $v)
                                         @if($v['field_name'] == 'siblings' && !empty($data['siblings']))
-                                            @php 
-                                                $siblingsData = [];
-                                                // Explode the siblings_id from the data array
-                                                $siblings_id = explode(',', $data['siblings']);
-                                                if (!empty($siblings_id)) {
-                                                    foreach ($siblings_id as $sk => $sv) {
-                                                        $studentData = App\Helpers\SearchStudent("", "", "", "", "", "", "", "", "", "", $sv);
-                                                        $siblingsData[] = $studentData[0] ?? '';
-                                                    }
+                                        @php 
+                                            $siblingsData = [];
+                                            $siblings_id = explode(',', $data['siblings']);
+                                            if (!empty($siblings_id)) {
+                                                foreach ($siblings_id as $sk => $sv) {
+                                                    $studentData = App\Helpers\SearchStudent("", "", "", "", "", "", "", "", "", "", $sv);
+                                                    $siblingsData[] = $studentData[0] ?? $sv; // fallback to ID/text
                                                 }
-                                            @endphp
-                                            <td>
-                                                @foreach($siblingsData as $skey=>$svalue)
-                                                {{$skey+1}}. {{$svalue['first_name'].' '.$svalue['middle_name'].' '.$svalue['last_name']}}<br>
-                                                @endforeach
-                                            </td>
-                                        @else 
-                                            <td>{{ isset($data[$v['field_name']]) ? $data[$v['field_name']] : '' }}</td>
-                                        @endif 
+                                            }
+                                        @endphp
+                                        <td>
+                                            @foreach($siblingsData as $skey => $svalue)
+                                                @if(is_array($svalue))
+                                                    {{ $skey+1 }}. {{ $svalue['first_name'].' '.$svalue['middle_name'].' '.$svalue['last_name'] }}<br>
+                                                @else
+                                                    {{ $skey+1 }}. {{ $svalue }}<br>
+                                                @endif
+                                            @endforeach
+                                        </td>
+                                    @else 
+                                        <td>{{ $data[$v['field_name']] ?? '' }}</td>
+                                    @endif
+
                                         <!-- 2024-10-08 hills admission  -->
                                     @endforeach
                                     @if(in_array($sub_institute_id,[254]))

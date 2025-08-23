@@ -162,7 +162,7 @@ class WRT_report_controller extends Controller
             ->where("standard_id", "=", $standard_id)
             ->where("term_id", "=", $term_id)
             ->where("syear", "=", $syear)
-            ->where("r.exam_date", [$from_date, $to_date])
+            ->whereBetween("r.exam_date", [$from_date, $to_date])
             ->groupBy('title')
             ->get()->toArray();
 

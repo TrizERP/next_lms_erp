@@ -77,21 +77,27 @@
                                     <td>{{$value['std_name']}}</td>
                                     @php 
                                         $siblingsData = [];
-                                        $siblings_id = explode(',', $value['siblings']);
-                                        if (!empty($siblings_id) && isset($value['siblings']) && !empty($value['siblings'])) {
-                                            foreach ($siblings_id as $sk => $sv) {
+                                        if (isset($value['siblings']) && !empty($value['siblings'])) {
+                                            $siblings_id = explode(',', $value['siblings']);
+                                            foreach ($siblings_id as $sv) {
                                                 $studentData = App\Helpers\SearchStudent("", "", "", "", "", "", "", "", "", "", $sv);
-                                                $siblingsData[] = $studentData[0] ?? '';
+                                                $siblingsData[] = $studentData[0] ?? $sv; // fallback string
                                             }
                                         }
                                     @endphp
+
                                     <td>
                                         @if(!empty($siblingsData))
-                                        @foreach($siblingsData as $skey=>$svalue)
-                                        {{$skey+1}}. {{$svalue['first_name'].' '.$svalue['middle_name'].' '.$svalue['last_name']}}<br>
-                                        @endforeach
+                                            @foreach($siblingsData as $skey => $svalue)
+                                                @if(is_array($svalue))
+                                                    {{ $skey+1 }}. {{ $svalue['first_name'].' '.$svalue['middle_name'].' '.$svalue['last_name'] }}<br>
+                                                @else
+                                                    {{ $skey+1 }}. {{ $svalue }}<br>
+                                                @endif
+                                            @endforeach
                                         @endif
                                     </td>
+
                                     <td class="tdwidth">
                                         <select name="students[{{$value['id']}}][hn]" class="hn form-control" disabled="true">
                                             <option value="">select</option>

@@ -67,48 +67,55 @@ class feesCircularController extends Controller
         $stu_arr = array();
         $gb = array();
         $paid_other_join = "";
-        if (!in_array($sub_institute_id, [201, 202, 203, 204,324,326,327,332])) {
-            $studentData = SearchStudent($grade, $standard, $division,$sub_institute_id,$syear);
+        // Step 1: Get students depending on sub_institute_id
+        if (!in_array($sub_institute_id, [201, 202, 203, 204, 324, 326, 327])) {
+            $studentData = SearchStudent($grade, $standard, $division, $sub_institute_id, $syear);
         } else {
-            $data = DB::table('tblstudent as s')
-                ->join('tblstudent_enrollment as se', function ($join) {
-                    $join->whereRaw('se.student_id = s.id');
-                })->join('academic_section as g', function ($join) {
-                    $join->whereRaw('g.id = se.grade_id');
-                })->join('standard as st', function ($join) use($marking_period_id){
-                    $join->on('st.id', '=', 'se.standard_id');
-                    // ->when($marking_period_id,function($query) use ($marking_period_id){
-                    //     $query->where('st.marking_period_id',$marking_period_id);
-                    // });
-                })->leftJoin('division as d', function ($join) {
-                    $join->whereRaw('d.id = se.section_id');
-                })->join('fees_breackoff as fb', function ($join) use ($syear, $sub_institute_id) {
-                    $join->whereRaw("(fb.syear = '".$syear."' AND fb.admission_year = s.admission_year 
-                        AND fb.quota = se.student_quota AND fb.grade_id = se.grade_id AND fb.standard_id = se.standard_id 
-                        AND fb.sub_institute_id = '".$sub_institute_id."')");
-                })->join('fees_title as ft', function ($join) {
-                    $join->whereRaw('(fb.fee_type_id = ft.id)');
-                })->selectRaw("s.id,s.enrollment_no,s.first_name,s.last_name,st.name standard_name, 
-                    d.name AS division_name,fb.amount,ft.display_name,ft.fees_title,SUM(fb.amount) AS total_breakoff")
+            $studentData = DB::table('tblstudent as s')
+                ->join('tblstudent_enrollment as se', 'se.student_id', '=', 's.id')
+                ->join('academic_section as g', 'g.id', '=', 'se.grade_id')
+                ->join('standard as st', 'st.id', '=', 'se.standard_id')
+                ->leftJoin('division as d', 'd.id', '=', 'se.section_id')
+                ->join('fees_breackoff as fb', function ($join) use ($syear, $sub_institute_id) {
+                    $join->whereRaw("
+                        fb.syear = ?
+                        AND fb.admission_year = s.admission_year
+                        AND fb.quota = se.student_quota
+                        AND fb.grade_id = se.grade_id
+                        AND fb.standard_id = se.standard_id
+                        AND fb.sub_institute_id = ?
+                    ", [$syear, $sub_institute_id]);
+                })
+                ->join('fees_title as ft', 'fb.fee_type_id', '=', 'ft.id')
+                ->selectRaw("
+                    s.id,
+                    s.enrollment_no,
+                    s.first_name,
+                    s.last_name,
+                    st.name AS standard_name,
+                    d.name AS division_name,
+                    fb.amount,
+                    ft.display_name,
+                    ft.fees_title,
+                    SUM(fb.amount) AS total_breakoff
+                ")
                 ->where('s.sub_institute_id', $sub_institute_id)
                 ->where('se.syear', $syear)
-                ->when($grade,function ($q) use ($grade) {
-                        $q->where('se.grade_id', $grade);
-                })
-                ->when($standard,function ($q) use ($standard) {
-                        $q->where('se.standard_id', $standard);
-                })
-                ->when($division,function ($q) use ($division) {
-                    $q->where('se.section_id', $division);
-            })->groupBy('s.id')->get()->toArray();
+                ->when($grade, fn($q) => $q->where('se.grade_id', $grade))
+                ->when($standard, fn($q) => $q->where('se.standard_id', $standard))
+                ->when($division, fn($q) => $q->where('se.section_id', $division))
+                ->groupBy('s.id')
+                ->get()
+                ->toArray();
 
-            $studentData = json_decode(json_encode($data), true);
-            foreach($studentData as $key => $val){
-                $gb[] = $this->getBk($request, $val['id']);
+            $studentData = json_decode(json_encode($studentData), true);
+        }
 
-            }
-         }
-         
+        // Step 2: Enrich with getBk()
+        $gb = [];
+        foreach ($studentData as $student) {
+            $gb[] = $this->getBk($request, $student['id']);
+        }
 
         $result = DB::table('fees_receipt_book_master')
             ->selectRaw('*,GROUP_CONCAT(fees_head_id) heads')
@@ -488,7 +495,7 @@ public function getBk(Request $request, $id)
         }
 
 
-        if(in_array($sub_institute_id, [201,202,203,204,324,326,327,332])) {
+        if(in_array($sub_institute_id, [201,202,203,204,324,326,327])) {
             $feesCircularMaster = feesCircularMasterModel::where($whereArray)->get()->toArray();
             if (! isset($feesCircularMaster[0]['id'])) {
                 $res['status_code'] = 0;
@@ -615,7 +622,7 @@ public function getBk(Request $request, $id)
                 $res['receiptbook'] = $receiptBook[0];
             }
 
-            if(in_array($sub_institute_id, [201,202,203,204,324,326,327,332])) {
+            if(in_array($sub_institute_id, [201,202,203,204,324,326,327])) {
                 $hillsterm = session()->get('term_id');
                 if (count($feesCircularMaster) > 0) {
                     $res['feesCircularMaster'] = $feesCircularMaster[0];

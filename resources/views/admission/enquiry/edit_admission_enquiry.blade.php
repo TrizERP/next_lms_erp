@@ -307,11 +307,13 @@
                                                             <div id="SelectedStudents" class="">
                                                                 @if (!empty($data['siblingsData']))
                                                                     @foreach ($data['siblingsData'] as $k => $v)
-                                                                        <span class="selected-student"
-                                                                            data-id="{{ $v['id'] }}">
-                                                                            {{ $v['first_name'] . ' ' . $v['middle_name'] . ' ' . $v['last_name'] }}
-                                                                            <span class="remove-student"
-                                                                                style="cursor:pointer;color:red;">&times;</span>
+                                                                        <span class="selected-student" data-id="{{ is_array($v) ? $v['id'] : $v }}">
+                                                                            @if (is_array($v))
+                                                                                {{ $v['first_name'] . ' ' . $v['middle_name'] . ' ' . $v['last_name'] }}
+                                                                            @else
+                                                                                {{ $v }} {{-- fallback string/ID --}}
+                                                                            @endif
+                                                                            <span class="remove-student" style="cursor:pointer;color:red;">&times;</span>
                                                                         </span>
                                                                     @endforeach
                                                                 @endif
