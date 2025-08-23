@@ -130,13 +130,13 @@ class leaveApplicationController extends Controller
                         $q->where('se.section_id', $requestData['division']);
                     }
                 }
+                $q->when(!empty($requestData['from_date']), function ($query) use ($requestData) {
+                    $query->whereRaw("DATE(pc.apply_date) >= ?", [$requestData['from_date']]);
+                });
 
-                if (isset($_REQUEST['from_date']) && $_REQUEST['from_date'] != '') {
-                    $q->where('pc.apply_date', '>=', $requestData['from_date']);
-                }
-                if (isset($_REQUEST['to_date']) && $_REQUEST['to_date'] != '') {
-                    $q->where('pc.apply_date', '<=', $requestData['to_date']);
-                }
+                $q->when(!empty($requestData['to_date']), function ($query) use ($requestData) {
+                    $query->whereRaw("DATE(pc.apply_date) <= ?", [$requestData['to_date']]);
+                });
             })
             ->get()->toarray();
             

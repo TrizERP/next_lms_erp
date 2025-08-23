@@ -34,6 +34,9 @@
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row">
+            <div class="col-lg-12 col-md-4 col-sm-4 col-xs-12 text-center">
+                <img src="{{$data['logo']}}" style="height: 50px;" alt="logo">
+            </div>
             <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
                 <h4 class="page-title">Admission Enquiry</h4>
             </div>
@@ -84,7 +87,7 @@
                         </div>
                         <div class="col-md-3 form-group">
                             <label>Mobile (SMS Number)</label>
-                            <input type="text" id='mobile' pattern="[1-9]{1}[0-9]{9}" required name="mobile"
+                            <input type="text" id='mobile' pattern="[1-9]{1}[0-9]{9}" maxlength="10" required name="mobile"
                                 class="form-control">
                         </div>
                         <div class="col-md-3 form-group">
@@ -99,7 +102,7 @@
                         </div>
 
                         <div class="col-md-3 form-group">
-                            <label>Previous School Name </label>
+                            <label>Previous School's Name </label>
                             <input type="text" id='previous_school_name' name="previous_school_name"
                                 class="form-control">
                         </div>
@@ -220,7 +223,7 @@
                                                 name="{{ $value['field_name'] }}" placeholder="{{ $value['field_message'] }}">
                                     </textarea>
                                         @else
-                                            @if ($value['field_name'] == 'siblings')
+                                            @if ($value['field_name'] == 'siblings' && !in_array($_REQUEST['sub_institute_id'], ['1', '254']))
                                                 <input type="{{ $value['field_type'] }}" list="studentList"
                                                     id="{{ $value['field_name'] }}"
                                                     placeholder="{{ $value['field_message'] }}"
@@ -230,6 +233,8 @@
                                                 <input type="hidden" name="{{ $value['field_name'] }}"
                                                     id="siblings_id">
                                                 <datalist id="studentList"></datalist>
+                                            @elseif ($value['field_name'] == 'siblings' && in_array($_REQUEST['sub_institute_id'], ['1', '254']))
+                                                    <input type="text" id="{{ $value['field_name'] }}" name="{{ $value['field_name'] }}" class="form-control">
                                             @else
                                                 <input type="{{ $value['field_type'] }}"
                                                     id="{{ $value['field_name'] }}"
@@ -279,14 +284,12 @@
                         </div>
                         @if (in_array($_REQUEST['sub_institute_id'], ['1', '254']))
                             <div class="col-md-3 form-group">
-                                <label>Father Mobile No. </label>
-                                <input type="text" id='mobile_number_father' name="mobile_number_father"
-                                    class="form-control">
+                                <label>Father's Mobile No. </label>
+                                <input type="text" id='mobile_number_father' name="mobile_number_father" pattern="[1-9]{1}[0-9]{9}" maxlength="10" class="form-control">
                             </div>
                             <div class="col-md-3 form-group">
-                                <label>Mother Mobile No. </label>
-                                <input type="text" id='mobile_number_mother' name="mobile_number_mother"
-                                    class="form-control">
+                                <label>Mother's Mobile No. </label>
+                                <input type="text" id='mobile_number_mother' name="mobile_number_mother" pattern="[1-9]{1}[0-9]{9}" maxlength="10" class="form-control">
                             </div>
                         @endif
                         @if (in_array(Session::get('sub_institute_id'), ['201', '202', '203', '204', '324', '326', '327']))
@@ -312,13 +315,13 @@
                             </select>
                             <span class="cashPay" style="color:green">Please Save To get Token!</span>
                         </div>
+<!--                        
                         <div class="col-md-3 paymentData">
                             <div class="onlinePay">
                                 <img src="{{ asset('admin_dep/images/admission_qr.jpeg') }}" alt="admission_qr"
                                     width="200" height="250">
                             </div>
-
-                        </div>
+                        </div>                        
                         <!-- End Payment Type Section -->
                         <div class="col-md-12 form-group">
                             <center>
@@ -338,29 +341,11 @@
 <script type="text/javascript">
     //10-01-2022 START display holiday,vacation & event in Followup date
     $('document').ready(function() {
-        $('.paymentData').hide();
-        $('.onlinePay').hide();
         $('.cashPay').hide();
         // Payment type change handler
         $('#payment_type').on('change', function() {
             var payment_type = $(this).val();
-
-            // Hide both options first
-            $('.onlinePay').hide();
-            $('.cashPay').hide();
-
-            // Show the payment data container
-            $('.paymentData').show();
-
-            // Show the specific payment method
-            if (payment_type === 'online') {
-                $('.onlinePay').show();
-            } else if (payment_type === 'cash') {
                 $('.cashPay').show();
-            } else {
-                // If neither is selected, hide the payment container
-                $('.paymentData').hide();
-            }
         });
 
         $("#followup_date").on("change", function(event) {
