@@ -10,6 +10,7 @@ use GenTux\Jwt\GetsJwtToken;
 use App\Http\Controllers\easy_com\send_sms_parents\send_sms_parents_controller;
 use App\Http\Controllers\easy_com\send_email_parents\send_email_parents_controller;
 use Carbon\Carbon;
+use PHPMailer\PHPMailer;
 
 class admissionRegistrationHillController extends Controller
 {
@@ -156,21 +157,33 @@ class admissionRegistrationHillController extends Controller
               $sendSmsController = new send_sms_parents_controller;
               $sendSms = $sendSmsController->sendSMS($data['mobile'], $text, $sub_institute_id);
               //send email;
-          
-              $emailRequest = Request::create('/', 'POST', [
-                'type' => 'API',
+              $nextYear = ((int) substr($syear, 2, 2)+1);
+              $getStandard = DB::table('standard')->where(['id'=>$data['admission_standard'],'sub_institute_id'=>$sub_institute_id])->first();
+
+              $htmlContent = view('admission.registrationHills.sendConfirmEmail', [
+                'parent_date' => $pindate,
+                'parent_time' => $data["pint_time"] ?? '',
+                'aca_year'    => $syear.'-'.$nextYear,
+                'admission_std'    => $getStandard->name ?? '-',
+            ])->render();
+
+              $emailRequest = new Request([
+                'type' => 'webForm',
                 'teacher_id' => $created_by,
                 'sub_institute_id' =>$sub_institute_id,
                 'token' => $_REQUEST['_token'],
-                'all_email' => $data['email'],
+                'all_email' => 'rp2164394@gmail.com', // $data['email'],
+                'subject' => 'Admission Confirmation',
                 'syear' => $syear,
-                'example-subject' => 'admission confirmation',
-                'content' => $text
+                'example_subject' => 'admission confirmation',
+                'content' => $htmlContent
             ]);
-            
             //   echo "<pre>";print_r($emailRequest);
               $sendEmailController = new send_email_parents_controller;
-              $sendEmail = $sendEmailController->sendEmail($emailRequest);
+            //   $sendEmail = $sendEmailController->sendEmail($emailRequest);
+              $sendEmail = $this->sendEmail($emailRequest);
+
+            //   echo "Email Sent to >";print_r($sendEmail);
             }
         }
         // exit;
@@ -271,4 +284,108 @@ class admissionRegistrationHillController extends Controller
         
         return is_mobile($type, 'admission/registrationHills/report', $res, 'view');
     }
+
+    public function sendEmail(Request $request)
+    {
+        // echo "<pre>";print_r($request->all_email);exit;
+        $path = "";
+        $type = $request->input('type');
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+        $user_id = session()->get('user_id');
+
+        if ($request->hasFile('fileToUpload')) {
+            $file = $request->file('fileToUpload');
+            $originalname = $file->getClientOriginalName();
+            $name = $request->get('fileToUpload').date('YmdHis');
+            $ext = File::extension($originalname);
+            $file_name = "email_".$name.'.'.$ext;
+            $path = $file->storeAs('public/email', $file_name);
+        }
+
+        if ($path != "") {
+            $filePath = storage_path()."/app/".$path;
+            $path = $filePath;
+        }
+
+        $where_arr = [
+            "sub_institute_id" => $sub_institute_id,
+        ];
+        $smtp_details = DB::table('smtp_details')
+            ->where($where_arr)
+            ->get();
+            // return $smtp_details;
+
+        if (count($smtp_details) > 0) {
+            $emails = $request->all_email;
+            $to_arr = explode(',', $emails);
+
+            $subject = $request->example_subject;
+            $message = $request->content;
+            $attechment = $path;
+
+            //$ip = Request::ip();
+            $ip = $request->ip();
+            $this->saveParentLog($emails, $message, $subject, $attechment, $ip, $syear, $user_id, $sub_institute_id);
+
+            $from = $smtp_details[0]->gmail;
+            $from_pass = $smtp_details[0]->password;
+
+            $mail = new PHPMailer\PHPMailer();
+            $mail->IsSMTP();
+            $mail->isHTML(true);
+            $mail->SMTPDebug = 0;
+            $mail->SMTPAuth = true;
+            $mail->SMTPSecure = "ssl";
+            $mail->Host = $smtp_details[0]->server_address;
+            $mail->Port = $smtp_details[0]->port;
+
+            foreach ($to_arr as $id => $val) {
+                $mail->AddAddress($val);
+            }
+
+            $mail->Username = $from;
+            $mail->Password = $from_pass;
+            $mail->SetFrom($from, $from);
+            $mail->AddReplyTo($from, $from);
+            $mail->addAttachment($attechment);
+            $mail->Subject = $subject;
+            $mail->Body = $message;
+            $mail->AltBody = $message;
+
+            if (! $mail->Send()) {
+                $res = [
+                    "status_code" => 0,
+                    "message"     => "There is some error , while sending mail" . $mail->ErrorInfo,
+                ];
+            } else {
+                $res = [
+                    "status_code" => 1,
+                    "message"     => "Email Sent",
+                ];
+            }
+        } else {
+            $res = [
+                "status_code" => 1,
+                "message"     => "You did not setup mail client.",
+            ];
+        }
+
+        return response()->json($res);
+    }
+
+    public function saveParentLog($email, $msg, $subject, $attachment, $ip, $syear, $user_id, $sub_institute_id)
+    {
+        DB::table('email_sent_parents')->insert([
+            'SYEAR'            => $syear,
+            'EMAIL'            => $email,
+            'SUBJECT'          => $subject,
+            'EMAIL_TEXT'       => $msg,
+            'ATTECHMENT'       => $attachment,
+            'USER_ID'          => $user_id,
+            'IP'               => $ip,
+            'sub_institute_id' => $sub_institute_id,
+        ]);
+    }
+
 }
