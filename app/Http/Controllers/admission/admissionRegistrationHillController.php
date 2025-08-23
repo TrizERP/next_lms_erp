@@ -172,7 +172,7 @@ class admissionRegistrationHillController extends Controller
                 'teacher_id' => $created_by,
                 'sub_institute_id' =>$sub_institute_id,
                 'token' => $_REQUEST['_token'],
-                'all_email' => 'rp2164394@gmail.com', // $data['email'],
+                'all_email' => $data['email'],
                 'subject' => 'Admission Confirmation',
                 'syear' => $syear,
                 'example_subject' => 'admission confirmation',
