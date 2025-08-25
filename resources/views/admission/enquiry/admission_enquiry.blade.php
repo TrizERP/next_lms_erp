@@ -53,6 +53,11 @@
         </div>
         @endif
         <div class="row">
+             <div class="col-md-12">
+              <div class="alert alert-warning" role="alert">
+                Fill the enquiry form (As per the Child's Birth Certificate only)
+                </div>
+            </div>
             <div class="col-lg-12 col-sm-12 col-xs-12">
                 <form action="{{ route('admission_enquiry.storeNew') }}" enctype="multipart/form-data" method="post">
                     {{ method_field('POST') }}
