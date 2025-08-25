@@ -134,11 +134,12 @@ class taskController extends Controller
         }
         
         $TASK_ALLOCATED_TO = $request->input("TASK_ALLOCATED_TO");
-        $KRA = $request->input("KRA");
-        $KPA = $request->input("KPA");
-        $observation_point = $request->input("observation_point");
-        $task_type = $request->input("selType");
-        $required_skill = isset($request->skills) ? implode(',',$request->skills) : '';
+        $KRA = $request->input("KRA") ?? '';
+        $KPA = $request->input("KPA") ?? '';
+        $observation_point = $request->input("observation_point") ?? '';
+        $task_type = $request->input("selType") ?? '';
+        //$required_skill = isset($request->input("skills")) ? implode(',',$request->input("skills")) : '';
+        $required_skill = $request->input("skills") ?? '';
         // store skills
         $dates = $this->getDatesWithoutSundays();
         // echo "<pre>";print_r($required_skill);exit;
