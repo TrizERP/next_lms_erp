@@ -173,9 +173,9 @@ class admissionRegistrationHillController extends Controller
                 'sub_institute_id' =>$sub_institute_id,
                 'token' => $_REQUEST['_token'],
                 'all_email' => $data['email'],
-                'subject' => 'Admission Confirmation',
+                'subject' => 'ADMISSION PROCEDURE',
                 'syear' => $syear,
-                'example_subject' => 'admission confirmation',
+                'example_subject' => 'ADMISSION PROCEDURE',
                 'content' => $htmlContent
             ]);
             //   echo "<pre>";print_r($emailRequest);
