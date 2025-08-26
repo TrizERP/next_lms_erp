@@ -334,7 +334,7 @@ class admissionRegistrationHillController extends Controller
             $mail->isHTML(true);
             $mail->SMTPDebug = 0;
             $mail->SMTPAuth = true;
-            $mail->SMTPSecure = "ssl";
+            $mail->SMTPSecure = "tls";
             $mail->Host = $smtp_details[0]->server_address;
             $mail->Port = $smtp_details[0]->port;
 

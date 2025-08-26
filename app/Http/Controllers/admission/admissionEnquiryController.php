@@ -783,6 +783,7 @@ class admissionEnquiryController extends Controller
             // send email from here
             $sendController = new admissionRegistrationHillController;
             $sendEmail = $sendController->sendEmail($emailRequest);
+            // echo "<pre>";print_r($sendEmail);exit;
         }
         $res['status_code'] = "1";
         $res['message'] = "Updated successfully";
