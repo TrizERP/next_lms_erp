@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
 use function App\Helpers\sendSMS;
 use function App\Helpers\SearchStudent;
+use App\Http\Controllers\admission\admissionRegistrationHillController;
 use GenTux\Jwt\GetsJwtToken;
 
 class admissionEnquiryController extends Controller
@@ -140,10 +141,6 @@ class admissionEnquiryController extends Controller
         // echo "<pre>";print_r($request->all());exit;
         $category = castModel::get()->toArray();
 
-        $schoolData = SchoolModel::where(['id' => $sub_institute_id])->get()->toArray();
-        $schoolName = $schoolData[0]['SchoolName'];
-        $schoolLogo = $_SERVER['APP_URL'].'/admin_dep/images/'.$schoolData[0]['Logo'];
-
         $dataCustomFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "admission_enquiry"])
             ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1) and user_type="" ')
             ->when($type=="webForm" && $sub_institute_id==254,function($q) use($request){
@@ -168,7 +165,6 @@ class admissionEnquiryController extends Controller
         $res['message'] = "Success";
         $res['enquiry_no'] = $FORM_NO;
         $res['standard'] = $standard;
-        $res['logo'] = $schoolLogo;
         $res['custom_fields'] = $dataCustomFields;
         if (count($finalfieldsData) > 0) {
             $res['data_fields'] = $finalfieldsData;
@@ -723,6 +719,7 @@ class admissionEnquiryController extends Controller
      */
     public function update(Request $request, $id)
     {
+        // echo "<pre>";print_r($request->all());exit;
         $type = $request->get("type");
         $sub_institute_id = $request->session()->get("sub_institute_id");
         $user_id = $request->session()->get("user_id");
@@ -752,6 +749,34 @@ class admissionEnquiryController extends Controller
 
         admissionEnquiryModel::where(['id' => $id])->update($data);
 
+        if(isset($data["activity_date"]) && isset($data['activity_time']) && isset($data['admission_standard']) && $data['status']=="approve"){
+            $nextYear = ((int) substr($syear, 2, 2)+1);
+            $getStandard = DB::table('standard')->where(['id'=>$data['admission_standard'],'sub_institute_id'=>$sub_institute_id])->first();
+            $activityDate = isset($data["activity_date"]) ? Carbon::createFromFormat('d-m-Y',$data["activity_date"])->format('Y-m-d') : null;
+
+            $htmlContent = view('admission.registrationHills.sendConfirmEmail', [
+                'parent_date' => $activityDate ?? '',
+                'parent_time' => $data["activity_time"] ?? '',
+                'aca_year'    => $syear.'-'.$nextYear,
+                'admission_std'    => $getStandard->name ?? '-',
+            ])->render();
+
+
+            $emailRequest = new Request([
+                'type' => 'webForm',
+                'teacher_id' => $user_id,
+                'sub_institute_id' =>$sub_institute_id,
+                'token' => $_REQUEST['_token'],
+                'all_email' => $data['email'],
+                'subject' => 'Admission Confirmation',
+                'syear' => $syear,
+                'example_subject' => 'admission confirmation',
+                'content' => $htmlContent
+            ]);
+            // send email from here
+            $sendController = new admissionRegistrationHillController;
+            $sendEmail = $sendController->sendEmail($emailRequest);
+        }
         $res['status_code'] = "1";
         $res['message'] = "Updated successfully";
 
