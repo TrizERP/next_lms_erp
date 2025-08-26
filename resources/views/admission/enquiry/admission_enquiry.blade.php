@@ -35,7 +35,7 @@
     <div class="container-fluid">
         <div class="row">
             <div class="col-lg-12 col-md-4 col-sm-4 col-xs-12 text-center">
-                <img src="{{$data['logo']}}" style="height: 50px;" alt="logo">
+                <img src="{{$data['logo'] ?? ''}}" style="height: 50px;" alt="logo">
             </div>
             <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
                 <h4 class="page-title">Admission Enquiry</h4>
@@ -53,6 +53,11 @@
         </div>
         @endif
         <div class="row">
+             <div class="col-md-12">
+              <div class="alert alert-warning" role="alert">
+                Fill the enquiry form (As per the Child's Birth Certificate only)
+                </div>
+            </div>
             <div class="col-lg-12 col-sm-12 col-xs-12">
                 <form action="{{ route('admission_enquiry.storeNew') }}" enctype="multipart/form-data" method="post">
                     {{ method_field('POST') }}
