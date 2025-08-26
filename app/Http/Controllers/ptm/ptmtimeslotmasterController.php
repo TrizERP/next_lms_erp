@@ -13,8 +13,8 @@ class ptmtimeslotmasterController extends Controller
 {
     public function index(Request $request)
     {
-        $data = $this->getData($request);
         $type = $request->input('type');
+        $data = $this->getData($request);
         $res['status_code'] = 1;
         $res['message'] = "SUCCESS";
         $res['data'] = $data;
@@ -24,13 +24,30 @@ class ptmtimeslotmasterController extends Controller
 
     public function getData($request)
     {
-        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $type = $request->input("type");
+        if($type=="API"){
+            $sub_institute_id = $request->sub_institute_id;
+            $syear = $request->syear;
+            $standard_id = $request->standard_id;
+            $division_id = $request->division_id;
+        }else{
+            $sub_institute_id = $request->session()->get("sub_institute_id");
+            $syear = $request->session()->get("syear");
+            $standard_id = null;
+            $division_id = null;
+        }
 
         return ptmtimeslotmasterModel::select('ptm_time_slots_master.*', 'ptm_time_slots_master.standard_id',
             'standard.name as standard_name', 'division.name as division_name')
             ->join('standard', 'standard.id', '=', 'ptm_time_slots_master.standard_id')
             ->join('division', 'division.id', '=', 'ptm_time_slots_master.division_id')
-            ->where(['ptm_time_slots_master.sub_institute_id' => $sub_institute_id])
+            ->where(['ptm_time_slots_master.sub_institute_id' => $sub_institute_id,'ptm_time_slots_master.syear' => $syear])
+            ->when($standard_id, function ($query, $standard_id) {
+                return $query->where('ptm_time_slots_master.standard_id', $standard_id);
+            })
+            ->when($division_id, function ($query, $division_id) {
+                return $query->where('ptm_time_slots_master.division_id', $division_id);
+            })
             ->orderBy('ptm_time_slots_master.standard_id', 'asc')
             ->get();
     }
