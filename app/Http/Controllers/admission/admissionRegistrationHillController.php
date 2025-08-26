@@ -157,31 +157,31 @@ class admissionRegistrationHillController extends Controller
               $sendSmsController = new send_sms_parents_controller;
               $sendSms = $sendSmsController->sendSMS($data['mobile'], $text, $sub_institute_id);
               //send email;
-              if(isset($data["pint_time"]) && isset($pindate) && isset($data['admission_standard']) && $data['conf']=="C"){
-                $nextYear = ((int) substr($syear, 2, 2)+1);
-                $getStandard = DB::table('standard')->where(['id'=>$data['admission_standard'],'sub_institute_id'=>$sub_institute_id])->first();
+               if(isset($data["pint_time"]) && isset($pindate) && isset($data['admission_standard']) && $data['conf']=="C"){
+                    $nextYear = ((int) substr($syear, 2, 2)+1);
+                    $getStandard = DB::table('standard')->where(['id'=>$data['admission_standard'],'sub_institute_id'=>$sub_institute_id])->first();
 
-                $htmlContent = view('admission.registrationHills.sendConfirmEmail', [
-                    'parent_date' => $pindate,
-                    'parent_time' => $data["pint_time"] ?? '',
-                    'aca_year'    => $syear.'-'.$nextYear,
-                    'admission_std'    => $getStandard->name ?? '-',
-                ])->render();
+                    $htmlContent = view('admission.registrationHills.sendConfirmEmail', [
+                        'parent_date' => $pindate,
+                        'parent_time' => $data["pint_time"] ?? '',
+                        'aca_year'    => $syear.'-'.$nextYear,
+                        'admission_std'    => $getStandard->name ?? '-',
+                    ])->render();
 
-                $emailRequest = new Request([
-                    'type' => 'webForm',
-                    'teacher_id' => $created_by,
-                    'sub_institute_id' =>$sub_institute_id,
-                    'token' => $_REQUEST['_token'],
-                    'all_email' => $data['email'],
-                    'subject' => 'Admission Confirmation',
-                    'syear' => $syear,
-                    'example_subject' => 'admission confirmation',
-                    'content' => $htmlContent
-                ]);
-                // send email from here
-                $sendEmail = $this->sendEmail($emailRequest);
-                }
+                    $emailRequest = new Request([
+                        'type' => 'webForm',
+                        'teacher_id' => $created_by,
+                        'sub_institute_id' =>$sub_institute_id,
+                        'token' => $_REQUEST['_token'],
+                        'all_email' => $data['email'],
+                        'subject' => 'ADMISSION PROCEDURE',
+                        'syear' => $syear,
+                        'example_subject' => 'ADMISSION PROCEDURE',
+                        'content' => $htmlContent
+                    ]);
+                    $sendEmailController = new send_email_parents_controller;
+                    $sendEmail = $this->sendEmail($emailRequest);
+                    }
             }
         }
         // exit;

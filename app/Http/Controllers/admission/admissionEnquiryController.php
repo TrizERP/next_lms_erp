@@ -19,6 +19,7 @@ use function App\Helpers\sendSMS;
 use function App\Helpers\SearchStudent;
 use App\Http\Controllers\admission\admissionRegistrationHillController;
 use GenTux\Jwt\GetsJwtToken;
+use Carbon\Carbon;
 
 class admissionEnquiryController extends Controller
 {
@@ -768,9 +769,9 @@ class admissionEnquiryController extends Controller
                 'sub_institute_id' =>$sub_institute_id,
                 'token' => $_REQUEST['_token'],
                 'all_email' => $data['email'],
-                'subject' => 'Admission Confirmation',
+                'subject' => 'ADMISSION PROCEDURE',
                 'syear' => $syear,
-                'example_subject' => 'admission confirmation',
+                'example_subject' => 'ADMISSION PROCEDURE',
                 'content' => $htmlContent
             ]);
             // send email from here
