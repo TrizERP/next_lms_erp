@@ -58,9 +58,11 @@ class ptmattenedstatusController extends Controller
      */
     public function create(Request $request)
     {
+        // echo "<pre>";print_r($request->all());exit;
         $grade = $_REQUEST['grade'];
         $standard = $_REQUEST['standard'];
         $division_id = $_REQUEST['division'];
+        $ptm_title = $request->input('ptm_title');
         $date = $request->input('date');
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
@@ -85,7 +87,12 @@ class ptmattenedstatusController extends Controller
             ->where('PTS.division_id', '=', $division_id)
             ->where('PTS.sub_institute_id', '=', $sub_institute_id)
             ->where('PTS.syear', '=', $syear)
-            ->whereRaw("DATE_FORMAT(PTS.ptm_date, '%Y-%m-%d') = ?", [$date])
+            ->when($ptm_title, function ($query, $ptm_title) {
+                return $query->where('PTS.id', $ptm_title);
+            })
+            ->when($date, function ($query, $date) {
+                return $query->whereRaw("DATE_FORMAT(PTS.ptm_date, '%Y-%m-%d') = ?", [$date]);
+            })
             ->get()
             ->toArray();
         

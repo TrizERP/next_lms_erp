@@ -36,8 +36,14 @@
                             <div class="col-md-12 form-group">
                                 <div class="row">
                                     <div class="col-md-4 form-group">
+                                        <label for="title" >Select Title:</label>
+                                        <select name="ptm_title" id="ptm_title" class="form-control">
+                                            <option value="">Select</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4 form-group">
                                         <label>Date</label>
-                                        <input type="text" name="date" class="form-control mydatepicker" placeholder="Please select PTM date." required="required" value="@if(isset($data['date'])) {{$data['date']}} @endif" autocomplete="off">
+                                        <input type="text" name="date" class="form-control mydatepicker" placeholder="Please select PTM date." value="@if(isset($data['date'])) {{$data['date']}} @endif" autocomplete="off">
                                     </div>
                                 </div>
                             </div>
@@ -180,6 +186,46 @@ $(document).ready(function () {
     })
 
     $('#example').DataTable();
+
+    $("#division").on("change", function () {
+    var standardId = $("#standard").val();
+    var divisionId = $("#division").val();
+
+    var subInstituteId = "{{session()->get('sub_institute_id')}}";
+    var syear = "{{session()->get('syear')}}";
+
+        $.ajax({
+            url: "/ptm/add_ptm_time_slot_master",
+            type:'get',
+            data: {
+                standard_id: standardId,
+                division_id: divisionId,
+                type: "API",
+                sub_institute_id: subInstituteId,
+                syear: syear,
+            },
+            success: function (response) {
+                var result = JSON.parse(response);
+                if (result.status === "1" && Array.isArray(result.data)) {
+                    let $ptmTitle = $("#ptm_title");
+                    $ptmTitle.empty().append('<option value="">--Select--</option>');
+
+                    result.data.forEach(({ id, title, ptm_date }) => {
+                        $ptmTitle.append(
+                            $("<option>", { value: id, text: `${title}` })// - ${ptm_date}
+                        );
+                    });
+                } else {
+                    console.warn("No PTM slots found.");
+                }
+            },
+
+            error: function (xhr) {
+                console.error("Failed to fetch PTM slots:", xhr.responseText);
+            }
+        });
+    });
 });
+
 </script>
 @include('includes.footer')
