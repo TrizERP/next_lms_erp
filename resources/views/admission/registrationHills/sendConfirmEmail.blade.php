@@ -19,16 +19,16 @@
                 <img src="https://erp.triz.co.in/admin_dep/images/hills_logo1.png" width="150" height="50" />
             </div>
             <div class="content-div" style="color:black;color:black;">
-                <h2 class="h1line underline" style="text-align: center;text-decoration: underline;color:black;color:black;">{{$admission_std}} ADMISSION PROCEDURE AT HILLS HIGH SCHOOL, A.Y- {{$aca_year}}</h2>
-                <p style="font-size:16px;color:black;color:black;">Dear Parents,</p>
-                <p style="text-decoration:underline;font-size:16px;color:black;color:black;">Dear Parents,Please note that the issue of Admission Forms DOES NOT GUARANTEE
+                <h2 class="h1line underline" style="text-align: center;text-decoration: underline;color:black;">{{$admission_std}} ADMISSION PROCEDURE AT HILLS HIGH SCHOOL, A.Y- {{$aca_year}}</h2>
+                <p style="font-size:16px;color:black;">Dear Parents,</p>
+                <p style="text-decoration:underline;font-size:16px;color:black;">Dear Parents,Please note that the issue of Admission Forms DOES NOT GUARANTEE
                     ADMISSION.</p>
 
                 <h3 style="text-decoration:underline;color:black;">CONTACT WITH HILLS’ HIGH SCHOOL</h3>
                 <ul>
-                    <li style="font-size:16px">Please note that all communication with the Parents will be done via e- mail ONLY.
+                    <li style="font-size:16px;color:black;">Please note that all communication with the Parents will be done via e- mail ONLY.
                         The school mail id is admission@hillshigh.com / session2@hillshigh.com .</li>
-                    <li style="font-size:16px">The STATUS of admission of your child’s admission will be communicated via email.</li>
+                    <li style="font-size:16px;color:black;">The STATUS of admission of your child’s admission will be communicated via email.</li>
                 </ul>
 
                 <h3 style="text-decoration:underline;color:black;">ADMISSION PROCEDURE</h3>
