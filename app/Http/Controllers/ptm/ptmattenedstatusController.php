@@ -427,6 +427,7 @@ class ptmattenedstatusController extends Controller
         if($request->has('Search')){
             $from_date = $request->from_date;
             $to_date = $request->to_date;
+            $ptm_title = $request->ptm_title;
             $res['grade_id'] = $grade = $request->grade;
             $res['standard_id'] = $standard = $request->standard;
             $res['division_id'] = $division = $request->division;
@@ -434,8 +435,10 @@ class ptmattenedstatusController extends Controller
             $res['details'] = DB::table('ptm_booking_master as pbm')
             ->join('ptm_time_slots_master as psm','psm.id','=','pbm.TIME_SLOT_ID')
             ->join('tblstudent as s','s.id','=','pbm.STUDENT_ID')
-            ->join('tblstudent_enrollment as se',function($join) use($sub_institute_id,$syear){
-                $join->on('se.student_id','=','s.id')->where(['se.sub_institute_id'=>$sub_institute_id]);
+            ->join('tblstudent_enrollment as se', function ($join) use ($sub_institute_id, $syear) {
+                $join->on('se.student_id', '=', 's.id')
+                     ->whereColumn('se.sub_institute_id', '=', 'psm.sub_institute_id')
+                     ->whereColumn('se.syear', '=', 'psm.syear');
             })
             ->join('standard as std','std.id','=','se.standard_id')
             ->join('division as d','d.id','=','se.section_id')
@@ -448,6 +451,9 @@ class ptmattenedstatusController extends Controller
             })
             ->when($request->division,function($q) use($division){
                 $q->where('se.section_id',$division);
+            })
+            ->when($ptm_title, function ($query, $ptm_title) {
+                return $query->where('psm.id', $ptm_title);
             })
             ->where(['pbm.sub_institute_id'=>$sub_institute_id,'se.syear'=>$syear])
             ->whereBetween('pbm.DATE',[$from_date,$to_date])

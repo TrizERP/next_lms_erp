@@ -24,11 +24,11 @@
                 <p style="text-decoration:underline;font-size:16px;color:black;">Dear Parents,Please note that the issue of Admission Forms DOES NOT GUARANTEE
                     ADMISSION.</p>
 
-                <h3 style="text-decoration:underline;color:black;">CONTACT WITH HILLS’ HIGH SCHOOL</h3>
+                <h3 style="text-decoration:underline;color:black;">CONTACT WITH HILLS HIGH SCHOOL</h3>
                 <ul>
                     <li style="font-size:16px;color:black;">Please note that all communication with the Parents will be done via e- mail ONLY.
-                        The school mail id is admission@hillshigh.com / session2@hillshigh.com .</li>
-                    <li style="font-size:16px;color:black;">The STATUS of admission of your child’s admission will be communicated via email.</li>
+                        The school mail id is admission@hillshigh.com.</li>
+                    <li style="font-size:16px;color:black;">The STATUS of admission of your child's admission will be communicated via email.</li>
                 </ul>
 
                 <h3 style="text-decoration:underline;color:black;">ADMISSION PROCEDURE</h3>
@@ -36,12 +36,12 @@
 
                 <h3 style="text-decoration:underline;color:black;">STAGE-1 COLLECTION OF FORM</h3>
                 <ul>
-                    <li style="font-size:16px;color:black;">Collection of Admission Form from Hills’ High School, Vesu at the date & time given.</li>
+                    <li style="font-size:16px;color:black;">Collection of Admission Form from Hills High School, Vesu at the date & time given.</li>
                 </ul>
 
                 <h3 style="text-decoration:underline;color:black;">STAGE 2 Activity session :</h3>
                 <ul>
-                    <li style="font-size:16px;color:black;">A fun filled activity session will be conducted at Hills’ High School, Vesu, on <b>{{ \Carbon\Carbon::parse($parent_date)->format('d-m-Y') }} at {{ \Carbon\Carbon::parse($parent_time)->format('h:i a') }}</b></li>
+                    <li style="font-size:16px;color:black;">A fun filled activity session will be conducted at Hills High School, Vesu, on <b>{{ \Carbon\Carbon::parse($parent_date)->format('d-m-Y') }} at {{ \Carbon\Carbon::parse($parent_time)->format('h:i a') }}</b></li>
                     <li style="font-size:16px;color:black;">Child should be present with <span style="background-color: yellow;color:black;">current School I-card.</span></li>
                     <li style="font-size:16px;color:black;">The session would be for approx 45mins.</li>
                 </ul>
@@ -55,17 +55,16 @@
 
                 <h3 style="text-decoration:underline;color:black;">STAGE 4- Submission of form and required documents:</h3>
                 <p style="text-indent: 3ch;font-size:16px;color:black;">Candidates who are selected after the interaction will need to submit all
-                    the necessary documents along with the admission form & fees to Hills’ High School office, within
+                    the necessary documents along with the admission form & fees to Hills High School office, within
                     the stipulated time, to complete the Provisional Admission procedure.</p>
                 <ul style="margin:0px 8px;color:black;">
                     <li style="font-size:16px"><b>PLEASE NOTE :-</b> In case parents or child are unable to attend any of the sessions on the
-                        dates / time allotted by us, kindly send a mail to admission@hillshigh.com /
-                        session2@hillshigh.com so that we can arrange an alternative date / time. In case parents or
+                        dates / time allotted by us, kindly send a mail to admission@hillshigh.com so that we can arrange an alternative date / time. In case parents or
                         child are unable to attend any of the sessions on the dates / time allotted by us, kindly send a
-                        mail to <a href="mailto:admission@hillshigh.com">admission@hillshigh.com</a> / <a href="mailto:session2@hillshigh.com">session2@hillshigh.com</a> so that we can arrange an alternative
+                        mail to <a href="mailto:admission@hillshigh.com">admission@hillshigh.com</a> <a href="mailto:session2@hillshigh.com"></a> so that we can arrange an alternative
                         date / time.</li>
                 </ul>
-                <p style="font-size:16px;color:black;"><b>Selection of Shift – </b>Morning or Noon will be on the basis of first come first serve, Once the
+                <p style="font-size:16px;color:black;"><b>Selection of Shift - </b>Morning or Noon will be on the basis of first come first serve, Once the
                     total number of students are enrolled in either morning or afternoon session admission will be
                     granted only in the other session</p>
 
@@ -74,8 +73,8 @@
                     <h3 style="font-family: Lucida Handwriting;color:black;">THANK YOU!! <br>Hills High Family</h3>
                     <p style="font-size:16px;color:black;"><b style="font-family: Arial Narrow;color:black;">Address:</b> 65-A RCC Canal Road Opp.Nandavan Apt,Vesu, Surat, Gujarat 395007.<br>
                         Contact Number-9033095477 / 3477 <span style="color:red !important;">Connect us on Instagram</span> :- @hillshighschool <br>
-                        School website – www.hillshigh.com<br> 
-                        Email Id: <a href="mailto:admission@hillshigh.com">admission@hillshigh.com</a> / <a href="mailto:session2@hillshigh.com">session2@hillshigh.com</a> (For any admission query)
+                        School website - www.hillshigh.com<br> 
+                        Email Id: <a href="mailto:admission@hillshigh.com">admission@hillshigh.com</a>  <a href="mailto:session2@hillshigh.com"></a> (For any admission query)
 
                     </p>
                 </div>
