@@ -394,5 +394,49 @@ class palController extends Controller
         // echo "<pre>";print_r($data);exit;
         return is_mobile($type, 'lms/online_exam_result', $data, "view");
     }
+    public function palreport(Request $request){
+        $type= $request->type;
+        if($type == 'API'){
+            $sub_institute_id = $request->sub_institute_id;
+            $syear = $request->syear;
+        }else{
+            $sub_institute_id = session()->get('sub_institute_id');
+            $syear = session()->get('syear');
+        }
 
+            $data = DB::table('question_paper as q')
+            ->join('lms_online_exam_student as l', 'l.question_paper_id', '=', 'q.id')
+            ->join('tblstudent as t', 't.id', '=', 'l.student_id')
+            ->join('tblstudent_enrollment as te', function ($join) {
+                $join->on('te.student_id', '=', 't.id')
+                     ->on('te.syear', '=', 'q.syear');
+            })
+            ->join('standard as s', 's.id', '=', 'te.standard_id')
+            ->join('division as d', 'd.id', '=', 'te.section_id')
+            ->where('q.sub_institute_id', $sub_institute_id)
+            ->where('q.syear', $syear)
+            ->where('q.exam_type', 'PAL')
+            ->select(
+                't.first_name',
+                't.middle_name',
+                't.last_name',
+                's.name as standard',
+                'd.name as division',
+                DB::raw("DATE_FORMAT(l.start_time, '%d-%m-%Y %h:%i:%s') as start_time"),
+                DB::raw("CONCAT(l.obtain_marks,'/',(l.total_right+l.total_wrong)) as grade")
+            )
+            ->get()->toArray();
+            // echo "<pre>";print_r($res);exit;
+        //}
+
+        if (empty($data)) {
+            $res['status'] = 0;
+            $res['message'] = "No Data Found";
+        } else {
+            $res['data'] = $data;
+            $res['status'] = 1;
+            $res['message'] = "Success";
+        }
+        return is_mobile($type, "lms/pal/palreport", $res, "view");
+    }
 }
