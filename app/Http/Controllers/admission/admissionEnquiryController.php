@@ -94,6 +94,8 @@ class admissionEnquiryController extends Controller
             $result = $data->get()->toArray();//COUNT(tblstudent.id) AS total_student_count, by rajesh update 'af.'
 
         $data = json_decode(json_encode($result), true);
+        // echo "<pre>";print_r($data);exit;
+
         // get general data
         $get_previousAdmission = DB::table('general_data')->where(['fieldname' => 'previous_year_admission', 'sub_institute_id' => $sub_institute_id])->first();
         // echo "<pre>";print_r($get_previousAdmission->fieldvalue);exit;
@@ -148,12 +150,17 @@ class admissionEnquiryController extends Controller
         // echo "<pre>";print_r($request->all());exit;
         $category = castModel::get()->toArray();
 
-        $dataCustomFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "admission_enquiry"])
-            ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1) and user_type="" ')
-            ->when($type=="webForm" && $sub_institute_id==254,function($q) use($request){
-                $q->whereNotIN('id',[199,200,201]);
-            })
-            ->get();
+        $dataCustomFields = tblcustomfieldsModel::where(['status' => "1"])
+                ->when($type == "webForm", function ($q) {
+                    $q->where(['table_name' => "admission_enquiry_online"]);
+                }, function ($q) {
+                    $q->where(['table_name' => "admission_enquiry"]);
+                })
+                ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1) and user_type="" ')
+                ->when($type=="webForm" && $sub_institute_id==254,function($q) use($request){
+                    $q->whereNotIN('id',[199,200,201]);
+                })
+                ->get();
 
         $fieldsData = tblfields_dataModel::get()->toArray();
         $i = 0;
@@ -195,6 +202,10 @@ class admissionEnquiryController extends Controller
             'date' => $row->date,
             ];
         }
+        $schoolData = SchoolModel::where(['id' => $sub_institute_id])->get()->toArray();
+        $schoolName = $schoolData[0]['SchoolName'];
+        $schoolLogo = $_SERVER['APP_URL'].'/admin_dep/images/'.$schoolData[0]['Logo'] ?? '-';
+        $res['logo'] = $schoolLogo;
         // echo "<pre>";print_r($res['ageValidation']);exit;
         if($type=='webForm'){
             // echo "<pre>";print_r($res['ageValidation']);exit;
@@ -753,7 +764,7 @@ class admissionEnquiryController extends Controller
         $data['created_by'] = $user_id;
         $data['created_on'] = date('Y-m-d H:i:s');
         $data['sub_institute_id'] = $sub_institute_id;
-
+        //  echo "<pre>";print_r($data);exit;
         admissionEnquiryModel::where(['id' => $id])->update($data);
 
         if(isset($data["activity_date"]) && isset($data['activity_time']) && isset($data['admission_standard']) && $data['status']=="approve"){

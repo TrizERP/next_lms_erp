@@ -353,9 +353,14 @@
                                     @if (in_array(session()->get('sub_institute_id'), ['254']))
                                         <div class="col-md-3 form-group">
                                             <label>Payment Type</label>
-                                            <input type="text" class="form-control"
+                                            {{-- <input type="text" class="form-control"
                                                 @if (isset($editData['payment_type'])) value="{{ $editData['payment_type'] }}" @endif
-                                                disabled>
+                                                disabled> --}}
+                                                <select id="payment_type" name="payment_type" class="form-control" required>
+                                                <option value="">Select </option>
+                                                <option value="cash"  @if (isset($editData['payment_type']) && $editData['payment_type']=="cash") selected @endif>Cash</option>
+                                                <option value="online"  @if (isset($editData['payment_type']) && $editData['payment_type']=="online") selected @endif>Online</option>
+                                            </select>
                                             @if ($editData['payment_attachment'] !== null)
                                                 <a href="{{ Storage::disk('digitalocean')->url('public/admission_payment/' . $editData['payment_attachment']) }}"
                                                     target="_blank">{{ $editData['payment_attachment'] }}</a>

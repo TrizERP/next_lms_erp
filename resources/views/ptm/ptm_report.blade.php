@@ -45,6 +45,12 @@
                             </div>
                         </div> 
                         <div class="col-md-4 form-group ml-0 mr-0">
+                            <label for="title" >Select Title:</label>
+                            <select name="ptm_title" id="ptm_title" class="form-control">
+                                <option value="">Select</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 form-group ml-0 mr-0">
                             <label>From Date</label>
                             <div class="input-daterange input-group" id="date-range">
                                 <input value="@if(isset($data['from_date'])){{ $data['from_date'] }}@endif"
@@ -157,6 +163,44 @@
                 }
             } );
         } );
+	    $("#division").on("change", function () {
+	    var standardId = $("#standard").val();
+	    var divisionId = $("#division").val();
+
+	    var subInstituteId = "{{session()->get('sub_institute_id')}}";
+	    var syear = "{{session()->get('syear')}}";
+
+	        $.ajax({
+	            url: "/ptm/add_ptm_time_slot_master",
+	            type:'get',
+	            data: {
+	                standard_id: standardId,
+	                division_id: divisionId,
+	                type: "API",
+	                sub_institute_id: subInstituteId,
+	                syear: syear,
+	            },
+	            success: function (response) {
+	                var result = JSON.parse(response);
+	                if (result.status === "1" && Array.isArray(result.data)) {
+	                    let $ptmTitle = $("#ptm_title");
+	                    $ptmTitle.empty().append('<option value="">--Select--</option>');
+
+	                    result.data.forEach(({ id, title, ptm_date }) => {
+	                        $ptmTitle.append(
+	                            $("<option>", { value: id, text: `${title}` })// - ${ptm_date}
+	                        );
+	                    });
+	                } else {
+	                    console.warn("No PTM slots found.");
+	                }
+	            },
+
+	            error: function (xhr) {
+	                console.error("Failed to fetch PTM slots:", xhr.responseText);
+	            }
+	        });
+	    });
     } );
 </script>
 @include('includes.footer')

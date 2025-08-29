@@ -98,22 +98,22 @@
                         <div class="col-md-3 form-group">
                             <label>Email </label>
                             <!--  pattern="/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/" -->
-                            <input type="email" id='email' name="email" class="form-control">
+                            <input type="email" id='email' name="email" class="form-control" required>
                         </div>
 
                         <div class="col-md-3 form-group">
                             <label>Address </label>
-                            <textarea id='address' name="address" class="form-control"></textarea>
+                            <textarea id='address' name="address" class="form-control" required></textarea>
                         </div>
 
                         <div class="col-md-3 form-group">
                             <label>Previous School's Name </label>
                             <input type="text" id='previous_school_name' name="previous_school_name"
-                                class="form-control">
+                                class="form-control" required>
                         </div>
                         <div class="col-md-3 form-group">
                             <label>Previous Standard </label>
-                            <select id='previous_standard' name="previous_standard" class="form-control">
+                            <select id='previous_standard' name="previous_standard" class="form-control" required>
                                 <option value=""> Select Standard </option>
                                 @foreach ($data['standard'] as $key => $previous)
                                     <option value="{{ $previous['id'] }}"> {{ $previous['name'] }}</option>
@@ -152,7 +152,7 @@
                         <div class="col-md-3 form-group">
                             <label>Gender </label>
                             <div class="radio radio-success">
-                                <input type="radio" id='male' name="gender" value="M">
+                                <input type="radio" id='male' name="gender" value="M" required>
                                 <label for="male"> Male </label>
                             </div>
                             <div class="radio radio-success">
@@ -290,11 +290,11 @@
                         @if (in_array($_REQUEST['sub_institute_id'], ['1', '254']))
                             <div class="col-md-3 form-group">
                                 <label>Father's Mobile No. </label>
-                                <input type="text" id='mobile_number_father' name="mobile_number_father" pattern="[1-9]{1}[0-9]{9}" maxlength="10" class="form-control">
+                                <input type="text" id='mobile_number_father' name="mobile_number_father" pattern="[1-9]{1}[0-9]{9}" maxlength="10" class="form-control" required>
                             </div>
                             <div class="col-md-3 form-group">
                                 <label>Mother's Mobile No. </label>
-                                <input type="text" id='mobile_number_mother' name="mobile_number_mother" pattern="[1-9]{1}[0-9]{9}" maxlength="10" class="form-control">
+                                <input type="text" id='mobile_number_mother' name="mobile_number_mother" pattern="[1-9]{1}[0-9]{9}" maxlength="10" class="form-control" required>
                             </div>
                         @endif
                         @if (in_array(Session::get('sub_institute_id'), ['201', '202', '203', '204', '324', '326', '327']))
