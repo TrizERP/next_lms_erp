@@ -128,6 +128,7 @@ Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute',
 
     // palController
     Route::resource('pal', palController::class);
+    Route::get('palreport',[palController::class,'palreport'])->name('palreport.index');
 
     Route::get('ajax_LMS_MappingValue', [contentController::class, 'ajax_LMS_MappingValue'])->name('ajax_LMS_MappingValue');
 
