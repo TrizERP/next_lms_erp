@@ -425,6 +425,7 @@ class palController extends Controller
                 DB::raw("DATE_FORMAT(l.start_time, '%d-%m-%Y %h:%i:%s') as start_time"),
                 DB::raw("CONCAT(l.obtain_marks,'/',(l.total_right+l.total_wrong)) as grade")
             )
+            ->orderBy('l.start_time', 'desc')
             ->get()->toArray();
             // echo "<pre>";print_r($res);exit;
         //}

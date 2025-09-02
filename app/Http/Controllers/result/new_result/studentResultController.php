@@ -3790,7 +3790,7 @@ while ($current_date <= $post_end_date) {
                                         }else{
                                             $tdVal = $obtained_mark_arr[0] ?? "0.00"; // print AB,NA,EX
                                         }
-                                        $table .= '<td class="data_center else" ' . $underline . ' ' . $exam_id . '-'.$val->subject_id.'-'.$standard_id.'>' . $tdVal . '</td>';
+                                        $table .= '<td class="data_center else" '.json_encode($marksArray) .' -' . $underline . ' ' . $exam_id . '-'.$val->subject_id.'-'.$standard_id.'>' . $tdVal . '</td>';
                                     }
                                 }
                             } else {

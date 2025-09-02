@@ -77,7 +77,7 @@ class apiController extends Controller
 				//End Added by rajesh 02-04-2024 same OTP send in exist mobile
                 
                 $sub_institute_id = $data[0]->sub_institute_id;
-                $sub_Array = [328,329,330,331];
+                $sub_Array = [328,329,330,331,333];
                 if ($_REQUEST['mobile'] == '9979176562' || $_REQUEST['mobile'] == '9824154142') {
                     $otp = "123456";
                 } else if(in_array($sub_institute_id, $sub_Array)){
@@ -161,7 +161,7 @@ class apiController extends Controller
                 $otp = rand(100000, 999999);
 
                 $sub_institute_id = $data['sub_institute_id'];
-                $sub_Array = [328,329,330,331];
+                $sub_Array = [328,329,330,331,333];
                 if ($_REQUEST['mobile'] == '9979176562' || $_REQUEST['mobile'] == '9824154142') {
                     $otp = "123456";
                 }else if(in_array($sub_institute_id, $sub_Array)){

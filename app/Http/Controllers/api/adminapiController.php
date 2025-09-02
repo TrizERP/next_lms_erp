@@ -70,9 +70,10 @@ class adminapiController extends Controller
                 $otp = rand(100000, 999999);
 
                 $sub_institute_id = $data['sub_institute_id'];
+                $sub_Array = [328,329,330,331,333];
                 if ($_REQUEST['mobile'] == '9979176562') {
                     $otp = "123456";
-                }else if($sub_institute_id == 328){
+                }else if(in_array($sub_institute_id, $sub_Array)){
                     $otp = date('dmy', strtotime($data['birthdate']));
                 } else {
                     //$text = "Dear Parent, Your OTP is ".$otp;
