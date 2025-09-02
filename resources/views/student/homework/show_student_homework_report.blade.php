@@ -90,7 +90,7 @@
                                 <tr>
                                     <th><input id="checkall" onchange="checkAll(this);" type="checkbox"></th>
                                     <th>Sr.No.</th>
-                                    <th>{{App\Helpers\get_string('studentname','request')}}</th>
+                                    <th>Name</th>
                                     <th>Title</th>
                                     <th>Description</th>
                                     <th>Image</th>
