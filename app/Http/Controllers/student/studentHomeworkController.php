@@ -339,6 +339,7 @@ class studentHomeworkController extends Controller
         $from_date = $request->input('from_date');
         $to_date = $request->input('to_date');
         $marking_period_id = session()->get('term_id');
+        $typewise = $request->input('typewise');
 
         $subjects = subjectModel::select('id',
             'subject_name')->where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
@@ -355,8 +356,13 @@ class studentHomeworkController extends Controller
                 $join->whereRaw('d.id = h.division_id AND h.sub_institute_id= d.sub_institute_id');
             })->join('subject as ss', function ($join) {
                 $join->whereRaw('ss.id = h.subject_id AND ss.sub_institute_id = h.sub_institute_id');
-            })->selectRaw("h.*,s.name as standard_name,d.name as division_name,ss.subject_name,
-                CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name) as student_name, ts.id as student_id")
+            })
+            ->join('tbluser as u', 'u.id', '=', 'h.created_by')
+            ->selectRaw("h.*,s.name as standard_name,d.name as division_name,ss.subject_name, ts.id as student_id,
+                " . ($typewise === 'subjectwise' 
+                ? "CONCAT_WS(' ', u.first_name, u.middle_name, u.last_name) as student_name"
+                : "CONCAT_WS(' ', ts.first_name, ts.middle_name, ts.last_name) as student_name"
+            ))
             ->where('h.sub_institute_id', $sub_institute_id)
             ->where('h.syear', $syear)
             // for student 01-01-2025
@@ -405,6 +411,17 @@ class studentHomeworkController extends Controller
             $result = $result->where('h.date', '<=', $to_date);
         }
 
+// Subjectwise condition
+if ($typewise == 'subjectwise') {
+    $result = $result->groupBy(
+        's.name',
+        'd.name',
+        'ss.subject_name',
+        'h.title',
+        'h.description',
+        'h.date'
+    );
+}
         $result = $result->orderBy('h.id','DESC')->get()->toArray();
 
         $result = array_map(function ($value) {
@@ -421,6 +438,7 @@ class studentHomeworkController extends Controller
         $res['subject'] = $subject;
         $res['from_date'] = $from_date;
         $res['to_date'] = $to_date;
+        $res['typewise'] = $typewise;
 
         return is_mobile($type, "student/homework/show_student_homework_report", $res, "view");
     }
