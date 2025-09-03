@@ -54,6 +54,12 @@
                         <input type="text" id="to_date" @if(isset($data['to_date'])) value="{{$data['to_date']}}" @endif name="to_date"
                                class="form-control mydatepicker" autocomplete="off">
                     </div>
+                    <div class="col-md-4 form-group">
+    <select name="typewise" id="typewise" class="form-control">
+        <option value="studentwise" {{ isset($data['typewise']) && $data['typewise'] == 'studentwise' ? 'selected' : '' }}>Student wise</option>
+        <option value="subjectwise" {{ isset($data['typewise']) && $data['typewise'] == 'subjectwise' ? 'selected' : '' }}>Subject wise</option>
+    </select>
+                    </div>
                     <div class="col-md-12 form-group">
                         <center>
                             <input type="submit" name="submit" value="Search" class="btn btn-success">

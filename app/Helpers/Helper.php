@@ -1829,7 +1829,11 @@ if (!function_exists('htmlToPDFHills')) {
     function htmlToPDFHills($htmlPath, $pdfPath)
     {
         $command = '/usr/local/bin/wkhtmltopdf --encoding utf-8 ';
-        $command .= '--header-html https://erp.triz.co.in/css/hpc_header.html ';
+
+        if(in_array(session()->get('sub_institute_id'),[201,202,203,204]))
+            $command .= '--header-html https://erp.triz.co.in/css/hpc_header.html ';
+        else
+            $command .= '--header-html https://erp.triz.co.in/css/hpc_header_todd.html ';
         $command .= '--footer-html https://erp.triz.co.in/css/hpc_footer.html ';
         $command .= '--margin-top 35mm --margin-bottom 15mm ';
         $command .= '--enable-local-file-access '; // Allows external files (CSS, fonts)
