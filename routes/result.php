@@ -39,6 +39,7 @@ use App\Http\Controllers\result\GradeMaster\GradeMasterController;
 use App\Http\Controllers\result\marks_entry\marks_entry_controller;
 use App\Http\Controllers\result\result_book_master\result_book_master_controller;
 use App\Http\Controllers\result\result_master\result_master_controller;
+use App\Http\Controllers\result\result_master\consolidateReportController;
 use App\Http\Controllers\result\result_api\resultAPIController;
 use App\Http\Controllers\result\result_remark_master\result_remark_master_controller;
 use App\Http\Controllers\result\std_grd_maping\std_grd_maping_controller;
@@ -67,6 +68,7 @@ Route::group(['prefix' => 'result', 'middleware' => ['session', 'menu', 'logRout
         ['as' => 'grade_master.createData', 'uses' => 'result\GradeMaster\GradeMasterController@AddAllData']);
     Route::resource('std_grd_maping', std_grd_maping_controller::class);
     Route::resource('result_master', result_master_controller::class);
+    Route::resource('consolidate_report', consolidateReportController::class);
     Route::resource('exam_creation', exam_creation_controller::class);
     Route::resource('result_remark_master', result_remark_master_controller::class);
     Route::resource('result_book_master', result_book_master_controller::class);

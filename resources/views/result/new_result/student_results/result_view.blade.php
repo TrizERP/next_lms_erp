@@ -1,6 +1,6 @@
 @include('includes.headcss') @include('includes.header') @include('includes.sideNavigation')
 
-@if(in_array(session()->get('sub_institute_id'),[201,202,203,204]) && $data['result_type']=="HPC")
+@if(in_array(session()->get('sub_institute_id'),[201,202,203,204,324,326,327]) && $data['result_type']=="HPC")
 <link rel="stylesheet" href="/css/hpc_result.css" />
 @else 
 <link rel="stylesheet" href="/css/result.css" />
@@ -125,7 +125,7 @@ function printMob(divName) {
         var studentData = @json($data['all_stud_html']);
         var acaYear = "{{ session()->get('syear') }}"+'-'+"{{(session()->get('syear')+1)}}";
 
-        @if(!in_array(session()->get('sub_institute_id'),[201,202,203,204]))
+        @if(!in_array(session()->get('sub_institute_id'),[201,202,203,204,324,326,327]))
             
             var divToPrint = document.getElementById(divName);
             var popupWin = window.open('', '_blank', 'width=300,height=300');

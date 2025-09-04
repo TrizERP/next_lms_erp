@@ -512,7 +512,7 @@ if (!function_exists('SearchChain')) {
         //  //  batch val  //  //
         $batch_option = "<option value=''>Select</option>";
         $searchsection = 'Search Section';
-        $grade = '<div class="col-md-' . $col . '">
+        $grade = '<div class="col-md-' . $col . ' searchSectionDiv">
                     <div class="form-group">
                         <label>' . get_string('searchsection', 'request') . ': </label>
                         <select name="' . $grade_name . '" id="grade" class="form-control" ' . $multiple . '>
@@ -523,8 +523,8 @@ if (!function_exists('SearchChain')) {
                 </div>';
         //<h4 class="box-title after-none mb-0">Select Section:</h4>
 
-        $std = '<div class="col-md-' . $col . '">
-                    <div class="form-group">
+        $std = '<div class="col-md-' . $col . ' searchStandardDiv" >
+                    <div class="form-group ">
                         <label>' . get_string('searchstandard', 'request') . ': </label>
                         <select name="' . $std_name . '" id="standard" class="form-control" ' . $multiple . '>
                             ' . $std_option . '
@@ -533,8 +533,8 @@ if (!function_exists('SearchChain')) {
                 </div>';
         //<h4 class="box-title after-none mb-0">Select Standard:</h4>
 
-        $div = ' <div class="col-md-' . $col . '">
-                    <div class="form-group">
+        $div = ' <div class="col-md-' . $col . ' searchDivisionDiv">
+                    <div class="form-group ">
                         <label>' . get_string('searchdivision', 'request') . ': </label>
                         <select name="' . $div_name . '" id="division" class="form-control" ' . $multiple . '>
                             ' . $div_option . '
@@ -1829,7 +1829,11 @@ if (!function_exists('htmlToPDFHills')) {
     function htmlToPDFHills($htmlPath, $pdfPath)
     {
         $command = '/usr/local/bin/wkhtmltopdf --encoding utf-8 ';
-        $command .= '--header-html https://erp.triz.co.in/css/hpc_header.html ';
+
+        if(in_array(session()->get('sub_institute_id'),[201,202,203,204]))
+            $command .= '--header-html https://erp.triz.co.in/css/hpc_header.html ';
+        else
+            $command .= '--header-html https://erp.triz.co.in/css/hpc_header_todd.html ';
         $command .= '--footer-html https://erp.triz.co.in/css/hpc_footer.html ';
         $command .= '--margin-top 35mm --margin-bottom 15mm ';
         $command .= '--enable-local-file-access '; // Allows external files (CSS, fonts)

@@ -83,11 +83,17 @@ class admissionEnquiryController extends Controller
                 IF(fu.follow_up_date = CURDATE(),"#0aa884","") as todays_next_followup')
             ->where('admission_enquiry.sub_institute_id', $sub_institute_id)
             ->where('admission_enquiry.syear', $syear)
-            ->groupBy('admission_enquiry.id')
-            ->orderByRaw('admission_enquiry.followup_date = CURDATE() desc')
-            ->get()->toArray();//COUNT(tblstudent.id) AS total_student_count, by rajesh update 'af.'
+            ->groupBy('admission_enquiry.id');
 
-        $data = json_decode(json_encode($data), true);
+            //Apply different ORDER BY based on sub_institute_id
+            if ($sub_institute_id == 254) {
+                $data->orderByRaw('CAST(admission_enquiry.enquiry_no AS UNSIGNED) DESC');
+            } else {
+                $data->orderByRaw('admission_enquiry.followup_date = CURDATE() desc');
+            }
+            $result = $data->get()->toArray();//COUNT(tblstudent.id) AS total_student_count, by rajesh update 'af.'
+
+        $data = json_decode(json_encode($result), true);
         // get general data
         $get_previousAdmission = DB::table('general_data')->where(['fieldname' => 'previous_year_admission', 'sub_institute_id' => $sub_institute_id])->first();
         // echo "<pre>";print_r($get_previousAdmission->fieldvalue);exit;

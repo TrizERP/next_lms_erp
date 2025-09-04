@@ -55,10 +55,10 @@
                                class="form-control mydatepicker" autocomplete="off">
                     </div>
                     <div class="col-md-4 form-group">
-                        <select name="typewise" id="typewise" class="form-control">
-                            <option value="studentwise" {{ isset($data['typewise']) && $data['typewise'] == 'studentwise' ? 'selected' : '' }}>Student wise</option>
-                            <option value="subjectwise" {{ isset($data['typewise']) && $data['typewise'] == 'subjectwise' ? 'selected' : '' }}>Subject wise</option>
-                        </select>
+    <select name="typewise" id="typewise" class="form-control">
+        <option value="studentwise" {{ isset($data['typewise']) && $data['typewise'] == 'studentwise' ? 'selected' : '' }}>Student wise</option>
+        <option value="subjectwise" {{ isset($data['typewise']) && $data['typewise'] == 'subjectwise' ? 'selected' : '' }}>Subject wise</option>
+    </select>
                     </div>
                     <div class="col-md-12 form-group">
                         <center>

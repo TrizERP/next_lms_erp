@@ -965,7 +965,7 @@ $oprator = ($request->get('sub_institute_id') == 1) ? '<' : '=';
 
                 // Prepare common elements
                     $css_name = "https://" . $_SERVER['SERVER_NAME'];
-                    if(in_array($request->get('sub_institute_id'),[201,202,203,204])){
+                    if(in_array($request->get('sub_institute_id'),[201,202,203,204,324,326,327])){
                         $result_css = '<link rel="stylesheet" href="' . $css_name . '/css/hpc_result.css" />';
                     }else{
                         $result_css = '<link rel="stylesheet" href="' . $css_name . '/css/result.css" />';
@@ -1016,7 +1016,7 @@ $oprator = ($request->get('sub_institute_id') == 1) ? '<' : '=';
 
                         // Save HTML to a file
                         file_put_contents($html_file_path, $html);
-                        if(in_array($request->get('sub_institute_id'),[201,202,203,204])){
+                        if(in_array($request->get('sub_institute_id'),[201,202,203,204,324,326,327])){
                             htmlToPDFHills($html_file_path, $pdf_file_path); 
                         }else{
                             // Convert HTML to PDF
