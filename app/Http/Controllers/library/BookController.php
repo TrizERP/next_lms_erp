@@ -31,6 +31,8 @@ class BookController extends Controller
         $publisher_names = LibraryBook::groupBy('publisher_name')->pluck('publisher_name', 'id');
         $author_names = LibraryBook::groupBy('author_name')->pluck('author_name', 'id');
         $sub_institute_id = session()->get('sub_institute_id');
+        $user_profile_name = session()->get('user_profile_name');
+
         $data['bookdata'] =  DB::table('mst_item_status')
             ->where('sub_institute_id', $sub_institute_id)
             ->pluck('item_status_name', 'id')
@@ -93,8 +95,16 @@ return DataTables::of($books)
     ->addColumn('image', function($row) {
         return '<img src="' . Storage::disk('books')->url($row->image) . '" height="100" width="100" alt="">';
     })
-    ->addColumn('action', function($row) {
-        $actionBtn = '<a href="javascript:void(0)" class="show m-2 btn btn-success btn-library-item" title="Show Book" data-id="' . $row->id . '"><i class="fa fa-eye"></i></a><a href="javascript:void(0)" class="delete m-2 btn btn-danger btn-delete d-none" title="Delete Book" data-id="' . $row->id . '"><i class="fa fa-trash"></i></a><a href="javascript:void(0)" class="m-2 btn btn-warning btn-edit ml-1" title="Edit Book" data-id="' . $row->id . '"><i class="fa fa-pencil"></i></a><a href="javascript:void(0)" class="m-2 btn btn-primary print-barcode ml-1 d-none" title="Print Barcode" data-id="' . $row->id . '"><i class="fa fa-barcode"></i></a><a href="javascript:void(0)" class="m-2 btn btn-info circulation ml-1" title="Issue/Return Book" data-id="' . $row->id . '"><i class="fa fa-retweet"></i></a>';
+    ->addColumn('action', function($row) use($user_profile_name) {
+        $deleteBtn = '';
+        if(strtoupper($user_profile_name) === 'ADMIN'){
+            $deleteBtn =  '<a href="javascript:void(0)" class="delete m-2 btn btn-danger btn-delete" title="Delete Book" data-id="' . $row->id . '"><i class="fa fa-trash"></i></a>';
+        }
+        
+        $actionBtn = '<a href="javascript:void(0)" class="show btn btn-success btn-library-item" title="Show Book" data-id="' . $row->id . '"><i class="fa fa-eye"></i></a>' . 
+                     '<a href="javascript:void(0)" class="btn btn-warning btn-edit ml-1" title="Edit Book" data-id="' . $row->id . '"><i class="fa fa-pencil"></i></a>' .
+                     '<a href="javascript:void(0)" class="btn btn-primary print-barcode ml-1 d-none" title="Print Barcode" data-id="' . $row->id . '"><i class="fa fa-barcode"></i></a>' .
+                     '<a href="javascript:void(0)" class="btn btn-info circulation ml-1" title="Issue/Return Book" data-id="' . $row->id . '"><i class="fa fa-retweet"></i></a>'.$deleteBtn;
         return $actionBtn;
     })
     ->rawColumns(['checkbox', 'image', 'action'])
