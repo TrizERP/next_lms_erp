@@ -192,7 +192,7 @@
             // Check if the created Date object is valid
             if (!isNaN(returnDate.getTime())) {
                 // Add 10 days to the returnDate
-                returnDate.setDate(returnDate.getDate() + 10);
+                returnDate.setDate(returnDate.getDate() + 15);
 
                 // Format the return date as 'dd-mm-yyyy'
                 var formattedReturnDate = returnDate.toLocaleDateString('en-GB');
