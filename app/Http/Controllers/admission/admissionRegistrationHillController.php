@@ -56,8 +56,8 @@ class admissionRegistrationHillController extends Controller
         // echo "<pre>";print_r($data);exit;
 
        $res['hnArr'] = [1,2,3];
-       $res['pIntArr'] = ["C","I","C/A","NO","W/L"];
-       $res['confArr'] = ["C","C/A","NO","W/L"];
+        $res['pIntArr'] = ["I","NO","W/L"];
+        $res['confArr'] = ["C"]; // ,"C/A","NO","W/L"
        $res['yesNo'] = ["Yes","No"];
 
         $res['status_code'] = 1;
@@ -157,17 +157,18 @@ class admissionRegistrationHillController extends Controller
               $sendSmsController = new send_sms_parents_controller;
               $sendSms = $sendSmsController->sendSMS($data['mobile'], $text, $sub_institute_id);
               //send email;
-               if(isset($data["pint_time"]) && isset($pindate) && isset($data['admission_standard']) && $data['conf']=="C"){
+               if(isset($data["pint_time"]) && isset($pindate) && isset($data['admission_standard']) && $data['conf']=="C" && in_array($data["pint"],["I","NO","W/L"])){
                     $nextYear = ((int) substr($syear, 2, 2)+1);
                     $getStandard = DB::table('standard')->where(['id'=>$data['admission_standard'],'sub_institute_id'=>$sub_institute_id])->first();
 
                     $htmlContent = view('admission.registrationHills.sendConfirmEmail', [
                         'parent_date' => $pindate,
+                        'pint' => $data["pint"] ?? '',
                         'parent_time' => $data["pint_time"] ?? '',
                         'aca_year'    => $syear.'-'.$nextYear,
                         'admission_std'    => $getStandard->name ?? '-',
                     ])->render();
-
+                    // return $htmlContent;exit;
                     $emailRequest = new Request([
                         'type' => 'webForm',
                         'teacher_id' => $created_by,
@@ -275,8 +276,8 @@ class admissionRegistrationHillController extends Controller
         $res['transport_fees']=$request->transport_fees;
         // echo "<pre>";print_r($request->all());exit;
         $res['hnArr'] = [1,2,3];
-        $res['pIntArr'] = ["C","I","C/A","NO","W/L"];
-        $res['confArr'] = ["C","C/A","NO","W/L"];
+        $res['pIntArr'] = ["I","NO","W/L"];
+        $res['confArr'] = ["C"]; // ,"C/A","NO","W/L"
         $res['yesNo'] = ["Yes","No"];
         $res['data'] = $data;
         
