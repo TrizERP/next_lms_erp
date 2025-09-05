@@ -87,7 +87,8 @@ class tblstudentPastEducationController extends Controller
         $res['message'] = "Student Past Education successfully created.";
         $res['data'] = $data;
 
-        return is_mobile($type, "search_student.index", $res);
+        //return is_mobile($type, "search_student.index", $res);
+        return redirect()->back();
     }
 
 

@@ -96,7 +96,8 @@ class tblstudentTcController extends Controller
         $res['message'] = "Student TC Details Successfully Updated.";
         $res['data'] = $data;
 
-        return is_mobile($type, "search_student.index", $res);
+        //return is_mobile($type, "search_student.index", $res);
+        return redirect()->back();
     }
 
     /**

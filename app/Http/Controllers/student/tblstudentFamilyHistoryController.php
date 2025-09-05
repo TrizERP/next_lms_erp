@@ -215,7 +215,8 @@ class tblstudentFamilyHistoryController extends Controller
         $res['status_code'] = 1;
         $res['message'] = "Student Family History Successfully Updated.";
         $res['data'] = $data;
-        return is_mobile($type, "search_student.index", $res);
+        //return is_mobile($type, "search_student.index", $res);
+        return redirect()->back();
     }
 
     public function saveData(Request $request)
