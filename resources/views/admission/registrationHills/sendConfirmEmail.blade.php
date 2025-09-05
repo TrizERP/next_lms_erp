@@ -35,8 +35,8 @@
         </div>
     @elseif(isset($pint) && $pint == 'W/L')
         <div style="color:black">
-            <h4 style="color:black">HILLS HIGH SCHOOL</h4>
-            <h5 style="color:black;text-align:center"><b>Waitlisted</b></h5>
+            <h3 style="color:black">HILLS HIGH SCHOOL</h3>
+            <h3 style="color:black;text-align:center"><b>Waitlisted</b></h3>
             <p style="color:black">
                 Your child has been placed on the waitlist. Please re-check your e-mail id by end of this month.
                 Your co-operation is really appreciated.
@@ -46,7 +46,7 @@
         </div>
     @elseif(isset($pint) && $pint == 'NO')
         <div style="color:black">
-            <h5 style="color:black;text-align:center"><b>Regret mail</b></h5>
+            <h3 style="color:black;text-align:center"><b>Regret mail</b></h3>
             <p style="color:black">Dear Parent,</p>
             <p style="color:black">We regret to inform you that we are unable to grant admission for your child at
                 Hill's' High School.
