@@ -76,7 +76,8 @@ class tblstudentParentFeedbackController extends Controller
         $res['message'] = "Student Parent Feedback Successfully Updated.";
         $res['data'] = $data;
 
-        return is_mobile($type, "search_student.index", $res);
+        //return is_mobile($type, "search_student.index", $res);
+        return redirect()->back();
     }
 
 

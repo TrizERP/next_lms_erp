@@ -890,7 +890,7 @@ class tblstudentController extends Controller
 print_r($get_anacdotals);
 echo "</pre>";
 die; */
-		$studentTcdetails = tblstudentTcModel::where(['sub_institute_id' => $sub_institute_id, 'student_id' => $id, 'syear' => $syear])->get()->toArray();
+		$studentTcdetails = tblstudentTcModel::where(['sub_institute_id' => $sub_institute_id, 'student_id' => $id])->get()->toArray();//, 'syear' => $syear
 
 		$stateData = tblstateModel::get()->toArray();
 		$state_name = '';
