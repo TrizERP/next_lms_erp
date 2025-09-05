@@ -157,7 +157,7 @@ class admissionRegistrationHillController extends Controller
               $sendSmsController = new send_sms_parents_controller;
               $sendSms = $sendSmsController->sendSMS($data['mobile'], $text, $sub_institute_id);
               //send email;
-               if(isset($data["pint_time"]) && isset($pindate) && isset($data['admission_standard']) && $data['conf']=="C" && in_array($data["pint"],["I","NO","W/L"])){
+               if(isset($data["pint_time"]) && isset($pindate) && isset($data['admission_standard']) && in_array($data["pint"],["I","NO","W/L"])){
                     $nextYear = ((int) substr($syear, 2, 2)+1);
                     $getStandard = DB::table('standard')->where(['id'=>$data['admission_standard'],'sub_institute_id'=>$sub_institute_id])->first();
 
