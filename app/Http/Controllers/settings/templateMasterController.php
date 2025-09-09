@@ -150,9 +150,9 @@ class templateMasterController extends Controller
             'student_roll_no_value' => 'Student Roll No.',// added on 05-05-2025
             'student_name_value' => 'Student Name first and last name',
             'student_full_name' => 'Student Name first, middle and last name', // added on 05-05-2025
-            'student_first_name' => 'Student Name first name', // added on 05-05-2025
-            'student_middle_name' => 'Student Name middle name', // added on 05-05-2025
-            'student_last_name' => 'Student Name last name', // added on 05-05-2025
+            'student_first_name_value' => 'Student Name first name', // added on 05-05-2025
+            'student_middle_name_value' => 'Student Name middle name', // added on 05-05-2025
+            'student_last_name_value' => 'Student Name last name', // added on 05-05-2025
             'student_image_value' => 'Student Image from student Profile',
             'student_division_value' => 'Student division',
             'student_year_value' => 'Student year like 2025-2026',
