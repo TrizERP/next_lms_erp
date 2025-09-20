@@ -335,12 +335,12 @@ $day = Carbon::parse($punchin_time)->format('Y-m-d');
             // Get URL of stored photo
             $photo_out = Storage::disk('digitalocean')->url('public/hrms/attendance_photo/' . $photoOutFilename);
         }
-*/
-// Check if $punchout_time is set and not empty
-$punchout_time = !empty($punchout_time) ? $punchout_time : Carbon::now()->format('Y-m-d H:i:s');
+        */
+        // Check if $punchout_time is set and not empty
+        $punchout_time = !empty($punchout_time) ? $punchout_time : Carbon::now()->format('Y-m-d H:i:s');
 
-// Now parse the date part
-$day = Carbon::parse($punchout_time)->format('Y-m-d');        
+        // Now parse the date part
+        $day = Carbon::parse($punchout_time)->format('Y-m-d');        
 
         // Check if a punchin already exists for this user on the same day
         $alreadyExists = HrmsAttendance::where('user_id', $userId)
@@ -357,6 +357,7 @@ $day = Carbon::parse($punchout_time)->format('Y-m-d');
         $hrmsInOutTime = HrmsAttendance::where([['user_id', $userId], ['sub_institute_id', $sub_institute_id], ['day', $day], ['punchout_time', null]])->first();
 
         if ($hrmsInOutTime) {
+            $getUserDetails = DB::table('tbluser')->where('id',$userId)->first();
             $punchout_time = Carbon::parse($punchout_time);
             $punchin_time = Carbon::parse($hrmsInOutTime->punchin_time);
 
@@ -365,7 +366,7 @@ $day = Carbon::parse($punchout_time)->format('Y-m-d');
 
             // Strat overtime calculation
             $overtime = null;$overtimeMinutes = 0;
-            $standardMinutes = 9 * 60; // 9 hour standard worked hours
+            $standardMinutes = 9 * 60; // 9 hour standard worked hours // for dynamic isset($getUserDetails->working_hours) ? ($getUserDetails->working_hours) * 60 : (9*60)
             if($min > $standardMinutes){
                 $overtimeMinutes = $min - $standardMinutes;
                 $overtime = date('H:i', mktime(0, $overtimeMinutes));

@@ -135,17 +135,25 @@ function printMob(divName) {
             popupWin.document.write('<head><link rel="stylesheet" href="/css/result.css" /></head>');
 
             popupWin.document.write('<body onload="setTimeout(function() { window.print(); }, 2000);"><style>body{margin:0;padding:0}</style>');
-            @if(in_array($data['template'],[12,51,52])) // added for mmis grandmarksheet
-            popupWin.document.write('<div style="text-align:center"><h2 style="margin:0px !important;">MULJIBHAI MEHTA INTERNATIONAL SCHOOL</h2><span>GOKUL TOWNSHIP, OFF. AGASHI ROAD, BOLINJ, VIRAR (W), MUMBAI METROPOLITAN REGION,</span><br><span>PALGHAR, PIN – 401 303</span><h3 style="margin:0px !important;">GRAND MARKSHEET ('+acaYear+')</h3></div>');
-            @endif
-            Object.keys(studentData).forEach(function(studentId) {
-                var html = studentData[studentId];
-                @if(in_array($data['template'],[12,51,52])) // added for mmis grandmarksheet
-                    popupWin.document.write('<div>' + html + '</div>');
-                @else
-                    popupWin.document.write('<div style="page-break-before: always !important;">' + html + '</div>');
-                @endif
-            });
+          @if(in_array($data['template'],[12,51,52,57])) // added for mmis grandmarksheet
+popupWin.document.write(`
+    <div style="text-align: center; break-inside: avoid; page-break-inside: avoid;">
+        <h1 style="margin: 0px !important; break-after: avoid; page-break-after: avoid;">MULJIBHAI MEHTA INTERNATIONAL SCHOOL</h1>
+        <span>GOKUL TOWNSHIP, OFF. AGASHI ROAD, BOLINJ, VIRAR (W), MUMBAI METROPOLITAN REGION,</span><br>
+        <span>PALGHAR, PIN – 401 303</span>
+        <h3 style="margin: 0px !important; break-before: avoid; break-after: avoid; page-break-before: avoid; page-break-after: avoid;">GRAND MARKSHEET (`+acaYear+`)</h3>
+    </div>
+`);
+@endif
+
+Object.keys(studentData).forEach(function(studentId) {
+    var html = studentData[studentId];
+    @if(in_array($data['template'],[12,51,52,57])) // added for mmis grandmarksheet
+        popupWin.document.write('<div style="break-inside: avoid; page-break-inside: avoid;">' + html + '</div>');
+    @else
+        popupWin.document.write('<div style="page-break-before: always !important;">' + html + '</div>');
+    @endif
+});
 
             popupWin.document.write('</body></html>');
             popupWin.document.close();

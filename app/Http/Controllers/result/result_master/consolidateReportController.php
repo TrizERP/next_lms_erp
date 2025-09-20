@@ -48,7 +48,9 @@ class consolidateReportController extends Controller
 
             $examData = DB::table('result_create_exam as rce')
             ->join('result_exam_master as rem', 'rem.id', '=', 'rce.exam_id')
-            ->join('sub_std_map as ssm','ssm.subject_id','=','rce.subject_id')
+            ->join('sub_std_map as ssm',function($q){
+                $q->on('ssm.subject_id','=','rce.subject_id')->on('ssm.standard_id','=','rce.standard_id');
+            })
             ->where('rce.report_card_status', 'Y')
             ->where([
                 'rce.sub_institute_id' => $sub_institute_id,
@@ -58,7 +60,7 @@ class consolidateReportController extends Controller
             ->selectRaw('rce.id,rce.title,rce.term_id,rce.standard_id,rem.weightage,rem.ExamTitle,
                          rce.subject_id,rce.points,rce.con_point,rem.Id as ExamId,rce.exam_id,
                          ssm.display_name,ssm.elective_subject,ssm.allow_grades,ssm.optional_type')
-            ->orderByRaw('rem.SortOrder,rce.sort_order')
+            ->orderByRaw('ssm.sort_order,rem.SortOrder,rce.sort_order')
             ->get()
             ->toArray();
         

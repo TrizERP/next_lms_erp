@@ -222,6 +222,9 @@ class studentReportController extends Controller
             })
             ->whereNull('tblstudent_enrollment.end_date')
             ->orderByRaw($extra_order_by)
+            ->when(in_array($sub_institute_id,[201,202,203]) && $request->order_by=="enrollment_no", function ($q) {
+                $q->orderByRaw("CAST(SUBSTRING_INDEX(enrollment_no, '/', -1) AS UNSIGNED) ASC");
+            })
             ->groupBy('tblstudent.id')
             ->get();
             $student_dataArr = [];
@@ -266,6 +269,7 @@ class studentReportController extends Controller
 
         $res['status_code'] = 1;
         $res['message'] = "Student List";
+        $res['order_by'] = $order_by;
         $res['student_data'] = $student_dataArr;
         $res['grade_id'] = $grade_id;
         $res['standard_id'] = $standard_id;
