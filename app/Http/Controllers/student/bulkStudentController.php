@@ -335,7 +335,7 @@ class bulkStudentController extends Controller
             })
             ->leftjoin("student_height_weight", function ($join) {
                 $join->on("student_height_weight.sub_institute_id", "=", "tblstudent_enrollment.sub_institute_id")
-                    ->on("student_height_weight.student_id", "=", "tblstudent_enrollment.student_id");
+                    ->on("student_height_weight.student_id", "=", "tblstudent_enrollment.student_id")->on("student_height_weight.syear", "=", "tblstudent_enrollment.syear");
             })
             ->where($extraSearchArray)
             ->whereRaw('tblstudent_enrollment.end_date is NULL')

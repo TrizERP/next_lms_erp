@@ -405,6 +405,27 @@ LIMIT 1");
             $tdOptionalData = $get_standard_subjects[0]->subject_name ?? '-';
         }
 
+        $twoLineSubject = '';
+        if(isset($get_standard_subjects[0]->elective_subject)){
+
+                $electiveExplode = explode(',',$get_standard_subjects[0]->elective_subject);
+                $subjectExplode = explode(',',$get_standard_subjects[0]->subject_name);
+
+                foreach($electiveExplode as $key=>$val){
+                    if($val=='Yes'){
+                        $optionalSub[] = $subjectExplode[$key]; 
+                    }else{
+                        $mainSub[] = $subjectExplode[$key]; 
+                    }
+                }
+                 $optionalImplode = implode(', ',$optionalSub);
+            $subjectImplode = implode(', ',$mainSub);
+            $twoLineSubject = $subjectImplode.'<br>'.$optionalImplode;
+            // added by uma on 05-05-2025 as per their requirement for manual entry for std 10 and 12 start MMIS
+            if(isset($value['subjects_studied']) && $value['subjects_studied'] !=''){
+                $twoLineSubject = $value['subjects_studied'];
+            }
+            }
         $get_student_attendances = DB::table('attendance_student')
         ->select(DB::raw('COUNT(id) as total_att_days,sum(CASE WHEN attendance_code = "P" THEN 1 ELSE 0 END) as present_att_days'))
         ->where('sub_institute_id', session()->get('sub_institute_id'))
@@ -533,6 +554,7 @@ LIMIT 1");
             $html_content = str_replace(htmlspecialchars("<<subjects_studied_system>>"),strtoupper($subject_names),$html_content);
         }else*/{
             $html_content = str_replace(htmlspecialchars("<<subjects_studied_system>>"),strtoupper($tdOptionalData),$html_content);
+            $html_content = str_replace(htmlspecialchars("<<subjects_studied_2_line>>"),strtoupper($twoLineSubject),$html_content);
         }
 
         // for mmis auto fetch remarks from result_remarks
