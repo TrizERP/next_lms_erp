@@ -105,7 +105,7 @@
                                 <th>Roll No</th>
                                 <th>Student Name</th>
                                 <th>Marks</th>
-                                <th style="display: none;">Percentage</th>
+                                <th>Per.(%)</th>
                                 <th style="display: none;">Grade</th>
                                 <th>Remark</th>
                             </tr>
@@ -128,7 +128,7 @@
                                 Out Of 
                                 <lable>{{$col_arr['outof']}}</lable>
                              </td>
-                            <td style="display: none;"><label class="at_per">{{ $col_arr['per'] }}%</label> <input type="hidden" class="at_per_val" name="values[{{ $col_arr['student_id'] }}][per]" readonly="readonly" style="width: 70px;"  value="{{ $col_arr['per'] }}%" /></td>
+                            <td><label class="at_per">{{ $col_arr['per'] }}%</label> <input type="hidden" class="at_per_val" name="values[{{ $col_arr['student_id'] }}][per]" readonly="readonly" style="width: 70px;"  value="{{ $col_arr['per'] }}%" /></td>
 
                             <td style="display: none;"><label class="at_grd">{{ $col_arr['grade'] }}</label> <input type="hidden" class="at_grd_val" name="values[{{ $col_arr['student_id'] }}][grade]" readonly="readonly" style="width: 70px;"  value="{{ $col_arr['grade'] }}" /></td>
                             <td>
