@@ -39,19 +39,21 @@ class studentAttendanceController extends Controller
             $user_id = $request->input('user_id');
 
             $result = DB::table('class_teacher as ct')
-                ->join('standard as s', function ($join) {
-                    $join->whereRaw('ct.standard_id = s.id AND ct.sub_institute_id = s.sub_institute_id');
-                    // ->when($marking_period_id,function($query) use ($marking_period_id){
-                    //     $query->where('s.marking_period_id',$marking_period_id);
-                    // });
-                })->join('division as d', function ($join) {
-                    $join->whereRaw('d.id = ct.division_id AND d.sub_institute_id = ct.sub_institute_id');
-                })
-                ->selectRaw('ct.standard_id,ct.division_id,s.name as standard_name,d.name as division_name')
-                ->where('ct.sub_institute_id', $sub_institute_id)
-                ->where('syear', $syear)
-                ->where('ct.teacher_id', $user_id)
-                ->get()->toArray();
+            ->join('standard as s', function ($join) use ($syear) {
+                $join->on('ct.standard_id', '=', 's.id')
+                    ->where('ct.sub_institute_id', '=', 's.sub_institute_id')
+                    ->where('syear', '=', $syear);
+            })
+            ->join('division as d', function ($join) {
+                $join->on('d.id', '=', 'ct.division_id')
+                    ->where('d.sub_institute_id', '=', 'ct.sub_institute_id');
+            })
+            ->select('ct.standard_id', 'ct.division_id', 's.name as standard_name', 'd.name as division_name')
+            ->where('ct.sub_institute_id', $sub_institute_id)
+            ->where('ct.teacher_id', $user_id)
+            ->get()
+            ->toArray();
+
 
             $result = array_map(function ($value) {
                 return (array)$value;
@@ -70,44 +72,41 @@ class studentAttendanceController extends Controller
     {
         $type = $request->input('type');
         $date = $request->input('date');
-        $marking_period_id = session()->get('term_id');
+       
+        $term_id = $request->session()->get('term_id');
+        $syear = $request->session()->get('syear');
+        $sub_institute_id = $request->session()->get('sub_institute_id');
 
         if ($type == "API") {
             $term_id = $request->input('term_id');
             $syear = $request->input('syear');
             $sub_institute_id = $request->input('sub_institute_id');
-        } else {
-            $term_id = $request->session()->get('term_id');
-            $syear = $request->session()->get('syear');
-            $sub_institute_id = $request->session()->get('sub_institute_id');
         }
+
         $standard_division_orignal = $request->input('standard_division');
-        $standard_division = explode("||", $standard_division_orignal);
-        $standard = $standard_division[0];
-        $division = $standard_division[1];
+        list($standard, $division) = explode("||", $standard_division_orignal);
         $grade = '';
 
         $sundays = getCountDays($date, $date);
        
         $holidays = DB::table("calendar_events")
             ->where('school_date', '=', $date)
-            ->whereIn('event_type',['holiday','vacation'])
-            ->where('sub_institute_id', '=', session()->get('sub_institute_id'))
-            ->where('syear', '=', session()->get('syear'))
-            ->whereRaw('FIND_IN_SET(?, standard)', [$standard])
+            ->whereIn('event_type',['holiday','event'])
+            ->where('sub_institute_id', '=', $sub_institute_id)
+            ->where('syear', '=', $syear)
             ->get()
             ->toArray();
 
         $single_standard = DB::table("standard")
             ->select('name')
             ->where('id', '=', $standard)
-            ->where('sub_institute_id', '=', session()->get('sub_institute_id'))
+            ->where('sub_institute_id', '=',$sub_institute_id)
             ->first();
         
         $single_division = DB::table("division")
             ->select('name')
             ->where('id', '=', $division)
-            ->where('sub_institute_id', '=', session()->get('sub_institute_id'))
+            ->where('sub_institute_id', '=', $sub_institute_id)
             ->first();
             
         if(!empty($sundays))
@@ -145,11 +144,10 @@ class studentAttendanceController extends Controller
 
         $classTeacherStdArr = session()->get('classTeacherStdArr');
         if (isset($classTeacherStdArr)) {
+            $extraRaw = "standard.id IN (' ')";            
             if (count($classTeacherStdArr) > 0) {
                 $extraRaw = "standard.id IN (" . implode(",", $classTeacherStdArr) . ")";
-            } else {
-                $extraRaw = "standard.id IN (' ')";
-            }
+            } 
         }
 
         $classTeacherDivArr = session()->get('classTeacherDivArr');
@@ -160,34 +158,27 @@ class studentAttendanceController extends Controller
         }
         //END Check for class teacher assigned standards
 
-
         $student_data = tblstudentModel::select('tblstudent_enrollment.*', 'tblstudent.*', 'standard.name as standard',
             'division.name as division', 'academic_section.title as grade','batch.id as batch_id','batch.title as batch_title')
             ->join("tblstudent_enrollment", function ($join) {
                 $join->on("tblstudent_enrollment.student_id", "=", "tblstudent.id")
-                    ->on("tblstudent_enrollment.sub_institute_id", "=", "tblstudent.sub_institute_id")
                     ->whereNull('tblstudent_enrollment.end_date');
             })
             ->join("academic_section", function ($join) {
-                $join->on("academic_section.id", "=", "tblstudent_enrollment.grade_id")
-                    ->on("academic_section.sub_institute_id", "=", "tblstudent_enrollment.sub_institute_id");
+                $join->on("academic_section.id", "=", "tblstudent_enrollment.grade_id");
             })
-            ->join("standard", function ($join) use($marking_period_id) {
-                $join->on("standard.id", "=", "tblstudent_enrollment.standard_id")
-                    ->on("standard.sub_institute_id", "=", "tblstudent_enrollment.sub_institute_id");
-                    // ->when($marking_period_id,function($query) use($marking_period_id){
-                    //     $query->where('standard.marking_period_id',$marking_period_id);
-                    // });
+            ->join("standard", function ($join) {
+                $join->on("standard.id", "=", "tblstudent_enrollment.standard_id");
             })
             ->join("division", function ($join) {
-                $join->on("division.id", "=", "tblstudent_enrollment.section_id")
-                    ->on("division.sub_institute_id", "=", "tblstudent_enrollment.sub_institute_id");
+                $join->on("division.id", "=", "tblstudent_enrollment.section_id");
             })
             ->leftJoin('batch','batch.id','=','tblstudent.studentbatch')
             ->where($extraSearchArray)
             ->whereRaw($extraRaw)
             ->orderby('tblstudent_enrollment.roll_no')
             ->get()->toArray();
+
         if (count($student_data) == 0) {
             $res['status_code'] = 0;
             $res['message'] = "No Student Data Found";
@@ -453,7 +444,6 @@ class studentAttendanceController extends Controller
     public function showMonthwiseStudentAttendance(Request $request)
     {
         $type = $request->input('type');
-
         $month = $res['month'] =  $request->input('month');
         $grade_id = $res['grade_id'] = $request->input("grade");
         $standard_id = $res['standard_id'] = $request->input("standard");
@@ -507,13 +497,7 @@ class studentAttendanceController extends Controller
         foreach ($events as $event) {
             $eventsArray[] = $event->DATE; // Add event date to the array without event type
         }
-        
-        /* echo("<pre>");
-        print_r($holidays);
-        print_r($eventsArray);
-        die; */
-
-        // $whereAtt['term_id'] = $term_id;
+   
         if(isset($standard_id)){
             $whereAtt['standard_id'] = $standard_id;
         }
@@ -549,12 +533,6 @@ class studentAttendanceController extends Controller
         // echo "<pre>";print_r($student_data);exit;
         $res['status_code'] = 1;
         $res['message'] = "Success";
-        $res['month'] = $month;
-        $res['year'] = $selected_year;
-        $res['grade_id'] = $grade_id;
-        $res['standard_id'] = $standard_id;
-        $res['division_id'] = $division_id;
-        $res['student_data'] = $student_data;
         $res['attendance_data'] = $finalAttendanceArray;
         $res['sundays'] = $sundays;
         $res['holidays'] = $holidays;
@@ -665,7 +643,7 @@ class studentAttendanceController extends Controller
                 $standard_id = $stud_data[0]->standard_id;
                 $section_id = $stud_data[0]->section_id;
 
-//DB::enableQueryLog();
+                //DB::enableQueryLog();
                 $data = DB::table('timetable as t')->select(
                     DB::raw("CONCAT_WS(' ', u.first_name, u.middle_name, u.last_name) AS teacher_name"),
                     DB::raw("IF(u.image = '', 'https://" . $_SERVER['SERVER_NAME'] . "/storage/student/noimages.png', CONCAT('https://" . $_SERVER['SERVER_NAME'] . "/storage/user/', u.image)) AS image"),
