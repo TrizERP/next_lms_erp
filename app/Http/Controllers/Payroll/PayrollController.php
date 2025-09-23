@@ -1536,22 +1536,32 @@ class PayrollController extends Controller
             // echo "<pre>";print_r($year);exit;
             $Curryear = ($year[0]);
             $nextYear =($year[0]+1);
-            // $startYear = $year[0];
-            // $endYear = $year[1];
+
+            $sessionMonths = [
+                $Curryear => ['Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+                $nextYear   => ['Jan','Feb','Mar'],
+            ];
             
-            $currentYearemployeeDetails = EmployeeMonthlySalaryData::join('tbluser as u',function($join) use($request){
+            $currentYearemployeeDetails = EmployeeMonthlySalaryData::join('tbluser as u', function($join) use ($request) {
                 $join->on('u.id','=','employee_monthly_salary_data.employee_id')
-                ->when($request->department_id!=0,function($q) use($request){
-                    $q->where('u.department_id',$request->department_id);
+                     ->when($request->department_id != 0, function($q) use ($request) {
+                         $q->where('u.department_id', $request->department_id);
+                     });
+            })
+            ->when($request->emp_id != 0, function($q) use ($request) {
+                $q->where('employee_monthly_salary_data.employee_id', $request->emp_id);
+            })
+            ->where('employee_monthly_salary_data.sub_institute_id', $sub_institute_id)
+            ->where(function($q) use ($sessionMonths) {
+                foreach ($sessionMonths as $year => $months) {
+                    $q->orWhere(function($inner) use ($year, $months) {
+                        $inner->where('employee_monthly_salary_data.year', $year)
+                              ->whereIn('employee_monthly_salary_data.month', $months);
                     });
-                })
-                ->when($request->emp_id!=0,function($q) use($request){
-                    $q->where('employee_monthly_salary_data.employee_id',$request->emp_id);
-                })
-                ->where([['employee_monthly_salary_data.sub_institute_id',$sub_institute_id]])
-                ->whereIn('employee_monthly_salary_data.month',['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'])
-                ->whereIn('employee_monthly_salary_data.year',[$nextYear,$Curryear])
+                }
+            })
             ->get();
+
                 // echo "<pre>";print_r($currentYearemployeeDetails);exit;
             $currentYearemployeeDetails = $currentYearemployeeDetails->map(function($employee) use($Curryear,$nextYear){
                 $data = [];

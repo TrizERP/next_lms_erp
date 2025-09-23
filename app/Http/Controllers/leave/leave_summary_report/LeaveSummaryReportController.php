@@ -112,6 +112,7 @@ class LeaveSummaryReportController extends Controller
             ->when($department_id!=0, function ($query) use ($department_id) {
                 return $query->where('u.department_id', $department_id);
             })
+            ->where('hel.status', '!=', 'pending') //added by rajesh 23-09-2025
             ->groupBy('hel.user_id')
             ->get()
             ->toArray();
@@ -136,11 +137,11 @@ class LeaveSummaryReportController extends Controller
                     $counday = countDays($leave_from_date[$key2],$leave_to_date[$key2],$day_type[$key2],'');
                     $sum_exists["Leave Without Pay"][] = $counday;
 
-                    $new_data["Leave Without Pay"][$value->id]= $counday;
+                    $new_data["Leave Without Pay"][$value->id]= $counday.'<br>';
 
                     $new_data["Leave Without Pay"][$value->id]= array_sum($sum_exists['Leave Without Pay']);
                 }
-                else if(in_array($leave_status[$key2],['approved','pending'])){
+                else if(in_array($leave_status[$key2],['approved','pending']) && $value2 != 'Leave Without Pay'){
                     $sum = $day_type[$key2];
                     // echo "from_date=".$leave_from_date[$key2].' to_date='.$leave_to_date[$key2].'<br>';
                     $counday = countDays($leave_from_date[$key2],$leave_to_date[$key2],$day_type[$key2],'');
@@ -149,7 +150,7 @@ class LeaveSummaryReportController extends Controller
                     // echo $counday.'<br>';
                     if(in_array($value2, $value_exits))
                     {
-                        $new_data[$value2][$value->id]= array_sum($sum_exists[$value2]);
+                        $new_data[$value2][$value->id] = array_sum($sum_exists[$value2]);
                     }
                     else
                     {
@@ -253,6 +254,7 @@ class LeaveSummaryReportController extends Controller
         },function($q) use($leaveTypeId,$employee_id) {
             $q->whereRaw("(hel.status = 'approved_lwp' OR hel.leave_type_id = {$leaveTypeId}) and hel.user_id = {$employee_id}");
         })
+        ->where('hel.status', '!=', 'pending') //added by rajesh 23-09-2025
         ->get()->toArray();
         // dd(DB::getQueryLog($get_employee_leave_lists));
         return $get_employee_leave_lists;
