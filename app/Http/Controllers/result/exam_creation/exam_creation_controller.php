@@ -73,7 +73,7 @@ class exam_creation_controller extends Controller
             ->join('result_exam_master', 'result_exam_master.id', '=', 'result_create_exam.exam_id')
             ->select('result_create_exam.id', 'academic_year.title as term_name', 'result_create_exam.medium',
                 'result_exam_master.ExamTitle as exam_type', 'result_create_exam.app_disp_status',
-                'standard.name as std_name',
+                'standard.name as std_name','sub_std_map.display_name',
                 'subject.subject_name as sub_name', 'result_create_exam.title as exam_name',
                 'result_create_exam.points',
                 'result_create_exam.marks_type', 'result_create_exam.report_card_status',

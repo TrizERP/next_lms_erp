@@ -1003,10 +1003,34 @@ $oprator = ($request->get('sub_institute_id') == 1) ? '<' : '=';
                         $html = $record->html;
                         $dom = str_replace('##HTML_SEC##', $html, $dom_template);
 
+                        if(in_array($request->get('sub_institute_id'),[201,202,203,204,324,326,327])){
+                            $host = $_SERVER['HTTP_HOST'];
+
+                            // Replace only src="..." or src='...' that do not already start with https://erp
+                            $html = preg_replace_callback(
+                                '/src=(["\'])(?!https:\/\/erp)([^"\']+)\1/i',
+                                function ($matches) use ($host) {
+                                    $quote = $matches[1];
+                                    $url   = $matches[2];
+                                    return 'src=' . $quote . 'https://' . $host . $url . $quote;
+                                },
+                                $dom
+                            );
+
+                            // Replace display:flex;
+                            $html = str_replace(
+                                'display:flex;',
+                                'display: -webkit-box; -webkit-box-pack: center;',
+                                $html
+                            );
+
+                        }
+                        else{
+
                         $path = 'src="https://' . $_SERVER['HTTP_HOST'];
                         $html = str_replace('src="', $path, $dom);
                         $html = str_replace('display:flex;', 'display: -webkit-box; -webkit-box-pack: center;', $html);
-
+}
                         // Generate unique filenames for HTML and PDF
                         $html_filename = $record->student_id . '_' . $CUR_TIME . '_' . $index . ".html";
                         $pdf_filename = $record->student_id . '_' . $CUR_TIME . '_' . $index . ".pdf";
@@ -1017,7 +1041,7 @@ $oprator = ($request->get('sub_institute_id') == 1) ? '<' : '=';
                         // Save HTML to a file
                         file_put_contents($html_file_path, $html);
                         if(in_array($request->get('sub_institute_id'),[201,202,203,204,324,326,327])){
-                            htmlToPDFHills($html_file_path, $pdf_file_path); 
+                            htmlToPDFHills($html_file_path, $pdf_file_path,$request->get('sub_institute_id')); 
                         }else{
                             // Convert HTML to PDF
                             htmlToPDF($html_file_path, $pdf_file_path); 
