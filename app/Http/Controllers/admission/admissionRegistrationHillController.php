@@ -57,7 +57,7 @@ class admissionRegistrationHillController extends Controller
 
        $res['hnArr'] = [1,2,3];
         $res['pIntArr'] = ["I","NO","W/L"];
-        $res['confArr'] = ["C"]; // ,"C/A","NO","W/L"
+        $res['confArr'] = ["C","C/A","NO","W/L"]; // ,"C/A","NO","W/L"
        $res['yesNo'] = ["Yes","No"];
 
         $res['status_code'] = 1;
@@ -157,11 +157,70 @@ class admissionRegistrationHillController extends Controller
               $sendSmsController = new send_sms_parents_controller;
               $sendSms = $sendSmsController->sendSMS($data['mobile'], $text, $sub_institute_id);
               //send email;
-               if(isset($data["pint_time"]) && isset($pindate) && isset($data['admission_standard']) && in_array($data["pint"],["I","NO","W/L"])){
+              if(in_array($data['conf'],["C","C/A"]) && isset($condate) && isset($data['admission_standard'])){
                     $nextYear = ((int) substr($syear, 2, 2)+1);
                     $getStandard = DB::table('standard')->where(['id'=>$data['admission_standard'],'sub_institute_id'=>$sub_institute_id])->first();
 
                     $htmlContent = view('admission.registrationHills.sendConfirmEmail', [
+                        'page_type'=>'confirm',
+                        'conf_date' => $condate,
+                        'conf' => $data["conf"] ?? '',
+                        'parent_time' => '9:00 a.m. to 11:00 am OR 2:30 p.m.  to 4:30 p.m.',
+                        'aca_year'    => $syear.'-'.$nextYear,
+                        'admission_std'    => $getStandard->name ?? '-',
+                    ])->render();
+
+                    // return $htmlContent;exit;
+                    $emailRequest = new Request([
+                        'type' => 'webForm',
+                        'teacher_id' => $created_by,
+                        'sub_institute_id' =>$sub_institute_id,
+                        'token' => $_REQUEST['_token'],
+                        'all_email' => $data['email'],
+                        'subject' => 'ADMISSION PROCEDURE',
+                        'syear' => $syear,
+                        'example_subject' => 'ADMISSION PROCEDURE',
+                        'content' => $htmlContent
+                    ]);
+                    $sendEmailController = new send_email_parents_controller;
+                    $sendEmail = $this->sendEmail($emailRequest);
+            //   echo "<pre>";print_r($sendEmail);exit;
+                    
+              }
+               elseif(isset($data["pint_time"]) && isset($pindate) && isset($data['admission_standard']) && in_array($data["pint"],["I"])){
+                    $nextYear = ((int) substr($syear, 2, 2)+1);
+                    $getStandard = DB::table('standard')->where(['id'=>$data['admission_standard'],'sub_institute_id'=>$sub_institute_id])->first();
+
+                    $htmlContent = view('admission.registrationHills.sendConfirmEmail', [
+                        'page_type'=>'parent',
+                        'parent_date' => $pindate,
+                        'pint' => $data["pint"] ?? '',
+                        'parent_time' => $data["pint_time"] ?? '',
+                        'aca_year'    => $syear.'-'.$nextYear,
+                        'admission_std'    => $getStandard->name ?? '-',
+                    ])->render();
+                    // return $htmlContent;exit;
+                    $emailRequest = new Request([
+                        'type' => 'webForm',
+                        'teacher_id' => $created_by,
+                        'sub_institute_id' =>$sub_institute_id,
+                        'token' => $_REQUEST['_token'],
+                        'all_email' => $data['email'],
+                        'subject' => 'ADMISSION PROCEDURE',
+                        'syear' => $syear,
+                        'example_subject' => 'ADMISSION PROCEDURE',
+                        'content' => $htmlContent
+                    ]);
+                    $sendEmailController = new send_email_parents_controller;
+                    $sendEmail = $this->sendEmail($emailRequest);
+                    }
+            
+            elseif(isset($data['admission_standard']) && in_array($data["pint"],["NO","W/L"])){
+                    $nextYear = ((int) substr($syear, 2, 2)+1);
+                    $getStandard = DB::table('standard')->where(['id'=>$data['admission_standard'],'sub_institute_id'=>$sub_institute_id])->first();
+
+                    $htmlContent = view('admission.registrationHills.sendConfirmEmail', [
+                        'page_type'=>'parent',
                         'parent_date' => $pindate,
                         'pint' => $data["pint"] ?? '',
                         'parent_time' => $data["pint_time"] ?? '',
@@ -277,7 +336,7 @@ class admissionRegistrationHillController extends Controller
         // echo "<pre>";print_r($request->all());exit;
         $res['hnArr'] = [1,2,3];
         $res['pIntArr'] = ["I","NO","W/L"];
-        $res['confArr'] = ["C"]; // ,"C/A","NO","W/L"
+        $res['confArr'] = ["C","C/A","NO","W/L"]; // ,"C/A","NO","W/L"
         $res['yesNo'] = ["Yes","No"];
         $res['data'] = $data;
         
@@ -335,7 +394,7 @@ class admissionRegistrationHillController extends Controller
             $mail->isHTML(true);
             $mail->SMTPDebug = 0;
             $mail->SMTPAuth = true;
-            $mail->SMTPSecure = "ssl";
+            $mail->SMTPSecure = "tls";
             $mail->Host = $smtp_details[0]->server_address;
             $mail->Port = $smtp_details[0]->port;
 
