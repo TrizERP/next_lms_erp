@@ -329,7 +329,8 @@ class result_report_controller extends Controller
             $date_arr = [];
 
             foreach ($result as $id => $arr) {
-                $date_arr[$arr['exam_date'] . '/' . $arr['ExamTitle']] = $arr['exam_date'] . '(' . $arr['total_points'] . ')';
+                //$date_arr[$arr['exam_date'] . '/' . $arr['ExamTitle']] = $arr['exam_date'] . '(' . $arr['total_points'] . ')';
+                  $date_arr[$arr['exam_date'] . '/' . $arr['ExamTitle']] = $arr['ExamTitle'] . '(' . $arr['total_points'] . ') '.$arr['exam_date'];
             }
 
             $data['grade_id'] = $grade_id;

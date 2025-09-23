@@ -1,7 +1,14 @@
 @include('includes.headcss')
     <link href="/plugins/bower_components/clockpicker/dist/jquery-clockpicker.min.css" rel="stylesheet">
-@include('includes.header')
-@include('includes.sideNavigation')
+
+@php
+    $type = request()->input('type');
+@endphp
+
+@if($type !== 'webForm')
+    @include('includes.header')
+    @include('includes.sideNavigation')
+@endif
 
 <div id="page-wrapper">
     <div class="container-fluid">
@@ -234,8 +241,10 @@
             </div>            
     </div>
 </div>
+@if($type !== 'webForm')
+	@include('includes.footerJs')
+@endif
 
-@include('includes.footerJs')
 <script>
 		$('.studentForm').hide();
 

@@ -232,6 +232,7 @@ class templateMasterController extends Controller
             'payment_mode_type' => 'Payment Mode in fees receipt',
             'parent_pan_card' => 'Parent Pan Card No in fees receipt',
             'subjects_studied_system'=>'Main and Optional subject as per student selected', // added on 05-05-2025
+            'subjects_studied_2_line'=>'Main and Optional subject as per student selected break between 2 lines', // added on 05-05-2025
             'annual_value_result'=>'Remarks from remarks master', // added on 05-05-2025
             'total_working_days_system'=>'Count days from start date and end date academic year',// added on 05-05-2025
             'total_working_days_present_system'=>'Count days as per attendance taken',// added on 05-05-2025

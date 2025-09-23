@@ -341,7 +341,9 @@ class PayrollController extends Controller
         $department_id = ($request->department_id!=0) ? implode(',',$request->department_id) : 0;
 
         $sub_institute_id = session()->get('sub_institute_id');
-        $payrollTypes = PayrollType::where('sub_institute_id',$sub_institute_id)->where('status', 1)->orderBy('sort_order')->get();
+        $payrollTypes = PayrollType::where('sub_institute_id',$sub_institute_id)->where('status', 1)
+        ->where('day_count', 0)
+        ->orderBy('sort_order')->get();
 
         $header = [];
         foreach ($payrollTypes as $payrollType) {
@@ -1763,7 +1765,6 @@ class PayrollController extends Controller
     }
 
     function getEmpMonthlyData(Request $request){
-        // echo "<pre>";print_r($request->all());exit;
         $sub_institute_id = session()->get('sub_institute_id');
         $totalDay = $request->totalDay;
         $searchedYear = $request->year;
@@ -1857,6 +1858,7 @@ class PayrollController extends Controller
                         $deduction =0;
                     }
 
+
                 // 13-08-2024 end 
                 $deductionName=  (($value['deduction'][3] == 'PT') ? 1 : 0);
                 if($totalSal < 15000 && $value['deduction'][3]=="PF" && $deduction>0){
@@ -1871,13 +1873,18 @@ class PayrollController extends Controller
                     $deduction = round(($deduction / $payrollMonthDays) * $request->totalDay);
                 }
                 else if($value['deduction'][1] == 2 && !$deductionName && $value['deduction'][3]!="PF" && $value['deduction'][4]==0){
-                    $deduction = round(($deduction / $payrollMonthDays) * $request->totalDay);  
+                    $deduction = round(($deduction / $payrollMonthDays) * $request->totalDay);
+                }
+                //START FOR PT CALCULATE AS PER DAYS 15-09-2025
+                elseif($getEligible->pt_deduction=="Y" && $value['deduction'][3]=="PT"){
+                    $deduction = Helpers::getPT($totalallowance,$getEligible->gender);
                 }
                 // 2024-10-11 if total is 0 all values will be 0
                 if($totalDay==0){
                     $deduction = 0;
                 }
                 // 2024-10-11
+
                 $employeefinalDisplayData[$value['deduction'][2]] = $deduction;
             
                 $totaldeduction = $totaldeduction + $deduction;
