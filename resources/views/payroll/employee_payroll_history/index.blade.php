@@ -59,7 +59,6 @@
                             </form>
                         </div>
             </div>
-
                 <div class="card">
                     <div class="table-responsive mt-20 tz-report-table">
                         <table id="example" class="table table-striped">
@@ -81,33 +80,18 @@
                                 <tbody>
 
                                     @foreach($data['currentYearemployeeDetails'] as $employee)
-                                        <tr>
-                                        <td>{{$employee['employee_no']}}</td>
-                                        <td>{{$employee['employee_name']}}</td>
-                                        <td>{{$employee['month'] .'/'. $employee['year']}}</td>
-                                        <td>{{round($employee['total_day'],2)}}</td>
+                                    <tr>
+                                        <td>{{ $employee['employee_no'] ?? '' }}</td>
+                                        <td>{{ $employee['employee_name'] ?? '' }}</td>
+                                        <td>{{ ($employee['month'] ?? '') . '/' . ($employee['year'] ?? '') }}</td>
+                                        <td>{{ round($employee['total_day'] ?? 0, 2) }}</td>
                                         @foreach($data['header'] as $hkey => $col)
-                                            <td>{{$employee['data'][$hkey] ?? '0' }}</td>
+                                            <td>{{ $employee['data'][$hkey] ?? '0' }}</td>
                                         @endforeach
-                                        <td>{{$employee['total_deduction']}}</td>
-                                        <td>{{$employee['total_payment']}}</td>
-                                        </tr>
+                                        <td>{{ $employee['total_deduction'] ?? 0 }}</td>
+                                        <td>{{ $employee['total_payment'] ?? 0 }}</td>
+                                    </tr>
                                     @endforeach
-
-
-                               {{--     @foreach($data['nextYearemployeeDetails'] as $employee)
-                                        <tr>
-                                        <td>{{$employee['month'] .'/'. $employee['year']}}</td>
-                                        <td>{{$employee['employee_id']}}</td>
-                                        <td>{{$employee['total_day']}}</td>
-                                        @foreach($data['header'] as $hkey => $col)
-                                            <td>{{$employee['data'][$hkey] ?? '0' }}</td>
-                                        @endforeach
-                                        <td>{{$employee['total_deduction']}}</td>
-                                        <td>{{$employee['total_payment']}}</td>
-                                        </tr>
-                                    @endforeach --}}
-
                                 </tbody>
                             </form>
                         </table>

@@ -242,6 +242,33 @@ class admissionRegistrationHillController extends Controller
                     $sendEmailController = new send_email_parents_controller;
                     $sendEmail = $this->sendEmail($emailRequest);
                     }
+                    elseif(isset($data['admission_standard']) && in_array($data["conf"],["NO","W/L"])){
+                    $nextYear = ((int) substr($syear, 2, 2)+1);
+                    $getStandard = DB::table('standard')->where(['id'=>$data['admission_standard'],'sub_institute_id'=>$sub_institute_id])->first();
+
+                    $htmlContent = view('admission.registrationHills.sendConfirmEmail', [
+                        'page_type'=>'parent',
+                        'parent_date' => $pindate,
+                        'pint' => $data["conf"] ?? '',
+                        'parent_time' => $condate ?? '',
+                        'aca_year'    => $syear.'-'.$nextYear,
+                        'admission_std'    => $getStandard->name ?? '-',
+                    ])->render();
+                    // return $htmlContent;exit;
+                    $emailRequest = new Request([
+                        'type' => 'webForm',
+                        'teacher_id' => $created_by,
+                        'sub_institute_id' =>$sub_institute_id,
+                        'token' => $_REQUEST['_token'],
+                        'all_email' => $data['email'],
+                        'subject' => 'ADMISSION PROCEDURE',
+                        'syear' => $syear,
+                        'example_subject' => 'ADMISSION PROCEDURE',
+                        'content' => $htmlContent
+                    ]);
+                    $sendEmailController = new send_email_parents_controller;
+                    $sendEmail = $this->sendEmail($emailRequest);
+                    }
             }
         }
         // exit;
