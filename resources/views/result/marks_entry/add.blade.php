@@ -111,11 +111,16 @@
                             </tr>
                             @php
                             $arr = $data['stu_data'];
-                             $disable  = "";                            
+                             $disable  = "";
+                             $per = 0;
                             if(isset($data['approve_status']) && $data['approve_status']->status ==1){
                                 $disable = "disabled";
                             }
                             foreach ($arr as $id=>$col_arr){
+                            
+$points = isset($col_arr['points']) ? (float)$col_arr['points'] : 0;
+$outof  = isset($col_arr['outof']) ? (float)$col_arr['outof'] : 1; // default 1 to avoid division by 0
+$per = ($outof > 0) ? round(($points / $outof) * 100, 2) : 0;
                             @endphp
                             <tr>
                             <input type="hidden" class="total_days" value="{{ $col_arr['outof'] }}" />
@@ -127,8 +132,8 @@
                                 <input type="text" class="att" name="values[{{ $col_arr['student_id'] }}][points]" style="width: 100px;" value="{{ $col_arr['points'] }}" onchange="check_input(this,{{$col_arr['outof']}})" {{$disable}} />
                                 Out Of 
                                 <lable>{{$col_arr['outof']}}</lable>
-                             </td>
-                            <td><label class="at_per">{{ $col_arr['per'] }}%</label> <input type="hidden" class="at_per_val" name="values[{{ $col_arr['student_id'] }}][per]" readonly="readonly" style="width: 70px;"  value="{{ $col_arr['per'] }}%" /></td>
+                             </td>                   
+                            <td><label>{{ $per }}%</label> <input type="hidden" class="at_per_val" name="values[{{ $col_arr['student_id'] }}][per]" readonly="readonly" style="width: 70px;"  value="{{ $col_arr['per'] }}%" /></td>
 
                             <td style="display: none;"><label class="at_grd">{{ $col_arr['grade'] }}</label> <input type="hidden" class="at_grd_val" name="values[{{ $col_arr['student_id'] }}][grade]" readonly="readonly" style="width: 70px;"  value="{{ $col_arr['grade'] }}" /></td>
                             <td>

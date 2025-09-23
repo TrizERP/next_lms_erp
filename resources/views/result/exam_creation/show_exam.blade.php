@@ -25,9 +25,9 @@
                                 <th>App Status</th>
                                 <th>Standard</th>
                                 <th>Subject</th>
+                                <th>Display Subject</th>
                                 <th>Exam Name</th>
                                 <th>Points</th>
-                                <th>Mark Type</th>
                                 <th>Report Card Status</th>
                                 <th>Sort Order</th>
                                 <th>Exam Date</th>
@@ -43,9 +43,9 @@
                                 <td>{{$data->app_disp_status}}</td>
                                 <td>{{$data->std_name}}</td>
                                 <td>{{$data->sub_name}}</td>
+                                <td>{{$data->display_name}}</td>
                                 <td>{{$data->exam_name}}</td>
                                 <td>{{$data->points}}</td>
-                                <td>{{$data->marks_type}}</td>
                                 <td>{{$data->report_card_status}}</td>
                                 <td>{{$data->sort_order}}</td>
                                 <td>{{$data->exam_date}}</td>
