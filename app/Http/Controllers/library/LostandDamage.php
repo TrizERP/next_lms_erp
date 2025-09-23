@@ -12,7 +12,7 @@ class LostandDamage extends Controller
 	  public function index(Request $request)
     {
         $sub_institute_id = session()->get('sub_institute_id');
-        $syear = session()->get('syear');
+        // $syear = session()->get('syear');
         $data['bookdata'] =  DB::table('mst_item_status')
             ->where('sub_institute_id', $sub_institute_id)
             ->pluck('item_status_name', 'id')
@@ -31,7 +31,7 @@ class LostandDamage extends Controller
                 'b.item_status_name',
             )
             ->where('a.sub_institute_id', $sub_institute_id)
-            ->where('a.syear', $syear)
+            // ->where('a.syear', $syear)
             ->where('a.item_status_id', '!=',0)
             ->whereNull('a.deleted_at'); // Assuming 3 is the ID for Lost and Damage status
 
