@@ -1826,11 +1826,13 @@ if (!function_exists('htmlToPDF')) {
     }
 }
 if (!function_exists('htmlToPDFHills')) {
-    function htmlToPDFHills($htmlPath, $pdfPath)
+    function htmlToPDFHills($htmlPath, $pdfPath,$sub_institute_id = '')
     {
         $command = '/usr/local/bin/wkhtmltopdf --encoding utf-8 ';
 
-        if(in_array(session()->get('sub_institute_id'),[201,202,203,204]))
+        if(in_array($sub_institute_id,[201,202,203,204]))
+            $command .= '--header-html https://erp.triz.co.in/css/hpc_header.html ';
+        elseif(in_array(session()->get('sub_institute_id'),[201,202,203,204]))
             $command .= '--header-html https://erp.triz.co.in/css/hpc_header.html ';
         else
             $command .= '--header-html https://erp.triz.co.in/css/hpc_header_todd.html ';

@@ -518,7 +518,7 @@ class tbluserController extends Controller
             $ext = File::extension($originalname);
             $file_name = $name.'.'.$ext;
             // $path = $file->storeAs('public/student_document/', $file_name);
-            Storage::disk('digitalocean')->putFileAs('public/staff_document/', $file, $file_name, 'public');
+            Storage::disk('digitalocean')->putFileAs('public/he_staff_document/', $file, $file_name, 'public');
         }
 
         $data = [
