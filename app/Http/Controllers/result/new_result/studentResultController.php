@@ -8,7 +8,7 @@ use function App\Helpers\is_mobile;
 use App\Models\result\result_template;
 use function App\Helpers\SearchStudent;
 use function App\Helpers\getStudents;
-use DB;
+use Illuminate\Support\Facades\DB;
 use PDF;
 use Illuminate\Support\Facades\Response;
 use Carbon\Carbon;
@@ -105,7 +105,7 @@ class studentResultController extends Controller
             ->where('rtm.syear', $syear)
             ->select('rbm.*', 'rtm.*') // You can specify the columns you want to select
             ->first();
-
+        // echo "<pre>";print_r($result_trust);exit;
         $last_insert_ids = '';
         $new_html = '';
         $all_stud_html = array();
@@ -289,6 +289,7 @@ class studentResultController extends Controller
         $html_content = str_replace(htmlspecialchars("<<class_teacher_name>>"), isset($teacher_name->teacher_name) ? $teacher_name->teacher_name : ' ', $html_content);
         $html_content = str_replace(htmlspecialchars("<<class_teacher_lastname>>"), isset($teacher_name->last_name) ? $teacher_name->last_name : ' ', $html_content);
         $html_content = str_replace(htmlspecialchars("<<academic_years>>"), $display_year, $html_content);
+        $html_content = str_replace(htmlspecialchars("<<current_year>>"), $syear, $html_content);
         $html_content = str_replace(htmlspecialchars("<<term_name>>"), $term_name, $html_content);
         $html_content = str_replace(htmlspecialchars("<<student_image_value>>"), $student_image_path, $html_content);
         $html_content = str_replace(htmlspecialchars("<<student_id>>"),strtoupper($value['id']),$html_content);
@@ -641,6 +642,15 @@ class studentResultController extends Controller
 
         // 04-03-2025 end
 
+        // 24-09-2025 ssmission 
+        if (strpos($html_content, htmlspecialchars('<<ssmission_term_1>>')) !== false) {
+            $scholastic = $this->ssmission_term_1($standard_id, $value['id'], $format, "");
+            $html_content = str_replace(htmlspecialchars("<<ssmission_term_1>>"), $scholastic['scholastic_table'], $html_content);
+            $html_content = str_replace(htmlspecialchars("<<total_marks>>"), $scholastic['total_marks'], $html_content);
+            $html_content = str_replace(htmlspecialchars("<<overallPercentage>>"), $scholastic['overallPercentage'], $html_content);
+            $html_content = str_replace(htmlspecialchars("<<overall_grade>>"), $scholastic['overall_grade'], $html_content);
+            $html_content = str_replace(htmlspecialchars("<<class_teacher_remark>>"), $scholastic['teacher_remark'], $html_content);
+        }
         return $html_content;
         //  return $main_result;         
     }
@@ -8962,4 +8972,114 @@ private function buildDisciplineTable($decipline_data,$both_term)
         return $rankArr;
     }
     // 04-03-2025 frangelo end 
+
+    // ssmission result 24-09-2025 
+    public function ssmission_term_1($standard_id, $student_id, $format,$stuData){
+        $syear = session()->get('syear');
+        $sub_institute_id = session()->get('sub_institute_id');
+        $extra_term =$extra_exam = $att_term="1=1";
+        if ($format != "yearly"){
+            $extra_term = "term_id = " . $format;
+            $att_term = "atd.term_id = " . $format;
+            $extra_exam = "rce.term_id = " . $format;
+        }
+        // get term_name 
+        $term_name = DB::table('academic_year')->whereRaw($extra_term)->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->get()->toArray();
+
+        // get subject
+        $get_subject = $this->get_subject($sub_institute_id,$syear,$student_id,$standard_id);
+        $exam_created = $this->get_exam_name($sub_institute_id,$syear,$standard_id,$extra_exam);
+        $groupedExam = [];
+        foreach ($exam_created as $exam) {
+            $groupedExam[$exam->ExamTitle] = $exam;
+        }
+        $exam_marks = $this->get_exam_marks($sub_institute_id,$student_id,'examWise',$syear);
+        // echo "<pre>";print_r($exam_marks);exit;
+
+        // get standard gardes
+        $grade_arr = $this->getGradeScale($standard_id, '');
+        $table = "";
+        if(!empty($groupedExam)){
+
+                // Step 2: build table
+                $table  = "<table class='aca-year' style='width: 100%;border-collapse:collapse; border:1px solid #e68023;' cellspacing='0'  border='1'>";
+                $table .= "<thead><tr>";
+                $table .= "<th style='text-align:center !important;'>Subject</th>";
+                $totalMarks = $overallTotal = $overallObt = 0;
+                foreach ($groupedExam as $exam) {
+                    $table .= "<th style='text-align:center !important;'>" . $exam->ExamTitle . "<br>(" . $exam->weightage . ")</th>";
+                    $totalMarks += $exam->weightage;
+                }
+                $table .= "<th style='text-align:center!important;'>Total <br>(".$totalMarks.")</th>";
+                $table.= "<th style='text-align:center!important;'>Grade</th>";
+                $table .= "</tr></thead><tbody>";
+
+                // Step 3: loop subjects
+                foreach ($get_subject as $subject) {
+                    $table .= "<tr>";
+                    $table .= "<td style='padding-left:16px !important;'>" . $subject->subject_name . "</td>";
+                    $obtainedTotal = 0;
+                    if($subject->elective_subject!="Yes"){
+                    $overallTotal += $totalMarks;
+                    }
+                    foreach ($groupedExam as $examTitle => $exam) {
+                        // Default 0 marks
+                        $marks = 0;
+                        // Step 4: find student’s marks for this subject + exam
+                        foreach ($exam_marks as $mark) {
+                            if ($mark->ExamTitle == $examTitle && $mark->subject_id == $subject->subject_id) {
+                                $marks = $mark->points;
+                                if(in_array($mark->is_absent,["AB","N.A.","EX"])){
+                                    $marks = $mark->is_absent;
+                                }
+                                break; // stop once found
+                            }
+                        }
+                        $obtainedTotal += $marks;
+                        if($subject->elective_subject=="Yes"){
+                            $table .= "<td style='text-align:center !important;' ".round($marks,0).">-</td>";
+                        }else{
+                            $overallObt += $marks;
+                            $table .= "<td style='text-align:center !important;'>" . round($marks,0) . "</td>";
+                        }
+                        // $this->getGrade($grade_arr, $pointMarks, $obtMarks)
+                    }
+                    if(($subject->elective_subject=="Yes") ){
+                        $table .= "<td style='text-align:center!important;' data-json=".json_encode(["standard"=>$standard_id,"subject"=>$subject->subject_id,"obtained_marks"=>$obtainedTotal])."><b>-</b></td>";
+                    }else{
+                        $table .= "<td style='text-align:center!important;' data-json=".json_encode(["standard"=>$standard_id,"subject"=>$subject->subject_id,"obtained_marks"=>$obtainedTotal])."><b>".$obtainedTotal."</b></td>";
+                    }
+                   
+                    $table.= "<td style='text-align:center!important;'><b>".$this->getGrade($grade_arr, $totalMarks, $obtainedTotal)."</b></td>";
+                    $table .= "</tr>";
+                }
+
+                $table .= "</tbody></table>";
+
+        }
+        $ret_data = DB::table('result_student_attendance_master as atd')
+            ->join('result_working_day_master as wrkd', function ($join) use ($standard_id, $sub_institute_id) {
+                $join->on('wrkd.standard', '=', 'atd.standard')
+                    ->on('wrkd.sub_institute_id', '=', 'atd.sub_institute_id');
+            })
+            ->selectRaw("atd.student_id,wrkd.total_working_day,atd.attendance,GROUP_CONCAT(Distinct atd.teacher_remark SEPARATOR '|') as teacher_remark")
+            ->where('atd.standard', $standard_id)
+            ->where('atd.sub_institute_id', $sub_institute_id)
+            ->where('atd.student_id', $student_id)
+            ->where('atd.syear', $syear)
+            ->whereRaw($att_term)
+            ->groupBy('student_id')
+            ->first();
+            
+        $res['teacher_remark'] = '';
+        if (!empty($ret_data)) {
+            $student_Remark = str_replace('|','',$ret_data->teacher_remark);
+            $res['teacher_remark'] = $student_Remark;
+        }
+        $res['scholastic_table'] = $table;
+        $res['total_marks'] = $overallObt .'/'.$overallTotal;
+        $res['overallPercentage'] = $this->getPer($overallObt, $overallTotal);
+        $res['overall_grade'] = $this->getGrade($grade_arr, $overallTotal, $overallObt);
+        return $res;
+    }
 }
