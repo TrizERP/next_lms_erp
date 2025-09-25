@@ -3974,8 +3974,9 @@ while ($current_date <= $post_end_date) {
                         foreach ($obtained_mark_arr as $key => $mark) {
                             $t_m += $to_marks[$exam_id][$key] ?? 0;
                         }
-                        // sum of best of 2
-                        $obtained_mark_sum = array_sum($obtained_mark_arr);
+
+                        // sum of best of 2 (safe conversion to numeric)
+                        $obtained_mark_sum = array_sum(array_map('floatval', $obtained_mark_arr));
 
                         // Convert marks
                         $ob_main_mark += ($t_m !== 0) ? (($obtained_mark_sum / $t_m) * $w_m) : 0;
@@ -5296,7 +5297,7 @@ private function buildDisciplineTable($decipline_data,$both_term)
             <tbody>';
 
     foreach ($commonData as $title => $cv) {
-        $discipline_table .= '<tr><td><b>' . $title . '</b></td>';
+        $discipline_table .= '<tr><td>' . $title . '</td>';
         if(!empty($both_term)){
             foreach ($both_term as $tk => $tv) {
                 $grade = isset($cv[$tv->term_id]) ? $cv[$tv->term_id] : '-';
