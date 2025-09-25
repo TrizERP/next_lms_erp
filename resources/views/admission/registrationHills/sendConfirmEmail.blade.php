@@ -236,7 +236,7 @@
         </div>
          <div class="footer" style="width:100%;">
             <div class="princople" style="float: left; width: 50%; text-align: center;">
-                <span style="color:#943634"><b>Mr.P.P.Jose</b></span><br>
+                <span style="color:#943634"><b>{{ ($conf=="C") ? 'Mr.P.P.Jose' : 'Mrs. Rehana Patni' }}</b></span><br>
                 <span style="color:#943634"><b>Principal</b></span><br>
             </div>
             <div class="director" style="float: right; width: 50%; text-align: center;">

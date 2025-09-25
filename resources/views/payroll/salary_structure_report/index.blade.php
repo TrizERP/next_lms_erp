@@ -77,7 +77,10 @@
                                 <th>Department</th>
                                 <th>Year</th>
                                 @foreach($data['headers'] as $hkey => $header)
-                                    <th class="text-left"> {{$header}} </th>
+                                    @if ($header === 'PF')
+                                        <th class="text-left"><b>Gross Total</b></th>
+                                    @endif
+                                        <th class="text-left">{{$header}}</th>                                    
                                 @endforeach
                             </tr>
                             </thead>
@@ -88,14 +91,29 @@
                                     <td>{{$value['employee_name']}}</td>
                                     <td>{{$value['department']}}</td>
                                     <td>{{$value['year']}}</td>
-                                    @php $jsonData = json_decode($value['employee_salary_data'],true); @endphp
-                                    @foreach($data['headers'] as $hkey => $header)
-                                        @if(isset($jsonData[$hkey]))
-                                            <td>{{$jsonData[$hkey]}}</td>
-                                        @else 
-                                            <td>0</td>
-                                        @endif
-                                    @endforeach
+@php 
+    $jsonData = json_decode($value['employee_salary_data'], true); 
+    $gross_total = 0; 
+@endphp
+
+@foreach($data['headers'] as $hkey => $header)
+    @php 
+        $cellValue = $jsonData[$hkey] ?? 0; 
+    @endphp
+
+    {{-- Add only if this header is in allowance list --}}
+    @if(in_array($header, $data['allowance']))
+        @php $gross_total += $cellValue; @endphp
+    @endif
+
+    {{-- Print PF column with Gross Total --}}
+    @if ($header == 'PF')
+        <td><b>{{ $gross_total }}</b></td>
+    @endif
+
+    {{-- Always show the column value --}}
+    <td>{{ $cellValue }}</td>
+@endforeach
                                 </tr>
                             @endforeach
                             </tbody>
