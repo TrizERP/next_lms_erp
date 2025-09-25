@@ -1747,8 +1747,13 @@ datalist {
                                                 <label>Whether the candidate belongs to Schedule Caste or Schedule Tribe or OBC</label>   
                                                 <input type="text" id='candidate_belongs_to' name="candidate_belongs_to" value="@if(isset($data['studentTcdetails']['candidate_belongs_to'])) {{$data['studentTcdetails']['candidate_belongs_to']}} @endif" class="form-control">
                                             </div>
-                                            <div class="col-md-4 form-group">
-                                                <label>Date of first admission in the School with class</label>
+                                            @php 
+                                                $hidden = '';
+                                                if(session()->get('sub_institute_id')==47)
+                                                    $hidden = "style=visibility:hidden";
+                                            @endphp
+                                            <div class="col-md-4 form-group" {{$hidden}}>
+                                                <label>Date of first admission in the institute with class</label>
                                                 <input type="text" id='date_of_first_admission' name="date_of_first_admission" value="@if(isset($data['studentTcdetails']['date_of_first_admission'])) {{$data['studentTcdetails']['date_of_first_admission']}} @endif" class="form-control" autocomplete="off">
                                             </div>
                                             <div class="col-md-4 form-group">
