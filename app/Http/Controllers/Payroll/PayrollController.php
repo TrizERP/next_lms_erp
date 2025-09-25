@@ -346,11 +346,16 @@ class PayrollController extends Controller
         ->orderBy('sort_order')->get();
 
         $header = [];
+        $allowance = [];
+
         foreach ($payrollTypes as $payrollType) {
             $header[$payrollType->id] = $payrollType->payroll_name;
+            if($payrollType->amount_type == 1)
+                $allowance[$payrollType->id] = $payrollType->payroll_name;
         }
-        
+
         $res['headers'] = $header;
+        $res['allowance'] = $allowance;
         $res['years'] = Helpers::getPairYears();
 
         $res['salaryStructure'] = EmployeeSalaryStructure::join('tbluser as u',function($join){
@@ -914,7 +919,7 @@ class PayrollController extends Controller
 
         $employees = tbluserModel::where('sub_institute_id', $sub_institute_id)->where('status', 1)->get();
         
-        $payrollTypes = PayrollType::where('sub_institute_id',$sub_institute_id)->where('status', 1)->orderBy('sort_order')->get();
+        $payrollTypes = PayrollType::where('sub_institute_id',$sub_institute_id)->where('status', 1)->where('day_count', 0)->orderBy('sort_order')->get();
 
         $employeeSalaryStructures = EmployeeSalaryStructure::where('year', (Carbon::now()->format('Y')))->get();
 
