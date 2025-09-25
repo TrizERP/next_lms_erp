@@ -29,6 +29,9 @@
                                     <th>Emp Name</th>
                                     <th>Gender</th>
                                     @foreach ($payrollTypes as $payrollType)
+                                        @if ($payrollType->payroll_name == 'PF')
+                                            <th>Gross Total</th>
+                                        @endif
                                         <th class="text-left">{{$payrollType->payroll_name}}</th>
                                     @endforeach
                                 </tr>
@@ -42,12 +45,20 @@
                                         <td>{{$data->employee_no}}</td>
                                         <td>{{$data->first_name .' '. $data->middle_name .' '.$data->last_name}}</td>
                                         <td>{{$data->gender}}</td><input type="hidden" name="emp[{{$key}}][]" value="{{$data->id}}">
+                                        @php $gross_total = 0; @endphp
                                         <input type="hidden" name="emp[{{$key}}][year] ?? ''" value="{{$employeeSalaryStructures[$key]['year'] ?? ''}}">
                                         @foreach ($payrollTypes as $payrollType)
+                                            @if ($payrollType->payroll_name == 'PF')
+                                                <td><b>{{ $gross_total }}</b></td>
+                                            @endif
                                             <input type="hidden" name="emp[{{$key}}][{{$payrollType->id}}][]"
                                                    value="{{$payrollType->id}}">
                                             <td><input type="text" name="emp[{{$key}}][{{$payrollType->id}}][]" value="{{$employeeSalaryStructures[$key]['employee_salary_data'][$payrollType->id] ?? 0}}">
                                             </td>
+                                            @php
+                                                $gross_total +=
+                                                        $employeeSalaryStructures[$key]['employee_salary_data'][$payrollType->id]  ?? 0;
+                                            @endphp
                                         @endforeach
                                     </tr>
                                     @php
