@@ -177,14 +177,14 @@ class itemScanController extends Controller
             $join->on('li.book_id','=','lb.id')->on('item_scan_details.sub_institute_id','=','lb.sub_institute_id');
         })
         ->selectRaw('item_scan_details.*,lb.title as book_title,lb.material_resource_type as collection_type')
-        ->where(['item_scan_details.sub_institute_id'=>$sub_institute_id]) //,'item_scan_details.syear'=>$syear
+        ->where(['item_scan_details.sub_institute_id'=>$sub_institute_id,'item_scan_details.syear'=>$syear])
         ->when($request->item_code!='',function($q) use($request){
             $q->where('item_scan_details.item_code',$request->item_code);
         })
         ->whereNull('item_scan_details.deleted_at')
         ->get()
         ->toArray(); 
-        // return $res['bookData'];
+        // return "hello";
         return is_mobile($type, "library/bookVarification/scanBookRemark", $res, "view");    
     }
 

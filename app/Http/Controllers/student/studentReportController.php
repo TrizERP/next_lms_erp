@@ -210,10 +210,6 @@ class studentReportController extends Controller
                     ->where('tblstudent_tc_details.syear', $syear)
                     ->where('tblstudent_tc_details.sub_institute_id', $sub_institute_id);
             })// adddd on 25-07-2025 by uma for conflict with tc details
-            ->leftJoin('tblstudent_family_history', function($join) use($syear,$sub_institute_id){
-                $join->on('tblstudent_family_history.student_id', '=', 'tblstudent.id')
-                    ->where('tblstudent_family_history.sub_institute_id', $sub_institute_id);
-            })// adddd on 24-09-2025 by uma for conflict with tc details
             ->where($extraSearchArray)
             ->when($request->grade,function($q) use($request){
                 $q->where('tblstudent_enrollment.grade_id',$request->grade);
