@@ -762,6 +762,7 @@ class admissionEnquiryController extends Controller
             $activityDate = isset($data["activity_date"]) ? Carbon::createFromFormat('d-m-Y',$data["activity_date"])->format('Y-m-d') : null;
 
             $htmlContent = view('admission.registrationHills.sendConfirmEmail', [
+                'page_type'=>'parent',
                 'parent_date' => $activityDate ?? '',
                 'parent_time' => $data["activity_time"] ?? '',
                 'aca_year'    => $syear.'-'.$nextYear,
