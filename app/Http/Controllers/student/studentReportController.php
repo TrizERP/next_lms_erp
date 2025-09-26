@@ -227,7 +227,7 @@ class studentReportController extends Controller
             ->whereNull('tblstudent_enrollment.end_date')
             ->orderByRaw($extra_order_by)
             ->when(in_array($sub_institute_id,[201,202,203]) && $request->order_by=="enrollment_no", function ($q) {
-                $q->orderByRaw("CAST(SUBSTRING_INDEX(enrollment_no, '/', -1) AS UNSIGNED) ASC");
+                $q->orderByRaw("CAST(SUBSTRING_INDEX(enrollment_no, '-', -1) AS UNSIGNED) ASC");
             })
             //->groupBy('tblstudent.id')  // added by vivek for family history show all memeber 25-09-2025
             ->get();
