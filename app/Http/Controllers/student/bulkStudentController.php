@@ -285,7 +285,7 @@ class bulkStudentController extends Controller
 
         foreach ($request->input('dynamicFields') as $key => $value) {
             if ($value != 'standard' && $value != 'grade' && $value != 'division' && $value != 'roll_no' && $value != 'student_height' && $value != 'student_weight') {
-                $array[] = $value;
+                $array[] = 'tblstudent.'.$value; //26-09-2025 By Rajesh : altius height & weight ambiguous
             }
             $value1 = str_replace($searchArr, $replaceArr, $value);
             $header[$value] = ucfirst($value1);

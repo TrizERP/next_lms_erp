@@ -191,7 +191,7 @@ use DB;
                                             @endif                                            
                                                 <a href="{{ route('chapter_master.index',['standard_id'=>$val['standard_id'],'subject_id'=>$val['subject_id'],'perm'=>$val['sub_institute_id']]) }}">
                                                     <img src="../../../storage{{$val['display_image']}}" alt=""
-                                                         width="25%">
+                                                         width="100%">
                                                 </a>
                                             </div>
 
