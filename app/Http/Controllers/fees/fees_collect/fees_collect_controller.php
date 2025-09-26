@@ -182,11 +182,33 @@ class fees_collect_controller extends Controller
                     $q->where('se.section_id', $request->division);
                 }
                 if (isset($request['stu_name']) && $request['stu_name'] != '') {
-                    $q->where(function ($query) use ($request) {
-                        $query->where('s.first_name', 'like', '%' . $request->stu_name . '%')
-                            ->orWhere('s.middle_name', 'like', '%' . $request->stu_name . '%')
-                            ->orWhere('s.last_name', 'like', '%' . $request->stu_name . '%');
-                    });
+                    if (str_contains($request['stu_name'], ' ')) {
+                        // Split the search value by spaces
+                        $nameParts = explode(' ', $request['stu_name']);
+                        
+                        // Remove empty values from the array
+                        $nameParts = array_filter($nameParts);
+                        
+                        // Build the search conditions for each part
+                        $q->where(function($q) use ($nameParts) {
+                            foreach ($nameParts as $part) {
+                                if (!empty(trim($part))) {
+                                    $q->where(function($innerQ) use ($part) {
+                                        $innerQ->where('s.first_name', 'LIKE', "%{$part}%")
+                                              ->orWhere('s.middle_name', 'LIKE', "%{$part}%")
+                                              ->orWhere('s.last_name', 'LIKE', "%{$part}%");
+                                    });
+                                }
+                            }
+                        });
+                    } else {
+                        // Single word search - search across all three fields
+                        $q->where(function($q) use ($request) {
+                            $q->where('s.first_name', 'LIKE', "%{$request['stu_name']}%")
+                              ->orWhere('s.middle_name', 'LIKE', "%{$request['stu_name']}%")
+                              ->orWhere('s.last_name', 'LIKE', "%{$request['stu_name']}%");
+                        });
+                    }
                 }
                 if (isset($request['including_inactive']) && $request['including_inactive'] != '' && $request['including_inactive'] == 'Yes') {
                         $q->whereNotNull('se.end_date');

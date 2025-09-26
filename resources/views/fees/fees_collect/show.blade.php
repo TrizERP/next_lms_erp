@@ -256,6 +256,27 @@
             } );
         } );
     } );
+    $(document).ready(function () {
+    $("#stu_name").autocomplete({
+        source: function (request, response) {
+            $.ajax({
+                url: "{{route('search_students.search')}}",
+                type: 'get',
+                data: {
+                    'value': request.term
+                },
+                success: function(data){
+                    response( $.map( data, function( item ) {
+                        return {
+                            label: item.student_name,
+                            value: item.student_name,
+                        }
+                    }));
+                }
+            });
+        }
+    });
+});
 </script>
 
 @if(app('request')->input('implementation') == 1)
