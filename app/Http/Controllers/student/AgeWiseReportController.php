@@ -12,7 +12,7 @@ class AgeWiseReportController extends Controller
     public function index(Request $request)
     {
         $gradeId = $request->get('grade_id', $request->get('grade', 0));
-        $subInstituteId = session()->get('sub_institute_id', 0);
+        $sub_institute_id = session()->get('sub_institute_id', 0);
         $medium = $request->get('medium', 'PRIMARY');
         $syear = session()->get('syear');
 
@@ -23,7 +23,7 @@ class AgeWiseReportController extends Controller
         // Classes list
         $classesQuery = DB::table('standard')
             ->select('id', 'name', 'short_name')
-            ->where('sub_institute_id', $subInstituteId)
+            ->where('sub_institute_id', $sub_institute_id)
             ->orderBy('sort_order', 'asc')
             ->orderBy('name', 'asc');
 
@@ -46,10 +46,10 @@ class AgeWiseReportController extends Controller
                 'minAge' => $minAge,
                 'maxAge' => $maxAge,
                 'grade_id' => $gradeId,
-                'sub_institute_id' => $subInstituteId,
+                'sub_institute_id' => $sub_institute_id,
             ];
             $type = $request->type;
-            return is_mobile($type, 'student.age_wise', $data, "view");
+            return is_mobile($type, "student/agewise", $data, "view");
         }
 
         $classIds = array_keys($classes);
@@ -65,6 +65,8 @@ class AgeWiseReportController extends Controller
             )
             ->where('e.syear', $syear)
             ->whereIn('e.standard_id', $classIds)
+            ->where('s.sub_institute_id', $sub_institute_id)
+            ->where('e.end_date', null)
             ->groupBy('age', 'e.standard_id', 's.gender')
             ->orderBy('age')
             ->get();
@@ -115,10 +117,10 @@ class AgeWiseReportController extends Controller
             'minAge' => $minAge,
             'maxAge' => $maxAge,
             'grade_id' => $gradeId,
-            'sub_institute_id' => $subInstituteId,
+            'sub_institute_id' => $sub_institute_id,
         ];
 
         $type = $request->type;
-        return is_mobile($type, 'student.age_wise', $data, "view");
+        return is_mobile($type, "student/agewise", $data, "view");
     }
 }
