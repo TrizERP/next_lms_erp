@@ -1,7 +1,5 @@
-@include('../includes.headcss')
-@include('../includes.header')
-@include('../includes.sideNavigation')
-
+@extends('layout')
+@section('container')
 <style>
     .report-container { margin:20px 0; }
     .report-header { text-align:center;margin-bottom:20px;padding:15px;background:linear-gradient(45deg,#f8f9fa,#e9ecef);border-radius:5px; }
@@ -18,20 +16,24 @@
 <div id="page-wrapper" class="content-main flex-fill">
     <div class="container-fluid">
         <div class="report-container">
-            <form method="GET" action="{{ route('ageWise.index') }}">
+            <form method="GET" action="{{ route('agewise.index') }}">
                 <div class="filter-form">
                     <div class="row align-items-end">
                         <div class="col-md-8">
                             <div class="row">
                                 {{ App\Helpers\SearchChain('4','single','grade',$data['grade_id'] ?? 0) }}
+                                <div class="btn-action-group">
+                                <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Generate Report</button>
+                                </div>
                             </div>
                         </div>
+                        <!--
                         <div class="col-md-4">
                             <div class="btn-action-group">
-                                <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Generate Report</button>
                                 <button type="button" class="btn btn-success export-btn" onclick="exportToExcel()"><i class="fas fa-file-excel"></i> Export to Excel</button>
                             </div>
                         </div>
+                        -->
                     </div>
                 </div>
             </form>
@@ -43,13 +45,7 @@
                         <tr>
                             <th rowspan="2" class="age-column" style="width:120px;background:#25bdea;">Age</th>
                             @foreach($data['classes'] as $class)
-                                <th colspan="2" style="background:#25bdea;">
-                                    @if($data['medium'] == 'KG')
-                                        {{ $class }}
-                                    @else
-                                        Class {{ $class }}
-                                    @endif
-                                </th>
+                                <th colspan="2" style="background:#25bdea;">{{ $class }}</th>
                             @endforeach
                         </tr>
                         <tr>
@@ -95,3 +91,6 @@
         </div>
     </div>
 </div>
+@include('includes.footerJs')
+@include('includes.footer')
+@endsection
