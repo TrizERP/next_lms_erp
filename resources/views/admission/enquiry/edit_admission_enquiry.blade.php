@@ -114,105 +114,105 @@
                                     <label>Email </label>
                                     <!-- pattern="/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/ -->
                                 <input type="email" id='email' @if (isset($editData['email'])) value="{{ $editData['email'] }}" @endif required name="email" class="form-control" required>
-                                </div>
+                                        </div>
 
-                                <div class="col-md-3 form-group">
-                                    <label>Date of Birth </label>
-                                    <input type="text" @if (isset($editData['date_of_birth'])) value="{{ $editData['date_of_birth'] }}" @endif onchange="calculate_age(this.value);" id='date_of_birth' required name="date_of_birth" class="form-control mydatepicker" required>
-                                </div>
+                                        <div class="col-md-3 form-group">
+                                            <label>Date of Birth </label>
+                                            <input type="text" @if (isset($editData['date_of_birth'])) value="{{ $editData['date_of_birth'] }}" @endif onchange="calculate_age(this.value);" id='date_of_birth' required name="date_of_birth" class="form-control mydatepicker" required>
+                                        </div>
 
-                                <div class="col-md-3 form-group">
-                                    <label>Age </label>
-                                    <input type="text" id='age' @if (isset($editData['age'])) value="{{ $editData['age'] }}" @endif required name="age" class="form-control" required>
-                                </div>
-                                @if (Session::get('sub_institute_id') != '198')
-                                <div class="col-md-3 form-group">
-                                    <label>Address </label>
-                                    <textarea id='address' required name="address" class="form-control">
+                                        <div class="col-md-3 form-group">
+                                            <label>Age </label>
+                                            <input type="text" id='age' @if (isset($editData['age'])) value="{{ $editData['age'] }}" @endif required name="age" class="form-control" required>
+                                        </div>
+                                        @if (Session::get('sub_institute_id') != '198')
+                                        <div class="col-md-3 form-group">
+                                            <label>Address </label>
+                                            <textarea id='address' required name="address" class="form-control">
 @if (isset($editData['address'])){{ $editData['address'] }}@endif
 </textarea>
-                                </div>
-                                @endif
-                                <div class="col-md-3 form-group {{ $class }} previous_school_nameDiv">
-                                    <label>Previous School Name </label>
-                                    <input type="text" id='previous_school_name' @if (isset($editData['previous_school_name'])) value="{{ $editData['previous_school_name'] }}" @endif name="previous_school_name" class="form-control">
-                                </div>
-
-                                <div class="col-md-3 form-group {{ $class }} previous_standardDiv">
-                                    <label>Previous Standard </label>
-                                    <select id='previous_standard' name="previous_standard" class="form-control">
-                                        <option value=""> Select Standard </option>
-                                        @foreach ($data['standard'] as $key => $previous)
-                                        <option value="{{ $previous['id'] }}" @if (isset($editData['previous_standard']) && $previous['id'] == $editData['previous_standard']) selected @endif> {{ $previous['name'] }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-
-                                <div class="col-md-3 form-group">
-                                    <label>Admission Standard </label>
-                                    <select id='admission_standard' name="admission_standard" required class="form-control">
-                                    <option value=""> Select Standard </option>
-                                        @foreach ($data['standard'] as $key => $value)
-                                            <option value="{{ $value['id'] }}" @if (isset($editData['admission_standard'])) @if ($editData['admission_standard'] == $value['id']) selected="selected" @endif @endif> {{ $value['name'] }} </option>
-                                        @endforeach
-                                    </select>
-                                </div>
-
-                                <div class="col-md-3 form-group {{ $class }} remarksDiv">
-                                    <label>Remarks </label>
-                                    <input type="text" id='remarks' @if (isset($editData['remarks'])) value="{{ $editData['remarks'] }}" @endif name="remarks" class="form-control">
-                                </div>
-
-                                <div class="col-md-3 form-group {{ $class }} source_of_enquiryDiv">
-                                    <label>Source of enquiry </label>
-                                    <input type="text" id='source_of_enquiry' @if (isset($editData['source_of_enquiry'])) value="{{ $editData['source_of_enquiry'] }}" @endif name="source_of_enquiry" class="form-control">
-                                </div>
-
-                                <div class="col-md-3 form-group {{ $class }} followup_dateDiv">
-                                    <label>Followup Date </label>
-                                    <input type="text" id='followup_date' @if (isset($editData['followup_date'])) value="{{ $editData['followup_date'] }}" @endif name="followup_date" class="form-control mydatepicker" autocomplete="off">
-                                </div>
-
-                                <div class="col-md-3 form-group">
-                                    <label>Gender </label>
-
-                                    <div class="radio radio-success">
-                                        <input type="radio" id='male' @if (isset($editData['gender'])) @if ($editData['gender'] == 'M') checked="checked" @endif @endif name="gender" value="M">
-                                        <label for="male"> Male </label>
-                                    </div>
-                                    <div class="radio radio-success">
-                                        <input type="radio" id='female' name="gender" @if (isset($editData['gender'])) @if ($editData['gender'] == 'F') checked="checked" @endif @endif value="F">
-                                        <label for="female"> Female </label>
-                                    </div>
-                                </div>
-
-                                <div class="col-md-3 form-group {{ $class }} categoryDiv">
-                                    <label>Category </label>
-                                    <select id='category' name="category" class="form-control">
-                                    <option value=""> Select Category </option>
-                                        @if (isset($data['category']))
-                                            @foreach ($data['category'] as $key => $value)
-                                                <option value="{{ $value['id'] }}" @if (isset($editData['category'])) @if ($editData['category'] == $value['id']) selected="selected" @endif @endif>{{ $value['caste_name'] }}</option>
-                                            @endforeach
+                                        </div>
                                         @endif
-                                    </select>
-                                </div>
+                                        <div class="col-md-3 form-group {{ $class }} previous_school_nameDiv">
+                                            <label>Previous School Name </label>
+                                            <input type="text" id='previous_school_name' @if (isset($editData['previous_school_name'])) value="{{ $editData['previous_school_name'] }}" @endif name="previous_school_name" class="form-control">
+                                        </div>
 
-                                <!-- <div class="col-md-3 form-group">
-                                    <label>Send Sms </label>
-                                    <select id='send_sms' required="required" name="send_sms" onchange="showMessageBox(this.value);" class="form-control">
-                                    <option value="0" @if (isset($editData['send_sms'])) @if ($editData['send_sms'] == '0')  selected="selected" @endif @endif> No </option>
-                                    <option value="1" @if (isset($editData['send_sms'])) @if ($editData['send_sms'] == '1') selected="selected" @endif @endif> Yes </option>
-                                    </select>
-                                </div>
+                                        <div class="col-md-3 form-group {{ $class }} previous_standardDiv">
+                                            <label>Previous Standard </label>
+                                            <select id='previous_standard' name="previous_standard" class="form-control">
+                                                <option value=""> Select Standard </option>
+                                                @foreach ($data['standard'] as $key => $previous)
+    <option value="{{ $previous['id'] }}" @if (isset($editData['previous_standard']) && $previous['id'] == $editData['previous_standard']) selected @endif> {{ $previous['name'] }}</option>
+    @endforeach
+                                            </select>
+                                        </div>
 
-                                <div class="col-md-3 form-group" id="sms_message_box" @if (isset($editData['send_sms'])) @if ($editData['send_sms'] == '0') style="display: none;" @endif
+                                        <div class="col-md-3 form-group">
+                                            <label>Admission Standard </label>
+                                            <select id='admission_standard' name="admission_standard" required class="form-control">
+                                            <option value=""> Select Standard </option>
+                                                @foreach ($data['standard'] as $key => $value)
+    <option value="{{ $value['id'] }}" @if (isset($editData['admission_standard'])) @if ($editData['admission_standard'] == $value['id']) selected="selected" @endif @endif> {{ $value['name'] }} </option>
+    @endforeach
+                                            </select>
+                                        </div>
+
+                                        <div class="col-md-3 form-group {{ $class }} remarksDiv">
+                                            <label>Remarks </label>
+                                            <input type="text" id='remarks' @if (isset($editData['remarks'])) value="{{ $editData['remarks'] }}" @endif name="remarks" class="form-control">
+                                        </div>
+
+                                        <div class="col-md-3 form-group {{ $class }} source_of_enquiryDiv">
+                                            <label>Source of enquiry </label>
+                                            <input type="text" id='source_of_enquiry' @if (isset($editData['source_of_enquiry'])) value="{{ $editData['source_of_enquiry'] }}" @endif name="source_of_enquiry" class="form-control">
+                                        </div>
+
+                                        <div class="col-md-3 form-group {{ $class }} followup_dateDiv">
+                                            <label>Followup Date </label>
+                                            <input type="text" id='followup_date' @if (isset($editData['followup_date'])) value="{{ $editData['followup_date'] }}" @endif name="followup_date" class="form-control mydatepicker" autocomplete="off">
+                                        </div>
+
+                                        <div class="col-md-3 form-group">
+                                            <label>Gender </label>
+
+                                            <div class="radio radio-success">
+                                                <input type="radio" id='male' @if (isset($editData['gender'])) @if ($editData['gender'] == 'M') checked="checked" @endif @endif name="gender" value="M">
+                                                <label for="male"> Male </label>
+                                            </div>
+                                            <div class="radio radio-success">
+                                                <input type="radio" id='female' name="gender" @if (isset($editData['gender'])) @if ($editData['gender'] == 'F') checked="checked" @endif @endif value="F">
+                                                <label for="female"> Female </label>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-3 form-group {{ $class }} categoryDiv">
+                                            <label>Category </label>
+                                            <select id='category' name="category" class="form-control">
+                                            <option value=""> Select Category </option>
+                                                @if (isset($data['category']))
+                                                    @foreach ($data['category'] as $key => $value)
+    <option value="{{ $value['id'] }}" @if (isset($editData['category'])) @if ($editData['category'] == $value['id']) selected="selected" @endif @endif>{{ $value['caste_name'] }}</option>
+    @endforeach
+                                                @endif
+                                            </select>
+                                        </div>
+
+                                        <!-- <div class="col-md-3 form-group">
+                                            <label>Send Sms </label>
+                                            <select id='send_sms' required="required" name="send_sms" onchange="showMessageBox(this.value);" class="form-control">
+                                            <option value="0" @if (isset($editData['send_sms'])) @if ($editData['send_sms'] == '0')  selected="selected" @endif @endif> No </option>
+                                            <option value="1" @if (isset($editData['send_sms'])) @if ($editData['send_sms'] == '1') selected="selected" @endif @endif> Yes </option>
+                                            </select>
+                                        </div>
+
+                                        <div class="col-md-3 form-group" id="sms_message_box" @if (isset($editData['send_sms'])) @if ($editData['send_sms'] == '0') style="display: none;" @endif
 @else
     style="display: none;" @endif>
-                                    <label>Sms </label>
-                                    <textarea type="text" id='sms_message' name="sms_message" class="form-control"> @if (isset($editData['sms_message'])) {{ $editData['sms_message'] }} @endif
+                                            <label>Sms </label>
+                                            <textarea type="text" id='sms_message' name="sms_message" class="form-control"> @if (isset($editData['sms_message'])) {{ $editData['sms_message'] }} @endif
 </textarea>
-                                </div> -->
+                                        </div> -->
 
 
 
@@ -299,21 +299,24 @@
                                     </textarea>
                                                     @else
                                                         @if ($value['field_name'] == 'siblings')
-                                                            <input type="{{ $value['field_type'] }}" list="studentList"
+                                                            <input type="{{ $value['field_type'] }}" {{-- list="studentList" --}}
                                                                 id="{{ $value['field_name'] }}"
                                                                 placeholder="{{ $value['field_message'] }}"
                                                                 @if ($value['required'] == 1) required @endif
-                                                                placeholder="Enter Siblings name" class="form-control">
-                                                            <div id="SelectedStudents" class="">
+                                                                placeholder="Enter Siblings name" class="form-control"
+                                                                name="siblings" value="{{ $student_data[$value['field_name']] }}">
+                                                            {{-- <div id="SelectedStudents" class="">
                                                                 @if (!empty($data['siblingsData']))
                                                                     @foreach ($data['siblingsData'] as $k => $v)
-                                                                        <span class="selected-student" data-id="{{ is_array($v) ? $v['id'] : $v }}">
+                                                                        <span class="selected-student"
+                                                                            data-id="{{ is_array($v) ? $v['id'] : $v }}">
                                                                             @if (is_array($v))
                                                                                 {{ $v['first_name'] . ' ' . $v['middle_name'] . ' ' . $v['last_name'] }}
                                                                             @else
-                                                                                {{ $v }} {{-- fallback string/ID --}}
+                                                                                {{ $v }} 
                                                                             @endif
-                                                                            <span class="remove-student" style="cursor:pointer;color:red;">&times;</span>
+                                                                            <span class="remove-student"
+                                                                                style="cursor:pointer;color:red;">&times;</span>
                                                                         </span>
                                                                     @endforeach
                                                                 @endif
@@ -321,7 +324,7 @@
                                                             <input type="hidden" name="{{ $value['field_name'] }}"
                                                                 id="siblings_id"
                                                                 value="{{ $student_data[$value['field_name']] }}">
-                                                            <datalist id="studentList"></datalist>
+                                                            <datalist id="studentList"></datalist> --}}
                                                         @else
                                                             <input type="{{ $value['field_type'] }}"
                                                                 id="{{ $value['field_name'] }}"
@@ -394,87 +397,109 @@
     @include('includes.footerJs')
     <script type="text/javascript">
         $(document).ready(function() {
+            $("#siblings").autocomplete({
+                source: function(request, response) {
+                    let searchText = request.term;
+                    let admission_enquiry = 'admission_enquiry';
+                    $.ajax({
+                        url: "{{ route('studentLists') }}",
+                        type: 'get',
+                        data: {
+                            stu_name: searchText,
+                            module: admission_enquiry
+                        },
+                        success: function(data) {
+                            response($.map(data, function(student) {
+                                return {
+                                    label: student.first_name + ' ' + student.middle_name + ' ' + student.last_name,
+                                    value: student.first_name + ' ' + student.middle_name + ' ' + student.last_name
+                                };
+                            }));
+                        }
+                    });
+                }
+            });
             // 08-10-2024 start siblings selection 
-            let selectedStudents = [];
-            // let selectedStudentIds = [];
-            let selectedStudentIds = $('#siblings_id').val() ? $('#siblings_id').val().split(',') : [];
-            $('#siblings').on('input', function() {
-                let searchText = $(this).val();
-                let admission_enquiry = 'admission_enquiry';
+            // let selectedStudents = [];
+            // // let selectedStudentIds = [];
+            // let selectedStudentIds = $('#siblings_id').val() ? $('#siblings_id').val().split(',') : [];
+            // $('#siblings').on('input', function() {
+            //     let searchText = $(this).val();
+            //     let admission_enquiry = 'admission_enquiry';
 
-                // AJAX request to fetch student list
-                $.ajax({
-                    url: "{{ route('studentLists') }}",
-                    type: 'GET',
-                    data: {
-                        stu_name: searchText,
-                        module: admission_enquiry
-                    },
-                    success: function(response) {
-                        let studentList = $('#studentList');
-                        studentList.empty();
-                        console.log(response);
-                        // Populate the datalist with new options
-                        response.forEach(student => {
-                            studentList.append('<option value="' + student.first_name +
-                                ' ' + student.middle_name + ' ' + student
-                                .last_name + '(' + student.enrollment_no +
-                                ')" data-id="' + student.id + '">' + student
-                                .first_name + ' ' + student.middle_name + ' ' +
-                                student.last_name + '(' + student.enrollment_no +
-                                ')</option>');
-                        });
-                    }
-                });
-            });
+            //     // AJAX request to fetch student list
+            //     $.ajax({
+            //         url: "{{ route('studentLists') }}",
+            //         type: 'GET',
+            //         data: {
+            //             stu_name: searchText,
+            //             module: admission_enquiry
+            //         },
+            //         success: function(response) {
+            //             let studentList = $('#studentList');
+            //             studentList.empty();
+            //             console.log(response);
+            //             // Populate the datalist with new options
+            //             response.forEach(student => {
+            //                 studentList.append('<option value="' + student.first_name +
+            //                     ' ' + student.middle_name + ' ' + student
+            //                     .last_name + '(' + student.enrollment_no +
+            //                     ')" data-id="' + student.id + '">' + student
+            //                     .first_name + ' ' + student.middle_name + ' ' +
+            //                     student.last_name + '(' + student.enrollment_no +
+            //                     ')</option>');
+            //             });
+            //         }
+            //     });
+        });
 
-            // Event listener for selecting a student
-            $('#siblings').on('change', function() {
-                let selectedStudentName = $(this).val();
-                let selectedOption = $('#studentList option[value="' + selectedStudentName + '"]');
+        // // Event listener for selecting a student
+        // $('#siblings').on('change', function() {
+        //     let selectedStudentName = $(this).val();
+        //     let selectedOption = $('#studentList option[value="' + selectedStudentName + '"]');
 
-                if (selectedOption.length) {
-                    let studentId = selectedOption.data('id').toString();
+        //     if (selectedOption.length) {
+        //         let studentId = selectedOption.data('id').toString();
 
-                    if (!selectedStudentIds.includes(studentId)) {
-                        selectedStudents.push(selectedStudentName);
-                        selectedStudentIds.push(studentId);
+        //         if (!selectedStudentIds.includes(studentId)) {
+        //             selectedStudents.push(selectedStudentName);
+        //             selectedStudentIds.push(studentId);
 
-                        $('#SelectedStudents').append(`
-                    <span class="selected-student" data-id="${studentId}">
-                        ${selectedStudentName} <span class="remove-student" style="cursor:pointer;color:red;">&times;</span>
-                    </span>
-                `);
+        //             $('#SelectedStudents').append(`
+        //             <span class="selected-student" data-id="${studentId}">
+        //                 ${selectedStudentName} <span class="remove-student" style="cursor:pointer;color:red;">&times;</span>
+        //             </span>
+        //         `);
 
-                        $('#siblings_id').val(selectedStudentIds.join(','));
+        //             $('#siblings_id').val(selectedStudentIds.join(','));
 
-                        // Clear the input field
-                        $('#siblings').val('');
-                    }
-                }
-            });
+        //             // Clear the input field
+        //             $('#siblings').val('');
+        //         }
+        //     }
+        // });
 
-            // Event listener for removing a selected student
-            $('#SelectedStudents').on('click', '.remove-student', function() {
-                let studentElement = $(this).closest('.selected-student');
-                let studentId = studentElement.data('id').toString();
+        // // Event listener for removing a selected student
+        // $('#SelectedStudents').on('click', '.remove-student', function() {
+        //     let studentElement = $(this).closest('.selected-student');
+        //     let studentId = studentElement.data('id').toString();
 
-                selectedStudentIds = selectedStudentIds.filter(id => id !== studentId);
+        //     selectedStudentIds = selectedStudentIds.filter(id => id !== studentId);
 
-                studentElement.remove();
+        //     studentElement.remove();
 
-                $('#siblings_id').val(selectedStudentIds.join(','));
-            });
+        //     $('#siblings_id').val(selectedStudentIds.join(','));
+        // });
 
-            // Populate selectedStudentIds array if there are existing students
-            $('#SelectedStudents .selected-student').each(function() {
-                let studentId = $(this).data('id').toString();
-                if (!selectedStudentIds.includes(studentId)) {
-                    selectedStudentIds.push(studentId);
-                }
-            });
-            // 08-10-2024 end siblings selection 
-        })
+        // // Populate selectedStudentIds array if there are existing students
+        // $('#SelectedStudents .selected-student').each(function() {
+        // let studentId = $(this).data('id').toString();
+        // if (!selectedStudentIds.includes(studentId)) {
+        //     selectedStudentIds.push(studentId);
+        // }
+        // });
+        // 08-10-2024 end siblings selection 
+        // })
 
         function calculate_age(dateString) {
             // value = dateString;
@@ -513,22 +538,25 @@
             }
         }
 
-        @if (isset($data['custom_fields'])) @foreach ($data['custom_fields'] as $key => $value)
-            @if (in_array($value['field_name'], [
-                    'category',
-                    'previous_school_name',
-                    'previous_standard',
-                    'send_sms',
-                    'remarks',
-                    'source_of_enquiry',
-                    'followup_date',
-                ]))
-                var fieldName = "{{ $value['field_name'] }}";
-                $('.'+fieldName+'Div').removeClass('hide');
-                $('.'+fieldName+'Div').addClass('show'); @endif
-        @if ($value['required'] == 1) $('#'+fieldName).prop('required',true); @endif
-
-        @endforeach
+        @if (isset($data['custom_fields']))
+            @foreach ($data['custom_fields'] as $key => $value)
+                @if (in_array($value['field_name'], [
+                        'category',
+                        'previous_school_name',
+                        'previous_standard',
+                        'send_sms',
+                        'remarks',
+                        'source_of_enquiry',
+                        'followup_date',
+                    ]))
+                    var fieldName = "{{ $value['field_name'] }}";
+                    $('.' + fieldName + 'Div').removeClass('hide');
+                    $('.' + fieldName + 'Div').addClass('show');
+                @endif
+                @if ($value['required'] == 1)
+                    $('#' + fieldName).prop('required', true);
+                @endif
+            @endforeach
         @endif
     </script>
     @include('includes.footer')

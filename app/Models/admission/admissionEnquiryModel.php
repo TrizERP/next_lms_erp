@@ -65,6 +65,7 @@ class admissionEnquiryModel extends Model
         'aadharcard_number',
         'building_name_appratment_name_society_name',
         'admission_fees',
+        'siblings',
         'receipt_id',
         'receipt_html',
         'fees_amount',
