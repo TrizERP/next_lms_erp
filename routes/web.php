@@ -74,7 +74,6 @@ use App\Http\Controllers\library\itemVerificationController;
 use App\Http\Controllers\library\itemScanController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\library\LostandDamage;
-use App\Http\Controllers\Student\AgeWiseReportController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -353,7 +352,6 @@ Route::group(['prefix' => 'school_setup', 'middleware' => ['session', 'menu', 'l
 Route::post('get_proxy_master', [proxyController::class, 'getproxydata']);
 Route::get('school_setup/ajax_getTeacherDailyDetailsReport', [teacherdailyReportController::class, 'getTeacherDailyDetailsReport'])->name("ajax_getTeacherDailyDetailsReport");
 
-Route::get('/student/age-wise', [AgeWiseReportController::class, 'index'])->name('ageWise.index');
 Route::post('/teacherTimetableAPI', [facultywisetimetableController::class, 'teacherTimetableAPI']);
 Route::post('/studentTimetableAPI', [classwisetimetableController::class, 'studentTimetableAPI']);
 

@@ -154,6 +154,4 @@ class studentStrengthReportController extends Controller
         $type = $request->type;
         return is_mobile($type, "student/student_strength_report", $res, "view");
     }
-    
-
 }
