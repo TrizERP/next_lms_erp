@@ -2215,8 +2215,9 @@ if (!function_exists('getBestOf')) {
 
 if (!function_exists('get_string')) {
 
-    function get_string($arg,$type='', $sub_institute_id = '')
+    function get_string($arg,$type='', $sub_institute_id = '',$menu_name="")
     {
+        // return $menu_name;
         if($sub_institute_id==''){
         $sub_institute_id = session()->get('sub_institute_id');
         }
@@ -2229,7 +2230,14 @@ if (!function_exists('get_string')) {
             $normClature = normClature::whereRaw('sub_institute_id=' . $sub_institute_id . ' and status=1')
                 ->where('menu_id', $menu_id)
                 ->first();
-        } else {
+        } else if($menu_name!==''){
+            $requestValue = $arg;
+            $normClature = normClature::whereRaw('sub_institute_id=' . $sub_institute_id . ' and status=1')
+                ->where('menu',$menu_name)
+                ->where('string', $requestValue)
+                ->first();
+        }
+        else {
             $requestValue = $arg;
             $normClature = normClature::whereRaw('sub_institute_id=' . $sub_institute_id . ' and status=1')
                 ->where('string', $requestValue)
