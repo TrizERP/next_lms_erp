@@ -388,7 +388,7 @@ $editData = array();
                             </div>
                             
                             <div class="col-md-4 form-group text-left {{$class}} castDiv">
-                                <label>Student Caste</label>
+                                <label>{{ App\Helpers\get_string('cast','',session()->get('sub_institute_id'),'Admission Confirmation')}}</label>
                                 <select id='cast' name="cast" class="form-control">
                                     <option value="">--Select--</option>  
                                     @if(isset($data['caste_data']))
