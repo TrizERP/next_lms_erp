@@ -229,7 +229,7 @@
             </tr>
            </table>
            <p style="color:black"><b>* Final Fee Subject to Decision of Honorable Court.</b></p>
-           <p style="color:black">You are required to pay provisional fees of  <span style="color:#943634"><b>&#8377; 26,933/-</b></span> at the school office by <b><span>Demand Draft payable to "Hills High School".</span> <i>[Please note: No cheques / No cash will be accepted]</i></b></p>
+           <p style="color:black">You are required to pay provisional fees of  <span style="color:#943634"><b>&#8377; 26,933/-</b></span> at the school office. <b><span>Parents are given option to pay the first installment by Demand Draft OR Cheque payable to “Hills High School”.</span> <i>[Please note: If Cheque is dishonoured the admission of your ward will not be considered / No cash will be accepted.]</i></b></p>
            <p style="color:black;text-decoration:underline"><b>V.V.IMP</b></p>
            <p style="color:black"><b>FEES ONCE PAID IS NON REFUNDABLE AND NON TRANSFERABLE</b></p>
            <p style="color:black;text-decoration:underline"><b>Candidates who fail to submit DOCUMENTS AND FEES IN THE GIVEN TIME PERIOD without any information will not be eligible for admission at Hills High School.</b></p>
