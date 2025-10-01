@@ -3773,7 +3773,7 @@ while ($current_date <= $post_end_date) {
                         // convert marks if best of 2
                         if ($standard_id == 3299 || $standard_id == 3965) {
                             if (count($obtained_mark_arr) > 1) {
-                                $convert_mark = max($obtained_mark_arr); // get greatest max
+                                $convert_mark = max($numeric_marks); // get greatest max
                             } else {
                                 $convert_mark = $obtained_mark_sum; // for PT
                             }
@@ -5186,7 +5186,7 @@ while ($current_date <= $post_end_date) {
 
         // Build first table
         if (!empty($groupedData1)) {
-            $co_scholastic .= '<div style="width:50%;">
+            $co_scholastic .= '<div style="width:50%;" class="table_co_1">
             <table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" cellpadding="0" border="1">
                 <thead>
                     <tr>
@@ -5209,7 +5209,7 @@ while ($current_date <= $post_end_date) {
         }
         // Build second table
         if (!empty($groupedData2)) {
-            $co_scholastic .= '<div style="width:50%;">
+            $co_scholastic .= '<div style="width:50%;"  class="table_co_2">
         <table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" cellpadding="0" border="1">
             <thead>
                 <tr>
@@ -5298,7 +5298,7 @@ while ($current_date <= $post_end_date) {
                 $termArr[$value->term_id] = $value->term_id;
             }
         }
-        $discipline_table = '<div style="width:50%;">
+        $discipline_table = '<div style="width:50%;" class="discipline_table">
         <table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" cellpadding="0" border="1">
             <thead>
                 <tr>
