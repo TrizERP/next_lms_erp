@@ -197,6 +197,9 @@ class studentResultController extends Controller
         if ($sub_institute_id == 254) {
             $display_year =  $syear . "-" . substr($syear + 1, 2);
         }
+        if($sub_institute_id==332){
+            $display_year =   substr($syear, 2) . "-" . substr($syear + 1, 2);
+        }
 
         $student_image_path1 = "/storage/student/" . $value['image'];
         $student_image_path = '<img class="logo" src="' . $student_image_path1 . '" alt="Student Logo" style="height: ' . $photo_height . ';' . $photo_width . '">';
@@ -275,7 +278,7 @@ class studentResultController extends Controller
         $term_name = '';
         if ($format != 'yearly') {
             $term_name = DB::table('academic_year')->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->where('term_id', $format)->value('title');
-            if ($term_name != '') {
+            if ($term_name != '' && !in_array($sub_institute_id,[332])) {
                 $term_name = '(' . $term_name . ')';
             }
         }
@@ -3497,7 +3500,7 @@ while ($current_date <= $post_end_date) {
                         $underline = ($pt_per < 33 && $academic_type == "upper") ? 'style="text-decoration: underline red 2px;"' : '';
                         if (count($obtained_mark_arr) > 1) {
                             $total_marks += $w_m;
-                            $table .= '<td class="data_center" ' . $underline . ' ' . $exam_id . '-' . $val->subject_id . '-' . $standard_id . '>' . number_format($convert_mark, 2) . '</td>';
+                            $table .= '<td class="data_center" ' . $underline . ' ' . $exam_id . '-' . $val->subject_id . '-' . $standard_id . '-'.$pt_per.'>' . number_format($convert_mark, 2) . '</td>';
                         } else {
                             if (!isset($obtained_mark_arr[0])) {
                                 $obtained_mark_arr[0] = '0.00';
@@ -3512,7 +3515,7 @@ while ($current_date <= $post_end_date) {
                             }
                             /* (Hills) Hide by rajesh std-1 display without convert marks */
                             //$table .= '<td class="data_center" '. $exam_id . '-'.$val->subject_id.'-'.$standard_id.'>' . number_format((float)$obtained_mark_arr[0], 2) .'</td>';
-                            $table .= '<td class="data_center else" ' . $underline . ' ' . $exam_id . '-' . $val->subject_id . '-' . $standard_id . '>' . $tdVal . '</td>';
+                            $table .= '<td class="data_center else" ' . $underline . ' ' . $exam_id . '-' . $val->subject_id . '-' . $standard_id . '-'.$pt_per.'>' . $tdVal . '</td>';
                         }
 
                         // echo $exam_id;echo "<pre>";print_r($obtained_mark_sum);
@@ -3784,7 +3787,7 @@ while ($current_date <= $post_end_date) {
                         $underline = ($pt_per < 33 && $academic_type == "upper") ? 'style="text-decoration: underline red 2px;"' : '';
                         if (count($obtained_mark_arr) > 1) {
                             $total_marks += $w_m;
-                            $table .= '<td class="data_center" ' . $underline . ' ' . $exam_id . '-' . $val->subject_id . '-' . $standard_id . '>' . number_format($convert_mark, 2) . '</td>';
+                            $table .= '<td class="data_center" ' . $underline . ' ' . $exam_id . '-' . $val->subject_id . '-' . $standard_id.'-'.$pt_per.'>' . number_format($convert_mark, 2) . '</td>';
                         } else {
                             if (!isset($obtained_mark_arr[0])) {
                                 $obtained_mark_arr[0] = '0.00';
@@ -3798,7 +3801,7 @@ while ($current_date <= $post_end_date) {
                             } else {
                                 $tdVal = $obtained_mark_arr[0] ?? "0.00"; // print AB,NA,EX
                             }
-                            $table .= '<td class="data_center else" ' . json_encode($marksArray) . ' -' . $underline . ' ' . $exam_id . '-' . $val->subject_id . '-' . $standard_id . '>' . $tdVal . '</td>';
+                            $table .= '<td class="data_center else" ' . $underline . ' ' . $exam_id . '-' . $val->subject_id . '-' . $standard_id.'-'.$pt_per.'>' . $tdVal . '</td>';
                         }
                     }
                 } else {
@@ -3970,46 +3973,58 @@ while ($current_date <= $post_end_date) {
 
                 // for best of 2 exam wise 
                 if (!empty($title_exam)) {
-                    foreach ($title_exam as $exam_id => $marksArray) {
-                        $w_m = $to_weight[$exam_id] ?? 0; // Check if the key exists
-                        $obtained_mark_arr = $obtained_marks[$exam_id] ?? [];
-                        // best of 2
-                        arsort($obtained_mark_arr); // sort array Desc
-                        $obtained_mark_arr = array_slice($obtained_mark_arr, 0, 2, true); // Get the top 2 obtained_marks
+                foreach ($title_exam as $exam_id => $marksArray) {
+                    $w_m = $to_weight[$exam_id] ?? 0; // Check if the key exists
+                    $obtained_mark_arr = $obtained_marks[$exam_id] ?? [];
+                    
+                    // best of 2
+                    arsort($obtained_mark_arr); // sort array Desc
+                    $obtained_mark_arr = array_slice($obtained_mark_arr, 0, 2, true); // Get the top 2 obtained_marks
 
-                        // Get the corresponding to_marks using the keys of best_obtained
-                        $best_to_marks = [];
-                        $t_m = 0; // get total_marks as per best of 2 arrays
-                        foreach ($obtained_mark_arr as $key => $mark) {
-                            $t_m += $to_marks[$exam_id][$key] ?? 0;
-                        }
-                        // sum of best of 2
-                        $obtained_mark_sum = array_sum($obtained_mark_arr);
-
-                        // Convert marks
-                        $ob_main_mark += ($t_m !== 0) ? (($obtained_mark_sum / $t_m) * $w_m) : 0;
-                        $convert_mark = ($obtained_mark_sum != 0) ? (($obtained_mark_sum / $t_m) * $w_m) : 0;
-                        $pt_per = ($convert_mark !== '0.00' && $w_m != 0) ? round(($convert_mark / $w_m) * 100, 0) : 0;
-                        $underline = ($pt_per < 33) ? 'style="text-decoration: underline red 2px;"' : '';
-                        // for other exams
-                        if (count($obtained_mark_arr) > 1) {
-                            $total_marks += $w_m;
-                            $tdVal = number_format($convert_mark, 2);
-                        }
-                        //  for PT 
-                        else {
-                            if (!empty($obtained_mark_arr) && !in_array($obtained_mark_arr[0], ["N.A.", "EX"])) {
-                                $total_marks += $w_m;
-                            }
-
-                            if (!empty($obtained_mark_arr) && !in_array($obtained_mark_arr[0], ["N.A.", "EX", "AB"])) {
-                                $tdVal = number_format($convert_mark, 2);
-                            } else {
-                                $tdVal = $obtained_mark_arr[0] ?? "0.00"; // print AB,NA,EX
-                            }
-                        }
-                        $table .= '<td class="data_center else" ' . $underline . ' ' . $exam_id . '-' . $val->subject_id . '-' . $standard_id . '>' . $tdVal . '</td>';
+                    // ✅ Clean array for sum (only numeric, else count as 0)
+                    $numeric_marks = [];
+                    foreach ($obtained_mark_arr as $k => $v) {
+                        $numeric_marks[$k] = is_numeric($v) ? (float)$v : 0;
                     }
+
+                    // Get the corresponding to_marks using the keys of best_obtained
+                    $t_m = 0; // get total_marks as per best of 2 arrays
+                    foreach ($obtained_mark_arr as $key => $mark) {
+                        $t_m += $to_marks[$exam_id][$key] ?? 0;
+                    }
+
+                    // sum of best of 2 (only numeric values)
+                    $obtained_mark_sum = array_sum($numeric_marks);
+
+                    // Convert marks
+                    $ob_main_mark += ($t_m !== 0) ? (($obtained_mark_sum / $t_m) * $w_m) : 0;
+                    $convert_mark = ($obtained_mark_sum != 0) ? (($obtained_mark_sum / $t_m) * $w_m) : 0;
+                    $pt_per = ($convert_mark !== '0.00' && $w_m != 0) ? round(($convert_mark / $w_m) * 100, 0) : 0;
+                    $underline = ($pt_per < 33) ? 'style="text-decoration: underline red 2px;"' : '';
+
+                    // for other exams
+                    if (count($obtained_mark_arr) > 1) {
+                        $total_marks += $w_m;
+                        $tdVal = number_format($convert_mark, 2);
+                    }
+                    // for PT 
+                    else {
+                        $first_val = reset($obtained_mark_arr); // get first element safely
+
+                        if (!empty($obtained_mark_arr) && !in_array($first_val, ["N.A.", "EX"])) {
+                            $total_marks += $w_m;
+                        }
+
+                        if (!empty($obtained_mark_arr) && !in_array($first_val, ["N.A.", "EX", "AB"])) {
+                            $tdVal = number_format($convert_mark, 2);
+                        } else {
+                            $tdVal = $first_val ?? "0.00"; // print AB,NA,EX else 0.00
+                        }
+                    }
+
+                    $table .= '<td class="data_center else" ' . $underline . ' ' . $exam_id . '-' . $val->subject_id . '-' . $standard_id.'-'.$pt_per.'>' . $tdVal . '</td>';
+                }
+
                 } else {
                     // If marks not found
                     foreach ($title_exam as $exam_id => $marksArray) {
