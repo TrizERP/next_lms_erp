@@ -242,3 +242,5 @@ Route::get('checkExists', [tblstudentController::class,'checkExists'])->name('ch
 Route::get('dicipline_alone', [diciplineController::class,'index'])->name('dicipline_alone.index');
 Route::get('dicipline_alone/create', [diciplineController::class,'create'])->name('dicipline_alone.create');
 Route::post('dicipline_alone/store', [diciplineController::class,'store'])->name('dicipline_alone.store');
+
+Route::get('search_students', [studentSearchController::class,'searchBydata'])->name('search_students.search');

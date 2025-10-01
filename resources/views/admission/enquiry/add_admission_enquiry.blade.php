@@ -209,10 +209,10 @@
                                     </textarea>                                
                                 @else
                                     @if($value['field_name']=='siblings')
-                                        <input type="{{ $value['field_type'] }}"  list="studentList" id="{{ $value['field_name'] }}" placeholder="{{ $value['field_message'] }}" @if($value['required'] == 1) required @endif placeholder="Enter Siblings name" class="form-control">
-                                        <div id="SelectedStudents" class=""></div>
-                                        <input type="hidden" name="{{ $value['field_name'] }}" id="siblings_id">
-                                    <datalist id="studentList"></datalist>
+                                        <input type="{{ $value['field_type'] }}"  list="studentList" id="{{ $value['field_name'] }}" placeholder="{{ $value['field_message'] }}" @if($value['required'] == 1) required @endif placeholder="Enter Siblings name" class="form-control" name="siblings">
+                                        {{-- <div id="SelectedStudents" class=""></div> --}}
+                                        {{-- <input type="hidden" name="{{ $value['field_name'] }}" id="siblings_id"> --}}
+                                    {{-- <datalist id="studentList"></datalist> --}}
                                     @else 
                                         <input type="{{ $value['field_type'] }}" id="{{ $value['field_name'] }}" placeholder="{{ $value['field_message'] }}" @if($value['required'] == 1) required @endif name="{{ $value['field_name'] }}" class="form-control">
                                     @endif
@@ -281,74 +281,96 @@
                 }
             });
         });
+        $("#siblings").autocomplete({
+                source: function(request, response) {
+                    let searchText = request.term;
+                    let admission_enquiry = 'admission_enquiry';
+                    $.ajax({
+                        url: "{{ route('studentLists') }}",
+                        type: 'get',
+                        data: {
+                            stu_name: searchText,
+                            module: admission_enquiry
+                        },
+                        success: function(data) {
+                            response($.map(data, function(student) {
+                                return {
+                                    label: student.first_name + ' ' + student.middle_name + ' ' + student.last_name,
+                                    value: student.first_name + ' ' + student.middle_name + ' ' + student.last_name
+                                };
+                            }));
+                        }
+                    });
+                }
+            });
     // 08-10-2024 start siblings selection 
-    let selectedStudents = [];
-    let selectedStudentIds = [];
+    // let selectedStudents = [];
+    // let selectedStudentIds = [];
 
-    $('#siblings').on('input', function () {
-        let searchText = $(this).val();
-        let admission_enquiry = 'admission_enquiry';
-        // AJAX request to fetch student list
-        $.ajax({
-            url: "{{ route('studentLists') }}",
-            type: 'GET',
-            data: { stu_name: searchText,module:admission_enquiry },
-            success: function(response) {
-                let studentList = $('#studentList');
-                studentList.empty(); 
-                console.log(response);
-                // Populate the datalist with new options
-                response.forEach(student => {
-                    studentList.append('<option value="' + student.first_name+' '+ student.middle_name+' '+ student.last_name + '('+student.enrollment_no+')" data-id="' + student.id + '">' + student.first_name+' '+ student.middle_name+' '+ student.last_name + '('+student.enrollment_no+')</option>');
-                });
-            }
-        });
-    });
+    // $('#siblings').on('input', function () {
+    //     let searchText = $(this).val();
+    //     let admission_enquiry = 'admission_enquiry';
+    //     // AJAX request to fetch student list
+    //     $.ajax({
+    //         url: "{{ route('studentLists') }}",
+    //         type: 'GET',
+    //         data: { stu_name: searchText,module:admission_enquiry },
+    //         success: function(response) {
+    //             let studentList = $('#studentList');
+    //             studentList.empty(); 
+    //             console.log(response);
+    //             // Populate the datalist with new options
+    //             response.forEach(student => {
+    //                 studentList.append('<option value="' + student.first_name+' '+ student.middle_name+' '+ student.last_name + '('+student.enrollment_no+')" data-id="' + student.id + '">' + student.first_name+' '+ student.middle_name+' '+ student.last_name + '('+student.enrollment_no+')</option>');
+    //             });
+    //         }
+    //     });
+    // });
 
-    // Event listener for selecting a student
-    $('#siblings').on('change', function () {
-        let selectedStudentName = $(this).val();
-        let selectedOption = $('#studentList option[value="' + selectedStudentName + '"]');
+    // // Event listener for selecting a student
+    // $('#siblings').on('change', function () {
+    //     let selectedStudentName = $(this).val();
+    //     let selectedOption = $('#studentList option[value="' + selectedStudentName + '"]');
 
-        if (selectedOption.length) {
-            let studentId = selectedOption.data('id');
+    //     if (selectedOption.length) {
+    //         let studentId = selectedOption.data('id');
 
-            // Check if student is already selected
-            if (!selectedStudentIds.includes(studentId)) {
-                selectedStudents.push(selectedStudentName);
-                selectedStudentIds.push(studentId);
+    //         // Check if student is already selected
+    //         if (!selectedStudentIds.includes(studentId)) {
+    //             selectedStudents.push(selectedStudentName);
+    //             selectedStudentIds.push(studentId);
 
-                // Update the SelectedStudents div
-                // $('#SelectedStudents').append('<span class="selected-student">' + selectedStudentName + '</span>');
-                $('#SelectedStudents').append(`
-                <span class="selected-student" data-id="${studentId}">
-                    ${selectedStudentName} <span class="remove-student" style="cursor:pointer;color:red;">&times;</span>
-                </span>
-            `);
+    //             // Update the SelectedStudents div
+    //             // $('#SelectedStudents').append('<span class="selected-student">' + selectedStudentName + '</span>');
+    //             $('#SelectedStudents').append(`
+    //             <span class="selected-student" data-id="${studentId}">
+    //                 ${selectedStudentName} <span class="remove-student" style="cursor:pointer;color:red;">&times;</span>
+    //             </span>
+    //         `);
 
-                // Update the siblings_id input
-                $('#siblings_id').val(selectedStudentIds.join(','));
+    //             // Update the siblings_id input
+    //             $('#siblings_id').val(selectedStudentIds.join(','));
 
-                // Clear the input field
-                $('#siblings').val('');
-            }
-        }
-    });
-    // Event listener for removing a selected student
-    $('#SelectedStudents').on('click', '.remove-student', function () {
-        let studentElement = $(this).closest('.selected-student');
-        let studentId = studentElement.data('id');
+    //             // Clear the input field
+    //             $('#siblings').val('');
+    //         }
+    //     }
+    // });
+    // // Event listener for removing a selected student
+    // $('#SelectedStudents').on('click', '.remove-student', function () {
+    //     let studentElement = $(this).closest('.selected-student');
+    //     let studentId = studentElement.data('id');
 
-        // Remove the student from selectedStudents and selectedStudentIds
-        selectedStudentIds = selectedStudentIds.filter(id => id !== studentId);
-        selectedStudents = selectedStudents.filter(name => name !== studentElement.text().trim());
+    //     // Remove the student from selectedStudents and selectedStudentIds
+    //     selectedStudentIds = selectedStudentIds.filter(id => id !== studentId);
+    //     selectedStudents = selectedStudents.filter(name => name !== studentElement.text().trim());
 
-        // Remove the student element from the DOM
-        studentElement.remove();
+    //     // Remove the student element from the DOM
+    //     studentElement.remove();
 
-        // Update the siblings_id input
-        $('#siblings_id').val(selectedStudentIds.join(','));
-    });
+    //     // Update the siblings_id input
+    //     $('#siblings_id').val(selectedStudentIds.join(','));
+    // });
     // 08-10-2024 end siblings selection 
         
     });

@@ -326,4 +326,52 @@ class studentSearchController extends Controller
             DB::table('tblstudent_siblings')->insert($finalInsert);
         }
     }
+
+    public function searchBydata(Request $request){
+        $searchValue = $request->input('value');
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $syear = $request->session()->get('syear');
+        $extraSearchArray = [];
+        $extraSearchArray['tblstudent_enrollment.sub_institute_id'] = $sub_institute_id;
+        $extraSearchArray['tblstudent_enrollment.syear'] = $syear;
+        $extraSearchArray['tblstudent.status'] = 1;
+    
+        $query = tblstudentModel::selectRaw('tblstudent.id,tblstudent.enrollment_no,CONCAT_WS(" ",tblstudent.first_name,tblstudent.middle_name,tblstudent.last_name) as student_name,tblstudent.id')
+            ->join('tblstudent_enrollment', 'tblstudent.id', '=', 'tblstudent_enrollment.student_id')
+            ->whereRaw('tblstudent_enrollment.end_date is NULL')
+            ->where($extraSearchArray);
+    
+        // Check if search value contains spaces
+        if (str_contains($searchValue, ' ')) {
+            // Split the search value by spaces
+            $nameParts = explode(' ', $searchValue);
+            
+            // Remove empty values from the array
+            $nameParts = array_filter($nameParts);
+            
+            // Build the search conditions for each part
+            $query->where(function($q) use ($nameParts) {
+                foreach ($nameParts as $part) {
+                    if (!empty(trim($part))) {
+                        $q->where(function($innerQ) use ($part) {
+                            $innerQ->where('tblstudent.first_name', 'LIKE', "%{$part}%")
+                                  ->orWhere('tblstudent.middle_name', 'LIKE', "%{$part}%")
+                                  ->orWhere('tblstudent.last_name', 'LIKE', "%{$part}%");
+                        });
+                    }
+                }
+            });
+        } else {
+            // Single word search - search across all three fields
+            $query->where(function($q) use ($searchValue) {
+                $q->where('tblstudent.first_name', 'LIKE', "%{$searchValue}%")
+                  ->orWhere('tblstudent.middle_name', 'LIKE', "%{$searchValue}%")
+                  ->orWhere('tblstudent.last_name', 'LIKE', "%{$searchValue}%");
+            });
+        }
+    
+        return $query->groupby('tblstudent.id')
+                    ->get()
+                    ->toArray();
+    }
 }
