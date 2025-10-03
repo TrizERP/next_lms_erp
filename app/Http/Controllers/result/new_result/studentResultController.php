@@ -3426,7 +3426,7 @@ while ($current_date <= $post_end_date) {
         $table .= '</tr>
                 </thead>
                 <tbody>';
-        $tot_ob_mark =  $tot_sub_mark =   $get_all_ob_mark =  $get_all_tot_mark = 0;
+        $tot_ob_mark =  $tot_sub_mark =   $get_all_ob_mark =  $get_all_tot_mark = $asteriskRemark = 0;
         // grade array to get grade according to marks
         $grade_arr = $this->getGradeScale($standard_id, '');
         $pass_fail = [];
@@ -3437,7 +3437,7 @@ while ($current_date <= $post_end_date) {
                     <td>' . $val->subject_name . '</td>';
             // get term wise eam and marks 
             foreach ($term_name as $keys => $terms) {
-                $obtained_marks = $to_marks = $to_weight = $title_exam = [];
+                $obtained_marks = $to_marks = $to_weight = $title_exam = $asteriskMark = [];
                 // get marks by exam id wise
                 foreach ($exam_name as $key => $title) {
                     if ($title->subject_id == $val->subject_id && $terms->term_id == $title->term_id) {
@@ -3468,6 +3468,8 @@ while ($current_date <= $post_end_date) {
                                     // store marks in array to get best of 2 
                                     $obtained_marks[$title->exam_id][] = $ob_mark;
                                     $foundMarks = true;
+                                    $asteriskMark[$title->exam_id][] = ($marks->comment == '*') ? true : false; // Added by Rajesh 03-10-2025 for hills only [New Requirement]
+                                    $asteriskRemark += ($marks->comment == '*');
                                 }
                                 break;
                             }
@@ -3480,6 +3482,7 @@ while ($current_date <= $post_end_date) {
                 if (!empty($title_exam)) {
                     foreach ($title_exam as $exam_id => $marksArray) {
                         $w_m = $to_weight[$exam_id] ?? 0; // Check if the key exists
+                        $asterisk = (!empty($asteriskMark[$exam_id]) && array_sum($asteriskMark[$exam_id]) > 0) ? '*' : '';
                         $t_m = array_sum(array_intersect_key($to_marks[$exam_id] ?? [], $marksArray));
                         $obtained_mark_arr = $obtained_marks[$exam_id] ?? [];
                         // // Sort the array in descending order
@@ -3500,7 +3503,7 @@ while ($current_date <= $post_end_date) {
                         $underline = ($pt_per < 33 && $academic_type == "upper") ? 'style="text-decoration: underline red 2px;"' : '';
                         if (count($obtained_mark_arr) > 1) {
                             $total_marks += $w_m;
-                            $table .= '<td class="data_center" ' . $underline . ' ' . $exam_id . '-' . $val->subject_id . '-' . $standard_id . '-'.$pt_per.'>' . number_format($convert_mark, 2) . '</td>';
+                            $table .= '<td class="data_center" ' . $underline . ' ' . $exam_id . '-' . $val->subject_id . '-' . $standard_id . '-'.$pt_per.'>' . number_format($convert_mark, 2) .$asterisk. '</td>';
                         } else {
                             if (!isset($obtained_mark_arr[0])) {
                                 $obtained_mark_arr[0] = '0.00';
@@ -3515,7 +3518,7 @@ while ($current_date <= $post_end_date) {
                             }
                             /* (Hills) Hide by rajesh std-1 display without convert marks */
                             //$table .= '<td class="data_center" '. $exam_id . '-'.$val->subject_id.'-'.$standard_id.'>' . number_format((float)$obtained_mark_arr[0], 2) .'</td>';
-                            $table .= '<td class="data_center else" ' . $underline . ' ' . $exam_id . '-' . $val->subject_id . '-' . $standard_id . '-'.$pt_per.'>' . $tdVal . '</td>';
+                            $table .= '<td class="data_center else" ' . $underline . ' ' . $exam_id . '-' . $val->subject_id . '-' . $standard_id . '-'.$pt_per.'>' . $tdVal .$asterisk. '</td>';
                         }
 
                         // echo $exam_id;echo "<pre>";print_r($obtained_mark_sum);
@@ -3590,10 +3593,11 @@ while ($current_date <= $post_end_date) {
             ->groupBy('student_id')
             ->first();
 
-        $res['teacher_remark'] = '';
+        $res['teacher_remark'] = $appendremark = '';
         if (!empty($ret_data)) {
             $student_Remark = str_replace('|', '', $ret_data->teacher_remark);
-            $res['teacher_remark'] = $student_Remark;
+            $appendremark = $asteriskRemark > 0 ? ' APPEARED FOR RE-TEST' : '';
+            $res['teacher_remark'] = $student_Remark.$appendremark;
         }
 
         $get_remark = DB::table('result_remarks')
@@ -3706,7 +3710,7 @@ while ($current_date <= $post_end_date) {
         $table .= '</tr>
                     </thead>
                     <tbody>';
-        $tot_ob_mark = $tot_sub_mark = $get_all_ob_mark = $get_all_tot_mark = 0;
+        $tot_ob_mark = $tot_sub_mark = $get_all_ob_mark = $get_all_tot_mark = $asteriskRemark = 0;
 
         // get all subject name 
         foreach ($get_subject as $val) {
@@ -3715,7 +3719,7 @@ while ($current_date <= $post_end_date) {
                         <td>' . $val->subject_name . '</td>';
             // get term wise eam and marks 
             foreach ($term_name as $keys => $terms) {
-                $obtained_marks = $to_marks = $to_weight = $title_exam = [];
+                $obtained_marks = $to_marks = $to_weight = $title_exam = $asteriskMark = [];
                 // get marks by exam id wise
                 foreach ($exam_name as $key => $title) {
                     if ($title->subject_id == $val->subject_id && $terms->term_id == $title->term_id) {
@@ -3751,6 +3755,8 @@ while ($current_date <= $post_end_date) {
                                     // store marks in array to get best of 2 
                                     $obtained_marks[$arr][] = $ob_mark;
                                     $foundMarks = true;
+                                    $asteriskMark[$arr][] = ($marks->comment == '*') ? true : false; // Added by Rajesh 03-10-2025 for hills only [New Requirement]
+                                    $asteriskRemark += ($marks->comment == '*');
                                 }
                                 break;
                             }
@@ -3762,6 +3768,9 @@ while ($current_date <= $post_end_date) {
                 if (!empty($title_exam)) {
                     foreach ($title_exam as $exam_id => $marksArray) {
                         $w_m = $to_weight[$exam_id] ?? 0; // Check if the key exists
+
+                        $asterisk = (!empty($asteriskMark[$exam_id]) && array_sum($asteriskMark[$exam_id]) > 0) ? '*' : '';
+
                         $t_m = array_sum(array_intersect_key($to_marks[$exam_id] ?? [], $marksArray));
                         $obtained_mark_arr = $obtained_marks[$exam_id] ?? [];
                         $numeric_marks = array_filter($obtained_mark_arr, 'is_numeric');
@@ -3787,7 +3796,7 @@ while ($current_date <= $post_end_date) {
                         $underline = ($pt_per < 33 && $academic_type == "upper") ? 'style="text-decoration: underline red 2px;"' : '';
                         if (count($obtained_mark_arr) > 1) {
                             $total_marks += $w_m;
-                            $table .= '<td class="data_center" ' . $underline . ' ' . $exam_id . '-' . $val->subject_id . '-' . $standard_id.'-'.$pt_per.'>' . number_format($convert_mark, 2) . '</td>';
+                            $table .= '<td class="data_center" ' . $underline . ' ' . $exam_id . '-' . $val->subject_id . '-' . $standard_id.'-'.$pt_per.'>' . number_format($convert_mark, 2) .$asterisk. '</td>';
                         } else {
                             if (!isset($obtained_mark_arr[0])) {
                                 $obtained_mark_arr[0] = '0.00';
@@ -3801,7 +3810,7 @@ while ($current_date <= $post_end_date) {
                             } else {
                                 $tdVal = $obtained_mark_arr[0] ?? "0.00"; // print AB,NA,EX
                             }
-                            $table .= '<td class="data_center else" ' . $underline . ' ' . $exam_id . '-' . $val->subject_id . '-' . $standard_id.'-'.$pt_per.'#'.$obtained_mark_sum.'-'.$convert_mark.'-'.$t_m.'-'.$w_m.'>' . $tdVal . '</td>';
+                            $table .= '<td class="data_center else" ' . $underline . ' ' . $exam_id . '-' . $val->subject_id . '-' . $standard_id.'-'.$pt_per.'#'.$obtained_mark_sum.'-'.$convert_mark.'-'.$t_m.'-'.$w_m.'>' . $tdVal .$asterisk. '</td>';
                         }
                     }
                 } else {
@@ -3833,10 +3842,11 @@ while ($current_date <= $post_end_date) {
             ->groupBy('student_id')
             ->first();
 
-        $res['teacher_remark'] = '';
+        $res['teacher_remark'] = $appendremark = '';
         if (!empty($ret_data)) {
             $student_Remark = str_replace('|', '', $ret_data->teacher_remark);
-            $res['teacher_remark'] = $student_Remark;
+            $appendremark = $asteriskRemark > 0 ? ' APPEARED FOR RE-TEST' : '';
+            $res['teacher_remark'] = $student_Remark.$appendremark;
         }
         return $res;
     }
@@ -3917,6 +3927,7 @@ while ($current_date <= $post_end_date) {
 
         $grade_arr = $this->getGradeScale($standard_id, '');
         $pass_fail = [];
+        $asteriskRemark = 0;
         // echo "<pre>";print_r($newHead);exit;
         // Process each subject
         foreach ($get_subject as $val) {
@@ -3925,7 +3936,7 @@ while ($current_date <= $post_end_date) {
             <td>' . $val->subject_name . '</td>';
             // get term wise eam and marks 
             foreach ($term_name as $keys => $terms) {
-                $obtained_marks = $to_marks = $to_weight = $title_exam = [];
+                $obtained_marks = $to_marks = $to_weight = $title_exam = $asteriskMark = [];
                 // get marks by exam id wise
                 foreach ($exam_name as $key => $title) {
                     if ($title->subject_id == $val->subject_id) {
@@ -3961,6 +3972,8 @@ while ($current_date <= $post_end_date) {
                                     $ob_mark = $marks->points;
                                     // store marks in array to get best of 2 
                                     $obtained_marks[$arr][] = $ob_mark;
+                                    $asteriskMark[$arr][] = ($marks->comment == '*') ? true : false; // Added by Rajesh 03-10-2025 for hills only [New Requirement]
+                                    $asteriskRemark += ($marks->comment == '*');
                                 }
                                 // break;
                             }
@@ -3975,6 +3988,7 @@ while ($current_date <= $post_end_date) {
                 if (!empty($title_exam)) {
                 foreach ($title_exam as $exam_id => $marksArray) {
                     $w_m = $to_weight[$exam_id] ?? 0; // Check if the key exists
+                    $asterisk = (!empty($asteriskMark[$exam_id]) && array_sum($asteriskMark[$exam_id]) > 0) ? '*' : '';
                     $obtained_mark_arr = $obtained_marks[$exam_id] ?? [];
                     
                     // best of 2
@@ -4022,7 +4036,7 @@ while ($current_date <= $post_end_date) {
                         }
                     }
 
-                    $table .= '<td class="data_center else" ' . $underline . ' ' . $exam_id . '-' . $val->subject_id . '-' . $standard_id.'-'.$pt_per.'>' . $tdVal . '</td>';
+                    $table .= '<td class="data_center else" ' . $underline . ' ' . $exam_id . '-' . $val->subject_id . '-' . $standard_id.'-'.$pt_per.'>' . $tdVal .$asterisk. '</td>';
                 }
 
                 } else {
@@ -4052,8 +4066,12 @@ while ($current_date <= $post_end_date) {
             ->whereRaw($att_term)
             ->groupBy('student_id')
             ->first();
-
-        $res['teacher_remark'] = !empty($ret_data) ? str_replace('|', '', $ret_data->teacher_remark) : '';
+        $res['teacher_remark'] = $appendremark = '';
+        if (!empty($ret_data)) {
+            $student_Remark = str_replace('|', '', $ret_data->teacher_remark);
+            $appendremark = $asteriskRemark > 0 ? ' APPEARED FOR RE-TEST' : '';
+            $res['teacher_remark'] = $student_Remark.$appendremark;
+        }
 
         // Determine pass/fail status
         $get_remark = DB::table('result_remarks')
@@ -4879,7 +4897,7 @@ while ($current_date <= $post_end_date) {
         }
         //   echo "<pre>";print_r($overall_total);exit;
         $table .= '</tr></thead><tbody>';
-        $tot_ob_mark =  $tot_sub_mark = $get_all_ob_mark =  $get_all_tot_mark = 0;
+        $tot_ob_mark =  $tot_sub_mark = $get_all_ob_mark =  $get_all_tot_mark = $asteriskRemark = 0;
         // get grade array for grade 
         $grade_arr = $this->getGradeScale($standard_id, '');
         $pass_fail = [];
@@ -4889,7 +4907,7 @@ while ($current_date <= $post_end_date) {
             $table .= '<tr><td>' . $val->subject_name .  '</td>';
             // get term wise eam and marks 
             foreach ($term_name as $keys => $terms) {
-                $obtained_marks = $to_marks = $to_weight = $title_exam = [];
+                $obtained_marks = $to_marks = $to_weight = $title_exam = $asteriskMark = [];
                 // get marks by exam id wise
                 foreach ($exam_name as $key => $title) {
                     if ($title->subject_id == $val->subject_id && $terms->term_id == $title->term_id) {
@@ -4918,6 +4936,8 @@ while ($current_date <= $post_end_date) {
                                     $obtained_marks[$title->exam_id][] = $ob_mark;
 
                                     $foundMarks = true;
+                                    $asteriskMark[$title->exam_id][] = ($marks->comment == '*') ? true : false; // Added by Rajesh 03-10-2025 for hills only [New Requirement]
+                                    $asteriskRemark += ($marks->comment == '*');
                                 }
                                 break;
                             }
@@ -4930,6 +4950,7 @@ while ($current_date <= $post_end_date) {
                 if (!empty($title_exam)) {
                     foreach ($title_exam as $exam_id => $marksArray) {
                         $w_m = $to_weight[$exam_id] ?? 0; // Check if the key exists
+                        $asterisk = (!empty($asteriskMark[$exam_id]) && array_sum($asteriskMark[$exam_id]) > 0) ? '*' : '';
                         $t_m = array_sum($to_marks[$exam_id] ?? []);
                         $obtained_mark_arr = $obtained_marks[$exam_id] ?? [];
 
@@ -4945,7 +4966,7 @@ while ($current_date <= $post_end_date) {
                         $underline = ($pt_per < 33 && $academic_type == "upper") ? 'style="text-decoration: underline red 2px;"' : '';
                         if (count($obtained_mark_arr) > 1) {
                             $total_marks = $w_m;
-                            $table .= '<td class="data_center" ' . $underline . ' ' . $exam_id . '-' . $val->subject_id . '-' . $standard_id . ' *** ' . $obtained_mark_sum . ' % ' . $t_m . '*' . $w_m . '>' . number_format($convert_mark, 2) . '</td>';
+                            $table .= '<td class="data_center" ' . $underline . ' ' . $exam_id . '-' . $val->subject_id . '-' . $standard_id . ' *** ' . $obtained_mark_sum . ' % ' . $t_m . '*' . $w_m . '>' . number_format($convert_mark, 2) .$asterisk. '</td>';
                             $ob_main_mark += ($t_m !== 0) ? (($obtained_mark_sum / $t_m) * $w_m) : 0;
                         } else {
                             if (!isset($obtained_mark_arr[0])) {
@@ -4955,7 +4976,7 @@ while ($current_date <= $post_end_date) {
                             if ($obtained_mark_arr[0] != 'N.A.' || $obtained_mark_arr[0] != 'EX') {
                                 $total_marks = $w_m;
                             }
-                            $table .= '<td class="data_center" ' . $underline . ' ' . $exam_id . '-' . $val->subject_id . '-' . $standard_id . '>' . number_format($obtained_mark_arr[0], 2) . '</td>';
+                            $table .= '<td class="data_center" ' . $underline . ' ' . $exam_id . '-' . $val->subject_id . '-' . $standard_id . '>' . number_format($obtained_mark_arr[0], 2) .$asterisk. '</td>';
                             $ob_main_mark += ($obtained_mark_arr[0] !== 0) ? $obtained_mark_arr[0] : 0;
                         }
                         // echo $exam_id;echo "<pre>";print_r($obtained_mark_sum);
@@ -5008,10 +5029,11 @@ while ($current_date <= $post_end_date) {
             ->groupBy('student_id')
             ->first();
 
-        $res['teacher_remark'] = '';
+        $res['teacher_remark'] = $appendremark = '';
         if (!empty($ret_data)) {
             $student_Remark = str_replace('|', '', $ret_data->teacher_remark);
-            $res['teacher_remark'] = $student_Remark;
+            $appendremark = $asteriskRemark > 0 ? ' APPEARED FOR RE-TEST' : '';
+            $res['teacher_remark'] = $student_Remark.$appendremark;
         }
 
 
@@ -5671,7 +5693,7 @@ while ($current_date <= $post_end_date) {
                     $join->on('s.subject_id', '=', 'ex.subject_id')
                         ->on('s.standard_id', '=', 'ex.standard_id');
                 })
-                ->select('exm.ExamTitle', 'ex.title as createTitle', 'ex.id as create_exam', 'ex.term_id', 'rm.student_id', 's.subject_id', 's.display_name', 's.elective_subject', DB::raw('SUM(ex.points) as total_points'), 'ex.con_point', 'exm.weightage', DB::raw('SUM(rm.points) as points'), 'exm.Id as exam_id', 'rm.is_absent', 'ex.title')
+                ->select('exm.ExamTitle', 'ex.title as createTitle', 'ex.id as create_exam', 'ex.term_id', 'rm.student_id', 's.subject_id', 's.display_name', 's.elective_subject', DB::raw('SUM(ex.points) as total_points'), 'ex.con_point', 'exm.weightage', DB::raw('SUM(rm.points) as points'), 'exm.Id as exam_id', 'rm.is_absent', 'ex.title','rm.comment')
                 ->where('rm.student_id', $student_id)
                 ->where('ex.syear', $syear)
                 ->where('ex.sub_institute_id', $sub_institute_id)
