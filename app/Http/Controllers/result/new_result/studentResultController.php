@@ -3679,7 +3679,7 @@ while ($current_date <= $post_end_date) {
         foreach ($term_name as $keys => $terms) {
             $total_mark = 0;
             foreach ($exam_title as $key => $title) {
-                $weigthage = '(' . $title->weightage . ')';
+                $weigthage = '(' . $title->con_point . ')';
 
                 $exam_head = $title->ExamTitle;
                 if ($exam_head == 'Periodic Test') {
@@ -3688,7 +3688,7 @@ while ($current_date <= $post_end_date) {
                     $printed_titles = []; // Array to keep track of printed titles
                     foreach ($exam_name as $key => $value) {
                         if ($i < $pts && !in_array($value->title, $printed_titles) && $value->ExamTitle == 'Periodic Test') {
-                            $table .= '<th class="data_center"><b>' . $value->title . '<br>(' . $value->points . ')</b></th>';
+                            $table .= '<th class="data_center"><b>' . $value->title . '<br>(' . $value->con_point . ')</b></th>';
                             $printed_titles[] = $value->title; // Add the title to printed_titles array
                             $i++;
                         }
@@ -3725,11 +3725,11 @@ while ($current_date <= $post_end_date) {
                         if ($title->ExamTitle == 'Periodic Test') {
                             $arr = $title->id;
                             $title_exam[$arr][] = $title->title;
-                            $weightage = $title->points;
+                            $weightage = $title->con_point;
                         } else {
                             $arr = $title->exam_id;
                             $title_exam[$arr][] = $title->ExamTitle;
-                            $weightage = $title->weightage;
+                            $weightage = $title->con_point;
                         }
                         // all exam marks 
                         foreach ($exam_marks as $index => $marks) {
@@ -3773,9 +3773,9 @@ while ($current_date <= $post_end_date) {
                         // convert marks if best of 2
                         if ($standard_id == 3299 || $standard_id == 3965) {
                             if (count($obtained_mark_arr) > 1) {
-                                $convert_mark = max($obtained_mark_arr); // get greatest max
+                                $convert_mark = max($numeric_marks); // get greatest max
                             } else {
-                                $convert_mark = $obtained_mark_sum; // for PT
+                                $convert_mark = (($obtained_mark_sum / $t_m) * $w_m);// $obtained_mark_sum; // for PT
                             }
                         } else {
                             $convert_mark = ($obtained_mark_sum != 0) ? (($obtained_mark_sum / $t_m) * $w_m) : 0;
@@ -3801,7 +3801,7 @@ while ($current_date <= $post_end_date) {
                             } else {
                                 $tdVal = $obtained_mark_arr[0] ?? "0.00"; // print AB,NA,EX
                             }
-                            $table .= '<td class="data_center else" ' . $underline . ' ' . $exam_id . '-' . $val->subject_id . '-' . $standard_id.'-'.$pt_per.'>' . $tdVal . '</td>';
+                            $table .= '<td class="data_center else" ' . $underline . ' ' . $exam_id . '-' . $val->subject_id . '-' . $standard_id.'-'.$pt_per.'#'.$obtained_mark_sum.'-'.$convert_mark.'-'.$t_m.'-'.$w_m.'>' . $tdVal . '</td>';
                         }
                     }
                 } else {
@@ -5085,7 +5085,7 @@ while ($current_date <= $post_end_date) {
                 ->orderBy('comark.term_id')
                 ->get();
 
-            $skill_data = $criteria_data = $decipline_data = $co_data = [];
+            $skill_data = $criteria_data = $decipline_data = $co_data =$hpe_data = [];
             $get_grade = DB::table('result_co_scholatic_range')
                 ->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])
                 ->get();
@@ -5100,6 +5100,11 @@ while ($current_date <= $post_end_date) {
                     case "CRITERIA":
                         $value->obtain_grade = ($value->obtain_grade != '0.00') ? $value->obtain_grade : '-';
                         $criteria_data[] = $value;
+                        break;
+                    case "H.P.E.":
+                        $grade = (!empty($get_grade) && $per != 0 && $per != '') ? $this->getGrade($get_grade, $value->max_mark, $per, "co_scholastic") : '-';
+                        $value->obtain_grade = $grade;
+                        $hpe_data[] = $value;
                         break;
                     case "DISCIPLINE":
                         if ($value->mark_type == "GRADE") {
@@ -5121,7 +5126,7 @@ while ($current_date <= $post_end_date) {
             $flex = 'display:flex;flex-wrap:wrap';
 
             $co_scholastic = $this->buildCoScholasticTable($both_term, $co_data, $term_name, $flex, $academic_type);
-            $other_table = $this->buildOtherTables($both_term, $criteria_data, $skill_data, $decipline_data, $term_name, $academic_type);
+            $other_table = $this->buildOtherTables($both_term, $criteria_data, $skill_data, $decipline_data, $term_name, $academic_type,$hpe_data);
 
             return [
                 'co_scholastic' => (count($ret_data) > 0) ? $co_scholastic : '',
@@ -5186,7 +5191,7 @@ while ($current_date <= $post_end_date) {
 
         // Build first table
         if (!empty($groupedData1)) {
-            $co_scholastic .= '<div style="width:50%;">
+            $co_scholastic .= '<div style="width:50%;" class="table_co_1">
             <table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" cellpadding="0" border="1">
                 <thead>
                     <tr>
@@ -5209,7 +5214,7 @@ while ($current_date <= $post_end_date) {
         }
         // Build second table
         if (!empty($groupedData2)) {
-            $co_scholastic .= '<div style="width:50%;">
+            $co_scholastic .= '<div style="width:50%;"  class="table_co_2">
         <table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" cellpadding="0" border="1">
             <thead>
                 <tr>
@@ -5235,7 +5240,7 @@ while ($current_date <= $post_end_date) {
         return $co_scholastic;
     }
 
-    private function buildOtherTables($both_term, $criteria_data, $skill_data, $decipline_data, $term_name, $academic_type)
+    private function buildOtherTables($both_term, $criteria_data, $skill_data, $decipline_data, $term_name, $academic_type,$hpe_data)
     {
         $other_table = '';
         $groupedCriteria = [];
@@ -5254,8 +5259,13 @@ while ($current_date <= $post_end_date) {
            " . $this->buildSubTable('CRITERIA', $groupedCriteria, $both_term, $academic_type) . "
             " . $this->buildSubTable('SKILL OBSERVATION', $groupedSkills, $both_term, $academic_type) . "
         </div>";
-        } elseif (!empty($decipline_data)) {
-            $other_table .= $this->buildDisciplineTable($decipline_data, $both_term);
+        } 
+        elseif (!empty($decipline_data)) {
+            
+        if (!empty($hpe_data)) {
+           $other_table .= $this->buildDisciplineTable($hpe_data, $both_term,'H.P.E.');
+        } 
+            $other_table .= $this->buildDisciplineTable($decipline_data, $both_term,'DISCIPLINE');
         }
 
         return $other_table;
@@ -5288,7 +5298,7 @@ while ($current_date <= $post_end_date) {
         return $sub_table;
     }
 
-    private function buildDisciplineTable($decipline_data, $both_term)
+    private function buildDisciplineTable($decipline_data, $both_term,$tableName)
     {
         $commonData = [];
         $termArr = [];
@@ -5298,11 +5308,11 @@ while ($current_date <= $post_end_date) {
                 $termArr[$value->term_id] = $value->term_id;
             }
         }
-        $discipline_table = '<div style="width:50%;">
+        $discipline_table = '<div style="width:50%;" class="discipline_table">
         <table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" cellpadding="0" border="1">
             <thead>
                 <tr>
-                    <th><b>DISCIPLINE</b></th>';
+                    <th><b>'.$tableName.'</b></th>';
         if (!empty($both_term) && count($termArr) > 1) {
             foreach ($both_term as $key => $value) {
                 $discipline_table .= '<th class="data_center"><b>' . $value->title . '</b></th>';
@@ -5315,7 +5325,7 @@ while ($current_date <= $post_end_date) {
             <tbody>';
 
         foreach ($commonData as $title => $cv) {
-            $discipline_table .= '<tr><td><b>' . $title . '</b></td>';
+            $discipline_table .= '<tr><td>' . $title . '</td>';
             if (!empty($both_term)) {
                 foreach ($both_term as $tk => $tv) {
                     $grade = isset($cv[$tv->term_id]) ? $cv[$tv->term_id] : '-';
