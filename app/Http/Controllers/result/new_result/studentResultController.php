@@ -537,7 +537,7 @@ class studentResultController extends Controller
         }
 
         if ($perTermAtt < 75) {
-            $attUnderline = "text-decoration:underline red 2px";
+            $attUnderline = "border-bottom: 2px solid red;";//text-decoration:underline red 2px
         }
         $html_content = str_replace(htmlspecialchars("<<term_attendance_per_style>>"), $attUnderline, $html_content);
 
@@ -3500,10 +3500,10 @@ while ($current_date <= $post_end_date) {
 
                         $pt_per = ($convert_mark !== '0.00' && $w_m != 0) ? round(($convert_mark / $w_m) * 100, 0) : 0;
 
-                        $underline = ($pt_per < 33 && $academic_type == "upper") ? 'style="text-decoration: underline red 2px;"' : '';
+                        $underline = ($pt_per < 33 && $academic_type == "upper") ? 'style="border-bottom: 2px solid red;"' : '';
                         if (count($obtained_mark_arr) > 1) {
                             $total_marks += $w_m;
-                            $table .= '<td class="data_center" ' . $underline . ' ' . $exam_id . '-' . $val->subject_id . '-' . $standard_id . '-'.$pt_per.'>' . number_format($convert_mark, 2) .$asterisk. '</td>';
+                            $table .= '<td class="data_center"><span '.$underline.'>' . number_format($convert_mark, 2) .$asterisk. '</span></td>';// . $exam_id . '-' . $val->subject_id . '-' . $standard_id . '-'.$pt_per.'
                         } else {
                             if (!isset($obtained_mark_arr[0])) {
                                 $obtained_mark_arr[0] = '0.00';
@@ -3518,7 +3518,7 @@ while ($current_date <= $post_end_date) {
                             }
                             /* (Hills) Hide by rajesh std-1 display without convert marks */
                             //$table .= '<td class="data_center" '. $exam_id . '-'.$val->subject_id.'-'.$standard_id.'>' . number_format((float)$obtained_mark_arr[0], 2) .'</td>';
-                            $table .= '<td class="data_center else" ' . $underline . ' ' . $exam_id . '-' . $val->subject_id . '-' . $standard_id . '-'.$pt_per.'>' . $tdVal .$asterisk. '</td>';
+                            $table .= '<td class="data_center"><span '.$underline.'>' . $tdVal .$asterisk. '</span></td>';//else ' . $exam_id . '-' . $val->subject_id . '-' . $standard_id . '-'.$pt_per.'
                         }
 
                         // echo $exam_id;echo "<pre>";print_r($obtained_mark_sum);
@@ -3564,9 +3564,9 @@ while ($current_date <= $post_end_date) {
                     $pass_fail[] = 'Failed';
                 }
 
-                $underline = ($grade_std == "E") ? 'style="text-decoration: underline red 2px;"' : ''; // added by rajesh 22_02_2024
+                $underline = ($grade_std == "E") ? 'style="border-bottom: 2px solid red;"' : ''; // added by rajesh 22_02_2024
 
-                $table .= '<td class="data_center tot_of_both" ' . $underline . '>' . round($both_term_ob_mark, 0) . '</td><td class="data_center grade_of_both">' . $grade_std . '</td>';
+                $table .= '<td class="data_center tot_of_both"><span '.$underline.' >' . round($both_term_ob_mark, 0) . '</span></td><td class="data_center grade_of_both">' . $grade_std . '</td>';
             }
             $get_all_ob_mark += $both_term_ob_mark;
             $get_all_tot_mark += $overall_total;
@@ -3792,11 +3792,10 @@ while ($current_date <= $post_end_date) {
 
                         $pt_per = ($convert_mark !== '0.00' && $w_m != 0) ? round(($convert_mark / $w_m) * 100, 0) : 0;
 
-                        // $underline = ($pt_per < 33 && $academic_type == "upper" && $standard_id!=3299 && $standard_id!=3965) ? 'style="text-decoration: underline red 2px;"' : '';
-                        $underline = ($pt_per < 33 && $academic_type == "upper") ? 'style="text-decoration: underline red 2px;"' : '';
+                        $underline = ($pt_per < 33 && $academic_type == "upper") ? 'style="border-bottom: 2px solid red;"' : '';
                         if (count($obtained_mark_arr) > 1) {
                             $total_marks += $w_m;
-                            $table .= '<td class="data_center" ' . $underline . ' ' . $exam_id . '-' . $val->subject_id . '-' . $standard_id.'-'.$pt_per.'>' . number_format($convert_mark, 2) .$asterisk. '</td>';
+                            $table .= '<td class="data_center"><span '.$underline.'>' . number_format($convert_mark, 2) .$asterisk. '</span></td>';// ' . $exam_id . '-' . $val->subject_id . '-' . $standard_id.'-'.$pt_per.'
                         } else {
                             if (!isset($obtained_mark_arr[0])) {
                                 $obtained_mark_arr[0] = '0.00';
@@ -3810,7 +3809,7 @@ while ($current_date <= $post_end_date) {
                             } else {
                                 $tdVal = $obtained_mark_arr[0] ?? "0.00"; // print AB,NA,EX
                             }
-                            $table .= '<td class="data_center else" ' . $underline . ' ' . $exam_id . '-' . $val->subject_id . '-' . $standard_id.'-'.$pt_per.'#'.$obtained_mark_sum.'-'.$convert_mark.'-'.$t_m.'-'.$w_m.'>' . $tdVal .$asterisk. '</td>';
+                            $table .= '<td class="data_center"><span '.$underline.'>' . $tdVal .$asterisk. '</span></td>';//else ' . $exam_id . '-' . $val->subject_id . '-' . $standard_id.'-'.$pt_per.'
                         }
                     }
                 } else {
@@ -4014,7 +4013,7 @@ while ($current_date <= $post_end_date) {
                     $ob_main_mark += ($t_m !== 0) ? (($obtained_mark_sum / $t_m) * $w_m) : 0;
                     $convert_mark = ($obtained_mark_sum != 0) ? (($obtained_mark_sum / $t_m) * $w_m) : 0;
                     $pt_per = ($convert_mark !== '0.00' && $w_m != 0) ? round(($convert_mark / $w_m) * 100, 0) : 0;
-                    $underline = ($pt_per < 33) ? 'style="text-decoration: underline red 2px;"' : '';
+                    $underline = ($pt_per < 33) ? 'style="border-bottom: 2px solid red;"' : '';
 
                     // for other exams
                     if (count($obtained_mark_arr) > 1) {
@@ -4036,7 +4035,7 @@ while ($current_date <= $post_end_date) {
                         }
                     }
 
-                    $table .= '<td class="data_center else" ' . $underline . ' ' . $exam_id . '-' . $val->subject_id . '-' . $standard_id.'-'.$pt_per.'>' . $tdVal .$asterisk. '</td>';
+                    $table .= '<td class="data_center"><span '.$underline.'>' . $tdVal .$asterisk. '</span></td>';// ' . $exam_id . '-' . $val->subject_id . '-' . $standard_id.'-'.$pt_per.'
                 }
 
                 } else {
@@ -4963,10 +4962,10 @@ while ($current_date <= $post_end_date) {
 
                         $pt_per = ($convert_mark !== '0.00' && $w_m != 0) ? round(($convert_mark / $w_m) * 100, 0) : 0;
 
-                        $underline = ($pt_per < 33 && $academic_type == "upper") ? 'style="text-decoration: underline red 2px;"' : '';
+                        $underline = ($pt_per < 33 && $academic_type == "upper") ? 'style="border-bottom: 2px solid red;"' : '';
                         if (count($obtained_mark_arr) > 1) {
                             $total_marks = $w_m;
-                            $table .= '<td class="data_center" ' . $underline . ' ' . $exam_id . '-' . $val->subject_id . '-' . $standard_id . ' *** ' . $obtained_mark_sum . ' % ' . $t_m . '*' . $w_m . '>' . number_format($convert_mark, 2) .$asterisk. '</td>';
+                            $table .= '<td class="data_center"><span '.$underline.'>' . number_format($convert_mark, 2) .$asterisk. '</span></td>';// ' . $exam_id . '-' . $val->subject_id . '-' . $standard_id . '
                             $ob_main_mark += ($t_m !== 0) ? (($obtained_mark_sum / $t_m) * $w_m) : 0;
                         } else {
                             if (!isset($obtained_mark_arr[0])) {
@@ -4976,7 +4975,7 @@ while ($current_date <= $post_end_date) {
                             if ($obtained_mark_arr[0] != 'N.A.' || $obtained_mark_arr[0] != 'EX') {
                                 $total_marks = $w_m;
                             }
-                            $table .= '<td class="data_center" ' . $underline . ' ' . $exam_id . '-' . $val->subject_id . '-' . $standard_id . '>' . number_format($obtained_mark_arr[0], 2) .$asterisk. '</td>';
+                            $table .= '<td class="data_center"><span '.$underline.'>' . number_format($obtained_mark_arr[0], 2) .$asterisk. '</span></td>';// ' . $exam_id . '-' . $val->subject_id . '-' . $standard_id . '
                             $ob_main_mark += ($obtained_mark_arr[0] !== 0) ? $obtained_mark_arr[0] : 0;
                         }
                         // echo $exam_id;echo "<pre>";print_r($obtained_mark_sum);
@@ -5007,9 +5006,9 @@ while ($current_date <= $post_end_date) {
                 $pass_fail[] = "Failed";
             }
 
-            $underline = ($grade_std == "E") ? 'style="text-decoration: underline red 2px;"' : ''; // added by rajesh 22_02_2024
+            $underline = ($grade_std == "E") ? 'style="border-bottom: 2px solid red;"' : ''; // added by rajesh 22_02_2024
 
-            $table .= '<td class="data_center tot_of_both" ' . $underline . '>' . round($both_term_ob_mark, 0) . '</td><td class="data_center grade_of_both">' . $grade_std . '</td>';
+            $table .= '<td class="data_center tot_of_both"><span '.$underline.'>' . round($both_term_ob_mark, 0) . '</span></td><td class="data_center grade_of_both">' . $grade_std . '</td>';
             $table .= '</tr>';
         }
         $table .= '</tbody></table>';
@@ -5203,7 +5202,7 @@ while ($current_date <= $post_end_date) {
         foreach ($co_data as $value) {
             $groupedData[$value->child_title][$value->term_id] = $value->obtain_grade;
         }
-        $break = 8;
+        $break = 7;
         if ($academic_type == "primary") {
             $break = 6;
         }
