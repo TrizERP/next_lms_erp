@@ -297,6 +297,8 @@ class studentResultController extends Controller
         $html_content = str_replace(htmlspecialchars("<<student_image_value>>"), $student_image_path, $html_content);
         $html_content = str_replace(htmlspecialchars("<<student_id>>"), strtoupper($value['id']), $html_content);
         $html_content = str_replace(htmlspecialchars("<<student_name_value>>"), strtoupper($value['student_full_name']), $html_content);
+        $html_content = str_replace(htmlspecialchars("<<student_first_name>>"), strtoupper($value['student_first_name']), $html_content);
+        $html_content = str_replace(htmlspecialchars("<<student_last_name>>"), strtoupper($value['student_last_name']), $html_content);
         $html_content = str_replace(htmlspecialchars("<<short_standard_name>>"), strtoupper($value['short_standard_name']), $html_content);
         $html_content = str_replace(htmlspecialchars("<<student_enrollment_value>>"), $value['enrollment_no'], $html_content);
         $html_content = str_replace(htmlspecialchars("<<student_roll_no_value>>"), $value['roll_no'], $html_content);
@@ -648,6 +650,7 @@ class studentResultController extends Controller
             $html_content = str_replace(htmlspecialchars("<<overallPercentage>>"), $scholastic['overallPercentage'], $html_content);
             $html_content = str_replace(htmlspecialchars("<<overall_grade>>"), $scholastic['overall_grade'], $html_content);
             $html_content = str_replace(htmlspecialchars("<<class_teacher_remark>>"), $scholastic['teacher_remark'], $html_content);
+            $html_content = str_replace(htmlspecialchars("<<remark>>"), $scholastic['remark'], $html_content);
         }
         if (strpos($html_content, htmlspecialchars('<<ssmission_term_1_primary>>')) !== false) {
             $scholastic = $this->ssmission_term_1_primary($standard_id, $value['id'], $format, "");
@@ -656,6 +659,7 @@ class studentResultController extends Controller
             $html_content = str_replace(htmlspecialchars("<<overallPercentage>>"), $scholastic['overallPercentage'], $html_content);
             $html_content = str_replace(htmlspecialchars("<<overall_grade>>"), $scholastic['overall_grade'], $html_content);
             $html_content = str_replace(htmlspecialchars("<<class_teacher_remark>>"), $scholastic['teacher_remark'], $html_content);
+            $html_content = str_replace(htmlspecialchars("<<remark>>"), $scholastic['remark'], $html_content);
         }
 
         if (strpos($html_content, htmlspecialchars('<<ssmission_term_1_secondary>>')) !== false) {
@@ -665,6 +669,7 @@ class studentResultController extends Controller
             $html_content = str_replace(htmlspecialchars("<<overallPercentage>>"), $scholastic['overallPercentage'], $html_content);
             $html_content = str_replace(htmlspecialchars("<<overall_grade>>"), $scholastic['overall_grade'], $html_content);
             $html_content = str_replace(htmlspecialchars("<<class_teacher_remark>>"), $scholastic['teacher_remark'], $html_content);
+            $html_content = str_replace(htmlspecialchars("<<remark>>"), $scholastic['remark'], $html_content);
         }
 
         if (strpos($html_content, htmlspecialchars('<<ssmission_term_higher>>')) !== false) {
@@ -674,6 +679,7 @@ class studentResultController extends Controller
             $html_content = str_replace(htmlspecialchars("<<overallPercentage>>"), $scholastic['overallPercentage'], $html_content);
             $html_content = str_replace(htmlspecialchars("<<overall_grade>>"), $scholastic['overall_grade'], $html_content);
             $html_content = str_replace(htmlspecialchars("<<class_teacher_remark>>"), $scholastic['teacher_remark'], $html_content);
+            $html_content = str_replace(htmlspecialchars("<<remark>>"), $scholastic['remark'], $html_content);
         }
         return $html_content;
         //  return $main_result;     ssmission_term_ssmission_term_higher    
@@ -9008,7 +9014,7 @@ while ($current_date <= $post_end_date) {
             // Step 2: Build table
             $table = "<table class='aca-year' style='width: 100%;border-collapse:collapse; border:1px solid #e68023;' cellspacing='0' border='1'>";
             $table .= "<thead><tr>";
-            $table .= "<th style='text-align:center !important;'>Subject</th>";
+            $table .= "<th style='text-align:center !important;'>Subjects</th>";
 
             $totalMarks = $overallTotal = $overallObt = 0;
 
@@ -9071,41 +9077,44 @@ while ($current_date <= $post_end_date) {
                     }
 
                     // Display the calculated marks for this ExamTitle group
-                    if ($subject->elective_subject == "Yes") {
-                        $table .= "<td style='text-align:center !important;'>-</td>";
-                    } else {
-                        // If we have non-numeric value, display it, otherwise display calculated total
+                       // If we have non-numeric value, display it, otherwise display calculated total
                         if (!is_numeric($examGroupTotal)) {
-                            $table .= "<td style='text-align:center !important;'>" . $examGroupTotal . "</td>";
+                            $table .= "<td style='text-align:center !important;'>" . 
+                                ($subject->elective_subject != "Yes" ? $examGroupTotal : '-') . 
+                            "</td>";
                             $obtainedTotal = $examGroupTotal; // This will make total show the non-numeric value
                             // Don't add to overallObt since value is non-numeric
                         } else {
-                            $table .= "<td style='text-align:center !important;'>" . round($examGroupTotal, 0) . "</td>";
+                            $table .= "<td style='text-align:center !important;'>" . 
+                                ($subject->elective_subject != "Yes" ? round($examGroupTotal, 0) : '-') . 
+                            "</td>";
                             // Initialize $obtainedTotal as numeric if not already
                             if (!is_numeric($obtainedTotal)) {
                                 $obtainedTotal = 0;
                             }
                             $obtainedTotal += floatval($examGroupTotal);
-                            $overallObt += floatval($examGroupTotal);
+                            $overallObt += ((($subject->elective_subject ?? '') != "Yes") ? floatval($examGroupTotal) : 0);
+
                         }
-                    }
                 }
 
                 // Handle total column
                 if ($subject->elective_subject == "Yes") {
-                    $table .= "<td style='text-align:center!important;' data-json=" . json_encode(["standard" => $standard_id, "subject" => $subject->subject_id, "obtained_marks" => $obtainedTotal]) . "><b>-</b></td>";
+                    $table .= "<td style='text-align:center!important;' data-json=" . json_encode(["standard" => $standard_id, "subject" => $subject->subject_id, "obtained_marks" => $obtainedTotal, "totalMarks" => $totalMarks]) . "><b>-</b></td>";
                 } else {
                     if (!is_numeric($obtainedTotal)) {
-                        $table .= "<td style='text-align:center!important;' data-json=" . json_encode(["standard" => $standard_id, "subject" => $subject->subject_id, "obtained_marks" => $obtainedTotal]) . "><b>" . $obtainedTotal . "</b></td>";
+                        $table .= "<td style='text-align:center!important;' data-json=" . json_encode(["standard" => $standard_id, "subject" => $subject->subject_id, "obtained_marks" => $obtainedTotal, "totalMarks" => $totalMarks]) . "><b>" . $obtainedTotal . "</b></td>";
                     } else {
-                        $table .= "<td style='text-align:center!important;' data-json=" . json_encode(["standard" => $standard_id, "subject" => $subject->subject_id, "obtained_marks" => $obtainedTotal]) . "><b>" . round($obtainedTotal, 0) . "</b></td>";
+                        $table .= "<td style='text-align:center!important;' data-json=" . json_encode(["standard" => $standard_id, "subject" => $subject->subject_id, "obtained_marks" => $obtainedTotal, "totalMarks" => $totalMarks]) . "><b>" . round($obtainedTotal, 0) . "</b></td>";
                     }
                 }
 
                 // Handle grade column
-                if ($subject->elective_subject == "Yes" || !is_numeric($obtainedTotal)) {
+                /*if ($subject->elective_subject == "Yes" || !is_numeric($obtainedTotal)) {
                     $table .= "<td style='text-align:center!important;'><b>-</b></td>";
-                } else {
+                } else 
+                */
+                {
                     $table .= "<td style='text-align:center!important;'><b>" . $this->getGrade($grade_arr, $totalMarks, $obtainedTotal) . "</b></td>";
                 }
 
@@ -9143,10 +9152,12 @@ while ($current_date <= $post_end_date) {
             $res['total_marks'] = round($overallObt, 0) . '/' . $overallTotal;
             $res['overallPercentage'] = $this->getPer($overallObt, $overallTotal);
             $res['overall_grade'] = $this->getGrade($grade_arr, $overallTotal, $overallObt);
+            $res['remark'] = \App\Helpers\getGradeComment($grade_arr, 100, $this->getPer($overallObt, $overallTotal)) ?? '-';
         } else {
             $res['total_marks'] = '0/0';
             $res['overallPercentage'] = '0%';
             $res['overall_grade'] = '-';
+            $res['remark'] = '-';
         }
 
         return $res;
@@ -9211,7 +9222,7 @@ while ($current_date <= $post_end_date) {
             // First header row - Exam Types
             $table .= "<thead>";
             $table .= "<tr>";
-            $table .= "<th rowspan='2' style='text-align:center !important; vertical-align:middle;'>Subject</th>";
+            $table .= "<th rowspan='2' style='text-align:center !important; vertical-align:middle;'>Subjects</th>";
 
             $totalMarks = $overallTotal = $overallObt = 0;
             $colspanData = [];
@@ -9275,8 +9286,8 @@ while ($current_date <= $post_end_date) {
 
                 if ($subject->elective_subject != "Yes") {
                     $overallTotal += $totalMarks;
-                    $subjectTotalMarks = $totalMarks;
                 }
+                $subjectTotalMarks = $totalMarks;
 
                 // For each exam type and exam title
                 foreach ($groupedByExamType as $examType => $examData) {
@@ -9325,50 +9336,52 @@ while ($current_date <= $post_end_date) {
                             }
                         }
                         // Display the calculated marks for this ExamTitle group
-                        if ($subject->elective_subject == "Yes") {
-                            $table .= "<td style='text-align:center !important;'>-</td>";
-                        } else {
-                            // If we have non-numeric value, display it, otherwise display calculated total
+                        // If we have non-numeric value, display it, otherwise display calculated total
                             if (!is_numeric($examGroupTotal)) {
-                                $table .= "<td style='text-align:center !important;'>" . $examGroupTotal . "</td>";
+                                $table .= "<td style='text-align:center !important;'>" .
+                                 ($subject->elective_subject != "Yes" ? $examGroupTotal : '-') . 
+                                 "</td>";
+                                 $examTypeTotal = $examGroupTotal;
                             } else {
-                                $table .= "<td style='text-align:center !important;'>" . round($examGroupTotal, 0) . "</td>";
-                                $examTypeTotal += $examGroupTotal;
+                                $table .= "<td style='text-align:center !important;'>" . 
+                                ($subject->elective_subject != "Yes" ? round($examGroupTotal, 0) : '-') . 
+                                "</td>";
+                                $examTypeTotal += round($examGroupTotal,0);
 
                                 // Store internal total separately
                                 if ($examType == 'Internal') {
-                                    $internalTotal += $examGroupTotal;
+                                    $internalTotal += round($examGroupTotal,0);
                                 }
                             }
-                        }
                     }
 
 
 
                     // Add to obtained total (Internal Total + current exam type total)
-                    if ($subject->elective_subject != "Yes" && is_numeric($examTypeTotal)) {
+                    //if ($subject->elective_subject != "Yes" && is_numeric($examTypeTotal)) {
                         // if ($examType != 'Internal') {
                         $obtainedTotal += $examTypeTotal;
                         // } 
-                    }
+                    //}
                 }
 
                 // Handle total column
                 if ($subject->elective_subject == "Yes") {
-                    $table .= "<td style='text-align:center!important;' data-json=" . json_encode(["standard" => $standard_id, "subject" => $subject->subject_id, "obtained_marks" => $obtainedTotal]) . "><b>-</b></td>";
+                    $table .= "<td style='text-align:center!important;' data-json=" . json_encode(["standard" => $standard_id, "subject" => $subject->subject_id, "obtained_marks" => $obtainedTotal, "subjectTotalMarks" => $subjectTotalMarks]) . "><b>-</b></td>";
                 } else {
                     if (!is_numeric($obtainedTotal)) {
-                        $table .= "<td style='text-align:center!important;' data-json=" . json_encode(["standard" => $standard_id, "subject" => $subject->subject_id, "obtained_marks" => $obtainedTotal]) . "><b>" . $obtainedTotal . "</b></td>";
+                        $table .= "<td style='text-align:center!important;' data-json=" . json_encode(["standard" => $standard_id, "subject" => $subject->subject_id, "obtained_marks" => $obtainedTotal, "subjectTotalMarks" => $subjectTotalMarks]) . "><b>" . $obtainedTotal . "</b></td>";
                     } else {
-                        $table .= "<td style='text-align:center!important;' data-json=" . json_encode(["standard" => $standard_id, "subject" => $subject->subject_id, "obtained_marks" => $obtainedTotal]) . "><b>" . round($obtainedTotal, 0) . "</b></td>";
+                        $table .= "<td style='text-align:center!important;' data-json=" . json_encode(["standard" => $standard_id, "subject" => $subject->subject_id, "obtained_marks" => $obtainedTotal, "subjectTotalMarks" => $subjectTotalMarks]) . "><b>" . round($obtainedTotal, 0) . "</b></td>";
                         $overallObt += $obtainedTotal;
                     }
                 }
 
                 // Handle grade column
-                if ($subject->elective_subject == "Yes" || !is_numeric($obtainedTotal)) {
+                /*if ($subject->elective_subject == "Yes" || !is_numeric($obtainedTotal)) {
                     $table .= "<td style='text-align:center!important;'><b>-</b></td>";
-                } else {
+                } else */
+                {
                     $table .= "<td style='text-align:center!important;'><b>" . $this->getGrade($grade_arr, $subjectTotalMarks, $obtainedTotal) . "</b></td>";
                 }
 
@@ -9406,10 +9419,12 @@ while ($current_date <= $post_end_date) {
             $res['total_marks'] = round($overallObt, 0) . '/' . $overallTotal;
             $res['overallPercentage'] = $this->getPer($overallObt, $overallTotal);
             $res['overall_grade'] = $this->getGrade($grade_arr, $overallTotal, $overallObt);
+            $res['remark'] = \App\Helpers\getGradeComment($grade_arr, 100, $this->getPer($overallObt, $overallTotal)) ?? '-';
         } else {
             $res['total_marks'] = '0/0';
             $res['overallPercentage'] = '0%';
             $res['overall_grade'] = '-';
+            $res['remark'] = '-';
         }
 
         return $res;
@@ -9474,7 +9489,7 @@ while ($current_date <= $post_end_date) {
             // First header row - Exam Types
             $table .= "<thead>";
             $table .= "<tr>";
-            $table .= "<th rowspan='2' style='text-align:center !important; vertical-align:middle;'>Subject</th>";
+            $table .= "<th rowspan='2' style='text-align:center !important; vertical-align:middle;'>Subjects</th>";
 
             $totalMarks = $overallTotal = $overallObt = 0;
             $colspanData = [];
@@ -9818,10 +9833,12 @@ while ($current_date <= $post_end_date) {
             $res['total_marks'] = round($overallObt, 0) . '/' . $overallTotal;
             $res['overallPercentage'] = $this->getPer($overallObt, $overallTotal);
             $res['overall_grade'] = $this->getGrade($grade_arr, $overallTotal, $overallObt);
+            $res['remark'] = \App\Helpers\getGradeComment($grade_arr, 100, $this->getPer($overallObt, $overallTotal)) ?? '-';
         } else {
             $res['total_marks'] = '0/0';
             $res['overallPercentage'] = '0%';
             $res['overall_grade'] = '-';
+            $res['remark'] = '-';
         }
 
         return $res;
@@ -9869,7 +9886,7 @@ while ($current_date <= $post_end_date) {
             // Step 2: Build table
             $table = "<table class='aca-year' style='width: 100%;border-collapse:collapse; border:1px solid #e68023;' cellspacing='0' border='1'>";
             $table .= "<thead><tr>";
-            $table .= "<th style='text-align:center !important;' rowspan='2'>Subject</th>";
+            $table .= "<th style='text-align:center !important;' rowspan='2'>Subjects</th>";
 
             $totalMarks = $overallTotal = $overallObt = 0;
 
@@ -10017,10 +10034,12 @@ while ($current_date <= $post_end_date) {
             $res['total_marks'] = round($overallObt, 0) . '/' . $overallTotal;
             $res['overallPercentage'] = $this->getPer($overallObt, $overallTotal);
             $res['overall_grade'] = $this->getGrade($grade_arr, $overallTotal, $overallObt);
+            $res['remark'] = \App\Helpers\getGradeComment($grade_arr, 100, $this->getPer($overallObt, $overallTotal)) ?? '-';
         } else {
             $res['total_marks'] = '0/0';
             $res['overallPercentage'] = '0%';
             $res['overall_grade'] = '-';
+            $res['remark'] = '-';
         }
 
         return $res;

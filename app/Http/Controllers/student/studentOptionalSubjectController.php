@@ -189,6 +189,7 @@ class studentOptionalSubjectController extends Controller
             'sub_std_map.standard_id'      => $standard_id, 
             'sub_std_map.elective_subject' => 'Yes',
         ])
+        ->orderby('sub_std_map.sort_order')
         ->get()->toArray();
         
         $res['status_code'] = 1;
