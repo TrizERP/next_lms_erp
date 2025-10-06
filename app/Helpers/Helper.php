@@ -1538,7 +1538,11 @@ if (!function_exists('getStudents')) {
                 r.religion_name,c.caste_name,s.subcast,s.affiliation_no,s.school_code,s.admission_date,td.first_name AS driver_name,
                 td.mobile AS driver_mobile,td.icard_icon,s.mother_mobile,CONCAT_WS(' ',s.first_name,CONCAT(SUBSTRING(s.father_name,1,1),'.'),
                 s.last_name) as short_student_name,tv.vehicle_type,tkr.id as distance_from_school_id,tkr.distance_from_school,
-                tkr.from_distance,IF(tv.vehicle_type = 'Van',tkr.van_new,tkr.rick_new) AS distance_rate,s.first_name as student_first_name,s.middle_name as student_middle_name,s.last_name as student_last_name,rsam.teacher_remark,COUNT(ats.id) as total_att_days,sum(CASE WHEN ats.attendance_code = 'P' THEN 1 ELSE 0 END) as present_att_days, group_concat(DISTINCT  fc.term_id) as month_name, bg.bloodgroup as blood_group_name,bt.title as batch_name,'-' as enquiry_no")
+                tkr.from_distance,IF(tv.vehicle_type = 'Van',tkr.van_new,tkr.rick_new) AS distance_rate,
+                s.first_name as student_first_name,
+                s.middle_name as student_middle_name,
+                s.last_name as student_last_name,
+                rsam.teacher_remark,COUNT(ats.id) as total_att_days,sum(CASE WHEN ats.attendance_code = 'P' THEN 1 ELSE 0 END) as present_att_days, group_concat(DISTINCT  fc.term_id) as month_name, bg.bloodgroup as blood_group_name,bt.title as batch_name,'-' as enquiry_no")
                 ->where('s.sub_institute_id', $sub_institute_id)
                 ->where('se.syear', $syear)
                 // ->groupBy('fc.id')
