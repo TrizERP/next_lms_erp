@@ -4,6 +4,7 @@ namespace App\Http\Controllers\result\new_result;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use App\Traits\Helpers;
 use function App\Helpers\is_mobile;
 use App\Models\result\result_template;
 use function App\Helpers\SearchStudent;
@@ -123,7 +124,8 @@ class studentResultController extends Controller
             $new_html_content = '<div id="' . $value['id'] . '"><div ' . $class . ' style="' . $style . '">' . $this->create_html_content($syear, $sub_institute_id, $html_content, $value, $template, $result_trust, $format, ($srNo)) . '</div></div>';
 
             $new_html .= $new_html_content;
-            if ($sub_institute_id == 47) { // for print sort order
+            $institutes = [47,76,61];
+            if (in_array($sub_institute_id, $institutes)) {
                 $all_stud_html[$value['roll_no']] = $new_html_content;
             } else {
                 $all_stud_html[$value['id']] = $new_html_content;
@@ -218,7 +220,7 @@ class studentResultController extends Controller
             $html_content = str_replace(htmlspecialchars("<<result_line_4>>"), $result_trust->line4, $html_content);
         }
         $standard_id = $value['standard_id'];
-        $reopen_date = $reopen_full_date = '';
+        $reopen_date = $result_date = $reopen_full_date = '';
 
         $teacher_name = DB::table('class_teacher as ct')
             ->join('tbluser as us', 'ct.teacher_id', '=', 'us.id')
@@ -258,6 +260,8 @@ class studentResultController extends Controller
             $html_content = str_replace(htmlspecialchars("<<principle_sign_value>>"), $principal_sign, $html_content);
             $html_content = str_replace(htmlspecialchars("<<director_sign_value>>"), $director_signatiure, $html_content);
             $reopen_date = date_format(date_create($result_teacher['reopen_date']), 'd-m-Y');
+            $result_date = date_format(date_create($result_teacher['result_date']), 'd-m-Y');
+
         }
         // echo "<pre>";print_r($teacher_sign->teacher_name);exit;
         $date_in_word = "";
@@ -298,6 +302,7 @@ class studentResultController extends Controller
         $html_content = str_replace(htmlspecialchars("<<student_id>>"), strtoupper($value['id']), $html_content);
         $html_content = str_replace(htmlspecialchars("<<student_name_value>>"), strtoupper($value['student_full_name']), $html_content);
         $html_content = str_replace(htmlspecialchars("<<student_first_name>>"), strtoupper($value['student_first_name']), $html_content);
+        $html_content = str_replace(htmlspecialchars("<<student_middle_name>>"), strtoupper($value['student_middle_name']), $html_content);
         $html_content = str_replace(htmlspecialchars("<<student_last_name>>"), strtoupper($value['student_last_name']), $html_content);
         $html_content = str_replace(htmlspecialchars("<<short_standard_name>>"), strtoupper($value['short_standard_name']), $html_content);
         $html_content = str_replace(htmlspecialchars("<<student_enrollment_value>>"), $value['enrollment_no'], $html_content);
@@ -570,6 +575,7 @@ class studentResultController extends Controller
             $html_content = str_replace(htmlspecialchars("<<result>>"), $main_result['result'], $html_content);
         }
         $html_content = str_replace(htmlspecialchars("<<school_open_date>>"), $reopen_date, $html_content);
+        $html_content = str_replace(htmlspecialchars("<<result_date>>"), $result_date, $html_content);
         // 31-12-2024 start
         if ($reopen_date != '') {
             $convertedDate = Carbon::createFromFormat('d-m-Y', $reopen_date);
@@ -688,7 +694,7 @@ class studentResultController extends Controller
     public function getExamMasterSettigs($standard_id)
     {
         $result = DB::table('result_master_confrigration')
-            ->select('teacher_sign', 'principal_sign', 'director_signatiure')->selectRaw('DATE_FORMAT(reopen_date, "%d-%m-%Y") as reopen_date')
+            ->select('teacher_sign', 'principal_sign', 'director_signatiure')->selectRaw('DATE_FORMAT(reopen_date, "%d-%m-%Y") as reopen_date')->selectRaw('DATE_FORMAT(result_date, "%d-%m-%Y") as result_date')
             ->where('standard_id', $standard_id)
             ->where('sub_institute_id', session()->get('sub_institute_id'))
             ->where('syear', session()->get('syear'))
@@ -701,6 +707,7 @@ class studentResultController extends Controller
                 'principal_sign' => $result->principal_sign,
                 'director_signatiure' => $result->director_signatiure,
                 'reopen_date' => $result->reopen_date,
+                'result_date' => $result->result_date,
             ];
         }
         return $responce;
@@ -3170,6 +3177,7 @@ class studentResultController extends Controller
                 'atd.student_id',
                 DB::raw('SUM(total_working_day) as total_working_day'),
                 DB::raw('SUM(attendance) as attendance'),
+                DB::raw('SUM(working_day) as working_day'),
                 DB::raw("GROUP_CONCAT(atd.teacher_remark SEPARATOR '|') as teacher_remark"),
                 DB::raw('GROUP_CONCAT(atd.term_id) as terms')
             )
@@ -3187,7 +3195,10 @@ class studentResultController extends Controller
         if (!empty($ret_data)) {
             $sim_tr = $ret_data->teacher_remark;
             $sim_att = $ret_data->attendance;
-            $sim_twd = $ret_data->total_working_day;
+            if($sub_institute_id == 76)
+                $sim_twd = $ret_data->working_day;
+            else
+                $sim_twd = $ret_data->total_working_day;
         }
         if ($type == 'simple') {
             $res['remark'] = $sim_tr;
@@ -9012,9 +9023,10 @@ while ($current_date <= $post_end_date) {
 
         if (!empty($groupedExam)) {
             // Step 2: Build table
-            $table = "<table class='aca-year' style='width: 100%;border-collapse:collapse; border:1px solid #e68023;' cellspacing='0' border='1'>";
+            $table = "<div class='box-height'>
+                <table class='aca-year' style='width: 100%;border-collapse:collapse; border:1px solid #e68023;' cellspacing='0' border='1'>";
             $table .= "<thead><tr>";
-            $table .= "<th style='text-align:center !important;'>Subjects</th>";
+            $table .= "<th style='text-align:center !important;'>SUBJECTS</th>";
 
             $totalMarks = $overallTotal = $overallObt = 0;
 
@@ -9052,7 +9064,7 @@ while ($current_date <= $post_end_date) {
                         foreach ($exam_marks as $mark) {
                             if ($mark->create_exam == $exam->id && $mark->subject_id == $subject->subject_id) {
                                 if (in_array($mark->is_absent, ["AB", "N.A.", "EX"])) {
-                                    $obt_marks += $mark->is_absent;
+                                    $obt_marks += 0;//$mark->is_absent
                                     $tot_marks += $exam->points;
                                 } else {
                                     //echo "<pre>";
@@ -9127,14 +9139,16 @@ while ($current_date <= $post_end_date) {
                     $table .= "<td style='text-align:center!important;'><b>-</b></td>";
                 } else 
                 */
-                {
+                if($subject->subject_name == 'ART & CRAFT'){
+                    $table .= "<td style='text-align:center!important;' ".$obtainedTotal."><b>" . Helpers::getMarkGrade($obtainedTotal) . "</b></td>";
+                }else{
                     $table .= "<td style='text-align:center!important;'><b>" . $this->getGrade($grade_arr, $subjectTotal, $obtainedTotal) . "</b></td>";
                 }
-
                 $table .= "</tr>";
             }
 
             $table .= "</tbody></table>";
+            $table .= "</div>";
         }
 
         // Attendance data
@@ -9230,12 +9244,13 @@ while ($current_date <= $post_end_date) {
 
         if (!empty($groupedByExamType)) {
             // Step 2: Build table with two-row header
-            $table = "<table class='aca-year' style='width: 100%;border-collapse:collapse; border:1px solid #e68023;' cellspacing='0' border='1'>";
+            $table = "<div class='box-height'>
+                <table class='aca-year' style='width: 100%;border-collapse:collapse; border:1px solid #e68023;' cellspacing='0' border='1'>";
 
             // First header row - Exam Types
             $table .= "<thead>";
             $table .= "<tr>";
-            $table .= "<th rowspan='2' style='text-align:center !important; vertical-align:middle;'>Subjects</th>";
+            $table .= "<th rowspan='2' style='text-align:center !important; vertical-align:middle;'>SUBJECTS</th>";
 
             $totalMarks = $overallTotal = $overallObt = 0;
             $colspanData = [];
@@ -9317,7 +9332,7 @@ while ($current_date <= $post_end_date) {
                             foreach ($exam_marks as $mark) {
                                 if ($mark->create_exam == $exam->id && $mark->subject_id == $subject->subject_id) {
                                     if (in_array($mark->is_absent, ["AB", "N.A.", "EX"])) {
-                                        $obt_marks += $mark->is_absent;
+                                        $obt_marks += 0;//$mark->is_absent
                                         $tot_marks += $exam->points;
                                     } else {
                                         // Convert marks as per weightage: (obt * weightage) / max_marks
@@ -9409,6 +9424,7 @@ while ($current_date <= $post_end_date) {
             }
 
             $table .= "</tbody></table>";
+            $table .= "</div>";
         }
 
         // Attendance data
@@ -9504,12 +9520,13 @@ while ($current_date <= $post_end_date) {
 
         if (!empty($groupedByExamType)) {
             // Step 2: Build table with two-row header
-            $table = "<table class='aca-year' style='width: 100%;border-collapse:collapse; border:1px solid #e68023;' cellspacing='0' border='1'>";
+            $table = "<div class='box-height'>
+                <table class='aca-year' style='width: 100%;border-collapse:collapse; border:1px solid #e68023;' cellspacing='0' border='1'>";
 
             // First header row - Exam Types
             $table .= "<thead>";
             $table .= "<tr>";
-            $table .= "<th rowspan='2' style='text-align:center !important; vertical-align:middle;'>Subjects</th>";
+            $table .= "<th rowspan='2' style='text-align:center !important; vertical-align:middle;'>SUBJECTS</th>";
 
             $totalMarks = $overallTotal = $overallObt = 0;
             $colspanData = [];
@@ -9622,7 +9639,7 @@ while ($current_date <= $post_end_date) {
                             foreach ($exam_marks as $mark) {
                                 if ($mark->create_exam == $exam->id && $mark->subject_id == $subject->subject_id) {
                                     if (in_array($mark->is_absent, ["AB", "N.A.", "EX"])) {
-                                        $marks = $mark->is_absent;
+                                        $marks = 0;//$mark->is_absent
                                     } else {
                                         // Convert marks as per weightage: (obt * weightage) / max_marks
                                         $marks = number_format(($mark->points * $exam->weightage) / $exam->points, 2);
@@ -9766,7 +9783,7 @@ while ($current_date <= $post_end_date) {
                             foreach ($exam_marks as $mark) {
                                 if ($mark->create_exam == $exam->id && $mark->subject_id == $subject->subject_id) {
                                     if (in_array($mark->is_absent, ["AB", "N.A.", "EX"])) {
-                                        $obt_marks += $mark->is_absent;
+                                        $obt_marks += 0;//$mark->is_absent
                                         $tot_marks += $exam->points;
                                     } else {
                                         $obt_marks += $mark->points;
@@ -9856,6 +9873,7 @@ while ($current_date <= $post_end_date) {
             }
 
             $table .= "</tbody></table>";
+            $table .= "</div>";
         }
 
         // Attendance data
@@ -9937,9 +9955,10 @@ while ($current_date <= $post_end_date) {
 
         if (!empty($groupedExam)) {
             // Step 2: Build table
-            $table = "<table class='aca-year' style='width: 100%;border-collapse:collapse; border:1px solid #e68023;' cellspacing='0' border='1'>";
+            $table = "<div class='box-height'>
+                <table class='aca-year' style='width: 100%;border-collapse:collapse; border:1px solid #e68023;' cellspacing='0' border='1'>";
             $table .= "<thead><tr>";
-            $table .= "<th style='text-align:center !important;' rowspan='2'>Subjects</th>";
+            $table .= "<th style='text-align:center !important;' rowspan='2'>SUBJECTS</th>";
 
             $totalMarks = $overallTotal = $overallObt = 0;
 
@@ -10057,6 +10076,7 @@ while ($current_date <= $post_end_date) {
             }
 
             $table .= "</tbody></table>";
+            $table .= "</div>";
         }
 
         // Attendance data

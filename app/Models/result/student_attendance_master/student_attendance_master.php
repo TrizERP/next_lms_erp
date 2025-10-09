@@ -15,6 +15,7 @@ class student_attendance_master extends Model {
         'syear',
         'student_id',
         'attendance',
+        'working_day',
         'percentage',
         'remark_id',
         'teacher_remark',
