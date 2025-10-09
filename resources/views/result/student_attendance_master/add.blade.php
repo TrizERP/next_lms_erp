@@ -40,8 +40,9 @@
                                 <tr>
                                     <th>No</th>
                                     <th width="20%">Student Name</th>
-                                    <th>Attendance</th>
-                                    <th>Percentage</th>
+                                    <th width="15%">Present Days</th>
+                                    <th width="15%">Working Days</th>
+                                    <!--<th>Percentage</th>-->
                                     <th width="20%">Remark</th>
                                     <th width="40%">Teacher Remark</th>
                                 </tr>
@@ -56,8 +57,13 @@
                                     <input type="hidden" name="values[{{ $col_arr['student_id'] }}][term_id]" value="{{$data['term_id']}}" />
                                     <td>@php echo $id+1; @endphp</td>
                                     <td>@php echo $col_arr['name']; @endphp</td>
-                                    <td><input type="text" class="att" name="values[{{ $col_arr['student_id'] }}][attendance]" style="width: 50%;" value="{{ $col_arr['att'] }}" /> Out Of <lable>{{$col_arr['att_out']}}</lable></td>
-                                    <td> <input type="text" class="at_per" name="values[{{ $col_arr['student_id'] }}][per]" readonly="readonly" style="width: 55%;"  value="{{ $col_arr['per'] }}%" /></td>
+                                    <td><input type="text" class="att" name="values[{{ $col_arr['student_id'] }}][attendance]" style="width: 50%;" value="{{ $col_arr['att'] }}" /> 
+                                        <!--Out Of <lable>{{$col_arr['att_out']}}</lable>-->
+                                    </td>
+                                    <td>
+                                    <input type="text" class="day" name="values[{{ $col_arr['student_id'] }}][working_day]" style="width: 50%;" value="{{ ($col_arr['day'] > 0) ? $col_arr['day'] : $col_arr['att_out'] }}" />
+                                    </td>
+                                    <!--<td> <input type="text" class="at_per" name="values[{{ $col_arr['student_id'] }}][per]" readonly="readonly" style="width: 55%;"  value="{{ $col_arr['per'] }}%" /></td>-->
                                     <td>
                                         <select name="values[{{ $col_arr['student_id'] }}][remark_id]" class="form-control" onchange="set_comment(this, '{{ $col_arr['student_id'] }}');">
                                             <option value="">Select</option>
@@ -113,7 +119,7 @@
     jQuery('.att').on('change', function () {
         var $row = jQuery(this).closest('tr');
         var $att = $row.find('.att').val();
-        var $total_days = $row.find('.total_days').val();
+        var $total_days = $row.find('.day').val();
         var $per = ($att * 100 / $total_days).toFixed(2);
         $row.find('.at_per').val($per + "%");
     });
