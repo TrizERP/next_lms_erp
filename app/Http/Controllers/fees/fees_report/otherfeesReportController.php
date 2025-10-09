@@ -28,23 +28,18 @@ class otherfeesReportController extends Controller
         $res['message'] = "Success";
         $sub_institute_id = $request->session()->get('sub_institute_id');
 
-        // $feesOtherHead_data = fees_title::select("*")
-        // ->where(["sub_institute_id"=>$sub_institute_id])
-        // ->where("other_fee_id",'<>','0')
-        // ->get()
-        // ->toArray();
-
-        // $res['feesOtherHead_data'] = $feesOtherHead_data;
-
         return is_mobile($type, "fees/fees_report/show_other_fees_report", $res, "view");
     }
 
     public function create(Request $request)
     {
         $type = $request->input("type");
-        $grade = $request->input('grade');
-        $standard = $request->input('standard');
-        $division = $request->input('division');
+        
+        // Get arrays for multiple selections (with fallback to empty arrays)
+        $grade = $request->input('grade_id', []);
+        $standard = $request->input('standard_id', []);
+        $division = $request->input('division_id', []);
+        
         $syear = $request->session()->get('syear');
         $sub_institute_id = $request->session()->get('sub_institute_id');
 
@@ -52,23 +47,25 @@ class otherfeesReportController extends Controller
 
         $other_head_title_column = "";
         foreach ($other_fee_title as $key => $val) {
-            //$other_head_title_column .= "sum(fp." . $val->fees_title . ") as sum_" . $val->fees_title . ",";
             $other_head_title_column .= "fp." . $val->fees_title . " as sum_" . $val->fees_title . ",";
         }
 
         $extraSearchArray = array();
         $extraSearchArrayRaw = " fp.is_deleted='N' AND 1=1 ";
 
-        if ($grade != '') {
-            $extraSearchArray['tblstudent_enrollment.grade_id'] = $grade;
+        // Handle multiple grade selection
+        if (!empty($grade)) {
+            $extraSearchArrayRaw .= " AND tblstudent_enrollment.grade_id IN (" . implode(',', array_map('intval', $grade)) . ")";
         }
 
-        if ($standard != '') {
-            $extraSearchArray['tblstudent_enrollment.standard_id'] = $standard;
+        // Handle multiple standard selection
+        if (!empty($standard)) {
+            $extraSearchArrayRaw .= " AND tblstudent_enrollment.standard_id IN (" . implode(',', array_map('intval', $standard)) . ")";
         }
 
-        if ($division != '') {
-            $extraSearchArray['tblstudent_enrollment.section_id'] = $division;
+        // Handle multiple division selection
+        if (!empty($division)) {
+            $extraSearchArrayRaw .= " AND tblstudent_enrollment.section_id IN (" . implode(',', array_map('intval', $division)) . ")";
         }
 
         $extraSearchArray['tblstudent_enrollment.syear'] = $syear;
@@ -84,7 +81,6 @@ class otherfeesReportController extends Controller
             ->join('fees_paid_other as fp', 'fp.student_id', '=', 'tblstudent_enrollment.student_id')
             ->where($extraSearchArray)
             ->whereRaw($extraSearchArrayRaw)
-            //->groupby('tblstudent_enrollment.student_id')
             ->get()
             ->toArray();
 
