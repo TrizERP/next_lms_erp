@@ -163,7 +163,7 @@ class student_attendance_master_controller extends Controller {
      * @return \Illuminate\Http\Response
      */
     public function store(Request $request) {
-        //
+        
         //        echo "<pre>";
         //        print_r($_REQUEST);
         //        exit;
