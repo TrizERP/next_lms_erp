@@ -9140,7 +9140,7 @@ while ($current_date <= $post_end_date) {
                 } else 
                 */
                 if($subject->subject_name == 'ART & CRAFT'){
-                    $table .= "<td style='text-align:center!important;' ".$obtainedTotal."><b>" . Helpers::getMarkGrade($obtainedTotal) . "</b></td>";
+                    $table .= "<td style='text-align:center!important;' ".$obtainedTotal."><b>" . Helpers::getMarkGrade($obtainedTotal,$subjectTotal) . "</b></td>";
                 }else{
                     $table .= "<td style='text-align:center!important;'><b>" . $this->getGrade($grade_arr, $subjectTotal, $obtainedTotal) . "</b></td>";
                 }
@@ -9308,7 +9308,7 @@ while ($current_date <= $post_end_date) {
                 $subjectTotalMarks = 0;
 
 
-                if ($subject->elective_subject != "Yes") {
+                if ($subject->optional_type == 1) {//$subject->elective_subject != "Yes" || 
                     $overallTotal += $totalMarks;
                 }
 
@@ -9362,7 +9362,7 @@ while ($current_date <= $post_end_date) {
                         }
                         // Add Internal Total column for non-Internal exam types
                         if ($hasInternal && $examType != 'Internal') {
-                            if ($subject->elective_subject == "Yes") {
+                            if ($subject->optional_type == 0) {//$subject->elective_subject == "Yes" && 
                                 $table .= "<td style='text-align:center !important;'>-</td>";
                             } else {
                                 $table .= "<td style='text-align:center !important;'>" . round($internalTotal, 0) . "</td>";
@@ -9372,14 +9372,15 @@ while ($current_date <= $post_end_date) {
                         // If we have non-numeric value, display it, otherwise display calculated total
                             if (!is_numeric($examGroupTotal)) {
                                 $table .= "<td style='text-align:center !important;'>" .
-                                 ($subject->elective_subject != "Yes" ? $examGroupTotal : '-') . 
-                                 "</td>";
+                                 ($subject->optional_type == 1 ? $examGroupTotal : '-') . 
+                                 "</td>";//$subject->elective_subject != "Yes"
+
                                 $examTypeTotal = $examGroupTotal;
                                 $examTypeMax += $examGroupMax;
                             } else {
                                 $table .= "<td style='text-align:center !important;'>" . 
-                                ($subject->elective_subject != "Yes" ? round($examGroupTotal, 0) : '-') . 
-                                "</td>";
+                                ($subject->optional_type == 1 ? round($examGroupTotal, 0) : '-') . 
+                                "</td>";//$subject->elective_subject != "Yes"
                                 $examTypeTotal += round($examGroupTotal,0);
                                 $examTypeMax += $examGroupMax;
                                 // Store internal total separately
@@ -9388,8 +9389,6 @@ while ($current_date <= $post_end_date) {
                                 }
                             }
                     }
-
-
 
                     // Add to obtained total (Internal Total + current exam type total)
                     //if ($subject->elective_subject != "Yes" && is_numeric($examTypeTotal)) {
@@ -9401,7 +9400,7 @@ while ($current_date <= $post_end_date) {
                 }
 
                 // Handle total column
-                if ($subject->elective_subject == "Yes") {
+                if ($subject->optional_type == 0) {//$subject->elective_subject == "Yes" && 
                     $table .= "<td style='text-align:center!important;' data-json=" . json_encode(["standard" => $standard_id, "subject" => $subject->subject_id, "obtained_marks" => $obtainedTotal, "obtainedMax" => $obtainedMax]) . "><b>-</b></td>";
                 } else {
                     if (!is_numeric($obtainedTotal)) {
@@ -9413,10 +9412,14 @@ while ($current_date <= $post_end_date) {
                 }
 
                 // Handle grade column
-                /*if ($subject->elective_subject == "Yes" || !is_numeric($obtainedTotal)) {
+                /*
+                if ($subject->elective_subject == "Yes" || !is_numeric($obtainedTotal)) {
                     $table .= "<td style='text-align:center!important;'><b>-</b></td>";
-                } else */
-                {
+                } else
+                */
+                if($subject->subject_name == 'ART & CRAFT'){
+                    $table .= "<td style='text-align:center!important;' ".$obtainedTotal."><b>" . Helpers::getMarkGrade($obtainedTotal,$obtainedMax) . "</b></td>";
+                }else{
                     $table .= "<td style='text-align:center!important;'><b>" . $this->getGrade($grade_arr, $obtainedMax, $obtainedTotal) . "</b></td>";
                 }
 
@@ -9825,7 +9828,8 @@ while ($current_date <= $post_end_date) {
                             if (!is_numeric($examGroupTotal)) {
                                 $table .= "<td style='text-align:center !important;'>" . $examGroupTotal . "</td>";
                             } else {
-                                $table .= "<td style='text-align:center !important;'>" . round($examGroupTotal, 0) . "</td>";
+                                $display = round($examGroupTotal, 0) > 0 ? round($examGroupTotal, 0) : '-';
+                                $table .= "<td style='text-align:center !important;'>" . $display . "</td>";
                                 $examTypeTotal += $examGroupTotal;
                                 $examTypeMax += $examGroupMax;
 
