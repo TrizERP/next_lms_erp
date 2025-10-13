@@ -32,7 +32,7 @@
             @endif
                 <form action="{{ route('other_fees_report.create') }}" enctype="multipart/form-data" class="row">
                     @csrf
-                    {{ App\Helpers\SearchChain('4','multiple','grade,std,div',$grade_id,$standard_id,$division_id) }} //added by vivek 10-10-2025
+                    {{ App\Helpers\SearchChain('4','multiple','grade,std,div',$grade_id,$standard_id,$division_id) }}
 
                     <div class="col-md-12 form-group">
                         <center>
