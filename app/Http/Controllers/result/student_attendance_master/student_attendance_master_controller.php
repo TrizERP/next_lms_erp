@@ -142,8 +142,13 @@ class student_attendance_master_controller extends Controller {
                 $responce_arr['stu_data'][$id]['remark'] = "";
                 $responce_arr['stu_data'][$id]['teacher_remark'] = "";
             }
-            $responce_arr['stu_data'][$id]['att_out'] = $working_day[0]['total_working_day'];
+            //$responce_arr['stu_data'][$id]['att_out'] = $working_day[0]['total_working_day'];
             $responce_arr['stu_data'][$id]['student_id'] = $arr['student_id'];
+            
+    
+            $total_working_day = $working_day[0]['total_working_day'];
+            $responce_arr['stu_data'][$id]['att_out'] = 113; 
+
         }
         //        echo "<pre>";
         //        print_r($responce_arr);

@@ -56,7 +56,11 @@
                                     <input type="hidden" name="values[{{ $col_arr['student_id'] }}][term_id]" value="{{$data['term_id']}}" />
                                     <td>@php echo $id+1; @endphp</td>
                                     <td>@php echo $col_arr['name']; @endphp</td>
-                                    <td><input type="text" class="att" name="values[{{ $col_arr['student_id'] }}][attendance]" style="width: 50%;" value="{{ $col_arr['att'] }}" /> Out Of <lable>{{$col_arr['att_out']}}</lable></td>
+                                    <td>
+                                    <input type="text" class="att" name="values[{{ $col_arr['student_id'] }}][attendance]" style="width: 60%;" value="{{ $col_arr['att'] }}" /> 
+                                        Out Of 
+                                    <input type="text" class="total_days" name="values[{{ $col_arr['student_id'] }}][att_out]" style="width: 60%;" value="{{ $col_arr['att_out'] }}" readonly /></td>
+
                                     <td> <input type="text" class="at_per" name="values[{{ $col_arr['student_id'] }}][per]" readonly="readonly" style="width: 55%;"  value="{{ $col_arr['per'] }}%" /></td>
                                     <td>
                                         <select name="values[{{ $col_arr['student_id'] }}][remark_id]" class="form-control" onchange="set_comment(this, '{{ $col_arr['student_id'] }}');">
