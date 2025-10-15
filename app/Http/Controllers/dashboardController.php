@@ -1168,6 +1168,9 @@ class dashboardController extends Controller
                 ->whereRaw("DATE_FORMAT(receiptdate,'%Y-%m-%d') = '" . $date . "'")->get()->toArray();
             $other_fees_collects = json_decode(json_encode($other_fees_collects), true);
 
+            // check_subject wise or class teacher
+            $typeWaise=DB::table('general_data')->where('sub_institute_id',$sub_institute_id)->where('fieldname','parent_communication')->latest('created_on')->get()->toArray();
+
             if ($user_profile_name == 'Student') {
                 $parentCommunication = DB::table('parent_communication as p')
                     ->join('tblstudent as s', function ($join) {
@@ -1177,13 +1180,46 @@ class dashboardController extends Controller
                     ->whereDate('p.date_', '=', $date)->where('p.sub_institute_id', '=', $sub_institute_id)
                     ->where('s.id', '=', $user_id)->orderBy('p.id', 'DESC')->limit(10)->get()->toArray();
             } else {
-                $parentCommunication = DB::table('parent_communication as p')
-                    ->join('tblstudent as s', function ($join) {
-                        $join->on("p.student_id", "=", "s.id");
-                    })
-                    ->selectRaw("p.*,CONCAT_WS(' ',s.first_name,s.last_name) as student_name,s.image as student_image")
-                    ->whereDate('p.date_', '=', $date)->where('p.sub_institute_id', '=', $sub_institute_id)
-                    ->orderBy('p.id', 'DESC')->limit(10)->get()->toArray();
+                $query = DB::table('parent_communication as p')
+                    ->join('tblstudent as s', 'p.student_id', '=', 's.id')
+                    ->join('tblstudent_enrollment as se', 'se.student_id', '=', 's.id')
+                    ->selectRaw("p.*, CONCAT_WS(' ', s.first_name, s.last_name) AS student_name, s.image AS student_image")
+                    ->whereDate('p.date_', $date)
+                    ->where('p.sub_institute_id', $sub_institute_id);
+
+                if (!empty($typeWaise[0]) && $typeWaise[0]->fieldvalue == "Y") {
+                    $query->where(function ($q) {
+                        $classTeacherStdArr = session()->get('classTeacherStdArr');
+                        $classTeacherDivArr = session()->get('classTeacherDivArr');
+
+                        if (!empty($classTeacherStdArr)) {
+                            $q->whereIn('se.standard_id', $classTeacherStdArr);
+                        }
+
+                        if (!empty($classTeacherDivArr)) {
+                            $q->whereIn('se.section_id', $classTeacherDivArr);
+                        }
+                    });
+                } else {
+                    $query->where(function ($q) {
+                        $subjectTeacherStdArr = session()->get('subjectTeacherStdArr');
+                        $subjectTeacherDivArr = session()->get('subjectTeacherDivArr');
+
+                        if (!empty($subjectTeacherStdArr)) {
+                            $q->whereIn('se.standard_id', $subjectTeacherStdArr);
+                        }
+
+                        if (!empty($subjectTeacherDivArr)) {
+                            $q->whereIn('se.section_id', $subjectTeacherDivArr);
+                        }
+                    });
+                }
+
+                $parentCommunication = $query
+                    ->orderByDesc('p.id')
+                    ->limit(10)
+                    ->get()
+                    ->toArray();
             }
 
 
