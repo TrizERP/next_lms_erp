@@ -11,9 +11,12 @@ use App\Http\Controllers\easy_com\send_sms_parents\send_sms_parents_controller;
 use App\Http\Controllers\easy_com\send_email_parents\send_email_parents_controller;
 use Carbon\Carbon;
 use PHPMailer\PHPMailer;
+use Illuminate\Support\Facades\File;
 
 class admissionRegistrationHillController extends Controller
 {
+    use GetsJwtToken;
+    
     //
     public function index(Request $request)
     {
@@ -132,30 +135,16 @@ class admissionRegistrationHillController extends Controller
                 $i=1;
               }
 
-              // check in admission form 
-            //   $checkFormExists = DB::table('admission_form')->where(["enquiry_id"=>$enquiry_id,"enquiry_no"=>$data['enquiry_no'],'sub_institute_id'=>$sub_institute_id])->first();
+              // Check if transport is "Yes" and send the specific welcome email
+              if(isset($data["transport"]) && $data["transport"] == "Yes" && isset($data['email'])) {
+                  $this->sendTransportWelcomeEmail($data['email'], $created_by, $sub_institute_id, $syear, $data);
+              }
 
-            //   $formArr =[
-            //     "enquiry_id"=> $enquiry_id,
-            //     "enquiry_no"=> $data["enquiry_no"],
-            //     "status"=>'OPEN',
-            //     "followup_date"=>now(),
-            //     'admission_standard'=>$data['admission_standard'],
-            //     'created_by'=>session()->get('user_id'),
-            //     "created_on"=>now(),
-            //   ];
-            //   if(empty($checkFormExists)){
-            //     $formArr['created_on'] = now();
-            //     $forminsert = DB::table('admission_form')->insert($formArr);
-            //     $i=1;
-            //   }else{
-            //     $formupdate = DB::table('admission_form')->where('id',$checkFormExists->id)->update($formArr);
-            //     $i=1;
-            //   }
-              $text = 'Your Admission has been confirmed';
               // send sms 
+              $text = 'Your Admission has been confirmed';
               $sendSmsController = new send_sms_parents_controller;
               $sendSms = $sendSmsController->sendSMS($data['mobile'], $text, $sub_institute_id);
+              
               //send email;
               if(in_array($data['conf'],["C","C/A"]) && isset($condate) && isset($data['admission_standard'])){
                     $nextYear = ((int) substr($syear, 2, 2)+1);
@@ -282,6 +271,33 @@ class admissionRegistrationHillController extends Controller
           }
 
         return is_mobile($type, 'admission_registration_v1.index', $res);
+    }
+
+    /**
+     * Send transport welcome email when transport is set to "Yes"
+     */
+    private function sendTransportWelcomeEmail($email, $created_by, $sub_institute_id, $syear, $studentData)
+    {
+        $nextYear = ((int) substr($syear, 2, 2)+1);
+        
+        $htmlContent = view('admission.registrationHills.transport_welcome', [
+            'student_data' => $studentData,
+            'aca_year' => $syear.'-'.$nextYear,
+        ])->render();
+
+        $emailRequest = new Request([
+            'type' => 'webForm',
+            'teacher_id' => $created_by,
+            'sub_institute_id' => $sub_institute_id,
+            'token' => $_REQUEST['_token'] ?? '',
+            'all_email' => $email,
+            'subject' => 'Welcome to Hills High School - Important Information',
+            'syear' => $syear,
+            'example_subject' => 'Welcome to Hills High School - Important Information',
+            'content' => $htmlContent
+        ]);
+
+        return $this->sendEmail($emailRequest);
     }
 
     public function registrationV1Reoprt(Request $request){
@@ -433,7 +449,9 @@ class admissionRegistrationHillController extends Controller
             $mail->Password = $from_pass;
             $mail->SetFrom($from, $from);
             $mail->AddReplyTo($from, $from);
-            $mail->addAttachment($attechment);
+            if ($attechment != "") {
+                $mail->addAttachment($attechment);
+            }
             $mail->Subject = $subject;
             $mail->Body = $message;
             $mail->AltBody = $message;
