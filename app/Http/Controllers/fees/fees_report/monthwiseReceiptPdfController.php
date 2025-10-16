@@ -20,33 +20,73 @@ class monthwiseReceiptPdfController extends Controller
         return is_mobile($type, "fees/fees_report/monthwiseReceiptPdf", $res, "view");
     }
 
-    public function create(Request $request){
-        $type = $request->input('type');
-        $res['from_date'] = $from_date = $request->from_date;
-        $res['to_date'] = $to_date = $request->to_date;
+    public function create(Request $request)
+{
+    $type = $request->input('type');
+    $res['from_date'] = $from_date = $request->from_date;
+    $res['to_date'] = $to_date = $request->to_date;
+    $res['fees_type'] = $fees_type = $request->input('fees_type'); 
 
-        $sub_institute_id = session()->get('sub_institute_id');
-        $syear = session()->get('syear');
-        // for API 
-        if($type=="API"){
-            $sub_institute_id = $request->sub_institute_id;
-            $syear = $request->syear;
-        }
+    $sub_institute_id = session()->get('sub_institute_id');
+    $syear = session()->get('syear');
 
-        // student fees details 
-        $feesDetails = DB::table('fees_collect as fc')
-                       ->join('tblstudent as s','s.id','=','fc.student_id')  
-                       ->join('tblstudent_enrollment as se','se.student_id','=','fc.student_id')
-                        ->select('fc.*',DB::raw('count(fc.id) as total_records'),DB::raw('concat_ws(" ",COALESCE(s.first_name,"-"),COALESCE(s.middle_name,"-"),COALESCE(s.last_name,"-")) as student_name'),DB::raw('(SELECT name FROM standard where id = fc.standard_id) as standard'),DB::raw('(SELECT name FROM division where id = se.section_id) as division'),)
-                        ->whereBetween('fc.receiptdate',[$from_date,$to_date])
-                        ->where(['fc.sub_institute_id'=>$sub_institute_id,'fc.syear'=>$syear,'fc.is_deleted'=>"N"])
-                        ->whereNull('se.end_date')
-                        ->groupBy('fc.receiptdate','fc.student_id')
-                        ->get()->toArray();
-        // echo "<pre>";print_r($feesDetails);exit;
-        $res['fees_details'] = $feesDetails;
-        return is_mobile($type, "fees/fees_report/monthwiseReceiptPdf", $res, "view");
+    // For API 
+    if ($type == "API") {
+        $sub_institute_id = $request->sub_institute_id;
+        $syear = $request->syear;
     }
+
+    if ($fees_type == 'other') {
+        // Fetch from fees_other_collection
+        $feesDetails = DB::table('fees_other_collection as foc')
+            ->join('tblstudent as s', 's.id', '=', 'foc.student_id')
+            ->join('tblstudent_enrollment as se', 'se.student_id', '=', 'foc.student_id')
+            ->select(
+                'foc.*',
+                DB::raw('count(foc.id) as total_records'),
+                DB::raw('concat_ws(" ", COALESCE(s.first_name,"-"), COALESCE(s.middle_name,"-"), COALESCE(s.last_name,"-")) as student_name'),
+                DB::raw('(SELECT name FROM standard WHERE id = se.standard_id) as standard'),
+                DB::raw('(SELECT name FROM division WHERE id = se.section_id) as division')
+            )
+            ->whereBetween('foc.deduction_date', [$from_date, $to_date])
+            ->where([
+                'foc.sub_institute_id' => $sub_institute_id,
+                'foc.syear' => $syear,
+                'foc.is_deleted' => "N"
+            ])
+            ->whereNull('se.end_date')
+            ->groupBy('foc.id', 'foc.student_id')
+            ->get()
+            ->toArray();
+    } else {
+        // Fetch from fees_collect (Regular Fees)
+        $feesDetails = DB::table('fees_collect as fc')
+            ->join('tblstudent as s', 's.id', '=', 'fc.student_id')
+            ->join('tblstudent_enrollment as se', 'se.student_id', '=', 'fc.student_id')
+            ->select(
+                'fc.*',
+                DB::raw('count(fc.id) as total_records'),
+                DB::raw('concat_ws(" ", COALESCE(s.first_name,"-"), COALESCE(s.middle_name,"-"), COALESCE(s.last_name,"-")) as student_name'),
+                DB::raw('(SELECT name FROM standard WHERE id = fc.standard_id) as standard'),
+                DB::raw('(SELECT name FROM division WHERE id = se.section_id) as division')
+            )
+            ->whereBetween('fc.receiptdate', [$from_date, $to_date])
+            ->where([
+                'fc.sub_institute_id' => $sub_institute_id,
+                'fc.syear' => $syear,
+                'fc.is_deleted' => "N"
+            ])
+            ->whereNull('se.end_date')
+            ->groupBy('fc.receiptdate', 'fc.student_id')
+            ->get()
+            ->toArray();
+    }
+
+    $res['fees_details'] = $feesDetails;
+
+    return is_mobile($type, "fees/fees_report/monthwiseReceiptPdf", $res, "view");
+}
+
 
     public function store(Request $request){
         $type = $request->type;
