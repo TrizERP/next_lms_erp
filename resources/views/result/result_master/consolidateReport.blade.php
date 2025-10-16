@@ -1,5 +1,5 @@
 @extends('layout')
-@section('container')
+@section('container') 
     <div id="page-wrapper">
         <div class="container-fluid">
             <div class="row bg-title">
@@ -22,14 +22,16 @@
             </div>
             @if (isset($data['examMasterWise']))
                 @php
-                    // Calculate total columns for each exam
-                    $examColspans = [];
-                    foreach ($data['examMasterWise'] as $examName => $subjectVal) {
+                    // Calculate total columns for each term
+                    $termColspans = [];
+                    foreach ($data['examMasterWise'] as $termId => $examTitles) {
                         $totalCols = 0;
-                        foreach ($subjectVal as $exams) {
-                            $totalCols += count($exams) + 1; // Add 1 for total column
+                        foreach ($examTitles as $examTitle => $subjects) {
+                            foreach ($subjects as $subjectName => $exams) {
+                                $totalCols += count($exams) + 1; // Add 1 for total column
+                            }
                         }
-                        $examColspans[$examName] = $totalCols;
+                        $termColspans[$termId] = $totalCols;
                     }
                 @endphp
                 <div class="card">
@@ -46,30 +48,51 @@
                                 <table id="example" class="table table-striped text-left">
                                     <thead>
                                         <tr>
-                                            <th rowspan="3">Roll No</th>
-                                            <th rowspan="3">Student Name</th>
-                                            @foreach ($data['examMasterWise'] as $examName => $subjectVal)
-                                                <th style="text-align:center;" colspan="{{ $examColspans[$examName] }}">
-                                                    {{ $examName }}</th>
+                                            <th rowspan="4">Roll No</th>
+                                            <th rowspan="4">Student Name</th>
+                                            @foreach ($data['examMasterWise'] as $termId => $examTitles)
+                                                <th style="text-align:center;" colspan="{{ $termColspans[$termId] }}">
+                                                    {{ $data['termList'][$termId] ?? 'Term ' . $termId }}
+                                                </th>
                                             @endforeach
                                         </tr>
                                         <tr>
-                                            @foreach ($data['examMasterWise'] as $examName => $subjectVal)
-                                                @foreach ($subjectVal as $subjectName => $exams)
-                                                    <th colspan="{{ count($exams) + 1 }}" style="text-align:center;">
-                                                        {{ $subjectName }}</th>
+                                            @foreach ($data['examMasterWise'] as $termId => $examTitles)
+                                                @foreach ($examTitles as $examTitle => $subjects)
+                                                    @php
+                                                        $examColspan = 0;
+                                                        foreach ($subjects as $subjectName => $exams) {
+                                                            $examColspan += count($exams) + 1;
+                                                        }
+                                                    @endphp
+                                                    <th colspan="{{ $examColspan }}" style="text-align:center;">
+                                                        {{ $examTitle }}
+                                                    </th>
                                                 @endforeach
                                             @endforeach
                                         </tr>
                                         <tr>
-                                            @foreach ($data['examMasterWise'] as $examName => $subjectVal)
-                                                @foreach ($subjectVal as $subjectName => $exams)
-                                                    @foreach ($exams as $examsKey => $examsVal)
-                                                        <th style="text-align:center;">{{ $examsKey }}
-                                                            ({{ $examsVal->points }})
+                                            @foreach ($data['examMasterWise'] as $termId => $examTitles)
+                                                @foreach ($examTitles as $examTitle => $subjects)
+                                                    @foreach ($subjects as $subjectName => $exams)
+                                                        <th colspan="{{ count($exams) + 1 }}" style="text-align:center;">
+                                                            {{ $subjectName }}
                                                         </th>
                                                     @endforeach
-                                                    <th style="text-align:center;">Total</th>
+                                                @endforeach
+                                            @endforeach
+                                        </tr>
+                                        <tr>
+                                            @foreach ($data['examMasterWise'] as $termId => $examTitles)
+                                                @foreach ($examTitles as $examTitle => $subjects)
+                                                    @foreach ($subjects as $subjectName => $exams)
+                                                        @foreach ($exams as $notebookName => $examDetails)
+                                                            <th style="text-align:center;">
+                                                                {{ $notebookName }} ({{ $examDetails->points }})
+                                                            </th>
+                                                        @endforeach
+                                                        <th style="text-align:center;">Total</th>
+                                                    @endforeach
                                                 @endforeach
                                             @endforeach
                                         </tr>
@@ -79,29 +102,25 @@
                                             @foreach ($data['studentMarks'] as $stuId => $studentVal)
                                                 <tr>
                                                     <td>{{ $studentVal['roll_no'] }}</td>
-                                                    <td>{{ $studentVal['first_name'] . ' ' . $studentVal['middle_name'] . ' ' . $studentVal['last_name'] }}
-                                                    </td>
-                                                    @foreach ($data['examMasterWise'] as $examName => $subjectVal)
-                                                        @foreach ($subjectVal as $subjectName => $exams)
-                                                            @php
-                                                                $subjectTotal = 0;
-                                                            @endphp
-                                                            @foreach ($exams as $examsKey => $examsVal)
+                                                    <td>{{ $studentVal['first_name'] . ' ' . $studentVal['middle_name'] . ' ' . $studentVal['last_name'] }}</td>
+                                                    
+                                                    @foreach ($data['examMasterWise'] as $termId => $examTitles)
+                                                        @foreach ($examTitles as $examTitle => $subjects)
+                                                            @foreach ($subjects as $subjectName => $exams)
                                                                 @php
-                                                                    $marks =
-                                                                        $studentVal[$examName][$subjectName][$examsKey][
-                                                                            'ob_marks'
-                                                                        ] ?? 0;
-                                                                    $subjectTotal +=
-                                                                        is_numeric($marks) && !is_null($marks)
-                                                                            ? floatval($marks)
-                                                                            : 0;
+                                                                    $subjectTotal = 0;
                                                                 @endphp
-                                                                <td>
-                                                                    {{ $marks }}
-                                                                </td>
+                                                                @foreach ($exams as $notebookName => $examDetails)
+                                                                    @php
+                                                                        $marks = $studentVal['terms'][$termId]['exams'][$examTitle][$subjectName][$notebookName]['ob_marks'] ?? 0;
+                                                                        $subjectTotal += is_numeric($marks) && !is_null($marks) ? floatval($marks) : 0;
+                                                                    @endphp
+                                                                    <td style="text-align:center;">
+                                                                        {{ $marks }}
+                                                                    </td>
+                                                                @endforeach
+                                                                <td style="font-weight: bold; text-align:center;">{{ $subjectTotal }}</td>
                                                             @endforeach
-                                                            <td style="font-weight: bold;">{{ $subjectTotal }}</td>
                                                         @endforeach
                                                     @endforeach
                                                 </tr>
