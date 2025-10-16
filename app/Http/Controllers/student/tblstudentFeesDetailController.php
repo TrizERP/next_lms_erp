@@ -39,51 +39,46 @@ class tblstudentFeesDetailController extends Controller
      * @return Response
      */
     public function store(Request $request)
-    {
-        $sub_institute_id = $request->session()->get('sub_institute_id');
-        $user_id = $request->session()->get('user_id');
-        $syear = $request->session()->get('syear');
-        $type = $request->input('type');
+{
+    $sub_institute_id = $request->session()->get('sub_institute_id');
+    $user_id = $request->session()->get('user_id');
+    $syear = $request->session()->get('syear');
+    $type = $request->input('type');
 
-        //START Insert or Update into Fees Details Table
-        $data = [
-            'student_id'        => $request->get('student_id'),
-            'ac_type'           => $request->get('ac_type'),
-            'ac_holder_name'    => $request->get('ac_holder_name'),
-            'ac_number'         => $request->get('ac_number'),
-            'bank_name'         => $request->get('bank_name'),
-            'bank_branch'       => $request->get('bank_branch'),
-            'ifsc_code'         => $request->get('ifsc_code'),
-            'registration_date' => $request->get('registration_date'),
-            'UMRN'              => $request->get('UMRN'),
-            'closure_date'      => $request->get('date_'),
-            'status'            => $request->get('status'),
-            'reason'            => $request->get('rejected_reason'),
-            'sub_institute_id'  => $sub_institute_id,
-            'created_by'        => $user_id,
-        ];
+    // START Insert or Update into Fees Details Table
+    $data = [
+        'student_id'        => $request->get('student_id'),
+        'ac_type'           => $request->get('ac_type'),
+        'ac_holder_name'    => $request->get('ac_holder_name'),
+        'ac_number'         => $request->get('ac_number'),
+        'bank_name'         => $request->get('bank_name'),
+        'bank_branch'       => $request->get('bank_branch'),
+        'ifsc_code'         => $request->get('ifsc_code'),
+        'registration_date' => $request->get('registration_date'),
+        'UMRN'              => $request->get('UMRN'),
+        'closure_date'      => $request->get('date_'),
+        'status'            => $request->get('status'),
+        'reason'            => $request->get('rejected_reason'),
+        'sub_institute_id'  => $sub_institute_id,
+        'created_by'        => $user_id,
+    ];
 
-        //CHECK for existing record
-        $studentfeesdetails = tblstudentFeesDetailModel::where([
-            'sub_institute_id' => $sub_institute_id,
-            'student_id'       => $request->get('student_id'),
-        ])->get()->toArray();
+    // CHECK for existing record
+    $studentfeesdetails = tblstudentFeesDetailModel::where([
+        'sub_institute_id' => $sub_institute_id,
+        'student_id'       => $request->get('student_id'),
+    ])->get()->toArray();
 
-        if (count($studentfeesdetails) > 0) { // Update
-            $is_registered = '';
-            if ($request->get('ac_number') != $studentfeesdetails[0]['ac_number']) {
-                //BACKUP Old record and update new Account Number
-                $is_registered = 'N';
-                // $insLogSql = "INSERT INTO tblstudent_bank_detail_log
-                // (student_id, ac_holder_name, ac_number, bank_name, bank_branch, ifsc_code, is_registered, created_by, AC_TYPE,UMRN,closure_date,status,reason,created_on,registration_date)
-                // SELECT student_id, ac_holder_name, ac_number, bank_name, bank_branch, ifsc_code, is_registered, '".$user_id."',
-                //     AC_TYPE,UMRN,closure_date,status,reason, created_on,registration_date
-                // FROM tblstudent_bank_detail WHERE student_id = '".$request->get('student_id')."'";
-                // DB::select($insLogSql);
-                $insLogData = DB::table('tblstudent_bank_detail')
+    if (count($studentfeesdetails) > 0) { // Update
+        $is_registered = '';
+        if ($request->get('ac_number') != $studentfeesdetails[0]['ac_number']) {
+            // BACKUP Old record and update new Account Number
+            $is_registered = 'N';
+
+            $insLogData = DB::table('tblstudent_bank_detail')
                 ->where('student_id', $request->input('student_id'))
                 ->get();
-            
+
             if ($insLogData->isNotEmpty()) {
                 $insLogData = $insLogData->first();
                 $insLogId = DB::table('tblstudent_bank_detail_log')->insertGetId([
@@ -103,36 +98,38 @@ class tblstudentFeesDetailController extends Controller
                     'created_on' => $insLogData->created_on,
                     'registration_date' => $insLogData->registration_date,
                 ]);
-            }            
-
             }
-
-            if ($is_registered != '') {
-                $data['is_registered'] = $is_registered;
-            }
-
-            tblstudentFeesDetailModel::where('student_id', $request->get('student_id'))->update($data);
-        } else {
-            tblstudentFeesDetailModel::insert($data);
         }
-        //END Insert or Update into Fees Details Table
 
-        //START Insert or Update into Payment Method Mapping Table 25-09-2024 start
-        $payment_method = $request->get('payment_method');
-        $month_date = $request->get('month_date');
-        $month_remark = $request->get('month_remark');
+        if ($is_registered != '') {
+            $data['is_registered'] = $is_registered;
+        }
 
+        tblstudentFeesDetailModel::where('student_id', $request->get('student_id'))->update($data);
+    } else {
+        tblstudentFeesDetailModel::insert($data);
+    }
+    // END Insert or Update into Fees Details Table
+
+    // START Insert or Update into Payment Method Mapping Table 25-09-2024 start
+    $payment_method = $request->get('payment_method');
+    $month_date = $request->get('month_date');
+    $month_remark = $request->get('month_remark');
+
+    // ✅ FIXED: Run foreach only if payment_method is valid array
+    if (!empty($payment_method) && is_array($payment_method)) {
         foreach ($payment_method as $monthid => $method) {
             // check entries exists or not with month and student_id
             $checkArr = [
-                'sub_institute_id' => $sub_institute_id, 
-                'student_id' => $request->get('student_id'),
-                'month_id'=>$monthid
+                'sub_institute_id' => $sub_institute_id,
+                'student_id'       => $request->get('student_id'),
+                'month_id'         => $monthid
             ];
             $checkData = tblstudentPaymentMethodMappingModel::where($checkArr)->get()->toArray();
+
             // make data array to insert or update
             $remark_value = $date_value = null;
-            if (isset ($month_remark[$monthid]) && $month_remark[$monthid] != "") {
+            if (isset($month_remark[$monthid]) && $month_remark[$monthid] != "") {
                 $remark_value = $month_remark[$monthid];
             }
 
@@ -140,7 +137,7 @@ class tblstudentFeesDetailController extends Controller
                 $date_value = date("Y-m-d", strtotime($month_date[$monthid]));
             }
 
-            $pdata = array(
+            $pdata = [
                 'student_id'       => $request->get('student_id'),
                 'syear'            => $syear,
                 'sub_institute_id' => $sub_institute_id,
@@ -149,29 +146,39 @@ class tblstudentFeesDetailController extends Controller
                 'payment_date'     => $date_value,
                 'remarks'          => $remark_value,
                 'created_by'       => $user_id,
-            );
+            ];
 
             // if data exists then update data into table 
-            if(!empty($checkData)){
+            if (!empty($checkData)) {
                 tblstudentPaymentMethodMappingModel::where([
-                                'student_id'       => $request->get('student_id'),
-                                'sub_institute_id' => $sub_institute_id,
-                                'month_id'         => $monthid,
-                            ])->update($pdata);
+                    'student_id'       => $request->get('student_id'),
+                    'sub_institute_id' => $sub_institute_id,
+                    'month_id'         => $monthid,
+                ])->update($pdata);
             }
             // if data not exists then insert data into table 
-            else{
+            else {
                 tblstudentPaymentMethodMappingModel::insert($pdata);
             }
         }
-        // 25-09-2024 end 
 
-        $res['status_code'] = 1;
-        $res['message'] = "Student Fees Details Successfully Updated.";
-        $res['data'] = $data;
+        // ✅ success message for payment method mapping
+        $payment_message = "Student Updated Successfully";
 
-        return is_mobile($type, "search_student.index", $res);
+    } else {
+        // ✅ skip message if no mapping data found
+        $payment_message = "Student Updated Successfully .";
     }
+    // 25-09-2024 end 
+
+    // ✅ final response
+    $res['status_code'] = 1;
+    $res['message'] = $payment_message;
+    $res['data'] = $data;
+
+    return is_mobile($type, "search_student.index", $res);
+}
+
 
     /**
      * Display the specified resource.
