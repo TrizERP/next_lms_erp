@@ -84,7 +84,7 @@ class student_attendance_master_controller extends Controller {
         $student_data = \App\Helpers\SearchStudent($_REQUEST['grade'], $_REQUEST['standard'],$_REQUEST['division']);
 
         $attendance_data = student_attendance_master::
-                        select('student_id', 'attendance', 'percentage', 'remark_id', 'teacher_remark')
+                        select('student_id', 'attendance', 'working_day', 'percentage', 'remark_id', 'teacher_remark')
                         ->where($where)->get()->toArray();
 
         $working_day = working_day_master::
@@ -133,11 +133,13 @@ class student_attendance_master_controller extends Controller {
             $responce_arr['stu_data'][$id]['name'] = $arr['first_name'] . ' ' . $arr['middle_name'] . ' ' . $arr['last_name'];
             if (count($temp_arr) > 0) {
                 $responce_arr['stu_data'][$id]['att'] = $temp_arr["attendance"];
+                $responce_arr['stu_data'][$id]['day'] = $temp_arr["working_day"];
                 $responce_arr['stu_data'][$id]['per'] = $temp_arr["percentage"];
                 $responce_arr['stu_data'][$id]['remark'] = $temp_arr["remark_id"];
                 $responce_arr['stu_data'][$id]['teacher_remark'] = $temp_arr["teacher_remark"];
             } else {
                 $responce_arr['stu_data'][$id]['att'] = 0;
+                $responce_arr['stu_data'][$id]['day'] = 0;
                 $responce_arr['stu_data'][$id]['per'] = 0;
                 $responce_arr['stu_data'][$id]['remark'] = "";
                 $responce_arr['stu_data'][$id]['teacher_remark'] = "";
@@ -166,11 +168,11 @@ class student_attendance_master_controller extends Controller {
      * @return \Illuminate\Http\Response
      */
     public function store(Request $request) {
-        //
+        
         //        echo "<pre>";
         //        print_r($_REQUEST);
         //        exit;
-        foreach ($_REQUEST['values'] as $student_id => $arr) {
+        /*foreach ($_REQUEST['values'] as $student_id => $arr) {
             student_attendance_master::where([
                 'sub_institute_id' => session()->get('sub_institute_id'),
                 'term_id' => $arr['term_id'],
@@ -178,8 +180,8 @@ class student_attendance_master_controller extends Controller {
                 'syear' => session()->get('syear'),
                 'student_id' => $student_id,
             ])->delete();
-            if ($arr['attendance'] != '' || $arr['remark_id'] != '' || $arr['teacher_remark']) {
-                $arr['per'] = rtrim($arr['per'], '%');
+            if ($arr['attendance'] != '' || $arr['working_day'] != '' || $arr['remark_id'] != '' || $arr['teacher_remark']) {
+                //$arr['per'] = rtrim($arr['per'], '%');
                 $data = new student_attendance_master([
                     'term_id' => $arr['term_id'],
                     'standard' => $arr['standard'],
@@ -187,11 +189,35 @@ class student_attendance_master_controller extends Controller {
                     'syear' => session()->get('syear'),
                     'student_id' => $student_id,
                     'attendance' => $arr['attendance'],
-                    'percentage' => $arr['per'],
+                    'working_day' => $arr['working_day'],
+                    //'percentage' => $arr['per'],
                     'remark_id' => $arr['remark_id'],
                     'teacher_remark' => $arr['teacher_remark']
                 ]);
                 $data->save();
+            }
+        }*/
+        foreach ($_REQUEST['values'] as $student_id => $arr) {
+            // Only proceed if at least one field has a value
+            if (!empty($arr['attendance']) || !empty($arr['working_day']) || !empty($arr['remark_id']) || !empty($arr['teacher_remark'])) {
+
+                student_attendance_master::updateOrCreate(
+                    [
+                        // 🔍 Match existing record (unique identifiers)
+                        'sub_institute_id' => session()->get('sub_institute_id'),
+                        'term_id' => $arr['term_id'],
+                        'standard' => $arr['standard'],
+                        'syear' => session()->get('syear'),
+                        'student_id' => $student_id,
+                    ],
+                    [
+                        // ✏️ Update or insert these fields
+                        'attendance' => $arr['attendance'] ?? 0,
+                        'working_day' => $arr['working_day'] ?? 0,
+                        'remark_id' => $arr['remark_id'] ?? 0,
+                        'teacher_remark' => $arr['teacher_remark'] ?? '',
+                    ]
+                );
             }
         }
         $res = array(

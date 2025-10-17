@@ -4,6 +4,7 @@ namespace App\Http\Controllers\result\new_result;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use App\Traits\Helpers;
 use function App\Helpers\is_mobile;
 use App\Models\result\result_template;
 use function App\Helpers\SearchStudent;
@@ -123,7 +124,8 @@ class studentResultController extends Controller
             $new_html_content = '<div id="' . $value['id'] . '"><div ' . $class . ' style="' . $style . '">' . $this->create_html_content($syear, $sub_institute_id, $html_content, $value, $template, $result_trust, $format, ($srNo)) . '</div></div>';
 
             $new_html .= $new_html_content;
-            if ($sub_institute_id == 47) { // for print sort order
+            $institutes = [47,76,61];
+            if (in_array($sub_institute_id, $institutes)) {
                 $all_stud_html[$value['roll_no']] = $new_html_content;
             } else {
                 $all_stud_html[$value['id']] = $new_html_content;
@@ -218,7 +220,7 @@ class studentResultController extends Controller
             $html_content = str_replace(htmlspecialchars("<<result_line_4>>"), $result_trust->line4, $html_content);
         }
         $standard_id = $value['standard_id'];
-        $reopen_date = $reopen_full_date = '';
+        $reopen_date = $result_date = $reopen_full_date = '';
 
         $teacher_name = DB::table('class_teacher as ct')
             ->join('tbluser as us', 'ct.teacher_id', '=', 'us.id')
@@ -258,6 +260,8 @@ class studentResultController extends Controller
             $html_content = str_replace(htmlspecialchars("<<principle_sign_value>>"), $principal_sign, $html_content);
             $html_content = str_replace(htmlspecialchars("<<director_sign_value>>"), $director_signatiure, $html_content);
             $reopen_date = date_format(date_create($result_teacher['reopen_date']), 'd-m-Y');
+            $result_date = date_format(date_create($result_teacher['result_date']), 'd-m-Y');
+
         }
         // echo "<pre>";print_r($teacher_sign->teacher_name);exit;
         $date_in_word = "";
@@ -298,6 +302,7 @@ class studentResultController extends Controller
         $html_content = str_replace(htmlspecialchars("<<student_id>>"), strtoupper($value['id']), $html_content);
         $html_content = str_replace(htmlspecialchars("<<student_name_value>>"), strtoupper($value['student_full_name']), $html_content);
         $html_content = str_replace(htmlspecialchars("<<student_first_name>>"), strtoupper($value['student_first_name']), $html_content);
+        $html_content = str_replace(htmlspecialchars("<<student_middle_name>>"), strtoupper($value['student_middle_name']), $html_content);
         $html_content = str_replace(htmlspecialchars("<<student_last_name>>"), strtoupper($value['student_last_name']), $html_content);
         $html_content = str_replace(htmlspecialchars("<<short_standard_name>>"), strtoupper($value['short_standard_name']), $html_content);
         $html_content = str_replace(htmlspecialchars("<<student_enrollment_value>>"), $value['enrollment_no'], $html_content);
@@ -570,6 +575,7 @@ class studentResultController extends Controller
             $html_content = str_replace(htmlspecialchars("<<result>>"), $main_result['result'], $html_content);
         }
         $html_content = str_replace(htmlspecialchars("<<school_open_date>>"), $reopen_date, $html_content);
+        $html_content = str_replace(htmlspecialchars("<<result_date>>"), $result_date, $html_content);
         // 31-12-2024 start
         if ($reopen_date != '') {
             $convertedDate = Carbon::createFromFormat('d-m-Y', $reopen_date);
@@ -688,7 +694,7 @@ class studentResultController extends Controller
     public function getExamMasterSettigs($standard_id)
     {
         $result = DB::table('result_master_confrigration')
-            ->select('teacher_sign', 'principal_sign', 'director_signatiure')->selectRaw('DATE_FORMAT(reopen_date, "%d-%m-%Y") as reopen_date')
+            ->select('teacher_sign', 'principal_sign', 'director_signatiure')->selectRaw('DATE_FORMAT(reopen_date, "%d-%m-%Y") as reopen_date')->selectRaw('DATE_FORMAT(result_date, "%d-%m-%Y") as result_date')
             ->where('standard_id', $standard_id)
             ->where('sub_institute_id', session()->get('sub_institute_id'))
             ->where('syear', session()->get('syear'))
@@ -701,6 +707,7 @@ class studentResultController extends Controller
                 'principal_sign' => $result->principal_sign,
                 'director_signatiure' => $result->director_signatiure,
                 'reopen_date' => $result->reopen_date,
+                'result_date' => $result->result_date,
             ];
         }
         return $responce;
@@ -3170,6 +3177,7 @@ class studentResultController extends Controller
                 'atd.student_id',
                 DB::raw('SUM(total_working_day) as total_working_day'),
                 DB::raw('SUM(attendance) as attendance'),
+                DB::raw('SUM(working_day) as working_day'),
                 DB::raw("GROUP_CONCAT(atd.teacher_remark SEPARATOR '|') as teacher_remark"),
                 DB::raw('GROUP_CONCAT(atd.term_id) as terms')
             )
@@ -3187,7 +3195,10 @@ class studentResultController extends Controller
         if (!empty($ret_data)) {
             $sim_tr = $ret_data->teacher_remark;
             $sim_att = $ret_data->attendance;
-            $sim_twd = $ret_data->total_working_day;
+            if($sub_institute_id == 76)
+                $sim_twd = $ret_data->working_day;
+            else
+                $sim_twd = $ret_data->total_working_day;
         }
         if ($type == 'simple') {
             $res['remark'] = $sim_tr;
@@ -9012,9 +9023,10 @@ while ($current_date <= $post_end_date) {
 
         if (!empty($groupedExam)) {
             // Step 2: Build table
-            $table = "<table class='aca-year' style='width: 100%;border-collapse:collapse; border:1px solid #e68023;' cellspacing='0' border='1'>";
+            $table = "<div class='box-height'>
+                <table class='aca-year' style='width: 100%;border-collapse:collapse; border:1px solid #e68023;' cellspacing='0' border='1'>";
             $table .= "<thead><tr>";
-            $table .= "<th style='text-align:center !important;'>Subjects</th>";
+            $table .= "<th style='text-align:center !important;'>SUBJECTS</th>";
 
             $totalMarks = $overallTotal = $overallObt = 0;
 
@@ -9033,7 +9045,7 @@ while ($current_date <= $post_end_date) {
                 $table .= "<tr>";
                 $table .= "<td style='padding-left:16px !important;'>" . $subject->subject_name . "</td>";
 
-                $obtainedTotal = 0;
+                $obtainedTotal = $subjectTotal = 0;
                 if ($subject->elective_subject != "Yes") {
                     $overallTotal += $totalMarks;
                 }
@@ -9042,7 +9054,7 @@ while ($current_date <= $post_end_date) {
                 foreach ($groupedExam as $examTitle => $examGroup) {
                     $examGroupTotal = 0;
                     $examGroupMax = 0;
-
+                    $tot_marks = $obt_marks = 0;
                     // Calculate total for this ExamTitle group
                     foreach ($examGroup['exams'] as $exam) {
                         $marks = 0;
@@ -9052,40 +9064,52 @@ while ($current_date <= $post_end_date) {
                         foreach ($exam_marks as $mark) {
                             if ($mark->create_exam == $exam->id && $mark->subject_id == $subject->subject_id) {
                                 if (in_array($mark->is_absent, ["AB", "N.A.", "EX"])) {
-                                    $marks = $mark->is_absent;
+                                    $obt_marks += 0;//$mark->is_absent
+                                    $tot_marks += $exam->points;
                                 } else {
+                                    //echo "<pre>";
+                                    //print_r($mark);
+                                    //die();
                                     // Convert marks as per weightage: (obt * weightage) / max_marks
-                                    $marks = number_format(($mark->points * $exam->weightage) / $exam->points, 2);
+                                    //$marks = number_format(($mark->points * $exam->weightage) / $exam->points, 2);
+                                    $obt_marks += $mark->points;
+                                    $tot_marks += $exam->points;
                                 }
                                 $found = true;
                                 break;
                             }
                         }
 
+                        /*
                         if (!$found) {
-                            $marks = 0;
+                            $obt_marks = 0;
                         }
+                        */
+                    }
 
-                        // If marks is not numeric (like "AB", "N.A.", etc.), handle accordingly
-                        if (!is_numeric($marks)) {
-                            $examGroupTotal = $marks;
-                            $examGroupMax = $examGroup['total_weightage'];
-                        } else {
-                            $examGroupTotal += $marks;
-                            $examGroupMax += $exam->weightage;
-                        }
+                    // If marks is not numeric (like "AB", "N.A.", etc.), handle accordingly
+                    if (!is_numeric($obt_marks)) {
+                        $examGroupTotal = $obt_marks;
+                        $examGroupMax += $examGroup['total_weightage'];
+                    } else {
+                        $examGroupTotal += ($tot_marks > 0)
+                            ? round(($obt_marks * ($examGroup['total_weightage'] ?? 0)) / $tot_marks, 2)
+                            : 0;
+                        $examGroupMax += ($tot_marks > 0) 
+                            ? $examGroup['total_weightage']
+                            : 0;
                     }
 
                     // Display the calculated marks for this ExamTitle group
                        // If we have non-numeric value, display it, otherwise display calculated total
                         if (!is_numeric($examGroupTotal)) {
-                            $table .= "<td style='text-align:center !important;'>" . 
+                            $table .= "<td style='text-align:center !important;'>". 
                                 ($subject->elective_subject != "Yes" ? $examGroupTotal : '-') . 
                             "</td>";
                             $obtainedTotal = $examGroupTotal; // This will make total show the non-numeric value
                             // Don't add to overallObt since value is non-numeric
                         } else {
-                            $table .= "<td style='text-align:center !important;'>" . 
+                            $table .= "<td style='text-align:center !important;' data-json=" . json_encode(["obt_marks" => $obt_marks, "tot_marks" => $tot_marks,"examGroupTotal" => $examGroupTotal, "examGroupMax" => $examGroupMax]) . ">".
                                 ($subject->elective_subject != "Yes" ? round($examGroupTotal, 0) : '-') . 
                             "</td>";
                             // Initialize $obtainedTotal as numeric if not already
@@ -9093,6 +9117,7 @@ while ($current_date <= $post_end_date) {
                                 $obtainedTotal = 0;
                             }
                             $obtainedTotal += floatval($examGroupTotal);
+                            $subjectTotal += floatval($examGroupMax);
                             $overallObt += ((($subject->elective_subject ?? '') != "Yes") ? floatval($examGroupTotal) : 0);
 
                         }
@@ -9100,12 +9125,12 @@ while ($current_date <= $post_end_date) {
 
                 // Handle total column
                 if ($subject->elective_subject == "Yes") {
-                    $table .= "<td style='text-align:center!important;' data-json=" . json_encode(["standard" => $standard_id, "subject" => $subject->subject_id, "obtained_marks" => $obtainedTotal, "totalMarks" => $totalMarks]) . "><b>-</b></td>";
+                    $table .= "<td style='text-align:center!important;' data-json=" . json_encode(["standard" => $standard_id, "subject" => $subject->subject_id, "obtained_marks" => $obtainedTotal, "subjectTotal" => $subjectTotal]) . "><b>-</b></td>";
                 } else {
                     if (!is_numeric($obtainedTotal)) {
-                        $table .= "<td style='text-align:center!important;' data-json=" . json_encode(["standard" => $standard_id, "subject" => $subject->subject_id, "obtained_marks" => $obtainedTotal, "totalMarks" => $totalMarks]) . "><b>" . $obtainedTotal . "</b></td>";
+                        $table .= "<td style='text-align:center!important;' data-json=" . json_encode(["standard" => $standard_id, "subject" => $subject->subject_id, "obtained_marks" => $obtainedTotal, "subjectTotal" => $subjectTotal]) . "><b>" . $obtainedTotal . "</b></td>";
                     } else {
-                        $table .= "<td style='text-align:center!important;' data-json=" . json_encode(["standard" => $standard_id, "subject" => $subject->subject_id, "obtained_marks" => $obtainedTotal, "totalMarks" => $totalMarks]) . "><b>" . round($obtainedTotal, 0) . "</b></td>";
+                        $table .= "<td style='text-align:center!important;' data-json=" . json_encode(["standard" => $standard_id, "subject" => $subject->subject_id, "obtained_marks" => $obtainedTotal, "subjectTotal" => $subjectTotal]) . "><b>" . round($obtainedTotal, 0) . "</b></td>";
                     }
                 }
 
@@ -9114,14 +9139,16 @@ while ($current_date <= $post_end_date) {
                     $table .= "<td style='text-align:center!important;'><b>-</b></td>";
                 } else 
                 */
-                {
-                    $table .= "<td style='text-align:center!important;'><b>" . $this->getGrade($grade_arr, $totalMarks, $obtainedTotal) . "</b></td>";
+                if($subject->subject_name == 'ART & CRAFT'){
+                    $table .= "<td style='text-align:center!important;' ".$obtainedTotal."><b>" . Helpers::getMarkGrade($obtainedTotal,$subjectTotal) . "</b></td>";
+                }else{
+                    $table .= "<td style='text-align:center!important;'><b>" . $this->getGrade($grade_arr, $subjectTotal, $obtainedTotal) . "</b></td>";
                 }
-
                 $table .= "</tr>";
             }
 
             $table .= "</tbody></table>";
+            $table .= "</div>";
         }
 
         // Attendance data
@@ -9217,12 +9244,13 @@ while ($current_date <= $post_end_date) {
 
         if (!empty($groupedByExamType)) {
             // Step 2: Build table with two-row header
-            $table = "<table class='aca-year' style='width: 100%;border-collapse:collapse; border:1px solid #e68023;' cellspacing='0' border='1'>";
+            $table = "<div class='box-height'>
+                <table class='aca-year' style='width: 100%;border-collapse:collapse; border:1px solid #e68023;' cellspacing='0' border='1'>";
 
             // First header row - Exam Types
             $table .= "<thead>";
             $table .= "<tr>";
-            $table .= "<th rowspan='2' style='text-align:center !important; vertical-align:middle;'>Subjects</th>";
+            $table .= "<th rowspan='2' style='text-align:center !important; vertical-align:middle;'>SUBJECTS</th>";
 
             $totalMarks = $overallTotal = $overallObt = 0;
             $colspanData = [];
@@ -9262,7 +9290,7 @@ while ($current_date <= $post_end_date) {
 
                     // Add "Internal Total" column for non-Internal exam types if Internal exists
                     if ($hasInternal && $examType != 'Internal') {
-                        $table .= "<th style='text-align:center !important;'>Internal Total <br> (" . $inTotal . ")</th>";
+                        $table .= "<th style='text-align:center !important;'>Internal <br> (" . $inTotal . ")</th>";
                     }
 
                     $table .= "<th style='text-align:center !important;'>" . $examGroup['title'] . "<br>(" . $examGroup['total_weightage'] . ")</th>";
@@ -9275,27 +9303,25 @@ while ($current_date <= $post_end_date) {
                 $table .= "<tr>";
                 $table .= "<td style='padding-left:16px !important;'>" . $subject->subject_name . "</td>";
 
-                $obtainedTotal = 0;
+                $obtainedTotal = $obtainedMax = 0;
                 $internalTotal = 0;
                 $subjectTotalMarks = 0;
 
-                // Calculate subject total marks
-                // foreach ($groupedByExamType as $examType => $examData) {
-                //     $subjectTotalMarks += $examData['total_weightage'];
-                // }
 
-                if ($subject->elective_subject != "Yes") {
+                if ($subject->optional_type == 1) {//$subject->elective_subject != "Yes" || 
                     $overallTotal += $totalMarks;
                 }
-                $subjectTotalMarks = $totalMarks;
 
                 // For each exam type and exam title
                 foreach ($groupedByExamType as $examType => $examData) {
                     $examTitles = $examData['examTitles'];
                     $examTypeTotal = 0;
+                    $examTypeMax = 0;
 
                     foreach ($examTitles as $examTitle => $examGroup) {
                         $examGroupTotal = 0;
+                        $examGroupMax = 0;
+                        $tot_marks = $obt_marks = 0;
 
                         // Calculate total for this ExamTitle group
                         foreach ($examGroup['exams'] as $exam) {
@@ -9306,30 +9332,37 @@ while ($current_date <= $post_end_date) {
                             foreach ($exam_marks as $mark) {
                                 if ($mark->create_exam == $exam->id && $mark->subject_id == $subject->subject_id) {
                                     if (in_array($mark->is_absent, ["AB", "N.A.", "EX"])) {
-                                        $marks = $mark->is_absent;
+                                        $obt_marks += 0;//$mark->is_absent
+                                        $tot_marks += $exam->points;
                                     } else {
                                         // Convert marks as per weightage: (obt * weightage) / max_marks
-                                        $marks = number_format(($mark->points * $exam->weightage) / $exam->points, 2);
+                                        $obt_marks += $mark->points;
+                                        $tot_marks += $exam->points;
                                     }
                                     $found = true;
                                     break;
                                 }
                             }
 
-                            if (!$found) {
+                            /*if (!$found) {
                                 $marks = 0;
-                            }
-
-                            // If marks is not numeric (like "AB", "N.A.", etc.), handle accordingly
-                            if (!is_numeric($marks)) {
-                                $examGroupTotal = $marks;
-                            } else {
-                                $examGroupTotal += $marks;
-                            }
+                            }*/
+                        }
+                        // If marks is not numeric (like "AB", "N.A.", etc.), handle accordingly
+                        if (!is_numeric($obt_marks)) {
+                            $examGroupTotal = $obt_marks;
+                            $examGroupMax += $examGroup['total_weightage'];
+                        } else {
+                            $examGroupTotal += ($tot_marks > 0)
+                                ? round(($obt_marks * ($examGroup['total_weightage'] ?? 0)) / $tot_marks, 2)
+                                : 0;
+                            $examGroupMax += ($tot_marks > 0) 
+                                ? $examGroup['total_weightage']
+                                : 0;
                         }
                         // Add Internal Total column for non-Internal exam types
                         if ($hasInternal && $examType != 'Internal') {
-                            if ($subject->elective_subject == "Yes") {
+                            if ($subject->optional_type == 0) {//$subject->elective_subject == "Yes" && 
                                 $table .= "<td style='text-align:center !important;'>-</td>";
                             } else {
                                 $table .= "<td style='text-align:center !important;'>" . round($internalTotal, 0) . "</td>";
@@ -9339,15 +9372,17 @@ while ($current_date <= $post_end_date) {
                         // If we have non-numeric value, display it, otherwise display calculated total
                             if (!is_numeric($examGroupTotal)) {
                                 $table .= "<td style='text-align:center !important;'>" .
-                                 ($subject->elective_subject != "Yes" ? $examGroupTotal : '-') . 
-                                 "</td>";
-                                 $examTypeTotal = $examGroupTotal;
+                                 ($subject->optional_type == 1 ? $examGroupTotal : '-') . 
+                                 "</td>";//$subject->elective_subject != "Yes"
+
+                                $examTypeTotal = $examGroupTotal;
+                                $examTypeMax += $examGroupMax;
                             } else {
                                 $table .= "<td style='text-align:center !important;'>" . 
-                                ($subject->elective_subject != "Yes" ? round($examGroupTotal, 0) : '-') . 
-                                "</td>";
+                                ($subject->optional_type == 1 ? round($examGroupTotal, 0) : '-') . 
+                                "</td>";//$subject->elective_subject != "Yes"
                                 $examTypeTotal += round($examGroupTotal,0);
-
+                                $examTypeMax += $examGroupMax;
                                 // Store internal total separately
                                 if ($examType == 'Internal') {
                                     $internalTotal += round($examGroupTotal,0);
@@ -9355,40 +9390,44 @@ while ($current_date <= $post_end_date) {
                             }
                     }
 
-
-
                     // Add to obtained total (Internal Total + current exam type total)
                     //if ($subject->elective_subject != "Yes" && is_numeric($examTypeTotal)) {
                         // if ($examType != 'Internal') {
                         $obtainedTotal += $examTypeTotal;
+                        $obtainedMax += $examTypeMax;
                         // } 
                     //}
                 }
 
                 // Handle total column
-                if ($subject->elective_subject == "Yes") {
-                    $table .= "<td style='text-align:center!important;' data-json=" . json_encode(["standard" => $standard_id, "subject" => $subject->subject_id, "obtained_marks" => $obtainedTotal, "subjectTotalMarks" => $subjectTotalMarks]) . "><b>-</b></td>";
+                if ($subject->optional_type == 0) {//$subject->elective_subject == "Yes" && 
+                    $table .= "<td style='text-align:center!important;' data-json=" . json_encode(["standard" => $standard_id, "subject" => $subject->subject_id, "obtained_marks" => $obtainedTotal, "obtainedMax" => $obtainedMax]) . "><b>-</b></td>";
                 } else {
                     if (!is_numeric($obtainedTotal)) {
-                        $table .= "<td style='text-align:center!important;' data-json=" . json_encode(["standard" => $standard_id, "subject" => $subject->subject_id, "obtained_marks" => $obtainedTotal, "subjectTotalMarks" => $subjectTotalMarks]) . "><b>" . $obtainedTotal . "</b></td>";
+                        $table .= "<td style='text-align:center!important;' data-json=" . json_encode(["standard" => $standard_id, "subject" => $subject->subject_id, "obtained_marks" => $obtainedTotal, "obtainedMax" => $obtainedMax]) . "><b>" . $obtainedTotal . "</b></td>";
                     } else {
-                        $table .= "<td style='text-align:center!important;' data-json=" . json_encode(["standard" => $standard_id, "subject" => $subject->subject_id, "obtained_marks" => $obtainedTotal, "subjectTotalMarks" => $subjectTotalMarks]) . "><b>" . round($obtainedTotal, 0) . "</b></td>";
+                        $table .= "<td style='text-align:center!important;' data-json=" . json_encode(["standard" => $standard_id, "subject" => $subject->subject_id, "obtained_marks" => $obtainedTotal, "obtainedMax" => $obtainedMax]) . "><b>" . round($obtainedTotal, 0) . "</b></td>";
                         $overallObt += $obtainedTotal;
                     }
                 }
 
                 // Handle grade column
-                /*if ($subject->elective_subject == "Yes" || !is_numeric($obtainedTotal)) {
+                /*
+                if ($subject->elective_subject == "Yes" || !is_numeric($obtainedTotal)) {
                     $table .= "<td style='text-align:center!important;'><b>-</b></td>";
-                } else */
-                {
-                    $table .= "<td style='text-align:center!important;'><b>" . $this->getGrade($grade_arr, $subjectTotalMarks, $obtainedTotal) . "</b></td>";
+                } else
+                */
+                if($subject->subject_name == 'ART & CRAFT'){
+                    $table .= "<td style='text-align:center!important;' ".$obtainedTotal."><b>" . Helpers::getMarkGrade($obtainedTotal,$obtainedMax) . "</b></td>";
+                }else{
+                    $table .= "<td style='text-align:center!important;'><b>" . $this->getGrade($grade_arr, $obtainedMax, $obtainedTotal) . "</b></td>";
                 }
 
                 $table .= "</tr>";
             }
 
             $table .= "</tbody></table>";
+            $table .= "</div>";
         }
 
         // Attendance data
@@ -9484,20 +9523,25 @@ while ($current_date <= $post_end_date) {
 
         if (!empty($groupedByExamType)) {
             // Step 2: Build table with two-row header
-            $table = "<table class='aca-year' style='width: 100%;border-collapse:collapse; border:1px solid #e68023;' cellspacing='0' border='1'>";
+            $table = "<div class='box-height'>
+                <table class='aca-year' style='width: 100%;border-collapse:collapse; border:1px solid #e68023;' cellspacing='0' border='1'>";
 
             // First header row - Exam Types
             $table .= "<thead>";
             $table .= "<tr>";
-            $table .= "<th rowspan='2' style='text-align:center !important; vertical-align:middle;'>Subjects</th>";
+            $table .= "<th rowspan='2' style='text-align:center !important; vertical-align:middle;'>SUBJECTS</th>";
 
             $totalMarks = $overallTotal = $overallObt = 0;
             $colspanData = [];
 
             // Calculate colspans for each exam type
             $hasInternal = isset($groupedByExamType['Internal']);
+
             foreach ($groupedByExamType as $examType => $examData) {
-                $colspan = count($examData['examTitles']);
+                //$colspan = count($examData['examTitles']);
+                $colspan = count(array_filter($examData['examTitles'], function($key) {
+                    return $key !== 'Internal';
+                }, ARRAY_FILTER_USE_KEY));
 
                 // Add extra column to non-internal exam types if internal exists
                 if ($hasInternal && $examType != 'Internal') {
@@ -9506,7 +9550,10 @@ while ($current_date <= $post_end_date) {
 
                 $table .= "<th colspan='" . $colspan . "' style='text-align:center !important;'>" . $examType . "</th>";
                 $colspanData[$examType] = $colspan;
-                $examTitles = $examData['examTitles'];
+                //$examTitles = $examData['examTitles'];
+                $examTitles = array_filter($examData['examTitles'], function($key) {
+                    return $key !== 'Internal';
+                }, ARRAY_FILTER_USE_KEY);
                 foreach ($examTitles as $examTitle => $examGroup) {
                     $totalMarks += $examGroup['total_weightage'];
                 }
@@ -9522,7 +9569,10 @@ while ($current_date <= $post_end_date) {
             $internalTotalAdded = false; // Flag to track if Internal Total has been added
 
             foreach ($groupedByExamType as $examType => $examData) {
-                $examTitles = $examData['examTitles'];
+                //$examTitles = $examData['examTitles'];
+                $examTitles = array_filter($examData['examTitles'], function($key) {
+                    return $key !== 'Internal';
+                }, ARRAY_FILTER_USE_KEY);
 
                 foreach ($examTitles as $examTitle => $examGroup) {
                     if ($examType == "Internal") {
@@ -9532,11 +9582,12 @@ while ($current_date <= $post_end_date) {
                     // Add "Internal Total" column for non-Internal exam types if Internal exists
                     // But only add it once - before the first exam title of non-Internal exam types
                     if ($hasInternal && $examType != 'Internal' && !$internalTotalAdded) {
-                        $table .= "<th style='text-align:center !important;'>Internal Total <br> (" . $inTotal . ")</th>";
+                        $table .= "<th style='text-align:center !important;'>Internal <br> (" . $inTotal . ")</th>";
                         $internalTotalAdded = true; // Set flag to true so it's only added once
                     }
 
-                    $table .= "<th style='text-align:center !important;'>" . $examGroup['title'] . "<br>(" . $examGroup['total_weightage'] . ")</th>";
+                    if($examGroup['title'] != 'Internal')
+                        $table .= "<th style='text-align:center !important;'>" . $examGroup['title'] . "<br>(" . $examGroup['total_weightage'] . ")</th>";
                 }
             }
             $table .= "</tr></thead><tbody>";
@@ -9562,17 +9613,21 @@ while ($current_date <= $post_end_date) {
                 $internalTotal = 0;
                 $subjectTotalMarks = 0;
 
-                if ($subject->elective_subject != "Yes") {
+                //if ($subject->elective_subject != "Yes") {
                     $overallTotal += $totalMarks;
                     $subjectTotalMarks = $totalMarks;
-                }
+                //}
 
                 // Reset flag for each subject row
                 $internalTotalCellAdded = false;
 
                 // For each exam type and exam title
                 foreach ($groupedByExamType as $examType => $examData) {
-                    $examTitles = $examData['examTitles'];
+                    //$examTitles = $examData['examTitles'];
+                    $examTitles = array_filter($examData['examTitles'], function($key) {
+                    return $key !== 'Internal';
+                    }, ARRAY_FILTER_USE_KEY);
+
                     $examTypeTotal = 0;
 
                     foreach ($examTitles as $examTitle => $examGroup) {
@@ -9587,7 +9642,7 @@ while ($current_date <= $post_end_date) {
                             foreach ($exam_marks as $mark) {
                                 if ($mark->create_exam == $exam->id && $mark->subject_id == $subject->subject_id) {
                                     if (in_array($mark->is_absent, ["AB", "N.A.", "EX"])) {
-                                        $marks = $mark->is_absent;
+                                        $marks = 0;//$mark->is_absent
                                     } else {
                                         // Convert marks as per weightage: (obt * weightage) / max_marks
                                         $marks = number_format(($mark->points * $exam->weightage) / $exam->points, 2);
@@ -9612,18 +9667,24 @@ while ($current_date <= $post_end_date) {
                         // Add Internal Total column for non-Internal exam types
                         // But only add it once - before the first exam title of non-Internal exam types
                         if ($hasInternal && $examType != 'Internal' && !$internalTotalCellAdded) {
+                            /*
                             if ($subject->elective_subject == "Yes") {
                                 $table .= "<td style='text-align:center !important;'>-</td>";
-                            } else {
+                            } else
+                            */
+                            {
                                 $table .= "<td style='text-align:center !important;'>" . round($internalTotal, 0) . "</td>";
                             }
                             $internalTotalCellAdded = true; // Set flag to true so it's only added once
                         }
 
                         // Display the calculated marks for this ExamTitle group
+                        /*
                         if ($subject->elective_subject == "Yes") {
                             $table .= "<td style='text-align:center !important;'>-</td>";
-                        } else {
+                        } else
+                        */
+                        {
                             // If we have non-numeric value, display it, otherwise display calculated total
                             if (!is_numeric($examGroupTotal)) {
                                 $table .= "<td style='text-align:center !important;'>" . $examGroupTotal . "</td>";
@@ -9640,15 +9701,19 @@ while ($current_date <= $post_end_date) {
                     }
 
                     // Add to obtained total (Internal Total + current exam type total)
-                    if ($subject->elective_subject != "Yes" && is_numeric($examTypeTotal)) {
-                        $obtainedTotal += $examTypeTotal;
+                    //if ($subject->elective_subject != "Yes" && is_numeric($examTypeTotal)) 
+                    {
+                        $obtainedTotal += round($examTypeTotal,0);
                     }
                 }
 
                 // Handle total column
+                /*
                 if ($subject->elective_subject == "Yes") {
                     $table .= "<td style='text-align:center!important;' data-json=" . json_encode(["standard" => $standard_id, "subject" => $subject->subject_id, "obtained_marks" => $obtainedTotal]) . "><b>-</b></td>";
-                } else {
+                } else 
+                */
+                {
                     if (!is_numeric($obtainedTotal)) {
                         $table .= "<td style='text-align:center!important;' data-json=" . json_encode(["standard" => $standard_id, "subject" => $subject->subject_id, "obtained_marks" => $obtainedTotal]) . "><b>" . $obtainedTotal . "</b></td>";
                     } else {
@@ -9658,9 +9723,11 @@ while ($current_date <= $post_end_date) {
                 }
 
                 // Handle grade column
-                if ($subject->elective_subject == "Yes" || !is_numeric($obtainedTotal)) {
+                /*if ($subject->elective_subject == "Yes" || !is_numeric($obtainedTotal)) {
                     $table .= "<td style='text-align:center!important;'><b>-</b></td>";
-                } else {
+                } else 
+                */
+                {
                     $table .= "<td style='text-align:center!important;'><b>" . $this->getGrade($grade_arr, $subjectTotalMarks, $obtainedTotal) . "</b></td>";
                 }
 
@@ -9668,10 +9735,10 @@ while ($current_date <= $post_end_date) {
             }
 
             // Add "ADDITIONAL SUBJECT" row before INFORMATION TECHNOLOGY
-            if ($it_subject) {
+            if ($it_subject->subject_name == "INFORMATION TECHNOLOGY") {
                 // Calculate total colspan for "ADDITIONAL SUBJECT" header
                 // Count total columns in the table: Subject column + all exam columns + Total column + Grade column
-                $additionalSubjectColspan = 1; // Start with 1 for Subject column
+                $additionalSubjectColspan = 0; // Start with 1 for Subject column
 
                 foreach ($groupedByExamType as $examType => $examData) {
                     $colspan = count($examData['examTitles']);
@@ -9695,12 +9762,7 @@ while ($current_date <= $post_end_date) {
 
                 $obtainedTotal = 0;
                 $internalTotal = 0;
-                $subjectTotalMarks = 0;
-
-                if ($subject->elective_subject != "Yes") {
-                    $overallTotal += $totalMarks;
-                    $subjectTotalMarks = $totalMarks;
-                }
+                $subjectTotal = 0;
 
                 // Reset flag for IT subject row
                 $internalTotalCellAdded = false;
@@ -9709,10 +9771,12 @@ while ($current_date <= $post_end_date) {
                 foreach ($groupedByExamType as $examType => $examData) {
                     $examTitles = $examData['examTitles'];
                     $examTypeTotal = 0;
+                    $examTypeMax = 0;
 
                     foreach ($examTitles as $examTitle => $examGroup) {
                         $examGroupTotal = 0;
-
+                        $examGroupMax = 0;
+                        $tot_marks = $obt_marks = 0;
                         // Calculate total for this ExamTitle group
                         foreach ($examGroup['exams'] as $exam) {
                             $marks = 0;
@@ -9722,49 +9786,52 @@ while ($current_date <= $post_end_date) {
                             foreach ($exam_marks as $mark) {
                                 if ($mark->create_exam == $exam->id && $mark->subject_id == $subject->subject_id) {
                                     if (in_array($mark->is_absent, ["AB", "N.A.", "EX"])) {
-                                        $marks = $mark->is_absent;
+                                        $obt_marks += 0;//$mark->is_absent
+                                        $tot_marks += $exam->points;
                                     } else {
-                                        // Convert marks as per weightage: (obt * weightage) / max_marks
-                                        $marks = number_format(($mark->points * $exam->weightage) / $exam->points, 2);
+                                        $obt_marks += $mark->points;
+                                        $tot_marks += $exam->points;
                                     }
                                     $found = true;
                                     break;
                                 }
                             }
+                        }
 
-                            if (!$found) {
-                                $marks = 0;
-                            }
-
-                            // If marks is not numeric (like "AB", "N.A.", etc.), handle accordingly
-                            if (!is_numeric($marks)) {
-                                $examGroupTotal = $marks;
-                            } else {
-                                $examGroupTotal += $marks;
-                            }
+                        if (!is_numeric($obt_marks)) {
+                            $examGroupTotal = $obt_marks;
+                            $examGroupMax += $tot_marks;
+                        } else {
+                            $examGroupTotal += ($tot_marks > 0)
+                                ? round($obt_marks, 2)
+                                : 0;
+                            $examGroupMax += $tot_marks;
                         }
 
                         // Add Internal Total column for non-Internal exam types
                         // But only add it once - before the first exam title of non-Internal exam types
-                        if ($hasInternal && $examType != 'Internal' && !$internalTotalCellAdded) {
-                            if ($subject->elective_subject == "Yes") {
-                                $table .= "<td style='text-align:center !important;'>-</td>";
-                            } else {
+                        /*if ($hasInternal && !$internalTotalCellAdded) {//&& $examType != 'Internal' 
+                            $internalTotalCellAdded = false; // Set flag to true so it's only added once
+                            {
                                 $table .= "<td style='text-align:center !important;'>" . round($internalTotal, 0) . "</td>";
                             }
-                            $internalTotalCellAdded = true; // Set flag to true so it's only added once
-                        }
+                        }*/
 
                         // Display the calculated marks for this ExamTitle group
+                        /*
                         if ($subject->elective_subject == "Yes") {
                             $table .= "<td style='text-align:center !important;'>-</td>";
-                        } else {
+                        } else 
+                        */
+                        {
                             // If we have non-numeric value, display it, otherwise display calculated total
                             if (!is_numeric($examGroupTotal)) {
                                 $table .= "<td style='text-align:center !important;'>" . $examGroupTotal . "</td>";
                             } else {
-                                $table .= "<td style='text-align:center !important;'>" . round($examGroupTotal, 0) . "</td>";
+                                $display = round($examGroupTotal, 0) > 0 ? round($examGroupTotal, 0) : '-';
+                                $table .= "<td style='text-align:center !important;'>" . $display . "</td>";
                                 $examTypeTotal += $examGroupTotal;
+                                $examTypeMax += $examGroupMax;
 
                                 // Store internal total separately
                                 if ($examType == 'Internal') {
@@ -9775,34 +9842,42 @@ while ($current_date <= $post_end_date) {
                     }
 
                     // Add to obtained total (Internal Total + current exam type total)
-                    if ($subject->elective_subject != "Yes" && is_numeric($examTypeTotal)) {
+                    //if ($subject->elective_subject != "Yes" && is_numeric($examTypeTotal)) 
+                    {
                         $obtainedTotal += $examTypeTotal;
+                        $subjectTotal += $examTypeMax;
                     }
                 }
 
                 // Handle total column
+                /*
                 if ($subject->elective_subject == "Yes") {
                     $table .= "<td style='text-align:center!important;' data-json=" . json_encode(["standard" => $standard_id, "subject" => $subject->subject_id, "obtained_marks" => $obtainedTotal]) . "><b>-</b></td>";
-                } else {
+                } else 
+                */
+                {
                     if (!is_numeric($obtainedTotal)) {
-                        $table .= "<td style='text-align:center!important;' data-json=" . json_encode(["standard" => $standard_id, "subject" => $subject->subject_id, "obtained_marks" => $obtainedTotal]) . "><b>" . $obtainedTotal . "</b></td>";
+                        $table .= "<td style='text-align:center!important;' data-json=" . json_encode(["standard" => $standard_id, "subject" => $subject->subject_id, "obtained_marks" => $obtainedTotal,"subjectTotal" => $subjectTotal]) . "><b>" . $obtainedTotal . "</b></td>";
                     } else {
-                        $table .= "<td style='text-align:center!important;' data-json=" . json_encode(["standard" => $standard_id, "subject" => $subject->subject_id, "obtained_marks" => $obtainedTotal]) . "><b>" . round($obtainedTotal, 0) . "</b></td>";
-                        $overallObt += $obtainedTotal;
+                        $table .= "<td style='text-align:center!important;' data-json=" . json_encode(["standard" => $standard_id, "subject" => $subject->subject_id, "obtained_marks" => $obtainedTotal,"subjectTotal" => $subjectTotal]) . "><b>" . round($obtainedTotal, 0) . "</b></td>";
+                        //$overallObt += $obtainedTotal;
                     }
                 }
 
                 // Handle grade column
-                if ($subject->elective_subject == "Yes" || !is_numeric($obtainedTotal)) {
+                /*if ($subject->elective_subject == "Yes" || !is_numeric($obtainedTotal)) {
                     $table .= "<td style='text-align:center!important;'><b>-</b></td>";
-                } else {
-                    $table .= "<td style='text-align:center!important;'><b>" . $this->getGrade($grade_arr, $subjectTotalMarks, $obtainedTotal) . "</b></td>";
+                } else 
+                */
+                {
+                    $table .= "<td style='text-align:center!important;'><b>" . $this->getGrade($grade_arr, $subjectTotal, $obtainedTotal) . "</b></td>";
                 }
 
                 $table .= "</tr>";
             }
 
             $table .= "</tbody></table>";
+            $table .= "</div>";
         }
 
         // Attendance data
@@ -9884,9 +9959,10 @@ while ($current_date <= $post_end_date) {
 
         if (!empty($groupedExam)) {
             // Step 2: Build table
-            $table = "<table class='aca-year' style='width: 100%;border-collapse:collapse; border:1px solid #e68023;' cellspacing='0' border='1'>";
+            $table = "<div class='box-height'>
+                <table class='aca-year' style='width: 100%;border-collapse:collapse; border:1px solid #e68023;' cellspacing='0' border='1'>";
             $table .= "<thead><tr>";
-            $table .= "<th style='text-align:center !important;' rowspan='2'>Subjects</th>";
+            $table .= "<th style='text-align:center !important;' rowspan='2'>SUBJECTS</th>";
 
             $totalMarks = $overallTotal = $overallObt = 0;
 
@@ -10004,6 +10080,7 @@ while ($current_date <= $post_end_date) {
             }
 
             $table .= "</tbody></table>";
+            $table .= "</div>";
         }
 
         // Attendance data

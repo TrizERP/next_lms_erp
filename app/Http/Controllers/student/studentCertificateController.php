@@ -260,6 +260,12 @@ class studentCertificateController extends Controller
         else
             $display_year = $syear."-".($syear + 1);
 
+        
+        // Also add individual year values if needed
+        $html_content = str_replace(htmlspecialchars("<<previous_syear>>"), ($syear - 1), $html_content);
+        $html_content = str_replace(htmlspecialchars("<<current_syear>>"), $syear, $html_content);
+        $html_content = str_replace(htmlspecialchars("<<next_syear>>"), ($syear + 1), $html_content);
+
         if($sub_institute_id == 254)
             $logo_height = 'style="height: 100px !important;"';
         else
