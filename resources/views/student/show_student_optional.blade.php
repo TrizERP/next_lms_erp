@@ -81,10 +81,10 @@
                     <div class="col-md-4 form-group">
                         <label>Optional Subjects</label>
                         <select class="form-control" name="subjects[]" required="required" multiple>
-                            <option value="">Select Subjects</option>
+                            <!--<option value="">--Select Subjects--</option>-->
                             @if(isset($data['optional_subject_data']))
                                 @foreach ($data['optional_subject_data'] as $subjects)
-                                    <option value="{{ $subjects['subject_id'] }}">{{ $subjects['subject_name'] }}</option>
+                                    <option value="{{ $subjects['subject_id'] }}">{{ $subjects['display_name'] }}</option>
                                 @endforeach
                             @endif                                                                
                         </select>

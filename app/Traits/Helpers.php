@@ -77,5 +77,26 @@ trait Helpers
         }
         return $PT;
     }
+    public static function getMarkGrade($obt,$total)
+    {
+        $mark = round((30*$obt/$total),0);
+        
+        if (!is_numeric($mark) || $mark === null || $mark === '') {
+            $mark = 0; // default value if mark is invalid
+        }
+        
+        //$mark = round(($mark / 2), 0);
 
+        if ($mark >= 25 && $mark <= 30) {
+            return 'A';
+        } elseif ($mark >= 21 && $mark <= 24) {
+            return 'B';
+        } elseif ($mark >= 15 && $mark <= 20) {
+            return 'C';
+        } elseif ($mark >= 10 && $mark <= 14) {
+            return 'D';
+        } else {
+            return 'E';
+        }
+    }
 }

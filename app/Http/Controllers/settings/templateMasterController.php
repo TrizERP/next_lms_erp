@@ -146,6 +146,9 @@ class templateMasterController extends Controller
             // 'receipt_year_value' => 'Educational Year / Session',
             // 'receipt_number_value' => 'Receipt Number',
             // 'receipt_date_value' => 'Receipt Date',
+            'previous_syear' => 'Previous academic year number (e.g., 2023)',
+            'current_syear' => 'Current academic year number (e.g., 2024)',
+            'next_syear' => 'Next academic year number (e.g., 2025)',
             'student_enrollment_value' => 'Student Enrollment Number / GR No.', 
             'student_roll_no_value' => 'Student Roll No.',// added on 05-05-2025
             'student_name_value' => 'Student Name first and last name',
