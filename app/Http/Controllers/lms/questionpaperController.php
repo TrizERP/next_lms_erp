@@ -57,6 +57,7 @@ class questionpaperController extends Controller
                 'student_id' => $student_id, 'syear' => $syear,
             ])->get()->toArray();
 
+        
             if (count($stu_data) > 0) {
 
                 $data['questionpaper_data'] = questionpaperModel::select(
@@ -69,6 +70,7 @@ class questionpaperController extends Controller
                     DB::raw('date_format(close_date, "%Y-%m-%d") as close_date'),
                     DB::raw('if(now() between open_date and close_date, "yes", "no") as active_exam')
                 )
+                
                 ->join('standard', 'standard.id', '=', 'question_paper.standard_id')
                 ->join('tblstudent_enrollment as se', function ($join) use ($student_id, $syear, $sub_institute_id) {
                     $join->on('se.student_id', '=', DB::raw($student_id))
@@ -84,6 +86,7 @@ class questionpaperController extends Controller
                     $join->on('lms_online_exam.question_paper_id', '=', 'question_paper.id')
                         ->on('lms_online_exam.student_id', '=', DB::raw($student_id));
                 })
+                ->whereRaw($sub_institute_id_by_lms)
                 ->where('question_paper.sub_institute_id', $sub_institute_id)
                 ->where('question_paper.syear', $syear)
                 ->where('standard.id', $stu_data[0]['standard_id'])
@@ -118,6 +121,7 @@ class questionpaperController extends Controller
                     //     $query->where('standard.marking_period_id',$marking_period_id);
                     // });
                 })
+                ->whereRaw($sub_institute_id_by_lms)
                 ->join('academic_section', 'academic_section.id', '=', 'question_paper.grade_id')
                 ->join('subject', 'subject.id', '=', 'question_paper.subject_id')
                 ->where('question_paper.sub_institute_id', $sub_institute_id)
@@ -138,6 +142,7 @@ class questionpaperController extends Controller
                     //     $query->where('standard.marking_period_id',$marking_period_id);
                     // });
                 })
+                
                 ->join('academic_section', 'academic_section.id', '=', 'question_paper.grade_id')
                 ->join('subject', 'subject.id', '=', 'question_paper.subject_id')
                 ->where('question_paper.sub_institute_id', $sub_institute_id)
@@ -1029,13 +1034,13 @@ public function search_question($all_data){
 }
     public function ajax_LMS_StandardwiseSubject(Request $request)
     {
-        $std_id = $request->input("std_id");
-        $sub_institute_id = session()->get("sub_institute_id");
-        $user_profile_id = session()->get('user_profile_id');
-        $user_profile_name = session()->get('user_profile_name');
-        $user_id = session()->get('user_id');
+       $std_id = $request->input("std_id");
+    $sub_institute_id = session()->get("sub_institute_id");
+    $user_profile_id = session()->get('user_profile_id');
+    $user_profile_name = session()->get('user_profile_name');
+    $user_id = session()->get('user_id');
 
-        if ($user_profile_name == 'Teacher') {
+    if ($user_profile_name == 'Teacher') {
             $wherecondition = ['t.sub_institute_id' => $sub_institute_id, 't.teacher_id' => $user_id];
             if ($std_id != "") {
                 $wherecondition['t.standard_id'] = $std_id;
@@ -1052,11 +1057,11 @@ public function search_question($all_data){
                 ->orderBy('sst.display_name')
                 ->get()->toArray();
         } else {
-            $stdData = sub_std_mapModel::where(['sub_institute_id' => $sub_institute_id, 'standard_id' => $std_id])
-                ->orderBy('display_name')->get()->toArray();
-        }
+        $stdData = sub_std_mapModel::where(['sub_institute_id' => $sub_institute_id, 'standard_id' => $std_id])
+            ->orderBy('display_name')->get()->toArray();
+    }
 
-        return $stdData;
+    return response()->json($stdData); // Return as JSON
     }
 
     public function ajax_questionpaperDependencies(Request $request)

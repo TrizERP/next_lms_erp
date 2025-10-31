@@ -63,6 +63,24 @@ if (!function_exists('is_mobile')) {
         }
     }
 }
+if (!function_exists('getLmsCondition')) {
+    function getLmsCondition($sub_institute_id, $table_alias = '')
+    {
+        // Get LMS status from school_setup table
+        $getIsLms = DB::table('school_setup')
+            ->where('Id', $sub_institute_id)
+            ->value('is_Lms');
+
+        $table_prefix = $table_alias ? $table_alias . '.' : '';
+        
+        if ($getIsLms == 'Y') {
+            return "(" . $table_prefix . "sub_institute_id = 1 OR " . $table_prefix . "sub_institute_id = " . $sub_institute_id . ")";
+        } else {
+            return $table_prefix . "sub_institute_id = " . $sub_institute_id;
+        }
+    }
+}
+
 if (!function_exists('ValidateInsertData')) {
 
     function ValidateInsertData($table, $type = 'insert')
@@ -133,6 +151,7 @@ if (!function_exists('SearchChain')) {
 
     function SearchChain($col, $multiple, $listed_drop, $grade_val = "", $std_val = "", $div_val = "")
     {
+$sub_institute_id = session()->get('sub_institute_id');
 
         // $path = URL::current();
         // preg_match("/[^\/]+$/", $path, $matches);
@@ -282,7 +301,9 @@ if (!function_exists('SearchChain')) {
         $option = "<option value=''>Select</option>";
 
         $query = DB::table("academic_section");
-        $query->where("sub_institute_id", session()->get('sub_institute_id'));
+       $lms_condition = getLmsCondition($sub_institute_id, 'academic_section');
+        $query->whereRaw($lms_condition);
+
         //START Check for class teacher assigned standards
         $classTeacherGrdArr = session()->get('classTeacherGrdArr');
         if (isset($classTeacherGrdArr) && !in_array($module_name, $module_array)) {
@@ -799,6 +820,8 @@ if (!function_exists('SearchStudent')) {
         );
        
         $query = tblstudentModel::from('tblstudent as ts');
+         $lms_condition = getLmsCondition($sub_institute_id, 'ts');
+         $query->whereRaw($lms_condition);
 
         // $query->when($marking_period_id, function ($join) use ($marking_period_id) {
         //     $join->where('ts.marking_period_id', $marking_period_id);
@@ -1988,6 +2011,7 @@ if (!function_exists('LMSSearchChain')) {
         $standard = DB::table("standard")
             ->where("sub_institute_id", $sub_institute_id)
             ->whereRaw($extra)
+            ->whereRaw(getLmsCondition($sub_institute_id, 'standard')) // LMS condition
             ->pluck("name", "id");
         $std_option .= "<option value=''>Select Standard</option>";
         foreach ($standard as $id => $val) {
@@ -2007,9 +2031,10 @@ if (!function_exists('LMSSearchChain')) {
 
         if ($std_val != "") {
             $subjects = DB::table('sub_std_map')
-                ->join('subject', 'subject.id', '=', 'sub_std_map.subject_id')
-                ->where("sub_std_map.standard_id", $std_val)
-                ->pluck('subject.subject_name', 'subject.id');
+    ->join('subject', 'subject.id', '=', 'sub_std_map.subject_id')
+    ->where("sub_std_map.standard_id", $std_val)
+    ->where("sub_std_map.sub_institute_id", $sub_institute_id) // Direct condition only
+    ->pluck('subject.subject_name', 'subject.id');
 
             $sub_option = "<option value=''>Select Subject</option>";
             foreach ($subjects as $id => $val) {
