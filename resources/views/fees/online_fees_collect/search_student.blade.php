@@ -178,6 +178,12 @@
                                     "/fees/payphi/online_fees_collect";
                                 // console.log(key);
                             }
+
+                            if (value.bank_name == 'hdfcrazorpay') {
+                                document.forms.changeAction.action =
+                                    "/fees/hdfcrazorpay/online_fees_collect";
+                                // console.log(key);
+                            }
                         }
                         if(value.end_date === null){
                             var act = " (Active)";
@@ -245,6 +251,11 @@
                 }
                 if (value.bank_name == 'razorpay') {
                     document.forms.changeAction.action = "/fees/razorpay/online_fees_collect";
+                    // console.log(key);
+                }
+                
+                if (value.bank_name == 'hdfc_razorpay') {
+                    document.forms.changeAction.action = "/fees/hdfcrazorpay/online_fees_collect";
                     // console.log(key);
                 }
 
