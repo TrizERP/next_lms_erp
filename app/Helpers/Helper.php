@@ -2030,20 +2030,24 @@ if (!function_exists('LMSSearchChain')) {
         $topic_option = "";
 
         if ($std_val != "") {
-            $subjects = DB::table('sub_std_map')
-    ->join('subject', 'subject.id', '=', 'sub_std_map.subject_id')
-    ->where("sub_std_map.standard_id", $std_val)
-    ->where("sub_std_map.sub_institute_id", $sub_institute_id) // Direct condition only
-    ->pluck('subject.subject_name', 'subject.id');
+           $subjects = DB::table('sub_std_map')
+                        ->join('subject', 'subject.id', '=', 'sub_std_map.subject_id')
+                        ->where('sub_std_map.standard_id', $std_val)
+                        ->where('sub_std_map.sub_institute_id', $sub_institute_id)
+                        ->whereRaw($extra)
+                        ->whereRaw(getLmsCondition($sub_institute_id, 'subject')) // ✅ FIXED here
+                        ->pluck('subject.subject_name', 'subject.id');
+
 
             $sub_option = "<option value=''>Select Subject</option>";
-            foreach ($subjects as $id => $val) {
-                $selected = '';
-                if ($sub_val == $id) {
-                    $selected = 'selected="selected"';
+            if (count($subjects) > 0) {
+                foreach ($subjects as $id => $val) {
+                    $selected = ($sub_val == $id) ? 'selected="selected"' : '';
+                    $sub_option .= "<option $selected value='$id'>$val</option>";
                 }
-
-                $sub_option .= "<option $selected value=$id>$val</option>";
+                    } else {
+                // Optional fallback if no subjects found
+                $sub_option .= "<option disabled>No subjects available</option>";
             }
         }
 
