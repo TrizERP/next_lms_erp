@@ -10,10 +10,8 @@ use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
 use function App\Helpers\SearchStudent;
 
-
 class result_report_controller extends Controller
 {
-
     use GetsJwtToken;
 
     public function index(Request $request)
@@ -310,9 +308,8 @@ class result_report_controller extends Controller
                 ->where("e.syear", "=", $syear)
                 ->where("e.standard_id", "=", $standard_id)
                 ->where("e.subject_id", "=", $subject)
-                ->where("e.report_card_status", "=", 'Y')
+             
                 ->whereIn("student_id", $student_id_arr);
-                //Rajesh = 18_12_2023 IF((e.con_point IS NULL) OR (e.con_point = ''),e.points,e.con_point) AS total_points
 
             if ($exam_type != '') {
                 $result = $result->where('e.exam_id', $exam_type);
@@ -369,17 +366,7 @@ class result_report_controller extends Controller
             foreach ($all_student as $id => $arr) {
                 $student_id_arr[] = $arr['student_id'];
             }
-            $student_id = implode(',', $student_id_arr);
 
-            /*$str = "SELECT e.title as ExamTitle, IF((e.con_point IS NULL) OR (e.con_point = ''),e.points,e.con_point) AS total_points,
-                e.subject_id,s.display_name as subject_name,date_format(e.exam_date,'%d-%m-%Y') as exam_date,dayname(e.exam_date) as exam_day,rm.student_id,rm.points as obtained_points
-                FROM result_create_exam e
-                INNER JOIN sub_std_map s ON s.subject_id = e.subject_id AND s.sub_institute_id = e.sub_institute_id AND s.standard_id = e.standard_id
-                LEFT JOIN result_marks rm on rm.sub_institute_id = e.sub_institute_id AND rm.exam_id = e.id
-                WHERE e.term_id = '".$term_id."' AND e.sub_institute_id = '".$sub_institute_id."' AND e.syear = '".$syear."'
-                AND e.standard_id = '".$standard_id."' AND e.subject_id = '".$subject."' AND student_id in (".$student_id.") $extra
-                ORDER BY e.title";*/
-                // DB::enableQueryLog();
             $result = DB::table("result_create_exam as e")
                 ->join('sub_std_map as s', function ($join) {
                     $join->whereRaw("s.subject_id = e.subject_id AND s.sub_institute_id = e.sub_institute_id AND s.standard_id = e.standard_id");
@@ -393,7 +380,9 @@ class result_report_controller extends Controller
                 ->where("e.sub_institute_id", "=", $sub_institute_id)
                 ->where("e.syear", "=", $syear)
                 ->where("e.standard_id", "=", $standard_id)
-                ->where("e.report_card_status", "=", 'Y')
+           
+
+
                 //->whereIn("e.subject_id", $additional_subjects)
                 ->whereIn("student_id", $student_id_arr);
 
@@ -411,7 +400,6 @@ class result_report_controller extends Controller
             $result = $result->groupByRaw('rm.student_id,e.subject_id')
                 ->orderBy('e.sort_order')->get()->toarray();
 
-            // dd(DB::getQueryLog($result));
             $result = json_decode(json_encode($result), true);
             $date_arr = [];
 
@@ -455,17 +443,7 @@ class result_report_controller extends Controller
             foreach ($all_student as $id => $arr) {
                 $student_id_arr[] = $arr['student_id'];
             }
-            $student_id = implode(',', $student_id_arr);
 
-            /*$str = "SELECT e.title as ExamTitle, IF((e.con_point IS NULL) OR (e.con_point = ''),e.points,e.con_point) AS total_points,
-                e.subject_id,s.display_name as subject_name,date_format(e.exam_date,'%d-%m-%Y') as exam_date,dayname(e.exam_date) as exam_day,rm.student_id,rm.points as obtained_points
-                FROM result_create_exam e
-                INNER JOIN sub_std_map s ON s.subject_id = e.subject_id AND s.sub_institute_id = e.sub_institute_id AND s.standard_id = e.standard_id
-                LEFT JOIN result_marks rm on rm.sub_institute_id = e.sub_institute_id AND rm.exam_id = e.id
-                WHERE e.term_id = '".$term_id."' AND e.sub_institute_id = '".$sub_institute_id."' AND e.syear = '".$syear."'
-                AND e.standard_id = '".$standard_id."' AND e.subject_id = '".$subject."' AND student_id in (".$student_id.") $extra
-                ORDER BY e.title";*/
-                // DB::enableQueryLog();
             $result = DB::table("result_create_exam as e")
                 ->join('sub_std_map as s', function ($join) {
                     $join->whereRaw("s.subject_id = e.subject_id AND s.sub_institute_id = e.sub_institute_id AND s.standard_id = e.standard_id");
@@ -479,7 +457,7 @@ class result_report_controller extends Controller
                 ->where("e.sub_institute_id", "=", $sub_institute_id)
                 ->where("e.syear", "=", $syear)
                 ->where("e.standard_id", "=", $standard_id)
-                ->where("e.report_card_status", "=", 'Y')
+               
                 //->whereIn("e.subject_id", $additional_subjects)
                 ->whereIn("student_id", $student_id_arr);
 
@@ -497,7 +475,6 @@ class result_report_controller extends Controller
             $result = $result->groupByRaw('rm.student_id,e.subject_id')
                 ->orderBy('e.sort_order')->get()->toarray();
 
-            // dd(DB::getQueryLog($result));
             $result = json_decode(json_encode($result), true);
             $date_arr = [];
 
@@ -539,7 +516,6 @@ class result_report_controller extends Controller
             foreach ($all_student as $id => $arr) {
                 $student_id_arr[] = $arr['student_id'];
             }
-            $student_id = implode(',', $student_id_arr);
 
             /*$str = "SELECT e.title as ExamTitle, IF((e.con_point IS NULL) OR (e.con_point = ''),e.points,e.con_point) AS total_points,
                 e.subject_id,s.display_name as subject_name,date_format(e.exam_date,'%d-%m-%Y') as exam_date,dayname(e.exam_date) as exam_day,rm.student_id,rm.points as obtained_points
@@ -563,7 +539,7 @@ class result_report_controller extends Controller
                 ->where("e.sub_institute_id", "=", $sub_institute_id)
                 ->where("e.syear", "=", $syear)
                 ->where("e.standard_id", "=", $standard_id)
-                ->where("e.report_card_status", "=", 'Y')
+                
                 ->whereIn("e.subject_id", $additional_subjects)
                 ->whereIn("student_id", $student_id_arr);
 
@@ -847,7 +823,7 @@ class result_report_controller extends Controller
             ->where("e.sub_institute_id", "=", $sub_institute_id)
             ->where("e.syear", "=", $syear)
             ->where("e.standard_id", "=", $standard_id)
-            ->where("e.report_card_status", "=", 'Y')
+       
             ->whereIn("e.subject_id", $additional_subjects)
             ->whereIn("student_id", $student_id_arr);
 
@@ -933,7 +909,7 @@ class result_report_controller extends Controller
             ->where("e.sub_institute_id", "=", $sub_institute_id)
             ->where("e.syear", "=", $syear)
             ->where("e.standard_id", "=", $standard_id)
-            ->where("e.report_card_status", "=", 'Y')
+           
             //->whereIn("e.subject_id", $additional_subjects)
             ->whereIn("student_id", $student_id_arr);
 
@@ -1038,7 +1014,7 @@ class result_report_controller extends Controller
             ->where("e.syear", "=", $syear)
             ->where("e.standard_id", "=", $standard_id)
             ->where("e.subject_id", "=", $subject)
-            ->where("e.report_card_status", "=", 'Y')
+          
             ->whereIn("student_id", $student_id_arr);
 
         if ($exam_type != '') {
@@ -1156,5 +1132,4 @@ class result_report_controller extends Controller
         return sub_std_mapModel::where(['sub_institute_id' => $sub_institute_id, 'standard_id' => $std_id])
             ->orderBy('display_name')->get()->toArray();
     }
-
 }

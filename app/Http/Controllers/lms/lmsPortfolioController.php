@@ -309,11 +309,19 @@ class lmsPortfolioController extends Controller
         $std_id = $request->input("std_id");
         $sub_institute_id = $request->session()->get("sub_institute_id");
 
+        // Add LMS conditional logic - same as used in questionpaperController
+        $getIsLms = DB::table('school_setup')
+            ->where('Id', $sub_institute_id)
+            ->value('is_Lms');
+
+        $sub_institute_id_by_lms = ($getIsLms == 'Y') ? "(sub_institute_id = 1 or sub_institute_id = $sub_institute_id)" : "sub_institute_id = $sub_institute_id";
+
         return chapterModel::where([
-            'chapter_master.sub_institute_id' => $sub_institute_id,
             'chapter_master.subject_id'       => $sub_id,
             'chapter_master.standard_id'      => $std_id,
-        ])->get()->toArray();
+        ])
+        ->whereRaw($sub_institute_id_by_lms)
+        ->get()->toArray();
     }
 
     public function ajax_LMS_ChapterwiseTopic(Request $request)
@@ -322,8 +330,15 @@ class lmsPortfolioController extends Controller
         $chapter_ids = explode(",", $chapter_id);
         $sub_institute_id = $request->session()->get("sub_institute_id");
 
+        // Add LMS conditional logic - same as used in questionpaperController
+        $getIsLms = DB::table('school_setup')
+            ->where('Id', $sub_institute_id)
+            ->value('is_Lms');
+
+        $sub_institute_id_by_lms = ($getIsLms == 'Y') ? "(sub_institute_id = 1 or sub_institute_id = $sub_institute_id)" : "sub_institute_id = $sub_institute_id";
+
         return topicModel::whereIn("topic_master.chapter_id", $chapter_ids)
-            ->where(['topic_master.sub_institute_id' => $sub_institute_id])
+            ->whereRaw($sub_institute_id_by_lms)
             ->get()->toArray();
     }
 
