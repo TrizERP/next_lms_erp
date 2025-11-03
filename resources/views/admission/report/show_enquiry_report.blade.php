@@ -138,6 +138,7 @@
                                             @php $sub_institute_id = session()->get('sub_institute_id'); @endphp
                                             @if (in_array(Session::get('sub_institute_id'), ['201','202','203','204','324','326','327']))
                                             <td></td>
+                                            <td></td>
                                             @endif
                                             <th>{{$grand_total_admission_fees}}</th>
                                             <th>{{$grand_total_fees_amount}}</th>
