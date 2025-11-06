@@ -659,7 +659,7 @@ if (!function_exists('SearchChainSubject')) {
             $subjects = DB::table('sub_std_map')
                 ->join('subject', 'subject.id', '=', 'sub_std_map.subject_id')
                 ->where("sub_std_map.standard_id", $std_val)
-                ->pluck('subject.subject_name', 'subject.id');
+                ->pluck('sub_std_map.display_name as subject_name', 'subject.id');
 
             foreach ($subjects as $id => $val) {
                 $selected = '';
