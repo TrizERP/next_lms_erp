@@ -421,83 +421,74 @@ class online_fees_collect_controller extends Controller
         $school_account = ['SHARIACADE1', 'SPRISCHOOL1'];
         $mission_account = ['SHRISWAMI1'];
 
-        // Step 1: Call payoutSummary API
-        $payoutPayload = json_encode(['settlement_date' => date('d-m-Y')]);//date('22-10-2025')
-        $encRequest = $this->hdfc_encrypt($payoutPayload, $working_code);
-
-        $summaryResponse = $this->callCCAvenueAPI($encRequest, $access_code, $working_code, 'payoutSummary');
-
-        if (!$summaryResponse || !isset($summaryResponse['Payout_Summary_Result']['payout_summary_list']['payout_summary_details'])) {
-            return response()->json(['mesaage' => 'No payout summary'], 400);
-        }
-
-        $summary_list = $summaryResponse['Payout_Summary_Result']['payout_summary_list']['payout_summary_details'] ?? [];
-
-        // Normalize: make it always an array of records
-        $summaryDetails = isset($summary_list[0]) ? $summary_list : [$summary_list];
-//echo "<pre>";print_r($summaryDetails);exit();
-
-        // Step 2: Loop over payout_summary_details
-        foreach ($summaryDetails as $summary) {
-            $payId = $summary['pay_Id'];
-            $subAccId = $summary['sub_acc_Id'];
-            $utrNo = $summary['utr_no'];
-
-            $payIdPayload = json_encode(['pay_id' => $payId]);
-            $encPayIdRequest = $this->hdfc_encrypt($payIdPayload, $working_code);
-
-            // Step 3: Call payIdDetails API
-            $payIdResponse = $this->callCCAvenueAPI($encPayIdRequest, $access_code, $working_code,'payIdDetails');
-//echo "<pre>";print_r($payIdResponse);exit();
-
-            if (!$payIdResponse || !isset($payIdResponse['pay_id_details_Result']['pay_id_txn_details_list']['pay_id_txn_details'])) {
-                continue;
-            }
+        // 🔁 Run for last 3 days (including today)
+        for ($i = 0; $i < 3; $i++) {
+            $settlementDate = Carbon::now()->subDays($i)->format('d-m-Y');
             
-            // Normalize: make it always an array of records
-            $txn_list = $payIdResponse['pay_id_details_Result']['pay_id_txn_details_list']['pay_id_txn_details'] ?? [];
-            $txnDetails = isset($txn_list[0]) ? $txn_list : [$txn_list];
+            // Step 1: Call payoutSummary API
+            $payoutPayload = json_encode(['settlement_date' => $settlementDate]);
+            $encRequest = $this->hdfc_encrypt($payoutPayload, $working_code);
+            $summaryResponse = $this->callCCAvenueAPI($encRequest, $access_code, $working_code, 'payoutSummary');
 
-            //Step 3. Determine bank_name
-            if (in_array($subAccId, $school_account)) {
-                $bankName = 'SCHOOL';
-            } elseif (in_array($subAccId, $mission_account)) {
-                $bankName = 'MISSION';
-            } else {
-                continue; // skip if unknown account type
+            if (!$summaryResponse || !isset($summaryResponse['Payout_Summary_Result']['payout_summary_list']['payout_summary_details'])) {
+                continue; // Skip this date if no summary found
             }
-//echo "<pre>";print_r($txnDetails);exit();
 
-           // 4. Update DB records
-            foreach ($txnDetails as $txn) {
-                //echo "Rajesh".$txn['order_no'];exit();
-                $chequeNo = $txn['order_no'];
-                $settlementDate = Carbon::createFromFormat('d-m-Y', $txn['settlementDate'])->format('Y-m-d');
-                $variable = $subAccId.'-'.$payId;
+            $summary_list = $summaryResponse['Payout_Summary_Result']['payout_summary_list']['payout_summary_details'] ?? [];
+            $summaryDetails = isset($summary_list[0]) ? $summary_list : [$summary_list];
 
-//echo "Rajesh";echo "chequeNo-".$chequeNo;echo "settlementDate-".$settlementDate;die();
+            // Step 2: Loop over payout_summary_details
+            foreach ($summaryDetails as $summary) {
+                $payId = $summary['pay_Id'];
+                $subAccId = $summary['sub_acc_Id'];
+                $utrNo = $summary['utr_no'];
 
-                $query = DB::table('fees_collect')
-                    ->where([
-                        ['sub_institute_id', '=', 76],
-                        ['cheque_no', '=', $chequeNo],
-                        ['bank_name', '=', $bankName],
-                        ['payment_mode', '=', 'Online'],
-                    ]);
+                // Step 3: Call payIdDetails API
+                $payIdPayload = json_encode(['pay_id' => $payId]);
+                $encPayIdRequest = $this->hdfc_encrypt($payIdPayload, $working_code);
+                $payIdResponse = $this->callCCAvenueAPI($encPayIdRequest, $access_code, $working_code, 'payIdDetails');
 
-//echo "SQL Query: " . $query->toSql() . "<br>";
-//echo "Bindings: ";print_r($query->getBindings());
-//die();
-                // Execute the update
-                if (!empty($utrNo)) {
-                    $query->update([
-                        'remarks' => $utrNo,
-                        'receiptdate' => $settlementDate,
-                        'created_ip_address' => $variable,
-                    ]);
+                if (!$payIdResponse || !isset($payIdResponse['pay_id_details_Result']['pay_id_txn_details_list']['pay_id_txn_details'])) {
+                    continue;
+                }
+
+                $txn_list = $payIdResponse['pay_id_details_Result']['pay_id_txn_details_list']['pay_id_txn_details'] ?? [];
+                $txnDetails = isset($txn_list[0]) ? $txn_list : [$txn_list];
+
+                // Step 4: Determine bank_name
+                if (in_array($subAccId, $school_account)) {
+                    $bankName = 'SCHOOL';
+                } elseif (in_array($subAccId, $mission_account)) {
+                    $bankName = 'MISSION';
+                } else {
+                    continue; // skip if unknown account type
+                }
+
+                // Step 5: Update DB records
+                foreach ($txnDetails as $txn) {
+                    $chequeNo = $txn['order_no'];
+                    $settlementDateFormatted = Carbon::createFromFormat('d-m-Y', $txn['settlementDate'])->format('Y-m-d');
+                    $variable = $subAccId . '-' . $payId;
+
+                    $query = DB::table('fees_collect')
+                        ->where([
+                            ['sub_institute_id', '=', 76],
+                            ['cheque_no', '=', $chequeNo],
+                            ['bank_name', '=', $bankName],
+                            ['payment_mode', '=', 'Online'],
+                        ]);
+
+                    if (!empty($utrNo)) {
+                        $query->update([
+                            'remarks' => $utrNo,
+                            'receiptdate' => $settlementDateFormatted,
+                            'created_ip_address' => $variable,
+                        ]);
+                    }
                 }
             }
         }
+
         return response()->json(['status' => 'success']);
     }
 
