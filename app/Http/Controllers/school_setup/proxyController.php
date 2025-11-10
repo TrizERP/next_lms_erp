@@ -250,15 +250,17 @@ class proxyController extends Controller
                 ->where('ti.syear', '<=', $syear)
                 ->where('ti.sub_institute_id', '=', $sub_institute_id)
                 ->where('t.status', '=', 1)
-                ->whereNotIn('ti.teacher_id', function($query) use ($tval, $syear,$sub_institute_id) {
-                    $query->select('tt.teacher_id')
-                          ->from('timetable as tt')
-                          ->where('tt.syear', '=', $syear)
-                          ->where('tt.sub_institute_id', '=', $sub_institute_id)
-                          ->where('tt.period_id', '=', $tval["period_id"])
-                          ->where('tt.week_day', '=', $tval["week_day"]);
+                ->where(function ($q) use ($tval, $syear, $sub_institute_id) {
+                    $q->whereNotIn('ti.teacher_id', function ($query) use ($tval, $syear, $sub_institute_id) {
+                        $query->select('tt.teacher_id')
+                            ->from('timetable as tt')
+                            ->where('tt.syear', '=', $syear)
+                            ->where('tt.sub_institute_id', '=', $sub_institute_id)
+                            ->where('tt.period_id', '=', $tval["period_id"])
+                            ->where('tt.week_day', '=', $tval["week_day"]);
+                    })
+                    ->orWhereNull('ti.week_day');
                 })
-                ->orWhere("ti.week_day",null)
                 ->groupBy('ti.teacher_id')
                 ->orderBy('t.first_name')
                 ->get();

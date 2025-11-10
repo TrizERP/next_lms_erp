@@ -5154,7 +5154,12 @@ while ($current_date <= $post_end_date) {
                         $decipline_data[] = $value;
                         break;
                     default:
-                        $grade = (!empty($get_grade) && $per != 0 && $per != '') ? $this->getGrade($get_grade, $value->max_mark, $per, "co_scholastic") : '-';
+                    if ($sub_institute_id == 332) {
+                            $grade = round($per,0);
+                        } else {
+                            $grade = (!empty($get_grade) && $per != 0 && $per != '') ? $this->getGrade($get_grade, $value->max_mark, $per, "co_scholastic") : '-';
+                        }
+                        
                         $value->obtain_grade = $grade;
                         $co_data[] = $value;
                 }
@@ -5162,8 +5167,11 @@ while ($current_date <= $post_end_date) {
             // echo "<pre>";print_r($decipline_data);exit;
             $term_name = ($academic_type == "upper") ? "Grade" : ($both_term[0]->title ?? 'Grade');
             $flex = 'display:flex;flex-wrap:wrap';
-
-            $co_scholastic = $this->buildCoScholasticTable($both_term, $co_data, $term_name, $flex, $academic_type);
+            if($sub_institute_id == 254)
+                $co_scholastic = $this->buildCoScholasticTable($both_term, $co_data, $term_name, $flex, $academic_type);
+            else
+                $co_scholastic = $this->SanskarCoScholasticTable($both_term, $co_data, $term_name, $flex, $academic_type);
+            
             $other_table = $this->buildOtherTables($both_term, $criteria_data, $skill_data, $decipline_data, $term_name, $academic_type,$hpe_data);
 
             return [
@@ -5276,6 +5284,78 @@ while ($current_date <= $post_end_date) {
         $co_scholastic .= '</div>';
 
         return $co_scholastic;
+    }
+
+    private function SanskarCoScholasticTable($both_term, $co_data, $term_name, $flex, $academic_type)
+    {
+        $syear = session()->get('syear');
+        $sub_institute_id = session()->get('sub_institute_id');
+        $grouped = [];
+        $get_grade = DB::table('result_co_scholatic_range')
+                ->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])
+                ->get();
+
+        // Group by parent_title (e.g., V-ARTS, P-ARTS)
+        foreach ($co_data as $item) {
+            $grouped[$item->parent_title][] = $item;
+        }
+
+        $html = '';
+
+        foreach ($grouped as $parentTitle => $items) {
+            $totalMax = 0;
+            $totalObtain = 0;
+
+            $html .= '<table border="1" cellspacing="0" cellpadding="4" 
+                        style="width:100%; border-collapse:collapse;">
+                            <tr>
+                                <td style="width:25%; text-align:left;" colspan="2"><b>' . strtoupper($parentTitle) . '</b></td>';
+
+            // Exam headers
+            foreach ($items as $item) {
+                $html .= '<td style="text-align:center;">' . htmlspecialchars($item->child_title) . '</td>';
+            }
+
+            $html .= '<td style="text-align:center;"><b>FINAL TERM</b></td>
+                      <td style="text-align:center;"><b>Percentage</b></td>
+                      <td style="text-align:center;"><b>Grade</b></td>
+                    </tr>
+                    <tr>
+                        <td colspan="2"><b>Max Marks</b></td>';
+
+            // Max Marks Row
+            foreach ($items as $item) {
+                $html .= '<td style="text-align:center;">' . $item->max_mark . '</td>';
+                $totalMax += $item->max_mark;
+            }
+
+            $html .= '<td style="text-align:center;"><b>' . $totalMax . '</b></td>
+                      <td style="text-align:center;"><b>%</b></td>
+                      <td style="text-align:center;"><b>5 Scale</b></td>
+                    </tr>';
+
+            // Obtained Marks Row
+            $html .= '<tr>
+                        <td><b>Remark</b></td>
+                        <td>Very Good</td>';
+            foreach ($items as $item) {
+                $html .= '<td style="text-align:center;">' . $item->obtain_grade . '</td>';
+                $totalObtain += $item->obtain_grade;
+            }
+
+            $finalPercentage = ($totalMax > 0) ? round(($totalObtain / $totalMax) * 100, 2) : 0;
+            $finalGrade = $this->getGrade($get_grade, $totalMax, $finalPercentage, "co_scholastic");
+
+            $html .= '<td style="text-align:center;"><b>' . $totalObtain . '</b></td>
+                      <td style="text-align:center;"><b>' . $finalPercentage . '</b></td>
+                      <td style="text-align:center;"><b>' . $finalGrade . '</b></td>
+                    </tr>';
+
+            // Remark Row
+            $html .= '</table>';
+        }
+
+        return $html;
     }
 
     private function buildOtherTables($both_term, $criteria_data, $skill_data, $decipline_data, $term_name, $academic_type,$hpe_data)

@@ -253,7 +253,6 @@ class van_wise_report_controller extends Controller
             sendNotification($app_notification_content);
             
             if (! empty($bunch_arr)) {
-                $i++;
                 foreach ($bunch_arr as $val) {
                     if (isset($val, $pushMessage)) {
                         $type1 = 'TansportNotification';

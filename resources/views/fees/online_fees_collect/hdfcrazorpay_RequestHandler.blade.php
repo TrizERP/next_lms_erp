@@ -3,48 +3,45 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <!-- CSRF Token -->
-    {{-- <meta name="csrf-token" content="{{ csrf_token() }}"> --}}
     <title>Pay Online Fees</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous"></script>
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" crossorigin="anonymous">
 </head>
 <body>
-    <div id="app">
-        <main class="py-4">
-            <div class="container">
-                <div class="row">
-                    <div class="col-md-6 offset-3 col-md-offset-6">
-                        
-                        <div class="card card-default">
-                            <div class="card-header">
-                                Online Fees
-                            </div>
-                            <div class="card-body text-center">
-                                <div>{{$data['student_name']}}</div>
-                                <div>{{$data['medium']}}</div>
-                                <form action="{{env('APP_URL')}}fees/hdfcrazorpay/online_fees_hdfcrazorpayResponseHandler" method="POST" >
-                                    @csrf
-                                    <input type="hidden" value ="{{$data['student_id']}}" name="student_id">
-                                    <input type="hidden" value ="{{$data['inserted_id']}}" name="inserted_id">
-                                    <script src="https://checkout.razorpay.com/v1/checkout.js"
-                                            data-key="{{$data['key']}}"
-                                            data-amount="{{$data['amount']}}"
-                                            data-buttontext="Pay Now"
-                                            data-name="{{$data['student_name']}}"
-                                            data-description="{{$data['medium']}}"
-                                            data-order_id="{{$data['order_id']}}"                                  
-                                    </script>
-                                    <script>
-                                        document.write('<button type="submit" class="btn btn-primary mt-3">Pay Now</button>');
-                                    </script>
-                                </form>
-                            </div>
-                        </div>
+    <div class="container py-5">
+        <div class="row">
+            <div class="col-md-6 offset-md-3">
+                <div class="card shadow-lg">
+                    <div class="card-header text-center bg-primary text-white">
+                        <h5>Online Fees Payment</h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <h6>{{ $data['student_name'] }}</h6>
+                        <p><strong>Medium:</strong> {{ $data['medium'] }}</p>
+                        <p><strong>Amount:</strong> ₹{{ number_format($data['amount']/100, 2) }}</p>
+
+                        <form method="POST" action="https://api.razorpay.com/v1/checkout/embedded">
+                            <input type="hidden" name="key_id" value="{{ $data['key'] }}">
+                            <input type="hidden" name="amount" value="{{ $data['amount'] }}">
+                            <input type="hidden" name="order_id" value="{{ $data['order_id'] }}">
+                            <input type="hidden" name="name" value="{{ $data['student_name'] }}">
+                            <input type="hidden" name="description" value="School Fees Payment">
+
+                            {{-- Include fallback query parameters for callback --}}
+                            <input type="hidden" name="callback_url"
+                                   value="{{ route('hdfcrazorpay_response_handler') }}?redirect=1&student_id={{ $data['student_id'] }}&inserted_id={{ $data['inserted_id'] }}">
+                            
+                            <input type="hidden" name="notes[student_id]" value="{{ $data['student_id'] }}">
+                            <input type="hidden" name="notes[inserted_id]" value="{{ $data['inserted_id'] }}">
+
+                            <button type="submit" class="btn btn-success btn-block mt-3">Pay Now</button>
+                        </form>
+
+                        <p class="text-muted small mt-3">You will be redirected to Razorpay for secure payment.</p>
                     </div>
                 </div>
             </div>
-        </main>
+        </div>
     </div>
 </body>
 </html>
