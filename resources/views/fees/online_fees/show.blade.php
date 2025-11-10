@@ -44,7 +44,7 @@
                                     <td>{{$data['syear']}}</td>
                                     <td>{{$data['bank_name'] ?? ''}}</td>
                                     <td>
-                                        <a href="https://erp.triz.co.in/fees/online_fees_collect" target="_blank">
+                                        <a href="{{env('APP_URL')}}/fees/online_fees_collect" target="_blank">
                                             Link
                                         </a>
                                     </td>
