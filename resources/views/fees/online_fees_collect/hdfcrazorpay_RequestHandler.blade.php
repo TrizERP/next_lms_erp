@@ -23,7 +23,7 @@
                             <div class="card-body text-center">
                                 <div>{{$data['student_name']}}</div>
                                 <div>{{$data['medium']}}</div>
-                                <form action="https://erp.triz.co.in/fees/hdfcrazorpay/online_fees_hdfcrazorpayResponseHandler" method="POST" >
+                                <form action="{{env('APP_URL')}}fees/hdfcrazorpay/online_fees_hdfcrazorpayResponseHandler" method="POST" >
                                     @csrf
                                     <input type="hidden" value ="{{$data['student_id']}}" name="student_id">
                                     <input type="hidden" value ="{{$data['inserted_id']}}" name="inserted_id">
@@ -34,6 +34,9 @@
                                             data-name="{{$data['student_name']}}"
                                             data-description="{{$data['medium']}}"
                                             data-order_id="{{$data['order_id']}}"                                  
+                                    </script>
+                                    <script>
+                                        document.write('<button type="submit" class="btn btn-primary mt-3">Pay Now</button>');
                                     </script>
                                 </form>
                             </div>
