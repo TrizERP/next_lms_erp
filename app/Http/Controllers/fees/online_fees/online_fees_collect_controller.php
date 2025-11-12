@@ -424,19 +424,20 @@ class online_fees_collect_controller extends Controller
         // 🔁 Run for last 3 days (including today)
         for ($i = 0; $i < 3; $i++) {
             $settlementDate = Carbon::now()->subDays($i)->format('d-m-Y');
+            //$settlementDate = '10-11-2025';
             
             // Step 1: Call payoutSummary API
             $payoutPayload = json_encode(['settlement_date' => $settlementDate]);
             $encRequest = $this->hdfc_encrypt($payoutPayload, $working_code);
             $summaryResponse = $this->callCCAvenueAPI($encRequest, $access_code, $working_code, 'payoutSummary');
-
+//echo "<pre>";print_r($summaryResponse);die();
             if (!$summaryResponse || !isset($summaryResponse['Payout_Summary_Result']['payout_summary_list']['payout_summary_details'])) {
                 continue; // Skip this date if no summary found
             }
 
             $summary_list = $summaryResponse['Payout_Summary_Result']['payout_summary_list']['payout_summary_details'] ?? [];
             $summaryDetails = isset($summary_list[0]) ? $summary_list : [$summary_list];
-
+//echo "<pre>";print_r($summaryDetails);die();
             // Step 2: Loop over payout_summary_details
             foreach ($summaryDetails as $summary) {
                 $payId = $summary['pay_Id'];
@@ -463,7 +464,7 @@ class online_fees_collect_controller extends Controller
                 } else {
                     continue; // skip if unknown account type
                 }
-
+//echo "<pre>";print_r($txnDetails);die();
                 // Step 5: Update DB records
                 foreach ($txnDetails as $txn) {
                     $chequeNo = $txn['order_no'];
@@ -488,7 +489,6 @@ class online_fees_collect_controller extends Controller
                 }
             }
         }
-
         return response()->json(['status' => 'success']);
     }
 

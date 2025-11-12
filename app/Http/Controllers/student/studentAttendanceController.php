@@ -207,6 +207,13 @@ class studentAttendanceController extends Controller
             $res['message'] = "$date is a holiday, so you can't take attendance for " . $single_standard->name . '/' . $single_division->name;
 
             return is_mobile($type, "student_attendance.index", $res);
+        }
+        else if (!empty($holidays) && $holidays[0]->event_type === "vacation") 
+        {
+            $res['status_code'] = 0;
+            $res['message'] = "$date is a vacation, so you can't take attendance for " . $single_standard->name . '/' . $single_division->name;
+
+            return is_mobile($type, "student_attendance.index", $res);
         } 
         else if (!empty($sundays)) 
         {
@@ -485,6 +492,14 @@ class studentAttendanceController extends Controller
             ->whereRaw("month(school_date) = " . $month)
             ->pluck('DATE')
             ->toArray();
+
+        $vacations = DB::table("calendar_events")
+            ->selectRaw("DATE_FORMAT(school_date,'%d') AS DATE")
+            ->where($whereAtt)
+            ->where('event_type', '=', 'vacation')
+            ->whereRaw("month(school_date) = " . $month)
+            ->pluck('DATE')
+            ->toArray();
             
         $events = DB::table("calendar_events")
             ->selectRaw("DATE_FORMAT(school_date,'%d') AS DATE, event_type")
@@ -536,6 +551,7 @@ class studentAttendanceController extends Controller
         $res['attendance_data'] = $finalAttendanceArray;
         $res['sundays'] = $sundays;
         $res['holidays'] = $holidays;
+        $res['vacations'] = $vacations;
         $res['events'] = $eventsArray;
         $res['to_date'] = date('d', strtotime($to_date));
 
