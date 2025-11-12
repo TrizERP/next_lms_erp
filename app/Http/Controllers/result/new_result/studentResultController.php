@@ -124,7 +124,7 @@ class studentResultController extends Controller
             $new_html_content = '<div id="' . $value['id'] . '"><div ' . $class . ' style="' . $style . '">' . $this->create_html_content($syear, $sub_institute_id, $html_content, $value, $template, $result_trust, $format, ($srNo)) . '</div></div>';
 
             $new_html .= $new_html_content;
-            $institutes = [47,76,61];
+            $institutes = [47,76,61,254];
             if (in_array($sub_institute_id, $institutes)) {
                 $all_stud_html[$value['roll_no']] = $new_html_content;
             } else {
