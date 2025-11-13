@@ -60,8 +60,8 @@
                             <tr>
                                 <td class="age-column">{{ $age }}</td>
                                 @foreach($data['classes'] as $className)
-                                    <td>{{ $byClass[$className]['M'] ?? 0 }}</td>
-                                    <td>{{ $byClass[$className]['F'] ?? 0 }}</td>
+                                    <td>{{ $byClass[$className]['M'] ?? '-' }}</td>
+                                    <td>{{ $byClass[$className]['F'] ?? '-' }}</td>
                                 @endforeach
                             </tr>
                         @endforeach

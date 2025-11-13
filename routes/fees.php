@@ -260,6 +260,10 @@ Route::controller(online_fees_collect_controller::class)->group(function () {
     Route::post('fees/razorpay/online_fees_razorpayRequestHandler', 'razorpay_request_handler')->name("razorpay_request_handler");
     Route::post('fees/razorpay/online_fees_razorpayResponseHandler', 'razorpay_response_handler')->name("razorpay_response_handler");
 
+    Route::post('fees/hdfcrazorpay/online_fees_collect', 'hdfcrazorpay')->name("hdfcrazorpay");
+    Route::post('fees/hdfcrazorpay/online_fees_hdfcrazorpayRequestHandler', 'hdfcrazorpay_request_handler')->name("hdfcrazorpay_request_handler");
+    Route::post('fees/hdfcrazorpay/online_fees_hdfcrazorpayResponseHandler', 'hdfcrazorpay_response_handler')->name("hdfcrazorpay_response_handler");
+
     Route::post('fees/payphi/online_fees_collect', 'payphi')->name("payphi_fees_collect");
     Route::post('fees/payphi/online_fees_payphiRequestHandler', 'payphi_request_handler')->name("payphi_request_handler");
     Route::post('fees/payphi/online_fees_handleInitiateSaleResponse', 'handle_initiatesale_response')->name("handle_initiatesale_response");

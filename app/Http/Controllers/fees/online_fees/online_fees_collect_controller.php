@@ -421,80 +421,71 @@ class online_fees_collect_controller extends Controller
         $school_account = ['SHARIACADE1', 'SPRISCHOOL1'];
         $mission_account = ['SHRISWAMI1'];
 
-        // Step 1: Call payoutSummary API
-        $payoutPayload = json_encode(['settlement_date' => date('d-m-Y')]);//date('18-07-2025')
-        $encRequest = $this->hdfc_encrypt($payoutPayload, $working_code);
-
-        $summaryResponse = $this->callCCAvenueAPI($encRequest, $access_code, $working_code, 'payoutSummary');
-
-        if (!$summaryResponse || !isset($summaryResponse['Payout_Summary_Result']['payout_summary_list']['payout_summary_details'])) {
-            return response()->json(['mesaage' => 'No payout summary'], 400);
-        }
-
-        $summary_list = $summaryResponse['Payout_Summary_Result']['payout_summary_list']['payout_summary_details'] ?? [];
-
-        // Normalize: make it always an array of records
-        $summaryDetails = isset($summary_list[0]) ? $summary_list : [$summary_list];
-//echo "<pre>";print_r($summaryDetails);exit();
-
-        // Step 2: Loop over payout_summary_details
-        foreach ($summaryDetails as $summary) {
-            $payId = $summary['pay_Id'];
-            $subAccId = $summary['sub_acc_Id'];
-            $utrNo = $summary['utr_no'];
-
-            $payIdPayload = json_encode(['pay_id' => $payId]);
-            $encPayIdRequest = $this->hdfc_encrypt($payIdPayload, $working_code);
-
-            // Step 3: Call payIdDetails API
-            $payIdResponse = $this->callCCAvenueAPI($encPayIdRequest, $access_code, $working_code,'payIdDetails');
-//echo "<pre>";print_r($payIdResponse);exit();
-
-            if (!$payIdResponse || !isset($payIdResponse['pay_id_details_Result']['pay_id_txn_details_list']['pay_id_txn_details'])) {
-                continue;
-            }
+        // 🔁 Run for last 3 days (including today)
+        for ($i = 0; $i < 3; $i++) {
+            $settlementDate = Carbon::now()->subDays($i)->format('d-m-Y');
+            //$settlementDate = '10-11-2025';
             
-            // Normalize: make it always an array of records
-            $txn_list = $payIdResponse['pay_id_details_Result']['pay_id_txn_details_list']['pay_id_txn_details'] ?? [];
-            $txnDetails = isset($txn_list[0]) ? $txn_list : [$txn_list];
-
-            //Step 3. Determine bank_name
-            if (in_array($subAccId, $school_account)) {
-                $bankName = 'SCHOOL';
-            } elseif (in_array($subAccId, $mission_account)) {
-                $bankName = 'MISSION';
-            } else {
-                continue; // skip if unknown account type
+            // Step 1: Call payoutSummary API
+            $payoutPayload = json_encode(['settlement_date' => $settlementDate]);
+            $encRequest = $this->hdfc_encrypt($payoutPayload, $working_code);
+            $summaryResponse = $this->callCCAvenueAPI($encRequest, $access_code, $working_code, 'payoutSummary');
+//echo "<pre>";print_r($summaryResponse);die();
+            if (!$summaryResponse || !isset($summaryResponse['Payout_Summary_Result']['payout_summary_list']['payout_summary_details'])) {
+                continue; // Skip this date if no summary found
             }
-//echo "<pre>";print_r($txnDetails);exit();
 
-           // 4. Update DB records
-            foreach ($txnDetails as $txn) {
-                //echo "Rajesh".$txn['order_no'];exit();
-                $chequeNo = $txn['order_no'];
-                $settlementDate = Carbon::createFromFormat('d-m-Y', $txn['settlementDate'])->format('Y-m-d');
-                $variable = $subAccId.'-'.$payId;
+            $summary_list = $summaryResponse['Payout_Summary_Result']['payout_summary_list']['payout_summary_details'] ?? [];
+            $summaryDetails = isset($summary_list[0]) ? $summary_list : [$summary_list];
+//echo "<pre>";print_r($summaryDetails);die();
+            // Step 2: Loop over payout_summary_details
+            foreach ($summaryDetails as $summary) {
+                $payId = $summary['pay_Id'];
+                $subAccId = $summary['sub_acc_Id'];
+                $utrNo = $summary['utr_no'];
 
-//echo "Rajesh";echo "chequeNo-".$chequeNo;echo "settlementDate-".$settlementDate;die();
+                // Step 3: Call payIdDetails API
+                $payIdPayload = json_encode(['pay_id' => $payId]);
+                $encPayIdRequest = $this->hdfc_encrypt($payIdPayload, $working_code);
+                $payIdResponse = $this->callCCAvenueAPI($encPayIdRequest, $access_code, $working_code, 'payIdDetails');
 
-                $query = DB::table('fees_collect')
-                    ->where([
-                        ['sub_institute_id', '=', 76],
-                        ['cheque_no', '=', $chequeNo],
-                        ['bank_name', '=', $bankName],
-                        ['payment_mode', '=', 'Online'],
-                    ]);
+                if (!$payIdResponse || !isset($payIdResponse['pay_id_details_Result']['pay_id_txn_details_list']['pay_id_txn_details'])) {
+                    continue;
+                }
 
-//echo "SQL Query: " . $query->toSql() . "<br>";
-//echo "Bindings: ";print_r($query->getBindings());
-//die();
-                // Execute the update
-                if (!empty($utrNo)) {
-                    $query->update([
-                        'remarks' => $utrNo,
-                        'receiptdate' => $settlementDate,
-                        'created_ip_address' => $variable,
-                    ]);
+                $txn_list = $payIdResponse['pay_id_details_Result']['pay_id_txn_details_list']['pay_id_txn_details'] ?? [];
+                $txnDetails = isset($txn_list[0]) ? $txn_list : [$txn_list];
+
+                // Step 4: Determine bank_name
+                if (in_array($subAccId, $school_account)) {
+                    $bankName = 'SCHOOL';
+                } elseif (in_array($subAccId, $mission_account)) {
+                    $bankName = 'MISSION';
+                } else {
+                    continue; // skip if unknown account type
+                }
+//echo "<pre>";print_r($txnDetails);die();
+                // Step 5: Update DB records
+                foreach ($txnDetails as $txn) {
+                    $chequeNo = $txn['order_no'];
+                    $settlementDateFormatted = Carbon::createFromFormat('d-m-Y', $txn['settlementDate'])->format('Y-m-d');
+                    $variable = $subAccId . '-' . $payId;
+
+                    $query = DB::table('fees_collect')
+                        ->where([
+                            ['sub_institute_id', '=', 76],
+                            ['cheque_no', '=', $chequeNo],
+                            ['bank_name', '=', $bankName],
+                            ['payment_mode', '=', 'Online'],
+                        ]);
+
+                    if (!empty($utrNo)) {
+                        $query->update([
+                            'remarks' => $utrNo,
+                            'receiptdate' => $settlementDateFormatted,
+                            'created_ip_address' => $variable,
+                        ]);
+                    }
                 }
             }
         }
@@ -2435,7 +2426,7 @@ exit; */
                 'receipt'         => 'order_' . uniqid(),
                 'amount'          => $amount, // Convert amount to paise for Razorpay
                 'currency'        => 'INR',
-                'payment_capture' => 1 // Auto capture
+                'payment_capture' => 1, // Auto capture
             ];
 
             $razorpayOrder = $api->order->create($orderData);
@@ -2732,6 +2723,458 @@ if (Str::startsWith($order_id, 'pay_')) {
 
             // echo "<pre>"; print_r(json_encode($data)); exit;
             return json_encode($data);
+        }
+    }
+
+    public function hdfcrazorpay(Request $request)
+    {
+        $data = $this->get_fees($request);
+        $type = "web";
+        return \App\Helpers\is_mobile($type, "fees/online_fees_collect/show_hdfcrazorpay_fees", $data, "view");
+    }
+
+    /**
+     * HDFC Razorpay - Create Order
+     */
+    public function hdfcrazorpay_request_handler(Request $request)
+{
+    try {
+        $student_id = $_REQUEST["student_id"];
+        $fine = isset($_REQUEST["fees_data"]["fine"]) ? $_REQUEST["fees_data"]["fine"] : 0;
+        $discount = isset($_REQUEST["totalDis"]) ? $_REQUEST["totalDis"] : 0;
+
+        // Get student data
+        $medium_data = DB::select("SELECT a.*,e.grade_id,
+            CONCAT_WS('_',t.first_name,t.middle_name,t.last_name) AS student_name,
+            t.mobile,
+            CONCAT_WS('_',t.first_name,t.middle_name,t.last_name,t.uniqueid) AS uniqueid,
+            t.email
+            FROM tblstudent_enrollment e
+            INNER JOIN academic_section a ON e.grade_id = a.id
+            INNER JOIN tblstudent t ON t.id=e.student_id
+            INNER JOIN fees_online_maping fom ON fom.syear=e.syear AND fom.sub_institute_id=e.sub_institute_id
+            WHERE e.student_id = ? ORDER BY e.syear DESC LIMIT 1", [$student_id]);
+
+        if (empty($medium_data)) {
+            return response()->json(['error' => 'Student data not found'], 404);
+        }
+
+        $get_map_bank_data = DB::table("fees_online_maping")
+            ->where(["sub_institute_id" => session()->get("sub_institute_id")])
+            ->get();
+
+        $payment_acsept_type = $get_map_bank_data[0]->fees_type ?? "variable"; 
+        $amount = 0; if ($payment_acsept_type == "fix") { $amount = number_format(floatval($_REQUEST["total"]) * 100, 0, '.', ''); } else { $amount = number_format(floatval($_REQUEST["pay_amount"]) * 100, 0, '.', ''); }
+        // Get HDFC configuration
+        $get_map_bank_detail = DB::table("fees_hdfcrazorpay")
+            ->where([
+                "sub_institute_id" => session()->get("sub_institute_id"),
+                "medium" => $medium_data[0]->medium
+            ])
+            ->first();
+
+        if (!$get_map_bank_detail) {
+            return response()->json(['error' => 'HDFC configuration not found'], 500);
+        }
+        $api = new Api($get_map_bank_detail->key_id, $get_map_bank_detail->key_secret);
+        $orderData = [ 'receipt' => 'order_hdfc_' . uniqid(), 'amount' => $amount, 'currency' => 'INR', 'payment_capture' => 1 ];
+        // ---- 🔹 STEP 1: Build Plain Request ----
+        $merchant_id = $get_map_bank_detail->merchant_id ?? '123456';
+        $submerchant_id = session()->get("sub_institute_id");
+        $reference_no = uniqid($student_id);
+        $return_url = route('hdfcrazorpay_response_handler'); // or a fixed URL
+        $paymode = '9';
+
+        $mandatory_fields = "{$reference_no}|{$submerchant_id}|{$amount}";
+        $optional_fields = "{$medium_data[0]->student_name}|{$medium_data[0]->mobile}|{$medium_data[0]->email}|{$student_id}|{$medium_data[0]->grade_id}|{$medium_data[0]->medium}|{$student_id}";
+
+        $plain_url = "https://api.razorpay.com/v1/checkout/embedded?" . http_build_query([
+            'merchantid' => $merchant_id,
+            'mandatory fields' => $mandatory_fields,
+            'optional fields' => $optional_fields,
+            'returnurl' => $return_url,
+            'Reference No' => $reference_no,
+            'submerchantid' => $submerchant_id,
+            'transaction amount' => $amount,
+            'paymode' => $paymode,
+        ]);
+
+        // ---- 🔹 STEP 2: Build Encrypted Request ----
+        $encryption_key = $get_map_bank_detail->key_secret; // must be 16 chars
+        $enc_mandatory = $this->hdfc_encrypt($mandatory_fields, $encryption_key);
+        $enc_optional = $this->hdfc_encrypt($optional_fields, $encryption_key);
+        $enc_returnurl = $this->hdfc_encrypt($return_url, $encryption_key);
+        $enc_ref = $this->hdfc_encrypt($reference_no, $encryption_key);
+        $enc_submerchant = $this->hdfc_encrypt($submerchant_id, $encryption_key);
+        $enc_amount = $this->hdfc_encrypt($amount, $encryption_key);
+        $enc_paymode = $this->hdfc_encrypt($paymode, $encryption_key);
+
+        $encrypt_url = "https://api.razorpay.com/v1/checkout/embedded?" . http_build_query([
+            'merchantid' => $merchant_id,
+            'mandatory fields' => $enc_mandatory,
+            'optional fields' => $enc_optional,
+            'returnurl' => $enc_returnurl,
+            'Reference No' => $enc_ref,
+            'submerchantid' => $enc_submerchant,
+            'transaction amount' => $enc_amount,
+            'paymode' => $enc_paymode,
+        ]);
+        $razorpayOrder = $api->order->create($orderData);
+        // ---- 🔹 STEP 3: Store Payment Details ----
+        $in_arr = [
+            "student_id" => $student_id,
+            "syear" => session()->get("syear"),
+            "amount" => $amount,
+            "fine" => $fine,
+            "discount" => $discount,
+            "razorpay_order_id" => $razorpayOrder['id'],
+            "razorpay_payment_status" => "PR",
+            "razorpay_payment_date" => now(),
+            "sub_institute_id" => session()->get("sub_institute_id"),
+            "hdfc_plain_request" => $plain_url,
+            "hdfc_encrypt_request" => $encrypt_url,
+            "created_at" => now(),
+            "updated_at" => now()
+        ];
+
+        DB::table("fees_payment")->insert($in_arr);
+        $id = DB::getPdo()->lastInsertId();
+
+        // ---- 🔹 STEP 4: Send Response ----
+        $data = [
+            "student_id" => $student_id,
+            "months" => $_REQUEST["months"],
+            "amount" => $amount,
+            "plain_request" => $plain_url,
+            "encrypt_request" => $encrypt_url,
+            "inserted_id" => $id,
+            "student_name" => $medium_data[0]->student_name,
+            "medium" => $medium_data[0]->uniqueid, 
+            "order_id" => $razorpayOrder['id'],
+            "key" => $get_map_bank_detail->key_id,
+        ];
+
+        $type = "web";
+        
+        return \App\Helpers\is_mobile($type, "fees/online_fees_collect/hdfcrazorpay_RequestHandler", $data, "view");
+
+    } catch (\Exception $e) {
+        return response()->json(['error' => $e->getMessage()], 500);
+    }
+}
+    /**
+     * HDFC Razorpay - Verify Payment Callback
+     */
+    public function hdfcrazorpay_verify_payment(Request $request)
+    {
+        try {
+            $input = $request->all();
+            
+            $student_id = $request->student_id;
+            $inserted_id = $request->inserted_id;
+
+            // Get HDFC Razorpay configuration
+            $medium_data = DB::select("SELECT a.*,e.grade_id FROM tblstudent_enrollment e
+                inner join academic_section a on e.grade_id = a.id
+                INNER JOIN fees_online_maping fom ON fom.syear=e.syear AND fom.sub_institute_id=e.sub_institute_id
+                WHERE e.student_id = '" . $student_id . "' ORDER BY e.syear DESC LIMIT 1");
+
+            $get_map_bank_detail = DB::table("fees_hdfcrazorpay")
+                ->where(["sub_institute_id" => session()->get("sub_institute_id"), "medium" => $medium_data[0]->medium])
+                ->first();
+
+            if (!$get_map_bank_detail) {
+                throw new \Exception('HDFC Razorpay configuration not found');
+            }
+
+            $api = new Api($get_map_bank_detail->key_id, $get_map_bank_detail->key_secret);
+
+            $attributes = [
+                'razorpay_order_id' => $input['razorpay_order_id'],
+                'razorpay_payment_id' => $input['razorpay_payment_id'],
+                'razorpay_signature' => $input['razorpay_signature'],
+            ];
+
+            // Verify payment signature
+            $api->utility->verifyPaymentSignature($attributes);
+
+            // Fetch payment details
+            $payment = $api->payment->fetch($input['razorpay_payment_id']);
+            $json_response = $this->razorpay_payment_response_data_to_array($payment);
+
+            // Update payment record
+            $update_arr = [
+                "razorpay_order_id" => $input['razorpay_payment_id'],
+                "razorpay_payment_status" => "PS",
+                "razorpay_dashboard_ps" => $payment['status'],
+                "razorpay_bank_res" => $json_response,
+                "updated_at" => now()
+            ];
+
+            $where_arr = ["id" => $inserted_id];
+
+            // Prevent duplicate processing
+            $get_all_data = DB::table("fees_payment")->where($where_arr)->first();
+            if ($get_all_data->razorpay_payment_status == 'PS') {
+                $school_data = ["website" => $this->site_name()];
+                $type = "web";
+                return \App\Helpers\is_mobile($type, "fees/online_fees_collect/search_student", $school_data, "view");
+            }
+
+            DB::table("fees_payment")->where($where_arr)->update($update_arr);
+
+            // Process fee payment
+            if ($payment['status'] == 'captured') {
+                $data = $this->pay_fees(
+                    $request, 
+                    $get_all_data->student_id, 
+                    $get_all_data->syear, 
+                    $get_all_data->sub_institute_id, 
+                    ($get_all_data->amount / 100), 
+                    $input['razorpay_payment_id']
+                );
+                $type = $request->input('type');
+                return \App\Helpers\is_mobile($type, "fees/online_fees_collect/receipt_view", $data, "view");
+            } else {
+                throw new \Exception('Payment not captured');
+            }
+
+        } catch (\Exception $e) {
+            Log::error('HDFC Razorpay verifyPayment error: ' . $e->getMessage());
+            
+            // Update payment as failed
+            if (isset($inserted_id)) {
+                $update_arr = [
+                    "razorpay_payment_status" => "PF",
+                    "razorpay_bank_res" => $e->getMessage(),
+                    "updated_at" => now()
+                ];
+                DB::table("fees_payment")->where('id', $inserted_id)->update($update_arr);
+            }
+
+            $type = $request->input('type');
+            $school_data = ["website" => $this->site_name()];
+            return \App\Helpers\is_mobile($type, "fees/online_fees_collect/show_error", $school_data, "view");
+        }
+    }
+
+    public function hdfcrazorpay_response_handler(Request $request)
+{
+    try {
+        $input = $request->all();
+
+        // STEP 1: Get basic parameters (same as first function)
+        $student_id = $_REQUEST["student_id"] ?? $request->input('student_id');
+        $inserted_id = $_REQUEST["inserted_id"] ?? $request->input('inserted_id');
+        
+        if (empty($student_id) || empty($inserted_id)) {
+            return response()->json(['error' => 'Missing required parameters'], 400);
+        }
+
+        // STEP 2: Get student data (same as first function)
+        $medium_data = DB::select("
+            SELECT a.*, e.grade_id, CONCAT_WS('_', t.first_name, t.middle_name, t.last_name) AS student_name, t.mobile
+            FROM tblstudent_enrollment e
+            INNER JOIN academic_section a ON e.grade_id = a.id
+            INNER JOIN fees_online_maping fom ON fom.syear = e.syear AND fom.sub_institute_id = e.sub_institute_id
+            INNER JOIN tblstudent t ON t.id = e.student_id
+            WHERE e.student_id = ? ORDER BY e.syear DESC LIMIT 1
+        ", [$student_id]);
+        
+        if (empty($medium_data)) {
+            return response()->json(['error' => 'No enrollment data found'], 404);
+        }
+        $sub_institute_id = $feesPayment['sub_institute_id']
+            ?? $medium_data[0]->sub_institute_id
+            ?? session()->get('sub_institute_id');    
+        // STEP 3: Get payment gateway config (use same table as first function)
+        $get_map_bank_detail = DB::table("fees_hdfcrazorpay") // Use same table name
+            ->where([
+                "sub_institute_id" => $sub_institute_id,
+                "medium" => $medium_data[0]->medium
+            ])
+            ->first();
+        if (empty($get_map_bank_detail)) {
+            return response()->json(['error' => 'Payment gateway configuration missing'], 500);
+        }
+        
+        // STEP 4: Update payment record (same as first function)
+        DB::table("fees_payment")
+            ->where(["id" => $inserted_id])
+            ->update([
+                "razorpay_order_id" => $input['razorpay_payment_id'],
+                "updated_at" => now()
+            ]);
+
+        // STEP 5: Initialize Razorpay API (same as first function)
+        $api = new Api($get_map_bank_detail->key_id, $get_map_bank_detail->key_secret);
+    
+        if (empty($input['razorpay_payment_id'])) {
+            throw new Exception('No payment ID provided');
+        }
+
+        $payment = $api->payment->fetch($input['razorpay_payment_id']);
+        
+        // STEP 6: Convert response to array (same as first function)
+        $json_response = $this->razorpay_payment_response_data_to_array($payment);
+        
+        // STEP 7: Get payment record and check for duplicate success
+        $get_all_data = DB::table("fees_payment")
+            ->where(["id" => $inserted_id])
+            ->first();
+        
+        // Prevent duplicate success (same as first function)
+        if($get_all_data->razorpay_payment_status == 'PS'){
+            $school_data = array();
+            $school_data["website"] = $this->site_name();
+            $type = $request->input('type') ?? 'web';
+            return \App\Helpers\is_mobile($type, "fees/online_fees_collect/search_student", $school_data, "view");
+        }
+
+        // STEP 8: Determine payment status (same as first function)
+        $payment_status_res = $payment['status'];
+        $payment_status = ($payment_status_res == "captured") ? 'PS' : 'PR';
+        
+        // STEP 9: Update payment status (same as first function)
+        DB::table("fees_payment")
+            ->where(["id" => $inserted_id])
+            ->update([
+                "razorpay_order_id" => $input['razorpay_payment_id'],
+                "razorpay_payment_status" => $payment_status,
+                "razorpay_dashboard_ps" => $payment_status_res,
+                "icici_bank_res" => $payment_status_res,
+                "razorpay_bank_res" => $json_response,
+                "updated_at" => now()
+            ]);
+
+        // STEP 10: Process successful payment (same as first function)
+        if($payment_status_res == 'captured'){
+            $data = $this->pay_fees(
+                $request, 
+                $get_all_data->student_id, 
+                $get_all_data->syear, 
+                $get_all_data->sub_institute_id, 
+                ($get_all_data->amount / 100), 
+                $input['razorpay_payment_id']
+            );
+            $type = $request->input('type') ?? 'web';
+            return \App\Helpers\is_mobile($type, "fees/online_fees_collect/receipt_view", $data, "view");
+        } else {
+            $type = $request->input('type') ?? 'web';
+            $school_data = array();
+            return \App\Helpers\is_mobile($type, "fees/online_fees_collect/show_error", $school_data, "view");
+        }
+
+    } catch (Exception $e) {
+        // Error handling (same as first function)
+        $res_josn = json_encode($e->getMessage());
+        $payment_status = "PF";
+
+        DB::table("fees_payment")
+            ->where(["id" => $inserted_id])
+            ->update([
+                "razorpay_payment_status" => $payment_status,
+                "razorpay_bank_res" => $res_josn,
+                "updated_at" => now()
+            ]);
+            
+        $type = $request->input('type') ?? 'web';
+        $school_data = array();
+        return \App\Helpers\is_mobile($type, "fees/online_fees_collect/show_error", $school_data, "view");
+    }
+}
+
+
+
+    /**
+     * HDFC Razorpay - Fetch Payment Status (Cron)
+     */
+    public function hdfcrazorpay_fetch_payment_status(Request $request)
+    {
+        $payment_data = DB::table('fees_payment AS fp')
+            ->select('fp.id', 'fp.student_id', 'fr.key_id', 'fr.key_secret', 'fp.razorpay_order_id', 'tse.syear', 'fp.sub_institute_id', 'fp.amount', 'fp.fine', 'fp.discount')
+            ->join('tblstudent_enrollment AS tse', function ($join) {
+                $join->on('tse.student_id', '=', 'fp.student_id')
+                    ->on('tse.syear', '=', 'fp.syear')
+                    ->on('tse.sub_institute_id', '=', 'fp.sub_institute_id');
+            })
+            ->join('academic_section AS a', 'a.id', '=', 'tse.grade_id')
+            ->join('fees_hdfcrazorpay AS fr', function ($join) {
+                $join->on('fr.medium', '=', 'a.medium')
+                    ->on('fr.sub_institute_id', '=', 'tse.sub_institute_id');
+            })
+            ->where(function ($query) {
+                $query->whereNotIn('fp.razorpay_dashboard_ps', ['captured', 'refunded', 'failed'])
+                      ->orWhereNull('fp.razorpay_dashboard_ps');
+            })
+            ->whereNotNull('fp.razorpay_order_id')
+            ->whereBetween('fp.created_at', [now()->subDays(3), now()->subMinutes(30)])
+            ->groupBy('fp.id')
+            ->get();
+
+        if (!empty($payment_data)) {
+            foreach ($payment_data as $data) {
+                try {
+                    $id = $data->id;
+                    $key_id = $data->key_id;
+                    $key_secret = $data->key_secret;
+                    $order_id = $data->razorpay_order_id;
+                    $student_id = $data->student_id;
+                    $amount = round($data->amount, 0);
+
+                    $api = new Api($key_id, $key_secret);
+
+                    $payment = null;
+                    $is_valid = false;
+
+                    // Detect ID type and fetch payment(s)
+                    if (Str::startsWith($order_id, 'pay_')) {
+                        $payment = $api->payment->fetch($order_id);
+                        if (!empty($payment) && $payment['id']) {
+                            $is_valid = true;
+                        }
+                    } elseif (Str::startsWith($order_id, 'order_')) {
+                        $paymentCollection = $api->order->fetch($order_id)->payments();
+                        if (!empty($paymentCollection) && $paymentCollection['count'] > 0) {
+                            $payment = $paymentCollection['items'][0];
+                            $is_valid = true;
+                        }
+                    }
+
+                    if ($is_valid && !empty($payment)) {
+                        $status = $payment['status'];
+                        $payment_id = $payment['id'];
+                        $json_response = $this->razorpay_payment_response_data_to_array($payment);
+
+                        $update_arr = [
+                            "razorpay_dashboard_ps" => $status,
+                            "razorpay_bank_res" => $json_response,
+                            'razorpay_order_id' => $payment_id,
+                            "updated_at" => now()
+                        ];
+
+                        DB::table("fees_payment")->where('id', $id)->update($update_arr);
+
+                        $request->merge([
+                            '_key' => csrf_token(),
+                            'student_id' => $student_id,
+                            'inserted_id' => $id,
+                            'razorpay_payment_id' => $payment_id,
+                            'syear' => $data->syear,
+                            'sub_institute_id' => $data->sub_institute_id
+                        ]);
+
+                        if ($status == 'captured') {
+                            $check = DB::table('fees_collect')->whereRaw('cheque_no="'.$payment_id.'" AND student_id='.$student_id.' AND syear='.$data->syear.' AND sub_institute_id='.$data->sub_institute_id)->get()->toArray();
+                            if (count($check) == 0) {
+                                $this->pay_fees($request, $data->student_id, $data->syear, $data->sub_institute_id, ($amount/100), $payment_id, $data->fine, 'HDFC Razorpay', $data->discount);
+                            }
+                        }
+                    }
+                } catch (\Exception $e) {
+                    Log::error('HDFC Razorpay fetch status error for ID ' . $data->id . ': ' . $e->getMessage());
+                }
+            }
         }
     }
 
