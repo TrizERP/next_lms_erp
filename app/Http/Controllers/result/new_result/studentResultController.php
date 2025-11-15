@@ -122,7 +122,6 @@ class studentResultController extends Controller
                 $style = "";
             }
             $new_html_content = '<div id="' . $value['id'] . '"><div ' . $class . ' style="' . $style . '">' . $this->create_html_content($syear, $sub_institute_id, $html_content, $value, $template, $result_trust, $format, ($srNo)) . '</div></div>';
-
             $new_html .= $new_html_content;
             $institutes = [47,76,61];
             if (in_array($sub_institute_id, $institutes)) {
@@ -450,14 +449,14 @@ class studentResultController extends Controller
 
             // student_details            
         }
-        if (strpos($html_content, htmlspecialchars('<<scholastic_marks_t1_mmis>>')) !== false) {
-            $main_result = $this->get_scholastic_t1_mmis($standard_id, $value['id'], $format, "no_zero");
-            $html_content = str_replace(htmlspecialchars("<<scholastic_marks_t1_mmis>>"), $main_result['table'], $html_content);
-            $html_content = str_replace(htmlspecialchars("<<teacher_remark>>"), $main_result['remark'], $html_content);
-            $html_content = str_replace(htmlspecialchars("<<result>>"), $main_result['result'], $html_content);
-            $html_content = str_replace(htmlspecialchars("<<custom_note_1>>"), $main_result['custom_note_1'], $html_content);
-            $html_content = str_replace(htmlspecialchars("<<simple_result>>"), $main_result['simple_result'], $html_content);
-        }
+            if (strpos($html_content, htmlspecialchars('<<scholastic_marks_t1_mmis>>')) !== false) {
+                $main_result = $this->get_scholastic_t1_mmis($standard_id, $value['id'], $format, "no_zero");
+                $html_content = str_replace(htmlspecialchars("<<scholastic_marks_t1_mmis>>"), $main_result['table'], $html_content);
+                $html_content = str_replace(htmlspecialchars("<<teacher_remark>>"), $main_result['remark'], $html_content);
+                $html_content = str_replace(htmlspecialchars("<<result>>"), $main_result['result'], $html_content);
+                $html_content = str_replace(htmlspecialchars("<<custom_note_1>>"), $main_result['custom_note_1'], $html_content);
+                $html_content = str_replace(htmlspecialchars("<<simple_result>>"), $main_result['simple_result'], $html_content);
+            }
 
         if (strpos($html_content, htmlspecialchars('<<scholastic_marks_mmis>>')) !== false) {
             $main_result = $this->get_scholastic_mmis($standard_id, $value['id'], $format, "no_zero");
@@ -687,6 +686,65 @@ class studentResultController extends Controller
             $html_content = str_replace(htmlspecialchars("<<class_teacher_remark>>"), $scholastic['teacher_remark'], $html_content);
             $html_content = str_replace(htmlspecialchars("<<remark>>"), $scholastic['remark'], $html_content);
         }
+        // 1. Get attendance (working / present)
+        $attendance = $this->get_attendance($standard_id, $value['id'], $format, "total_attendance");
+       
+        $working = 0;
+$present = 0;
+
+if (isset($attendance['table'])) {
+
+    $tableHtml = $attendance['table'];
+
+    // Extract all <td> values
+    preg_match_all('/<td[^>]*>([^<]+)<\/td>/', $tableHtml, $tdMatches);
+
+    // Example match list:
+    // [0] => "No. Of Working Days"
+    // [1] => "212"
+    // [2] => "Days Attended"
+    // [3] => "193"
+
+    if (!empty($tdMatches[1]) && count($tdMatches[1]) >= 4) {
+
+        // Working days is the 2nd <td> (index 1)
+        if (is_numeric(trim($tdMatches[1][1]))) {
+            $working = trim($tdMatches[1][1]);
+        }
+
+        // Present days is the 4th <td> (index 3)
+        if (is_numeric(trim($tdMatches[1][3]))) {
+            $present = trim($tdMatches[1][3]);
+        }
+    }
+}
+
+        // 2. Get percentage (simple_result)
+        $percentage = 0;
+        if (isset($main_result['table'])) {
+            $tableHtml = $main_result['table'];
+
+            if (preg_match('/<b>(\d+(\.\d+)?)%<\/b>/', $tableHtml, $matches)) {
+                $percentage = $matches[1]; // numeric value
+            }
+        }
+
+        // 3. Save into DB
+        DB::table('result_reportcard_marks')->updateOrInsert(
+            [
+                'sub_institute_id' => session()->get('sub_institute_id'),
+                'student_id'  => $value['id'],
+                'standard_id' => $value['standard_id'],
+                'syear'       => $syear,
+            ],
+            [
+                'template_id'         => $template,
+                'total_working_day'   => $working,
+                'present_working_day' => $present,
+                'student_percentage'   => $percentage,
+                'updated_at'           => now(),
+            ]
+        );
         return $html_content;
         //  return $main_result;     ssmission_term_ssmission_term_higher    
     }
@@ -1248,7 +1306,6 @@ class studentResultController extends Controller
                         // echo $pAB.'<br>';
                         // get mark for total mark 
                         $ob_main_mark += $convert_mark;
-
                         if (count($obtained_mark_arr) > 1) {
                             $total_marks += $w_m;
                             if (in_array($pAB, ['AB', 'N.A.', 'EX']) && $convert_mark == 0) { // added on 27-02-2025 by uma
@@ -1280,7 +1337,6 @@ class studentResultController extends Controller
                     $obtained_mark_formatted = round($ob_main_mark);
                 else
                     $obtained_mark_formatted = number_format($ob_main_mark, 2);
-
                 $table .= '<td class="data_center all_mark" ' . $ob_main_mark . '>' . $obtained_mark_formatted . '</td>';
                 $both_term_ob_mark += $obtained_mark_formatted;
                 // Update the total marks for the current term
@@ -1302,7 +1358,6 @@ class studentResultController extends Controller
 
             $get_all_ob_mark += $both_term_ob_mark;
             $get_all_tot_mark += $overall_total;
-
             $table .= '</tr>';
         }
         // print_r($grade_arr_mmis);
@@ -5799,56 +5854,98 @@ while ($current_date <= $post_end_date) {
     }
     // store results in table result_html for mobile 
     public function save_result_html(Request $request)
-    {
-        // return $request;exit;        
-        $student_array = explode(",", $request->get('student_arr'));
-        $term_id = $request->get('term_id');
-        $grade_id = $request->get('grade_id');
-        $standard_id = $request->get('standard_id');
-        $division_id = $request->get('division_id');
-        $syear = session()->get('syear');
-        $sub_institute_id = session()->get('sub_institute_id');
-        $user_id = session()->get('user_id');
+{
+    $student_array = explode(",", $request->get('student_arr'));
+    $term_id = $request->get('term_id');
+    $grade_id = $request->get('grade_id');
+    $standard_id = $request->get('standard_id');
+    $division_id = $request->get('division_id');
+    $syear = session()->get('syear');
+    $sub_institute_id = session()->get('sub_institute_id');
+    $user_id = session()->get('user_id');
+    $result_type = $request->get('result_type');
 
-        $result_type = $request->get('result_type');
-        // echo "<pre>";print_r($request->all());exit;
+    foreach ($student_array as $key => $val) {
 
-        foreach ($student_array as $key => $val) {
-            $result_data['student_id'] = $val;
-            $result_data['term_id'] = $term_id;
-            $result_data['grade_id'] = $grade_id;
-            $result_data['standard_id'] = $standard_id;
-            $result_data['division_id'] = $division_id;
-            $result_data['syear'] = $syear;
-            $result_data['sub_institute_id'] = $sub_institute_id;
-            $result_data['created_by'] = $user_id;
-            $result_data['result_type'] = $result_type;
-            $result_data['html'] = $request->get('html_' . $val);
-            // if($val==236243){
-            //     echo "<pre>";print_r($result_data);
-            // }
-            // exit;
-            $data = DB::select("SELECT * FROM result_html WHERE student_id = '" . $val . "' AND term_id = '" . $request->get('term_id') . "'
-                    AND grade_id = '" . $request->get('grade_id') . "'  AND standard_id = '" . $request->get('standard_id') . "'
-                     AND division_id = '" . $request->get('division_id') . "'  AND syear = '" . $request->get('syear') . "'
-                     AND sub_institute_id = '" . session()->get('sub_institute_id') . "' AND result_type = '" . $result_type . "'
-                    ");
-            if (count($data) > 0) {
-                // $html = '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">'.htmlentities($request->get('html_' . $val));
-                $html = $request->get('html_' . $val);
+        /* ---------------------------------------------------------
+         SAVE ATTENDANCE & PERCENTAGE INTO result_reportcard_marks
+        ---------------------------------------------------------- */
 
-                $finalArray['html'] = $html;
-                $finalArray['result_type'] = $result_type;
-                $finalArray['updated_by'] = $user_id;
-                $finalArray['updated_on'] = NOW();
-                $data = DB::table('result_html')->where(['student_id' => $val, 'term_id' => $term_id, 'grade_id' => $grade_id, 'standard_id' => $standard_id, 'division_id' => $division_id, 'syear' => $syear, 'result_type' => $result_type])->update($finalArray);
-                echo "Updated for std-" . $standard_id . ' term_id-' . $term_id . ' student_id-' . $val;
-            } else {
-                DB::table("result_html")->insert($result_data);
-            }
+        // Values sent from Blade hidden fields
+        $working  = $request->get('total_working_day') ?? 0;
+        $present  = $request->get('present_working_day') ?? 0;
+        $percentage = $request->get('student_percentage') ?? 0;
+
+        DB::table('result_reportcard_marks')->updateOrInsert(
+            [
+                'student_id'  => $val,
+                'standard_id' => $standard_id,
+                'term_id'     => $term_id,
+                'syear'       => $syear
+            ],
+            [
+                'total_working_day'   => $working,
+                'present_working_day' => $present,
+                'student_percentage'   => $percentage,
+                'updated_at'           => now(),
+            ]
+        );
+
+        /* ---------------------------------------------------------
+           SAVE HTML INTO result_html
+        ---------------------------------------------------------- */
+
+        $result_data['student_id']       = $val;
+        $result_data['term_id']          = $term_id;
+        $result_data['grade_id']         = $grade_id;
+        $result_data['standard_id']      = $standard_id;
+        $result_data['division_id']      = $division_id;
+        $result_data['syear']            = $syear;
+        $result_data['sub_institute_id'] = $sub_institute_id;
+        $result_data['created_by']       = $user_id;
+        $result_data['result_type']      = $result_type;
+        $result_data['html']             = $request->get('html_' . $val);
+
+        $existing = DB::table('result_html')
+            ->where([
+                'student_id'  => $val,
+                'term_id'     => $term_id,
+                'grade_id'    => $grade_id,
+                'standard_id' => $standard_id,
+                'division_id' => $division_id,
+                'syear'       => $syear,
+                'result_type' => $result_type
+            ])
+            ->first();
+
+        if ($existing) {
+
+            $finalArray['html']        = $request->get('html_' . $val);
+            $finalArray['result_type'] = $result_type;
+            $finalArray['updated_by']  = $user_id;
+            $finalArray['updated_on']  = now();
+
+            DB::table('result_html')
+                ->where([
+                    'student_id'  => $val,
+                    'term_id'     => $term_id,
+                    'grade_id'    => $grade_id,
+                    'standard_id' => $standard_id,
+                    'division_id' => $division_id,
+                    'syear'       => $syear,
+                    'result_type' => $result_type
+                ])
+                ->update($finalArray);
+
+        } else {
+
+            DB::table("result_html")->insert($result_data);
         }
-        return 1;
     }
+
+    return 1;
+}
+
 
     public function get_activity_marks($standard_id, $student_id, $format, $digit)
     {
