@@ -51,6 +51,7 @@ use App\Http\Controllers\student\studentBulkUpdateController;
 use App\Http\Controllers\student\studentOptionalSubjectController;
 use App\Http\Controllers\student\studentAnacdotalController;
 use App\Http\Controllers\Student\AgeWiseReportController;
+use App\Http\Controllers\front_desk\circular\CircularReportController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -194,12 +195,18 @@ Route::post('firstpage_teacher', [studentReportController::class, 'firstpage_tea
 Route::group(['prefix' => 'front_desk', 'middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::resource('parent_communication', parentCommunicationController::class);
     Route::resource('leave_application', leaveApplicationController::class);
-    Route::resource('circular', circularController::class);
+    // Route::resource('circular', circularController::class);
+    Route::resource('circular', circularController::class)->except(['show']);
+
     Route::resource('dicipline', diciplineController::class);
     Route::resource('dicipline_report', dicipline_reportController::class);
     Route::resource('photo_video_gallary', photo_video_gallaryController::class);
     Route::resource('exam_schedule', exam_scheduleController::class);
     Route::resource('send_attachment', classworkAttachmentController::class);
+// Route::get('circular/report', [CircularReportController::class, 'index'])->name('circular.report.index');
+// Route::post('circular/report', [CircularReportController::class, 'generate'])->name('circular.report.generate');
+Route::get('circular/report', [CircularReportController::class, 'index'])
+    ->name('circular.report.index');
 
     Route::post('search_by_circular_title', [circularController::class, 'searchCircularTitle'])->name("search_by_circular_title");
     
