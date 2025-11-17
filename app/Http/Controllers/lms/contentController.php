@@ -299,20 +299,32 @@ class contentController extends Controller
             "message"     => "Content Added Successfully",
         ];
         $type = $request->input('type');
-        //return is_mobile($type, "content_master.index", $res, "redirect");
-        // return redirect()->route('topic_master.index', ['id' => $request->get('hid_chapter_id')]);
-        if ( $request->has('hid_topic_id') ) {
-            return redirect()->route('topic_master.index', ['id' => $request->get('hid_chapter_id'),'standard_id' => $chapter_data['standard_id'],'perm'=>$sub_institute_id]);
-        } else {
-            return redirect()->route('chapter_master.index', ['standard_id' => $chapter_data['standard_id'], 'subject_id' => $chapter_data['subject_id'],'perm'=>$sub_institute_id]);
+        if($type == "API")
+            return is_mobile($type, "content_master.index", $res, "redirect");
+        else{
+            // return redirect()->route('topic_master.index', ['id' => $request->get('hid_chapter_id')]);
+            if ( $request->has('hid_topic_id') ) {
+                return redirect()->route('topic_master.index', ['id' => $request->get('hid_chapter_id'),'standard_id' => $chapter_data['standard_id'],'perm'=>$sub_institute_id]);
+            } else {
+                return redirect()->route('chapter_master.index', ['standard_id' => $chapter_data['standard_id'], 'subject_id' => $chapter_data['subject_id'],'perm'=>$sub_institute_id]);
+            }
         }
     }
 
     public function storeChapter(Request $request){      
-        // echo "<pre>"; print_r($request->all()); exit;         
-        $sub_institute_id = $request->session()->get('sub_institute_id'); 		
-        $syear = $request->session()->get('syear'); 		
-        $user_id = $request->session()->get('user_id');
+        //echo "<pre>"; print_r($request->all()); exit;
+        $type = $request->input('type');
+        if($type == "API"){
+            $sub_institute_id = $request->input('sub_institute_id');
+            $syear = $request->input('syear');
+            $user_id = $request->input('user_id');
+        }
+        else{
+            $sub_institute_id = $request->session()->get('sub_institute_id');       
+            $syear = $request->session()->get('syear');         
+            $user_id = $request->session()->get('user_id');
+        }
+
         $show_hide = $request->get('show_hide');
         $show_hide_val = $show_hide ?? '';
 
@@ -387,8 +399,9 @@ class contentController extends Controller
 
         // dd($content);
         //'sub_topic_id' => $request->get('subtopic'),  
-        DB::enableQueryLog();
+        //DB::enableQueryLog();
         contentModel::insert($content);
+//echo "RAJESH";print_r($content); exit;
         $last_id = DB::getPDO()->lastInsertId();
 
         $mapping_type = $request->get('mapping_type');
@@ -408,9 +421,11 @@ class contentController extends Controller
             "status_code" => 1,
 			"message" => "Content Added Successfully",
 		);
-        $type = $request->input('type');
-        //return is_mobile($type, "content_master.index", $res, "redirect");
-        return redirect()->route('chapter_master.index', ['standard_id' => $request->get('hid_standard_id'), 'subject_id' => $request->get('hid_subject_id'),'perm'=>$sub_institute_id]);
+
+        if($type == "API")
+            return is_mobile($type, "content_master.index", $res, "redirect");
+        else
+            return redirect()->route('chapter_master.index', ['standard_id' => $request->get('hid_standard_id'), 'subject_id' => $request->get('hid_subject_id'),'perm'=>$sub_institute_id]);
     }
 		
     public function edit(Request $request,$id){
