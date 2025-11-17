@@ -26,7 +26,15 @@
                                 <label>To Date</label>
                                 <input type="text" name="to_date" class="form-control mydatepicker" autocomplete="off" />
                             </div>
-                            
+                            <div class="col-md-4 form-group">
+                                <label>Academic Year</label>
+                                <select name="academic_year" class="form-control" required>
+                                    <option value="">Select</option>
+                                    @foreach($data['academicYears'] as $year)
+                                        <option value="{{ $year->syear }}">{{ $year->syear }}</option>
+                                    @endforeach               
+                                </select>
+                            </div>
                             <div class="col-md-4 form-group">
                                 <label>Select</label>
                                 <select name="tbl" class="form-control" required>
