@@ -537,7 +537,64 @@ class admissionRegistrationController extends Controller
                 $get_enrollment_no = $enrollment_result[0]->new_enrollment_no;
                 $new_enrollment_no = $get_enrollment_no + 1;
             }
-        } else {
+        } else if ($sub_institute_id == 202)//Generate Enrollment No for hills_rustampura
+        {
+            $get_prefix_result = DB::table('enrollment_prefix_master')
+                ->select('enrollment_prefix_master.*')
+                ->whereRaw("sub_institute_id = '" . $sub_institute_id . "' AND FIND_IN_SET ('" . $admission_standard_id . "', standards)")
+                ->get()->toArray();
+        
+            $prefix = $get_prefix_result[0]->prefix;
+        
+            if ($prefix != '' && $prefix != null) {
+        
+                $syear = session()->get('syear');
+                $syearShort = substr($syear, -2);
+                $finalPrefix = $prefix . "-" . $syearShort . "-";
+        
+                $enrollment_result = DB::table('tblstudent')
+                    ->selectRaw('MAX(enrollment_no) as new_enrollment_no')
+                    ->where('sub_institute_id', $sub_institute_id)
+                    ->where('enrollment_no', 'LIKE', $finalPrefix . '%')
+                    ->first();
+        
+                if ($enrollment_result->new_enrollment_no) {
+                    $full = $enrollment_result->new_enrollment_no;
+                    $lastPart = substr($full, strrpos($full, '-') + 1);
+                    $new_enrollment_number = (int)$lastPart + 1;
+                } else {
+                    $new_enrollment_number = 1;
+                }
+        
+                $new_enrollment_no = $finalPrefix . $new_enrollment_number;
+        
+            } else {
+        
+                $get_prefix_null_result = DB::table('enrollment_prefix_master')
+                    ->selectRaw('GROUP_CONCAT(prefix) as all_prefix')
+                    ->where('sub_institute_id', $sub_institute_id)
+                    ->first();
+        
+                $prefix_expload = explode(',', $get_prefix_null_result->all_prefix);
+        
+                $enrollment_result = DB::table('tblstudent')
+                    ->selectRaw('MAX(enrollment_no) as new_enrollment_no')
+                    ->where('sub_institute_id', $sub_institute_id)
+                    ->when(!empty($prefix_expload), function ($q) use ($prefix_expload) {
+                        foreach ($prefix_expload as $value) {
+                            $q->whereRaw("enrollment_no NOT LIKE '%" . $value . "%'");
+                        }
+                    })
+                    ->first();
+        
+                if ($enrollment_result->new_enrollment_no) {
+                    $new_enrollment_no = $enrollment_result->new_enrollment_no + 1;
+                } else {
+                    $new_enrollment_no = 1;
+                }
+            }
+        }  
+        else {
             $maxEnrollment = DB::table('tblstudent')
                 ->selectRaw('(MAX(CAST(enrollment_no AS INT)) + 1) AS new_enrollment_no')
                 ->where('sub_institute_id', $sub_institute_id)
