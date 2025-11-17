@@ -28,10 +28,24 @@ class send_sms_report_controller extends Controller
             }
         }
 
-        $data['data'] = [];
-        $type = $request->input('type');
+        $sub_institute_id = session()->get('sub_institute_id');
 
-        return is_mobile($type, "easy_comm/send_sms_report/show", $data, "view");
+    $academicYears = DB::table('academic_year')
+        ->where('sub_institute_id', $sub_institute_id)
+        ->groupBy('syear')
+        ->orderBy('syear', 'desc')
+        ->get();
+
+    // Prepare view data as top-level keys
+    $viewData = [
+        'academicYears' => $academicYears,
+        'data' => [],               // your existing data key
+        'message' => $message ?? '' // optional
+    ];
+
+    $type = $request->input('type');
+
+        return is_mobile($type, "easy_comm/send_sms_report/show", $viewData, "view");
     }
 
     /**
@@ -72,15 +86,22 @@ class send_sms_report_controller extends Controller
         }
 
         $type = $request->input('type');
-
+        $academic_year = $_REQUEST['academic_year'];
         $alldata = DB::table($tbl)
             ->join($join_tbl, $join)
-            ->where([
-                's.sub_institute_id' => session()->get('sub_institute_id'),
-            ])
-            ->where('s.created_on', '<=', $_REQUEST['to_date'])
-            ->where('s.created_on', '>=', $_REQUEST['from_date'])
-            ->get();
+            ->where('s.sub_institute_id', session()->get('sub_institute_id'))
+            ->where($syear, $academic_year);
+
+        // apply date filters only if values exist
+        if (!empty($_REQUEST['from_date'])) {
+            $alldata->where('s.created_on', '>=', $_REQUEST['from_date']);
+        }
+
+        if (!empty($_REQUEST['to_date'])) {
+            $alldata->where('s.created_on', '<=', $_REQUEST['to_date']);
+        }
+
+        $alldata = $alldata->get();
 
         $data = [];
         foreach ($alldata as $object) {
