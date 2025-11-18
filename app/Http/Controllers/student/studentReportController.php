@@ -230,6 +230,7 @@ class studentReportController extends Controller
                 $q->orderByRaw("CAST(SUBSTRING_INDEX(enrollment_no, '-', -1) AS UNSIGNED) ASC");
             })
             //->groupBy('tblstudent.id')  // added by vivek for family history show all memeber 25-09-2025
+            ->distinct()
             ->get();
             $student_dataArr = [];
             if($sub_institute_id==254){

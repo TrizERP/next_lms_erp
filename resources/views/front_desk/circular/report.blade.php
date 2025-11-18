@@ -143,7 +143,7 @@
             buttons: [
                 {
                     extend: 'pdfHtml5',
-                    title: 'PTM Report',
+                    title: 'circular Report',
                     orientation: 'landscape',
                     pageSize: 'LEGAL',
                     pageSize: 'A0',
@@ -151,9 +151,9 @@
                         columns: ':visible'
                     },
                 },
-                {extend: 'csv', text: ' CSV', title: 'PTM Report'},
-                {extend: 'excel', text: ' EXCEL', title: 'PTM Report'},
-                {extend: 'print', text: ' PRINT', title: 'PTM Report'},
+                {extend: 'csv', text: ' CSV', title: 'circular Report'},
+                {extend: 'excel', text: ' EXCEL', title: 'circular Report'},
+                {extend: 'print', text: ' PRINT', title: 'circular Report'},
                 'pageLength'
             ],
         });
