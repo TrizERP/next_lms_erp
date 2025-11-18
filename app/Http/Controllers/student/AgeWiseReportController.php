@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Student;
+namespace App\Http\Controllers\student;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -58,7 +58,7 @@ class AgeWiseReportController extends Controller
         $rows = DB::table('tblstudent_enrollment as e')
             ->join('tblstudent as s', 's.id', '=', 'e.student_id')
             ->select(
-                DB::raw("TIMESTAMPDIFF(YEAR, s.dob, CURDATE()) as age"),
+                DB::raw("IFNULL(TIMESTAMPDIFF(YEAR, s.dob, CURDATE()), 0) AS age"),
                 'e.standard_id as class_id',
                 's.gender',
                 DB::raw('count(*) as total')
@@ -67,6 +67,8 @@ class AgeWiseReportController extends Controller
             ->whereIn('e.standard_id', $classIds)
             ->where('s.sub_institute_id', $sub_institute_id)
             ->where('e.end_date', null)
+            ->whereNotNull('s.gender')
+            ->where('s.gender', '!=', '')
             ->groupBy('age', 'e.standard_id', 's.gender')
             ->orderBy('age')
             ->get();
@@ -92,7 +94,9 @@ class AgeWiseReportController extends Controller
         foreach ($rows as $r) {
             $ageInt = (int)$r->age;
             $classId = $r->class_id;
-            $gender = strtoupper(substr($r->gender ?? '', 0, 1));
+            //$gender = strtoupper(substr($r->gender ?? '', 0, 1));
+            $gender = preg_replace('/[^A-Za-z]/', '', $r->gender ?? '');
+            $gender = strtoupper(substr($gender, 0, 1));
 
             if (!isset($classes[$classId])) continue;
 
@@ -105,7 +109,8 @@ class AgeWiseReportController extends Controller
             }
 
             $className = $classes[$classId];
-            $report[$ageKey][$className][$gender] += (int)$r->total;
+            //$report[$ageKey][$className][$gender] += (int)$r->total;
+            $report[$ageKey][$className][$gender] = ($report[$ageKey][$className][$gender] ?? 0) + (int)$r->total;
             $grandTotal += (int)$r->total;
         }
 

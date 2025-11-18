@@ -50,7 +50,7 @@ use App\Http\Controllers\student\transferStudentController;
 use App\Http\Controllers\student\studentBulkUpdateController;
 use App\Http\Controllers\student\studentOptionalSubjectController;
 use App\Http\Controllers\student\studentAnacdotalController;
-use App\Http\Controllers\Student\AgeWiseReportController;
+use App\Http\Controllers\student\AgeWiseReportController;
 use App\Http\Controllers\front_desk\circular\CircularReportController;
 use Illuminate\Support\Facades\Route;
 
