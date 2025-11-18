@@ -52,6 +52,7 @@
                                 <th>Syear</th>
                                 <th>Item Code</th>
                                 <th>Title</th>
+                                <th>Remarks</th>
                                 <th class="text-left">Collection Type</th>
                             </tr>
                         </thead>
@@ -62,6 +63,7 @@
                                 <td>{{$value['syear']}}</td>
                                 <td>{{$value['item_code']}}</td>
                                 <td>{{$value['book_title']}}</td>
+                                <td>{{$value['remarks'] }}</td>
                                 <td>{{$value['collection_type']}}</td>
                             </tr>
                             @endforeach
