@@ -389,7 +389,7 @@ LIMIT 1");
 
                 $electiveExplode = explode(',',$get_standard_subjects[0]->elective_subject);
                 $subjectExplode = explode(',',$get_standard_subjects[0]->subject_name);
-
+// dd($subjectExplode);
                 foreach($electiveExplode as $key=>$val){
                     if($val=='Yes'){
                         $optionalSub[] = $subjectExplode[$key]; 
@@ -400,7 +400,7 @@ LIMIT 1");
             }
             $optionalImplode = implode(', ',$optionalSub);
             $subjectImplode = implode(', ',$mainSub);
-            $tdOptionalData = $subjectImplode.'<br>'.$optionalImplode;
+            $tdOptionalData = implode(', ',$subjectExplode);
             // added by uma on 05-05-2025 as per their requirement for manual entry for std 10 and 12 start MMIS
             if(isset($value['subjects_studied']) && $value['subjects_studied'] !=''){
                 $tdOptionalData = $value['subjects_studied'];
