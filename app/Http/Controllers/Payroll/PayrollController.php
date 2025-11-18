@@ -359,7 +359,7 @@ class PayrollController extends Controller
         $res['years'] = Helpers::getPairYears();
 
         $res['salaryStructure'] = EmployeeSalaryStructure::join('tbluser as u',function($join){
-            $join->on('u.id','=','employee_salary_structures.employee_id')->where('u.status',1); // 23-04-24 by uma
+            $join->on('u.id','=','employee_salary_structures.employee_id')->where('u.status',1)->where('employee_salary_structures.year',$year); // 23-04-24 by uma
         })
         ->join('hrms_departments as hd',function($join){
             $join->on('hd.id','=','u.department_id'); // 27-04-24 by uma
@@ -1835,7 +1835,8 @@ class PayrollController extends Controller
         $totalSal =0;
         foreach ($preparPayrollType as $value){
             // for allowance
-            $monthNo = date('n', strtotime($request->month)); // Converts months
+            //$monthNo = date('n', strtotime($request->month)); // Converts months
+            $monthNo = Carbon::parse("1 $request->month")->month;//Rajesh As per GPT
             $payrollMonthDays = Carbon::create($searchedYear, $monthNo)->daysInMonth;
             if(isset($value['allowance'])) {
                 $allowence =  $value['allowance'][0];

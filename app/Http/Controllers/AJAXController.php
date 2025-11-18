@@ -35,7 +35,7 @@ use function App\Helpers\is_mobile;
 use Symfony\Component\Process\Process;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 use Spatie\Async\Pool;
-use Gemini\Laravel\Facades\Gemini;
+//use Gemini\Laravel\Facades\Gemini;
 use Log;
 use function App\Helpers\getSubCordinates;
 
@@ -2429,9 +2429,9 @@ class AJAXController extends Controller
             // return $message;exit;
         }
 
-        $result = Gemini::geminiPro()->generateContent($message);
+        //$result = Gemini::geminiPro()->generateContent($message);
 
-        $text = $result->text(); // Hello! How can I assist you today?
+        $text = '';//$result->text(); // Hello! How can I assist you today?
         return $text;
     }
 
