@@ -28,6 +28,8 @@ $loginpage_backgrond = session()->get('loginpage_backgrond');
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
 
 
     <!-- Bootstrap CSS -->
@@ -110,11 +112,15 @@ $loginpage_backgrond = session()->get('loginpage_backgrond');
                                     <input class="form-control" name="email" type="text" required=""
                                         placeholder="Username">
                                 </div>
-                                <div class="form-group">
-                                    <label for="password">Password</label>
-                                    <input class="form-control" name="password" type="password" required=""
-                                        placeholder="Password">
-                                </div>
+                              <div class="form-group" style="position: relative;">
+    <label for="password">Password</label>
+    <input class="form-control" name="password" id="password" type="password" placeholder="Password" required>
+
+    <span style="position: absolute; right: 15px; top: 38px; cursor: pointer;" id="togglePassword">
+        <i class="fa-solid fa-eye" id="eyeIcon"></i>
+    </span>
+</div>
+
                                 <div class="form-group">
                                     <div class="row">
                                         <div class="col-6">
@@ -172,5 +178,20 @@ $(document).ready(function() {
 
 });
 </script>
+<script>
+document.getElementById("togglePassword").addEventListener("click", function () {
+    let password = document.getElementById("password");
+    let icon = document.getElementById("eyeIcon");
+
+    if (password.type === "password") {
+        password.type = "text";
+        icon.classList.replace("fa-eye", "fa-eye-slash");
+    } else {
+        password.type = "password";
+        icon.classList.replace("fa-eye-slash", "fa-eye");
+    }
+});
+</script>
+
 
 </html>

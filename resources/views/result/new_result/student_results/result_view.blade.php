@@ -63,9 +63,13 @@
     <input type="hidden" id="division_id" name="division_id" value="{{ $data['division_id'] }}">
     <input type="hidden" id="term_id" name="term_id" value="{{ $data['term_id'] }}">
     <input type="hidden" id="syear" name="syear" value="{{ $data['syear'] }}">
-    <input type="hidden" id="result_type" name="result_type"
-        value="{{ isset($data['result_type']) ? $data['result_type'] : 'Regular' }}">
+    <input type="hidden" id="result_type" name="result_type" value="{{ isset($data['result_type']) ? $data['result_type'] : 'Regular' }}">
     <input type="hidden" id="student_arr" name="student_arr" value="{{ $student_id_arr }}">
+
+    <input type="hidden" name="total_working_day" id="total_working_day" value="{{ $data['total_working_day'] ?? 0 }}">
+    <input type="hidden" name="present_working_day" id="present_working_day" value="{{ $data['present_working_day'] ?? 0 }}">
+    <input type="hidden" name="student_percentage" id="student_percentage" value="{{ $data['student_percentage'] ?? 0 }}">
+
 </form>
 
 @include('includes.footerJs')
@@ -83,7 +87,6 @@
                     result_html + "'>");
             }
         }
-
         var form = $("#savehtml");
         var url = form.attr('action');
         $.ajax({
