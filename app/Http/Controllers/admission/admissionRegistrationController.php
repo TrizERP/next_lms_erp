@@ -494,6 +494,7 @@ class admissionRegistrationController extends Controller
 
     public function max_enrollment_no($sub_institute_id, $admission_standard_id)
     {
+        $array = [201,202,203,204];
 
         if ($sub_institute_id == 47)//Generate Enrollment No for MMISERP
         {
@@ -537,7 +538,7 @@ class admissionRegistrationController extends Controller
                 $get_enrollment_no = $enrollment_result[0]->new_enrollment_no;
                 $new_enrollment_no = $get_enrollment_no + 1;
             }
-        } else if ($sub_institute_id == 202)//Generate Enrollment No for hills_rustampura
+        } else if (in_array($sub_institute_id, $array))//Generate Enrollment No for hills_rustampura
         {
             $get_prefix_result = DB::table('enrollment_prefix_master')
                 ->select('enrollment_prefix_master.*')

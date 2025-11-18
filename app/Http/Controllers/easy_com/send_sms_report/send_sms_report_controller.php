@@ -68,6 +68,7 @@ class send_sms_report_controller extends Controller
                 's.staff_id'         => 'u.id',
                 's.sub_institute_id' => 'u.sub_institute_id',
             ];
+            $yearColumn = "syear";   // staff table has NO academic/admission year
             $syear = "syear";
             $sms_no = "sms_no";
             $sms_text = "sms_text";
@@ -79,6 +80,7 @@ class send_sms_report_controller extends Controller
                 's.student_id'       => 'u.id',
                 's.sub_institute_id' => 'u.sub_institute_id',
             ];
+            $yearColumn = "s.admission_year";  // <-- column exists only here
             $syear = "SYEAR";
             $sms_no = "SMS_NO";
             $sms_text = "SMS_TEXT";
@@ -86,11 +88,14 @@ class send_sms_report_controller extends Controller
         }
 
         $type = $request->input('type');
-        $academic_year = $_REQUEST['academic_year'];
+        $academic_year = $request->input('academic_year');
+
         $alldata = DB::table($tbl)
             ->join($join_tbl, $join)
             ->where('s.sub_institute_id', session()->get('sub_institute_id'))
-            ->where($syear, $academic_year);
+            ->when($academic_year, function ($q) use ($yearColumn, $academic_year) {
+                return $q->where($yearColumn, $academic_year);
+            });       
 
         // apply date filters only if values exist
         if (!empty($_REQUEST['from_date'])) {
