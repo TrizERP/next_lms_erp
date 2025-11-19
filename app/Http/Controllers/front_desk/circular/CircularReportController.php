@@ -12,6 +12,8 @@ class CircularReportController extends Controller
     {
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
+        $standard = $request->input('standard');
+        $division = $request->input('division');
 
         // Load dropdown for Type
         $circular_type = DB::table('circular_type')->get();
@@ -19,18 +21,7 @@ class CircularReportController extends Controller
         // Default empty result
         $result = [];
 
-        // ---------------------------
-        // WHEN USER CLICKS SEARCH
-        // ---------------------------
-        if (
-            $request->has('from_date') ||
-            $request->has('title') ||
-            $request->has('type') ||
-            $request->has('standard_id') ||
-            $request->has('division_id')
-        ) {
-
-            $query = DB::table("circular as c")
+        $query = DB::table("circular as c")
                 ->join('standard as s', 's.id', '=', 'c.standard_id')
                 ->join('circular_type as t', 't.id', '=', 'c.type')
                 ->join('division as d', function ($join) {
@@ -41,19 +32,18 @@ class CircularReportController extends Controller
                 ->where("c.sub_institute_id", $sub_institute_id);
 
             // Apply Filters
-            if ($request->standard_id) {
-                $query->whereIn("c.standard_id", $request->standard_id);
+            if ($standard) {
+                $query->where("c.standard_id", $standard);
             }
 
-            if ($request->division_id) {
-                $query->whereIn("c.division_id", $request->division_id);
+            if ($division) {
+                $query->where("c.division_id", $division);
             }
             if ($request->from_date && $request->to_date) {
                 $query->whereBetween("c.date_", [$request->from_date, $request->to_date]);
             }
 
             $result = $query->orderBy('c.id', 'DESC')->get();
-        }
 
         // Return ONE single view
         return view('front_desk.circular.report', compact('circular_type', 'result'));

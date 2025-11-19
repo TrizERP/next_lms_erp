@@ -41,12 +41,15 @@ class monthwiseReceiptPdfController extends Controller
         $feesDetails = DB::table('fees_other_collection as foc')
             ->join('tblstudent as s', 's.id', '=', 'foc.student_id')
             ->join('tblstudent_enrollment as se', 'se.student_id', '=', 'foc.student_id')
+            ->join('standard as st', function($join) {
+                $join->on('st.id', '=', 'se.standard_id')
+                     ->whereColumn('foc.syear', 'se.syear');
+            })
+            ->join('division as d', 'd.id', '=', 'se.section_id')
             ->select(
-                'foc.*',
+                'foc.*','st.name as standard','d.name as division',
                 DB::raw('count(foc.id) as total_records'),
-                DB::raw('concat_ws(" ", COALESCE(s.first_name,"-"), COALESCE(s.middle_name,"-"), COALESCE(s.last_name,"-")) as student_name'),
-                DB::raw('(SELECT name FROM standard WHERE id = se.standard_id) as standard'),
-                DB::raw('(SELECT name FROM division WHERE id = se.section_id) as division')
+                DB::raw('concat_ws(" ", COALESCE(s.first_name,"-"), COALESCE(s.middle_name,"-"), COALESCE(s.last_name,"-")) as student_name')
             )
             ->whereBetween('foc.deduction_date', [$from_date, $to_date])
             ->where([
@@ -63,12 +66,15 @@ class monthwiseReceiptPdfController extends Controller
         $feesDetails = DB::table('fees_collect as fc')
             ->join('tblstudent as s', 's.id', '=', 'fc.student_id')
             ->join('tblstudent_enrollment as se', 'se.student_id', '=', 'fc.student_id')
+            ->join('standard as st', function($join) {
+                $join->on('st.id', '=', 'se.standard_id')
+                     ->whereColumn('fc.syear', 'se.syear');
+            })
+            ->join('division as d', 'd.id', '=', 'se.section_id')
             ->select(
-                'fc.*',
+                'fc.*','st.name as standard','d.name as division',
                 DB::raw('count(fc.id) as total_records'),
-                DB::raw('concat_ws(" ", COALESCE(s.first_name,"-"), COALESCE(s.middle_name,"-"), COALESCE(s.last_name,"-")) as student_name'),
-                DB::raw('(SELECT name FROM standard WHERE id = fc.standard_id) as standard'),
-                DB::raw('(SELECT name FROM division WHERE id = se.section_id) as division')
+                DB::raw('concat_ws(" ", COALESCE(s.first_name,"-"), COALESCE(s.middle_name,"-"), COALESCE(s.last_name,"-")) as student_name')
             )
             ->whereBetween('fc.receiptdate', [$from_date, $to_date])
             ->where([

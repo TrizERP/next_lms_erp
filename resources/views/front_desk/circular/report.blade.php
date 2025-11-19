@@ -25,14 +25,14 @@
                 @endif
                 @php
                     $grade_id = $standard_id = $division_id = '';
-                    if(isset($data['grade_id'])){
-                        $grade_id = $data['grade_id'];
+                    if(isset($data['grade'])){
+                        $grade_id = $data['grade'];
                     }
-                    if(isset($data['standard_id'])){
-                        $standard_id = $data['standard_id'];
+                    if(isset($data['standard'])){
+                        $standard_id = $data['standard'];
                     }
-                    if(isset($data['division_id'])){
-                        $division_id = $data['division_id'];
+                    if(isset($data['division'])){
+                        $division_id = $data['division'];
                     }
                 @endphp
                 <form action="{{ route('circular.report.index') }}" method="GET">
@@ -76,11 +76,10 @@
         @if(isset($result) && count($result) > 0)
         <div class="card mt-3">
             <div class="table-responsive">
-                <table class="table table-bordered" id="example">
+                <table id="example" class="table table-striped">
                     <thead>
                         <tr>
                             <th>Sr No</th>
-                            <th>Syear</th>
                             <th>Type</th>
                             <th>Title</th>
                             <th>Message</th>
@@ -88,7 +87,7 @@
                             <th>Standard</th>
                             <th>Division</th>
                             <th>File</th>
-                             <th>Action</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
 
@@ -98,7 +97,6 @@
                         @foreach($result as $row)
                             <tr>
                                 <td>{{ $i++ }}</td>
-                                <td>{{ $row->syear }}</td>
                                 <td>{{ $row->circular_type }}</td>
                                 <td>{{ $row->title }}</td>
                                 <td style="white-space: break-spaces;">{{ $row->message }}</td>
@@ -109,13 +107,16 @@
                                     @if($row->file_name)
                                         <a href="{{ asset('storage/circular/'.$row->file_name) }}" target="_blank">View</a>
                                     @else
-                                        - <td>
+                                        -
+                                    @endif
+                                </td>
+                                <td>
+                                    @if($row->file_name)
                                     <form action="{{ route('circular.destroy', $row->id)}}" method="post">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" name="delete" onclick="return confirmDelete();" class="btn btn-info btn-outline-danger"><i class="mdi mdi-close"></i></button>
                                     </form>
-                                </td>
                                     @endif
                                 </td>
                             </tr>
@@ -143,7 +144,7 @@
             buttons: [
                 {
                     extend: 'pdfHtml5',
-                    title: 'PTM Report',
+                    title: 'Circular Report',
                     orientation: 'landscape',
                     pageSize: 'LEGAL',
                     pageSize: 'A0',
@@ -151,9 +152,9 @@
                         columns: ':visible'
                     },
                 },
-                {extend: 'csv', text: ' CSV', title: 'PTM Report'},
-                {extend: 'excel', text: ' EXCEL', title: 'PTM Report'},
-                {extend: 'print', text: ' PRINT', title: 'PTM Report'},
+                {extend: 'csv', text: ' CSV', title: 'Circular Report'},
+                {extend: 'excel', text: ' EXCEL', title: 'Circular Report'},
+                {extend: 'print', text: ' PRINT', title: 'Circular Report'},
                 'pageLength'
             ],
         });
@@ -170,9 +171,9 @@
                         .search( this.value )
                         .draw();
                 }
-            } );
-        } );
-    } );
+            });
+        });
+    });
 </script>
 @include('includes.footer')
 @endsection
