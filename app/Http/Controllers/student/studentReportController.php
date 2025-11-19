@@ -121,7 +121,8 @@ class studentReportController extends Controller
             //     $array[] = $field;
             // }
             $seprateValue  = explode("/",$field);
-            $fielValue = $seprateValue[0];
+            // $fielValue = $seprateValue[0];
+           $fielValue = str_replace(" ", "_", $seprateValue[0]);
             $fieldId = $seprateValue[1];
 
           $customDetails = DB::table("tblcustom_fields")
@@ -134,8 +135,14 @@ class studentReportController extends Controller
             ->whereRaw('FIND_IN_SET('.$sub_institute_id.', field_message) = 0')
             ->first();
 
-            if(!empty($customDetails) && !in_array($fielValue,["student_name","optional_subject"])){
-                $array[] = $customDetails->table_name.".".$fielValue." as ".str_ireplace(" ","_",$customDetails->field_label);
+           if(!empty($customDetails) && !in_array($fielValue,["student_name","optional_subject"])){
+            //$array[] = $customDetails->table_name.".".$fielValue." as ".str_ireplace(" ","_",$customDetails->field_label);
+
+            $safeField = str_replace(" ", "_", $fielValue);
+            $safeLabel = str_replace(" ", "_", $customDetails->field_label);
+
+            $array[] = "{$customDetails->table_name}.{$safeField} AS {$safeLabel}";
+
                 $makeKey = strtolower(str_replace(" ","_",$customDetails->field_label));
                 $header[$makeKey] = ucfirst(str_replace(['_'], [' '], str_replace($searchArr1, $replaceArr1, $customDetails->field_label)));
             }else if($fielValue=="academic_year"){
@@ -166,7 +173,11 @@ class studentReportController extends Controller
 
         // Concatenated student name
         $array[] = 'CONCAT_WS(" ", tblstudent.first_name, tblstudent.middle_name, tblstudent.last_name) AS student_name';
-      
+      // Attendance fields
+        $array[] = "result_reportcard_marks.total_working_day as total_working_day";
+        $array[] = "result_reportcard_marks.present_working_day as present_working_day";
+        $array[] = "result_reportcard_marks.student_percentage as student_percentage";
+
         // Query
         $student_data = DB::table('tblstudent')
             ->select(DB::raw(strtolower(implode(',', $array))))
@@ -214,6 +225,13 @@ class studentReportController extends Controller
                 $join->on('tblstudent_family_history.student_id', '=', 'tblstudent.id')
                     ->where('tblstudent_family_history.sub_institute_id', $sub_institute_id);
             })// adddd on 24-09-2025 by uma for conflict with tc details
+
+            ->leftJoin('result_reportcard_marks', function($join) use($syear, $sub_institute_id){
+            $join->on('result_reportcard_marks.student_id', '=', 'tblstudent.id')
+                 ->where('result_reportcard_marks.syear', $syear)
+                 ->where('result_reportcard_marks.sub_institute_id', $sub_institute_id);
+            })
+
             ->where($extraSearchArray)
             ->when($request->grade,function($q) use($request){
                 $q->where('tblstudent_enrollment.grade_id',$request->grade);
