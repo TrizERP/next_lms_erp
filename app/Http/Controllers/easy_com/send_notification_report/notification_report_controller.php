@@ -25,8 +25,17 @@ class notification_report_controller extends Controller
     {
         $type = $request->input('type');
 
+        $sub_institute_id = session()->get('sub_institute_id');
+
+        $academicYears = DB::table('academic_year')
+            ->where('sub_institute_id', $sub_institute_id)
+            ->groupBy('syear')
+            ->orderBy('syear', 'desc')
+            ->get();
+
         $res['status_code'] = 1;
         $res['message'] = "Success";
+        $res['academicYears'] = $academicYears;
 
         return is_mobile($type, "easy_comm/send_notification_report/show_notification_report", $res, "view");
     }
@@ -44,13 +53,15 @@ class notification_report_controller extends Controller
         $mobile_no = $request->input('mobile_no');
         $from_date = $request->input('from_date');
         $to_date = $request->input('to_date');
+        $academic_year = $request->input('academic_year');
         if($type=='API'){
             $sub_institute_id = $request->sub_institute_id;
             $syear = $request->syear;
         }else{
             $sub_institute_id = $request->session()->get('sub_institute_id');
-            $syear = $request->session()->get('syear');            
+            $syear = $request->session()->get('syear');
         }
+
         $marking_period_id = session()->get('term_id');
 
         $data = DB::table('app_notification as an')
@@ -75,8 +86,13 @@ class notification_report_controller extends Controller
                 gu.mobile_no, DATE_FORMAT(an.CREATED_AT,'%d-%m-%Y %r') AS CREATED_ON,s.enrollment_no,an.NOTIFICATION_TYPE, 
                 DATE_FORMAT(an.NOTIFICATION_DATE,'%d-%m-%Y') AS NOTOFICATION_DATE,an.NOTIFICATION_DESCRIPTION, 
                 CASE WHEN an.Status = 1 THEN 'Read' WHEN an.Status =0 THEN 'Un-Read' ELSE 'N/A' END AS NOTIFICATION_STATUS")
-            ->where('se.SYEAR', $syear)
+            ->when($academic_year, function ($q, $year) {
+                    return $q->where('se.SYEAR', $year);
+                })
             ->where('an.sub_institute_id', $sub_institute_id)
+            ->when($academic_year, function ($query, $year) {
+                return $query->whereYear('an.NOTIFICATION_DATE', $year);
+            })
             ->where(function ($q) use ($mobile_no, $from_date, $to_date) {
                 if ($mobile_no != '') {
                     $q->where('s.mobile', $mobile_no);
@@ -84,7 +100,6 @@ class notification_report_controller extends Controller
                 if ($from_date != '') {
                     $q->where('an.NOTIFICATION_DATE', '>=', $from_date);
                 }
-
                 if ($to_date != '') {
                     $q->where('an.NOTIFICATION_DATE', '<=', $to_date);
                 }
@@ -96,6 +111,11 @@ class notification_report_controller extends Controller
         $data = array_map(function ($value) {
             return (array) $value;
         }, $data);
+        $academicYears = DB::table('academic_year')
+            ->where('sub_institute_id', $sub_institute_id)
+            ->groupBy('syear')
+            ->orderBy('syear', 'desc')
+            ->get();
         if(!empty($data)){
             $res['status_code'] = 1;
             $res['message'] = "Success";
@@ -103,9 +123,13 @@ class notification_report_controller extends Controller
             $res['mobile_no'] = $mobile_no;
             $res['from_date'] = $from_date;
             $res['to_date'] = $to_date;
+            $res['academic_year'] = $academic_year; // Store selected year
+            $res['academicYears'] = $academicYears;
         }else{
             $res['status_code'] = 0;
             $res['message'] = "No notification found";
+            $res['academic_year'] = $academic_year; // Store selected year
+            $res['academicYears'] = $academicYears; // Always include academic years
         }
 
         return is_mobile($type, "easy_comm/send_notification_report/show_notification_report", $res, "view");
@@ -167,3 +191,4 @@ class notification_report_controller extends Controller
         //
     }
 }
+
