@@ -52,6 +52,7 @@ use App\Http\Controllers\student\studentOptionalSubjectController;
 use App\Http\Controllers\student\studentAnacdotalController;
 use App\Http\Controllers\student\AgeWiseReportController;
 use App\Http\Controllers\front_desk\circular\CircularReportController;
+use App\Http\Controllers\student\studentreportNewController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -112,6 +113,7 @@ Route::group(['prefix' => 'student', 'middleware' => ['session', 'menu', 'logRou
     Route::post('show_search_student_optional_subject', [studentOptionalSubjectController::class, 'searchStudentOptionalSubject'])->name("show_search_student_optional_subject");
     //Route::post('add_student_optional_subject', [studentOptionalSubjectController::class, 'addStudentOptionalSubject'])->name('add_student_optional_subject');
     Route::post('show_student_report', [studentReportController::class, 'searchStudent'])->name("show_student_report");
+    Route::post('show_student_report1', [studentreportNewController::class, 'searchStudent'])->name("show_student_report1");
     Route::resource('missing_document_report', missingDocumentReportController::class);
     Route::resource('inactive_student_report', InactiveStudentReportController::class);
     Route::match(['get', 'post'],'show_bulk_student', [bulkStudentController::class, 'searchStudent'])->name("show_bulk_student");
