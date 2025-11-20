@@ -10,22 +10,36 @@
                 <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
                     <h4 class="page-title">Notification Report</h4> </div>
             </div>
-        @php
-            $mobile_no = $from_date = $to_date = '';
+            @php
+                $mobile_no = $from_date = $to_date = $academic_year = '';
+                $academicYears = isset($academicYears) ? $academicYears : (isset($data['academicYears']) ? $data['academicYears'] : []);
 
-            if(isset($data['mobile_no']))
-            {
-                $mobile_no = $data['mobile_no'];
-            }
-            if(isset($data['from_date']))
-            {
-                $from_date = $data['from_date'];
-            }
-            if(isset($data['to_date']))
-            {
-                $to_date = $data['to_date'];
-            }
-        @endphp
+                if(isset($data['mobile_no']))
+                {
+                    $mobile_no = $data['mobile_no'];
+                }
+                if(isset($data['from_date']))
+                {
+                    $from_date = $data['from_date'];
+                }
+                if(isset($data['to_date']))
+                {
+                    $to_date = $data['to_date'];
+                }
+                if(isset($data['academic_year']))
+                {
+                    $academic_year = $data['academic_year'];
+                }
+                // Also check for direct variables
+                if(isset($academic_year) && !empty($academic_year))
+                {
+                    $academic_year = $academic_year;
+                }
+                elseif(isset($data['academic_year']) && !empty($data['academic_year']))
+                {
+                    $academic_year = $data['academic_year'];
+                }
+            @endphp
         <div class="card">
             @if ($sessionData = Session::get('data'))
                 @if($sessionData['status_code'] == 1)
@@ -48,6 +62,20 @@
                         <input type="text" id="to_date" name="to_date" value="{{$to_date}}" class="form-control mydatepicker" autocomplete="off">
                     </div>
                     <div class="col-md-4 form-group">
+                        <label>Admission Year</label>
+                        <select name="academic_year" id="academic_year" class="form-control">
+                            <option value="">Select</option>
+                            @if(isset($academicYears) && (is_array($academicYears) || is_object($academicYears)))
+                                @foreach($academicYears as $year)
+                                <option value="{{ $year->syear }}"
+                                    {{ (isset($academic_year) && $academic_year == $year->syear) || (isset($data['academic_year']) && $data['academic_year'] == $year->syear) ? 'selected' : '' }}>
+                                    {{ $year->syear }}
+                                </option>
+                                @endforeach
+                            @endif
+                        </select>
+                    </div>
+                    <div class="col-md-4 form-group">
                         <label>Mobile No.</label>
                         <input type="text" id="mobile_no" value="{{$mobile_no}}" name="mobile_no" class="form-control">
                     </div>
@@ -61,10 +89,7 @@
             </div>
         @if(isset($data['data']))
         @php
-            if(isset($data['data'])){
-                $data = $data['data'];
-            }
-            
+            $notificationData = $data['data'] ?? [];
         @endphp
         <div class="card">
             <div class="table-responsive">
@@ -92,8 +117,7 @@
                         @php
                         $j=1;
                         @endphp
-                        @if(isset($data))                        
-                        @foreach($data as $key => $val)
+                        @foreach($notificationData as $val)
                         <tr>
                             <td>{{$j}}</td>
                             <td>{{$val['NOTIFICATION_TYPE']}}</td>
@@ -120,7 +144,6 @@
                 </table>
             </div>
         </div>
-        @endif
     </div>
 </div>
 
