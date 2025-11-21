@@ -87,7 +87,7 @@ class notification_report_controller extends Controller
                 DATE_FORMAT(an.NOTIFICATION_DATE,'%d-%m-%Y') AS NOTOFICATION_DATE,an.NOTIFICATION_DESCRIPTION, 
                 CASE WHEN an.Status = 1 THEN 'Read' WHEN an.Status =0 THEN 'Un-Read' ELSE 'N/A' END AS NOTIFICATION_STATUS")
             ->when($academic_year, function ($q, $year) {
-                    return $q->where('se.SYEAR', $year);
+                    return $q->where('s.admission_year', $year);
                 })
             ->where('an.sub_institute_id', $sub_institute_id)
             ->when($academic_year, function ($query, $year) {
