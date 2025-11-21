@@ -94,6 +94,8 @@ class admissionEnquiryController extends Controller
             $result = $data->get()->toArray();//COUNT(tblstudent.id) AS total_student_count, by rajesh update 'af.'
 
         $data = json_decode(json_encode($result), true);
+        // echo "<pre>";print_r($data);exit;
+
         // get general data
         $get_previousAdmission = DB::table('general_data')->where(['fieldname' => 'previous_year_admission', 'sub_institute_id' => $sub_institute_id])->first();
         // echo "<pre>";print_r($get_previousAdmission->fieldvalue);exit;
@@ -148,12 +150,17 @@ class admissionEnquiryController extends Controller
         // echo "<pre>";print_r($request->all());exit;
         $category = castModel::get()->toArray();
 
-        $dataCustomFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "admission_enquiry"])
-            ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1) and user_type="" ')
-            ->when($type=="webForm" && $sub_institute_id==254,function($q) use($request){
-                $q->whereNotIN('id',[199,200,201]);
-            })
-            ->get();
+        $dataCustomFields = tblcustomfieldsModel::where(['status' => "1"])
+                ->when($type == "webForm", function ($q) {
+                    $q->where(['table_name' => "admission_enquiry_online"]);
+                }, function ($q) {
+                    $q->where(['table_name' => "admission_enquiry"]);
+                })
+                ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1) and user_type="" ')
+                ->when($type=="webForm" && $sub_institute_id==254,function($q) use($request){
+                    $q->whereNotIN('id',[199,200,201]);
+                })
+                ->get();
 
         $fieldsData = tblfields_dataModel::get()->toArray();
         $i = 0;
@@ -195,6 +202,10 @@ class admissionEnquiryController extends Controller
             'date' => $row->date,
             ];
         }
+        $schoolData = SchoolModel::where(['id' => $sub_institute_id])->get()->toArray();
+        $schoolName = $schoolData[0]['SchoolName'];
+        $schoolLogo = $_SERVER['APP_URL'].'/admin_dep/images/'.$schoolData[0]['Logo'] ?? '-';
+        $res['logo'] = $schoolLogo;
         // echo "<pre>";print_r($res['ageValidation']);exit;
         if($type=='webForm'){
             // echo "<pre>";print_r($res['ageValidation']);exit;
@@ -753,21 +764,47 @@ class admissionEnquiryController extends Controller
         $data['created_by'] = $user_id;
         $data['created_on'] = date('Y-m-d H:i:s');
         $data['sub_institute_id'] = $sub_institute_id;
-
+        //  echo "<pre>";print_r($data);exit;
         admissionEnquiryModel::where(['id' => $id])->update($data);
 
         if(isset($data["activity_date"]) && isset($data['activity_time']) && isset($data['admission_standard']) && $data['status']=="approve"){
             $nextYear = ((int) substr($syear, 2, 2)+1);
             $getStandard = DB::table('standard')->where(['id'=>$data['admission_standard'],'sub_institute_id'=>$sub_institute_id])->first();
-            $activityDate = isset($data["activity_date"]) ? Carbon::createFromFormat('d-m-Y',$data["activity_date"])->format('Y-m-d') : null;
+            $standard_id = $getStandard->id?? '';
+            $activityDate = null;
 
-            $htmlContent = view('admission.registrationHills.sendConfirmEmail', [
-                'page_type'=>'parent',
-                'parent_date' => $activityDate ?? '',
-                'parent_time' => $data["activity_time"] ?? '',
-                'aca_year'    => $syear.'-'.$nextYear,
-                'admission_std'    => $getStandard->name ?? '-',
-            ])->render();
+            if (!empty($data["activity_date"])) {
+                try {
+                    // Try expected format d-m-Y
+                    $activityDate = Carbon::createFromFormat('d-m-Y', trim($data["activity_date"]))->format('Y-m-d');
+                } catch (\Exception $e) {
+                    try {
+                        // Try Y-m-d
+                        $activityDate = Carbon::parse($data["activity_date"])->format('Y-m-d');
+                    } catch (\Exception $e) {
+                        $activityDate = null; // fallback
+                    }
+                }
+            }
+
+
+            if ($standard_id == 3291) {
+                $htmlContent = view('admission.registrationHills.sendConfirmEmail', [
+                    'page_type'=>'parent',
+                    'parent_date' => $activityDate ?? '',
+                    'parent_time' => $data["activity_time"] ?? '',
+                    'aca_year'    => $syear.'-'.$nextYear,
+                    'admission_std'    => $getStandard->name ?? '-',
+                ])->render();
+            } else {
+                $htmlContent = view('admission.registrationHills.admissionEnquiryStd2to9', [
+                    'page_type'=>'parent',
+                    'parent_date' => $activityDate ?? '',
+                    'parent_time' => $data["activity_time"] ?? '',
+                    'aca_year'    => $syear.'-'.$nextYear,
+                    'admission_std'    => $getStandard->name ?? '-',
+                ])->render();   
+            }
 
 
             $emailRequest = new Request([
@@ -784,6 +821,7 @@ class admissionEnquiryController extends Controller
             // send email from here
             $sendController = new admissionRegistrationHillController;
             $sendEmail = $sendController->sendEmail($emailRequest);
+            //echo "<pre>";print_r($sendEmail);exit;
         }
         $res['status_code'] = "1";
         $res['message'] = "Updated successfully";
