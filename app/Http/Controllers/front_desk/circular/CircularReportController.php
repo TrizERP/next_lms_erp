@@ -21,7 +21,9 @@ class CircularReportController extends Controller
         // Default empty result
         $result = [];
 
-        $query = DB::table("circular as c")
+        if($request->input('standard') || $request->input('division') || $request->from_date || $request->to_date)
+        {
+            $query = DB::table("circular as c")
                 ->join('standard as s', 's.id', '=', 'c.standard_id')
                 ->join('circular_type as t', 't.id', '=', 'c.type')
                 ->join('division as d', function ($join) {
@@ -44,7 +46,7 @@ class CircularReportController extends Controller
             }
 
             $result = $query->orderBy('c.id', 'DESC')->get();
-
+        }
         // Return ONE single view
         return view('front_desk.circular.report', compact('circular_type', 'result'));
     }
