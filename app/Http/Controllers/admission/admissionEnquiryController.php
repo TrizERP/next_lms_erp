@@ -770,15 +770,41 @@ class admissionEnquiryController extends Controller
         if(isset($data["activity_date"]) && isset($data['activity_time']) && isset($data['admission_standard']) && $data['status']=="approve"){
             $nextYear = ((int) substr($syear, 2, 2)+1);
             $getStandard = DB::table('standard')->where(['id'=>$data['admission_standard'],'sub_institute_id'=>$sub_institute_id])->first();
-            $activityDate = isset($data["activity_date"]) ? Carbon::createFromFormat('d-m-Y',$data["activity_date"])->format('Y-m-d') : null;
+            $standard_id = $getStandard->id?? '';
+            $activityDate = null;
 
-            $htmlContent = view('admission.registrationHills.sendConfirmEmail', [
-                'page_type'=>'parent',
-                'parent_date' => $activityDate ?? '',
-                'parent_time' => $data["activity_time"] ?? '',
-                'aca_year'    => $syear.'-'.$nextYear,
-                'admission_std'    => $getStandard->name ?? '-',
-            ])->render();
+            if (!empty($data["activity_date"])) {
+                try {
+                    // Try expected format d-m-Y
+                    $activityDate = Carbon::createFromFormat('d-m-Y', trim($data["activity_date"]))->format('Y-m-d');
+                } catch (\Exception $e) {
+                    try {
+                        // Try Y-m-d
+                        $activityDate = Carbon::parse($data["activity_date"])->format('Y-m-d');
+                    } catch (\Exception $e) {
+                        $activityDate = null; // fallback
+                    }
+                }
+            }
+
+
+            if ($standard_id == 3291) {
+                $htmlContent = view('admission.registrationHills.sendConfirmEmail', [
+                    'page_type'=>'parent',
+                    'parent_date' => $activityDate ?? '',
+                    'parent_time' => $data["activity_time"] ?? '',
+                    'aca_year'    => $syear.'-'.$nextYear,
+                    'admission_std'    => $getStandard->name ?? '-',
+                ])->render();
+            } else {
+                $htmlContent = view('admission.registrationHills.admissionEnquiryStd2to9', [
+                    'page_type'=>'parent',
+                    'parent_date' => $activityDate ?? '',
+                    'parent_time' => $data["activity_time"] ?? '',
+                    'aca_year'    => $syear.'-'.$nextYear,
+                    'admission_std'    => $getStandard->name ?? '-',
+                ])->render();   
+            }
 
 
             $emailRequest = new Request([
