@@ -134,6 +134,33 @@ class admissionRegistrationHillController extends Controller
                 $update = DB::table('admission_registration_v1')->where('id',$checkExists->id)->update($dataArr);
                 $i=1;
               }
+              // If paid = Yes → send payment confirmation email
+            if (isset($data["paid"]) && $data["paid"] == "Yes" && isset($data["email"])) {
+
+                $nextYear = ((int) substr($syear, 2, 2) + 1);
+
+                $htmlContent = view('admission.registrationHills.acknowledgementmai', [
+                    'page_type'    => 'paid',
+                    'paid_status'  => $data["paid"],
+                    'aca_year'     => $syear . '-' . $nextYear,
+                    'enquiry_no'   => $data["enquiry_no"] ?? '',
+                ])->render();
+
+                $emailRequest = new Request([
+                    'type'             => 'webForm',
+                    'teacher_id'       => $created_by,
+                    'sub_institute_id' => $sub_institute_id,
+                    'token'            => $_REQUEST['_token'],
+                    'all_email'        => $data['email'],
+                    'subject'          => 'ADMISSION PAYMENT CONFIRMATION',
+                    'syear'            => $syear,
+                    'example_subject'  => 'ADMISSION PAYMENT CONFIRMATION',
+                    'content'          => $htmlContent
+                ]);
+
+                $sendEmailController = new send_email_parents_controller;
+                $sendEmail = $this->sendEmail($emailRequest);
+            }
 
               // Check if transport is "Yes" and send the specific welcome email
               if(isset($data["transport"]) && $data["transport"] == "Yes" && isset($data['email'])) {
