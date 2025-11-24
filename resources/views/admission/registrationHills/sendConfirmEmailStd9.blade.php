@@ -151,139 +151,145 @@
         </div>
     @endif
     @elseif($page_type=="confirm")
-    <div style="border: 3px solid #000; padding: 2px; font-family: 'Arial', sans-serif;">
-        <div style="border: 1px solid #000; padding: 18px;">
-      
-          <!-- HEADER -->
-          <div style="width: 100%; margin-bottom:10px;">
-            <div style="float:left; width:50%;">
-              <p style="color:#943634; font-size:18px; font-weight:bold; margin:0;">HHS/EC/2/2026-27</p>
-            </div>
-      
-            <div style="float:right; width:50%; text-align:right;">
-              <img src="https://erp.triz.co.in/admin_dep/images/hills_logo1.png" width="160" height="55">
-            </div>
-      
-            <div style="clear:both;"></div>
-          </div>
-      
-          <!-- TITLE -->
-          <div style="text-align:center; margin-top:5px;">
-            <h2 style="margin:0; color:#000; font-weight:900; letter-spacing:1px;">HILLS’ HIGH SCHOOL</h2>
-            <h3 style="margin:0; color:#000; font-weight:700;">PROVISIONAL ADMISSION ({{$admission_std}}) MORNING SESSION</h3>
-          </div>
-      
-          <hr style="border:0; border-top:2px solid #943634; margin:18px 0;">
-      
-          <!-- GREETINGS -->
-          <h2 style="margin:0; color:#000;"><b>Dear Parents,</b></h2>
-      
-          <p style="font-size:15px; line-height:1.7; margin-top:10px;">
-            Hills High School is pleased to grant provisional admission to your ward. 
-            In order to submit the required documents & fees, you are requested to come to
-            <b>{{date('d-m-Y',strtotime($conf_date))}} between {{$parent_time}} (9:00 am to 11:00 am)</b> – <b>SUNDAY CLOSED</b>.
-          </p>
-      
-          <!-- SECTION A -->
-          <h3 style="color:#943634; margin-top:25px; text-decoration:underline;">A) The Admission Form</h3>
-      
-          <ol style="line-height:1.7; font-size:15px; color:#000;">
-            <li>The Form Must Be Filled in with A Blue or Black Pen.</li>
-            <li><b>Please Note:</b> The UDISE, PEN NO, APAAR ID Number is <b>MANDATORY</b>.</li>
-            <li>Please Use <b>CAPITAL LETTERS</b> to Fill in the Form.</li>
-            <li>Please Paste One Recent Photograph of the Father, Mother & Child.</li>
-            <li>Please Ensure All Details Are Completed. <b>Incomplete Forms Will Not Be Accepted.</b></li>
-          </ol>
-      
-          <!-- SECTION B -->
-          <h3 style="color:#943634; margin-top:25px; text-decoration:underline;">B) Documents & Photos</h3>
-      
-          <ol style="line-height:1.7; font-size:15px; color:#000;">
-            <li>Please bring a photocopy of the child’s Birth Certificate.</li>
-            <li>A caste certificate of child or father (if applicable).</li>
-            <li>Recent passport size photographs (white collared shirt) + 1 extra.</li>
-            <li>Photocopy of Aadhar cards of Child, Father & Mother (Compulsory).</li>
-            <li>A recent 5×7” family photo (Father, Mother & Child).</li>
-            <li>U-DISE Code, PEN No., APAAR ID from previous school (<b>MANDATORY</b>).</li>
-            <li>FULL YEAR FEE RECEIPT & NO DUE CERTIFICATE from previous school.</li>
-            <li>Reference Letter (Not required for Sibling Parent).</li>
-            <li>Original School Leaving Certificate (Admission remains provisional until submitted).</li>
-          </ol>
-      
-          <!-- SECTION C -->
-          <h3 style="color:#943634; margin-top:25px; text-decoration:underline;">C) Completion of NACH Document</h3>
-      
-          <p style="line-height:1.7; font-size:15px;">
-            The school follows a cashless and digital on-line fee collection system. Submit the following:
-          </p>
-      
-          <ul style="line-height:1.7; font-size:15px; padding-left:15px;">
-            <li>Completed NACH form (Collect from school office).</li>
-            <li>Cancelled cheque of the account to be used for fee payments.</li>
-            <li>If using Proprietorship / Partnership / Company account → bring company rubber stamp.</li>
-            <li>For joint accounts → ALL account holders must sign.</li>
-          </ul>
-      
-          <div style="background:#fff4e6; border-left:4px solid #943634; padding:10px 15px; margin-top:10px;">
-            <p style="margin:0; color:#000; font-weight:bold;">
-              • Admission remains <u>PROVISIONAL until NACH approval.</u><br>
-              • Admission is <u>CONFIRMED only after NACH is approved by the bank.</u>
-            </p>
-          </div>
-      
-          <!-- SECTION D -->
-          <h3 style="color:#943634; margin-top:25px; text-decoration:underline;">D) Fee Amount</h3>
-      
-          <ol style="line-height:1.7; font-size:15px; color:#000;">
-            <li>Fee for the year 2026-27 is <b style="color:#943634;">₹ 87,000/- *</b></li>
-            <li>Fees to be paid at the time of admission:</li>
-          </ol>
-      
-          <table style="width:100%; border:2px solid #000; border-collapse:collapse; margin:15px 0;">
-            <tr style="background:#f0e8e8;">
-              <th style="border:2px solid #000; padding:10px;">1st Quarter Tuition Fees</th>
-              <th style="border:2px solid #000; padding:10px;">One-Time Admission Fees</th>
-              <th style="border:2px solid #000; padding:10px;">Total Provisional Fees</th>
-            </tr>
-            <tr>
-              <td style="border:2px solid #000; padding:10px; color:#943634;"><b>₹ 21,750/-</b></td>
-              <td style="border:2px solid #000; padding:10px; color:#943634;"><b>₹ 7,250/-</b></td>
-              <td style="border:2px solid #000; padding:10px; color:#943634;"><b>₹ 29,000/-</b></td>
-            </tr>
-          </table>
-      
-          <p><b>* Final Fee Subject to Decision of Honorable Court.</b></p>
-      
-          <p style="line-height:1.7; font-size:15px;">
-            You are required to pay <b style="color:#943634;">₹ 29,000/-</b> at the school office by  
-            <b>Demand Draft / Cheque payable to “Hills High School”.</b>  
-            <br><b>No NEFT / No Cash will be accepted.</b>
-          </p>
-      
-          <div style="background:#fff4e6; border-left:4px solid #943634; padding:10px 15px; margin-top:10px;">
-            <p style="margin:0; color:#000; font-weight:bold;">
-              • FEES ONCE PAID ARE NON-REFUNDABLE AND NON-TRANSFERABLE.<br>
-              • Failure to submit documents & fees in time will make the candidate ineligible for admission.
-            </p>
-          </div>
-      
-          <!-- SIGNATURES -->
-          <div style="width:100%; margin-top:30px;">
-            <div style="float:left; width:50%; text-align:center;">
-              <p style="color:#943634; font-size:16px; margin:0;"><b>Mr. P.P. Jose</b></p>
-              <p style="color:#943634; font-weight:bold;">Principal</p>
-            </div>
-      
-            <div style="float:right; width:50%; text-align:center;">
-              <p style="color:#943634; font-size:16px; margin:0;"><b>Mrs. Persis Hilluwala</b></p>
-              <p style="color:#943634; font-weight:bold;">Director</p>
-            </div>
-      
-            <div style="clear:both;"></div>
-          </div>
-      
-        </div>
-      </div>      
+<!--[if mso]>
+<style type="text/css">
+body, table, td, div, p {font-family: Arial, Helvetica, sans-serif !important;}
+</style>
+<![endif]-->
+
+<div style="border: 3px solid #000; padding: 2px; font-family: Arial, sans-serif;">
+  <div style="border: 1px solid #000; padding: 18px;">
+  
+    <!-- HEADER -->
+    <div style="width: 100%; margin-bottom:10px;">
+      <div style="float:left; width:50%;">
+        <p style="color:#943634; font-size:18px; font-weight:bold; margin:0;">HHS/EC/2/2026-27</p>
+      </div>
+  
+      <div style="float:right; width:50%; text-align:right;">
+        <img src="https://erp.triz.co.in/admin_dep/images/hills_logo1.png" width="160" height="55" style="display: inline-block;">
+      </div>
+  
+      <div style="clear:both;"></div>
+    </div>
+  
+    <!-- TITLE -->
+    <div style="text-align:center; margin-top:5px;">
+      <h2 style="margin:0; color:#000; font-weight:bold; letter-spacing:1px;">HILLS' HIGH SCHOOL</h2>
+      <h3 style="margin:0; color:#000; font-weight:bold;">PROVISIONAL ADMISSION ({{$admission_std}}) MORNING SESSION</h3>
+    </div>
+  
+    <hr style="border:0; border-top:2px solid #943634; margin:18px 0;">
+  
+    <!-- GREETINGS -->
+    <h2 style="margin:0; color:#000;"><b>Dear Parents,</b></h2>
+  
+    <p style="font-size:15px; line-height:1.7; margin-top:10px;">
+      Hills High School is pleased to grant provisional admission to your ward. 
+      In order to submit the required documents & fees, you are requested to come to
+      <b>{{date('d-m-Y',strtotime($conf_date))}} between {{$parent_time}} (9:00 am to 11:00 am)</b> - <b>SUNDAY CLOSED</b>.
+    </p>
+  
+    <!-- SECTION A -->
+    <h3 style="color:#943634; margin-top:25px; text-decoration:underline;">A) The Admission Form</h3>
+  
+    <ol style="line-height:1.7; font-size:15px; color:#000; padding-left: 25px;">
+      <li style="margin-bottom: 8px;">The Form Must Be Filled in with A Blue or Black Pen.</li>
+      <li style="margin-bottom: 8px;"><b>Please Note:</b> The UDISE, PEN NO, APAAR ID Number is <b>MANDATORY</b>.</li>
+      <li style="margin-bottom: 8px;">Please Use <b>CAPITAL LETTERS</b> to Fill in the Form.</li>
+      <li style="margin-bottom: 8px;">Please Paste One Recent Photograph of the Father, Mother & Child.</li>
+      <li style="margin-bottom: 8px;">Please Ensure All Details Are Completed. <b>Incomplete Forms Will Not Be Accepted.</b></li>
+    </ol>
+  
+    <!-- SECTION B -->
+    <h3 style="color:#943634; margin-top:25px; text-decoration:underline;">B) Documents & Photos</h3>
+  
+    <ol style="line-height:1.7; font-size:15px; color:#000; padding-left: 25px;">
+      <li style="margin-bottom: 8px;">Please bring a photocopy of the child's Birth Certificate.</li>
+      <li style="margin-bottom: 8px;">A caste certificate of child or father (if applicable).</li>
+      <li style="margin-bottom: 8px;">Recent passport size photographs (white collared shirt) + 1 extra.</li>
+      <li style="margin-bottom: 8px;">Photocopy of Aadhar cards of Child, Father & Mother (Compulsory).</li>
+      <li style="margin-bottom: 8px;">A recent 5×7" family photo (Father, Mother & Child).</li>
+      <li style="margin-bottom: 8px;">U-DISE Code, PEN No., APAAR ID from previous school (<b>MANDATORY</b>).</li>
+      <li style="margin-bottom: 8px;">FULL YEAR FEE RECEIPT & NO DUE CERTIFICATE from previous school.</li>
+      <li style="margin-bottom: 8px;">Reference Letter (Not required for Sibling Parent).</li>
+      <li style="margin-bottom: 8px;">Original School Leaving Certificate (Admission remains provisional until submitted).</li>
+    </ol>
+  
+    <!-- SECTION C -->
+    <h3 style="color:#943634; margin-top:25px; text-decoration:underline;">C) Completion of NACH Document</h3>
+  
+    <p style="line-height:1.7; font-size:15px;">
+      The school follows a cashless and digital on-line fee collection system. Submit the following:
+    </p>
+  
+    <ul style="line-height:1.7; font-size:15px; padding-left:25px;">
+      <li style="margin-bottom: 8px;">Completed NACH form (Collect from school office).</li>
+      <li style="margin-bottom: 8px;">Cancelled cheque of the account to be used for fee payments.</li>
+      <li style="margin-bottom: 8px;">If using Proprietorship / Partnership / Company account → bring company rubber stamp.</li>
+      <li style="margin-bottom: 8px;">For joint accounts → ALL account holders must sign.</li>
+    </ul>
+  
+    <div style="background:#fff4e6; border-left:4px solid #943634; padding:10px 15px; margin-top:10px;">
+      <p style="margin:0; color:#000; font-weight:bold;">
+        • Admission remains <u>PROVISIONAL until NACH approval.</u><br>
+        • Admission is <u>CONFIRMED only after NACH is approved by the bank.</u>
+      </p>
+    </div>
+  
+    <!-- SECTION D -->
+    <h3 style="color:#943634; margin-top:25px; text-decoration:underline;">D) Fee Amount</h3>
+  
+    <ol style="line-height:1.7; font-size:15px; color:#000; padding-left: 25px;">
+      <li style="margin-bottom: 8px;">Fee for the year 2026-27 is <b style="color:#943634;">₹ 87,000/- *</b></li>
+      <li style="margin-bottom: 8px;">Fees to be paid at the time of admission:</li>
+    </ol>
+  
+    <table style="width:100%; border:2px solid #000; border-collapse:collapse; margin:15px 0;">
+      <tr style="background:#f0e8e8;">
+        <th style="border:2px solid #000; padding:10px; text-align:center;">1st Quarter Tuition Fees</th>
+        <th style="border:2px solid #000; padding:10px; text-align:center;">One-Time Admission Fees</th>
+        <th style="border:2px solid #000; padding:10px; text-align:center;">Total Provisional Fees</th>
+      </tr>
+      <tr>
+        <td style="border:2px solid #000; padding:10px; color:#943634; text-align:center;"><b>₹ 21,750/-</b></td>
+        <td style="border:2px solid #000; padding:10px; color:#943634; text-align:center;"><b>₹ 7,250/-</b></td>
+        <td style="border:2px solid #000; padding:10px; color:#943634; text-align:center;"><b>₹ 29,000/-</b></td>
+      </tr>
+    </table>
+  
+    <p style="font-size:15px;"><b>* Final Fee Subject to Decision of Honorable Court.</b></p>
+  
+    <p style="line-height:1.7; font-size:15px;">
+      You are required to pay <b style="color:#943634;">₹ 29,000/-</b> at the school office by  
+      <b>Demand Draft / Cheque payable to "Hills High School".</b>  
+      <br><b>No NEFT / No Cash will be accepted.</b>
+    </p>
+  
+    <div style="background:#fff4e6; border-left:4px solid #943634; padding:10px 15px; margin-top:10px;">
+      <p style="margin:0; color:#000; font-weight:bold;">
+        • FEES ONCE PAID ARE NON-REFUNDABLE AND NON-TRANSFERABLE.<br>
+        • Failure to submit documents & fees in time will make the candidate ineligible for admission.
+      </p>
+    </div>
+  
+    <!-- SIGNATURES -->
+    <div style="width:100%; margin-top:30px;">
+      <div style="float:left; width:50%; text-align:center;">
+        <p style="color:#943634; font-size:16px; margin:0;"><b>Mr. P.P. Jose</b></p>
+        <p style="color:#943634; font-weight:bold;">Principal</p>
+      </div>
+  
+      <div style="float:right; width:50%; text-align:center;">
+        <p style="color:#943634; font-size:16px; margin:0;"><b>Mrs. Persis Hilluwala</b></p>
+        <p style="color:#943634; font-weight:bold;">Director</p>
+      </div>
+  
+      <div style="clear:both;"></div>
+    </div>
+  
+  </div>
+</div>  
     @endif
 </body>
 
