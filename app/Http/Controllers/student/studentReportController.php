@@ -116,6 +116,9 @@ class studentReportController extends Controller
             'division' => get_string('division', 'request',$sub_institute_id),
         ];
 
+        $hasOptionalSubjects = false;
+        $hasFamilyHistory = false;
+        $hasResultMarks = false;
         foreach ($dynamicFields as $field) {
             // if (!in_array($field, ["bloodgroup", "van", "optional_subjects", "roll_no","student_name","academic_year","religion_name","father_name","gender","mobile","email"])) {
             //     $array[] = $field;
@@ -136,7 +139,14 @@ class studentReportController extends Controller
             ->first();
 
            if(!empty($customDetails) && !in_array($fielValue,["student_name","optional_subject"])){
-            //$array[] = $customDetails->table_name.".".$fielValue." as ".str_ireplace(" ","_",$customDetails->field_label);
+            // Check if field is from tblstudent_family_history table
+            if ($customDetails->table_name === 'tblstudent_family_history') {
+                $hasFamilyHistory = true;
+            }
+            // Check if field is from result_reportcard_marks table
+            if ($customDetails->table_name === 'result_reportcard_marks') {
+                $hasResultMarks = true;
+            }
 
             $safeField = str_replace(" ", "_", $fielValue);
             $safeLabel = str_replace(" ", "_", $customDetails->field_label);
@@ -150,7 +160,8 @@ class studentReportController extends Controller
                 $header[$fielValue] = ucfirst(str_replace(['_'], [' '], str_replace($searchArr1, $replaceArr1, $fielValue)));
             }
             else if($fielValue=="optional_subject"){
-                $array[] = "GROUP_CONCAT(DISTINCT subject.subject_name) as optional_subject";
+                $hasOptionalSubjects = true;
+                // Optional subjects handled via subquery below to prevent duplicates
                 if($sub_institute_id==254){
                     $header['optional_subject4']="Optional Subject 4";
                     $header['optional_subject5']="Optional Subject 5";
@@ -173,10 +184,7 @@ class studentReportController extends Controller
 
         // Concatenated student name
         $array[] = 'CONCAT_WS(" ", tblstudent.first_name, tblstudent.middle_name, tblstudent.last_name) AS student_name';
-      // Attendance fields
-        $array[] = "result_reportcard_marks.total_working_day as total_working_day";
-        $array[] = "result_reportcard_marks.present_working_day as present_working_day";
-        $array[] = "result_reportcard_marks.student_percentage as student_percentage";
+        // Attendance fields handled via subquery to prevent duplicates
 
         // Query
         $student_data = DB::table('tblstudent')
@@ -188,7 +196,7 @@ class studentReportController extends Controller
             ->leftJoin('religion', 'religion.id', '=', 'tblstudent.religion')
             ->leftJoin('house_master', 'house_master.id', '=', 'tblstudent_enrollment.house_id')
             ->leftJoin('student_quota', 'student_quota.id', '=', 'tblstudent_enrollment.student_quota')
-            ->leftJoin('religion as r', 'r.id', '=', 'tblstudent.religion')
+            //->leftJoin('religion as r', 'r.id', '=', 'tblstudent.religion')
             ->leftJoin('caste', 'caste.id', '=', 'tblstudent.cast')
             ->leftJoin('blood_group', 'blood_group.id', '=', 'tblstudent.bloodgroup')
             ->leftJoin('batch', function($join) use ($syear) {
@@ -208,12 +216,7 @@ class studentReportController extends Controller
                 $join->on('transport_vehicle.id', '=', 'transport_map_student.from_bus_id')
                     ->where('transport_vehicle.sub_institute_id', '=', $sub_institute_id);
             })
-            ->leftJoin('student_optional_subject', function($join) use($syear,$sub_institute_id){
-                $join->on('student_optional_subject.student_id', '=', 'tblstudent.id')
-                    ->where('student_optional_subject.syear', $syear)
-                    ->where('student_optional_subject.sub_institute_id', $sub_institute_id); // added on 02-07-2025 by uma for conflict with hills and mmis
-            })
-            ->leftJoin('subject', 'student_optional_subject.subject_id', '=', 'subject.id')
+            // Optional subjects handled via subquery below to prevent duplicates
             ->leftJoin('transport_school_shift', 'transport_vehicle.school_shift', '=', 'transport_school_shift.id')
             ->leftJoin('tblstudent_bank_detail', 'tblstudent_bank_detail.student_id', '=', 'tblstudent.id')
             ->leftJoin('tblstudent_tc_details', function($join) use($syear,$sub_institute_id){
@@ -221,16 +224,25 @@ class studentReportController extends Controller
                     ->where('tblstudent_tc_details.syear', $syear)
                     ->where('tblstudent_tc_details.sub_institute_id', $sub_institute_id);
             })// adddd on 25-07-2025 by uma for conflict with tc details
-            ->leftJoin('tblstudent_family_history', function($join) use($syear,$sub_institute_id){
-                $join->on('tblstudent_family_history.student_id', '=', 'tblstudent.id')
-                    ->where('tblstudent_family_history.sub_institute_id', $sub_institute_id);
-            })// adddd on 24-09-2025 by uma for conflict with tc details
 
-            ->leftJoin('result_reportcard_marks', function($join) use($syear, $sub_institute_id){
-            $join->on('result_reportcard_marks.student_id', '=', 'tblstudent.id')
-                 ->where('result_reportcard_marks.syear', $syear)
-                 ->where('result_reportcard_marks.sub_institute_id', $sub_institute_id);
+            // Conditional family history join - only when needed to prevent duplicates
+            ->when($hasFamilyHistory, function($join) use($syear,$sub_institute_id){
+                $join->leftJoin('tblstudent_family_history', function($join) use($syear,$sub_institute_id){
+                    $join->on('tblstudent_family_history.student_id', '=', 'tblstudent.id')
+                         ->where('tblstudent_family_history.sub_institute_id', $sub_institute_id);
+                });
             })
+
+            // Conditional result marks join - only when needed to prevent duplicates
+            ->when($hasResultMarks, function($join) use($syear, $sub_institute_id){
+                $join->leftJoin('result_reportcard_marks', function($join) use($syear, $sub_institute_id){
+                    $join->on('result_reportcard_marks.student_id', '=', 'tblstudent.id')
+                         ->where('result_reportcard_marks.syear', $syear)
+                         ->where('result_reportcard_marks.sub_institute_id', $sub_institute_id);
+                });
+            })
+
+            // Additional attendance fields handled via subquery below to prevent duplicates
 
             ->where($extraSearchArray)
             ->when($request->grade,function($q) use($request){
@@ -250,6 +262,43 @@ class studentReportController extends Controller
             //->groupBy('tblstudent.id')  // added by vivek for family history show all memeber 25-09-2025
             // ->distinct()
             ->get();
+
+            // Add optional subjects via subquery to prevent duplicates
+            if ($hasOptionalSubjects) {
+                $optionalSubjectsQuery = DB::table('student_optional_subject as sos')
+                    ->join('subject as s', 'sos.subject_id', '=', 's.id')
+                    ->select('sos.student_id', DB::raw('GROUP_CONCAT(DISTINCT s.subject_name SEPARATOR ", ") as optional_subject'))
+                    ->where('sos.syear', $syear)
+                    ->where('sos.sub_institute_id', $sub_institute_id)
+                    ->groupBy('sos.student_id')
+                    ->get()
+                    ->keyBy('student_id');
+                    
+                foreach ($student_data as $key => $student) {
+                    if (isset($optionalSubjectsQuery[$student->id])) {
+                        $student->optional_subject = $optionalSubjectsQuery[$student->id]->optional_subject;
+                    }
+                }
+            }
+
+            // Add attendance data via subquery only if no direct join is used
+            if (!$hasResultMarks) {
+                $attendanceQuery = DB::table('result_reportcard_marks')
+                    ->select('student_id', 'total_working_day', 'present_working_day', 'student_percentage')
+                    ->where('syear', $syear)
+                    ->where('sub_institute_id', $sub_institute_id)
+                    ->get()
+                    ->keyBy('student_id');
+                    
+                foreach ($student_data as $key => $student) {
+                    if (isset($attendanceQuery[$student->id])) {
+                        $student->total_working_day = $attendanceQuery[$student->id]->total_working_day;
+                        $student->present_working_day = $attendanceQuery[$student->id]->present_working_day;
+                        $student->student_percentage = $attendanceQuery[$student->id]->student_percentage;
+                    }
+                }
+            }
+
             $student_dataArr = [];
             if($sub_institute_id==254){
                 foreach ($student_data as $key => $value) {
