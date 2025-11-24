@@ -188,7 +188,7 @@ class admissionRegistrationHillController extends Controller
                         ])->render();
                     }
                     elseif(in_array($standard_id, [3292,3293,3294,3295,3296,3297,9298])) {
-                        $htmlContent = view('admission.registrationHills.sendEmailPrentInteraction', [
+                        $htmlContent = view('admission.registrationHills.confirmationmail', [
                             'page_type'=>'confirm',
                             'conf_date' => $condate,
                             'conf' => $data["conf"] ?? '',
