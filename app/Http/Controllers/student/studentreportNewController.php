@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
 use function App\Helpers\get_string;
 
-class studentReportController extends Controller
+class studentreportNewController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -25,7 +25,7 @@ class studentReportController extends Controller
         $res['message'] = "Success";
         $res['data'] = $tblcustom_fields;
 
-        return is_mobile($type, "student/show_student_report", $res, "view");
+        return is_mobile($type, "student/show_student_report1", $res, "view");
     }
 
     public function bulkIndex(Request $request)
@@ -259,7 +259,8 @@ class studentReportController extends Controller
             ->when(in_array($sub_institute_id,[201,202,203]) && $request->order_by=="enrollment_no", function ($q) {
                 $q->orderByRaw("CAST(SUBSTRING_INDEX(enrollment_no, '-', -1) AS UNSIGNED) ASC");
             })
-            ->groupBy('tblstudent.id')  // added by vivek for family history show all memeber 25-09-2025
+            //->groupBy('tblstudent.id')  // added by vivek for family history show all memeber 25-09-2025
+            // ->distinct()
             ->get();
 
             // Add optional subjects via subquery to prevent duplicates
@@ -348,7 +349,7 @@ class studentReportController extends Controller
         $res['data'] = $this->customFields($request);
         $res['headers'] = $header;
 
-        return is_mobile($type, "student/show_student_report", $res, "view");
+        return is_mobile($type, "student/show_student_report1", $res, "view");
     }
 
     public function underDevelopment()
