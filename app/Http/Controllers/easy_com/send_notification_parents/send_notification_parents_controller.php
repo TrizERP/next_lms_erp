@@ -35,7 +35,15 @@ class send_notification_parents_controller extends Controller
 
         $data['data'] = array();
         $type = $request->input('type');
-
+        $sub_institute_id = session()->get('sub_institute_id');
+        
+        $academicYears = DB::table('academic_year')
+        ->where('sub_institute_id', $sub_institute_id)
+        ->groupBy('syear')
+        ->orderBy('syear', 'desc')
+        ->get();
+        $data['academicYears'] = $academicYears;
+        
         return is_mobile($type, "easy_comm/send_notification_parents/show", $data, "view");
     }
 
@@ -49,11 +57,12 @@ class send_notification_parents_controller extends Controller
     public function create(Request $request)
     {
         $type = $request->input('type');
-        $student_data = SearchStudent($_REQUEST['grade'], $_REQUEST['standard'], $_REQUEST['division']);
+        $student_data = SearchStudent($_REQUEST['grade'], $_REQUEST['standard'], $_REQUEST['division'], "", "", "", "", "", "", "", "", "", "", $_REQUEST['admission_year']);
         $responce_arr['grade'] = $_REQUEST['grade'];
         $responce_arr['standard'] = $_REQUEST['standard'];
         $responce_arr['division'] = $_REQUEST['division'];
-
+        $response_arr['academic_year'] = $_REQUEST['admission_year'];
+        
         foreach ($student_data as $id => $arr) 
         {
             $responce_arr['stu_data'][$id]['sr.no'] = $id + 1;
@@ -80,7 +89,7 @@ class send_notification_parents_controller extends Controller
         $syear = session()->get('syear');
         $text = $_REQUEST['notificationText'];
         $res = array();
-        $student_data = SearchStudent($_REQUEST['grade'], $_REQUEST['standard'], $_REQUEST['division']);
+        $student_data = SearchStudent($_REQUEST['grade'], $_REQUEST['standard'], $_REQUEST['division'], "", "", "", "", "", "", "", "", "", "", $_REQUEST['admission_year']);
 
         foreach ($_REQUEST['sendNotification'] as $number => $on) {
 
