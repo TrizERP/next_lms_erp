@@ -750,7 +750,7 @@ if (!function_exists('TermDD')) {
 }
 if (!function_exists('SearchStudent')) {
 
-    function SearchStudent($grade = "", $standard = "", $div = "", $sub_institute_id = "", $syear = "", $roll_no = "", $stu_name = "", $uniqueid = "", $mobile = "", $grno = "", $stud_id = "", $batch = "",$status="")
+    function SearchStudent($grade = "", $standard = "", $div = "", $sub_institute_id = "", $syear = "", $roll_no = "", $stu_name = "", $uniqueid = "", $mobile = "", $grno = "", $stud_id = "", $batch = "",$status="", $admission_year = "")
     {
         if ($sub_institute_id == '') {
             $sub_institute_id = session()->get('sub_institute_id');
@@ -829,7 +829,9 @@ if (!function_exists('SearchStudent')) {
         if ($batch != "") {
             $query->where('ts.studentbatch', $batch);
         }
-
+        if ($admission_year != '') {
+            $query->where('ts.admission_year', $admission_year);
+        }
         if ($mobile != '') {
             $query->where('ts.mobile', $mobile);
         }
