@@ -856,7 +856,7 @@
           of online fee collection.
         </li>
         <li> It is COMPULSORY to pay fee through NACH debit mandate.</li>
-        <li> The fees will be deducted on a 'MON  THLY' basis.</li>
+        <li> The fees will be deducted on a 'MONTHLY' basis.</li>
         <li>
            Parents are requested to regularly check the fee section on the
           Hills High School App for the outstanding amount &amp; to download fee
