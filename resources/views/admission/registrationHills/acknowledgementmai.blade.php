@@ -306,7 +306,7 @@
             <span class="house-dot"></span> ARAVALLI HOUSE
           </div>
           <p>
-            “Aravalli” the name of the mountain range of western India with its
+            "Aravalli" the name of the mountain range of western India with its
             orange colour signifies strength, energy and vitality. It is indeed
             the colour of life itself and the colour of the sun which is even
             higher than the Aravalli itself.
@@ -365,7 +365,7 @@
         <h2>ETIQUETTES EXPECTED FROM A HILLS' HIGH STUDENT</h2>
         <ul>
           <li>
-            Greeting young and old alike with a warm ‘Hello’ How are you ? or
+            Greeting young and old alike with a warm 'Hello' How are you ? or
             Good morning according to the eye and position of the individual.
           </li>
           <li>Using the washroom cleanly without wasting water.</li>
@@ -513,7 +513,7 @@
     <!-- SUGAR AWARENESS -->
     <section class="card">
       <h2>
-        IMPLEMENTATION OF SUGAR AWARENESS INITIATIVE – SUGAR-FREE AND MEANINGFUL
+        IMPLEMENTATION OF SUGAR AWARENESS INITIATIVE - SUGAR-FREE AND MEANINGFUL
         BIRTHDAY CELEBRATIONS
       </h2>
 
@@ -523,7 +523,7 @@
         harmful effects of excessive sugar consumption among children, Hills
         High School has initiated steps to create a healthier and more mindful
         school environment. As part of this effort, we are introducing a
-        “Sugar-Free and Meaningful Birthday Celebration”  an alternative to the
+        “Sugar-Free and Meaningful Birthday Celebration  an alternative to the
         traditional practice of distributing chocolates and sugary snacks. This
         initiative aims to support the health and well-being of our students by
         reducing sugar intake, while also encouraging thoughtful and value-based
@@ -531,7 +531,7 @@
         promote positive choices that contribute to the overall development of
         our learners.
       </p>
-      <p>Let’s promote joyful and nutritious birthday celebration!</p>
+      <p>Let's promote joyful and nutritious birthday celebration!</p>
 
       <div class="two-col-text">
         <div>
@@ -856,7 +856,7 @@
           of online fee collection.
         </li>
         <li> It is COMPULSORY to pay fee through NACH debit mandate.</li>
-        <li> The fees will be deducted on a ‘MONTHLY' basis.</li>
+        <li> The fees will be deducted on a 'MON  THLY' basis.</li>
         <li>
            Parents are requested to regularly check the fee section on the
           Hills High School App for the outstanding amount &amp; to download fee
