@@ -187,7 +187,7 @@ class studentReportController extends Controller
         // Attendance fields handled via subquery to prevent duplicates
 
         // Query
-        $student_data = DB::table('tblstudent')
+        $query = DB::table('tblstudent')
             ->select(DB::raw(strtolower(implode(',', $array))))
             ->join('tblstudent_enrollment', 'tblstudent.id', '=', 'tblstudent_enrollment.student_id')
             ->join('academic_section', 'academic_section.id', '=', 'tblstudent_enrollment.grade_id')
@@ -258,9 +258,13 @@ class studentReportController extends Controller
             ->orderByRaw($extra_order_by)
             ->when(in_array($sub_institute_id,[201,202,203]) && $request->order_by=="enrollment_no", function ($q) {
                 $q->orderByRaw("CAST(SUBSTRING_INDEX(enrollment_no, '-', -1) AS UNSIGNED) ASC");
-            })
-            ->groupBy('tblstudent.id')  // added by vivek for family history show all memeber 25-09-2025
-            ->get();
+            });
+
+            if (!$hasFamilyHistory) {
+                $query->groupBy('tblstudent.id');
+            }
+
+            $student_data = $query->get();
 
             // Add optional subjects via subquery to prevent duplicates
             if ($hasOptionalSubjects) {
