@@ -75,7 +75,7 @@ body, table, td, div, p {font-family: Arial, Helvetica, sans-serif !important;}
                                             Please visit the school between
                                             <b>{{ date('d-m-Y', strtotime($conf_date)) }} between {{ $parent_time }}
                                                 (9:00am to 11:00am)</b>
-                                            - <b>SUNDAY CLOSED</b> - for submitting the required documents & fees.
+                                            - <b>SUNDAY CLOSED</b> 
                                         </p>
                                     </td>
                                 </tr>
@@ -99,35 +99,32 @@ body, table, td, div, p {font-family: Arial, Helvetica, sans-serif !important;}
                                                             <td style="vertical-align: top; width: 25px;">1.</td>
                                                             <td
                                                                 style="padding-bottom: 8px; font-size:15px; color:#000000; font-family: Arial, sans-serif;">
-                                                                The Form must be filled in with a <b>Blue or Black
-                                                                    Pen</b>.</td>
+                                                                The Form Must Be Filled in with A Blue or Black Pen.</td>
                                                         </tr>
                                                         <tr>
                                                             <td style="vertical-align: top; width: 25px;">2.</td>
                                                             <td
                                                                 style="padding-bottom: 8px; font-size:15px; color:#000000; font-family: Arial, sans-serif;">
-                                                                <b>UDISE, PEN NO, APAAR ID</b> details are
-                                                                <b>MANDATORY</b>.
+                                                                <b>Please Note: The UDISE, PEN NO, APAAR ID Number (Under Heading - PREVIOUS SCHOOL RECORD) Is MANDATORY </b>.
                                                             </td>
                                                         </tr>
                                                         <tr>
                                                             <td style="vertical-align: top; width: 25px;">3.</td>
                                                             <td
                                                                 style="padding-bottom: 8px; font-size:15px; color:#000000; font-family: Arial, sans-serif;">
-                                                                Use <b>CAPITAL LETTERS</b> only.</td>
+                                                                Please Use CAPITAL LETTERS to Fill in the Form.</td>
                                                         </tr>
                                                         <tr>
                                                             <td style="vertical-align: top; width: 25px;">4.</td>
                                                             <td
                                                                 style="padding-bottom: 8px; font-size:15px; color:#000000; font-family: Arial, sans-serif;">
-                                                                Paste recent photographs of Father, Mother & Child.</td>
+                                                                Please Paste One <b>Recent</b> Photograph of the Father, Mother & Child in The Space Provided in The Form.</td>
                                                         </tr>
                                                         <tr>
                                                             <td style="vertical-align: top; width: 25px;">5.</td>
                                                             <td
                                                                 style="font-size:15px; color:#000000; font-family: Arial, sans-serif;">
-                                                                Ensure every field is filled. <b>Incomplete forms will
-                                                                    not be accepted.</b></td>
+                                                                Please Ensure All Details of the Form Are Completed. <b>Incomplete Forms Will Not Be Accepted.</b></td>
                                                         </tr>
                                                     </table>
                                                 </td>
@@ -156,65 +153,65 @@ body, table, td, div, p {font-family: Arial, Helvetica, sans-serif !important;}
                                                             <td style="vertical-align: top; width: 25px;">1.</td>
                                                             <td
                                                                 style="padding-bottom: 8px; font-size:15px; color:#000000; font-family: Arial, sans-serif;">
-                                                                Child's Birth Certificate (Photocopy).
+                                                                Please bring a photo Copy of the child's Birth Certificate.
                                                             </td>
                                                         </tr>
                                                         <tr>
                                                             <td style="vertical-align: top; width: 25px;">2.</td>
                                                             <td
                                                                 style="padding-bottom: 8px; font-size:15px; color:#000000; font-family: Arial, sans-serif;">
-                                                                Caste Certificate (if applicable).
+                                                                A caste certificate of child or Father is to be submitted if mentioned in form.
                                                             </td>
                                                         </tr>
                                                         <tr>
                                                             <td style="vertical-align: top; width: 25px;">3.</td>
                                                             <td
                                                                 style="padding-bottom: 8px; font-size:15px; color:#000000; font-family: Arial, sans-serif;">
-                                                                Recent photograph of child in white collared shirt + 1
-                                                                extra.
+                                                                <b>Recent</b> passport size photographs of the child in a <b>white collared shirt</b> to be attached on the form and 1extra photograph for administrative purposes.
                                                             </td>
                                                         </tr>
                                                         <tr>
                                                             <td style="vertical-align: top; width: 25px;">4.</td>
                                                             <td
                                                                 style="padding-bottom: 8px; font-size:15px; color:#000000; font-family: Arial, sans-serif;">
-                                                                Aadhar Card of Child, Father &amp; Mother (Mandatory).
+                                                                A photo copy of the Aadhar cards of 1) Child  2) Father  3) Mother is Compulsory.
                                                             </td>
                                                         </tr>
                                                         <tr>
                                                             <td style="vertical-align: top; width: 25px;">5.</td>
                                                             <td
                                                                 style="padding-bottom: 8px; font-size:15px; color:#000000; font-family: Arial, sans-serif;">
-                                                                Family Photograph (5&#215;7&quot;).
+                                                                A recent family photo (father, mother & child) of 5&#215;7&quot; size to be stuck on admission form.(Refer admission form for reference)
                                                             </td>
                                                         </tr>
                                                         <tr>
                                                             <td style="vertical-align: top; width: 25px;">6.</td>
                                                             <td
                                                                 style="padding-bottom: 8px; font-size:15px; color:#000000; font-family: Arial, sans-serif;">
-                                                                U-DISE, PEN No., APAAR ID from previous school
-                                                                (<b>MANDATORY</b>).
+                                                                <b>U-DISE CODE, PEN No., APAAR ID</b> to be taken from previous school and to be written on the Admission Form.(MANDATORY)
                                                             </td>
                                                         </tr>
                                                         <tr>
                                                             <td style="vertical-align: top; width: 25px;">7.</td>
                                                             <td
                                                                 style="padding-bottom: 8px; font-size:15px; color:#000000; font-family: Arial, sans-serif;">
-                                                                Full-year Fee Receipt + No Due Certificate (Attested).
+                                                                FULL YEAR FEE RECEIPT (XEROX AND ATTESTED FROM THE SCHOOL) & NO DUE CERTIFICATE from Current School for Fees Payment Status. 
                                                             </td>
                                                         </tr>
                                                         <tr>
                                                             <td style="vertical-align: top; width: 25px;">8.</td>
                                                             <td
                                                                 style="padding-bottom: 8px; font-size:15px; color:#000000; font-family: Arial, sans-serif;">
-                                                                Reference Letter (Not required for siblings).
+                                                                8.	A Reference Letter from an Existing Parent of Hills' High School or C.A, Family Doctor or Lawyer.(Sibling Parent Need Not Submit the Same)
+
                                                             </td>
                                                         </tr>
                                                         <tr>
                                                             <td style="vertical-align: top; width: 25px;">9.</td>
                                                             <td
                                                                 style="font-size:15px; color:#000000; font-family: Arial, sans-serif;">
-                                                                Original School Leaving Certificate.
+                                                                ORIGINAL SCHOOL LEAVING CERTIFICATE Once You Receive from Present School (Admission Remains Provisional till The L.C is Not Submitted).
+
                                                             </td>
                                                         </tr>
                                                     </table>
@@ -235,7 +232,7 @@ body, table, td, div, p {font-family: Arial, Helvetica, sans-serif !important;}
                                             C) Completion of NACH Document</h3>
                                         <p
                                             style="line-height:1.7; font-size:15px; margin-top:10px; font-family: Arial, sans-serif;">
-                                            The school follows a cashless fee-collection system. You must submit:
+                                            The school follows a cashless and digital system of on-line fee collections. It is compulsory to submit the following documents at the time of admission:
                                         </p>
                                         <table width="100%" cellpadding="0" cellspacing="0" border="0"
                                             style="margin-top:10px;">
@@ -247,29 +244,28 @@ body, table, td, div, p {font-family: Arial, Helvetica, sans-serif !important;}
                                                             <td style="vertical-align: top; width: 15px;">&#8226;</td>
                                                             <td
                                                                 style="padding-bottom: 8px; font-size:15px; color:#000000; font-family: Arial, sans-serif;">
-                                                                <b>Complete</b> NACH Form.
+                                                                Completed NACH form <b>(PLEASE COLLECT THE NACH FORM FROM THE SCHOOL OFFICE WHILE   SUBMISSION OF FORM OR BEFORE)</b>.
                                                             </td>
                                                         </tr>
                                                         <tr>
                                                             <td style="vertical-align: top; width: 15px;">&#8226;</td>
                                                             <td
                                                                 style="padding-bottom: 8px; font-size:15px; color:#000000; font-family: Arial, sans-serif;">
-                                                                <b>Cancelled</b> Cheque of Fee Payment Account.
+                                                                Cancelled cheque of the Bank a/c you will be using for all school fee payments from the 2ndquarter onwards.
                                                             </td>
                                                         </tr>
                                                         <tr>
                                                             <td style="vertical-align: top; width: 15px;">&#8226;</td>
                                                             <td
                                                                 style="padding-bottom: 8px; font-size:15px; color:#000000; font-family: Arial, sans-serif;">
-                                                                <b>Company</b> Stamp (if account is
-                                                                business/proprietorship).
+                                                                In case you are using an account other than an individual account, like a Partnership, Proprietorship, Shop,  Factory, Mill.  You are requested to please bring along the rubber stamp of the company to stamp the original NACH form. 
                                                             </td>
                                                         </tr>
                                                         <tr>
                                                             <td style="vertical-align: top; width: 15px;">&#8226;</td>
                                                             <td
                                                                 style="font-size:15px; color:#000000; font-family: Arial, sans-serif;">
-                                                                <b>Joint</b> Account &rarr; All holders must sign.
+                                                                In case it is a joint account it would be compulsory to have the signature of all account holders.
                                                             </td>
                                                         </tr>
                                                     </table>
@@ -291,7 +287,7 @@ body, table, td, div, p {font-family: Arial, Helvetica, sans-serif !important;}
                                                 <td>
                                                     <p
                                                         style="margin:0; color:#000000; font-weight:bold; font-family: Arial, sans-serif;">
-                                                        PROVISIONAL until NACH approval.
+                                                        <b>Till completion and acceptance of NACH forms by the Bank, the admission will be considered PROVISIONAL </b>
                                                     </p>
                                                 </td>
                                             </tr>
@@ -311,7 +307,7 @@ body, table, td, div, p {font-family: Arial, Helvetica, sans-serif !important;}
                                                 <td>
                                                     <p
                                                         style="margin:0; color:#000000; font-weight:bold; font-family: Arial, sans-serif;">
-                                                        Admission to be CONFIRMED only after bank approval.
+                                                        <b>Admission will be CONFIRMED only after NACH form is approved by the bank.</b>
                                                     </p>
                                                 </td>
                                             </tr>
@@ -338,14 +334,14 @@ body, table, td, div, p {font-family: Arial, Helvetica, sans-serif !important;}
                                                             <td style="vertical-align: top; width: 25px;">1.</td>
                                                             <td
                                                                 style="padding-bottom: 8px; font-size:15px; color:#000000; font-family: Arial, sans-serif;">
-                                                                Fee for year 2026-27: <b
+                                                                Fee for the year 2026-27 is: <b
                                                                     style="color:#943634;">&#x20B9; 80,800/- *</b></td>
                                                         </tr>
                                                         <tr>
                                                             <td style="vertical-align: top; width: 25px;">2.</td>
                                                             <td
                                                                 style="font-size:15px; color:#000000; font-family: Arial, sans-serif;">
-                                                                Fees payable at time of admission:</td>
+                                                                 Fees to be paid at the time of the admission:</td>
                                                         </tr>
                                                     </table>
                                                 </td>
@@ -358,13 +354,13 @@ body, table, td, div, p {font-family: Arial, Helvetica, sans-serif !important;}
                                             <tr style="background:#f0e8e8;">
                                                 <td width="33%"
                                                     style="border:2px solid #000000; padding:10px; text-align:center; font-weight:bold; font-family: Arial, sans-serif;">
-                                                    1st Quarter Tuition Fees</td>
+                                                    1st Quarter Provisional Tuition Fees </td>
                                                 <td width="33%"
                                                     style="border:2px solid #000000; padding:10px; text-align:center; font-weight:bold; font-family: Arial, sans-serif;">
-                                                    One-Time Admission Fees</td>
+                                                    One time  Provisional Admission Fees</td>
                                                 <td width="34%"
                                                     style="border:2px solid #000000; padding:10px; text-align:center; font-weight:bold; font-family: Arial, sans-serif;">
-                                                    Total Provisional Fees</td>
+                                                    Total provisional fees to be paid at time of  the admission</td>
                                             </tr>
                                             <tr>
                                                 <td
@@ -379,13 +375,10 @@ body, table, td, div, p {font-family: Arial, Helvetica, sans-serif !important;}
                                             </tr>
                                         </table>
 
-                                        <p style="font-size:15px; font-family: Arial, sans-serif;"><b>* Final Fee
-                                                subject to Honorable Court decision.</b></p>
+                                        <p style="font-size:15px; font-family: Arial, sans-serif;"><b>* Final Fee Subject to Decision of Honorable Court.</b></p>
 
                                         <p style="line-height:1.7; font-size:15px; font-family: Arial, sans-serif;">
-                                            Pay <b style="color:#943634;">&#x20B9; 26,933/-</b> by <b>Demand Draft /
-                                                Cheque</b> payable to <b>Hills High School</b>.
-                                            <br><b>No NEFT / No Cash will be accepted.</b>
+                                            You are required to pay provisional fees <b style="color:#943634;">&#x20B9; 26,933/- at the school office by</b> <b>Demand Draft /Cheque payable to Hills High School. [Please note: No NEFT / cash will be accepted]</b>
                                         </p>
 
                                         <!-- Highlight Box -->
@@ -399,15 +392,14 @@ body, table, td, div, p {font-family: Arial, Helvetica, sans-serif !important;}
                                                             <td style="vertical-align: top; width: 15px;">&#8226;</td>
                                                             <td
                                                                 style="font-size:15px; color:#000000; font-weight:bold; font-family: Arial, sans-serif;">
-                                                                FEES ONCE PAID ARE NON-REFUNDABLE AND NON-TRANSFERABLE.
+                                                                FEES ONCE PAID IS NON REFUNDABLE AND NON TRANSFERABLE.
                                                             </td>
                                                         </tr>
                                                         <tr>
                                                             <td style="vertical-align: top; width: 15px;">&#8226;</td>
                                                             <td
                                                                 style="font-size:15px; color:#000000; font-weight:bold; font-family: Arial, sans-serif;">
-                                                                Non-submission of Documents &amp; Fees within due date
-                                                                &rarr; <u>Admission Cancelled.</u>
+                                                                Candidates who fail to submit DOCUMENTS AND FEES IN THE GIVEN TIME PERIOD without any information will not be eligible for admission at Hills' High School.</u>
                                                             </td>
                                                         </tr>
                                                     </table>

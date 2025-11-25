@@ -45,7 +45,7 @@ body, table, td {font-family: Arial, Helvetica, sans-serif !important;}
 
     <h3 style="color: #444; margin-top: 25px;">STAGE 2 - ENTRANCE TEST</h3>
     <ul style="font-size: 15px; color: #333;">
-        <li>An entrance test will be conducted at Hills' High School, Vesu on <strong>15/08/2025 at 12 Noon</strong>.</li>
+        <li>An entrance test will be conducted at Hills' High School, Vesu on <strong>{{date('d-m-Y',strtotime($parent_date))}}  {{$parent_time}}</strong>.</li>
         <li>Child must be present with current School I-card and stationery.</li>
         <li>The session duration will be approx.:
             <ul style="padding-left: 20px; margin: 0; font-family: Arial, sans-serif;">
