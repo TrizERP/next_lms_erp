@@ -185,9 +185,8 @@ body, table, td, div, p {font-family: Arial, Helvetica, sans-serif !important;}
     <h2 style="margin:0; color:#000;"><b>Dear Parents,</b></h2>
   
     <p style="font-size:15px; line-height:1.7; margin-top:10px;">
-      Hills High School is pleased to grant provisional admission to your ward. 
-      In order to submit the required documents & fees, you are requested to come to
-      <b>{{date('d-m-Y',strtotime($conf_date))}} between {{$parent_time}} (9:00 am to 11:00 am)</b> - <b>SUNDAY CLOSED</b>.
+      Hills High School is pleased to grant provisional admission to your ward. In order to submit the required documents & fees you are requested to come between
+      <b>{{date('d-m-Y',strtotime($conf_date))}}  {{$parent_time}} (9:00 am to 11:00 am)</b> - <b>SUNDAY CLOSED</b>.
     </p>
   
     <!-- SECTION A -->
@@ -195,45 +194,51 @@ body, table, td, div, p {font-family: Arial, Helvetica, sans-serif !important;}
   
     <ol style="line-height:1.7; font-size:15px; color:#000; padding-left: 25px;">
       <li style="margin-bottom: 8px;">The Form Must Be Filled in with A Blue or Black Pen.</li>
-      <li style="margin-bottom: 8px;"><b>Please Note:</b> The UDISE, PEN NO, APAAR ID Number is <b>MANDATORY</b>.</li>
-      <li style="margin-bottom: 8px;">Please Use <b>CAPITAL LETTERS</b> to Fill in the Form.</li>
-      <li style="margin-bottom: 8px;">Please Paste One Recent Photograph of the Father, Mother & Child.</li>
-      <li style="margin-bottom: 8px;">Please Ensure All Details Are Completed. <b>Incomplete Forms Will Not Be Accepted.</b></li>
+      <li style="margin-bottom: 8px;">Please Note: <b>The UDISE, PEN NO, APAAR ID Number (Under Heading - PREVIOUS SCHOOL RECORD) Is MANDATORY </b>.</li>
+      <li style="margin-bottom: 8px;">Please Use CAPITAL LETTERS to Fill in the Form.</li>
+      <li style="margin-bottom: 8px;">Please Paste One <b>Recent</b> Photograph of the Father, Mother & Child in The Space Provided in The Form.</li>
+      <li style="margin-bottom: 8px;">Please Ensure All Details of the Form Are Completed. <b>Incomplete Forms Will Not Be Accepted.</b></li>
     </ol>
   
     <!-- SECTION B -->
     <h3 style="color:#943634; margin-top:25px; text-decoration:underline;">B) Documents & Photos</h3>
   
     <ol style="line-height:1.7; font-size:15px; color:#000; padding-left: 25px;">
-      <li style="margin-bottom: 8px;">Please bring a photocopy of the child's Birth Certificate.</li>
-      <li style="margin-bottom: 8px;">A caste certificate of child or father (if applicable).</li>
-      <li style="margin-bottom: 8px;">Recent passport size photographs (white collared shirt) + 1 extra.</li>
-      <li style="margin-bottom: 8px;">Photocopy of Aadhar cards of Child, Father & Mother (Compulsory).</li>
-      <li style="margin-bottom: 8px;">A recent 5×7" family photo (Father, Mother & Child).</li>
-      <li style="margin-bottom: 8px;">U-DISE Code, PEN No., APAAR ID from previous school (<b>MANDATORY</b>).</li>
-      <li style="margin-bottom: 8px;">FULL YEAR FEE RECEIPT & NO DUE CERTIFICATE from previous school.</li>
-      <li style="margin-bottom: 8px;">Reference Letter (Not required for Sibling Parent).</li>
-      <li style="margin-bottom: 8px;">Original School Leaving Certificate (Admission remains provisional until submitted).</li>
+      <li style="margin-bottom: 8px;">Please bring a photo Copy of the child's Birth Certificate.</li>
+      <li style="margin-bottom: 8px;">A caste certificate of child or Father is to be submitted if mentioned in form.</li>
+      <li style="margin-bottom: 8px;"><b>Recent</b> passport size photographs of the child in a <b>white collared shirt</b> to be attached on the form and 1extra photograph for administrative purposes.</li>
+      <li style="margin-bottom: 8px;">A photo copy of the Aadhar cards of 1) Child  2) Father  3) Mother is Compulsory.</li>
+      <li style="margin-bottom: 8px;">A recent family photo (father, mother & child) of 5&#215;7&quot; size to be stuck on admission form.(Refer admission form for reference)</li>
+      <li style="margin-bottom: 8px;"><b>U-DISE CODE, PEN No., APAAR ID</b> to be taken from previous school and to be written on the Admission Form.(MANDATORY)</li>
+      <li style="margin-bottom: 8px;">FULL YEAR FEE RECEIPT (XEROX AND ATTESTED FROM THE SCHOOL) and NO DUE CERTIFICATE from Current School for Fees Payment Status.</li>
+      <li style="margin-bottom: 8px;">A Reference Letter from an Existing Parent of Hills' High School or C.A, Family Doctor or Lawyer. 
+        (Sibling Parent Need Not Submit the Same)
+        </li>
+      <li style="margin-bottom: 8px;"><b>ORIGINAL SCHOOL LEAVING CERTIFICATE</b> Once You Receive from Present School 
+        (Admission Remains Provisional till The L.C is Not Submitted).
+        </li>
     </ol>
   
     <!-- SECTION C -->
-    <h3 style="color:#943634; margin-top:25px; text-decoration:underline;">C) Completion of NACH Document</h3>
+    <h3 style="color:#943634; margin-top:25px; text-decoration:underline;">C) Completion of NACH Document: </h3>
   
     <p style="line-height:1.7; font-size:15px;">
-      The school follows a cashless and digital on-line fee collection system. Submit the following:
+      The school follows a cashless and digital system of on-line fee collections. It is compulsory to submit the following documents at the time of admission:     
     </p>
   
     <ul style="line-height:1.7; font-size:15px; padding-left:25px;">
-      <li style="margin-bottom: 8px;">Completed NACH form (Collect from school office).</li>
-      <li style="margin-bottom: 8px;">Cancelled cheque of the account to be used for fee payments.</li>
-      <li style="margin-bottom: 8px;">If using Proprietorship / Partnership / Company account → bring company rubber stamp.</li>
-      <li style="margin-bottom: 8px;">For joint accounts → ALL account holders must sign.</li>
+      <li style="margin-bottom: 8px;">Completed NACH form (PLEASE COLLECT THE NACH FORM FROM THE SCHOOL OFFICE WHILE SUBMISSION OF FORM OR BEFORE)</li>
+      <li style="margin-bottom: 8px;">Cancelled cheque of the Bank a/c you will be using for all school fee payments from the 2ndquarter onwards.</li>
+      <li style="margin-bottom: 8px;">In case you are using an account other than an individual account, like a Partnership, Proprietorship, Shop, Factory, Mill. You are requested to please bring along the rubber stamp of the company to stamp the original NACH form. 
+  </li>
+      <li style="margin-bottom: 8px;">In case it is a joint account it would be compulsory to have the signature of all account holders.</li>
     </ul>
   
     <div style="background:#fff4e6; border-left:4px solid #943634; padding:10px 15px; margin-top:10px;">
       <p style="margin:0; color:#000; font-weight:bold;">
-        • Admission remains <u>PROVISIONAL until NACH approval.</u><br>
-        • Admission is <u>CONFIRMED only after NACH is approved by the bank.</u>
+        
+        <li>Till completion and acceptance of NACH forms by the Bank, the admission will be considered PROVISIONAL</li>
+        <li>Admission will be CONFIRMED only after NACH form is approved by the bank.</li>
       </p>
     </div>
   
@@ -241,35 +246,33 @@ body, table, td, div, p {font-family: Arial, Helvetica, sans-serif !important;}
     <h3 style="color:#943634; margin-top:25px; text-decoration:underline;">D) Fee Amount</h3>
   
     <ol style="line-height:1.7; font-size:15px; color:#000; padding-left: 25px;">
-      <li style="margin-bottom: 8px;">Fee for the year 2026-27 is <b style="color:#943634;">₹ 87,000/- *</b></li>
+      <li style="margin-bottom: 8px;">Fee for the year 2026-27 is <b style="color:#943634;">&#x20B9; 87,000/- *</b></li>
       <li style="margin-bottom: 8px;">Fees to be paid at the time of admission:</li>
     </ol>
   
     <table style="width:100%; border:2px solid #000; border-collapse:collapse; margin:15px 0;">
       <tr style="background:#f0e8e8;">
-        <th style="border:2px solid #000; padding:10px; text-align:center;">1st Quarter Tuition Fees</th>
-        <th style="border:2px solid #000; padding:10px; text-align:center;">One-Time Admission Fees</th>
-        <th style="border:2px solid #000; padding:10px; text-align:center;">Total Provisional Fees</th>
+        <th style="border:2px solid #000; padding:10px; text-align:center;">1st Quarter Provisional Tuition Fees</th>
+        <th style="border:2px solid #000; padding:10px; text-align:center;">One-Time Provisional  Admission Fees</th>
+        <th style="border:2px solid #000; padding:10px; text-align:center;">Total Provisional Fees to be paid at time of  the admission</th>
       </tr>
       <tr>
-        <td style="border:2px solid #000; padding:10px; color:#943634; text-align:center;"><b>₹ 21,750/-</b></td>
-        <td style="border:2px solid #000; padding:10px; color:#943634; text-align:center;"><b>₹ 7,250/-</b></td>
-        <td style="border:2px solid #000; padding:10px; color:#943634; text-align:center;"><b>₹ 29,000/-</b></td>
+        <td style="border:2px solid #000; padding:10px; color:#943634; text-align:center;"><b>&#x20B9; 21,750/-</b></td>
+        <td style="border:2px solid #000; padding:10px; color:#943634; text-align:center;"><b>&#x20B9; 7,250/-</b></td>
+        <td style="border:2px solid #000; padding:10px; color:#943634; text-align:center;"><b>&#x20B9; 29,000/-</b></td>
       </tr>
     </table>
   
     <p style="font-size:15px;"><b>* Final Fee Subject to Decision of Honorable Court.</b></p>
   
     <p style="line-height:1.7; font-size:15px;">
-      You are required to pay <b style="color:#943634;">₹ 29,000/-</b> at the school office by  
-      <b>Demand Draft / Cheque payable to "Hills High School".</b>  
-      <br><b>No NEFT / No Cash will be accepted.</b>
+      You are required to pay provisional fees of <b>&#x20B9; 29,000/-</b> at the school office by <b>Demand Draft /Cheque payable to Hills High School. [Please note: No NEFT / cash will be accepted]</b>
     </p>
   
     <div style="background:#fff4e6; border-left:4px solid #943634; padding:10px 15px; margin-top:10px;">
       <p style="margin:0; color:#000; font-weight:bold;">
-        • FEES ONCE PAID ARE NON-REFUNDABLE AND NON-TRANSFERABLE.<br>
-        • Failure to submit documents & fees in time will make the candidate ineligible for admission.
+        <li> FEES ONCE PAID IS NON REFUNDABLE AND NON TRANSFERABLE.<br></li>
+        <li> Candidates who fail to submit DOCUMENTS AND FEES IN THE GIVEN TIME PERIOD without any information will not be eligible for admission at Hills' High School.</li>
       </p>
     </div>
   
