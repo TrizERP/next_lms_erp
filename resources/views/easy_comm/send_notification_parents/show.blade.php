@@ -27,6 +27,19 @@
                                 <div class="row"> 
                                     {{ App\Helpers\SearchChain('4','single','grade,std,div') }}
                                 </div>
+                                <div class="row" style="margin-top:15px;">
+                                    <div class="col-md-4 form-group">
+                                        <label for="admission_year">Admission Year:</label>
+                                        <select name="admission_year" id="admission_year" class="form-control" >
+                                            <option value="">Select</option>
+                                            @if(isset($data['academicYears']))
+                                                @foreach($data['academicYears'] as $year)
+                                                    <option value="{{ $year->syear }}">{{ $year->syear }}</option>
+                                                @endforeach
+                                            @endif
+                                        </select>
+                                    </div>
+                                </div>
                             </div>
                             <div class="col-md-12 form-group">
                                 <center>
