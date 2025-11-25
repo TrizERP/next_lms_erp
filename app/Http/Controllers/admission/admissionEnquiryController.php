@@ -363,7 +363,7 @@ class admissionEnquiryController extends Controller
             $sub_institute_id = $request->get('sub_institute_id');
             $syear = $request->get('syear');
 
-            $check = DB::table('admission_enquiry')->where(['sub_institute_id'=>$sub_institute_id,'first_name'=>$request->first_name,'last_name'=>$request->last_name,'mobile'=>$request->mobile])->first();
+            $check = DB::table('admission_enquiry')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear,'first_name'=>$request->first_name,'last_name'=>$request->last_name,'mobile'=>$request->mobile])->first();
             // return $check;
 
             if(!empty($check) && isset($check->id)){
