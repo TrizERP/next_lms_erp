@@ -15,3 +15,11 @@ Route::group(['prefix' => 'visitor_management', 'middleware' => ['session', 'men
     Route::post('confirmOtp', [visitor_masterController::Class, 'confirmOTP'])->name("confirmOtp");
 
 });
+Route::get('/visitor_management/add_visitor_master/create', 
+    [visitor_masterController::class, 'create']
+)->name('add_visitor_master.create');
+
+// store (public)
+Route::post('/visitor_management/add_visitor_master', 
+    [visitor_masterController::class, 'store']
+)->name('add_visitor_master.store');

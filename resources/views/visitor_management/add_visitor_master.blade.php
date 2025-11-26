@@ -82,18 +82,27 @@
 									</div>
 								</div> 
 							</div>
-							<div class="row hideDiv">				
-								<div class="col-md-4 form-group">                   
-									<label class="control-label">Visitor Type</label>
-									<select class="form-control" name="visitor_type" required>
-										<option value="">Select</option>
-										@if(isset($data['visitor_type_data'])) 
-											@foreach($data['visitor_type_data'] as $key => $value)
-											<option value="{{$value['id']}}" @if(isset($data->visitor_type)) @if($data->visitor_type==$value['id']) selected='selected' @endif @endif>{{$value['title']}}</option>										
-											@endforeach                      
-										@endif     
-									</select>
-								</div>
+							<div class="row">
+							<div class="col-md-4 form-group" style="{{ $type == 'webForm' ? 'display:none;' : '' }}">
+							<label class="control-label">Visitor Type</label>
+							<select class="form-control"
+									name="visitor_type"
+									{{ $type == 'webForm' ? 'readonly' : 'required' }}>
+								<option value="">Select</option>
+								@if(isset($data['visitor_type_data']))
+									@foreach($data['visitor_type_data'] as $value)
+										<option value="{{ $value['id'] }}"
+											@if(isset($data->visitor_type) && $data->visitor_type == $value['id']) selected @endif>
+											{{ $value['title'] }}
+										</option>
+									@endforeach
+								@endif
+							</select>
+						</div>
+
+        @if($type == 'webForm')
+            <input type="hidden" name="visitor_type" value="1">
+        @endif
 								
 								<div class="col-md-4 form-group">
 									<label>Visitor Name </label>
@@ -107,45 +116,59 @@
 									<input onkeypress="return isNumber(event)" type="text" id='contact' required name="contact" value='@if(isset($data->contact)){{$data->contact}}@endif' class="form-control">
 									<span style="float:left;color:red;" id="errorMsg"></span>
 								</div>							
-																								
-								<div class="col-md-4 form-group">
-									<label>Visitor Email </label>
-									<input type="email" id='email' required name="email" value="@if(isset($data->email)) {{ $data->email }} @endif" class="form-control">
-								</div>
-							
-								<div class="col-md-4 form-group">
-									<label>Coming From </label>
-									<input type="text" id='coming_from' required name="coming_from" value="@if(isset($data->coming_from)) {{ $data->coming_from }} @endif" class="form-control">
-								</div>
+																													
+								<div class="col-md-4 form-group" style="{{ $type == 'webForm' ? 'display:none;' : '' }}">
+								<label>Visitor Email</label>
+								<input type="email"
+									id="email"
+									name="email"
+									class="form-control"
+									value="{{ isset($data->email) ? $data->email : '' }}"
+									{{ $type == 'webForm' ? 'readonly' : 'required' }}>
+							</div>
+
+        @if($type == 'webForm')
+            <input type="hidden" name="email" value="">
+        @endif
 
 								<div class="col-md-4 form-group">                   
-									<label class="control-label">To Meet</label>
-									<select class="form-control" name="to_meet">
-										<option value="">Select</option>
-										@if(isset($data['to_meet_array'])) 
-											@foreach($data['to_meet_array'] as $key => $value)
-											<option value="{{$value['id']}}" @if(isset($data->to_meet)) @if($data->to_meet == $value['id']) selected='selected' @endif @endif>{{$value['staff_name']}}</option>																				
-											@endforeach                      
-										@endif 
-									</select>
-								</div>																
+	                                <label class="control-label">To Meet</label>
+                                        <input type="text" class="form-control" name="to_meet" value="{{ isset($data->to_meet) ? $data->to_meet : '' }}" />
+                                    </div>														
 								
-								<div class="col-md-4 form-group">
-									<label>Relation With </label>
-									<input type="text" id='relation' required name="relation" value="@if(isset($data->relation)) {{ $data->relation }} @endif" class="form-control">
-								</div>
+								<div class="col-md-4 form-group" style="{{ $type == 'webForm' ? 'display:none;' : '' }}">
+								<label>Relation With</label>
+								<input type="text"
+									id="relation"
+									name="relation"
+									class="form-control"
+									value="{{ isset($data->relation) ? $data->relation : '' }}"
+									{{ $type == 'webForm' ? 'readonly' : 'required' }}>
+							</div>
 								
+        @if($type == 'webForm')
+            <input type="hidden" name="relation" value="">
+        @endif
 								<div class="col-md-4 form-group">
 									<label>Purpose </label>
 									<textarea id='purpose' required name="purpose" class="form-control">@if(isset($data->purpose)) {{ $data->purpose }} @endif</textarea>
 								</div>
 								
-								<div class="col-md-4 form-group">
-									<label>Visitor Id Card No. </label>
-									<input type="text" id='visitor_idcard' required name="visitor_idcard" value="@if(isset($data->visitor_idcard)) {{ $data->visitor_idcard }} @endif" class="form-control">
-								</div>
+								<div class="col-md-4 form-group" style="{{ $type == 'webForm' ? 'display:none;' : '' }}">
+								<label>Visitor ID Card No.</label>
+								<input type="text"
+									id="visitor_idcard"
+									name="visitor_idcard"
+									class="form-control"
+									value="{{ isset($data->visitor_idcard) ? $data->visitor_idcard : '' }}"
+									{{ $type == 'webForm' ? 'readonly' : 'required' }}>
+							</div>
+
+        @if($type == 'webForm')
+            <input type="hidden" name="visitor_idcard" value="">
+        @endif
 																
-								<div class="col-md-4 form-group">
+								<div class="col-md-4 form-group" style="{{ $type == 'webForm' ? 'display:none;' : '' }}">
 									<label>Visitor Photo</label>
 									<input type="file" id='visitor_photo' name="visitor_photo" class="form-control">
 									@php
@@ -157,7 +180,7 @@
 									@endphp
 								</div>
 
-								<div class="col-md-4 form-group">
+								<div class="col-md-4 form-group" style="{{ $type == 'webForm' ? 'display:none;' : '' }}">
 									<label>Meet Date</label>
 									<div class="input-daterange input-group" id="date-range">
 										<input type="text" class="form-control mydatepicker" placeholder="dd/mm/yyyy" value="@if(isset($data->meet_date)){{$data->meet_date}}@endif" name="meet_date" id="meet_date" autocomplete="off">
@@ -167,7 +190,7 @@
 						  
 								<input type="hidden" name="hid_out_time" id="hid_out_time" value="@if(isset($data->out_time)){{$data->out_time}}@endif">
 
-								<div class="col-md-4 form-group ml-0 mr-auto">
+								<div class="col-md-4 form-group ml-0 mr-auto" style="{{ $type == 'webForm' ? 'display:none;' : '' }}">
 									<label>Checkin Time </label>
 									<div class="input-group clockpicker " data-placement="bottom" data-align="top" data-autoclose="true">
 										<input type="text" id='in_time' required name="in_time" class="form-control" value="@if(isset($data->in_time)) {{ $data->in_time }} @endif"> 
@@ -182,7 +205,7 @@
 	                                    <span class="input-group-addon"><span class="glyphicon glyphicon-time"></span></span>
 	                                </div>
 	                            </div-->							
-
+								</div>
 	                            <div class="col-md-12 form-group">
 	                                <center>
 	                                    <input type="submit" name="submit" value="Save" class="btn btn-success" onclick="return ValidateNo();">

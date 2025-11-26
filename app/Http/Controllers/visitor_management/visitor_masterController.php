@@ -152,7 +152,9 @@ class visitor_masterController extends Controller
             ->selectRaw('ts.id,ts.enrollment_no,CONCAT_WS(" ",COALESCE(ts.first_name,"-"),COALESCE(ts.middle_name,"-"),COALESCE(ts.last_name,"-")) as student_name,ts.mobile')
             ->where(['ts.sub_institute_id'=>$sub_institute_id,'tse.syear'=>$syear])->get()->toArray();
 
+         
         return is_mobile($type, 'visitor_management/add_visitor_master', $data, "view");
+    
     }
 
     public function store(Request $request)
@@ -178,10 +180,10 @@ class visitor_masterController extends Controller
 
             $sub_institute_id = $request->input('sub_institute_id');
             $created_by = $request->input('user_id');
-            $appointment_type = $request->input('appointment_type');
-            $visitor_type = $request->input('visitor_type');
-            $name = $request->input('name');
-            $contact = $request->input('contact');
+            $appointment_type = $request->input('appointment_type') ?? Direct;
+            $visitor_type = $request->input('visitor_type') ?? Direct;
+            $name = $request->input('name') ?? null;
+            $contact = $request->input('contact') ?? null;
             $meet_date = $request->input('meet_date');
             $in_time = $request->input('in_time');
 
@@ -197,7 +199,7 @@ class visitor_masterController extends Controller
 
         if ($request->get('appointment_type') == "Direct") {
             $meet_date = date('Y-m-d');
-            $in_time = date('h:i:s');
+           $in_time = date('H:i:s');
         } else {
             $meet_date = $request->get('meet_date');
             $in_time = $request->get('in_time');
@@ -214,17 +216,18 @@ class visitor_masterController extends Controller
             $img->storeAs('public/visitor_photo/', $newfilename);
         }
 
+
         $visitor = [
             'appointment_type' => $request->get('appointment_type'),
-            'visitor_type'     => $request->get('visitor_type'),
+            'visitor_type'     => $request->get('visitor_type') ?? '',
             'name'             => $request->get('name'),
             'contact'          => $request->get('contact'),
-            'email'            => $request->get('email'),
-            'coming_from'      => $request->get('coming_from'),
+            'email'            => $request->get('email') ?? '',
+            'coming_from'      => $request->get('coming_from') ?? '',
             'to_meet'          => $request->get('to_meet'),
-            'relation'         => $request->get('relation'),
+            'relation'         => $request->get('relation') ?? '',
             'purpose'          => $request->get('purpose'),
-            'visitor_idcard'   => $request->get('visitor_idcard'),
+            'visitor_idcard'   => $request->get('visitor_idcard') ?? '',
             'photo'            => $newfilename,
             'file_size'        => $size,
             'file_type'        => $ext,
@@ -234,7 +237,7 @@ class visitor_masterController extends Controller
             'sub_institute_id' => $sub_institute_id,
             'created_at'       => now(),
         ];
-
+// dd($visitor);
         $visitor_id = visitor_masterModel::insertGetId($visitor);
 
         $res = [
@@ -347,7 +350,9 @@ class visitor_masterController extends Controller
 				    u.mobile AS staff_contact,s.*,vm.*")
             ->where("v.id", "=", $visitor_id)
             ->get()->toArray();
-
+if (empty($data)) {
+    return; // or handle error
+}
         $data = $data[0];
         if ($data->url != "")//SMS API is set
         {
