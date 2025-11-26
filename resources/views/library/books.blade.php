@@ -648,7 +648,18 @@
                     contentType: false,
                     processData: false,
                     success: function(data) {
-                        $('.divUserDetail').html(data.data);
+                        $('.divUserDetail').html('');
+                        $('#item_codes').val('');
+                        $('#issue_date').val('{{ date('d-m-Y') }}');
+                        $('#return_date').val('');
+                        $('#check_msg').html('');
+                        $.toast({
+                            heading: 'Success',
+                            text: 'Book issued successfully',
+                            showHideTransition: 'slide',
+                            icon: 'success',
+                            position: 'top-right'
+                        });
                     },
                     error: function(xhr) {
                         if (xhr.status == 422) {
