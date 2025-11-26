@@ -104,7 +104,9 @@
         <td align="center" {{-- rowspan=4 --}}>
             <b>From {{ $employeeData['school_name']->ReceiptHeader }}</b>
             <br>
-           <img src="https://erp.triz.co.in/Images/MMIS_stamp.png" width="200" height="160" alt="mmis_stamp">
+            @if(session()->get('sub_institute_id') == 47)
+                <img src="https://erp.triz.co.in/Images/MMIS_stamp.png" width="200" height="160" alt="mmis_stamp">
+            @endif
             <br>
             <b>Authorised Signatory</b>
         </td>

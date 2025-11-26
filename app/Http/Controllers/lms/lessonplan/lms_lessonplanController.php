@@ -33,7 +33,7 @@ class lms_lessonplanController extends Controller
         if($request->has('preload_lms')){
             $res['preload_lms'] = "preload_lms";
         }
-        $formData = $this->getFormData($request);
+        //$formData = $this->getFormData($request);
 
         $lessonData = LmsLessonPlan::when($id, function ($q) use ($id) {
             $q->whereId($id);
@@ -82,25 +82,25 @@ class lms_lessonplanController extends Controller
         $res['message'] = "SUCCESS";
         $res['lessonplan_data'] = $lessonData;
         // echo "<pre>";print_r($lessonData['lessonDays']);exit;
-        $res['form_data'] = $formData;
+        //$res['form_data'] = $formData;
         $res['topics'] = $topics;
         $res['chapters'] = $chapters;
         $res['subjects'] = $subjects;
         $res['standards'] = $standards;
         $res['mapType'] = $mapType;
         $res['mapVal'] = $mapVal;
-        // echo "<pre>";print_r($res['lessonplan_data']);exit;
+        //echo "<pre>";print_r($res['lessonplan_data']);exit;
         return is_mobile($type, 'lms/lessonplan/add_lessonplan', $res, "view");        
     }
 
     public function create(Request $request)
     {
-        if($request->has('view') && $request->view=="create"){
+        if(($request->has('view') && $request->view=="create") || isset($request->id)){
             $sub_institute_id = session()->get('sub_institute_id');
             $type = $request->input('type');
             $id = $request->id;
     
-            $formData = $this->getFormData($request);
+            //$formData = $this->getFormData($request);
     
             $lessonData = LmsLessonPlan::when($id, function ($q) use ($id) {
                 $q->whereId($id);
@@ -153,11 +153,11 @@ class lms_lessonplanController extends Controller
                         $mapValArr['Blooms Taxonomy'][] = $value->name;
                     }
                 }
-            // echo "<pre>";print_r($lessonData);exit;
+            //echo "<pre>";print_r($lessonData);exit;
             $res['status_code'] = 1;
             $res['message'] = "SUCCESS";
             $res['lessonplan_data'] = $lessonData;
-            $res['form_data'] = $formData;
+            //$res['form_data'] = $formData;
             $res['topics'] = $topics;
             $res['chapters'] = $chapters;
             $res['subjects'] = $subjects;
@@ -263,7 +263,7 @@ class lms_lessonplanController extends Controller
 
         // get form submitted Data
         // DB::enableQueryLog();
-        $get_form_data = FormSubmitData::where('user_id', $user_id)
+        $get_form_data = FormSubmitData::where('user_id1', $user_id)
             ->where('sub_institute_id', $sub_institute_id)
             ->where('standard', $standard_id)
             ->where('subject', $subject_id)
@@ -275,7 +275,7 @@ class lms_lessonplanController extends Controller
             // Get Form
             $get_from_fields_json = FormTable::find($get_form_data->form_id);
 
-            // echo "<pre>"; print_r($get_form_data); exit;
+            echo "<pre>"; print_r($get_form_data); exit;
             $form_fields_object = json_decode($get_from_fields_json->form_json);
             if (!empty($form_fields_object) && !empty($get_form_data)) {
                 $form_data = (array) json_decode($get_form_data->form_data);
