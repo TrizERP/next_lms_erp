@@ -49,9 +49,9 @@ class studentResultController extends Controller
         $result_type = $request->input('result_type');
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
+        $term_id = $request->input('term_id');
         // get students
         $studentData = SearchStudent($grade, $standard, $division);
-
         $res['data'] = result_template::where('sub_institute_id', $sub_institute_id)->where('status', 1)->orderBy('sort_order')->get()->toArray();
         if (empty($res['data'])) {
             $res['data'] = result_template::where('sub_institute_id', 0)->where('status', 1)->orderBy('sort_order')->get()->toArray();
@@ -96,7 +96,6 @@ class studentResultController extends Controller
                     sub_institute_id = "' . $sub_institute_id . '"
                 ),0)')->get()->toArray();
         $tData = json_decode(json_encode($tData), true);
-
         $result_trust = DB::table('result_book_master as rbm')
             ->join('result_trust_master as rtm', 'rtm.id', '=', 'rbm.trust_id')
             ->where('rbm.sub_institute_id', $sub_institute_id)
@@ -145,7 +144,6 @@ class studentResultController extends Controller
         $data['all_stud_html'] = $all_stud_html;
         $data['students_ids'] = $request->students;
         $data['template'] = $template;
-
         return is_mobile($type, "result/new_result/student_results/result_view", $data, "view");
     }
 
@@ -6110,16 +6108,27 @@ while ($current_date <= $post_end_date) {
 
                 foreach ($sub_sub_title as $key1 => $value1) {
                     $table .= '<th style="text-align:center;font-size:medium;color:black;background:white !important"><b>' . $value1->title . '</b></th>';
-
-                    $get_result_activity_masters = DB::table('result_activity_master')
+                    $termwiseHpc = DB::table('general_data')
+                        ->where('sub_institute_id', $sub_institute_id)
+                        ->where('type', 'hrms')
+                        ->where('fieldname', 'termwise_hpc')
+                        ->value('fieldvalue');   // This returns 'Yes' or 'No'
+                    $query = DB::table('result_activity_master')
                         ->selectRaw('*, 
-                    	group_concat(title ORDER BY sort_order ASC SEPARATOR "|") as activity_master_title,
-                    	GROUP_CONCAT(id ORDER BY sort_order ASC) as ids')
-                        ->where(['sub_institute_id' => $sub_institute_id])
+                            GROUP_CONCAT(title ORDER BY sort_order ASC SEPARATOR "|") as activity_master_title,
+                            GROUP_CONCAT(id ORDER BY sort_order ASC) as ids')
+                        ->where('sub_institute_id', $sub_institute_id)
                         ->where('skill_id', $skill_ids[$key])
-                        ->where('standard', $standard_id)
-                        ->orderBy('sort_order')
-                        ->get()->toArray();
+                        ->where('standard', $standard_id);
+                    
+                    // Apply term filter ONLY if termwise_hpc = "Yes"
+                    if ($termwiseHpc === 'Yes') {
+                        $query->whereRaw($extra_term);
+                    }
+
+                    $get_result_activity_masters = $query->orderBy('sort_order')
+                        ->get()
+                        ->toArray();
 
                     foreach ($get_result_activity_masters as $get_result_activity_master) {
                         $activity_master_id = explode(',', $get_result_activity_master->ids);

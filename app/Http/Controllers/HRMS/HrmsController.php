@@ -17,8 +17,8 @@ use Illuminate\Support\Facades\Storage;
 use function App\Helpers\is_mobile;
 use function App\Helpers\employeeDetails;
 use function App\Helpers\getSubCordinates;
-use DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
 
 class HrmsController extends Controller
 {
@@ -715,7 +715,7 @@ $day = Carbon::parse($punchin_time)->format('Y-m-d');
         $get_parent_communication = DB::table('general_data')->where(['fieldname' => 'parent_communication', 'sub_institute_id' => $sub_institute_id])->first();
 
         $get_multi_login = DB::table('general_data')->where(['fieldname' => 'multi_login', 'sub_institute_id' => $sub_institute_id])->first();
-
+        $get_termwise_hpc = DB::table('general_data')->where(['fieldname' => 'termwise_hpc', 'sub_institute_id' => $sub_institute_id])->first();
         $get_timetable_teacher = DB::table('general_data')->where(['fieldname' => 'timetable_teacher', 'sub_institute_id' => $sub_institute_id])->first();
 
         $get_timetable_ai = DB::table('general_data')->where(['fieldname' => 'timetable_ai', 'sub_institute_id' => $sub_institute_id])->first();
@@ -740,7 +740,7 @@ $day = Carbon::parse($punchin_time)->format('Y-m-d');
         $res['get_studentName'] = $get_studentName;
         $res['get_previousAdmission'] = $get_previousAdmission;
         $res['getallow_leave_days'] = $getallow_leave_days;
-
+        $res['get_termwise_hpc'] = $get_termwise_hpc;
 
         // echo "<pre>";print_r($res);exit;  
 
@@ -765,6 +765,7 @@ $day = Carbon::parse($punchin_time)->format('Y-m-d');
         $earned_leave_days = $request->input('earned_leave_days');
         $parent_communication = $request->input('parent_communication');
         $multi_login = $request->input('multi_login');
+        $termwise_hpc = $request->input('termwise_hpc');
         $timetable_teacher = $request->input('timetable_teacher');
         $bulkDiscount = $request->input('bulkDiscount');
         $bulkDiscountAmt = isset($request->bulkDiscountAmt) ? $request->bulkDiscountAmt : 0;
@@ -899,6 +900,23 @@ $day = Carbon::parse($punchin_time)->format('Y-m-d');
         } else {
             $general_data->fieldname = 'multi_login';
             $general_data->fieldvalue = $multi_login;
+            $general_data->sub_institute_id = $sub_institute_id;
+            $general_data->type = 'hrms';
+            $general_data->save();
+        }
+
+        $termwise_hpc = $request->input('termwise_hpc') ?? 'No';
+        $existingTermwiseHpc = general_dataModel::where('fieldname', 'termwise_hpc')
+            ->where('sub_institute_id', $sub_institute_id)
+            ->first();
+        $general_data = new general_dataModel();
+
+        if ($existingTermwiseHpc) {
+            $existingTermwiseHpc->fieldvalue = $termwise_hpc;
+            $existingTermwiseHpc->save();
+        } else {
+            $general_data->fieldname = 'termwise_hpc';
+            $general_data->fieldvalue = $termwise_hpc;
             $general_data->sub_institute_id = $sub_institute_id;
             $general_data->type = 'hrms';
             $general_data->save();
