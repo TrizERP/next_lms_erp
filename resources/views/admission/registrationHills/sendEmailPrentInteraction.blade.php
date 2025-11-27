@@ -167,7 +167,7 @@ body, table, td, div, p {font-family: Arial, Helvetica, sans-serif !important;}
       <!-- TITLE -->
       <div style="text-align:center; margin-top:5px;">
         <h2 style="margin:0; color:#000000; font-weight:bold; letter-spacing:1px;">HILLS' HIGH SCHOOL</h2>
-        <h3 style="margin:0; color:#000000; font-weight:bold;">PROVISIONAL ADMISSION ({{$admission_std}}) MORNING SESSION</h3>
+        <h3 style="margin:0; color:#000000; font-weight:bold;">PROVISIONAL ADMISSION ({{$admission_std}}) {{$medium}} SESSION</h3>
       </div>
   
       <hr style="border:0; border-top:2px solid #943634; margin:18px 0;">

@@ -51,7 +51,7 @@ body, table, td, div, p {font-family: Arial, Helvetica, sans-serif !important;}
                                             HILLS' HIGH SCHOOL</h2>
                                         <h3
                                             style="margin:5px 0 0 0; color:#000000; font-weight:bold; font-family: Arial, sans-serif;">
-                                            PROVISIONAL ADMISSION ({{ $admission_std }}) MORNING SESSION</h3>
+                                            PROVISIONAL ADMISSION ({{ $admission_std }}) {{ $medium }} Session</h3>
                                     </td>
                                 </tr>
                             </table>
