@@ -21,7 +21,7 @@
                     {{csrf_field()}}
                     <div class="row">
                         {{ App\Helpers\SearchChain('4','single','grade,std,div') }}
-                    
+                        {{ App\Helpers\TermDD() }}
                         <div class="col-md-4 form-group">
                             <label for="title">Select Skillset:</label>
                             <select name="skillset_id" id="skillset_id" class="form-control">
@@ -31,6 +31,7 @@
                                 @endforeach
                             </select>
                         </div>
+                        
                         <div class="col-md-4 form-group">
                             <label for="title">Select Activity Master:</label>
                             <select name="activity_master" id="activity_master" class="form-control">
@@ -95,15 +96,15 @@
         })
     });
     
-    $('#skillset_id').on('change', function () {
+    function loadActivityMaster() {
         var skillset_id = $("#skillset_id").val();
         var standard = $("#standard").val();
-
-        if (skillset_id && standard) 
+        var term = $("#term").val();
+        if (skillset_id && standard)
         {
             $.ajax({
                 type: "GET",
-                url: "/api/get-activity-master-list?skillset_id=" + skillset_id +"&standard="+standard,
+                url: "/api/get-activity-master-list?skillset_id=" + skillset_id + "&standard=" + standard + "&term_id=" + term,
                 success: function (res) {
                     if (res) {
                         $("#activity_master").empty();
@@ -117,11 +118,19 @@
                     }
                 }
             });
-        } 
-        else 
+        }
+        else
         {
             $("#activity_master").empty();
         }
+    }
+
+    $('#skillset_id').on('change', function () {
+        loadActivityMaster();
+    });
+
+    $('#term').on('change', function () {
+        loadActivityMaster();
     });
 
     $('#activity_master').on('change', function () {

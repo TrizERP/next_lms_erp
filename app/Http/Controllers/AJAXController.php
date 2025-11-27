@@ -2446,10 +2446,14 @@ class AJAXController extends Controller
             "ram.skill_id" => $request->skillset_id,
             'ram.standard' => $request->standard,
         );
-        
+
+        if ($request->has('term_id') && $request->term_id != '') {
+            $where['ram.term_id'] = $request->term_id;
+        }
+
         $std_sub_map = DB::table('result_activity_master as ram')
             ->where($where);
-        
+
         $std_sub_map = $std_sub_map->pluck('ram.title', 'ram.id');
 
         return response()->json($std_sub_map);

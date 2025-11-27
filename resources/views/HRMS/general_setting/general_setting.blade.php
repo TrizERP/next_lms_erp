@@ -16,7 +16,7 @@
                     $field = Session::get('data');
                     $parent_communication = ['N'=>"Subject Wise","Y"=>"Class Teacher wise"];
                     $timetable_ai = ["0"=>"Standard Wise","1"=>"Teacher wise"];
-                    $sandwich_leave = $multi_login = $timeTableTeacher = $previousAdmission = ['Y'=>"Yes",'N'=>"No"];
+                    $sandwich_leave = $multi_login = $timeTableTeacher = $previousAdmission = $termwise_hpc = ['Yes'=>"Yes",'No'=>"No"];
                     $bulkDiscount = ["No","Yes"];
                     $casual_leave = [0,1,2,3,4,5];
                     $sat_late_day = [0,0.5,1];
@@ -154,6 +154,25 @@
                                             </select>
                                         </div>
                                     </div>
+                                </td>
+                            </tr>
+                            <!-- termwise HPC  -->
+                            <tr>
+                                <th>Do you want to display HPC termwise?</th>
+                                <td>
+                                    <div class="row">
+                                        <div class="col-md-6 form-group" style="margin-left: 0px !important">
+                                            <select id='termwise_hpc' name="termwise_hpc" class="form-control" >
+                                            <option>--Select--</option>
+                                            @foreach($termwise_hpc as $key=>$value)
+                                                <option value="{{ $key }}" @if(isset($data['get_termwise_hpc']->fieldvalue) && $data['get_termwise_hpc']->fieldvalue == $key) selected @endif >
+                                                    {{ $value }}
+                                                </option>
+                                            @endforeach
+                                            </select>
+                                        </div>
+                                    </div>
+
                                 </td>
                             </tr>
                             <!-- timetable  -->
