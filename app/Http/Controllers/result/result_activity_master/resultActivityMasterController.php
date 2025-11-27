@@ -75,7 +75,7 @@ class resultActivityMasterController extends Controller
     public function store(Request $request)
     {
         $sub_institute_id = $request->session()->get('sub_institute_id');
-        $term_id = $request->session()->get('term_id');
+        $term_id = $request->input('term');
         $syear = $request->session()->get('syear');
         $user_id = $request->session()->get('user_id');
         $type = $request->input('type');
@@ -99,7 +99,6 @@ class resultActivityMasterController extends Controller
                 'sort_order' =>$sort_order,
                 'created_at' => now(),
             ];
-
             $insert=DB::table('result_sub_activity')->insert($finalArray);
         }else{
             
@@ -114,8 +113,8 @@ class resultActivityMasterController extends Controller
                 'created_by' => $user_id,
                 'sort_order' => $sort_order,
                 'created_at' => now(),
+                'term_id' => $term_id,
             ];
-            
             $insert=DB::table('result_activity_master')->insert($finalArray);
         }
         if($insert!=0){
@@ -175,12 +174,14 @@ class resultActivityMasterController extends Controller
     public function update(Request $request, $id)
     {
         $sub_institute_id = $request->session()->get('sub_institute_id');
-        $term_id = $request->session()->get('term_id');
+        $term_id = $request->input('term');
         $syear = $request->session()->get('syear');
         $type = $request->input('type');
         $user_id = $request->session()->get('user_id');
         $finalArray = $request->except('_method', '_token', 'submit','subData','hasSubActivity');
-
+        unset($finalArray['term']);
+        $finalArray['term_id'] = $term_id;
+        $finalArray['updated_at'] = now();
         DB::table('result_activity_master')->where(['id' => $id])->update($finalArray);
         // update sub data
         if(isset($request->subData['id'])){
