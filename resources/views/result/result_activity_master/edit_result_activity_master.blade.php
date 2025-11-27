@@ -60,14 +60,9 @@
                            @endforeach
                            </select>
                         </div>
-                        <div class="col-md-4 form-group">
-                           <label>Select Term:</label>
-                           <select name="term" id="term" class="form-control" required>
-                               <option value="">Select Term</option>
-                               <option value="1" @if(isset($data['result_activity_masters']->term_id) && $data['result_activity_masters']->term_id==1) selected @endif>TERM-1</option>
-                               <option value="2" @if(isset($data['result_activity_masters']->term_id) && $data['result_activity_masters']->term_id==2) selected @endif>TERM-2</option>
-                           </select>
-                       </div>
+                        @if($data['termwise_hpc'] == 'Yes')
+                              {{ App\Helpers\TermDD() }}
+                        @endif
                         <div class="col-md-4 form-group">
                            <label>Sort Order </label>
                            <input type="text" id='sort_order' value="@if(isset($data['result_activity_masters']->sort_order)){{ $data['result_activity_masters']->sort_order }}@endif" name="sort_order" class="form-control">

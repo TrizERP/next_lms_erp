@@ -58,7 +58,9 @@
                                 <label>Title </label>
                                 <input type="text" id='title' name="title" class="form-control" required>
                             </div>
-                            {{ App\Helpers\TermDD() }}
+                            @if($data['termwise_hpc'] == 'Yes')
+                                {{ App\Helpers\TermDD() }}
+                            @endif
                             {{-- <div class="col-md-4 form-group">
                                 <label>Skill Name</label>
                                 <select id="skill_id" name="skill_id" class="form-control" required>

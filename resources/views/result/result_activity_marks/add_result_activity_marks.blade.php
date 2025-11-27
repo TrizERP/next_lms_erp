@@ -17,7 +17,9 @@
                         {{csrf_field()}}
                         <div class="row">
                             {{ App\Helpers\SearchChain('4','required','grade,std,div',$data['grade'],$data['standard'],$data['division']) }}
-                            {{ App\Helpers\TermDD() }}
+                            @if($data['termwise_hpc'] == 'Yes')
+                                {{ App\Helpers\TermDD() }}
+                            @endif
                             <div class="col-md-4 form-group">
                                 <label for="title">Select Skillset:</label>
                                 <select name="skillset_id" id="skillset_id" class="form-control" required>
@@ -147,12 +149,12 @@
     function loadActivityMaster() {
         var skillset_id = $("#skillset_id").val();
         var standard = $("#standard").val();
-        var term = $("#term").val();
+        var term = $("#term").length ? $("#term").val() : '';
         if (skillset_id && standard)
         {
             $.ajax({
                 type: "GET",
-                url: "/api/get-activity-master-list?skillset_id=" + skillset_id + "&standard=" + standard + "&term_id=" + term,
+                url: "/api/get-activity-master-list?skillset_id="+skillset_id+"&standard="+standard+(term ? "&term_id="+term : ""),
                 success: function (res) {
                     if (res) {
                         $("#activity_master").empty();

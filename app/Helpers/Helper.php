@@ -718,19 +718,6 @@ if (!function_exists('TermDD')) {
 
     function TermDD($selected_val = "", $col = 4)
     {
-        // Check condition only for result_activity_master route
-        if (strpos(URL::current(), 'result_activity_master') !== false) {
-            // Check termwise_hpc setting for the sub_institute_id
-            $termwise_hpc = DB::table('general_data')
-                ->where(['fieldname' => 'termwise_hpc', 'sub_institute_id' => session()->get('sub_institute_id')])
-                ->value('fieldvalue');
-
-            // If termwise_hpc is not 'Yes', do not display the term dropdown
-            if ($termwise_hpc !== 'Yes') {
-                return;
-            }
-        }
-
         $option = "<option value=''>Select Term</option>";
 
         $academic_year = DB::table("academic_year")
