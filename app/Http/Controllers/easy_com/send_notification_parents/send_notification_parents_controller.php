@@ -89,12 +89,12 @@ class send_notification_parents_controller extends Controller
         $syear = session()->get('syear');
         $text = $_REQUEST['notificationText'];
         $res = array();
-        $student_data = SearchStudent($_REQUEST['grade'], $_REQUEST['standard'], $_REQUEST['division'], "", "", "", "", "", "", "", "", "", "", $_REQUEST['admission_year']);
+        //$student_data = SearchStudent($_REQUEST['grade'], $_REQUEST['standard'], $_REQUEST['division'], "", "", "", "", "", "", "", "", "", "", $_REQUEST['admission_year']);
 
         foreach ($_REQUEST['sendNotification'] as $number => $on) {
 
             $requestData = $_REQUEST;
-            DB::enableQueryLog();
+            //DB::enableQueryLog();
             $student_data_selected = DB::table('tblstudent_enrollment as se')
                 ->join('tblstudent as s', function ($join) {
                     $join->whereRaw('s.id = se.student_id AND s.sub_institute_id = se.sub_institute_id');
