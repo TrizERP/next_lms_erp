@@ -37,6 +37,9 @@
                                     <th>Skill Name</th>
                                     <th>Sub Activities</th>
                                     <th>Sort Order</th>
+                                    @if($data['termwise_hpc'] == 'Yes')
+                                        <th>Term</th>
+                                    @endif
                                     <th class="text-left">Action</th>
                                 </tr>
                             </thead>
@@ -62,6 +65,9 @@
                                         }
                                     @endphp</td>
                                     <td>{{$result_activity_master->sort_order}}</td>
+                                    @if($data['termwise_hpc'] == 'Yes')
+                                        <td>{{$result_activity_master->term_name}}</td>
+                                    @endif
                                     <td>
                                         <div class="d-inline">                                            
                                             <a href="{{ route('result_activity_master.edit',$result_activity_master->id)}}" class="btn btn-info btn-outline">

@@ -31,7 +31,8 @@ class resultActivityMasterController extends Controller
             ->join('result_skillset as rs', 'rs.id', '=', 'ram.skill_id')
             ->join('standard as s','s.id','=','ram.standard')
             ->leftJoin('result_sub_activity as rsa','rsa.sub_skill_id','=','ram.id')
-            ->selectRaw('ram.*, rs.main_title as result_main_title, rs.title as result_title,s.name as standard,GROUP_CONCAT(rsa.title order by rsa.sort_order SEPARATOR "|||") as sub_activity')
+            ->leftJoin('academic_year as ac','ac.term_id','=','ram.term_id')
+            ->selectRaw('ram.*, rs.main_title as result_main_title, rs.title as result_title,s.name as standard,GROUP_CONCAT(rsa.title order by rsa.sort_order SEPARATOR "|||") as sub_activity,ac.title AS term_name')
             ->where('ram.sub_institute_id', $sub_institute_id)
             ->groupBy('ram.id')
             ->get()->toArray();
@@ -39,6 +40,7 @@ class resultActivityMasterController extends Controller
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['result_activity_masters'] = $get_result_activity_masters;
+        $res['termwise_hpc'] = $this->getTermwiseHpc();
 
         return is_mobile($type, "result/result_activity_master/show_result_activity_master", $res, "view");
     }
@@ -60,6 +62,7 @@ class resultActivityMasterController extends Controller
         $standardLists = DB::table('standard')->where('sub_institute_id', $sub_institute_id)->orderBy('sort_order')->get()->toArray();
 
         $res['standardLists'] = $standardLists;
+        $res['termwise_hpc'] = $this->getTermwiseHpc();
         $res['levelLayers'] = [3,4];
         $res['result_skillsets'] = $get_result_skillsets;
 
@@ -156,6 +159,7 @@ class resultActivityMasterController extends Controller
         $standardLists = DB::table('standard')->where('sub_institute_id', $sub_institute_id)->orderBy('sort_order')->get()->toArray();
 
         $res['standardLists'] = $standardLists;
+        $res['termwise_hpc'] = $this->getTermwiseHpc();
         $res['result_activity_masters'] = $get_result_activity_masters;
         $res['result_skillsets'] = $get_result_skillsets;
         $res['result_sub_activity_masters'] = $get_result_sub_activity_masters;
@@ -247,5 +251,13 @@ class resultActivityMasterController extends Controller
             $res = 'No Data';
         }
         return $res;
+    }
+
+    protected function getTermwiseHpc()
+    {
+        return DB::table('general_data')->where([
+            'fieldname' => 'termwise_hpc',
+            'sub_institute_id' => session()->get('sub_institute_id'),
+        ])->value('fieldvalue') ?? 'No';
     }
 }

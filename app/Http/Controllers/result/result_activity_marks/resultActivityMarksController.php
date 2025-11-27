@@ -35,6 +35,7 @@ class resultActivityMarksController extends Controller
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['result_skillsets'] = $get_result_skillsets;
+        $res['termwise_hpc'] = $this->getTermwiseHpc();
 
         return is_mobile($type, "result/result_activity_marks/show_result_activity_marks", $res, "view");
     }
@@ -114,12 +115,13 @@ class resultActivityMarksController extends Controller
             $res['sub_activity_value'] = DB::table('result_sub_activity')->where('sub_institute_id', $sub_institute_id)->where('sub_skill_id',$_REQUEST['activity_master'])->get()->toArray();
             $res['sub_activity_master'] = $request->sub_activity_master;
         }
-        
+     
         $res['result_skillsets'] = $get_result_skillsets;
         $res['activity_value'] = $_REQUEST['activity_master'];
         $res['student_datas'] = $student_datas;
         $res['result_activity_groups'] = $get_result_activity_groups;
         $res['get_activity_marks'] = $get_activity_marks;
+        $res['termwise_hpc'] = $this->getTermwiseHpc();
         // echo "<pre>";print_r($res['sub_activity_value']);exit;
         return is_mobile($type, "result/result_activity_marks/add_result_activity_marks", $res, "view");
     }
@@ -200,5 +202,13 @@ class resultActivityMarksController extends Controller
         $res['message'] = "Result activity marks added/updated successfully.";
 
         return is_mobile($type, "result_activity_marks.index", $res);
+    }
+
+    protected function getTermwiseHpc()
+    {
+        return DB::table('general_data')->where([
+            'fieldname' => 'termwise_hpc',
+            'sub_institute_id' => session()->get('sub_institute_id'),
+        ])->value('fieldvalue') ?? 'No';
     }
 }
