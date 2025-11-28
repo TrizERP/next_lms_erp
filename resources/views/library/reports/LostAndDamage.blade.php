@@ -31,7 +31,7 @@
                 
                 <div class="form-group mr-2">
                     <select class="form-control" name="status" id="status">
-                        <option value="">Item Status</option>
+                        <option value="all" @if(isset($data['item_status']) && $data['item_status'] == 'all') selected @endif>All</option>
                         <!-- <option value="lost" @if(isset($data['status']) && $data['status'] == 'lost') selected @endif>Lost</option>
                         <option value="damaged" @if(isset($data['status']) && $data['status'] == 'damaged') selected @endif>Damaged</option> -->
                         @foreach($data['item_status_arr'] as $key => $value)
@@ -39,7 +39,14 @@
                         @endforeach
                     </select>
                 </div>
-                
+                <div class="form-group mr-2">
+                    <select class="form-control" name="academic_year" id="academic_year">
+                        <option value="all" @if(isset($data['academic_year']) && $data['academic_year'] == 'all') selected @endif>All</option>
+                        @foreach($data['academicYears'] as $year)
+                            <option value="{{ $year->syear }}" @if(isset($data['academic_year']) && $data['academic_year'] == $year->syear) selected @endif>{{ $year->syear }}</option>
+                        @endforeach
+                    </select>
+                </div>
                 <div class="form-group">
                     <input type="submit" value="Search" class="btn btn-primary ml-2">
                 </div>

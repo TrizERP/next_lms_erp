@@ -16,7 +16,7 @@ use League\CommonMark\Extension\CommonMark\Renderer\Inline\ImageRenderer;
 use Yajra\DataTables\DataTables;
 use Picqer\Barcode\BarcodeGeneratorPNG;
 use function App\Helpers\is_mobile;
-use DB;
+use Illuminate\Support\Facades\DB;
 
 class BookController extends Controller
 {
@@ -648,7 +648,7 @@ return DataTables::of($books)
         try {
             $details = LibraryBook::where('library_books.sub_institute_id', $sub_institute_id)
             ->where('library_books.id',$id)
-            ->select(['library_books.*', DB::raw('(SELECT GROUP_CONCAT(item_code) FROM library_items WHERE book_id = library_books.id) as item_codes'),DB::raw('(SELECT count(item_code) FROM library_items WHERE book_id = library_books.id) as no_of_items'), DB::raw('(SELECT item_status FROM library_items WHERE book_id = library_books.id limit 1) as item_status')])
+            ->select(['library_books.*', DB::raw('(SELECT GROUP_CONCAT(item_code) FROM library_items WHERE book_id = library_books.id) as item_codes'),DB::raw('(SELECT count(item_code) FROM library_items WHERE book_id = library_books.id) as no_of_items'), DB::raw('(SELECT GROUP_CONCAT(item_status SEPARATOR "|") FROM library_items WHERE book_id = library_books.id) as item_status')])
             ->groupBy('library_books.id')->get()->toArray();
             // return $details[0];exit;
             return response()->json(['data' => $details], 200);
@@ -964,7 +964,7 @@ public function issueBook(Request $request)
             $type= $request->type;
             $sub_institute_id = session()->get('sub_institute_id');
             if($type=="API"){
-                $sub_institute_id = $request->sub_institute_id; 
+                $sub_institute_id = $request->sub_institute_id;
             }
             $bookLists = DB::table('library_books as lb')
             ->leftJoin('library_items as li', 'li.book_id', '=', 'lb.id')
@@ -984,5 +984,23 @@ public function issueBook(Request $request)
         } catch (Exception $e) {
             return response()->json($e->getMessage(), 500);
         }
+    }
+
+    public function checkItemAvailability(Request $request) {
+        $item = LibraryItem::find($request->item_id);
+        if (!$item) {
+            return response()->json(['available' => false, 'message' => 'Item not found']);
+        }
+        if ($item->item_status !== null) {
+            $statusName = DB::table('mst_item_status')->where('id', $item->item_status)->value('item_status_name');
+            return response()->json(['available' => false, 'message' => 'This book is not available for issue because it is ' . $statusName]);
+        }
+        // Optionally, also check if already issued
+        $issued = LibraryBookCirculation::where('item_code', $item->item_code)->whereNull('return_date')->first();
+        if ($issued) {
+            $student = tblstudentModel::find($issued->student_id);
+            return response()->json(['available' => false, 'message' => 'This Book already assigned to student -' . $student->first_name . ' of standard ' . $student->standard . ' / ' . $student->division]);
+        }
+        return response()->json(['available' => true]);
     }
 }

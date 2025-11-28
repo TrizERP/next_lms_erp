@@ -8,8 +8,9 @@ use function App\Helpers\is_mobile;
 use App\Models\library\itemScanDetail;
 use App\Models\library\itemStatus;
 use GenTux\Jwt\GetsJwtToken;
-use Validator;
-use DB;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Session;
 use App\Models\LibraryItem;
 
 class itemScanController extends Controller
@@ -97,8 +98,21 @@ class itemScanController extends Controller
         $checkItemCode = DB::table('library_items')->where('item_code',$item_code)->where('sub_institute_id',$sub_institute_id)->get()->toArray();
 
         if(!empty($checkItemCode)){
+            // Check if the item has been verified with a status other than 0 in any year
+            $verifiedItem = itemScanDetail::where('item_code', $item_code)->where('sub_institute_id', $sub_institute_id)->where('item_status_id', '!=', 0)->first();
+
+            if($verifiedItem){
+                $statusName = DB::table('mst_item_status')->where('id', $verifiedItem->item_status_id)->value('item_status_name');
+                $res['status'] = "0";
+                $res['message'] = "This book is {$statusName}";
+                $res['searchedItem'] = $item_code;
+                $res['bookData'] = [];
+                Session::flash('data', $res);
+                return is_mobile($type, "library/bookVarification/scanBook", $res, "view");
+            }
+
             $checkData = itemScanDetail::where($data)->whereNull('deleted_at')->first();
-        
+
             if(empty($checkData)){
                 $data['created_by'] = $user_id;
                 $data['scan_status'] = "Yes";
