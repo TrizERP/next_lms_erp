@@ -474,7 +474,8 @@ Route::group(['middleware' => ['session', 'menu', 'logRoute','check_permissions'
     Route::get('quick_return', [BookController::class,'QuickReturn'])->name('quick_return.index');
     Route::post('quick_return', [BookController::class,'QuickReturnSearch'])->name('quick_return.create');    
     Route::get('check_issue', [BookController::class,'checkIssue'])->name('check_issue');
-    // api 
+    Route::get('check_item_availability', [BookController::class,'checkItemAvailability'])->name('check_item_availability');
+    // api
     Route::get('all_book_lists', [BookController::class,'allBookLists'])->name('allBookLists.index');
 
     Route::resource('library_report', LibraryReportController::class);
