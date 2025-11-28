@@ -33,7 +33,8 @@ class LostandDamage extends Controller
             ->where('a.sub_institute_id', $sub_institute_id)
             // ->where('a.syear', $syear)
             ->where('a.item_status_id', '!=',0)
-            ->whereNull('a.deleted_at'); // Assuming 3 is the ID for Lost and Damage status
+            ->whereNull('a.deleted_at')
+            ->orderBy('a.item_code'); // Assuming 3 is the ID for Lost and Damage status
 
             // ->when('a.item_status_id', $validated['item_status'])
 
