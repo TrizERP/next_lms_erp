@@ -219,9 +219,8 @@
                                         </div>
                                         <div class="col-md-4">
                                             <label for="">Item Status</label>
-                                            <select class="form-control" name="item_status" id="item_status">
-                                                <option value="">Item Status</option>
-
+                                            <select class="form-control" name="item_status" id="item_status" disabled>
+                                                <option value="" >Available</option>
                                                 @foreach ($data['item_status_arr'] as $key => $value)
                                                     <option value="{{ $key }}"
                                                         @if (isset($data['item_status']) && $data['item_status'] == $key) selected @endif>
@@ -780,13 +779,11 @@
                             // Ensure the status value exists, is not null/undefined, and matches an option
                             var statusValue = (typeof data.data[0].status !== 'undefined' &&
                                 data.data[0].status !== null) ? data.data[0].status : '';
-                            if (statusValue && $('#status option[value="' + statusValue + '"]')
-                                .length > 0) {
-                                $('#status').val(statusValue);
-                            } else {
-                                $('#status').prop('selectedIndex',
-                                0); // fallback to first option
-                            }
+                                if (data.data[0].item_status !== null && data.data[0].item_status !== "") {
+                                    $('#item_status').val(data.data[0].item_status);
+                                } else {
+                                    $('#item_status').prop('selectedIndex', 0); 
+                                }
                             $('#author_name').val(data.data[0].author_name);
                             $('#isbn_issn').val(data.data[0].isbn_issn);
                             $('#classification').val(data.data[0].classification);
