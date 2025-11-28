@@ -5,7 +5,7 @@ namespace App\Http\Controllers\library;
 use App\Http\Controllers\Controller;
 use function App\Helpers\is_mobile;
 use Illuminate\Http\Request;
-use DB;
+use Illuminate\Support\Facades\DB;
 
 class LostandDamage extends Controller
 {
@@ -17,7 +17,14 @@ class LostandDamage extends Controller
             ->where('sub_institute_id', $sub_institute_id)
             ->pluck('item_status_name', 'id')
             ->toArray();
-        
+
+        $data['academicYears'] = DB::table('academic_year')
+            ->where('sub_institute_id', $sub_institute_id)
+            ->groupBy('syear')
+            ->orderBy('syear', 'desc')
+            ->get();
+            
+
         $query = DB::table('item_scan_details as a')
             ->join('mst_item_status as b', 'b.id', '=', 'a.item_status_id')
             ->join('library_items as c', 'c.item_code', '=', 'a.item_code')
@@ -58,12 +65,19 @@ class LostandDamage extends Controller
         $syear = session()->get('syear');
 
         $data['item_code']=$item_code = $request->input('item_code');
-        $data['item_status']=$item_status = $request->input('status');
+        $data['item_status']=$item_status = $request->input('status') ?: 'all';
+        $data['academic_year']=$academic_year = $request->input('academic_year') ?: 'all';
 
         $data['item_status_arr'] = DB::table('mst_item_status')
             ->where('sub_institute_id', $sub_institute_id)
             ->pluck('item_status_name', 'id')
             ->toArray();
+
+        $data['academicYears'] = DB::table('academic_year')
+            ->where('sub_institute_id', $sub_institute_id)
+            ->groupBy('syear')
+            ->orderBy('syear', 'desc')
+            ->get();
         
         $query = DB::table('item_scan_details as a')
             ->join('mst_item_status as b', 'b.id', '=', 'a.item_status_id')
@@ -78,16 +92,21 @@ class LostandDamage extends Controller
                 'b.item_status_name',
             )
             ->where('a.sub_institute_id', $sub_institute_id)
-            ->where('a.syear', $syear)
             ->where('a.item_status_id', '!=',0)
             ->whereNull('a.deleted_at');
+
+        if ($academic_year && $academic_year !== 'all') {
+            $query->where('a.syear', $academic_year);
+        } elseif (!$academic_year) {
+            $query->where('a.syear', $syear);
+        }
             // ->when('a.item_status_id', $validated['item_status']);
             
 
         if (isset($request->item_code) && $request->item_code != '') {
             $query->where('a.item_code', $request->item_code);
         }
-        if (isset($request->status) && $request->status != '') {
+        if (isset($request->status) && $request->status != '' && $request->status != 'all') {
             // echo "here";exit;
             $query->where('a.item_status_id', $request->status);
         }
