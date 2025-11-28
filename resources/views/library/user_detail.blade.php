@@ -148,39 +148,58 @@
 
     });
 
-    // check book already issued or not
+    // check book availability
 
     function checkIssue() {
         $("#issue_book_check").prop("disabled", false);
         $('#check_msg').empty();
         var book_id = $('#bookId').val();
         var student_gr = $('#enroll_no').val();
-        // alert(book_id);
         var item_code = $('#item_codes').val();
-        @if (session()->get('sub_institute_id') == 254)
-            var urls = '/check_issue?book_id=' + book_id;
-        @else
-            var urls = '/check_issue?book_id=' + book_id + '&item_code=' + item_code;
-        @endif
-        $.ajax({
-            url: urls,
-            type: 'GET',
-            success: function(result) {
-                console.log(result);
-                if (result.length > 0) {
-                    $('.alert-success').hide();
-                    $('#check_msg').show();
-                    $('#check_msg').append(`<div class="col-md-12 mt-3">
-                        <div class="alert alert-danger alert-block">
-                            <button type="button" class="close" data-dismiss="alert">×</button>
-                            <strong>This Book already assigned to student - ` + result[0].student_name +
-                        ` of standard ` + result[0].standard + `/` + result[0].division + `</strong>
-                        </div>
-                    </div>`);
-                    $("#issue_book_check").prop("disabled", true);
+        if (item_code) {
+            // First check item_status
+            $.ajax({
+                url: '/check_item_availability?item_id=' + item_code,
+                type: 'GET',
+                success: function(result) {
+                    if (!result.available) {
+                        $('#check_msg').append(`<div class="col-md-12 mt-3">
+                            <div class="alert alert-danger alert-block">
+                                <button type="button" class="close" data-dismiss="alert">×</button>
+                                <strong>` + result.message + `</strong>
+                            </div>
+                        </div>`);
+                        $("#issue_book_check").prop("disabled", true);
+                    } else {
+                        // If available, check if already issued
+                        @if (session()->get('sub_institute_id') == 254)
+                            var urls = '/check_issue?book_id=' + book_id;
+                        @else
+                            var urls = '/check_issue?book_id=' + book_id + '&item_code=' + item_code;
+                        @endif
+                        $.ajax({
+                            url: urls,
+                            type: 'GET',
+                            success: function(result2) {
+                                console.log(result2);
+                                if (result2.length > 0) {
+                                    $('.alert-success').hide();
+                                    $('#check_msg').show();
+                                    $('#check_msg').append(`<div class="col-md-12 mt-3">
+                                        <div class="alert alert-danger alert-block">
+                                            <button type="button" class="close" data-dismiss="alert">×</button>
+                                            <strong>This Book already assigned to student - ` + result2[0].student_name +
+                                        ` of standard ` + result2[0].standard + `/` + result2[0].division + `</strong>
+                                        </div>
+                                    </div>`);
+                                    $("#issue_book_check").prop("disabled", true);
+                                }
+                            }
+                        });
+                    }
                 }
-            }
-        });
+            });
+        }
     }
 
     function get_date(selectedDate) {
