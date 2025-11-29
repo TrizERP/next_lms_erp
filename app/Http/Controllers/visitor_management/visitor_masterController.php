@@ -100,7 +100,7 @@ class visitor_masterController extends Controller
             ->leftjoin('tblstudent as t', function($join){
                 $join->on('t.id', '=', 'visitor_master.to_meet'); // 22-05-24 by rajesh
             })
-            ->join('visitor_type as vt', 'vt.id', '=', 'visitor_master.visitor_type')
+            ->leftjoin('visitor_type as vt', 'vt.id', '=', 'visitor_master.visitor_type')
             ->where(['visitor_master.sub_institute_id' => $sub_institute_id])
             ->whereBetween('meet_date', array($from_date, $to_date))
             ->get();
@@ -152,7 +152,6 @@ class visitor_masterController extends Controller
             ->selectRaw('ts.id,ts.enrollment_no,CONCAT_WS(" ",COALESCE(ts.first_name,"-"),COALESCE(ts.middle_name,"-"),COALESCE(ts.last_name,"-")) as student_name,ts.mobile')
             ->where(['ts.sub_institute_id'=>$sub_institute_id,'tse.syear'=>$syear])->get()->toArray();
 
-         
         return is_mobile($type, 'visitor_management/add_visitor_master', $data, "view");
     
     }
@@ -180,15 +179,14 @@ class visitor_masterController extends Controller
 
             $sub_institute_id = $request->input('sub_institute_id');
             $created_by = $request->input('user_id');
-            $appointment_type = $request->input('appointment_type') ?? Direct;
-            $visitor_type = $request->input('visitor_type') ?? Direct;
-            $name = $request->input('name') ?? null;
-            $contact = $request->input('contact') ?? null;
-            $meet_date = $request->input('meet_date');
-            $in_time = $request->input('in_time');
+            $appointment_type = $request->input('appointment_type') ?? 'Direct';
+            $visitor_type = $request->input('visitor_type') ?? null;
+            $name = $request->input('name') ?? '';
+            $contact = $request->input('contact') ?? '';
+            $meet_date = $request->input('meet_date') ?? date('Y-m-d');
+            $in_time = $request->input('in_time') ?? date('H:i:s');
 
-            if ($appointment_type == '' || $visitor_type == '' || $name == '' || $contact == '' || $meet_date == '' || $in_time == '' ||
-                $sub_institute_id == '') {
+            if ($appointment_type == '' || $visitor_type == '' || $name == '' || $contact == '' || $meet_date == '' || $in_time == '' || $sub_institute_id == '') {
                 $res['status_code'] = 0;
                 $res['message'] = "Parameter Missing.";
 
@@ -199,7 +197,7 @@ class visitor_masterController extends Controller
 
         if ($request->get('appointment_type') == "Direct") {
             $meet_date = date('Y-m-d');
-           $in_time = date('H:i:s');
+            $in_time = date('H:i:s');
         } else {
             $meet_date = $request->get('meet_date');
             $in_time = $request->get('in_time');

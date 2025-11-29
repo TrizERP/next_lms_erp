@@ -16,9 +16,9 @@
             <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
                 <h4 class="page-title">                                           
                     @if(!isset($data->name))
-                    Add Visitor
+                    Add Visitor Detail
                     @else
-                    Edit Visitor
+                    Edit Visitor Detail
                     @endif                    
                 </h4>
             </div>            
@@ -49,12 +49,12 @@
 
                         {{csrf_field()}}
                         	<div class="row">
-								<div class="col-md-4 form-group">
+								<div class="col-md-4 form-group" style="{{ $type == 'webForm' ? 'display:none;' : '' }}">
 									<label class="control-label">Appointment Type</label>
 									<div class="radio-list">
 										<label class="radio-inline p-0">
 											<div class="radio radio-success">
-												<input type="radio" name="appointment_type" id="direct" value="Direct" required onclick="show_date_time(this.value);"
+												<input type="radio" name="appointment_type" id="direct" value="Direct" onclick="show_date_time(this.value);"
 												@if(isset($data->appointment_type)) 
 													@if($data->appointment_type == 'Direct') checked @endif 
 												@endif >
@@ -63,7 +63,7 @@
 										</label>
 										<label class="radio-inline">
 											<div class="radio radio-success">
-												<input type="radio" name="appointment_type" id="prior" value="Prior" required onclick="show_date_time(this.value);"
+												<input type="radio" name="appointment_type" id="prior" value="Prior" onclick="show_date_time(this.value);"
 												@if(isset($data->appointment_type)) 
 													@if($data->appointment_type == 'Prior') checked @endif 
 												@endif >
@@ -72,7 +72,7 @@
 										</label>
 										<label class="radio-inline">
 											<div class="radio radio-success">
-												<input type="radio" name="appointment_type" id="pickUp" value="pickUp" required onclick="show_date_time(this.value);"
+												<input type="radio" name="appointment_type" id="pickUp" value="pickUp" onclick="show_date_time(this.value);"
 												@if(isset($data->appointment_type)) 
 													@if($data->appointment_type == 'PickUp') checked @endif 
 												@endif >
@@ -82,6 +82,9 @@
 									</div>
 								</div> 
 							</div>
+        @if($type == 'webForm')
+            <input type="hidden" name="appointment_type" id="direct" value="Direct">
+        @endif							
 							<div class="row">
 							<div class="col-md-4 form-group" style="{{ $type == 'webForm' ? 'display:none;' : '' }}">
 							<label class="control-label">Visitor Type</label>
@@ -111,14 +114,14 @@
 								</div>
 								
 								<div class="col-md-4 form-group">
-									<label>Visitor Contact </label>	
+									<label>Mobile Number</label>	
 									
-									<input onkeypress="return isNumber(event)" type="text" id='contact' required name="contact" value='@if(isset($data->contact)){{$data->contact}}@endif' class="form-control">
+									<input maxlength="10" type="text" id='contact' required name="contact" value='@if(isset($data->contact)){{$data->contact}}@endif' class="form-control" onkeypress="return isNumber(event)">
 									<span style="float:left;color:red;" id="errorMsg"></span>
 								</div>							
 																													
 								<div class="col-md-4 form-group" style="{{ $type == 'webForm' ? 'display:none;' : '' }}">
-								<label>Visitor Email</label>
+								<label>Email</label>
 								<input type="email"
 									id="email"
 									name="email"
@@ -132,7 +135,7 @@
         @endif
 
 								<div class="col-md-4 form-group">                   
-	                                <label class="control-label">To Meet</label>
+	                                <label class="control-label">To Meet (Person / Department)</label>
                                         <input type="text" class="form-control" name="to_meet" value="{{ isset($data->to_meet) ? $data->to_meet : '' }}" />
                                     </div>														
 								
@@ -150,7 +153,7 @@
             <input type="hidden" name="relation" value="">
         @endif
 								<div class="col-md-4 form-group">
-									<label>Purpose </label>
+									<label>Purpose of Visit</label>
 									<textarea id='purpose' required name="purpose" class="form-control">@if(isset($data->purpose)) {{ $data->purpose }} @endif</textarea>
 								</div>
 								
@@ -193,7 +196,7 @@
 								<div class="col-md-4 form-group ml-0 mr-auto" style="{{ $type == 'webForm' ? 'display:none;' : '' }}">
 									<label>Checkin Time </label>
 									<div class="input-group clockpicker " data-placement="bottom" data-align="top" data-autoclose="true">
-										<input type="text" id='in_time' required name="in_time" class="form-control" value="@if(isset($data->in_time)) {{ $data->in_time }} @endif"> 
+										<input type="text" id='in_time' name="in_time" class="form-control" value="@if(isset($data->in_time)) {{ $data->in_time }} @endif"> 
 										<span class="input-group-addon"><span class="glyphicon glyphicon-time"></span></span>
 									</div>
 								</div>	
