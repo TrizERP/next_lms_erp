@@ -46,7 +46,7 @@ class visitor_masterController extends Controller
             ->leftjoin('tblstudent as t',function($join){
                 $join->on('t.id', '=', 'visitor_master.to_meet'); // 22-05-24 by rajesh
             })
-            ->join('visitor_type as vt', 'vt.id', '=', 'visitor_master.visitor_type')
+            ->leftjoin('visitor_type as vt', 'vt.id', '=', 'visitor_master.visitor_type')
             ->where(['visitor_master.sub_institute_id' => $sub_institute_id, 'meet_date' => date('Y-m-d')])
             ->get();
             // echo "<pre>";print_r($data);exit;
