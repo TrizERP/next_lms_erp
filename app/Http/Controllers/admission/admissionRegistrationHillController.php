@@ -184,7 +184,7 @@ class admissionRegistrationHillController extends Controller
                             'conf' => $data["conf"] ?? '',
                             'parent_time' => '9:00 a.m. to 11:00 am OR 2:30 p.m.  to 4:30 p.m.',
                             'aca_year'    => $syear.'-'.$nextYear,
-                            'admission_std'    => $getStandard->name ?? '-',
+                            'admission_std'    => $getStandard->short_name ?? '-',
                             'medium'    => $getStandard->medium ?? '-'
                         ])->render();
                     }
@@ -195,7 +195,7 @@ class admissionRegistrationHillController extends Controller
                             'conf' => $data["conf"] ?? '',
                             'parent_time' => '9:00 a.m. to 11:00 am OR 2:30 p.m.  to 4:30 p.m.',
                             'aca_year'    => $syear.'-'.$nextYear,
-                            'admission_std'    => $getStandard->name ?? '-',
+                            'admission_std'    => $getStandard->short_name ?? '-',
                             'medium'    => $getStandard->medium ?? '-'
                         ])->render();
                     }
@@ -206,7 +206,7 @@ class admissionRegistrationHillController extends Controller
                             'conf' => $data["conf"] ?? '',
                             'parent_time' => '9:00 a.m. to 11:00 am OR 2:30 p.m.  to 4:30 p.m.',
                             'aca_year'    => $syear.'-'.$nextYear,
-                            'admission_std'    => $getStandard->name ?? '-',
+                            'admission_std'    => $getStandard->short_name ?? '-',
                             'medium'    => $getStandard->medium ?? '-'
                         ])->render();
                     }
@@ -240,7 +240,7 @@ class admissionRegistrationHillController extends Controller
                             'pint' => $data["pint"]?? '',
                             'parent_time' => $data["pint_time"]?? '',
                             'aca_year'    => $syear.'-'.$nextYear,
-                            'admission_std'    => $getStandard->name?? '-', 
+                            'admission_std'    => $getStandard->short_name ?? '-', 
                         ])  ->render();
                     } else {
                         $htmlContent = view('admission.registrationHills.sendEmailPrentInteraction', [
@@ -249,7 +249,7 @@ class admissionRegistrationHillController extends Controller
                             'pint' => $data["pint"] ?? '',
                             'parent_time' => $data["pint_time"] ?? '',
                             'aca_year'    => $syear.'-'.$nextYear,
-                            'admission_std'    => $getStandard->name ?? '-',
+                            'admission_std'    => $getStandard->short_name ?? '-',
                             'medium'    => $getStandard->medium ?? '-'
                         ])->render();
                     }
@@ -280,7 +280,7 @@ class admissionRegistrationHillController extends Controller
                         'pint' => $data["pint"] ?? '',
                         'parent_time' => $data["pint_time"] ?? '',
                         'aca_year'    => $syear.'-'.$nextYear,
-                        'admission_std'    => $getStandard->name ?? '-',
+                        'admission_std'    => $getStandard->short_name ?? '-',
                         'medium'    => $getStandard->medium ?? '-'
                     ])->render();
                     // return $htmlContent;exit;
@@ -308,7 +308,7 @@ class admissionRegistrationHillController extends Controller
                         'pint' => $data["conf"] ?? '',
                         'parent_time' => $condate ?? '',
                         'aca_year'    => $syear.'-'.$nextYear,
-                        'admission_std'    => $getStandard->name ?? '-',
+                        'admission_std'    => $getStandard->short_name ?? '-',
                         'medium'    => $getStandard->medium ?? '-'
                     ])->render();
                     // return $htmlContent;exit;

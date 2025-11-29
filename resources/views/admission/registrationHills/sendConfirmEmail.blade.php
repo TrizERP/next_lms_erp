@@ -64,7 +64,7 @@
                 </div>
                 <div class="content-div" style="color:black;color:black;">
                     <h2 class="h1line underline" style="text-align: center;text-decoration: underline;color:black;">
-                        {{ $admission_std }} ADMISSION PROCEDURE AT HILLS HIGH SCHOOL, A.Y- {{ $aca_year }}</h2>
+                        Standard-{{ $admission_std }} ADMISSION PROCEDURE AT HILLS HIGH SCHOOL, A.Y- {{ $aca_year }}</h2>
                     <p style="font-size:16px;color:black;">Dear Parents,</p>
                     <p style="text-decoration:underline;font-size:16px;color:black;">Dear Parents,Please note that the
                         issue of Admission Forms DOES NOT GUARANTEE
@@ -168,14 +168,14 @@
         </div>
         <div class="content-div" style="text-align:center">
             <h3 style="color:black;margin:0px;"><b>HILLS HIGH SCHOOL</b></h3>
-            <h3 style="color:black;margin:0px;"><b>PROVISIONAL ADMISSION ({{$admission_std}})</b></h3>
+            <h3 style="color:black;margin:0px;"><b>PROVISIONAL ADMISSION (Standard-{{$admission_std}})</b></h3>
         </div>
         <div class="greetings">
             <h2 style="color:black;margin:0px;"><b>Dear Parents,</b></h2>
             <h2 style="color:black;margin:0px;"><b>Congratulations!!</b></h2>
         </div>
         <div class="parage">
-            <p><span style="color:black;margin:0px;"><b>Your Wards Provisional Admission has been Granted in {{ ($conf=="C") ? 'Morning Session' : 'Afternoon Session' }}.</b></span>Please complete the documentation process within the given date and time to confirm your wards admission at Hills High School.
+            <p><span style="color:black;margin:0px;"><b>Your Wards Provisional Admission has been Granted in {{ ($conf=="C") ? 'Morning Session' : 'Afternoon Session' }}.  </b></span>Please complete the documentation process within the given date and time to confirm your wards admission at Hills High School.
                 Kindly visit Hills High School before <span style="color: #943634"><b>{{date('d-m-Y',strtotime($conf_date))}} between {{$parent_time}}</b></span> with all the documents mentioned below (on Sunday and Bank Holidays the office will be closed)
             </p>
             <p style="color:black"><b>Please note the documents required: -</b></p>

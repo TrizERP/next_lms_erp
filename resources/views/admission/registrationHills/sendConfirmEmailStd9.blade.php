@@ -64,7 +64,7 @@
                 </div>
                 <div class="content-div" style="color:black;color:black;">
                     <h2 class="h1line underline" style="text-align: center;text-decoration: underline;color:black;">
-                        {{ $admission_std }} ADMISSION PROCEDURE AT HILLS HIGH SCHOOL, A.Y- {{ $aca_year }}</h2>
+                        Standard-{{ $admission_std }} ADMISSION PROCEDURE AT HILLS HIGH SCHOOL, A.Y- {{ $aca_year }}</h2>
                     <p style="font-size:16px;color:black;">Dear Parents,</p>
                     <p style="text-decoration:underline;font-size:16px;color:black;">Dear Parents,Please note that the
                         issue of Admission Forms DOES NOT GUARANTEE
