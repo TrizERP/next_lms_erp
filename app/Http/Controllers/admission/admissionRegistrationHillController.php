@@ -188,7 +188,7 @@ class admissionRegistrationHillController extends Controller
                             'medium'    => $getStandard->medium ?? '-'
                         ])->render();
                     }
-                    elseif(in_array($standard_id, [3292,3293,3294,3295,3296,3297,9298,3309,3310,3311,3312,3313,3314,3315])) {
+                    elseif(in_array($standard_id, [3292,3293,3294,3295,3296,3297,3298,3309,3310,3311,3312,3313,3314,3315])) {
                         $htmlContent = view('admission.registrationHills.confirmationmail', [
                             'page_type'=>'confirm',
                             'conf_date' => $condate,
@@ -199,7 +199,7 @@ class admissionRegistrationHillController extends Controller
                             'medium'    => $getStandard->medium ?? '-'
                         ])->render();
                     }
-                    elseif(in_array($standard_id ,[3316,3303,3316])) {
+                    elseif(in_array($standard_id ,[3316,3303])) {
                         $htmlContent = view('admission.registrationHills.sendConfirmEmailStd9', [
                             'page_type'=>'confirm',
                             'conf_date' => $condate,
