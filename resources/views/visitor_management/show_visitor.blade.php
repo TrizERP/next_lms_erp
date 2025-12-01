@@ -19,6 +19,14 @@
                         <strong>{{ $data['message'] }}</strong>
                     </div>
                     @endif
+                    
+                    @if(!empty($data['debug_info']))
+                    <div class="alert alert-info alert-block">
+                        <button type="button" class="close" data-dismiss="alert">×</button>
+                        <strong>DEBUG INFO:</strong>
+                        <pre>{{ print_r($data['debug_info'], true) }}</pre>
+                    </div>
+                    @endif
                 </div>				
 
                 <div class="col-lg-3 col-sm-3 col-xs-3">
@@ -72,7 +80,7 @@
                                 <td><a target="_blank" href="/storage/visitor_photo/{{$data->photo}}">{{$data->photo}}</a></td>
                                 <td>{{$data->visitor_idcard}}</td>
                                 <td>{{$data->coming_from}}</td>
-                                <td>{{$data->staff_name}}</td>
+                                <td>{{$data->to_meet}}</td>
                                 <td>{{$data->relation}}</td>
                                 <td>{{$data->purpose}}</td> 
                                 <td>{{$data->created_by}}</td>                                
