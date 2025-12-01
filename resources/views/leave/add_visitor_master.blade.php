@@ -103,14 +103,7 @@
 
 								<div class="col-md-4 form-group">                   
 									<label class="control-label">To Meet</label>
-									<select class="form-control" name="to_meet">
-										<option value="">Select</option>
-										@if(isset($data['to_meet_array'])) 
-											@foreach($data['to_meet_array'] as $key => $value)
-											<option value="{{$value['id']}}" @if(isset($data->to_meet)) @if($data->to_meet == $value['id']) selected='selected' @endif @endif>{{$value['staff_name']}}</option>																				
-											@endforeach                      
-										@endif 
-									</select>
+									 <input type="text" class="form-control" name="to_meet" value="{{ isset($data->to_meet) ? $data->to_meet : '' }}" />
 								</div>																
 								
 								<div class="col-md-4 form-group">
