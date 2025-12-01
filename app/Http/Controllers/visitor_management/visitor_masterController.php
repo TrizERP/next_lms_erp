@@ -49,7 +49,7 @@ class visitor_masterController extends Controller
             ->join('visitor_type as vt', 'vt.id', '=', 'visitor_master.visitor_type')
             ->where(['visitor_master.sub_institute_id' => $sub_institute_id, 'meet_date' => date('Y-m-d')])
             ->get();
-            // echo "<pre>";print_r($data);exit;
+           //  echo "<pre>";print_r($data);exit;
         $visitor_data['status_code'] = 1;
         $visitor_data['data'] = $data;
         $type = $request->input('type');
@@ -152,7 +152,12 @@ class visitor_masterController extends Controller
             ->selectRaw('ts.id,ts.enrollment_no,CONCAT_WS(" ",COALESCE(ts.first_name,"-"),COALESCE(ts.middle_name,"-"),COALESCE(ts.last_name,"-")) as student_name,ts.mobile')
             ->where(['ts.sub_institute_id'=>$sub_institute_id,'tse.syear'=>$syear])->get()->toArray();
 
-        return is_mobile($type, 'visitor_management/add_visitor_master', $data, "view");
+       if($type=='webForm'){
+                 $res['message'] = "Added successfully";
+            }
+            else{
+               return is_mobile($type, 'visitor_management/add_visitor_master', $data, "view");
+            }
     
     }
 
