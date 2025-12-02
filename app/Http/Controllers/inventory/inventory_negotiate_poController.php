@@ -198,8 +198,8 @@ class inventory_negotiate_poController extends Controller
             })
             ->selectRaw('inventory_item_quotation_details.*, `inventory_item_master`.`title` AS `item_name`')
             ->where(function ($q) use ($sub_institute_id, $id) {
-                $q->where("`inventory_item_quotation_details`.`sub_institute_id`", $sub_institute_id)
-                    ->orWhere("`inventory_negotiate_po_details`.`id`", $id);
+                $q->where("inventory_item_quotation_details.sub_institute_id", $sub_institute_id)
+                    ->orWhere("inventory_negotiate_po_details.id", $id);
             })
             ->get()->toArray();
 
