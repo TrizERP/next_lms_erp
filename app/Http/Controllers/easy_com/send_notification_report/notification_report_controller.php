@@ -67,8 +67,9 @@ class notification_report_controller extends Controller
         $data = DB::table('app_notification as an')
             ->join('tblstudent as s', function ($join) {
                 $join->whereRaw('s.id=an.STUDENT_ID');
-            })->join('tblstudent_enrollment as se', function ($join) {
-                $join->whereRaw('se.student_id=s.id');
+            })->join('tblstudent_enrollment as se', function ($join) use ($syear) {
+                $join->on('se.student_id', '=', 's.id')
+                     ->where('se.syear', '=', $syear);
             })->join('standard as ss', function ($join) use($marking_period_id){
                 $join->whereRaw('ss.id = se.standard_id');
                 // ->when($marking_period_id,function($query) use($marking_period_id){

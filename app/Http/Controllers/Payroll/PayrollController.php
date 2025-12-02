@@ -2179,7 +2179,11 @@ class PayrollController extends Controller
                             $totLeaveDay += $value->day_type;
                         }
                         
-                        if($value->status == "approved_lwp" && $value->day_type=="0.5" && !in_array($checkLeave,$holidayDates) && !in_array($checkLeave,$weekDays)){ 
+                        if($value->status == "approved_lwp" && $value->day_type=="0.5" && 
+                            !in_array($checkLeave,$holidayDates) && 
+                            !in_array($checkLeave,$weekDays) && 
+                            in_array($checkLeave,$attArr) //added by rajesh 02-12-2025 for half day: exist in present
+                        ){ 
                             $totalAtt -= $value->day_type;
                         }
 
