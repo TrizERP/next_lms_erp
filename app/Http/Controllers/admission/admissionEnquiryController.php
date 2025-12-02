@@ -795,7 +795,7 @@ class admissionEnquiryController extends Controller
                     'parent_date' => $activityDate ?? '',
                     'parent_time' => $data["activity_time"] ?? '',
                     'aca_year'    => $syear.'-'.$nextYear,
-                    'admission_std'    => $getStandard->short_name ?? '-',
+                    'admission_std'    => $getStandard->name ?? '-',
                 ])->render();
             } else {
                 $htmlContent = view('admission.registrationHills.admissionEnquiryStd2to9', [
@@ -803,7 +803,7 @@ class admissionEnquiryController extends Controller
                     'parent_date' => $activityDate ?? '',
                     'parent_time' => $data["activity_time"] ?? '',
                     'aca_year'    => $syear.'-'.$nextYear,
-                    'admission_std'    => $getStandard->short_name ?? '-',
+                    'admission_std'    => $getStandard->name ?? '-',
                 ])->render();   
             }
 

@@ -20,7 +20,7 @@ body, table, td {font-family: Arial, Helvetica, sans-serif !important;}
         <img src="https://erp.triz.co.in/admin_dep/images/hills_logo1.png" width="160" style="display: inline-block;" />
     </div>
 
-    <h1 style="text-align: center; font-size: 26px; color: #2d4f83; margin-bottom: 5px; text-transform: uppercase;"> Standard-{{ $admission_std }} ADMISSION PROCEDURE AT HILLS HIGH SCHOOL, VESU, SURAT</h1>
+    <h1 style="text-align: center; font-size: 26px; color: #2d4f83; margin-bottom: 5px; text-transform: uppercase;"> {{ $admission_std }} ADMISSION PROCEDURE AT HILLS HIGH SCHOOL, VESU, SURAT</h1>
     <p style="text-align:center; margin-top: -10px; font-size:16px;"><strong>A.Y. {{ $aca_year }}</strong></p>
 
     <p style="font-size: 15px; color: #333;">Dear Parents,</p>
