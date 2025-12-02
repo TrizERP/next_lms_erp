@@ -51,7 +51,7 @@ body, table, td, div, p {font-family: Arial, Helvetica, sans-serif !important;}
                                             HILLS' HIGH SCHOOL</h2>
                                         <h3
                                             style="margin:5px 0 0 0; color:#000000; font-weight:bold; font-family: Arial, sans-serif;">
-                                            PROVISIONAL ADMISSION (Standard-{{ $admission_std }}) {{ $medium }} Session</h3>
+                                            PROVISIONAL ADMISSION ({{ $admission_std }}) {{ ($conf=="C") ? 'Morning Session' : 'Afternoon Session' }} </h3>
                                     </td>
                                 </tr>
                             </table>
@@ -74,7 +74,7 @@ body, table, td, div, p {font-family: Arial, Helvetica, sans-serif !important;}
                                             Hills High School is pleased to grant provisional admission to your ward.
                                             Please visit the school between
                                             <b>{{ date('d-m-Y', strtotime($conf_date)) }} between {{ $parent_time }}
-                                                (9:00am to 11:00am)</b>
+                                                </b>
                                             - <b>SUNDAY CLOSED</b> 
                                         </p>
                                     </td>

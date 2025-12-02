@@ -64,7 +64,7 @@
                 </div>
                 <div class="content-div" style="color:black;color:black;">
                     <h2 class="h1line underline" style="text-align: center;text-decoration: underline;color:black;">
-                        Standard-{{ $admission_std }} ADMISSION PROCEDURE AT HILLS HIGH SCHOOL, A.Y- {{ $aca_year }}</h2>
+                        {{ $admission_std }} ADMISSION PROCEDURE AT HILLS HIGH SCHOOL, A.Y- {{ $aca_year }}</h2>
                     <p style="font-size:16px;color:black;">Dear Parents,</p>
                     <p style="text-decoration:underline;font-size:16px;color:black;">Dear Parents,Please note that the
                         issue of Admission Forms DOES NOT GUARANTEE
@@ -168,7 +168,7 @@
         </div>
         <div class="content-div" style="text-align:center">
             <h3 style="color:black;margin:0px;"><b>HILLS HIGH SCHOOL</b></h3>
-            <h3 style="color:black;margin:0px;"><b>PROVISIONAL ADMISSION (Standard-{{$admission_std}})</b></h3>
+            <h3 style="color:black;margin:0px;"><b>PROVISIONAL ADMISSION ({{$admission_std}})</b></h3>
         </div>
         <div class="greetings">
             <h2 style="color:black;margin:0px;"><b>Dear Parents,</b></h2>

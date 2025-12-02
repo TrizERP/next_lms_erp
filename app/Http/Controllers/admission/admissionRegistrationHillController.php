@@ -99,6 +99,7 @@ class admissionRegistrationHillController extends Controller
         $i=0;
         if(!empty($students)){
             foreach($students as $enquiry_id=>$data){
+                $skipOtherEmails = ($data["paid"] ?? "No") === "Yes";
                 $pindate = isset($data["pint_date"]) ? Carbon::createFromFormat('d-m-Y',$data["pint_date"])->format('Y-m-d') : null;
                 $condate = isset($data["conf_date"]) ? Carbon::createFromFormat('d-m-Y',$data["conf_date"])->format('Y-m-d') : null;
 
@@ -173,7 +174,7 @@ class admissionRegistrationHillController extends Controller
               $sendSms = $sendSmsController->sendSMS($data['mobile'], $text, $sub_institute_id);
               
               //send email;
-              if(in_array($data['conf'],["C","C/A"]) && isset($condate) && isset($data['admission_standard'])){
+              if(!$skipOtherEmails && in_array($data['conf'],["C","C/A"]) && isset($condate) && isset($data['admission_standard']) && ($data["paid"] ?? "No") !== "Yes"){
                     $nextYear = ((int) substr($syear, 2, 2)+1);
                     $getStandard = DB::table('standard')->where(['id'=>$data['admission_standard'],'sub_institute_id'=>$sub_institute_id])->first();
                     $standard_id = $getStandard->id?? '';
@@ -184,7 +185,7 @@ class admissionRegistrationHillController extends Controller
                             'conf' => $data["conf"] ?? '',
                             'parent_time' => '9:00 a.m. to 11:00 am OR 2:30 p.m.  to 4:30 p.m.',
                             'aca_year'    => $syear.'-'.$nextYear,
-                            'admission_std'    => $getStandard->short_name ?? '-',
+                            'admission_std'    => $getStandard->name ?? '-',
                             'medium'    => $getStandard->medium ?? '-'
                         ])->render();
                     }
@@ -195,7 +196,7 @@ class admissionRegistrationHillController extends Controller
                             'conf' => $data["conf"] ?? '',
                             'parent_time' => '9:00 a.m. to 11:00 am OR 2:30 p.m.  to 4:30 p.m.',
                             'aca_year'    => $syear.'-'.$nextYear,
-                            'admission_std'    => $getStandard->short_name ?? '-',
+                            'admission_std'    => $getStandard->name ?? '-',
                             'medium'    => $getStandard->medium ?? '-'
                         ])->render();
                     }
@@ -206,7 +207,7 @@ class admissionRegistrationHillController extends Controller
                             'conf' => $data["conf"] ?? '',
                             'parent_time' => '9:00 a.m. to 11:00 am OR 2:30 p.m.  to 4:30 p.m.',
                             'aca_year'    => $syear.'-'.$nextYear,
-                            'admission_std'    => $getStandard->short_name ?? '-',
+                            'admission_std'    => $getStandard->name ?? '-',
                             'medium'    => $getStandard->medium ?? '-'
                         ])->render();
                     }
@@ -229,7 +230,7 @@ class admissionRegistrationHillController extends Controller
             //   echo "<pre>";print_r($sendEmail);exit;
                     
               }
-               elseif(isset($data["pint_time"]) && isset($pindate) && isset($data['admission_standard']) && in_array($data["pint"],["I"])){
+               elseif(!$skipOtherEmails && isset($data["pint_time"]) && isset($pindate) && isset($data['admission_standard']) && in_array($data["pint"],["I"])){
                     $nextYear = ((int) substr($syear, 2, 2)+1);
                     $getStandard = DB::table('standard')->where(['id'=>$data['admission_standard'],'sub_institute_id'=>$sub_institute_id])->first();
                     $standard_id = $getStandard->id?? '';
@@ -240,7 +241,7 @@ class admissionRegistrationHillController extends Controller
                             'pint' => $data["pint"]?? '',
                             'parent_time' => $data["pint_time"]?? '',
                             'aca_year'    => $syear.'-'.$nextYear,
-                            'admission_std'    => $getStandard->short_name ?? '-', 
+                            'admission_std'    => $getStandard->name ?? '-', 
                         ])  ->render();
                     } else {
                         $htmlContent = view('admission.registrationHills.sendEmailPrentInteraction', [
@@ -249,7 +250,7 @@ class admissionRegistrationHillController extends Controller
                             'pint' => $data["pint"] ?? '',
                             'parent_time' => $data["pint_time"] ?? '',
                             'aca_year'    => $syear.'-'.$nextYear,
-                            'admission_std'    => $getStandard->short_name ?? '-',
+                            'admission_std'    => $getStandard->name ?? '-',
                             'medium'    => $getStandard->medium ?? '-'
                         ])->render();
                     }
@@ -270,7 +271,7 @@ class admissionRegistrationHillController extends Controller
                     $sendEmail = $this->sendEmail($emailRequest);
                     }
             
-            elseif(isset($data['admission_standard']) && in_array($data["pint"],["NO","W/L"])){
+            elseif(!$skipOtherEmails && isset($data['admission_standard']) && in_array($data["pint"],["NO","W/L"])){
                     $nextYear = ((int) substr($syear, 2, 2)+1);
                     $getStandard = DB::table('standard')->where(['id'=>$data['admission_standard'],'sub_institute_id'=>$sub_institute_id])->first();
 
@@ -280,7 +281,7 @@ class admissionRegistrationHillController extends Controller
                         'pint' => $data["pint"] ?? '',
                         'parent_time' => $data["pint_time"] ?? '',
                         'aca_year'    => $syear.'-'.$nextYear,
-                        'admission_std'    => $getStandard->short_name ?? '-',
+                        'admission_std'    => $getStandard->name ?? '-',
                         'medium'    => $getStandard->medium ?? '-'
                     ])->render();
                     // return $htmlContent;exit;
@@ -308,7 +309,7 @@ class admissionRegistrationHillController extends Controller
                         'pint' => $data["conf"] ?? '',
                         'parent_time' => $condate ?? '',
                         'aca_year'    => $syear.'-'.$nextYear,
-                        'admission_std'    => $getStandard->short_name ?? '-',
+                        'admission_std'    => $getStandard->name ?? '-',
                         'medium'    => $getStandard->medium ?? '-'
                     ])->render();
                     // return $htmlContent;exit;
