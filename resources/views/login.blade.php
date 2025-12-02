@@ -100,9 +100,9 @@ $loginpage_backgrond = session()->get('loginpage_backgrond');
                             @if(!empty($successMsg))
                             <div class="alert alert-success"> {{ $successMsg }}</div>
                             @endif
-                            @if(!empty($data))
+                            @if(session('data'))
                             <div class="alert alert-danger" role="alert">
-                                {{ $data['message'] }}
+                                {{ session('data')['message'] }}
                             </div>
                             @endif
                             <form class="form-horizontal new-lg-form" id="loginform" method="POST" action="/login">
@@ -110,11 +110,11 @@ $loginpage_backgrond = session()->get('loginpage_backgrond');
                                 <div class="form-group">
                                     <label for="email">Email Address</label>
                                     <input class="form-control" name="email" type="text" required=""
-                                        placeholder="Username">
+                                        placeholder="Username" value="{{ old('email') }}">
                                 </div>
                               <div class="form-group" style="position: relative;">
     <label for="password">Password</label>
-    <input class="form-control" name="password" id="password" type="password" placeholder="Password" required>
+    <input class="form-control" name="password" id="password" type="password" placeholder="Password" required value="{{ old('password') }}">
 
     <span style="position: absolute; right: 15px; top: 38px; cursor: pointer;" id="togglePassword">
         <i class="fa-solid fa-eye" id="eyeIcon"></i>
@@ -126,7 +126,7 @@ $loginpage_backgrond = session()->get('loginpage_backgrond');
                                         <div class="col-6">
                                             <label>Captcha</label>
                                             <input class="form-control" autocomplete="off" name="captchaText" type="text" required=""
-                                                   placeholder="Enter Captcha">
+                                                       placeholder="Enter Captcha" value="{{ old('captchaText') }}">
                                         </div>
                                         <div class="col-6">
                                             {!! captcha_img() !!}

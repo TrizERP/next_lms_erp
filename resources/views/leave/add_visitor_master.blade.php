@@ -33,7 +33,7 @@
                           @else
                           {{ route('add_visitor_master.store') }}
                           @endif" method="post">
-
+						<input type="hidden" name="type" value="{{ request('type') }}">
                         @if(!isset($data->name))
                         {{ method_field("POST") }}
                         @else

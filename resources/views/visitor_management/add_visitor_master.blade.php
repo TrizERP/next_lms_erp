@@ -32,6 +32,13 @@
                         <strong>{{ $message }}</strong>
                     </div>
                     @endif
+
+                    @if (isset($data->message))
+                    <div class="alert alert-success alert-block">
+                        <button type="button" class="close" data-dismiss="alert">×</button>
+                        <strong>{{ $data->message }}</strong>
+                    </div>
+                    @endif
                        
                     <div class="col-lg-12 col-sm-12 col-xs-12">  
                         <form enctype='multipart/form-data' action="
@@ -48,6 +55,7 @@
                         @endif
 
                         {{csrf_field()}}
+                        <input type="hidden" name="type" value="{{ request('type') }}">
                         	<div class="row">
 								<div class="col-md-4 form-group" style="{{ $type == 'webForm' ? 'display:none;' : '' }}">
 									<label class="control-label">Appointment Type</label>
@@ -92,8 +100,8 @@
 									name="visitor_type"
 									{{ $type == 'webForm' ? 'readonly' : 'required' }}>
 								<option value="">Select</option>
-								@if(isset($data['visitor_type_data']))
-									@foreach($data['visitor_type_data'] as $value)
+								@if(isset($data->visitor_type_data))
+									@foreach($data->visitor_type_data as $value)
 										<option value="{{ $value['id'] }}"
 											@if(isset($data->visitor_type) && $data->visitor_type == $value['id']) selected @endif>
 											{{ $value['title'] }}
@@ -228,7 +236,7 @@
 									<label for="">Student Name</label>
 									<input type="text" class="form-control" name="student_name" id="student_name" list="studentLists">
 									<datalist id="studentLists">
-										@foreach($data['studentData'] as $key=>$value)
+										@foreach($data->studentData as $key=>$value)
 										<option>
 											{{--$value->student_name--}}
 											{{ App\Helpers\sortStudentName($value->student_name) }}
@@ -240,10 +248,10 @@
 								<label for="">Mobile</label>
 								<input type="text" class="form-control" name="mobile" id="mobile" list="mobileLists">
 								<datalist id="mobileLists">
-									@foreach($data['studentData'] as $key=>$value)
-									<option>{{$value->mobile}}</option>
-									@endforeach
-								</datalist>
+								@foreach($data->studentData as $key=>$value)
+								<option>{{$value->mobile}}</option>
+								@endforeach
+							</datalist>
 							</div>
 						</div>
 						<div class="col-md-12 form-group">
