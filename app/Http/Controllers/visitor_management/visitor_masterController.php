@@ -141,33 +141,28 @@ class visitor_masterController extends Controller
             $syear = $request->get('syear');
         }
         
-        $data['visitor_type_data'] = visitor_typeModel::where(['sub_institute_id' => $sub_institute_id])->get();
-        $data['to_meet_array'] = tbluserModel::select(
+        $data = (object) [];
+        $data->visitor_type_data = visitor_typeModel::where(['sub_institute_id' => $sub_institute_id])->get();
+        $data->to_meet_array = tbluserModel::select(
             'id', DB::raw('concat(first_name," ",middle_name," ",last_name) as staff_name')
         )
             ->where(['sub_institute_id' => $sub_institute_id, 'status' => 1])->get();
-        
-        $data['studentData'] = DB::table('tblstudent as ts')
+
+        $data->studentData = DB::table('tblstudent as ts')
             ->join('tblstudent_enrollment as tse','tse.student_id','=','ts.id')
             ->selectRaw('ts.id,ts.enrollment_no,CONCAT_WS(" ",COALESCE(ts.first_name,"-"),COALESCE(ts.middle_name,"-"),COALESCE(ts.last_name,"-")) as student_name,ts.mobile')
             ->where(['ts.sub_institute_id'=>$sub_institute_id,'tse.syear'=>$syear])->get()->toArray();
-
-       if($type=='webForm'){
-                 $res['message'] = "Added successfully";
-            }
-            else{
                return is_mobile($type, 'visitor_management/add_visitor_master', $data, "view");
-            }
-    
     }
 
     public function store(Request $request)
     {
         // echo "<pre>";print_r($request->all());exit;
         $type = $request->get('type');
-
+//  dd($type);
         if ($type != "API") {
             $sub_institute_id = $request->session()->get('sub_institute_id');
+            $syear = $request->session()->get('syear');
             $created_by = $request->session()->get('user_id');
         } else {
             try {
@@ -251,6 +246,14 @@ class visitor_masterController extends Controller
         //For Sending Welcome sms		
         $this->get_sms_setting($visitor_id, 'Welcome');
 
+        if($type == "webForm"){
+            $data = (object) [];
+            $data->visitor_type_data = visitor_typeModel::where(['sub_institute_id' => $sub_institute_id])->get();
+            $data->to_meet_array = tbluserModel::select('id', DB::raw('concat(first_name," ",middle_name," ",last_name) as staff_name'))->where(['sub_institute_id' => $sub_institute_id, 'status' => 1])->get();
+            $data->studentData = DB::table('tblstudent as ts')->join('tblstudent_enrollment as tse','tse.student_id','=','ts.id')->selectRaw('ts.id,ts.enrollment_no,CONCAT_WS(" ",COALESCE(ts.first_name,"-"),COALESCE(ts.middle_name,"-"),COALESCE(ts.last_name,"-")) as student_name,ts.mobile')->where(['ts.sub_institute_id'=>$sub_institute_id,'tse.syear'=>$syear])->get()->toArray();
+            $data->message = $res['message'];
+            return view('visitor_management/add_visitor_master', ['data' => $data],$res);
+        }
         return is_mobile($type, "add_visitor_master.index", $res, "redirect");
     }
 

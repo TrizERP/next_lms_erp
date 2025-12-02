@@ -26,43 +26,42 @@ class loginController extends Controller
             $type=$login_data['type'];
        }else{
 
-        $validator = Validator::make($request->all(), [
-            'email'    => 'required',
-            'password' => 'required',
-        ]);
+       if($request->isMethod('post')) {
+           $validator = Validator::make($request->all(), [
+               'email'    => 'required',
+               'password' => 'required',
+           ]);
 
-        $type = $request->input('type');
+           $type = $request->input('type');
 
-        if ($validator->fails()) {
-            if (! empty(session()->get('loginpage_link'))) {
-                $res = array();
-            } else {
-                $res['status_code'] = 0;
-                $res['message'] = "Parameter Missing";
-            }
-            $data = is_mobile($type, "login", $res, "view");
-
-            return $data;
-        }
+           if ($validator->fails()) {
+               if (! empty(session()->get('loginpage_link'))) {
+                   $res = array();
+               } else {
+                   $res['status_code'] = 0;
+                   $res['message'] = "Parameter Missing";
+               }
+               return redirect('/login')->withInput()->with(['data' => $res]);
+           }
 
 
-        $email = $request->input("email");
-        $password = $request->input("password");
-        $captchaText = $request->input("captchaText");
+           $email = $request->input("email");
+           $password = $request->input("password");
+           $captchaText = $request->input("captchaText");
 //        $hid_captcha = $request->input("hid_captcha");
-    }
-        if ($captchaText != env('CAPTCHA')) {
-            $validator = Validator::make($request->all(), [
-                'captchaText' => 'required|captcha',
-            ]);
-            if ($validator->fails()) {
-                $res['status_code'] = 0;
-                $res['message'] = "Invalid Captcha";
 
-                return is_mobile($type, "login", $res, "view");
-            }
+           if ($captchaText != env('CAPTCHA')) {
+               $validator = Validator::make($request->all(), [
+                   'captchaText' => 'required|captcha',
+               ]);
+               if ($validator->fails()) {
+                   $res['status_code'] = 0;
+                   $res['message'] = "Invalid Captcha";
+
+                   return redirect('/login')->withInput()->with(['data' => $res]);
+               }
 //            $captchaText = $hid_captcha;
-        }
+           }
 
         // $data = loginModel::where(['email' => $email, 'password' => $password])->first();
 
@@ -207,14 +206,14 @@ class loginController extends Controller
             $res['status_code'] = 0;
             $res['message'] = "Invalid User Id And Password";
 
-            return is_mobile($type, "login", $res, "view");
+            return redirect('/login')->withInput()->with(['data' => $res]);
         } else {
             if ($rightsMenusIds == 0) { //Check user Rights
                 $res['status_code'] = 0;
                 $res['message'] = "Please Contact Administrator For ERP Rights";
 
-                    return is_mobile($type, "login", $res, "view");
-                } else {
+                return redirect('/login')->withInput()->with(['data' => $res]);
+            } else {
                     $user = $data->toArray();
                     $user = $user[0];
 
@@ -264,7 +263,7 @@ class loginController extends Controller
                         if(empty($getTermId)){
                             $res['status_code'] = 0;
                             $res['message'] = "Academic Term Date Expired";
-                            return is_mobile($type, "login", $res, "view");
+                            return redirect('/login')->withInput()->with(['data' => $res]);
                         }
                         $request->session()->put('syear', $getTermId[0]['syear']);
 
@@ -323,7 +322,7 @@ class loginController extends Controller
                         if(empty($getTermId)){
                             $res['status_code'] = 0;
                             $res['message'] = "Academic Term Date Expired";
-                            return is_mobile($type, "login", $res, "view");
+                            return redirect('/login')->withInput()->with(['data' => $res]);
                         }
                         //START set class teacher standard , grade , division
                         DB::table('tbluserprofilemaster')->where('NAME', 'Teacher')
@@ -457,8 +456,11 @@ class loginController extends Controller
                 }
             }
 //        }
+        }
     }
 
+    return view('login');
+    }
     public function logout(Request $request)
     {
         //logout user
