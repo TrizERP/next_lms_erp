@@ -64,7 +64,7 @@
                 </div>
                 <div class="content-div" style="color:black;color:black;">
                     <h2 class="h1line underline" style="text-align: center;text-decoration: underline;color:black;">
-                        Standard-{{ $admission_std }} ADMISSION PROCEDURE AT HILLS HIGH SCHOOL, A.Y- {{ $aca_year }}</h2>
+                        {{ $admission_std }} ADMISSION PROCEDURE AT HILLS HIGH SCHOOL, A.Y- {{ $aca_year }}</h2>
                     <p style="font-size:16px;color:black;">Dear Parents,</p>
                     <p style="text-decoration:underline;font-size:16px;color:black;">Dear Parents,Please note that the
                         issue of Admission Forms DOES NOT GUARANTEE
@@ -176,7 +176,7 @@ body, table, td, div, p {font-family: Arial, Helvetica, sans-serif !important;}
     <!-- TITLE -->
     <div style="text-align:center; margin-top:5px;">
       <h2 style="margin:0; color:#000; font-weight:bold; letter-spacing:1px;">HILLS' HIGH SCHOOL</h2>
-      <h3 style="margin:0; color:#000; font-weight:bold;">PROVISIONAL ADMISSION ({{$admission_std}}) {{$medium}} SESSION</h3>
+      <h3 style="margin:0; color:#000; font-weight:bold;">PROVISIONAL ADMISSION ({{$admission_std}}) {{($conf=="C") ? 'Morning Session' : 'Afternoon Session' }}.</h3>
     </div>
   
     <hr style="border:0; border-top:2px solid #943634; margin:18px 0;">
@@ -186,7 +186,7 @@ body, table, td, div, p {font-family: Arial, Helvetica, sans-serif !important;}
   
     <p style="font-size:15px; line-height:1.7; margin-top:10px;">
       Hills High School is pleased to grant provisional admission to your ward. In order to submit the required documents & fees you are requested to come between
-      <b>{{date('d-m-Y',strtotime($conf_date))}}  {{$parent_time}} (9:00 am to 11:00 am)</b> - <b>SUNDAY CLOSED</b>.
+      <b>{{date('d-m-Y',strtotime($conf_date))}}  {{$parent_time}} </b> - <b>SUNDAY CLOSED</b>.
     </p>
   
     <!-- SECTION A -->
