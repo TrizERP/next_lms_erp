@@ -4,8 +4,8 @@ return [
     'disable' => env('CAPTCHA_DISABLE', false),
     'characters' => ['2', '3', '4', '6', '7', '8', '9', '0', '1'],
     'default' => [
-        'length' => 2,
-        'width' => 170,
+        'length' => 3,
+        'width' => 120,
         'height' => 80,
         'quality' => 100,
         'math' => false,
