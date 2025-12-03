@@ -2152,10 +2152,11 @@ class PayrollController extends Controller
         ->get()->toArray();
         //echo "<pre>";print_r($userLeaves);exit();
       
-      $leaveStatus=["approved","pending"];
+        $leaveStatus=["approved","pending"];
+        $onDutyLeave = DB::table('hrms_leave_types')->whereIn('leave_type_id', ['LTY004'])->where(['status' => 1, 'sub_institute_id' => $sub_institute_id])->pluck('id')->first();
       
         $totLeaveDay = $tot_lwp_leave = $noData = 0;
-        $leaveDates=[];
+        $leaveDates=$onDutyLeaveDates=[];
         $searchMonth = $from_date->format('Y-m');
         // check leave date in attandance and also aprroved_lwp
         foreach ($userLeaves as $key => $value) {
@@ -2196,8 +2197,14 @@ class PayrollController extends Controller
                         if(in_array($checkLeave,$weekDays)){
                             $weekday_off--;
                         }
-                        
-                        $leaveDates[] =$checkLeave;
+
+                        //echo $onDutyLeave ."!=".$value->leave_type_id."<br/>";
+                        if ($onDutyLeave != $value->leave_type_id){
+                            $leaveDates[] = $checkLeave;
+                        }
+                        else{
+                            $onDutyLeaveDates[] = $checkLeave;
+                        }
                     }
                 }
         }
@@ -2205,6 +2212,8 @@ class PayrollController extends Controller
         //echo "<br>Leaves<br>";
         //echo "<pre>";print_r($leaveDates);exit();
        // date not found in attandance and leave, no punch in and punch out and also no leave entry in database
+        
+        /* By Rajesh 02-12-2025 Not used below code
         $noEnrty = 0;
         foreach ($noAtt as $key => $value) {
             if(!in_array($value,$leaveDates) && !in_array($value,$holidayDates)){
@@ -2212,18 +2221,19 @@ class PayrollController extends Controller
                 // echo "<pre>";print_r($value);
             }
         }
+        */
 //         if($request->emp_id==79){
 // echo "<pre>";
 // print_r($weekDays);
 // print_r($holidayDates);
-// print_r($leaveDates);
+// print_r($leaveDates);die();
 // print_r($attArr);
 // die();
 //         }
 
 //START SANDWICH LEAVE
 $sandwichLeaveCount = 0;
-$sandwichLeaveCount = $this->calculateLeaveCounts($from_date,$to_date,$weekDays,$holidayDates,$leaveDates,$attArr);
+$sandwichLeaveCount = $this->calculateLeaveCounts($from_date,$to_date,$weekDays,$holidayDates,$leaveDates,$attArr,$onDutyLeaveDates);
 //END SANDWICH LEAVE
 
 //Start Saturday Late
@@ -2277,8 +2287,10 @@ $sat_late = $sat_cutoff_value * $sat_late_count;
 
         return $response;
     }
-    public function calculateLeaveCounts($startDate,$endDate,$weekOffDates,$holidays,$leaveDates,$presentDates)
+    public function calculateLeaveCounts($startDateTime,$endDateTime,$weekOffDates,$holidays,$leaveDates,$presentDates,$onDutyLeaveDates)
     {
+        $startDate= date('Y-m-d', strtotime($startDateTime));
+        $endDate  = date('Y-m-d', strtotime($endDateTime));
         $allDates = [];
         $sandwichLeaveCount = 0;
 
@@ -2291,23 +2303,27 @@ $sat_late = $sat_cutoff_value * $sat_late_count;
             $prevDay = date('Y-m-d', strtotime('-1 day', strtotime($allDate)));
             $nextDay = date('Y-m-d', strtotime('+1 day', strtotime($allDate)));
 
-            if ( !in_array($prevDay, $allDates) && !in_array($nextDay, $allDates) && !in_array($prevDay, $presentDates) && !in_array($nextDay, $presentDates) && !in_array($allDate, $leaveDates)) 
-            {
-                /*echo "<pre>";
-                print_r($allDates);
-                print_r($presentDates);
-                print_r($leaveDates);
+            // Condition simplified with ON-Duty Leave
+            $isPrevBlocked = in_array($prevDay, $presentDates) || in_array($prevDay, $onDutyLeaveDates);
+            $isNextBlocked = in_array($nextDay, $presentDates) || in_array($nextDay, $onDutyLeaveDates);
 
-                echo "prevDay:".$prevDay."-nextDay:".$nextDay;
-                */
-                $sandwichLeaveCount++;
-            }
-            /* Add by Uma - ulta adapav Hide from rajesh
-            if (in_array($allDate, $leaveDates) && in_array($allDate,$holidays)) 
+            // NEW: prevent cross-month / outside-period sandwich
+            $isPrevOutsideRange = ($prevDay < $startDate || $prevDay > $endDate);
+            $isNextOutsideRange = ($nextDay < $startDate || $nextDay > $endDate);
+
+            if(
+                !$isPrevOutsideRange &&
+                !$isNextOutsideRange &&
+                !in_array($prevDay, $allDates) &&
+                !in_array($nextDay, $allDates) &&
+                !$isPrevBlocked &&
+                !$isNextBlocked &&
+                !in_array($allDate, $leaveDates)
+            ) 
             {
+                //echo $allDate."prevDay:".$prevDay."-nextDay:".$nextDay;die();
                 $sandwichLeaveCount++;
             }
-            */
         }
 
         // Output results
