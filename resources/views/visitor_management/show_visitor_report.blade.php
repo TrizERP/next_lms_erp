@@ -67,7 +67,7 @@
                                 <th>Date</th>
                                 <th>Check In Time</th>
                                 <th>Check Out Time</th>
-                                <th>Created By</th>
+                                <!--<th>Created By</th>-->
                             </tr>
                         </thead>
                         <tbody>
@@ -88,7 +88,7 @@
                                 <td>{{date('d-m-Y',strtotime($data->meet_date))}}</td>
                                 <td>{{$data->in_time}}</td>
                                 <td>{{$data->out_time}}</td>
-                                <td>{{$data->created_by}}</td>
+                                <!--<td>{{$data->created_by}}</td>-->
                             </tr>
                         @endforeach
                         </tbody>

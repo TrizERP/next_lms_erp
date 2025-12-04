@@ -92,8 +92,9 @@
 							</div>
         @if($type == 'webForm')
             <input type="hidden" name="appointment_type" id="direct" value="Direct">
+            <input type="hidden" name="sub_institute_id" id="sub_institute_id" value="{{ request('sub_institute_id') }}">
         @endif							
-							<div class="row">
+						<div class="row hideDiv">
 							<div class="col-md-4 form-group" style="{{ $type == 'webForm' ? 'display:none;' : '' }}">
 							<label class="control-label">Visitor Type</label>
 							<select class="form-control"
@@ -109,123 +110,121 @@
 									@endforeach
 								@endif
 							</select>
-						</div>
+							</div>
 
         @if($type == 'webForm')
             <input type="hidden" name="visitor_type" value="1">
         @endif
 								
-								<div class="col-md-4 form-group">
-									<label>Visitor Name </label>
-									<input type="text" id='name' required name="name" value="@if(isset($data->name)) {{ $data->name }} @endif" class="form-control">									
-									<input type="hidden" id='hid_exit_msg_sent' name="hid_exit_msg_sent" value="@if(isset($data->exit_msg_sent)){{$data->exit_msg_sent}}@endif" class="form-control">									
-								</div>
-								
-								<div class="col-md-4 form-group">
-									<label>Mobile Number</label>	
-									
-									<input maxlength="10" type="text" id='contact' required name="contact" value='@if(isset($data->contact)){{$data->contact}}@endif' class="form-control" onkeypress="return isNumber(event)">
-									<span style="float:left;color:red;" id="errorMsg"></span>
-								</div>							
-																													
-								<div class="col-md-4 form-group" style="{{ $type == 'webForm' ? 'display:none;' : '' }}">
-								<label>Email</label>
-								<input type="email"
-									id="email"
-									name="email"
-									class="form-control"
-									value="{{ isset($data->email) ? $data->email : '' }}"
-									{{ $type == 'webForm' ? 'readonly' : 'required' }}>
+							<div class="col-md-4 form-group">
+								<label>Visitor Name </label>
+								<input type="text" id='name' required name="name" value="@if(isset($data->name)) {{ $data->name }} @endif" class="form-control">									
+								<input type="hidden" id='hid_exit_msg_sent' name="hid_exit_msg_sent" value="@if(isset($data->exit_msg_sent)){{$data->exit_msg_sent}}@endif" class="form-control">									
 							</div>
+							
+							<div class="col-md-4 form-group">
+								<label>Mobile Number</label>	
+								
+								<input maxlength="10" type="text" id='contact' required name="contact" value='@if(isset($data->contact)){{$data->contact}}@endif' class="form-control" onkeypress="return isNumber(event)">
+								<span style="float:left;color:red;" id="errorMsg"></span>
+							</div>							
+																												
+							<div class="col-md-4 form-group" style="{{ $type == 'webForm' ? 'display:none;' : '' }}">
+							<label>Email</label>
+							<input type="email"
+								id="email"
+								name="email"
+								class="form-control"
+								value="{{ isset($data->email) ? $data->email : '' }}"
+								{{ $type == 'webForm' ? 'readonly' : 'required' }}>
+						    </div>
 
         @if($type == 'webForm')
             <input type="hidden" name="email" value="">
         @endif
 
-								<div class="col-md-4 form-group">                   
-	                                <label class="control-label">To Meet (Person / Department)</label>
-                                        <input type="text" class="form-control" name="to_meet" value="{{ isset($data->to_meet) ? $data->to_meet : '' }}" />
-                                    </div>														
-								
-								<div class="col-md-4 form-group" style="{{ $type == 'webForm' ? 'display:none;' : '' }}">
-								<label>Relation With</label>
-								<input type="text"
-									id="relation"
-									name="relation"
-									class="form-control"
-									value="{{ isset($data->relation) ? $data->relation : '' }}"
-									{{ $type == 'webForm' ? 'readonly' : 'required' }}>
-							</div>
+							<div class="col-md-4 form-group">                   
+                                <label class="control-label">To Meet (Person / Department)</label>
+                                    <input type="text" class="form-control" name="to_meet" value="{{ isset($data->to_meet) ? $data->to_meet : '' }}" />
+                            </div>														
+							
+							<div class="col-md-4 form-group" style="{{ $type == 'webForm' ? 'display:none;' : '' }}">
+							<label>Relation With</label>
+							<input type="text"
+								id="relation"
+								name="relation"
+								class="form-control"
+								value="{{ isset($data->relation) ? $data->relation : '' }}"
+								{{ $type == 'webForm' ? 'readonly' : 'required' }}>
+						    </div>
 								
         @if($type == 'webForm')
             <input type="hidden" name="relation" value="">
         @endif
-								<div class="col-md-4 form-group">
-									<label>Purpose of Visit</label>
-									<textarea id='purpose' required name="purpose" class="form-control">@if(isset($data->purpose)) {{ $data->purpose }} @endif</textarea>
-								</div>
-								
-								<div class="col-md-4 form-group" style="{{ $type == 'webForm' ? 'display:none;' : '' }}">
-								<label>Visitor ID Card No.</label>
-								<input type="text"
-									id="visitor_idcard"
-									name="visitor_idcard"
-									class="form-control"
-									value="{{ isset($data->visitor_idcard) ? $data->visitor_idcard : '' }}"
-									{{ $type == 'webForm' ? 'readonly' : 'required' }}>
+							<div class="col-md-4 form-group">
+								<label>Purpose of Visit</label>
+								<textarea id='purpose' required name="purpose" class="form-control">@if(isset($data->purpose)) {{ $data->purpose }} @endif</textarea>
 							</div>
+							
+							<div class="col-md-4 form-group" style="{{ $type == 'webForm' ? 'display:none;' : '' }}">
+							<label>Visitor ID Card No.</label>
+							<input type="text"
+								id="visitor_idcard"
+								name="visitor_idcard"
+								class="form-control"
+								value="{{ isset($data->visitor_idcard) ? $data->visitor_idcard : '' }}"
+								{{ $type == 'webForm' ? 'readonly' : 'required' }}>
+						    </div>
 
         @if($type == 'webForm')
             <input type="hidden" name="visitor_idcard" value="">
         @endif
 																
-								<div class="col-md-4 form-group" style="{{ $type == 'webForm' ? 'display:none;' : '' }}">
-									<label>Visitor Photo</label>
-									<input type="file" id='visitor_photo' name="visitor_photo" class="form-control">
-									@php
-									if(isset($data->photo) && $data->photo !="")
-									{
-										echo "<img src='/storage/visitor_photo/$data->photo' height='80' width='80'>";
-										echo "<input type='hidden' name='hid_photo' value='/$data->photo'>";										
-									}								
-									@endphp
-								</div>
+						<div class="col-md-4 form-group" style="{{ $type == 'webForm' ? 'display:none;' : '' }}">
+							<label>Visitor Photo</label>
+							<input type="file" id='visitor_photo' name="visitor_photo" class="form-control">
+							@php
+							if(isset($data->photo) && $data->photo !="")
+							{
+								echo "<img src='/storage/visitor_photo/$data->photo' height='80' width='80'>";
+								echo "<input type='hidden' name='hid_photo' value='/$data->photo'>";										
+							}								
+							@endphp
+						</div>
 
-								<div class="col-md-4 form-group" style="{{ $type == 'webForm' ? 'display:none;' : '' }}">
-									<label>Meet Date</label>
-									<div class="input-daterange input-group" id="date-range">
-										<input type="text" class="form-control mydatepicker" placeholder="dd/mm/yyyy" value="@if(isset($data->meet_date)){{$data->meet_date}}@endif" name="meet_date" id="meet_date" autocomplete="off">
-										<span class="input-group-addon"><i class="icon-calender"></i></span> 
-									</div>
-								</div>
+						<div class="col-md-4 form-group" style="{{ $type == 'webForm' ? 'display:none;' : '' }}">
+							<label>Meet Date</label>
+							<div class="input-daterange input-group" id="date-range">
+								<input type="text" class="form-control mydatepicker" placeholder="dd/mm/yyyy" value="@if(isset($data->meet_date)){{$data->meet_date}}@endif" name="meet_date" id="meet_date" autocomplete="off">
+								<span class="input-group-addon"><i class="icon-calender"></i></span> 
+							</div>
+						</div>
 						  
-								<input type="hidden" name="hid_out_time" id="hid_out_time" value="@if(isset($data->out_time)){{$data->out_time}}@endif">
+						<input type="hidden" name="hid_out_time" id="hid_out_time" value="@if(isset($data->out_time)){{$data->out_time}}@endif">
 
-								<div class="col-md-4 form-group ml-0 mr-auto" style="{{ $type == 'webForm' ? 'display:none;' : '' }}">
-									<label>Checkin Time </label>
-									<div class="input-group clockpicker " data-placement="bottom" data-align="top" data-autoclose="true">
-										<input type="text" id='in_time' name="in_time" class="form-control" value="@if(isset($data->in_time)) {{ $data->in_time }} @endif"> 
-										<span class="input-group-addon"><span class="glyphicon glyphicon-time"></span></span>
-									</div>
-								</div>	
-								
-	                            <!--div class="col-md-4 form-group">
-	                                <label>Checkout Time </label>
-	                                <div class="input-group clockpicker " data-placement="bottom" data-align="top" data-autoclose="true">
-	                                    <input type="text" id='out_time' name="out_time" class="form-control" value="@if(isset($data->out_time)) {{ $data->out_time }} @endif"> 
-	                                    <span class="input-group-addon"><span class="glyphicon glyphicon-time"></span></span>
-	                                </div>
-	                            </div-->							
-								</div>
-	                            <div class="col-md-12 form-group">
-	                                <center>
-	                                    <input type="submit" name="submit" value="Save" class="btn btn-success" onclick="return ValidateNo();">
-	                                </center>
-	                            </div>
-	                        </div>
-
-                        </form>
+						<div class="col-md-4 form-group ml-0 mr-auto" style="{{ $type == 'webForm' ? 'display:none;' : '' }}">
+							<label>Checkin Time </label>
+							<div class="input-group clockpicker " data-placement="bottom" data-align="top" data-autoclose="true">
+								<input type="text" id='in_time' name="in_time" class="form-control" value="@if(isset($data->in_time)) {{ $data->in_time }} @endif"> 
+								<span class="input-group-addon"><span class="glyphicon glyphicon-time"></span></span>
+							</div>
+						</div>
+                        <!--div class="col-md-4 form-group">
+                            <label>Checkout Time </label>
+                            <div class="input-group clockpicker " data-placement="bottom" data-align="top" data-autoclose="true">
+                                <input type="text" id='out_time' name="out_time" class="form-control" value="@if(isset($data->out_time)) {{ $data->out_time }} @endif"> 
+                                <span class="input-group-addon"><span class="glyphicon glyphicon-time"></span></span>
+                            </div>
+                        </div-->
+	                    <div class="col-md-12 form-group">
+	                        <center>
+	                            <input type="submit" name="submit" value="Save" class="btn btn-success" onclick="return ValidateNo();">
+	                        </center>
+	                    </div>
                     </div>
+                </div>
+            </form>
+        </div>
 
 					<!-- seacrh student   -->
 					<div class="col-md-12 studentForm">
@@ -236,7 +235,7 @@
 									<label for="">Student Name</label>
 									<input type="text" class="form-control" name="student_name" id="student_name" list="studentLists">
 									<datalist id="studentLists">
-										@foreach($data->studentData as $key=>$value)
+										@foreach($data->studentData ?? [] as $key=>$value)
 										<option>
 											{{--$value->student_name--}}
 											{{ App\Helpers\sortStudentName($value->student_name) }}
@@ -248,7 +247,7 @@
 								<label for="">Mobile</label>
 								<input type="text" class="form-control" name="mobile" id="mobile" list="mobileLists">
 								<datalist id="mobileLists">
-								@foreach($data->studentData as $key=>$value)
+								@foreach($data->studentData ?? [] as $key=>$value)
 								<option>{{$value->mobile}}</option>
 								@endforeach
 							</datalist>

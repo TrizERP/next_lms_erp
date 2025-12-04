@@ -340,7 +340,7 @@ Route::group(['prefix' => 'school_setup', 'middleware' => ['session', 'menu', 'l
 
     Route::resource('lessonplanningReport', lessonplanningReportController::class);
 
-    //Route::get('google-analytics-summary', array('as' => 'google-analytics-summary', 'uses' => 'school_setup\HomeController@getAnalyticsSummary'));
+    Route::get('google-analytics-summary', array('as' => 'google-analytics-summary', 'uses' => 'school_setup\HomeController@getAnalyticsSummary'));
 
     Route::Resource('used_storage_graph', used_storage_graphController::class);
 

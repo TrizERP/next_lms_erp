@@ -21,14 +21,14 @@
 
                 <div class="sttabs tabs-style-linemove triz-verTab bg-white style2 text-center">
                     <ul class="nav nav-tabs tab-title mb-4">
-                        <li class="nav-item"><a href="#section-linemove-1" class="nav-link active" aria-selected="true" data-toggle="tab"><span>Department wise Leave</span></a></li>
-                        <li class="nav-item"><a href="#section-linemove-2" class="nav-link" aria-selected="false" data-toggle="tab"><span>Employee wise Leave</span></a></li>
+                        <!--<li class="nav-item"><a href="#section-linemove-1" class="nav-link" aria-selected="false" data-toggle="tab"><span>Department wise Leave</span></a></li>-->
+                        <li class="nav-item"><a href="#section-linemove-2" class="nav-link active" aria-selected="true" data-toggle="tab"><span>Employee wise Leave</span></a></li>
                     </ul>
                         
                         
                         <div class="tab-content">
                             {{-- department leave starts  --}}
-                            <div class="tab-pane p-3 active" id="section-linemove-1" role="tabpanel"> 
+                            <div class="tab-pane p-3" id="section-linemove-1" role="tabpanel"> 
                                 <div class="col-lg-12 col-sm-12 col-xs-12 text-right">
                                     <a href="{{ route('designation_leave.create') }}?view=department" class="btn btn-primary add-new mb-3">
                                         <i class="fa fa-plus"></i> Add Department Leave
@@ -72,7 +72,7 @@
                             </div>
                             {{-- department leave ends  --}}
                             {{-- employee leave starts  --}}
-                            <div class="tab-pane p-3" id="section-linemove-2" role="tabpanel"> 
+                            <div class="tab-pane p-3 active" id="section-linemove-2" role="tabpanel"> 
                                 <div class="col-lg-12 col-sm-12 col-xs-12 text-right">
                                     <a href="{{ route('designation_leave.create') }}?view=employee" class="btn btn-primary add-new mb-3">
                                         <i class="fa fa-plus"></i> Add Employee Leave
