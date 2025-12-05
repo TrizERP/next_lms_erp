@@ -55,26 +55,41 @@ class inventory_item_receivableController extends Controller
         $syear = $request->session()->get('syear');
         $po_number = $request->input('po_number');
 
-        $result = DB::table("inventory_negotiate_po_details as inp")
-            ->join('inventory_item_master as i', function ($join) {
-                $join->whereRaw("i.id = inp.item_id AND i.sub_institute_id = inp.sub_institute_id");
-            })
-            ->leftJoin('inventory_item_receivable_details as ir', function ($join) {
-                $join->whereRaw("ir.PURCHASE_ORDER_NO = inp.po_number AND ir.ITEM_ID = inp.item_id AND ir.ITEM_ID = i.id");
-            })
-            ->leftJoin('tbluser as tu', function ($join) {
-                $join->whereRaw("tu.id = ir.RECEIVED_BY")->where('tu.status',1);  // 23-04-24 by uma
-            })
-            ->selectRaw('inp.id,inp.po_number,inp.item_id,i.title AS item_name,inp.qty, 
-                IFNULL(ir.PREVIOUS_RECEIVED_QTY,0) AS previous_receive_qty,ir.ACTUAL_RECEIVED_QTY,IFNULL(ir.PENDING_QTY,0) AS pending_qty,
-                ir.REMARKS,ir.WARRANTY_START_DATE,ir.WARRANTY_END_DATE,ir.BILL_NO,ir.BILL_DATE,ir.BILL_DATE,ir.CHALLAN_NO,
-                ir.CHALLAN_DATE, CONCAT_WS(" ",tu.first_name,tu.middle_name,tu.last_name) AS received_by,
-				ir.RECEIVED_DATE,ir.GATEPASS_NO,ir.CHEQUE_NO,ir.BANK_NAME')
-            ->where("inp.sub_institute_id", "=", $sub_institute_id)
-            ->where("inp.syear", "=", $syear)
-            ->where("inp.po_number", "=", $po_number)
-            ->groupBy('inp.item_id')
-            ->get()->toArray();
+       $result = DB::table("inventory_generate_po_details as gp")
+    ->join('inventory_item_master as i', 'i.id', '=', 'gp.item_id')
+    ->leftJoin('inventory_item_receivable_details as ir', function ($join) {
+        $join->on('ir.ITEM_ID', '=', 'gp.item_id')
+             ->on('ir.PURCHASE_ORDER_NO', '=', 'gp.po_number');
+    })
+    ->leftJoin('tbluser as tu', function ($join) {
+        $join->on('tu.id', '=', 'ir.RECEIVED_BY')
+             ->where('tu.status', '=', 1);
+    })
+    ->selectRaw("
+        gp.po_number,
+        gp.item_id,
+        i.title AS item_name,
+        gp.qty,
+
+        IFNULL(ir.PREVIOUS_RECEIVED_QTY, 0) AS previous_receive_qty,
+        IFNULL(ir.ACTUAL_RECEIVED_QTY, 0) AS ACTUAL_RECEIVED_QTY,
+        (gp.qty - IFNULL(ir.PREVIOUS_RECEIVED_QTY,0)) AS pending_qty,
+        
+        ir.REMARKS,
+        ir.WARRANTY_START_DATE,
+        ir.WARRANTY_END_DATE,
+        ir.BILL_NO,
+        ir.BILL_DATE,
+        ir.CHALLAN_NO,
+        ir.CHALLAN_DATE,
+
+        CONCAT_WS(' ', tu.first_name, tu.middle_name, tu.last_name) AS received_by
+    ")
+    ->where("gp.sub_institute_id", $sub_institute_id)
+    ->where("gp.syear", $syear)
+    ->where("gp.po_number", $po_number)
+    ->get();
+
 
         $approved_po_numbers = DB::table("inventory_generate_po_details as igp")
             ->join('inventory_requisition_status_master as irs', function ($join) {

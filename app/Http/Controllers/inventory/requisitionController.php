@@ -10,11 +10,19 @@ use App\Models\inventory\requisitionModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
+use DateTime;
 
 class requisitionController extends Controller
 {
     public function index(Request $request)
     {
+        if (session()->has('data')) { // check if it exists
+            $data_arr = session('data'); // to retrieve value
+            if (isset($data_arr['message'])) {
+                $requisition_data['message'] = $data_arr['message'];
+            }
+        }
+
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
         $user_id = $request->session()->get('user_id');
@@ -22,10 +30,10 @@ class requisitionController extends Controller
 
         $data = DB::table("inventory_requisition_details as ir")
             ->join('tbluser as tu', function ($join) {
-                $join->whereRaw("tu.id = ir.requisition_by")->where('tu.status',1);   // 23-04-24 by uma
+                $join->whereRaw("tu.id = ir.requisition_by");
             })
             ->leftJoin('tbluser as ira', function ($join) {
-                $join->whereRaw("ira.id = ir.requisition_approved_by")->where('ira.status',1);   // 23-04-24 by uma
+                $join->whereRaw("ira.id = ir.requisition_approved_by");
             })
             ->join('inventory_item_master as i', function ($join) {
                 $join->whereRaw("i.id = ir.item_id");
@@ -75,18 +83,15 @@ class requisitionController extends Controller
                 if ($user_profile != 'admin') {
                     $q->where('id', $user_id);
                 }
-            })
-            ->where('status',1)  // 23-04-24 by uma
-            ->get()->toArray();
+            })->get()->toArray();
 
         $item_data = DB::table('inventory_item_master')
             ->where('sub_institute_id', $sub_institute_id)
             ->where('item_status', 'Active')
             ->get()->toArray();
-
-        $item_setting_data = inventory_master_setupModel::where([
+$item_setting_data = inventory_master_setupModel::where([
             'sub_institute_id' => $sub_institute_id, 'syear' => $syear,
-        ])->whereNotNull('ITEM_SETTING_FOR_REQUISITION')->get()->toArray();
+        ])->get()->toArray();
 
         if (count($item_setting_data) == 0) {
             $res['status_code'] = "0";
@@ -98,15 +103,17 @@ class requisitionController extends Controller
 
         $item_setting_data_value = '';
 
-        if (isset($item_setting_data[0]['ITEM_SETTING_FOR_REQUISITION']) && $item_setting_data[0]['ITEM_SETTING_FOR_REQUISITION'] != '') {
-            $item_setting_data_value = $item_setting_data[0]['ITEM_SETTING_FOR_REQUISITION'];
-        }else {
-            $res['status_code'] = "0";
-            $res['message'] = "ITEM_SETTING_FOR_REQUISITION Not set in masters please set";
-            $type = $request->input('type');
+        if (isset($item_setting_data[0]['ITEM_SETTING_FOR_REQUISITION']) &&
+            $item_setting_data[0]['ITEM_SETTING_FOR_REQUISITION'] != '') {
 
-            return is_mobile($type, "add_requisition.index", $res, "redirect");
+            $item_setting_data_value = $item_setting_data[0]['ITEM_SETTING_FOR_REQUISITION'];
         }
+
+        $unit_data = DB::table('master_setup_select')
+                    ->where('type', 'item_unit')
+                    ->get()
+                    ->toArray();
+
 
         $FORM_NO = $this->generate_requisition_no($sub_institute_id, $syear);
 
@@ -116,8 +123,8 @@ class requisitionController extends Controller
         $data['sub_category_data'] = [];
         $data['item_data'] = [];
         $data['menu1'] = $item_data;
+        $data['unit_data'] = $unit_data;
         $data['REQ_NO'] = $FORM_NO;
-
         return view('inventory/add_requisition', $data);
     }
 
@@ -134,6 +141,14 @@ class requisitionController extends Controller
 
         foreach ($items as $key => $val) {
 
+            $expected_delivery_time = $request->get('expected_delivery_time')[$key];
+            if (!empty($expected_delivery_time)) {
+                $date = DateTime::createFromFormat('d-m-Y', $expected_delivery_time);
+                if ($date) {
+                    $expected_delivery_time = $date->format('Y-m-d H:i:s');
+                }
+            }
+
             $requisition = new requisitionModel([
                 'syear'                  => $syear,
                 'sub_institute_id'       => $sub_institute_id,
@@ -143,7 +158,7 @@ class requisitionController extends Controller
                 'item_id'                => $request->get('item_id')[$key],
                 'item_qty'               => $request->get('item_qty')[$key],
                 'item_unit'              => $request->get('item_unit')[$key],
-                'expected_delivery_time' => $request->get('expected_delivery_time')[$key],
+                'expected_delivery_time' => $expected_delivery_time,
                 'requisition_status'     => 1,
                 'remarks'                => $request->get('remarks')[$key],
                 'user_group_id'          => $user_group_id,
@@ -183,7 +198,6 @@ class requisitionController extends Controller
         $user_data = DB::table("tbluser")
             ->selectRaw('*,concat_ws(" ",first_name,middle_name,last_name) as requisition_name')
             ->where("sub_institute_id", "=", $sub_institute_id)
-            ->where('status',1)  // 23-04-24 by uma
             ->get()->toArray();
 
         $item_data = DB::table("inventory_item_master")
@@ -205,12 +219,15 @@ class requisitionController extends Controller
 
         $FORM_NO = $GET_NO[0]['requisition_no'];
 
+        $unit_data = DB::table('units')->get()->toArray();
+
         view()->share('item_setting_data_value', $item_setting_data_value);
         view()->share('menu', $user_data);
         view()->share('menu1', $item_data);
         view()->share('category_data', $editdata);
         view()->share('sub_category_data', $editdata1);
         view()->share('item_data', $item_data);
+        view()->share('unit_data', $unit_data);
         view()->share('REQ_NO', $FORM_NO);
         view()->share('requisition_id', $id);
 
@@ -221,20 +238,25 @@ class requisitionController extends Controller
     {
         $syear = $request->session()->get('syear');
         $sub_institute_id = $request->session()->get('sub_institute_id');
-        $items = $request->get('item_id');
 
-        foreach ($items as $key => $val) {
-            $requisition = [
-                'item_id'                => $request->get('item_id')[$key],
-                'item_qty'               => $request->get('item_qty')[$key],
-                'item_unit'              => $request->get('item_unit')[$key],
-                'expected_delivery_time' => $request->get('expected_delivery_time')[$key],
-                'requisition_status'     => 1,
-                'remarks'                => $request->get('remarks')[$key],
-            ];
-
-            requisitionModel::where(["id" => $id])->update($requisition);
+        $expected_delivery_time = $request->get('expected_delivery_time');
+        if (!empty($expected_delivery_time)) {
+            $date = DateTime::createFromFormat('d-m-Y', $expected_delivery_time);
+            if ($date) {
+                $expected_delivery_time = $date->format('Y-m-d H:i:s');
+            }
         }
+
+        $requisition = [
+            'item_id'                => $request->get('item_id'),
+            'item_qty'               => $request->get('item_qty'),
+            'item_unit'              => $request->get('item_unit'),
+            'expected_delivery_time' => $expected_delivery_time,
+            'requisition_status'     => 1,
+            'remarks'                => $request->get('remarks'),
+        ];
+
+        requisitionModel::where(["id" => $id])->update($requisition);
 
         $message['status_code'] = "1";
         $message = [

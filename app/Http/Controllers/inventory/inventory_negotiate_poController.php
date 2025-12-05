@@ -163,6 +163,10 @@ class inventory_negotiate_poController extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
 
         $po_data = inventory_generate_poModel::where(['id' => $id])->get()->toArray();
+        if (empty($po_data)) {
+    // Handle error (PO not found)
+    return back()->with('error', 'PO data not found.');
+}
         $po_number = $po_data[0]['po_number'];
 
         $generate_po_data = DB::table("inventory_generate_po_details as gp")
@@ -189,19 +193,32 @@ class inventory_negotiate_poController extends Controller
            INNER JOIN `inventory_item_master` ON `inventory_item_quotation_details`.`item_id` = `inventory_item_master`.`id`
            WHERE `inventory_item_quotation_details`.`sub_institute_id` = '$sub_institute_id' OR `inventory_negotiate_po_details`.`id` = '$id'";
 
-        $item_data = DB::table("inventory_item_quotation_details")
-            ->leftJoin('inventory_negotiate_po_details', function ($join) {
-                $join->whereRaw("inventory_item_quotation_details.item_id = inventory_negotiate_po_details.item_id");
-            })
-            ->join('inventory_item_master', function ($join) {
-                $join->whereRaw("`inventory_item_quotation_details`.`item_id` = `inventory_item_master`.`id`");
-            })
-            ->selectRaw('inventory_item_quotation_details.*, `inventory_item_master`.`title` AS `item_name`')
-            ->where(function ($q) use ($sub_institute_id, $id) {
-                $q->where("`inventory_item_quotation_details`.`sub_institute_id`", $sub_institute_id)
-                    ->orWhere("`inventory_negotiate_po_details`.`id`", $id);
-            })
-            ->get()->toArray();
+$item_data = DB::table("inventory_generate_po_details as gp")
+    ->leftJoin("inventory_negotiate_po_details as np", function ($join) use ($po_number) {
+        $join->on("np.item_id", "=", "gp.item_id")
+             ->where("np.po_number", "=", $po_number);
+    })
+    ->join("inventory_item_master as im", "im.id", "=", "gp.item_id")
+    ->selectRaw("
+        gp.item_id,
+        im.title AS item_name,
+        
+        COALESCE(np.price, gp.price) AS price,
+        COALESCE(np.qty, gp.qty) AS qty,
+        COALESCE(np.amount, gp.amount) AS amount,
+        
+        COALESCE(np.dis_per, gp.dis_per) AS dis_per,
+        COALESCE(np.dis_amount_value, gp.dis_amount_value) AS dis_amount_value,
+        COALESCE(np.after_dis_amount, gp.after_dis_amount) AS after_dis_amount,
+
+        COALESCE(np.tax_per, gp.tax_per) AS tax_per,
+        COALESCE(np.tax_amount_value, gp.tax_amount_value) AS tax_amount_value,
+        COALESCE(np.after_tax_amount, gp.after_tax_amount) AS after_tax_amount
+    ")
+    ->where("gp.po_number", $po_number)
+    ->where("gp.sub_institute_id", $sub_institute_id)
+    ->get();
+
 
         return view('inventory/add_inventory_negotiate_po', [
             'data'             => $data, 'item_data' => $item_data, 'status_data' => $status_data,
@@ -210,10 +227,56 @@ class inventory_negotiate_poController extends Controller
     }
 
     public function update(Request $request, $id)
-    {
-        //
+{
+    $syear = $request->session()->get('syear');
+    $sub_institute_id = $request->session()->get('sub_institute_id');
+    $updated_by = $request->session()->get('user_id');
 
+    // Update main PO approval fields
+    inventory_generate_poModel::where([
+        "po_number"        => $request->po_number,
+        "sub_institute_id" => $sub_institute_id,
+        "syear"            => $syear,
+    ])
+    ->update([
+        "po_approval_status" => $request->po_approval_status,
+        "po_approval_remark" => $request->po_approval_remark,
+        "po_approved_by"     => $updated_by,
+        "po_approved_date"   => date('Y-m-d H:i:s'),
+    ]);
+
+    // Update all item rows
+    foreach ($request->chkbx_item_id_arr as $item_id) {
+
+        $data = [
+            "price"              => $request->price[$item_id],
+            "qty"                => $request->qty[$item_id],
+            "amount"             => $request->amount[$item_id],
+            "dis_per"            => $request->dis_per[$item_id],
+            "dis_amount_value"   => $request->dis_amount_value[$item_id],
+            "after_dis_amount"   => $request->after_dis_amount[$item_id],
+            "tax_per"            => $request->tax_per[$item_id],
+            "tax_amount_value"   => $request->tax_amount_value[$item_id],
+            "after_tax_amount"   => $request->after_tax_amount[$item_id],
+            "amount_per_item"    => ($request->price[$item_id] * $request->qty[$item_id]),
+            "po_approved_by"     => $updated_by,
+            "po_approved_date"   => date('Y-m-d H:i:s'),
+        ];
+
+        inventory_negotiate_poModel::where([
+            "po_number"        => $request->po_number,
+            "item_id"          => $item_id,
+            "sub_institute_id" => $sub_institute_id,
+            "syear"            => $syear,
+        ])
+        ->update($data);
     }
+
+    return redirect()
+        ->route('add_inventory_negotiate_po.index')
+        ->with('success', 'Negotiate PO updated successfully');
+}
+
 
     public function destroy(Request $request, $id)
     {
