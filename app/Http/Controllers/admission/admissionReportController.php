@@ -29,13 +29,13 @@ class admissionReportController extends Controller
         $user = $request->input('user');
         $marking_period_id = session()->get('term_id');
 
-        $users = DB::table('tbluser')
-            ->where('sub_institute_id', $sub_institute_id)
-            ->whereIn('id', function ($query) {
-                $query->select(DB::raw('distinct(created_by)'))
-                    ->from('admission_registration');
-            })
-            ->where('status',1) // 23-04-24 by uma
+        $users = DB::table('tbluser AS u')
+            ->join('admission_enquiry AS a', 'a.created_by', '=', 'u.id')
+            ->select('u.id', 'u.first_name', 'u.last_name')
+            ->where('u.sub_institute_id', $sub_institute_id)
+            ->where('u.status', 1)
+            ->where('a.syear', $syear)
+            ->groupBy('u.id')
             ->get();
 
         if (isset($report)) {
