@@ -14,157 +14,183 @@ class inventory_item_quotationController extends Controller
 {
     public function index(Request $request)
     {
-        if (session()->has('data')) { // check if it exists
-            $data_arr = session('data'); // to retrieve value
+        if (session()->has('data')) {
+            $data_arr = session('data');
             if (isset($data_arr['message'])) {
                 $item_data['message'] = $data_arr['message'];
             }
         }
+
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
 
         $data = DB::table('inventory_item_quotation_details')
-            ->leftjoin('inventory_item_master', 'inventory_item_quotation_details.item_id', '=',
-                'inventory_item_master.id')
-            ->join('inventory_vendor_master', 'inventory_item_quotation_details.vendor_id', '=',
-                'inventory_vendor_master.id')
-            ->join('inventory_requisition_status_master', 'inventory_requisition_status_master.id', '=',
-                'inventory_item_quotation_details.approved_status')
+            ->leftJoin('inventory_item_master', 'inventory_item_quotation_details.item_id', '=', 'inventory_item_master.id')
+            ->join('inventory_vendor_master', 'inventory_item_quotation_details.vendor_id', '=', 'inventory_vendor_master.id')
+            ->join('inventory_requisition_status_master', 'inventory_requisition_status_master.id', '=', 'inventory_item_quotation_details.approved_status')
             ->join('tbluser', 'tbluser.id', '=', 'inventory_item_quotation_details.approved_by')
-            ->select('inventory_item_quotation_details.*', 'inventory_item_master.title as item_id',
+            ->select(
+                'inventory_item_quotation_details.*',
+                'inventory_item_master.title as item_id',
                 'inventory_vendor_master.vendor_name as vendor_id',
-                'inventory_requisition_status_master.title as approved_status', 'tbluser.first_name',
-                'tbluser.middle_name', 'tbluser.last_name')
+                'inventory_requisition_status_master.title as approved_status',
+                'tbluser.first_name', 'tbluser.middle_name', 'tbluser.last_name'
+            )
             ->where([
                 'inventory_item_quotation_details.sub_institute_id' => $sub_institute_id,
-                'inventory_item_quotation_details.syear'            => $syear,
-            ])->where('tbluser.status',1)->get();   // 23-04-24 by uma
+                'inventory_item_quotation_details.syear' => $syear
+            ])
+            ->get();
 
         $item_data['status_code'] = 1;
         $item_data['data'] = $data;
-        $type = $request->input('type');
 
-        return is_mobile($type, "inventory/show_inventory_item_quotation", $item_data, "view");
-
+        return is_mobile($request->input('type'), "inventory/show_inventory_item_quotation", $item_data, "view");
     }
+
 
     public function create(Request $request)
     {
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
 
-        $data = inventory_vendor_masterModel::where([
-            'sub_institute_id' => $sub_institute_id, 'syear' => $syear,
-        ])->get()->toArray();
-        $itemdata = inventory_item_masterModel::where([
-            'sub_institute_id' => $sub_institute_id, 'syear' => $syear,
-        ])->get()->toArray();
+        $vendors = inventory_vendor_masterModel::where([
+            'sub_institute_id' => $sub_institute_id,
+            'syear' => $syear,
+        ])->get();
 
-        return view('inventory/add_inventory_item_quotation', ['menu' => $data, 'item_data' => $itemdata]);
+        $items = inventory_item_masterModel::where([
+            'syear' => $syear,
+        ])->get();
+
+        $unit_data = DB::table('master_setup_select')
+            ->where('type', 'item_unit')
+            ->get();
+
+        return view('inventory/add_inventory_item_quotation', [
+            'menu' => $vendors,
+            'item_data' => $items,
+            'unit_data' => $unit_data
+        ]);
     }
+
 
     public function store(Request $request)
     {
-
         $syear = $request->session()->get('syear');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $created_by = $request->session()->get('user_id');
 
-        for ($i = 0; $i < count($request->get('item')); $i++) {
-            $total_price = ($request->get('price')[$i] * $request->get('qty')[$i]);
+        // SAFE ARRAY FETCHING
+        $items  = $request->item ?? [];
+        $qtys   = $request->qty ?? [];
+        $prices = $request->price ?? [];
+        $units  = $request->unit ?? [];
+        $taxes  = $request->tax ?? [];
 
-            $item_quotation = new inventory_item_quotationModel([
+        if (count($items) === 0) {
+            return back()->with('message', 'Please add at least one item.');
+        }
+
+        foreach ($items as $i => $item_id) {
+
+            $qty   = $qtys[$i] ?? 0;
+            $price = $prices[$i] ?? 0;
+            $unit  = $units[$i] ?? '';
+            $tax   = $taxes[$i] ?? 0;
+
+            $total = $qty * $price;
+
+            inventory_item_quotationModel::create([
                 'syear'                 => $syear,
                 'sub_institute_id'      => $sub_institute_id,
-                'item_id'               => $request->get('item')[$i],
-                'vendor_id'             => $request->get('vendor_id'),
-                'transportation_charge' => $request->get('transportation_charge'),
-                'installation_charge'   => $request->get('installation_charge'),
-                'qty'                   => $request->get('qty')[$i],
-                'price'                 => $request->get('price')[$i],
-                'total'                 => $total_price,
-                'unit'                  => $request->get('unit')[$i],
-                'tax'                   => $request->get('tax')[$i],
-                'remarks'               => $request->get('remarks'),
+                'item_id'               => $item_id,
+                'vendor_id'             => $request->vendor_id,
+                'transportation_charge' => $request->transportation_charge,
+                'installation_charge'   => $request->installation_charge,
+                'qty'                   => $qty,
+                'price'                 => $price,
+                'total'                 => $total,
+                'unit'                  => $unit,
+                'tax'                   => $tax,
+                'remarks'               => $request->remarks,
                 'approved_status'       => 2,
                 'approved_date'         => date('Y-m-d'),
                 'approved_by'           => $created_by,
                 'created_by'            => $created_by,
-                'created_on'            => date('Y-m-d H:i:s'),
-                'created_ip_address'    => $_SERVER['REMOTE_ADDR'],
+                'created_on'            => now(),
+                'created_ip_address'    => $request->ip(),
             ]);
-            $item_quotation->save();
         }
 
-        $message['status_code'] = "1";
-        $message = [
-            "message" => "Item Quotation Added Succesfully",
-        ];
-
-        $type = $request->input('type');
-
-        return is_mobile($type, "add_inventory_item_quotation.index", $message, "redirect");
-
+        return is_mobile(
+            $request->input('type'),
+            "add_inventory_item_quotation.index",
+            ["message" => "Item Quotation Added Successfully"],
+            "redirect"
+        );
     }
+
 
     public function edit(Request $request, $id)
     {
-        $type = $request->input('type');
-        $data = inventory_item_quotationModel::find($id);
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
-        $editdata = inventory_vendor_masterModel::where([
-            'sub_institute_id' => $sub_institute_id, 'syear' => $syear,
-        ])->get();
-        $editdata1 = inventory_item_masterModel::where([
-            'sub_institute_id' => $sub_institute_id, 'syear' => $syear,
-        ])->get();
-        view()->share('menu', $editdata);
-        view()->share('item_data', $editdata1);
 
-        return view('inventory/add_inventory_item_quotation', ['data' => $data]);
+        $data = inventory_item_quotationModel::find($id);
+
+        return view('inventory/add_inventory_item_quotation', [
+            'data' => $data,
+            'menu' => inventory_vendor_masterModel::where([
+                'sub_institute_id' => $sub_institute_id,
+                'syear' => $syear
+            ])->get(),
+            'item_data' => inventory_item_masterModel::where([
+                'sub_institute_id' => $sub_institute_id,
+                'syear' => $syear
+            ])->get(),
+        ]);
     }
+
 
     public function update(Request $request, $id)
     {
-        $syear = $request->session()->get('syear');
-        $sub_institute_id = $request->session()->get('sub_institute_id');
-        $created_by = $request->session()->get('user_id');
-
-        $total_price = ($request->get('price')[0] * $request->get('qty')[0]);
+        $qty   = $request->qty[0] ?? 0;
+        $price = $request->price[0] ?? 0;
 
         $data = [
-            'item_id'               => $request->get('item')[0],
-            'vendor_id'             => $request->get('vendor_id'),
-            'transportation_charge' => $request->get('transportation_charge'),
-            'installation_charge'   => $request->get('installation_charge'),
-            'qty'                   => $request->get('qty')[0],
-            'price'                 => $request->get('price')[0],
-            'total'                 => $total_price,
-            'unit'                  => $request->get('unit')[0],
-            'tax'                   => $request->get('tax')[0],
-            'remarks'               => $request->get('remarks'),
+            'item_id'               => $request->item[0],
+            'vendor_id'             => $request->vendor_id,
+            'transportation_charge' => $request->transportation_charge,
+            'installation_charge'   => $request->installation_charge,
+            'qty'                   => $qty,
+            'price'                 => $price,
+            'total'                 => $qty * $price,
+            'unit'                  => $request->unit[0] ?? '',
+            'tax'                   => $request->tax[0] ?? 0,
+            'remarks'               => $request->remarks,
         ];
-        inventory_item_quotationModel::where(["id" => $id])->update($data);
 
-        $message['status_code'] = "1";
-        $message = [
-            "message" => "Item Quatation Updated Successfully",
-        ];
-        $type = $request->input('type');
+        inventory_item_quotationModel::where("id", $id)->update($data);
 
-        return is_mobile($type, "add_inventory_item_quotation.index", $message, "redirect");
+        return is_mobile(
+            $request->input('type'),
+            "add_inventory_item_quotation.index",
+            ["message" => "Item Quotation Updated Successfully"],
+            "redirect"
+        );
     }
+
 
     public function destroy(Request $request, $id)
     {
-        $type = $request->input('type');
-        inventory_item_quotationModel::where(["id" => $id])->delete();
-        $message['status_code'] = "1";
-        $message = [
-            "message" => "Item Quotation Deleted successfully",
-        ];
+        inventory_item_quotationModel::where("id", $id)->delete();
 
-        return is_mobile($type, "add_inventory_item_quotation.index", $message, "redirect");
+        return is_mobile(
+            $request->input('type'),
+            "add_inventory_item_quotation.index",
+            ["message" => "Item Quotation Deleted Successfully"],
+            "redirect"
+        );
     }
 }

@@ -96,7 +96,7 @@
                                             <input type="hidden" name="previous_receive_qty[{{$data->item_id}}]" value="{{$data->previous_receive_qty}}" class="form-control">
                                         </td>
                                         <td>
-                                            <input type="number" name="actual_received_qty[{{$data->item_id}}]" value="@if(isset($data->ACTUAL_RECEIVED_QTY)){{$data->ACTUAL_RECEIVED_QTY}}@endif" class="form-control">
+                                            <input type="number" name="actual_received_qty[{{$data->item_id}}]" value="{{$data->pending_qty}}" class="form-control">
                                         </td>
                                         <td>
                                             {{$data->pending_qty}}
