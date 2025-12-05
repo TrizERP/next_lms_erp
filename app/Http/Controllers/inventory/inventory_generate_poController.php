@@ -216,4 +216,23 @@ class inventory_generate_poController extends Controller
 
         return is_mobile($type, "add_inventory_generate_po.index", $message, "redirect");
     }
+    public function getVendorItems(Request $request)
+{
+    $vendor_id = $request->vendor_id;
+    $sub_institute_id = $request->session()->get('sub_institute_id');
+    $syear = $request->session()->get('syear');
+
+    $item_data = DB::table('inventory_item_quotation_details')
+        ->join('inventory_item_master', 'inventory_item_quotation_details.item_id', '=', 'inventory_item_master.id')
+        ->select('inventory_item_quotation_details.*', 'inventory_item_master.title as item_name')
+        ->where([
+            'inventory_item_quotation_details.vendor_id' => $vendor_id,
+            'inventory_item_quotation_details.sub_institute_id' => $sub_institute_id,
+            'inventory_item_quotation_details.syear' => $syear,
+        ])
+        ->get();
+
+    return view('inventory.partials.vendor_items_rows', compact('item_data'))->render();
+}
+
 }

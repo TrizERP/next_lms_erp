@@ -49,16 +49,16 @@
                                 <textarea class="form-control" rows="2" id='description_1' required name="remarks">@if(isset($data->remarks)){{ $data->remarks}}@endif</textarea>  
                             </div>
                             <div class="col-md-12 form-group">
-                                <div class="row" id="addparts">                                   
+                                <div class="row" id="addparts">     
+                                    <div class="quotation-row">                               
                                     <div class="row">
                                         <div class="col-md-3 form-group">
                                             <label>Item</label>
-                                            <select class="form-control" required name="item[]" required>                                             
-                                            @if(!empty($item_data))  
-                                            @foreach($item_data as $k => $v)
-                                                <option value="{{$v['id']}}" @if(isset($data->item_id)) {{ $data->item_id == $v['id'] ? 'selected' : '' }} @endif> {{$v['title']}} </option>
+                                             <select class="form-control" name="item[]" required>
+                                            <option value="">Select Item</option>
+                                            @foreach($item_data as $v)
+                                                <option value="{{ $v['id'] }}">{{ $v['title'] }}</option>
                                             @endforeach
-                                            @endif
                                             </select>
                                         </div>
                                         <div class="col-md-2 form-group">
@@ -67,7 +67,15 @@
                                         </div>
                                         <div class="col-md-2 form-group">
                                             <label>Unit</label>
-                                            <input type="text" required name="unit[]" value="@if(isset($data->unit)){{ $data->unit}}@endif" class="form-control" required>
+                                            <select class="form-control mb-0" name="item_unit[]" data-new="1" required>
+                                                    <option value="">Select Unit</option>
+                                                    @if(!empty($unit_data))
+                                                    @foreach($unit_data as $unit)
+                                                        <option value="{{ $unit->fieldvalue }}">{{ $unit->fieldvalue }}</option>
+
+                                                    @endforeach
+                                                    @endif
+                                                </select>
                                         </div>
                                         <div class="col-md-2 form-group">
                                             <label>Price/Piece</label>
@@ -79,7 +87,8 @@
                                         </div>
                                     </div>  
                                 </div>                                         
-                            </div>                                                              
+                            </div>  
+</div>                                                            
                             <div class="col-md-12 form-group" id="div_button">
                                 <center>
                                     <div class="row" id="div_button">
@@ -125,7 +134,7 @@
 </div>
 
 @include('includes.footerJs')
-<script>
+<!-- <script>
     $(document).ready(function() 
     {
         var id = 1;
@@ -148,6 +157,29 @@
             $('.duplicate').children().last().remove();
         });
     });
+</script> -->
+
+<script>
+$(document).ready(function () {
+
+    $("#addMore").click(function () {
+
+        let clone = $(".quotation-row").first().clone();
+
+        // Clear all fields inside the cloned row
+        clone.find("input").val("");
+        clone.find("select").val("");
+
+        $("#addparts").append(clone);
+    });
+
+    $("#minMore").click(function () {
+        if ($(".quotation-row").length > 1) {
+            $(".quotation-row").last().remove();
+        }
+    });
+
+});
 </script>
 
 @include('includes.footer')

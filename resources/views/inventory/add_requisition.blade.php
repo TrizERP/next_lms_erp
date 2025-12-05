@@ -101,7 +101,7 @@
                                         <div class="col-md-2 my-2">
                                             <div class="form-group mb-0">
                                                 <label>Item</label>                               
-                                                <select class="cust-select form-control mb-0" name="item_id[]" data-new="1">
+                                                <select class="cust-select form-control mb-0" name="item_id[]" data-new="1" required>
                                                     <option value="">Select Item</option>
                                                     @if(!empty($item_data))  
                                                     @foreach($item_data as $key1 => $value1)                                        
@@ -120,9 +120,17 @@
                                         <div class="col-md-1 my-2">
                                             <div class="form-group mb-0">
                                                 <label>Unit</label>
-                                                <input type="text" required name="item_unit[]" value="@if(isset($data->item_unit)){{$data->item_unit}}@endif" class="form-control mb-0" data-new="1">
-                                            </div>    
-                                        </div>                        
+                                                <select class="form-control mb-0" name="item_unit[]" data-new="1" required>
+                                                    <option value="">Select Unit</option>
+                                                    @if(!empty($unit_data))
+                                                    @foreach($unit_data as $unit)
+                                                        <option value="{{ $unit->fieldvalue }}">{{ $unit->fieldvalue }}</option>
+
+                                                    @endforeach
+                                                    @endif
+                                                </select>
+                                            </div>
+                                        </div>
                                         <div class="col-md-2 my-2">
                                             <div class="form-group mb-0">
                                                 <label>Expected Delivery DateTime</label>
@@ -155,7 +163,7 @@
                                         <div class="col-md-2 my-2">
                                             <div class="form-group mb-0">
                                                 <label>Item</label>                               
-                                                <select class="cust-select form-control mb-0" name="item_id[]" data-new = "1">
+                                                <select class="cust-select form-control mb-0" name="item_id[]" data-new = "1" required>
                                                     <option value="">Select Item</option>
                                                     @if(!empty($menu1))  
                                                     @foreach($menu1 as $key1 => $value1)                                        
@@ -168,29 +176,36 @@
                                         <div class="col-md-1 my-2">
                                             <div class="form-group mb-0">
                                                 <label>Qty</label>
-                                                <input type="number" id='item_qty' required name="item_qty" value="@if(isset($data->item_qty)){{$data->item_qty}}@endif" class="form-control mb-0">
-                                            </div>    
-                                        </div>                        
+                                                <input type="number" required name="item_qty[]" value="@if(isset($data->item_qty)){{$data->item_qty}}@endif" class="form-control mb-0">
+                                            </div>
+                                        </div>
                                         <div class="col-md-1 my-2">
                                             <div class="form-group mb-0">
                                                 <label>Unit</label>
-                                                <input type="text" id='item_unit' required name="item_unit" value="@if(isset($data->item_unit)){{$data->item_unit}}@endif" class="form-control mb-0">
-                                            </div>    
-                                        </div>                        
+                                                <select class="form-control mb-0" name="item_unit[]" required>
+                                                    <option value="">Select Unit</option>
+                                                    @if(!empty($unit_data))
+                                                    @foreach($unit_data as $unit)
+                                                       <option value="{{ $unit->fieldvalue }}">{{ $unit->fieldvalue }}</option>
+                                                    @endforeach
+                                                    @endif
+                                                </select>
+                                            </div>
+                                        </div>
                                         <div class="col-md-2 my-2">
                                             <div class="form-group mb-0">
                                                 <label>Expected Delivery DateTime</label>
                                                 <div class="input-daterange input-group" id="date-range">
-                                                    <input type="text" class="form-control mydatepicker mb-0" placeholder="yyyy/mm/dd" value="@if(isset($data->expected_delivery_time)){{$data->expected_delivery_time}}@endif" name="expected_delivery_time" autocomplete="off">
-                                                    <span class="input-group-addon"><i class="icon-calender"></i></span> 
+                                                    <input type="text" class="form-control mydatepicker mb-0" placeholder="yyyy/mm/dd" value="@if(isset($data->expected_delivery_time)){{$data->expected_delivery_time}}@endif" name="expected_delivery_time[]" autocomplete="off">
+                                                    <span class="input-group-addon"><i class="icon-calender"></i></span>
                                                 </div>
-                                            </div>    
-                                        </div>                          
+                                            </div>
+                                        </div>
                                         <div class="col-md-1 my-2">
                                             <div class="form-group mb-0">
                                                 <label>Remarks </label>
-                                                <input type="text" id='remarks' required name="remarks" value="@if(isset($data->remarks)){{$data->remarks}}@endif" class="form-control mb-0">
-                                            </div>    
+                                                <input type="text" required name="remarks[]" value="@if(isset($data->remarks)){{$data->remarks}}@endif" class="form-control mb-0">
+                                            </div>
                                         </div>
                                         @if(!isset($data))    
                                             <div class="col-md-1 mt-3">
@@ -226,6 +241,14 @@
 
 @include('includes.footerJs')
 <script>
+var unit_options = '<option value="">Select Unit</option>';
+@if(!empty($unit_data))
+@foreach($unit_data as $unit)
+    unit_options += '<option value="{{ $unit->fieldvalue }}">{{ $unit->fieldvalue }}</option>';
+@endforeach
+@endif
+
+
 
 function getCategorywiseSubcategory(category_id,data_new)
 {         
@@ -275,14 +298,25 @@ function addNewRowWithChain()
 
     htmlcontent += '<div class="col-md-2 my-2"><div class="form-group mb-0"><select class="form-control cust-select" name="category_id[]" data-new='+data_new+' onchange="getCategorywiseSubcategory(this.value,'+data_new+');">'+category_data+'</select></div></div>';
     htmlcontent += '<div class="col-md-2 my-2"><div class="form-group mb-0"><select class="form-control cust-select" name="sub_category_id[]" data-new='+data_new+' onchange="getSubcategorywiseItems(this.value,'+data_new+');"><option>Select Mapping Value</option></select></div></div>';
-    htmlcontent += '<div class="col-md-2 my-2"><div class="form-group mb-0"><select class="form-control cust-select" name="item_id[]" data-new='+data_new+'><option>Select Item</option></select></div></div>';
+    htmlcontent += '<div class="col-md-2 my-2"><div class="form-group mb-0"><select class="form-control cust-select" name="item_id[]" data-new='+data_new+' required><option>Select Item</option></select></div></div>';
     htmlcontent += '<div class="col-md-1 my-2"><div class="form-group mb-0"><input type="number" class="form-control" name="item_qty[]" data-new='+data_new+'></div></div>';
-    htmlcontent += '<div class="col-md-1 my-2"><div class="form-group mb-0"><input type="text" class="form-control" name="item_unit[]" data-new='+data_new+'></div></div>';
+    htmlcontent += '<div class="col-md-1 my-2"><div class="form-group mb-0"><select class="form-control" name="item_unit[]" data-new='+data_new+'>'+unit_options+'</select></div></div>';
     htmlcontent += '<div class="col-md-2 my-2"><div class="form-group mb-0"><div class="input-daterange input-group" id="date-range"><input type="text" class="form-control mydatepicker" name="expected_delivery_time[]" placeholder="yyyy/mm/dd" data-new='+data_new+'></div></div></div>';
     htmlcontent += '<div class="col-md-1 my-2"><div class="form-group mb-0"><input type="text" class="form-control" name="remarks[]" data-new='+data_new+'></div></div>';
     htmlcontent += '<div class="col-md-1 mt-3"><a href="javascript:void(0);" onclick="removeNewRowWithChain();" class="d-inline btn btn-danger"><i class="mdi mdi-minus"></i></a></div></div>';
                              
     $('.addButtonCheckbox:last').after(htmlcontent);
+
+    jQuery('.mydatepicker').last().datepicker({
+        changeMonth: true,
+        changeYear: true,
+        yearRange: "-40:+10",
+        inline: true,
+        autoclose: true,
+        format: 'dd-mm-yyyy',
+        orientation: 'bottom',
+        forceParse: false
+    });
 }
 function removeNewRowWithChain()
 {     
@@ -300,14 +334,25 @@ function addNewRowWithoutChain()
     var htmlcontent = '';    
     htmlcontent += '<div class="clearfix"></div><div class="addButtonCheckbox" style="display: flex; margin-right: -15px; margin-left: -15px; flex-wrap: wrap;">';
 
-    htmlcontent += '<div class="col-md-2 my-2"><div class="form-group mb-0"><select class="form-control cust-select" name="item_id[]" data-new='+data_new+'>'+item_data+'</select></div></div>';
+    htmlcontent += '<div class="col-md-2 my-2"><div class="form-group mb-0"><select class="form-control cust-select" name="item_id[]" data-new='+data_new+' required>'+item_data+'</select></div></div>';
     htmlcontent += '<div class="col-md-1 my-2"><div class="form-group mb-0"><input type="number" class="form-control" name="item_qty[]" data-new='+data_new+'></div></div>';
-    htmlcontent += '<div class="col-md-1 my-2"><div class="form-group mb-0"><input type="text" class="form-control" name="item_unit[]" data-new='+data_new+'></div></div>';
+    htmlcontent += '<div class="col-md-1 my-2"><div class="form-group mb-0"><select class="form-control" name="item_unit[]" data-new='+data_new+'>'+unit_options+'</select></div></div>';
     htmlcontent += '<div class="col-md-2 my-2"><div class="form-group mb-0"><div class="input-daterange input-group" id="date-range"><input type="text" class="form-control mydatepicker" name="expected_delivery_time[]" placeholder="yyyy/mm/dd" data-new='+data_new+'></div></div></div>';
     htmlcontent += '<div class="col-md-1 my-2"><div class="form-group mb-0"><input type="text" class="form-control" name="remarks[]" data-new='+data_new+'></div></div>';
     htmlcontent += '<div class="col-md-1 mt-3"><a href="javascript:void(0);" onclick="removeNewRowWithoutChain();" class="d-inline btn btn-danger"><i class="mdi mdi-minus"></i></a></div></div>';
                              
     $('.addButtonCheckbox:last').after(htmlcontent);
+
+    jQuery('.mydatepicker').last().datepicker({
+        changeMonth: true,
+        changeYear: true,
+        yearRange: "-40:+10",
+        inline: true,
+        autoclose: true,
+        format: 'dd-mm-yyyy',
+        orientation: 'bottom',
+        forceParse: false
+    });
 }
 function removeNewRowWithoutChain()
 {     
@@ -315,3 +360,4 @@ function removeNewRowWithoutChain()
 }
 </script>
 @include('includes.footer')
+
