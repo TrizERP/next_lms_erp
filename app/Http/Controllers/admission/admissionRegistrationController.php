@@ -554,15 +554,16 @@ class admissionRegistrationController extends Controller
                 $finalPrefix = $prefix . "-" . $syearShort . "-";
         
                 $enrollment_result = DB::table('tblstudent')
-                    ->selectRaw('MAX(enrollment_no) as new_enrollment_no')
+                    ->selectRaw("MAX(CAST(SUBSTRING_INDEX(enrollment_no, '-', -1) AS UNSIGNED)) as new_enrollment_no")
                     ->where('sub_institute_id', $sub_institute_id)
                     ->where('enrollment_no', 'LIKE', $finalPrefix . '%')
                     ->first();
-        
+
                 if ($enrollment_result->new_enrollment_no) {
                     $full = $enrollment_result->new_enrollment_no;
-                    $lastPart = substr($full, strrpos($full, '-') + 1);
-                    $new_enrollment_number = (int)$lastPart + 1;
+                    //$lastPart = substr($full, strrpos($full, '-') + 1);
+                    //echo $enrollment_result->new_enrollment_no."=".$lastPart;die();
+                    $new_enrollment_number = (int)$full + 1;
                 } else {
                     $new_enrollment_number = 1;
                 }

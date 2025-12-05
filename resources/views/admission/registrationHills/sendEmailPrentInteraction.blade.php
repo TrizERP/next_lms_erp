@@ -68,7 +68,7 @@ body, table, td, div, p {font-family: Arial, Helvetica, sans-serif !important;}
             </div>
             <div style="color:#000000;">
                 <h2 style="text-align: center; text-decoration: underline; color:#000000; margin: 15px 0;">
-                    {{ $admission_std }} ADMISSION PROCEDURE AT HILLS HIGH SCHOOL, A.Y- {{ $aca_year }}</h2>
+                    Standard-{{ $admission_std }} ADMISSION PROCEDURE AT HILLS HIGH SCHOOL, A.Y- {{ $aca_year }}</h2>
                 <p style="font-size:16px; color:#000000;">Dear Parents,</p>
                 <p style="text-decoration:underline; font-size:16px; color:#000000;">
                     Please note that the issue of Admission Forms DOES NOT GUARANTEE ADMISSION.
@@ -167,7 +167,7 @@ body, table, td, div, p {font-family: Arial, Helvetica, sans-serif !important;}
       <!-- TITLE -->
       <div style="text-align:center; margin-top:5px;">
         <h2 style="margin:0; color:#000000; font-weight:bold; letter-spacing:1px;">HILLS' HIGH SCHOOL</h2>
-        <h3 style="margin:0; color:#000000; font-weight:bold;">PROVISIONAL ADMISSION ({{$admission_std}}) {{$medium}} SESSION</h3>
+        <h3 style="margin:0; color:#000000; font-weight:bold;">PROVISIONAL ADMISSION ({{$admission_std}}) ($conf=="C") ? 'Morning Session' : 'Afternoon Session' }}.</h3>
       </div>
   
       <hr style="border:0; border-top:2px solid #943634; margin:18px 0;">

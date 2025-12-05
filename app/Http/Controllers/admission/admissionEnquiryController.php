@@ -535,6 +535,7 @@ class admissionEnquiryController extends Controller
             $check_exist_no = DB::table('admission_enquiry')
                 ->selectRaw('count(*) as total_no_exist')
                 ->where('fees_circular_form_no', $request->get('fees_circular_form_no'))
+                ->where('syear', $syear)
                 ->whereIn('sub_institute_id', [201,202,203,204,324,326,327])->get()->toArray();
 
             if ($check_exist_no[0]->total_no_exist > 0) {

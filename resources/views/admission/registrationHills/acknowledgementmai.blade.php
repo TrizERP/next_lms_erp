@@ -286,11 +286,11 @@
       <div class="hero-meta">
         <span class="badge">
           <span class="badge-dot"></span>
-          Hills' High School · CBSE
+          Hills' High School  CBSE
         </span>
         <span class="badge">
           <span class="badge-dot"></span>
-          Parents · Students · Community
+          Parents  Students  Community
         </span>
       </div>
     </section>

@@ -99,6 +99,7 @@ class admissionRegistrationHillController extends Controller
         $i=0;
         if(!empty($students)){
             foreach($students as $enquiry_id=>$data){
+                $skipOtherEmails = ($data["paid"] ?? "No") === "Yes";
                 $pindate = isset($data["pint_date"]) ? Carbon::createFromFormat('d-m-Y',$data["pint_date"])->format('Y-m-d') : null;
                 $condate = isset($data["conf_date"]) ? Carbon::createFromFormat('d-m-Y',$data["conf_date"])->format('Y-m-d') : null;
 
@@ -173,7 +174,7 @@ class admissionRegistrationHillController extends Controller
               $sendSms = $sendSmsController->sendSMS($data['mobile'], $text, $sub_institute_id);
               
               //send email;
-              if(in_array($data['conf'],["C","C/A"]) && isset($condate) && isset($data['admission_standard'])){
+              if(!$skipOtherEmails && in_array($data['conf'],["C","C/A"]) && isset($condate) && isset($data['admission_standard']) && ($data["paid"] ?? "No") !== "Yes"){
                     $nextYear = ((int) substr($syear, 2, 2)+1);
                     $getStandard = DB::table('standard')->where(['id'=>$data['admission_standard'],'sub_institute_id'=>$sub_institute_id])->first();
                     $standard_id = $getStandard->id?? '';
@@ -188,7 +189,7 @@ class admissionRegistrationHillController extends Controller
                             'medium'    => $getStandard->medium ?? '-'
                         ])->render();
                     }
-                    elseif(in_array($standard_id, [3292,3293,3294,3295,3296,3297,9298,3309,3310,3311,3312,3313,3314,3315])) {
+                    elseif(in_array($standard_id, [3292,3293,3294,3295,3296,3297,3298,3309,3310,3311,3312,3313,3314,3315])) {
                         $htmlContent = view('admission.registrationHills.confirmationmail', [
                             'page_type'=>'confirm',
                             'conf_date' => $condate,
@@ -199,7 +200,7 @@ class admissionRegistrationHillController extends Controller
                             'medium'    => $getStandard->medium ?? '-'
                         ])->render();
                     }
-                    elseif(in_array($standard_id ,[3316,3303,3316])) {
+                    elseif(in_array($standard_id ,[3316,3303])) {
                         $htmlContent = view('admission.registrationHills.sendConfirmEmailStd9', [
                             'page_type'=>'confirm',
                             'conf_date' => $condate,
@@ -229,7 +230,7 @@ class admissionRegistrationHillController extends Controller
             //   echo "<pre>";print_r($sendEmail);exit;
                     
               }
-               elseif(isset($data["pint_time"]) && isset($pindate) && isset($data['admission_standard']) && in_array($data["pint"],["I"])){
+               elseif(!$skipOtherEmails && isset($data["pint_time"]) && isset($pindate) && isset($data['admission_standard']) && in_array($data["pint"],["I"])){
                     $nextYear = ((int) substr($syear, 2, 2)+1);
                     $getStandard = DB::table('standard')->where(['id'=>$data['admission_standard'],'sub_institute_id'=>$sub_institute_id])->first();
                     $standard_id = $getStandard->id?? '';
@@ -240,7 +241,7 @@ class admissionRegistrationHillController extends Controller
                             'pint' => $data["pint"]?? '',
                             'parent_time' => $data["pint_time"]?? '',
                             'aca_year'    => $syear.'-'.$nextYear,
-                            'admission_std'    => $getStandard->name?? '-', 
+                            'admission_std'    => $getStandard->name ?? '-', 
                         ])  ->render();
                     } else {
                         $htmlContent = view('admission.registrationHills.sendEmailPrentInteraction', [
@@ -270,7 +271,7 @@ class admissionRegistrationHillController extends Controller
                     $sendEmail = $this->sendEmail($emailRequest);
                     }
             
-            elseif(isset($data['admission_standard']) && in_array($data["pint"],["NO","W/L"])){
+            elseif(!$skipOtherEmails && isset($data['admission_standard']) && in_array($data["pint"],["NO","W/L"])){
                     $nextYear = ((int) substr($syear, 2, 2)+1);
                     $getStandard = DB::table('standard')->where(['id'=>$data['admission_standard'],'sub_institute_id'=>$sub_institute_id])->first();
 

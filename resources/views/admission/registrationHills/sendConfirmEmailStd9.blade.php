@@ -176,7 +176,7 @@ body, table, td, div, p {font-family: Arial, Helvetica, sans-serif !important;}
     <!-- TITLE -->
     <div style="text-align:center; margin-top:5px;">
       <h2 style="margin:0; color:#000; font-weight:bold; letter-spacing:1px;">HILLS' HIGH SCHOOL</h2>
-      <h3 style="margin:0; color:#000; font-weight:bold;">PROVISIONAL ADMISSION ({{$admission_std}}) {{$medium}} SESSION</h3>
+      <h3 style="margin:0; color:#000; font-weight:bold;">PROVISIONAL ADMISSION ({{$admission_std}}) {{($conf=="C") ? 'Morning Session' : 'Afternoon Session' }}.</h3>
     </div>
   
     <hr style="border:0; border-top:2px solid #943634; margin:18px 0;">
@@ -186,7 +186,7 @@ body, table, td, div, p {font-family: Arial, Helvetica, sans-serif !important;}
   
     <p style="font-size:15px; line-height:1.7; margin-top:10px;">
       Hills High School is pleased to grant provisional admission to your ward. In order to submit the required documents & fees you are requested to come between
-      <b>{{date('d-m-Y',strtotime($conf_date))}}  {{$parent_time}} (9:00 am to 11:00 am)</b> - <b>SUNDAY CLOSED</b>.
+      <b>{{date('d-m-Y',strtotime($conf_date))}}  {{$parent_time}} </b> - <b>SUNDAY CLOSED</b>.
     </p>
   
     <!-- SECTION A -->

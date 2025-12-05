@@ -175,7 +175,7 @@
             <h2 style="color:black;margin:0px;"><b>Congratulations!!</b></h2>
         </div>
         <div class="parage">
-            <p><span style="color:black;margin:0px;"><b>Your Wards Provisional Admission has been Granted in {{ ($conf=="C") ? 'Morning Session' : 'Afternoon Session' }}.</b></span>Please complete the documentation process within the given date and time to confirm your wards admission at Hills High School.
+            <p><span style="color:black;margin:0px;"><b>Your Wards Provisional Admission has been Granted in {{ ($conf=="C") ? 'Morning Session' : 'Afternoon Session' }}.  </b></span>Please complete the documentation process within the given date and time to confirm your wards admission at Hills High School.
                 Kindly visit Hills High School before <span style="color: #943634"><b>{{date('d-m-Y',strtotime($conf_date))}} between {{$parent_time}}</b></span> with all the documents mentioned below (on Sunday and Bank Holidays the office will be closed)
             </p>
             <p style="color:black"><b>Please note the documents required: -</b></p>
