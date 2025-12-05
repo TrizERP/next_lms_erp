@@ -96,105 +96,11 @@
                                         <td style="border: 1px solid black;border-collapse: collapse;padding: 5px;text-align: left;"><b>Tax Amount</b></td>
                                         <td style="border: 1px solid black;border-collapse: collapse;padding: 5px;text-align: left;"><b>Amount</b></td>
                                     </tr>
-                                    @if(!empty($item_data)) 
-                                    @foreach($item_data as $k => $v)
-                                        <tr>
-                                            <td style="border: 1px solid black;border-collapse: collapse;padding: 5px;text-align: center;">
-                                                <INPUT class="cls_item_chkbx" type="checkbox" name="chkbx_item_id_arr[]" value="{{$v->item_id}}" checked>
-                                            </td>
-                                            <td style="border: 1px solid black;border-collapse: collapse;padding: 5px;text-align: left;">{{$v->item_name}}</td>             
-                                            <TD style="border: 1px solid black;border-collapse: collapse;padding: 5px;text-align: left;">{{$v->price}}
-                                                <input class="cls_all_items_prices" type="hidden" name="price[{{$v->item_id}}]" id="price[{{$v->item_id}}]" value='{{$v->price}}' />
-                                            </TD>
-                                            <td style="border: 1px solid black;border-collapse: collapse;padding: 5px;text-align: left;">
-                                                <INPUT class="cls_all_items_qty" type="text" name="qty[{{$v->item_id}}]" value="@if(isset($data->qty)){{$data->qty}}@endif" size="5" maxlength="5" onblur="Javascript:update_total_amount_2(this,{{$v->item_id}});
-                                    function update_total_amount_2(element,item_id)
-                                    {   
-                                         all_item_prices = document.getElementsByClassName('cls_all_items_prices');
-                                         all_item_qty = document.getElementsByClassName('cls_all_items_qty');
-                                         all_items_chkbx = document.getElementsByClassName('cls_item_chkbx');
-                                         
-                                         all_poac_prices = document.getElementsByClassName('cls_all_poac_prices');
-                                         all_poac_chkbx = document.getElementsByClassName('cls_poac_chkbx');
+                                   <tbody id="itemTableBody">
+    @include('inventory.partials.vendor_items_rows', ['item_data' => $item_data])
+</tbody>
 
-                                         final_total_amount = 0;
-                                         final_total_amount_1 = 0;
 
-                                         for(var i = 0; i < all_items_chkbx.length; i++)
-                                         {							
-                                            if (all_items_chkbx.item(i).checked == true)
-                                            {
-                    							
-                                                if (all_item_qty.item(i).value != '')
-                                                {
-                                                    item_qty = all_item_qty.item(i).value;
-                                                }
-                                                else
-                                                {
-                                                    item_qty = 0;
-                                                }											                                
-                    							final_total_amount = Number(final_total_amount) + Number(all_item_prices.item(i).value) * Number(item_qty);
-                                                final_total_amount_1 = Number(final_total_amount) + Number(all_item_prices.item(i).value) * Number(item_qty);
-                    							
-                                            }                            
-                                         }
-                    					 var price = document.getElementById('price['+item_id+']').value;
-                    					 //alert(price);
-                    					 //alert(element.value);
-                    					 document.getElementById('amount['+item_id+']').value = Number(price) * Number(element.value);							
-                    					 document.getElementById('TOTAL_PO_AMOUNT['+item_id+']').value = Number(price) * Number(element.value);
-                                         for(var j = 0; j < all_poac_chkbx.length; j++)
-                                         {
-                                            if (all_poac_chkbx.item(j).checked == true)
-                                            {
-                                                final_total_amount = Number(final_total_amount) + (Number(final_total_amount_1) * Number(all_poac_prices.item(j).value)/100);
-                    						
-                                            }
-                                         }
-                                     };" > </td>
-                                        <td style="border: 1px solid black;border-collapse: collapse;padding: 5px;text-align: left;">
-                                            <input type="text" id="amount[{{$v->item_id}}]" name="amount[{{$v->item_id}}]" value="@if(isset($data->amount)){{$data->amount}}@endif" readonly size="8" />
-                                        </td>
-                                        <td style="border: 1px solid black;border-collapse: collapse;padding: 5px;text-align: left;">
-                                            <INPUT type="text" name="dis_per[{{$v->item_id}}]" value="@if(isset($data->dis_per)){{$data->dis_per}}@endif" size="5" maxlength="5" class=cls_all_items_qty onblur="Javascript:discount_amount_per(this.value,{{$v->item_id}});
-                                function discount_amount_per(element,item_id)
-                                 {   //alert(item_id);
-                					total_amount = document.getElementById('amount['+item_id+']').value;						
-                					percentage_amount = total_amount*element/100;
-                					//alert(percentage_amount);
-                					tot_amt = Number(total_amount) - Number(percentage_amount);
-                					document.getElementById('dis_amount_value['+item_id+']').value = percentage_amount;
-                					document.getElementById('after_dis_amount['+item_id+']').value = tot_amt;
-                					
-                                 };"></td>
-                                    <td style="border: 1px solid black;border-collapse: collapse;padding: 5px;text-align: left;">
-                                        <INPUT type="text" name="dis_amount_value[{{$v->item_id}}]" id="dis_amount_value[{{$v->item_id}}]" value="@if(isset($data->dis_amount_value)){{$data->dis_amount_value}}@endif" size="8" readonly>
-                                    </td>
-                                    <td style="border: 1px solid black;border-collapse: collapse;padding: 5px;text-align: left;">
-                                        <INPUT type="text" name="after_dis_amount[{{$v->item_id}}]" size="8" id="after_dis_amount[{{$v->item_id}}]" value="@if(isset($data->dis_amount_value)){{$data->dis_amount_value}}@endif" readonly>
-                                    </td>
-                                    <td style="border: 1px solid black;border-collapse: collapse;padding: 5px;text-align: left;">
-                                        <INPUT type="text" name="tax_per[{{$v->item_id}}]" size="8" value="@if(isset($data->tax_per)){{$data->tax_per}}@endif" class=cls_all_items_qty onblur="Javascript:tax_percentage(this.value,{{$v->item_id}});
-                                function tax_percentage(element,item_id)
-                                 {   
-                					total_amount_after_disc = document.getElementById('after_dis_amount['+item_id+']').value;						
-                					tax_percentage_amount = total_amount_after_disc*element/100;
-                					//alert(tax_percentage_amount);
-                					//alert(element);
-                					Final_tot_amt = Number(total_amount_after_disc) + Number(tax_percentage_amount);
-                					 document.getElementById('tax_amount_value['+item_id+']').value = tax_percentage_amount;
-                					 document.getElementById('after_tax_amount['+item_id+']').value = Final_tot_amt;
-                					
-                                 };"></td>
-                                        <td style="border: 1px solid black;border-collapse: collapse;padding: 5px;text-align: left;">
-                                            <INPUT type="text" name="tax_amount_value[{{$v->item_id}}]" id="tax_amount_value[{{$v->item_id}}]" size="8" value="@if(isset($data->tax_amount_value)){{$data->tax_amount_value}}@endif" readonly>
-                                        </td>
-                                        <td style="border: 1px solid black;border-collapse: collapse;padding: 5px;text-align: left;">
-                                            <INPUT type="text" name="after_tax_amount[{{$v->item_id}}]" id="after_tax_amount[{{$v->item_id}}]" size="8" value="@if(isset($data->after_tax_amount)){{$data->after_tax_amount}}@endif" readonly>
-                                        </td>
-                                    </tr>
-                                    @endforeach
-                                    @endif
                                 </table>
                             </div>
                         </div>                    
@@ -218,6 +124,58 @@
         </div>
     </div>
 </div>
+<script>
+function calculateRow(id) {
+    let price = Number($("#price_" + id).val());
+    let qty = Number($("#qty_" + id).val());
+
+    let amount = price * qty;
+    $("#amount_" + id).val(amount);
+
+    let dis_per = Number($("#dis_per_" + id).val());
+    let dis_amt = amount * dis_per / 100;
+    $("#dis_amount_value_" + id).val(dis_amt);
+
+    let after_dis = amount - dis_amt;
+    $("#after_dis_amount_" + id).val(after_dis);
+
+    let tax_per = Number($("#tax_per_" + id).val());
+    let tax_amt = after_dis * tax_per / 100;
+    $("#tax_amount_value_" + id).val(tax_amt);
+
+    $("#after_tax_amount_" + id).val(after_dis + tax_amt);
+}
+
+
+// Bind keyup events
+function bindEvents() {
+    $(".cls_qty, .cls_dis, .cls_tax").off().on("keyup", function () {
+        calculateRow($(this).data("id"));
+    });
+}
+
+
+$(document).ready(function () {
+
+    bindEvents(); // initial page load
+
+    $('select[name="vendor_id"]').on('change', function () {
+
+        $.ajax({
+            url: "{{ url('/inventory/get-vendor-items') }}",
+            type: "GET",
+            data: { vendor_id: $(this).val() },
+
+            success: function (data) {
+                $("#itemTableBody").html(data);
+                bindEvents(); // re-apply events after loading new rows
+            }
+        });
+
+    });
+});
+</script>
+
 
 @include('includes.footerJs')
 @include('includes.footer')
