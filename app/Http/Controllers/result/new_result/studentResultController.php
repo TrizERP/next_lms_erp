@@ -276,9 +276,11 @@ class studentResultController extends Controller
         } elseif ($value['gender'] == 'female') {
             $he_she = 'she';
         }
-        $term_name = '';
+        $term_name = $format_type = '';
+
         if ($format != 'yearly') {
             $term_name = DB::table('academic_year')->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->where('term_id', $format)->value('title');
+            $format_type = ($term_name == 'TERM-1') ? "MID-TERM" : "YEARLY";
             if ($term_name != '' && !in_array($sub_institute_id,[332])) {
                 $term_name = '(' . $term_name . ')';
             }
@@ -287,6 +289,7 @@ class studentResultController extends Controller
         $getStudents = SearchStudent($value['grade_id'], $value['standard_id'], $value['section_id']);
         $no_of_student = count($getStudents);
         $html_content = str_replace(htmlspecialchars("<<no_of_student_class>>"), $no_of_student, $html_content);
+        $html_content = str_replace(htmlspecialchars("<<format_type>>"), $format_type, $html_content);
 
         //Start Bonafide certificate Tags
         $html_content = str_replace(htmlspecialchars("<<sr_no>>"), $srNo, $html_content);

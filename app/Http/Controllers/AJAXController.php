@@ -316,7 +316,7 @@ class AJAXController extends Controller
             // for student 01-01-2025 end
             //END Check for subject teacher assigned
         }
-        $query->where('sub_institute_id', $sub_institute_id);
+        //$query->where('sub_institute_id', $sub_institute_id);
         $standard = $query->pluck("name", "id");
 
         // echo session()->get('right_menu_id')
