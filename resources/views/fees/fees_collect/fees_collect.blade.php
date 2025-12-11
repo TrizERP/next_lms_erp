@@ -239,6 +239,9 @@
 							<input type="hidden" name="enrollment" value="{{ $data['stu_data']['enrollment']; }}">
 							<input type="hidden" name="roll_no" value="{{ $data['stu_data']['roll_no']; }}">
 							<input type="hidden" name="medium" value="{{ $data['stu_data']['medium']; }}">
+							<input type="hidden" name="first_name" value="{{ $data['stu_data']['first_name']; }}">
+							<input type="hidden" name="middle_name" value="{{ $data['stu_data']['middle_name']; }}">
+							<input type="hidden" name="last_name" value="{{ $data['stu_data']['last_name']; }}">
 							<input type="hidden" name="father_name" value="{{ $data['stu_data']['father_name']; }}">
 							<input type="hidden" name="mother_name" value="{{ $data['stu_data']['mother_name']; }}">
 							<!-- // 2024-06-24 by uma -->

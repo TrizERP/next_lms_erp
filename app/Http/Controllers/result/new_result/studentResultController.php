@@ -6351,15 +6351,28 @@ while ($current_date <= $post_end_date) {
                     $first_char[$key1] = $firstCharacter;
                     $table .= '<th  class="curricular_th"><span class="' . $span_classes[$key1] . '">' . $value1->title . '</span></th>';
 
-                    $get_result_activity_masters = DB::table('result_activity_master')
+					$termwiseHpc = DB::table('general_data')
+                        ->where('sub_institute_id', $sub_institute_id)
+                        ->where('type', 'hrms')
+                        ->where('fieldname', 'termwise_hpc')
+                        ->value('fieldvalue');   // This returns 'Yes' or 'No'
+
+                    $query = DB::table('result_activity_master')
                         ->selectRaw('*, 
                     	group_concat(title ORDER BY sort_order ASC SEPARATOR "|") as activity_master_title,
                     	GROUP_CONCAT(id ORDER BY sort_order ASC) as ids')
                         ->where(['sub_institute_id' => $sub_institute_id])
                         ->where('skill_id', $skill_ids[$key])
-                        ->where('standard', $standard_id)
-                        ->orderBy('sort_order')
-                        ->get()->toArray();
+                        ->where('standard', $standard_id);
+                    
+                    // Apply term filter ONLY if termwise_hpc = "Yes"
+                    if ($termwiseHpc === 'Yes') {
+                        $query->whereRaw($extra_term);
+                    }
+
+                    $get_result_activity_masters = $query->orderBy('sort_order')
+                        ->get()
+                        ->toArray();
 
                     foreach ($get_result_activity_masters as $get_result_activity_master) {
                         $activity_master_id = explode(',', $get_result_activity_master->ids);
@@ -6475,7 +6488,12 @@ while ($current_date <= $post_end_date) {
                                     } else {
                                         foreach ($get_result_activity_marks[$activity_master_title[$ak]] as $kPoint => $get_result_activity_mark) {
                                             $table .= '<td class="curricular_td">';
-                                            if (isset($get_result_activity_mark[0]) && $get_result_activity_mark[0]->activity_id == $activity_master_id[$ak]) {
+                                            if (
+                                                isset($get_result_activity_mark[0]) &&
+                                                $get_result_activity_mark[0]->activity_id == $activity_master_id[$ak] &&
+                                                isset($span_classes[$kPoint]) &&
+                                                isset($first_char[$kPoint])
+                                            ) {
                                                 $table .= '<span class="' . $span_classes[$kPoint] . '">' . $first_char[$kPoint] . '</span>';
                                             } else if (in_array($sub_institute_id, [202])) {
                                                 $table .= '-';

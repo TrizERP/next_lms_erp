@@ -1754,6 +1754,9 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
 
             $tData = json_decode(json_encode($tData), true);
 
+            $first_name = $_REQUEST['first_name'] ?? '-';
+            $middle_name = $_REQUEST['middle_name'] ?? '-';
+            $last_name = $_REQUEST['last_name'] ?? '-';
             $father_name = $_REQUEST['father_name'] ?? '-';
             $mother_name = $_REQUEST['mother_name'] ?? '-';
             $medium = $_REQUEST['medium'] ?? '-';
@@ -1875,6 +1878,9 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
 
             $html_content = str_replace(htmlspecialchars("<<student_enrollment_value>>"), $enrollment, $html_content);
             $html_content = str_replace(htmlspecialchars("<<student_roll_value>>"), $roll_no, $html_content);
+            $html_content = str_replace(htmlspecialchars("<<student_first_name>>"), $first_name, $html_content);
+            $html_content = str_replace(htmlspecialchars("<<student_middle_name>>"), $middle_name, $html_content);
+            $html_content = str_replace(htmlspecialchars("<<student_last_name>>"), $last_name, $html_content);
             $html_content = str_replace(htmlspecialchars("<<student_father_name>>"), $father_name, $html_content);
             $html_content = str_replace(htmlspecialchars("<<student_mother_name>>"), $mother_name, $html_content);
             $html_content = str_replace(
@@ -2638,6 +2644,9 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             "enrollment" => isset($studentDetailsArr[0]['enrollment_no']) ? $studentDetailsArr[0]['enrollment_no'] : 0,
             "roll_no" => isset($studentDetailsArr[0]['roll_no']) ? $studentDetailsArr[0]['roll_no'] : 0,
             "name" => $student_name,
+            "first_name" => isset($studentDetailsArr[0]['first_name']) ? $studentDetailsArr[0]['first_name'] : '-',
+            "middle_name" => isset($studentDetailsArr[0]['middle_name']) ? $studentDetailsArr[0]['middle_name'] : '-',
+            "last_name" => isset($studentDetailsArr[0]['last_name']) ? $studentDetailsArr[0]['last_name'] : '-',
             "stddiv" => $stddiv,
             "admission" => isset($studentDetailsArr[0]['admission_year']) ? $studentDetailsArr[0]['admission_year'] : 0,
             "admission_year"=>  isset($studentDetailsArr[0]['admission_date']) ? \Carbon\Carbon::parse($studentDetailsArr[0]['admission_date'])->format('Y') : '0000',
