@@ -447,15 +447,15 @@ return DataTables::of($books)
                 $createBook->isbn_issn = $request->isbn_issn;
                 $createBook->classification = $request->classification;
                 $createBook->publisher_name = $request->publisher_name;
-                $createBook->publish_year = $request->publish_year;
+                $createBook->publish_year = $request->publish_year ?? 0;
                 $createBook->publish_place = $request->publish_place;
-                $createBook->pages = $request->pages;
+                $createBook->pages = $request->pages ?? 0;
                 $createBook->series_title = $request->series_title;
                 $createBook->call_number = $request->call_number;
                 $createBook->language = $request->language;
                 $createBook->source = $request->source;
                 $createBook->subject = $request->subject;
-                $createBook->price = $request->price;
+                $createBook->price = $request->price ?? 0;
                 $createBook->price_currency = $request->price_currency;
                 $createBook->notes = $request->notes;
                 $createBook->review = $request->review;
@@ -493,8 +493,8 @@ return DataTables::of($books)
                 }
 
                 $lastInsertedBookId = 0;
-                $itemCode = $this->getItemCode($sub_institute_id,$request);
-                // echo "<pre>";print_r($request->all());exit;
+                //echo "<pre>";print_r($request->all());exit;
+                
                 $message = 'Book created Successfully !!';
                 $checkBookExists = LibraryBook::where('title', $request->title)
                     ->where('sub_institute_id', $sub_institute_id)
@@ -510,7 +510,7 @@ return DataTables::of($books)
                     $lastInsertedBookId = $request->id;
                     $message = 'Book updated Successfully !!';
                 }
-                
+
                 if($lastInsertedBookId!=0){
                     $countItems = LibraryItem::where(['book_id' => $lastInsertedBookId, 'sub_institute_id' => $sub_institute_id])->get()->count();
                     $itemToInsert = 0;
@@ -521,12 +521,13 @@ return DataTables::of($books)
                         for ($i = 1; $i <= $itemToInsert; $i++) {
                           $itemCode = $this->getItemCode($sub_institute_id,$request);
                           $checkItemCodeNotExists = LibraryItem::where(['item_code' => $itemCode, 'sub_institute_id' => $sub_institute_id])->exists();
+
                           if(!$checkItemCodeNotExists){
                             $objItem = LibraryItem::create([
                                 'book_id' => $lastInsertedBookId,
-                                'call_number' => $createBook->call_number,
+                                'call_number' => $createBook->call_number ?? '',
                                 'item_code' => $itemCode,
-                                'item_status' => $item_status_id,
+                                'item_status' => $item_status_id ?? 0,
                                 'sub_institute_id' => $sub_institute_id,
                             ]);
 
@@ -536,16 +537,16 @@ return DataTables::of($books)
                                 'sub_institute_id' => $sub_institute_id,
                                 'item_code' => $itemCode,
                                 'remarks' => '',
-                                'item_status_id' => $item_status_id,
+                                'item_status_id' => $item_status_id ?? 0,
                                 'created_by' => $user_id,
                                 'created_at' => now(),
                             ]);
                           }else{
                                 $objItem = LibraryItem::where(['book_id' => $lastInsertedBookId,'item_code' => $itemCode,'sub_institute_id' => $sub_institute_id])->update([
                                     'book_id' => $lastInsertedBookId,
-                                    'call_number' => $createBook->call_number,
+                                    'call_number' => $createBook->call_number ?? '',
                                     'item_code' => $itemCode,
-                                    'item_status' => $item_status_id,
+                                    'item_status' => $item_status_id ?? 0,
                                     'sub_institute_id' => $sub_institute_id,
                                 ]);
 
@@ -555,7 +556,8 @@ return DataTables::of($books)
                                     'sub_institute_id' => $sub_institute_id,
                                     'item_code' => $itemCode,
                                     'remarks' => '',
-                                    'item_status_id' => $item_status_id,
+                                    'item_status_id' => $item_status_id ?? 0,
+                                    'updated_by' => $user_id,
                                     'updated_at' => now(),
                                 ]);
                           }
@@ -571,7 +573,7 @@ return DataTables::of($books)
     }
 
     public function getItemCode($sub_institute_id,$request){
-        $lastItem = LibraryItem::orderBy('id', 'desc')->where('sub_institute_id',$sub_institute_id)->where('item_code','like','%L%')->first();
+        $lastItem = LibraryItem::orderBy('id', 'desc')->where('sub_institute_id',$sub_institute_id)->first();//->where('item_code','like','%L%')
 
         if(!in_array($sub_institute_id,[47,254])){
             if ($lastItem) {
@@ -597,13 +599,18 @@ return DataTables::of($books)
         //    if($i==1){
         //         $nextItemCode = $request->item_code_value;
         //     }else{
-                $first =substr($request->item_code_value, 0,1);
-                $nextItemCode = (int)substr($request->item_code_value, 1) + 1;
-                $nextItemCode = str_pad($nextItemCode, 5, '0', STR_PAD_LEFT); // Ensure it's 5 digits
-                $nextItemCode = $first. $nextItemCode;
+            $item_value = $request->item_code_value;
+            $prefix = substr($item_value, 0, 1);   // A
+
+            $item = LibraryItem::where('sub_institute_id',$sub_institute_id)
+                ->where('item_code', 'like', "{$prefix}%")
+                ->orderBy('id', 'desc')->first();
+            
+            $number = substr($item->item_code, 1);      // 009531
+            $number = str_pad(((int)$number) + 1, strlen($number), '0', STR_PAD_LEFT);
+            $nextItemCode = $prefix . $number;
             // }
         }
-
         return $nextItemCode;
     }
     /**
