@@ -459,6 +459,8 @@ return DataTables::of($books)
                 $createBook->price_currency = $request->price_currency;
                 $createBook->notes = $request->notes;
                 $createBook->review = $request->review;
+                $createBook->bill_no = $request->bill_no;
+                $createBook->bill_date = $request->bill_date;
                 $createBook->sub_institute_id = $sub_institute_id;
 
                 // Fetch custom fields

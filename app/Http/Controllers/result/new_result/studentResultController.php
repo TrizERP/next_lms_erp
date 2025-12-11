@@ -276,9 +276,11 @@ class studentResultController extends Controller
         } elseif ($value['gender'] == 'female') {
             $he_she = 'she';
         }
-        $term_name = '';
+        $term_name = $format_type = '';
+
         if ($format != 'yearly') {
             $term_name = DB::table('academic_year')->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->where('term_id', $format)->value('title');
+            $format_type = ($term_name == 'TERM-1') ? "MID-TERM" : "YEARLY";
             if ($term_name != '' && !in_array($sub_institute_id,[332])) {
                 $term_name = '(' . $term_name . ')';
             }
@@ -287,6 +289,7 @@ class studentResultController extends Controller
         $getStudents = SearchStudent($value['grade_id'], $value['standard_id'], $value['section_id']);
         $no_of_student = count($getStudents);
         $html_content = str_replace(htmlspecialchars("<<no_of_student_class>>"), $no_of_student, $html_content);
+        $html_content = str_replace(htmlspecialchars("<<format_type>>"), $format_type, $html_content);
 
         //Start Bonafide certificate Tags
         $html_content = str_replace(htmlspecialchars("<<sr_no>>"), $srNo, $html_content);
@@ -6348,15 +6351,28 @@ while ($current_date <= $post_end_date) {
                     $first_char[$key1] = $firstCharacter;
                     $table .= '<th  class="curricular_th"><span class="' . $span_classes[$key1] . '">' . $value1->title . '</span></th>';
 
-                    $get_result_activity_masters = DB::table('result_activity_master')
+					$termwiseHpc = DB::table('general_data')
+                        ->where('sub_institute_id', $sub_institute_id)
+                        ->where('type', 'hrms')
+                        ->where('fieldname', 'termwise_hpc')
+                        ->value('fieldvalue');   // This returns 'Yes' or 'No'
+
+                    $query = DB::table('result_activity_master')
                         ->selectRaw('*, 
                     	group_concat(title ORDER BY sort_order ASC SEPARATOR "|") as activity_master_title,
                     	GROUP_CONCAT(id ORDER BY sort_order ASC) as ids')
                         ->where(['sub_institute_id' => $sub_institute_id])
                         ->where('skill_id', $skill_ids[$key])
-                        ->where('standard', $standard_id)
-                        ->orderBy('sort_order')
-                        ->get()->toArray();
+                        ->where('standard', $standard_id);
+                    
+                    // Apply term filter ONLY if termwise_hpc = "Yes"
+                    if ($termwiseHpc === 'Yes') {
+                        $query->whereRaw($extra_term);
+                    }
+
+                    $get_result_activity_masters = $query->orderBy('sort_order')
+                        ->get()
+                        ->toArray();
 
                     foreach ($get_result_activity_masters as $get_result_activity_master) {
                         $activity_master_id = explode(',', $get_result_activity_master->ids);
@@ -6472,7 +6488,12 @@ while ($current_date <= $post_end_date) {
                                     } else {
                                         foreach ($get_result_activity_marks[$activity_master_title[$ak]] as $kPoint => $get_result_activity_mark) {
                                             $table .= '<td class="curricular_td">';
-                                            if (isset($get_result_activity_mark[0]) && $get_result_activity_mark[0]->activity_id == $activity_master_id[$ak]) {
+                                            if (
+                                                isset($get_result_activity_mark[0]) &&
+                                                $get_result_activity_mark[0]->activity_id == $activity_master_id[$ak] &&
+                                                isset($span_classes[$kPoint]) &&
+                                                isset($first_char[$kPoint])
+                                            ) {
                                                 $table .= '<span class="' . $span_classes[$kPoint] . '">' . $first_char[$kPoint] . '</span>';
                                             } else if (in_array($sub_institute_id, [202])) {
                                                 $table .= '-';

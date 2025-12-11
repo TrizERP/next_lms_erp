@@ -801,6 +801,8 @@
                             $('#notes').val(data.data[0].notes);
                             $('#review').val(data.data[0].review);
                             $('#image').val(data.data[0].image);
+                            $('#bill_no').val(data.data[0].bill_no);
+                            $('#bill_date').val(data.data[0].bill_date);
                             $('#file_att').val(data.data[0].file_att);
                         } else {
                             alert('Something went wrong');

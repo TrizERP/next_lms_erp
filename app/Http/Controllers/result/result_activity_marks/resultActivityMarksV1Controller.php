@@ -17,15 +17,18 @@ class resultActivityMarksV1Controller extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $res['status_code'] = 1;
         $res['message'] = "Success";
+        $res['termwise_hpc'] = $this->getTermwiseHpc();
 
         return is_mobile($type, "result/result_activity_marks/show", $res, "view");
     }
 
     public function create(Request $request)
     {
+        //dd($request->all());
         $type = $request->input('type');
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
+        $term_id = $request->term ?? '';
 
         if($type=="API"){
             $sub_institute_id = $request->sub_institute_id;
@@ -43,13 +46,23 @@ class resultActivityMarksV1Controller extends Controller
         // get grouped activity and other
         foreach ($activitySkillSet as $key => $value) {
            $activityData[$value->main_title][]=$value;
+
+           $termwiseHpc = $this->getTermwiseHpc();
+
            // get grouped Data 
-           $activityGroupData = DB::table('result_activity_master')
+           $query = DB::table('result_activity_master')
             ->where('standard',$request->standard)
             ->where('sub_institute_id',$sub_institute_id)
-            ->where('skill_id',$value->id)
-            ->orderBy('sort_order')
-            ->get()->toArray();
+            ->where('skill_id',$value->id);
+
+            // Apply term filter ONLY if termwise_hpc = "Yes"
+            if ($termwiseHpc === 'Yes') {
+                $query->where('term_id',$term_id);
+            }
+
+            $activityGroupData = $query->orderBy('sort_order')
+                ->get()
+                ->toArray();
 
             foreach ($activityGroupData as $key2 => $value2) {
                 $groupActivity[$value2->skill_id][] = $value2;
@@ -105,6 +118,7 @@ class resultActivityMarksV1Controller extends Controller
         $res['subActivityGroup'] = $subActivity;
         $res['marksType'] = $activityGroup;
         $res['studentMarks'] = $marksArr;
+        $res['termwise_hpc'] = $this->getTermwiseHpc();
         // echo "<pre>";print_r($res);exit;
       
         return is_mobile($type, "result/result_activity_marks/show", $res, "view");
@@ -175,5 +189,13 @@ class resultActivityMarksV1Controller extends Controller
         $res['message'] = "Result activity master deleted successfully";
 
         return is_mobile($type, "result_activity_marks_V1.index", $res, "redirect"); 
+    }
+
+    protected function getTermwiseHpc()
+    {
+        return DB::table('general_data')->where([
+            'fieldname' => 'termwise_hpc',
+            'sub_institute_id' => session()->get('sub_institute_id'),
+        ])->value('fieldvalue') ?? 'No';
     }
 }
