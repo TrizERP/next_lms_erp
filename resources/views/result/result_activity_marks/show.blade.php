@@ -55,6 +55,9 @@
                         }
                     @endphp
                         {{ App\Helpers\SearchChain('4','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
+                        @if($data['termwise_hpc'] == 'Yes')
+                            {{ App\Helpers\TermDD() }}
+                        @endif
                         <div class="col-md-12 form-group">
                             <center>
                                 <input type="submit" name="submit" value="Search" class="btn btn-success" >
