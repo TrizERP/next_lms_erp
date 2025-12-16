@@ -145,7 +145,7 @@
 
 							<div class="col-md-4 form-group">                   
                                 <label class="control-label">To Meet (Person / Department)</label>
-                                    <input type="text" class="form-control" name="to_meet" value="{{ isset($data->to_meet) ? $data->to_meet : '' }}" />
+                                    <input type="text" class="form-control" required name="to_meet" value="{{ isset($data->to_meet) ? $data->to_meet : '' }}" />
                             </div>														
 							
 							<div class="col-md-4 form-group" style="{{ $type == 'webForm' ? 'display:none;' : '' }}">
@@ -180,9 +180,9 @@
             <input type="hidden" name="visitor_idcard" value="">
         @endif
 																
-						<div class="col-md-4 form-group" style="{{ $type == 'webForm' ? 'display:none;' : '' }}">
+						<div class="col-md-4 form-group">
 							<label>Visitor Photo</label>
-							<input type="file" id='visitor_photo' name="visitor_photo" class="form-control">
+							<input type="file" id='visitor_photo' name="visitor_photo" required class="form-control">
 							@php
 							if(isset($data->photo) && $data->photo !="")
 							{
