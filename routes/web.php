@@ -455,6 +455,7 @@ Route::group(['middleware' => ['session', 'menu', 'logRoute','check_permissions'
     Route::get('leave-list', [LeaveSummaryReportController::class,'leaveLists'])->name('leavelist');
 
     Route::resource('books', BookController::class);
+    Route::post('books/check-title', [BookController::class,'checkTitle'])->name('books.checkTitle');
     // use App\Http\Controllers\library\LostandDamage;
     Route::resource('Lost_and_Damage', LostandDamage::class);
     Route::resource('item_verification_status', itemVerificationController::class); 
