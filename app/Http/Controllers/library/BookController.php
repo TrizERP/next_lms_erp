@@ -186,390 +186,153 @@ return DataTables::of($books)
         return view('library.circulation');
     }
 
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function create()
+    public function store(Request $request)
     {
-        //
+        //echo "<pre>";print_r($request->all());exit;
+        DB::beginTransaction();
+
+        try {
+
+            $sub_institute_id = session('sub_institute_id');
+            $item_status_id   = $request->item_status ?? 0;
+
+            /**
+             * 1️⃣ Always find book by TITLE + institute
+             *    (TITLE is the master identity)
+             */
+            $book = LibraryBook::where('title', $request->title)
+                ->where('sub_institute_id', $sub_institute_id)
+                ->whereNull('deleted_at')
+                ->first();
+
+            /**
+             * 2️⃣ If book does NOT exist → create
+             *    If exists → ONLY UPDATE book fields
+             */
+            if (!$book) {
+                $book = new LibraryBook();
+            }
+
+            // 🔹 Update only book master fields
+            $book->fill([
+                'title' => $request->title,
+                'sub_title' => $request->sub_title,
+                'material_resource_type' => $request->material_resource_type,
+                'edition' => $request->edition,
+                'tags' => $request->tags,
+                'author_name' => $request->author_name,
+                'isbn_issn' => $request->isbn_issn,
+                'classification' => $request->classification,
+                'publisher_name' => $request->publisher_name,
+                'publish_year' => $request->publish_year ?? 0,
+                'publish_place' => $request->publish_place,
+                'pages' => $request->pages ?? 0,
+                'series_title' => $request->series_title,
+                'call_number' => $request->call_number,
+                'language' => $request->language,
+                'source' => $request->source,
+                'subject' => $request->subject,
+                'price' => $request->price ?? 0,
+                'price_currency' => $request->price_currency,
+                'notes' => $request->notes,
+                'review' => $request->review,
+                'bill_no' => $request->bill_no,
+                'bill_date' => $request->bill_date,
+                'sub_institute_id' => $sub_institute_id,
+            ]);
+
+            // 3️⃣ Dynamic Custom Fields
+            $customFields = tblcustomfieldsModel::where([
+                    'status' => 1,
+                    'table_name' => 'library_books'
+                ])
+                ->whereRaw('(sub_institute_id = ? OR common_to_all = 1) AND user_type = ""', [$sub_institute_id])
+                ->pluck('field_name');
+
+            foreach ($customFields as $field) {
+                if ($request->filled($field)) {
+                    $book->$field = $request->$field;
+                }
+            }
+
+            // 4️⃣ File Uploads
+            if ($request->hasFile('image')) {
+                $file = $request->file('image');
+                $name = $file->getClientOriginalName();
+                Storage::disk('books')->put($name, file_get_contents($file));
+                $book->image = $name;
+            }
+
+            if ($request->hasFile('file_att')) {
+                $file = $request->file('file_att');
+                $name = $file->getClientOriginalName();
+                Storage::disk('books')->put($name, file_get_contents($file));
+                $book->file_att = $name;
+            }
+            $book->save();
+
+            /**
+             * 3️⃣ Count existing items for this book
+             */
+            $existingItemCount = LibraryItem::where([
+                'book_id' => $book->id,
+                'sub_institute_id' => $sub_institute_id
+            ])->count();
+
+            /**
+             * 4️⃣ Insert ONLY NEW items
+             */
+            $itemsToInsert = max(0, $request->no_of_items - $existingItemCount);
+
+            for ($i = 0; $i < $itemsToInsert; $i++) {
+
+                // Ensure unique item_code
+                do {
+                    $itemCode = $this->getItemCode($sub_institute_id, $request);
+                } while (
+                    LibraryItem::where('item_code', $itemCode)
+                        ->where('sub_institute_id', $sub_institute_id)
+                        ->exists()
+                );
+
+                LibraryItem::create([
+                    'book_id' => $book->id,
+                    'call_number' => $book->call_number ?? '',
+                    'item_code' => $itemCode,
+                    'item_status' => $item_status_id,
+                    'sub_institute_id' => $sub_institute_id,
+                ]);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'status'  => true,
+                'message' => $itemsToInsert > 0
+                    ? 'Book updated & new items added successfully'
+                    : 'Book updated successfully (no new items required)',
+            ]);
+
+        } catch (\Exception $e) {
+
+            DB::rollBack();
+            \Log::error('Library store error', ['error' => $e]);
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Something went wrong',
+            ], 500);
+        }
     }
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
-    // public function store(Request $request)
-    // {         
-    
-    //     try {
-    //         $sub_institute_id = session()->get('sub_institute_id');
-    //         $syear = session()->get('syear');
-
-    //         $createBook = LibraryBook::find($request->id) ?? new LibraryBook();
-    //         $createBook->title = $request->title;
-    //         $createBook->sub_title = $request->sub_title;
-    //         $createBook->material_resource_type = $request->material_resource_type;
-    //         $createBook->edition = $request->edition;
-    //         $createBook->tags = $request->tags;
-    //         $createBook->author_name = $request->author_name;
-    //         $createBook->isbn_issn = $request->isbn_issn;
-    //         $createBook->classification = $request->classification;
-    //         $createBook->publisher_name = $request->publisher_name;
-    //         $createBook->publish_year = $request->publish_year;
-    //         $createBook->publish_place = $request->publish_place;
-    //         $createBook->pages = $request->pages;
-    //         $createBook->series_title = $request->series_title;
-    //         $createBook->call_number = $request->call_number;
-    //         $createBook->language = $request->language;
-    //         $createBook->source = $request->source;
-    //         $createBook->subject = $request->subject;
-    //         $createBook->price = $request->price;
-    //         $createBook->price_currency = $request->price_currency;
-    //         $createBook->notes = $request->notes;
-    //         $createBook->review = $request->review;
-    //         $createBook->sub_institute_id = $sub_institute_id;
-
-    //         // Fetch custom fields
-    //         $dataCustomFields = tblcustomfieldsModel::select('field_name')
-    //             ->where(['status' => "1", 'table_name' => "library_books"])
-    //             ->whereRaw('(sub_institute_id = ' . $sub_institute_id . ' OR common_to_all = 1) and user_type= "" ')
-    //             ->get()
-    //             ->toArray(); // This converts the collection of models to an array of arrays
-
-    //         // Iterate through the fetched custom fields
-    //         foreach ($dataCustomFields as $fieldData) { // Renamed $value to $fieldData for clarity
-    //             // Extract the actual field name string from the array
-    //             $fieldName = $fieldData['field_name'];
-    //             if (isset($request->$fieldName)) { // It's good practice to check if the request field exists
-    //                 $createBook->$fieldName = $request->$fieldName;
-    //             }
-    //         }
-            
-    //         if ($request->image) {
-    //             $img = $request->image;
-    //             $filename = $img->getClientOriginalName();
-    //             $filepath = Storage::disk('books')->put($filename, file_get_contents($img->getRealPath()));
-    //             $createBook->image = $filepath ? $filename : '';
-    //         }
-    //         if ($request->file_att) {
-    //             $file_att = $request->file_att;
-    //             $filename = $file_att->getClientOriginalName();
-    //             $filepath = Storage::disk('books')->put($filename, file_get_contents($img->getRealPath()));
-    //             $createBook->file_att = $filepath ? $filename : '';
-    //         }
-    //         if ($createBook->save()) {
-    //             // only for add
-    //             if(!isset($request->id)){
-    //                 $itemCount = LibraryItem::where(['book_id' => $createBook->id, 'sub_institute_id' => $sub_institute_id])->get()->count();
-    //                 if ($request->no_of_items < $itemCount) {
-    //                     LibraryItem::where(['book_id' => $createBook->id, 'sub_institute_id' => $sub_institute_id])->where('item_code', '<', $request->no_of_items)->delete();
-    //                 }
-    //                 if($request->no_of_items!=0){
-    //                     for ($i = 1; $i <= $request->no_of_items; $i++) {
-    //                         // $lastItem = LibraryItem::orderBy('id', 'desc')->where('sub_institute_id',$sub_institute_id)->where('item_code','like','%L%')->first();
-    //                         // if(!in_array($sub_institute_id,[47,254])){
-    //                         //     if ($lastItem) {
-    //                         //         // Extract the numeric part of the item_code and increment it
-    //                         //         $lastItemCode = substr($lastItem->item_code, 1); // Remove the 'L' prefix
-    //                         //         $nextItemCode = (int)$lastItemCode + 1;
-    //                         //         $nextItemCode = str_pad($nextItemCode, 5, '0', STR_PAD_LEFT); // Ensure it's 5 digits
-    //                         //         $nextItemCode = 'L' . $nextItemCode;
-    //                         //     } else {
-    //                         //         // If no previous items exist, start with L00001
-    //                         //         $nextItemCode = 'L00001';
-    //                         //     }
-    //                         // }elseif($sub_institute_id==254){
-    //                         //     $hillsItemCode = LibraryItem::where('sub_institute_id',$sub_institute_id)->orderBy('id', 'desc')->first();
-
-    //                         //     if ($hillsItemCode) {
-    //                         //     $nextItemCode = ($hillsItemCode->item_code + 1);
-    //                         //     }else{
-    //                         //         $nextItemCode = "0";
-    //                         //     }
-        
-    //                         // }else{
-    //                         //     if($i==1){
-    //                         //         $nextItemCode = $request->item_code_value;
-    //                         //     }else{
-    //                         //         $first =substr($request->item_code_value, 0,1);
-    //                         //         $nextItemCode = (int)substr($request->item_code_value, 1) + 1;
-    //                         //         $nextItemCode = str_pad($nextItemCode, 5, '0', STR_PAD_LEFT); // Ensure it's 5 digits
-    //                         //         $nextItemCode = $first. $nextItemCode;
-    //                         //     }
-    //                         // }
-    //                         $nextItemCode =  $this->getItemCode($sub_institute_id);
-
-    //                         $objItem = LibraryItem::updateOrCreate([
-    //                             'book_id' => $createBook->id,
-    //                             'call_number' => $createBook->call_number,
-    //                             'item_code' => $nextItemCode,
-    //                             'item_status' => $request->item_status,
-    //                             'sub_institute_id'=>$sub_institute_id,
-    //                         ]);
-
-    //                         // $scanItemsCheck = DB::table('item_scan_details')->where(['syear'=>$syear,'sub_institute_id'=>$sub_institute_id,'item_code'=>$nextItemCode])->get();
-
-    //                         $scanItemsCheck = DB::table('item_scan_details')
-    //                             ->where([
-    //                                 'syear' => $syear,
-    //                                 'sub_institute_id' => $sub_institute_id,
-    //                                 'item_code' => $nextItemCode
-    //                             ])->first();
-
-    //                         if ($scanItemsCheck) {
-    //                             // If record exists, update it
-    //                             DB::table('item_scan_details')
-    //                                 ->where('sub_institute_id', $sub_institute_id)
-    //                                 ->where('item_code', $syear)
-    //                                 ->where('item_code', $nextItemCode)
-    //                                 ->update([
-    //                                     'remarks' => '',
-    //                                     'item_status_id' => $item_status_id,
-    //                                     'updated_by'=>session()->get('user_id'),
-    //                                     'updated_at' => now()
-    //                                 ]);
-    //                         } else {
-    //                             // If record doesn't exist, insert it
-    //                             DB::table('item_scan_details')
-    //                                 ->insert([
-    //                                     'syear' => $syear,
-    //                                     'sub_institute_id' => $sub_institute_id,
-    //                                     'item_code' => $nextItemCode,
-    //                                     'remarks' => '',
-    //                                     'item_status_id' => $item_status_id,
-    //                                     'created_by'=>session()->get('user_id'),
-    //                                     'created_at' => now(), // Add timestamps if your table uses them
-    //                                 ]);
-    //                         }
-
-
-    //                     }
-    //                 }
-    //             }else{
-    //                 $objItem = LibraryItem::where(['book_id' => $createBook->id,'sub_institute_id'=>$sub_institute_id])->update([
-    //                     'call_number' => $createBook->call_number,
-    //                 ]);
-    //             }
-
-    //             $getBook = DB::table('library_books')->where('id',$request->id)->whereNull('deleted_at')->first();
-    //             $getBookItems =  DB::table('library_items')->where(['book_id' => $request->id, 'sub_institute_id' => $sub_institute_id])->get()->toArray();
-
-    //             // echo "<pre>";print_r($getBookItems);exit;
-
-    //             if(isset($getBook->id) && !empty($getBookItems)){
-    //                 $newItems = 0;
-    //                 if($request->no_of_items > count($getBookItems)){
-    //                     $newItem = ($request->no_of_items - count($getBookItems));
-
-    //                     if($newItem>0){
-    //                         $itemCode = $this->getItemCode($sub_institute_id);
-
-    //                             // If record doesn't exist, insert it
-    //                             DB::table('item_scan_details')
-    //                                 ->insert([
-    //                                     'syear' => $syear,
-    //                                     'sub_institute_id' => $sub_institute_id,
-    //                                     'item_code' => $itemCode,
-    //                                     'remarks' => '',
-    //                                     'item_status_id' => $request->item_status,
-    //                                     'created_by'=>session()->get('user_id'),
-    //                                     'created_at' => now(), // Add timestamps if your table uses them
-    //                                 ]);
-    //                     }
-    //                 }
-    //                 foreach($getBookItems as $bi => $biv){
-    //                             // If record exists, update it
-    //                             DB::table('item_scan_details')
-    //                                 ->where('sub_institute_id', $sub_institute_id)
-    //                                 ->where('syear', $syear)
-    //                                 ->where('item_code', $biv->item_code)
-    //                                 ->update([
-    //                                     'remarks' => '',
-    //                                     'item_status_id' => $request->item_status,
-    //                                     'updated_at' => now()
-    //                                 ]);
-
-    //                                 DB::table('library_items')->where('id',$biv->id)->update(['item_status'=>$request->item_status]);
-    //                 }
-                    
-    //             }
-    //             else if(!empty($getBook) && isset($getBook->id)) {
-    //             $itemCode = $this->getItemCode($sub_institute_id);
-
-    //                             // If record doesn't exist, insert it
-    //                             DB::table('item_scan_details')
-    //                                 ->insert([
-    //                                     'syear' => $syear,
-    //                                     'sub_institute_id' => $sub_institute_id,
-    //                                     'item_code' => $itemCode,
-    //                                     'remarks' => '',
-    //                                     'item_status_id' => $request->item_status,
-    //                                     'created_by'=>session()->get('user_id'),
-    //                                     'created_at' => now(), // Add timestamps if your table uses them
-    //                                 ]);
-    //                         }
-    //             // echo "<pre>";print_r($getBook);exit;
-
-    //             // if ($objItem) {
-    //                 if(isset($request->id)){
-    //                 return response()->json(['message' => 'Book Updated Successfully !!', 'status' => true], 200);
-    //                 }else{
-    //                     return response()->json(['message' => 'Book created Successfully !!', 'status' => true], 200);
-    //                 }
-    //             // }
-    //         }
-    //     } catch (Exception $e) {
-    //         return response()->json($e->getMessage());
-    //     }
-    // }
-
-
-        public function store(Request $request)
+    public function checkTitle(Request $request)
     {
-        try {
-            // echo "<pre>";print_r($request->all());exit;
-                $sub_institute_id = session()->get('sub_institute_id');
-                $syear = session()->get('syear');
-                $user_id = session()->get('user_id');
-                $item_status_id = $request->item_status ?? 0;
-
-                $createBook = LibraryBook::find($request->id) ?? new LibraryBook();
-                $createBook->title = $request->title;
-                $createBook->sub_title = $request->sub_title;
-                $createBook->material_resource_type = $request->material_resource_type;
-                $createBook->edition = $request->edition;
-                $createBook->tags = $request->tags;
-                $createBook->author_name = $request->author_name;
-                $createBook->isbn_issn = $request->isbn_issn;
-                $createBook->classification = $request->classification;
-                $createBook->publisher_name = $request->publisher_name;
-                $createBook->publish_year = $request->publish_year ?? 0;
-                $createBook->publish_place = $request->publish_place;
-                $createBook->pages = $request->pages ?? 0;
-                $createBook->series_title = $request->series_title;
-                $createBook->call_number = $request->call_number;
-                $createBook->language = $request->language;
-                $createBook->source = $request->source;
-                $createBook->subject = $request->subject;
-                $createBook->price = $request->price ?? 0;
-                $createBook->price_currency = $request->price_currency;
-                $createBook->notes = $request->notes;
-                $createBook->review = $request->review;
-                $createBook->bill_no = $request->bill_no;
-                $createBook->bill_date = $request->bill_date;
-                $createBook->sub_institute_id = $sub_institute_id;
-
-                // Fetch custom fields
-                $dataCustomFields = tblcustomfieldsModel::select('field_name')
-                    ->where(['status' => "1", 'table_name' => "library_books"])
-                    ->whereRaw('(sub_institute_id = ' . $sub_institute_id . ' OR common_to_all = 1) and user_type= "" ')
-                    ->get()
-                    ->toArray(); // This converts the collection of models to an array of arrays
-
-                // Iterate through the fetched custom fields
-                foreach ($dataCustomFields as $fieldData) { // Renamed $value to $fieldData for clarity
-                    // Extract the actual field name string from the array
-                    $fieldName = $fieldData['field_name'];
-                    if (isset($request->$fieldName)) { // It's good practice to check if the request field exists
-                        $createBook->$fieldName = $request->$fieldName;
-                    }
-                }
-                
-                if ($request->image) {
-                    $img = $request->image;
-                    $filename = $img->getClientOriginalName();
-                    $filepath = Storage::disk('books')->put($filename, file_get_contents($img->getRealPath()));
-                    $createBook->image = $filepath ? $filename : '';
-                }
-                if ($request->file_att) {
-                    $file_att = $request->file_att;
-                    $filename = $file_att->getClientOriginalName();
-                    $filepath = Storage::disk('books')->put($filename, file_get_contents($img->getRealPath()));
-                    $createBook->file_att = $filepath ? $filename : '';
-                }
-
-                $lastInsertedBookId = 0;
-                //echo "<pre>";print_r($request->all());exit;
-                
-                $message = 'Book created Successfully !!';
-                $checkBookExists = LibraryBook::where('title', $request->title)
-                    ->where('sub_institute_id', $sub_institute_id)
-                    ->whereNull('deleted_at')
-                    ->first();
-                    
-                if (!isset($request->id) && !$checkBookExists && !isset($checkBookExists->id)) {
-                    $createBook->save();
-                    $lastInsertedBookId = $createBook->id;
-                }
-                else if($request->has('id')){
-                    $createBook->save();
-                    $lastInsertedBookId = $request->id;
-                    $message = 'Book updated Successfully !!';
-                }
-
-                if($lastInsertedBookId!=0){
-                    $countItems = LibraryItem::where(['book_id' => $lastInsertedBookId, 'sub_institute_id' => $sub_institute_id])->get()->count();
-                    $itemToInsert = 0;
-                    if($countItems < $request->no_of_items){
-                        $itemToInsert = ($request->no_of_items - $countItems);
-                    }
-                    if($itemToInsert > 0){
-                        for ($i = 1; $i <= $itemToInsert; $i++) {
-                          $itemCode = $this->getItemCode($sub_institute_id,$request);
-                          $checkItemCodeNotExists = LibraryItem::where(['item_code' => $itemCode, 'sub_institute_id' => $sub_institute_id])->exists();
-
-                          if(!$checkItemCodeNotExists){
-                            $objItem = LibraryItem::create([
-                                'book_id' => $lastInsertedBookId,
-                                'call_number' => $createBook->call_number ?? '',
-                                'item_code' => $itemCode,
-                                'item_status' => $item_status_id ?? 0,
-                                'sub_institute_id' => $sub_institute_id,
-                            ]);
-
-                            // Insert into item_scan_details
-                            DB::table('item_scan_details')->insert([
-                                'syear' => $syear,
-                                'sub_institute_id' => $sub_institute_id,
-                                'item_code' => $itemCode,
-                                'remarks' => '',
-                                'item_status_id' => $item_status_id ?? 0,
-                                'created_by' => $user_id,
-                                'created_at' => now(),
-                            ]);
-                          }else{
-                                $objItem = LibraryItem::where(['book_id' => $lastInsertedBookId,'item_code' => $itemCode,'sub_institute_id' => $sub_institute_id])->update([
-                                    'book_id' => $lastInsertedBookId,
-                                    'call_number' => $createBook->call_number ?? '',
-                                    'item_code' => $itemCode,
-                                    'item_status' => $item_status_id ?? 0,
-                                    'sub_institute_id' => $sub_institute_id,
-                                ]);
-
-                                // Insert into item_scan_details
-                                DB::table('item_scan_details')->where(['syear' => $syear,'sub_institute_id' => $sub_institute_id,'item_code' => $itemCode])->update([
-                                    'syear' => $syear,
-                                    'sub_institute_id' => $sub_institute_id,
-                                    'item_code' => $itemCode,
-                                    'remarks' => '',
-                                    'item_status_id' => $item_status_id ?? 0,
-                                    'updated_by' => $user_id,
-                                    'updated_at' => now(),
-                                ]);
-                          }
-                        }
-                    }
-                }
-            return response()->json(['message' => $message, 'status' => true], 200);
-
-        } catch (Exception $e) {
-            \Log::error('Error storing book: ' . $e->getMessage(), ['exception' => $e]);
-            return response()->json(['message' => 'An error occurred: ' . $e->getMessage(), 'status' => false], 500);
-        }
+        $sub_institute_id = session()->get('sub_institute_id');
+        $exists = LibraryBook::where('title', $request->title)
+            ->where('sub_institute_id', $sub_institute_id)
+            ->whereNull('deleted_at')
+            ->exists();
+        return response()->json(['exists' => $exists]);
     }
 
     public function getItemCode($sub_institute_id,$request){
@@ -666,24 +429,6 @@ return DataTables::of($books)
         }
     }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
     public function destroy($id, Request $request)
     {
         $ids = $request->id;
@@ -736,73 +481,6 @@ return DataTables::of($books)
         return response()->json(['data' => $view], 200);
     }
     
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    // public function issueBook(Request $request)
-    // {
-    //     // echo "<pre>";print_r($request->all());exit;
-    //     $sub_institute_id = session()->get('sub_institute_id');
-    //     $request->validate([
-    //         'student_id' => 'required|exists:tblstudent,id',
-    //         'bookId' => 'required',
-    //         'issue_date' => 'required|date',
-    //         'return_date' => 'required|date|after:issue_date',
-    //     ]);
-    //     $ids = $request->id;
-    //     $check_data = LibraryBookCirculation::where(
-    //         [
-    //             'student_id' => $request->student_id,
-    //             'book_id' => $request->bookId,
-    //             'item_code' => $request->item_codes,                                
-    //         ]
-    //     )->whereNull('return_date')->get()->toArray();
-
-    //     if(!empty($check_data)){
-    //         $update = LibraryBookCirculation::where(
-    //             [
-    //                 'student_id' => $request->student_id,
-    //                 'book_id' => $request->bookId,
-    //                 'item_code' => $request->item_codes,                                
-    //             ]
-    //         )->whereNull('return_date')->update([
-    //                 'issued_date' => \Carbon\parse($request->issue_date)->format('Y-m-d'),
-    //                 'due_date' => \Carbon\parse($request->return_date)->format('Y-m-d'),
-    //                 'sub_institute_id' => $sub_institute_id,
-    //                 'updated_at'=>now(),
-    //         ]);
-    //         $issueBook ='update';
-    //     }else{
-    //         $insert = LibraryBookCirculation::insert(
-    //             [
-    //                 'student_id' => $request->student_id,
-    //                 'book_id' => $request->bookId,
-    //                 'item_code' => $request->item_codes, 
-    //                 'issued_date' => \Carbon\parse($request->issue_date)->format('Y-m-d'),
-    //                 'due_date' => \Carbon\parse($request->return_date)->format('Y-m-d'),
-    //                 'sub_institute_id' => $sub_institute_id,
-    //                 'created_at'=>now(),                    
-    //         ]);
-    //         $issueBook ='insert';
-    //     }
-        
-    //     $message = "";
-    //     if(isset($issueBook) && $issueBook=="insert"){
-    //         $message = "Book Issued Successfully";
-    //     }
-    //     else if(isset($issueBook) && $issueBook=="update"){
-    //         $message = "Book Issue Updated Successfully";
-    //     }
-    //     $details = tblstudentModel::where('enrollment_no', $request->enroll_no)->with('issuedBook')->first();
-    //     $item_codes= DB::table('library_items')->where('book_id',$request->bookId)->where('sub_institute_id',$sub_institute_id)->whereNull('deleted_at')->get()->toArray();
-    //     $view = View::make('library.user_detail', compact('details','item_codes','message'))->render();
-    //     // $view = View::make('library.user_detail')->with(['details' => $details, 'message' => $message])->render();
-
-    //     return response()->json(['data' => $view], 200);
-    // }
 public function issueBook(Request $request)
 {
     $sub_institute_id = session()->get('sub_institute_id');

@@ -141,7 +141,7 @@
                                             <div class="form-group">
                                                 <label for="">Title</label>
                                                 <input type="text" name="title" id="title" class="form-control"
-                                                    placeholder="Enter Title">
+                                                    placeholder="Enter Title" onchange="checkTitle(this.value)">
                                             </div>
                                         </div>
                                         <div class="col-md-4">
@@ -1074,6 +1074,27 @@
         // 12-08-2024
         function getAuthors(author) {
             $('#tblBooks').DataTable().ajax.url("?author_name=" + author).load();;
+        }
+
+        function checkTitle(title) {
+            // console.log(title);
+            if(title.trim() == '') return;
+            $.ajax({
+                url: '{{ route("books.checkTitle") }}',
+                type: 'POST',
+                data: {title: title, _token: '{{ csrf_token() }}'},
+                success: function(data){
+                    if(data.exists){
+                        alert(
+                            "This book title already exists.\n\n" +
+                            "You will be redirected.\n" +
+                            "Edit the book to add more copies."
+                        );
+
+                        window.location.href = '{{ route("books.index") }}';
+                    }
+                }
+            });
         }
     </script>
     @include('includes.footer')
