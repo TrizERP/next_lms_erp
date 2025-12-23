@@ -406,7 +406,9 @@ class result_report_controller extends Controller
             foreach ($result as $id => $arr) {
                 $date_arr[$arr['subject_name']] = [$arr['subject_name'] . '(' . $arr['total_points'] . ')',$arr['opt_sub']];
             }
-
+if (!empty($date_arr)) {
+    ksort($date_arr, SORT_STRING); // sort by subject name
+}
             $data['grade_id'] = $grade_id;
             $data['standard_id'] = $standard_id;
             $data['division_id'] = $division_id;
