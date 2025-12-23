@@ -8,6 +8,11 @@
    tfoot {
    display: table-header-group;
    }
+   @media print {
+      #example, #example td, #example th {
+         color: black !important;
+      }
+   }
 </style>
 @include('includes.header')
 @include('includes.sideNavigation')
@@ -152,7 +157,11 @@
            }, 
            { extend: 'csv', text: ' CSV', title: 'Classwise Report' }, 
            { extend: 'excel', text: ' EXCEL', title: 'Classwise Report' }, 
-           { extend: 'print', text: ' PRINT', title: 'Classwise Report' }, 
+           { extend: 'print', text: ' PRINT', title: 'Classwise Report', customize: function(win) {
+               $(win.document.body).find('table').css('color', 'black');
+               $(win.document.body).find('table td').css('color', 'black');
+               $(win.document.body).find('table th').css('color', 'black');
+           } },
            'pageLength' 
        ], 
        }); 
