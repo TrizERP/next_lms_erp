@@ -269,7 +269,7 @@ class studentCertificateController extends Controller
         if($sub_institute_id == 254)
             $logo_height = 'style="height: 100px !important;"';
         else
-            $logo_height = 'style="width: 100px !important;height: 100px !important;"';
+            $logo_height = 'style="width: 100px;height: 100px;"';
 
         $image_path1 = "https://".$_SERVER['HTTP_HOST']."/storage/fees/".$receipt_book_arr->receipt_logo;
         $image_path = '<img src="'.$image_path1.'" alt="SCHOOL LOGO" '.$logo_height.'>';
