@@ -398,7 +398,7 @@ class result_report_controller extends Controller
         
 
             $result = $result->groupByRaw('rm.student_id,e.subject_id')
-                ->orderBy('e.sort_order')->get()->toarray();
+                ->orderBy('s.sort_order')->get()->toarray();
 
             $result = json_decode(json_encode($result), true);
             $date_arr = [];
@@ -473,7 +473,7 @@ class result_report_controller extends Controller
         
 
             $result = $result->groupByRaw('rm.student_id,e.subject_id')
-                ->orderBy('e.sort_order')->get()->toarray();
+                ->orderBy('s.sort_order')->get()->toarray();
 
             $result = json_decode(json_encode($result), true);
             $date_arr = [];
@@ -553,7 +553,7 @@ class result_report_controller extends Controller
         
 
             $result = $result->groupByRaw('rm.student_id,e.subject_id')
-                ->orderBy('e.sort_order')->get()->toarray();
+                ->orderBy('s.sort_order')->get()->toarray();
 
             // dd(DB::getQueryLog($result));
             $result = json_decode(json_encode($result), true);
@@ -623,7 +623,7 @@ class result_report_controller extends Controller
                 ->whereRaw("e.exam_id IN (".$get_exam_masters->exam_id.")");
 
             $result = $result->groupByRaw('rm.student_id,e.subject_id')
-                ->orderBy('e.sort_order')->get()->toArray();
+                ->orderBy('s.sort_order')->get()->toArray();
 
             // dd(DB::getQueryLog($result));
             $result = json_decode(json_encode($result), true);
@@ -735,6 +735,7 @@ class result_report_controller extends Controller
                 ->when($request->has('exam_create') && $request->exam_create!='',function($q) use($request){
                     $q->where('rce.title',$request->exam_create);
                 })
+                ->orderBy('ssm.sort_order')
                 ->orderByRaw('rce.sort_order')
                 ->groupBy('rce.id')
                 ->get()->toArray();
@@ -1130,6 +1131,6 @@ class result_report_controller extends Controller
         $sub_institute_id = session()->get("sub_institute_id");
 
         return sub_std_mapModel::where(['sub_institute_id' => $sub_institute_id, 'standard_id' => $std_id])
-            ->orderBy('display_name')->get()->toArray();
+            ->orderBy('sort_order')->get()->toArray();
     }
 }
