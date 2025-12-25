@@ -91,8 +91,7 @@
                                         @foreach($data['headers'] as $hkey => $header)
                                             @if($header == 'address')
                                                 <td data-toggle="popover" data-content="{{$value[$header]}}"> 
-                                                    {{substr($value[$header],0,50)}} 
-                                                    <!-- <span style="font-size: 28px;color: black;font-weight: bolder;">...</span> -->
+                                                    {{substr($value[$header],0,50)}}
                                                 </td>
                                             @elseif($header == 'fees_circular')
                                                 <td>
