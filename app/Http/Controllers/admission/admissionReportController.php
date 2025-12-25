@@ -48,7 +48,13 @@ class admissionReportController extends Controller
             // 2024-12-28 start 
             $customFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "admission_enquiry"])
             ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1) and user_type="" ')
-            ->selectRaw('GROUP_CONCAT("ai.",field_name) as fileds')
+            ->selectRaw("GROUP_CONCAT(
+                        CONCAT(
+                            'ai.', field_name, 
+                            ' AS `', field_label, '`'
+                        )
+                        SEPARATOR ', '
+                    ) AS fileds")
             ->first();
             $customField = '1=1';
             if(isset($customFields->fileds) && $customFields->fileds!=''){
@@ -63,7 +69,7 @@ class admissionReportController extends Controller
                 ai.counciler_name, ai.father_name,CONCAT_WS(' ',ts.first_name,ts.last_name) AS created_by, cs.caste_name,ai.siblings $extra";
             }else{
                 $select = "ai.enquiry_no, DATE_FORMAT(ai.created_on, '%d-%m-%Y %h:%i:%s') as created_on, DATE_FORMAT(ai.followup_date, '%d-%m-%Y') as followup_date, ai.first_name, ai.middle_name, ai.last_name,
-                ai.gender, ai.mobile, ai.email, ai.address, DATE_FORMAT(ai.date_of_birth, '%d-%m-%Y') as date_of_birth, ai.age,$customField, ai.syear,CONCAT_WS(' ',ts.first_name,ts.last_name) AS created_by";
+                ai.gender, ai.mobile, ai.email, ai.address, DATE_FORMAT(ai.date_of_birth, '%d-%m-%Y') as date_of_birth, ai.age,s.name as admission_standard,$customField,ai.syear,CONCAT_WS(' ',ts.first_name,ts.last_name) AS created_by";
             }
             // 2024-12-28 end 
             
