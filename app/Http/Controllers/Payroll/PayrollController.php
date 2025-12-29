@@ -180,7 +180,7 @@ class PayrollController extends Controller
                 $totalAllowance = $totalSalary = $totalGrossSalary= 0;
                 $allData = $jsonData = [];
                 // payroll type details get head and amounts
-                $getPfFlat = $getPTFlat = $getPF = $getPT = $payroll_percentage = $amount_type = $hasPF = $hasPT =0;
+                $getPfFlat = $getPTFlat = $getPF = $getESIC = $getPT = $payroll_percentage = $amount_type = $hasPF = $hasESIC = $hasPT =0;
                 // echo "<pre>";print_r($emp_values);
 
                 foreach($emp_values as $key => $value){
@@ -219,6 +219,13 @@ class PayrollController extends Controller
                             $hasPF = $amount_type;
                         }
 
+                        if($payroll_type_name=='ESIC'){
+                            if($amount_type==1){
+                                $getEsicFlat = $amount;
+                            }
+                            $hasESIC = $amount_type;
+                        }
+
                         if($payroll_type_name=='PT'){
                             if($amount_type==1){
                                 $getPTFlat = $amount;
@@ -226,15 +233,11 @@ class PayrollController extends Controller
                             $hasPT = $amount_type;
                         }
 
-                    //     if(!in_array($payroll_type_name,['TDS','PT','PF'])){
-                    //         $totalGrossSalary += $amount;
-                    //     }
                        $totalSalary+=$amount;
 
                         // data to make json 
                        $allData[$payroll_type_id] = [$payroll_type_name=>$amount];
 
-                    // 13-08-2024 caculate PT and PF
                         // check allowance if allowance make it gross Salary
                         if($getPayrollType->payroll_type==1){
                             // for PT Deduction 
@@ -247,20 +250,7 @@ class PayrollController extends Controller
                     // 13-04-2024 end
                     }
                 }
-                // for contact emps 
-                // $getIsCalculate = DB::table('tbluser as tu')->join('hrms_departments as hd','hd.id','=','tu.department_id')
-                // ->where('tu.id',$emp_ids)->where('tu.sub_institute_id',$sub_institute_id)->value('is_calculated');
-                // // check hrms_departments table, if is_calculated is 1 then pf or pt will be not count
-                // if($getIsCalculate==1){
-                //     $getPF = $getPT = 0;
-                //     echo "if";
-                // }
-                // else{
-                    // to count PT and PF percentage wise, in payroll_type table amount_type must be 2
-                    // $getPF = ($hasPF == 2) ? Helpers::getPF($totalAllowance) : $getPfFlat;
-                    // $getPT = ($hasPT == 2) ? Helpers::getPT($totalGrossSalary,$gender) : $getPTFlat; 
-                // }           
-                // echo "<pre>";print_r($getPT);
+
                 $employee = tbluserModel::where('id',$emp_ids)->first();
                 $pf_deduction = $employee->pf_deduction;
                 $pt_deduction = $employee->pt_deduction;
@@ -268,7 +258,12 @@ class PayrollController extends Controller
                 // 13-08-2024 claculate PT as per eligilble emp_ids
                 if($pf_deduction == 'Y')
                     $getPF = ($hasPF == 2) ? Helpers::getPF($totalAllowance) : $getPfFlat; // getPfFlat is for set flat amounts
+
+                if($hasESIC == 2){
+                    $getESIC = Helpers::getESIC($totalAllowance); // calculate ESIC based on total allowance by rajesh 29-12-2025
+                }
                 
+                // PT Calculation
                 if($pt_deduction == 'Y')
                     $getPT = ($hasPT == 2) ? Helpers::getPT($totalGrossSalary,$gender) : $getPTFlat; // getPtFlat is for set flat amounts
                 // 13-08-2024 end 
@@ -280,6 +275,8 @@ class PayrollController extends Controller
                     $jsonData[$key] = $getPF;
                    }else if(isset($value['PT'])){
                     $jsonData[$key] = $getPT;
+                   }else if(isset($value['ESIC'])){
+                    $jsonData[$key] = $getESIC;
                    }else{
                     $otherData = array_values($value);
                     $jsonData[$key] = intval($otherData[0]);
@@ -1878,12 +1875,14 @@ class PayrollController extends Controller
                 // 13-08-2024 end 
                 $deductionName=  (($value['deduction'][3] == 'PT') ? 1 : 0);
                 if($totalSal < 15000 && $value['deduction'][3]=="PF" && $deduction>0){
-                    //$deduction = round(($deduction / $payrollMonthDays) * $request->totalDay);  
                     $deduction = round(($totalSal / 100) * 12);
                     // echo $deduction.'<br>';  
                     if($deduction > 1800){
                         $deduction=1800;
                     }
+                }
+                elseif($value['deduction'][3]=="ESIC"){
+                    $deduction = Helpers::getESIC($totalSal);
                 }
                 else if($value['deduction'][1] == 1 && !$deductionName && $value['deduction'][3]!="PF" && $value['deduction'][4]==0){
                     $deduction = round(($deduction / $payrollMonthDays) * $request->totalDay);
