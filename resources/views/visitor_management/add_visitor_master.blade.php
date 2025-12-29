@@ -181,7 +181,7 @@
 																
 						<div class="col-md-4 form-group">
 							<label>Visitor Photo</label>
-							<input type="file" id='visitor_photo' name="visitor_photo" required class="form-control">
+							<input type="file" id='visitor_photo' name="visitor_photo" class="form-control" {{ $type == 'webForm' ? 'required' : '' }}>
 							@php
 							if(isset($data->photo) && $data->photo !="")
 							{
