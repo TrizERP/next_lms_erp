@@ -43,6 +43,15 @@ trait Helpers
         ];
     }
 
+    public static function getESIC($totalAllowance) {
+        // BASIC + GRADPAY + DA for MMIS
+        $ESIC = 0;
+        if($totalAllowance <= 21000 && $totalAllowance > 0){
+            $ESIC =round(($totalAllowance * 0.75)/100);
+        }
+        return $ESIC;
+    }
+
     public static function getPF($totalAllowance) {
         // BASIC + GRADPAY + DA for MMIS
         $PF = 0;

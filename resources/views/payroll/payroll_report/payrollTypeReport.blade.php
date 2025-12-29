@@ -121,7 +121,7 @@
                                         <td>{{$jsonSalary[$value2['id']]}}</td>
                                         @php  
                                             $total +=$jsonSalary[$value2['id']];
-                                            if($value2['payroll_name']=="PF" || $value2['payroll_name']=="PT"){
+                                            if($value2['payroll_name']=="PF" || $value2['payroll_name']=="PT" || $value2['payroll_name']=="ESIC"){
                                                 $totalDeduction += $jsonSalary[$value2['id']];
                                             }else{
                                                 $totalPayment += $jsonSalary[$value2['id']];
