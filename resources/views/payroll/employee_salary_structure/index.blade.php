@@ -87,7 +87,7 @@
                                         <th class="text-left"><b>Gross Total</b></th>
                                     @endif
                                     {{-- // added by uma 27-06-2025  for hidden payrolls --}}
-                                    @if (!in_array($payrollType->payroll_name, ['PF', 'PT']) && $payrollType->day_count == 1)
+                                    @if (!in_array($payrollType->payroll_name, ['PF', 'PT','ESIC']) && $payrollType->day_count == 1)
                                     @else
                                         <th class="text-left">{{ $payrollType->payroll_name }}</th>
                                     @endif
@@ -113,7 +113,7 @@
                                     @foreach ($data['payrollTypes'] as $payrollType)
                                         {{-- // added by uma 27-06-2025  for hidden payrolls --}}
 
-                                        @if (!in_array($payrollType->payroll_name, ['PF', 'PT']) && $payrollType->day_count == 1)
+                                        @if (!in_array($payrollType->payroll_name, ['PF', 'PT','ESIC']) && $payrollType->day_count == 1)
                                             <input type="hidden"
                                                 name="emp[{{ $value['id'] }}][{{ $payrollType->id }}][]"
                                                 value="{{ $payrollType->id }}">
@@ -135,7 +135,7 @@
                                             @endif
 
                                             @if (
-                                                ($payrollType->payroll_name == 'PF' || $payrollType->payroll_name == 'PT') &&
+                                                ($payrollType->payroll_name == 'PF' || $payrollType->payroll_name == 'PT' || $payrollType->payroll_name == 'ESIC') &&
                                                     Session::get('sub_institute_id') != '195')
                                                 <td>
                                                     <input type="hidden"
@@ -226,8 +226,8 @@
         var table = $('#example').DataTable({
             select: true,
             lengthMenu: [
-                [100, 500, 1000, -1],
-                ['100', '500', '1000', 'Show All']
+                [500, 1000, -1],
+                ['500', '1000', 'Show All']
             ],
             dom: 'Bfrtip',
             buttons: [{
