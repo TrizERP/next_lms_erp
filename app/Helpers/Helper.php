@@ -1563,7 +1563,7 @@ if (!function_exists('getStudents')) {
                 r.religion_name,c.caste_name,s.subcast,s.affiliation_no,s.school_code,s.admission_date,td.first_name AS driver_name,
                 td.mobile AS driver_mobile,td.icard_icon,s.mother_mobile,CONCAT_WS(' ',s.first_name,CONCAT(SUBSTRING(s.father_name,1,1),'.'),
                 s.last_name) as short_student_name,tv.vehicle_type,tkr.id as distance_from_school_id,tkr.distance_from_school,
-                tkr.from_distance,IF(tv.vehicle_type = 'Van',tkr.van_new,tkr.rick_new) AS distance_rate,
+                tkr.from_distance,IF(tv.vehicle_type = 'Van',tkr.van_new,tkr.rick_new) AS distance_rate,s.pan_card,
                 s.first_name as student_first_name,
                 s.middle_name as student_middle_name,
                 s.last_name as student_last_name,
@@ -1663,6 +1663,7 @@ if (!function_exists('getStudents')) {
             $student_data[$value->id]['short_student_name'] = $value->short_student_name;
             $student_data[$value->id]['admission_no'] = $value->enquiry_no;
             $student_data[$value->id]['admission_standard'] = $value->admission_standard;
+            $student_data[$value->id]['pan_card'] = $value->pan_card;
         }
 
         return $student_data;
