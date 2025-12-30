@@ -266,7 +266,7 @@ body, table, td, div, p {font-family: Arial, Helvetica, sans-serif !important;}
     <p style="font-size:15px;"><b>* Final Fee Subject to Decision of Honorable Court.</b></p>
   
     <p style="line-height:1.7; font-size:15px;">
-      You are required to pay provisional fees of <b>&#x20B9; 29,000/-</b> at the school office by <b>Demand Draft /Cheque payable to Hills High School. [Please note: No NEFT / cash will be accepted]</b>
+      You are required to pay provisional fees of <b>&#x20B9; 29,000/-</b> at the school office by <b>Demand Draft payable to Hills High School. [Please note: No NEFT / cash will be accepted]</b>
     </p>
   
     <div style="background:#fff4e6; border-left:4px solid #943634; padding:10px 15px; margin-top:10px;">
