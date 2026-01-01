@@ -400,6 +400,8 @@ public function edit(Request $request, $id)
 
     $sub_institute_id_by_lms = ($getIsLms == 'Y') ? "(sub_institute_id = 1 or sub_institute_id = $sub_institute_id)" : "sub_institute_id = $sub_institute_id";
 
+    $sub_institute_id_alias = ($getIsLms == 'Y') ? "(qm.sub_institute_id = 1 or qm.sub_institute_id = $sub_institute_id)" : "qm.sub_institute_id = $sub_institute_id";
+
     $data['questionpaper_data'] = questionpaperModel::find($id)->toArray();
 
     if ($data['questionpaper_data']['open_date'] != "0000-00-00 00:00:00" && $data['questionpaper_data']['open_date'] != null) {
@@ -456,7 +458,7 @@ public function edit(Request $request, $id)
         ->whereIn('qm.chapter_id', $chapters)
         ->where('qm.standard_id', $std_id)
         ->where('qm.subject_id', $sub_id)
-        ->whereRaw($sub_institute_id_by_lms) // Apply LMS condition here for questions
+        ->whereRaw($sub_institute_id_alias) // Apply LMS condition here for questions
         ->where('qm.status', 1)
         ->groupBy('qm.id')
         ->orderBy('chapter_master.sort_order')
