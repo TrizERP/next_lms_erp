@@ -382,15 +382,31 @@ class lms_apiController extends Controller
         $subInstituteIdsStr = implode(',', array_map('intval', $subInstituteIds));
 
         if($student_id != "" && $sub_institute_id != "" && $syear != "" && $subject_id != "")
-        {         
-            $chapterdata = DB::select("SELECT c.id AS chapter_id, c.syear, c.standard_id, c.subject_id, c.chapter_name, c.chapter_desc, c.availability, c.show_hide, c.sort_order, ssm.add_content
-                    FROM tblstudent s
-                    INNER JOIN tblstudent_enrollment se ON s.id = se.student_id
-                    INNER JOIN chapter_master c ON c.sub_institute_id = se.sub_institute_id AND c.standard_id = se.standard_id
-                    INNER JOIN sub_std_map ssm ON c.subject_id = ssm.subject_id AND c.standard_id = ssm.standard_id
-                    WHERE s.sub_institute_id = '".$sub_institute_id."' AND s.id = '".$student_id."' AND se.syear = '".$syear."'
-                    AND c.subject_id = '".$subject_id."' AND c.show_hide = '1'
-                    ORDER BY c.sort_order");
+        {
+            $chapterdata = DB::table('chapter_master as c')
+                ->join('sub_std_map as ssm', function ($join) {
+                    $join->on('c.subject_id', '=', 'ssm.subject_id')
+                        ->on('c.standard_id', '=', 'ssm.standard_id');
+                })
+                ->where('c.subject_id', $subject_id)
+                ->where('c.show_hide', '1')
+                ->whereIn('c.sub_institute_id', $subInstituteIds)
+                ->whereIn('c.standard_id', function ($query) use ($subInstituteIds, $syear, $student_id) {
+                    $query->select('s1.id')
+                        ->from('standard as s')
+                        ->join('tblstudent_enrollment as te', 'te.standard_id', '=', 's.id')
+                        ->join('standard as s1', function ($join) use ($subInstituteIds) {
+                            $join->on('s1.course_duration', '=', 's.course_duration')
+                                ->whereIn('s1.sub_institute_id', $subInstituteIds);
+                        })
+                        ->where('te.syear', $syear)
+                        ->where('te.student_id', $student_id);
+                })
+                ->orderBy('c.sort_order')
+                ->select('c.id as chapter_id', 'c.syear', 'c.standard_id', 'c.subject_id', 'c.chapter_name', 'c.chapter_desc', 'c.availability', 'c.show_hide', 'c.sort_order', 'ssm.add_content')
+                ->get()
+                ->toArray();
+
                     // AND c.syear = se.syear
             //echo("<pre>");print_r($chapterdata);exit;
             $chapterdata = json_decode(json_encode($chapterdata),true);
@@ -409,7 +425,7 @@ class lms_apiController extends Controller
                         $finaldata[$chapter_id] = $val;
                         $finaldata[$chapter_id]['topicData'] = $topicData;
                     } else {
-                        $topicData = contentModel::where('content_master.sub_institute_id', $sub_institute_id)
+                        $topicData = contentModel::whereIn('content_master.sub_institute_id', $subInstituteIds)
                             ->where('content_master.chapter_id', $chapter_id)
                             ->where('content_master.show_hide', '1')
                             ->select('content_master.sub_institute_id', 'content_master.chapter_id', 'content_master.content_category as name' , 'content_master.syear', 'content_master.created_at')->groupBy('content_master.content_category')
@@ -427,7 +443,7 @@ class lms_apiController extends Controller
                                     if(filename = '', '',
                                         if(file_type = 'link', filename, concat('".env('DO_PATH')."public', file_folder, '/', filename))) as full_path 
                                     FROM content_master 
-                                    WHERE sub_institute_id = '".$sub_institute_id."' AND chapter_id = '".$chapter_id."'  
+                                    WHERE sub_institute_id in (".$subInstituteIdsStr.") AND chapter_id = '".$chapter_id."'  
                                     AND topic_id = '".$tval['id']."' 
                                     AND subject_id = '".$subject_id."' AND show_hide = '1'");
                                 $contentData = json_decode(json_encode($contentData), true);
@@ -439,7 +455,7 @@ class lms_apiController extends Controller
                                     if(filename = '', '',
                                         if(file_type = 'link', filename, concat('".env('DO_PATH')."public', file_folder, '/', filename))) as full_path 
                                     FROM content_master 
-                                    WHERE sub_institute_id = '".$sub_institute_id."' AND chapter_id = '".$chapter_id."'  
+                                    WHERE sub_institute_id in (".$subInstituteIdsStr.") AND chapter_id = '".$chapter_id."'  
                                     AND content_category = '".$tval['name']."'  AND subject_id = '".$subject_id."' AND show_hide = '1'");
                                 $contentData = json_decode(json_encode($contentData), true);
                                 $finaldata[$chapter_id]['topicData'][$tkey]['contentData'] = $contentData;
