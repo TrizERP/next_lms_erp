@@ -106,13 +106,13 @@
                     </div>
                 </div>
             @endif
-            @php $grandTotal = $discountGRTotal = 0; @endphp
+            @php $grandTotal = 0; @endphp
             @foreach($data['datewiseData'] as $date_pay=>$values)
-                @php 
+                @php
                     $explode = explode('||',$date_pay);
                     $date = $explode[0] ?? '-';
                     $pay_mode = $explode[1] ?? '-';
-                    $colspan = 9;
+                    $colspan = strtoupper($data['selPaymentMode']) != 'CASH' ? 8 : 6;
                 @endphp
                 <div class="table-responsive" style="margin:auto;width:85%">
                 <table class="table table-striped">
@@ -125,7 +125,7 @@
                             <th style="text-align:center;"><b>REC.NO</b></th>
                             <th style="text-align:center;"><b>NAME</b></th>
                             <th style="text-align:center;"><b>STD.</b></th>
-                            @if($data['selPaymentMode']!='CASH')
+                            @if(strtoupper($data['selPaymentMode']) != 'CASH')
                             <th><b>BANK NAME</b></th>
                             <th style="text-align:center;" title="CHEQUE NO./RRF NO."><b>CHEQUE NO./Ref No.</b></th>
                             @endif
@@ -141,21 +141,19 @@
                     <tbody>
                         @if(!empty($values))
                             @php 
-                                $total_amt =$discountTotal = 0;
+                                $total_amt =0;
                             @endphp
                             @foreach($values as $key=>$value)
                             @php 
                                 $total_amt+=$value->total_amount;
                                 $grandTotal+=$value->total_amount;
-                                $discountTotal+=$value->tot_disc;
-                                $discountGRTotal+=$value->tot_disc;
                             @endphp
                             <tr>
                                 <td>{{$key+1}}</td>
                                 <td>{{$value->receipt_no}}</td>
                                 <td>{{ strtoupper($value->student_name)}}</td>
                                 <td>{{ strtoupper($value->short_standard_name)}} - {{$value->div_name}}</td>
-                                @if($data['selPaymentMode']!='CASH')
+                                @if(strtoupper($data['selPaymentMode']) != 'CASH')
                                 <td>{{$value->cheque_bank_name}}</td>
                                 <td>{{$value->cheque_no}}</td>
                                 @endif
@@ -167,12 +165,12 @@
                                     {{ $value->{'total_'.$title} }}
                                 @endif
                                 </td>
-                                @endforeach --}} 
-                                <td>{{--$value->total_amount - $value->tot_disc--}}{{$value->total_amount}}</td>
+                                @endforeach --}}
+                                <td>{{$value->total_amount}}</td>
                             </tr>
                             @endforeach
                         <tr>
-                            <td colspan="{{$colspan}}" style="text-align:right"><span>DATE WISE TOTAL FEES : {{--$total_amt - $discountTotal--}} {{$total_amt}}</span></td>
+                            <td colspan="{{$colspan}}" style="text-align:right"><span>DATE WISE TOTAL FEES : {{$total_amt}}</span></td>
                         </tr>
                         @endif
                     </tbody>
@@ -191,11 +189,11 @@
                             <tr>
                                 <th style="text-align:center"> 1</th>
                                 <th style="text-align:center"><b>{{$data['selPaymentMode']}}</b></th>
-                                <th style="text-align:center">{{-- $grandTotal - $discountGRTotal--}} {{$grandTotal}}</th>
+                                <th style="text-align:center">{{$grandTotal}}</th>
                             </tr>
                             <tr>
                                 <th colspan="2" style="text-align:right"><b>Total</b></th>
-                                <th><b>{{-- $grandTotal - $discountGRTotal--}} {{$grandTotal}}</b></th>
+                                <th><b>{{$grandTotal}}</b></th>
                             </tr>
                         </table>
             </div>
