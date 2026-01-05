@@ -108,11 +108,11 @@
             @endif
             @php $grandTotal = 0; @endphp
             @foreach($data['datewiseData'] as $date_pay=>$values)
-                @php
+                @php 
                     $explode = explode('||',$date_pay);
                     $date = $explode[0] ?? '-';
                     $pay_mode = $explode[1] ?? '-';
-                    $colspan = strtoupper($data['selPaymentMode']) != 'CASH' ? 8 : 6;
+                    $colspan = 9;
                 @endphp
                 <div class="table-responsive" style="margin:auto;width:85%">
                 <table class="table table-striped">
@@ -125,7 +125,7 @@
                             <th style="text-align:center;"><b>REC.NO</b></th>
                             <th style="text-align:center;"><b>NAME</b></th>
                             <th style="text-align:center;"><b>STD.</b></th>
-                            @if(strtoupper($data['selPaymentMode']) != 'CASH')
+                            @if($data['selPaymentMode']!='CASH')
                             <th><b>BANK NAME</b></th>
                             <th style="text-align:center;" title="CHEQUE NO./RRF NO."><b>CHEQUE NO./Ref No.</b></th>
                             @endif
@@ -153,7 +153,7 @@
                                 <td>{{$value->receipt_no}}</td>
                                 <td>{{ strtoupper($value->student_name)}}</td>
                                 <td>{{ strtoupper($value->short_standard_name)}} - {{$value->div_name}}</td>
-                                @if(strtoupper($data['selPaymentMode']) != 'CASH')
+                                @if($data['selPaymentMode']!='CASH')
                                 <td>{{$value->cheque_bank_name}}</td>
                                 <td>{{$value->cheque_no}}</td>
                                 @endif
@@ -165,7 +165,7 @@
                                     {{ $value->{'total_'.$title} }}
                                 @endif
                                 </td>
-                                @endforeach --}}
+                                @endforeach --}} 
                                 <td>{{$value->total_amount}}</td>
                             </tr>
                             @endforeach

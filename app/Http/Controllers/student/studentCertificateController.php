@@ -11,7 +11,6 @@ use function App\Helpers\is_mobile;
 use function App\Helpers\FeeMonthId;
 use function App\Helpers\SearchStudent;
 use App\Http\Controllers\result\new_result\studentResultController;
-use DateTime;
 
 class studentCertificateController extends Controller
 {
@@ -668,41 +667,16 @@ LIMIT 1");
         $getLastFeesPaid = DB::table('fees_collect')->where('sub_institute_id',$sub_institute_id)->where('syear',$syear)->where('student_id',$value['id'])->where('is_deleted','N')->groupBy('term_id')->get();
 
         $lastPaidfees = [];
-        $latestTermValue = null;
         foreach ($getLastFeesPaid as $key => $values) {
             $term_id = $values->term_id; 
             $FeesYear = substr($term_id, -4);
             $FeesMonth = substr($term_id, 0,-4);
             $lastPaidfees[$term_id] = ($FeesYear * 12) + $FeesMonth;
-
-            // Convert to comparable numeric value
-            $numericValue = ($FeesYear * 12) + $FeesMonth;
-
-            if ($latestTermValue === null || $numericValue > $latestTermValue['value']) {
-                $latestTermValue = [
-                    'value' => $numericValue,
-                    'month' => $FeesMonth,
-                    'year'  => $FeesYear
-                ];
-            }
         }
-        //echo "<pre>";
-        //print_r($lastPaidfees);
-        //echo "</pre>";
-        //exit();
         if(!empty($lastPaidfees)){
-            if($sub_institute_id==202){
-                // Add 5 months (fees valid for 6 months total)
-                $date = new DateTime();
-                $date->setDate($latestTermValue['year'], $latestTermValue['month'], 1);
-                $date->modify('+5 months');
-
-                $month = strtoupper($date->format('M/Y'));
-            }else{
-                $maxMonth = array_keys($lastPaidfees, max($lastPaidfees))[0];
-                if(isset($months[$maxMonth])){
-                    $month = $months[$maxMonth];    
-                }
+            $maxMonth = array_keys($lastPaidfees, max($lastPaidfees))[0];
+            if(isset($months[$maxMonth])){
+                $month = $months[$maxMonth];    
             }
         }else{
             // (Hills) if RTE quota fees paid not getting data so print as per TC Info

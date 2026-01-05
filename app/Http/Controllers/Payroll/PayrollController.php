@@ -1880,9 +1880,6 @@ class PayrollController extends Controller
                     if($getEligible->pt_deduction=="N" && $value['deduction'][3]=="PT"){
                         $deduction =0;
                     }
-                    if($getEligible->esic_deduction=="N" && $value['deduction'][3]=="ESIC"){
-                        $deduction =0;
-                    }
 
 
                 // 13-08-2024 end 
@@ -1894,7 +1891,7 @@ class PayrollController extends Controller
                         $deduction=1800;
                     }
                 }
-                elseif($getEligible->esic_deduction=="Y" && $value['deduction'][3]=="ESIC"){
+                elseif($value['deduction'][3]=="ESIC"){
                     $deduction = Helpers::getESIC($totalSal);
                 }
                 else if($value['deduction'][1] == 1 && !$deductionName && $value['deduction'][3]!="PF" && $value['deduction'][4]==0){

@@ -378,7 +378,7 @@ body, table, td, div, p {font-family: Arial, Helvetica, sans-serif !important;}
                                         <p style="font-size:15px; font-family: Arial, sans-serif;"><b>* Final Fee Subject to Decision of Honorable Court.</b></p>
 
                                         <p style="line-height:1.7; font-size:15px; font-family: Arial, sans-serif;">
-                                            You are required to pay provisional fees <b style="color:#943634;">&#x20B9; 26,933/- at the school office by</b> <b>Demand Draft  payable to Hills High School. [Please note: No NEFT / cash will be accepted]</b>
+                                            You are required to pay provisional fees <b style="color:#943634;">&#x20B9; 26,933/- at the school office by</b> <b>Demand Draft /Cheque payable to Hills High School. [Please note: No NEFT / cash will be accepted]</b>
                                         </p>
 
                                         <!-- Highlight Box -->
