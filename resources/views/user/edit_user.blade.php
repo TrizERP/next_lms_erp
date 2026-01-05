@@ -552,6 +552,7 @@
                                                     'tds_deduction' => 'TDS Deduction',
                                                     'pf_deduction' => 'PF Deduction',
                                                     'pt_deduction' => 'PT Deduction',
+                                                    'esic_deduction' => 'ESIC Deduction',
                                                 ];
                                                 $textArr = [
                                                     'pf_no' => 'PF No',

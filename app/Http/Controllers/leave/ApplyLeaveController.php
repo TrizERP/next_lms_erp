@@ -121,6 +121,7 @@ class ApplyLeaveController extends Controller
             ->where('sub_institute_id', $sub_institute_id)
             ->where('from_date', '>=', $from_date)
             ->where('to_date', '<=', $to_date)
+            ->whereNull('deleted_at')
             ->get()
             ->toArray();
             

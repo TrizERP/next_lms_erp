@@ -611,6 +611,7 @@ $day = Carbon::parse($punchin_time)->format('Y-m-d');
 
         $get_hrms_holidays = DB::table('hrms_holidays')
             ->where('sub_institute_id', $sub_institute_id)
+            ->whereNull('deleted_at')
             ->where('from_date', '>=', $from_date_formatted)
             ->where('to_date', '<=', $to_date_formatted)
             ->get()->toArray();
@@ -1219,7 +1220,11 @@ $day = Carbon::parse($punchin_time)->format('Y-m-d');
             })
             ->join('hrms_departments as hd', 'tu.department_id', '=', 'hd.id')
             ->leftJoin('hrms_holidays as hh', function ($join) use ($from_date, $to_date, $sub_institute_id) {
-                $join->on('hh.department', '=', 'hd.id')->where('hh.from_date', '>=', $from_date)->where('hh.to_date', '<=', $to_date)->where(['hh.sub_institute_id' => $sub_institute_id]);
+                $join->on('hh.department', '=', 'hd.id')
+                ->whereNull('hh.deleted_at')
+                ->where('hh.from_date', '>=', $from_date)
+                ->where('hh.to_date', '<=', $to_date)
+                ->where(['hh.sub_institute_id' => $sub_institute_id]);
             })
             ->selectRaw('tu.id as user_id, tu.employee_no, CONCAT_WS(" ", COALESCE(tu.first_name, "-"), COALESCE(tu.middle_name, "-"),COALESCE(tu.last_name, "-")) as full_name, tu.sub_institute_id, IFNULL(upm.name, "-") as user_profile, hd.department, COUNT(DISTINCT ha.id) as total_att_day, GROUP_CONCAT(DISTINCT ha.id) as worked_days, COUNT(DISTINCT hel.id) as total_ab_day, GROUP_CONCAT(DISTINCT hel.id) as ab_days, COUNT(DISTINCT hh.id) as total_holidays, GROUP_CONCAT(DISTINCT hh.id) as holidays,GROUP_CONCAT(DISTINCT hd.id) as department_id')
             ->where('tu.sub_institute_id', $sub_institute_id)
@@ -1321,7 +1326,7 @@ $day = Carbon::parse($punchin_time)->format('Y-m-d');
     public function getHolidays(Request $request)
     {
         $sub_institute_id = session()->get('sub_institute_id');
-        $data = DB::table('hrms_holidays')->where('sub_institute_id', $sub_institute_id)->where(['department_id' => $request->department_id, 'from_date' => $request->from_date, 'to_date' => $request->to_date])->get()->toArray();
+        $data = DB::table('hrms_holidays')->where('sub_institute_id', $sub_institute_id)->whereNull('deleted_at')->where(['department_id' => $request->department_id, 'from_date' => $request->from_date, 'to_date' => $request->to_date])->get()->toArray();
         return $data;
     }
 
@@ -1442,6 +1447,7 @@ $day = Carbon::parse($punchin_time)->format('Y-m-d');
 
         $get_hrms_holidays = DB::table('hrms_holidays')
             ->where('sub_institute_id', $sub_institute_id)
+            ->whereNull('deleted_at')
             ->where('from_date', '>=', $from_date_formatted)
             ->where('to_date', '<=', $to_date_formatted)
             ->get()->toArray();
@@ -1593,6 +1599,7 @@ $day = Carbon::parse($punchin_time)->format('Y-m-d');
 
         $get_hrms_holidays = DB::table('hrms_holidays')
             ->where('sub_institute_id', $sub_institute_id)
+            ->whereNull('deleted_at')
             ->whereBetween('from_date', [$from_date, $to_date])
             ->oRwhereBetween('to_date', [$from_date, $to_date])
             ->get()->toArray();
