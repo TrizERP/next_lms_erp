@@ -888,14 +888,19 @@ class AJAXController extends Controller
                 if($id=="Total"){
                     $ids='id="all_total"';
                 }
+                $bgcolor = '';
+                if (stripos($id, 'HOSTEL FEE') !== false || stripos($id, 'FOOD TRANSPORT ETC') !== false) {
+                    $bgcolor = 'background-color: #ff4d4d;';
+                }
             $response .= "
-                 <tr>
+                 <tr style='" . $bgcolor . "'>
                     <td style='width: 20%'>$id</td>
                     <td style='width: 20%' $ids>$val</td>
             ";
             if ($id != 'Total') {
+                
                 // $response .= "<td style='width: 20%'><input type='number' min=0 max=$val  value='" . $val . "' name='fees_data[" . $final_bk_name[$id] . "]' class='form-control allField1'></td>";
-                $response .= "<td style='width: 20%'><input type='number' min='0' max='$val' value='$val' name='fees_data[" . $final_bk_name[$id] . "]' class='form-control allField1' id=" . $final_bk_name[$id] . "></td>";
+                $response .= "<td style='width: 20%; " . $bgcolor . "'><input type='number' min='0' max='$val' value='$val' name='fees_data[" . $final_bk_name[$id] . "]' class='form-control allField1' id=" . $final_bk_name[$id] . "></td>";
 
                 $response .= "<input type='hidden' value='" . $val . "' name='hid_fees_data[" . $final_bk_name[$id] . "]' class='hid_allField1'>";
                 $response .= "<td style='width: 20%;display:none'><input type='number' value='0' name='discount_data[" . $final_bk_name[$id] . "]' class='form-control allDisField' style='min-width:150px;'></td>"; // min=0 max=$val

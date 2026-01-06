@@ -33,6 +33,7 @@
                 {{ method_field("POST") }}
                 @csrf
                 <div class="row">
+                    @if(session()->get('sub_institute_id') != 76)
                     <div class="col-md-12">
                         <div class="form-group">
                             <div class="row">
@@ -42,10 +43,6 @@
                     </div>
                     
                     <div class="col-md-4 form-group">
-                        <label>{{App\Helpers\get_string('studentname')}}<i class="mdi mdi-lead-pencil"></i></label>
-                        <input type="text" id="stu_name" placeholder="{{App\Helpers\get_string('studentname')}}" name="stu_name" class="form-control" @if(isset($data['stu_name'])) value="{{$data['stu_name']}}" @endif>
-                    </div>
-                    <div class="col-md-4 form-group">
                         <label>{{App\Helpers\get_string('uniqueid')}}<i class="mdi mdi-lead-pencil"></i></label>
                         <input type="text" id="uniqueid" placeholder="{{App\Helpers\get_string('uniqueid')}}" name="uniqueid" class="form-control" @if(isset($data['uniqueid'])) value="{{$data['uniqueid']}}" @endif>
                     </div>
@@ -54,18 +51,23 @@
                         <input type="text" id="mobile" placeholder="Mobile" name="mobile" class="form-control" @if(isset($data['mobile'])) value="{{$data['mobile']}}" @endif>
                     </div>                        
                     <div class="col-md-4 form-group">
-                        <label>{{App\Helpers\get_string('grno')}}<i class="mdi mdi-lead-pencil"></i></label>
-                        <input type="text" id="grno" placeholder="{{App\Helpers\get_string('grno')}}" name="grno" class="form-control" @if(isset($data['grno'])) value="{{$data['grno']}}" @endif>
-                        @if(app('request')->input('implementation') == 1)
-                        <input type="hidden" name="implementation" value="1">
-                        @endif
-                    </div>
-                    <div class="col-md-4 form-group">
                         <div class="d-inline">
                             <input type="checkbox" name="including_inactive" value="Yes"
                                    @if(isset($data['including_inactive'])) @if($data['including_inactive'] == 'Yes') checked @endif @endif>
                             <span>Including In-active Students</span>
                         </div>
+                    </div>
+                    @endif
+                    <div class="col-md-4 form-group">
+                        <label>{{App\Helpers\get_string('studentname')}}<i class="mdi mdi-lead-pencil"></i></label>
+                        <input type="text" id="stu_name" placeholder="{{App\Helpers\get_string('studentname')}}" name="stu_name" class="form-control" @if(isset($data['stu_name'])) value="{{$data['stu_name']}}" @endif>
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label>{{App\Helpers\get_string('grno')}}<i class="mdi mdi-lead-pencil"></i></label>
+                        <input type="text" id="grno" placeholder="{{App\Helpers\get_string('grno')}}" name="grno" class="form-control" @if(isset($data['grno'])) value="{{$data['grno']}}" @endif>
+                        @if(app('request')->input('implementation') == 1)
+                        <input type="hidden" name="implementation" value="1">
+                        @endif
                     </div>
                     <div class="col-md-12 form-group">
                         <center>
