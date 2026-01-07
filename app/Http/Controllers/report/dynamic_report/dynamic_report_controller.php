@@ -319,6 +319,7 @@ class dynamic_report_controller extends Controller
             $this->query = DB::table("tblstudent as s");
             $this->query->join("tblstudent_enrollment as se",$enrollment_join);
             $this->query->join("standard as st", $std_join);
+            $this->query->join("division as di", $div_join);
             $this->query->whereRaw("s.sub_institute_id=$sub_institute_id AND se.syear=$syear");
             $this->query->groupBy("s.mobile");
             $this->query->havingRaw("COUNT(s.mobile) > 1");  
