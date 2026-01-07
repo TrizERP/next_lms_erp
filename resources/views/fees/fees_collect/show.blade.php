@@ -54,13 +54,13 @@
                         <div class="d-inline">
                             <input type="checkbox" name="including_inactive" value="Yes"
                                    @if(isset($data['including_inactive'])) @if($data['including_inactive'] == 'Yes') checked @endif @endif>
-                            <span>Including In-active Students</span>
+                            <span>In-active Students</span>
                         </div>
                     </div>
                     @endif
                     <div class="col-md-4 form-group">
                         <label>{{App\Helpers\get_string('studentname')}}<i class="mdi mdi-lead-pencil"></i></label>
-                        <input type="text" id="stu_name" placeholder="{{App\Helpers\get_string('studentname')}}" name="stu_name" class="form-control" @if(isset($data['stu_name'])) value="{{$data['stu_name']}}" @endif>
+                        <input type="text" id="stu_name" placeholder="{{App\Helpers\get_string('studentname')}}" name="stu_name" class="form-control" @if(isset($data['stu_name'])) value="{{$data['stu_name']}}" @endif required>
                     </div>
                     <div class="col-md-4 form-group">
                         <label>{{App\Helpers\get_string('grno')}}<i class="mdi mdi-lead-pencil"></i></label>
@@ -68,6 +68,13 @@
                         @if(app('request')->input('implementation') == 1)
                         <input type="hidden" name="implementation" value="1">
                         @endif
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <div class="d-inline">
+                            <input type="checkbox" name="including_inactive" value="Yes"
+                                   @if(isset($data['including_inactive'])) @if($data['including_inactive'] == 'Yes') checked @endif @endif>
+                            <span>In-active Students</span>
+                        </div>
                     </div>
                     <div class="col-md-12 form-group">
                         <center>
