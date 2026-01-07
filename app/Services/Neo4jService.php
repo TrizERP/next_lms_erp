@@ -112,6 +112,17 @@ class Neo4jService
   
       return $message;
   }
+
+  public function testConnection()
+{
+    try {
+        $result = $this->client->run('RETURN "Neo4j Connected" AS message');
+        return $result->first()->get('message');
+    } catch (\Exception $e) {
+        Log::error('Neo4j connection failed: '.$e->getMessage());
+        return false;
+    }
+}
   
   
 }

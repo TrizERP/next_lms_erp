@@ -637,3 +637,7 @@ Route::get('dashboard_rights',[dashboardController::class,'dashboardRights'])->n
 Route::post('getHillsHPCPDF', [AJAXController::class, 'getHillsHPCPDF'])->name('getHillsHPCPDF');
 
 Route::get('/my-leave', [LeaveSummaryReportController::class, 'MyLeave'])->name('my-leave');
+// routes/web.php or api.php
+Route::get('/neo4j-test', function (\App\Services\Neo4jService $neo4j) {
+    return $neo4j->testConnection();
+});
