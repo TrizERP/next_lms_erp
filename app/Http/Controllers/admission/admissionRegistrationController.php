@@ -96,6 +96,7 @@ class admissionRegistrationController extends Controller
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $marking_period_id = session()->get('term_id');
+        $syear = session()->get("syear");
         if($type=="API"){
             try {
                 if (!$this->jwtToken()->validate()) {
@@ -494,9 +495,6 @@ class admissionRegistrationController extends Controller
 
     public function max_enrollment_no($sub_institute_id, $admission_standard_id, $syear = null)
     {
-        if ($syear === null) {
-            $syear = session()->get('syear');
-        }
         $array = [201,203,204];
 
         if ($sub_institute_id == 47)//Generate Enrollment No for MMISERP
@@ -600,10 +598,16 @@ class admissionRegistrationController extends Controller
             }
         }
         else if ($sub_institute_id == 202) {
-            $maxEnrollment = DB::table('tblstudent')
-                ->selectRaw('MAX(CAST(enrollment_no AS INT)) AS new_enrollment_no')
-                ->where('sub_institute_id', $sub_institute_id)
-                ->where('admission_year', $syear)
+            $syear = $syear ?? session()->get('syear');
+            $maxEnrollment = DB::table('tblstudent as s')
+                ->join('tblstudent_enrollment as se', function ($join) {
+                    $join->on('se.student_id', '=', 's.id')
+                        ->on('se.sub_institute_id', '=', 's.sub_institute_id')
+                        ->whereNull('se.end_date'); // only active enrollment
+                })
+                ->selectRaw('MAX(CAST(s.enrollment_no AS UNSIGNED)) AS new_enrollment_no')
+                ->where('s.sub_institute_id', $sub_institute_id)
+                ->where('se.syear', $syear) // syear from tblstudent_enrollment
                 ->first();
 
             if ($maxEnrollment && $maxEnrollment->new_enrollment_no) {
@@ -666,7 +670,8 @@ class admissionRegistrationController extends Controller
                 WHERE sub_institute_id = '" . $sub_institute_id . "'";
         }
 
-        return $enrollment_no_sql;
+        $result = DB::select($enrollment_no_sql);
+        return $result[0]->new_enrollment_no ?? 1;
     }
 
     public function ajax_getDivision(Request $request)

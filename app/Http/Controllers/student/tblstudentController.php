@@ -109,8 +109,16 @@ class tblstudentController extends Controller
         $stateData = tblstateModel::get()->toArray();
         $cityData = [];
         if ($sub_institute_id == 202) {
-            $maxEnrollmentYear = DB::table('tblstudent')->selectRaw("(MAX(CAST(enrollment_no AS INT)) + 1) AS new_enrollment_no")
-                ->where('sub_institute_id', $sub_institute_id)->where('admission_year', $syear)->first();
+            $maxEnrollmentYear = DB::table('tblstudent as s')
+                ->join('tblstudent_enrollment as se', function ($join) {
+                    $join->on('se.student_id', '=', 's.id')
+                        ->on('se.sub_institute_id', '=', 's.sub_institute_id')
+                        ->whereNull('se.end_date'); // active enrollment only
+                })
+                ->selectRaw('(MAX(CAST(s.enrollment_no AS UNSIGNED)) + 1) AS new_enrollment_no')
+                ->where('s.sub_institute_id', $sub_institute_id)
+                ->where('se.syear', $syear) // year from enrollment table
+                ->first();
 
             $new_enrollment_no = $maxEnrollmentYear ? $maxEnrollmentYear->new_enrollment_no : 1;
         } else {
@@ -474,10 +482,15 @@ class tblstudentController extends Controller
             }
             // added for sub_institute_id 202 admission year wise enrollment
             if($key=="enrollment_no" && $sub_institute_id==202){
-                $admission_year = $request->input('admission_year');
+                $syear = $request->input('syear');
                 $maxEnrollment = DB::table('tblstudent')->selectRaw('MAX(CAST(enrollment_no AS INT)) AS new_enrollment_no')
+                    ->join('tblstudent_enrollment as se', function ($join) {
+                        $join->on('se.student_id', '=', 's.id')
+                            ->on('se.sub_institute_id', '=', 's.sub_institute_id')
+                            ->whereNull('se.end_date'); // active enrollment only
+                    })    
                     ->where('sub_institute_id', $sub_institute_id)
-                    ->where('admission_year', $admission_year)
+                    ->where('se.syear', $syear)
                     ->first();
                 $new_enrollment_no = ($maxEnrollment->new_enrollment_no ?? 0) + 1;
                 $finalArray[$key] = $new_enrollment_no;
