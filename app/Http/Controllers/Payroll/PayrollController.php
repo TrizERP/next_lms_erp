@@ -180,7 +180,7 @@ class PayrollController extends Controller
                 $totalAllowance = $totalSalary = $totalGrossSalary= 0;
                 $allData = $jsonData = [];
                 // payroll type details get head and amounts
-                $getPfFlat = $getPTFlat = $getPF = $getESIC = $getPT = $payroll_percentage = $amount_type = $hasPF = $hasESIC = $hasPT =0;
+                $getPfFlat = $getEsicFlat = $getPTFlat = $getPF = $getESIC = $getPT = $payroll_percentage = $amount_type = $hasPF = $hasESIC = $hasPT =0;
                 // echo "<pre>";print_r($emp_values);
 
                 foreach($emp_values as $key => $value){
@@ -254,14 +254,14 @@ class PayrollController extends Controller
                 $employee = tbluserModel::where('id',$emp_ids)->first();
                 $pf_deduction = $employee->pf_deduction;
                 $pt_deduction = $employee->pt_deduction;
+                $esic_deduction = $employee->esic_deduction;
 
                 // 13-08-2024 claculate PT as per eligilble emp_ids
                 if($pf_deduction == 'Y')
                     $getPF = ($hasPF == 2) ? Helpers::getPF($totalAllowance) : $getPfFlat; // getPfFlat is for set flat amounts
 
-                if($hasESIC == 2){
-                    $getESIC = Helpers::getESIC($totalAllowance); // calculate ESIC based on total allowance by rajesh 29-12-2025
-                }
+                if($esic_deduction == 'Y')
+                    $getESIC = ($hasESIC == 2) ? Helpers::getESIC($totalAllowance) : $getEsicFlat; // calculate ESIC based on total allowance by rajesh 29-12-2025
                 
                 // PT Calculation
                 if($pt_deduction == 'Y')
@@ -1458,7 +1458,17 @@ class PayrollController extends Controller
                  }
 
                  // get absent Days
-                 $holidayData = DB::table('hrms_holidays')->whereRaw('((from_date between "'.$startOfMonth.'" and "'.$endOfMonth.'") OR (to_date between "'.$startOfMonth.'" and "'.$endOfMonth.'")) and sub_institute_id = '.$sub_institute_id.' and department in ('.implode(',',$department_ids).')')->get()->toArray();
+                 //$holidayData = DB::table('hrms_holidays')->whereRaw('((from_date between "'.$startOfMonth.'" and "'.$endOfMonth.'") OR (to_date between "'.$startOfMonth.'" and "'.$endOfMonth.'")) and sub_institute_id = '.$sub_institute_id.' and department in ('.implode(',',$department_ids).')')->get()->toArray();
+                 $holidayData = DB::table('hrms_holidays')
+                    ->where('sub_institute_id', $sub_institute_id)
+                    ->whereIn('department', $department_ids)
+                    ->whereNull('deleted_at') // Soft delete handling
+                    ->where(function ($query) use ($startOfMonth, $endOfMonth) {
+                        $query->where('from_date', '<=', $endOfMonth)
+                            ->where('to_date', '>=', $startOfMonth);
+                    })
+                    ->get()
+                    ->toArray();
 
                  foreach($holidayData as $hdkey => $hdvalue){
                       // leave dates to find absent days 
@@ -2091,6 +2101,7 @@ class PayrollController extends Controller
         ->whereBetween('from_date',[$from_date->format('Y-m-d'),$to_date->format('Y-m-d')])
         ->whereBetween('to_date',[$from_date->format('Y-m-d'),$to_date->format('Y-m-d')])
         ->whereRaw('FIND_IN_SET("'.$department_id.'", department)')
+        ->whereNull('deleted_at')
         ->get()->toArray();
         
         $holiday = 0;
