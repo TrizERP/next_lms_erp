@@ -492,9 +492,12 @@ class admissionRegistrationController extends Controller
         return is_mobile($type, "admission_confirmation.index", $res);
     }
 
-    public function max_enrollment_no($sub_institute_id, $admission_standard_id)
+    public function max_enrollment_no($sub_institute_id, $admission_standard_id, $syear = null)
     {
-        $array = [201,202,203,204];
+        if ($syear === null) {
+            $syear = session()->get('syear');
+        }
+        $array = [201,203,204];
 
         if ($sub_institute_id == 47)//Generate Enrollment No for MMISERP
         {
@@ -595,7 +598,20 @@ class admissionRegistrationController extends Controller
                     $new_enrollment_no = 1;
                 }
             }
-        }  
+        }
+        else if ($sub_institute_id == 202) {
+            $maxEnrollment = DB::table('tblstudent')
+                ->selectRaw('MAX(CAST(enrollment_no AS INT)) AS new_enrollment_no')
+                ->where('sub_institute_id', $sub_institute_id)
+                ->where('admission_year', $syear)
+                ->first();
+
+            if ($maxEnrollment && $maxEnrollment->new_enrollment_no) {
+                $new_enrollment_no = $maxEnrollment->new_enrollment_no + 1;
+            } else {
+                $new_enrollment_no = 1;
+            }
+        }
         else {
             $maxEnrollment = DB::table('tblstudent')
                 ->selectRaw('(MAX(CAST(enrollment_no AS INT)) + 1) AS new_enrollment_no')
