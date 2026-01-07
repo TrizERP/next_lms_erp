@@ -26,16 +26,33 @@ class resultActivityMasterController extends Controller
     {
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
+        $syear = $request->session()->get('syear');
 
         $get_result_activity_masters = DB::table('result_activity_master as ram')
             ->join('result_skillset as rs', 'rs.id', '=', 'ram.skill_id')
-            ->join('standard as s','s.id','=','ram.standard')
-            ->leftJoin('result_sub_activity as rsa','rsa.sub_skill_id','=','ram.id')
-            ->leftJoin('academic_year as ac','ac.term_id','=','ram.term_id')
-            ->selectRaw('ram.*, rs.main_title as result_main_title, rs.title as result_title,s.name as standard,GROUP_CONCAT(rsa.title order by rsa.sort_order SEPARATOR "|||") as sub_activity,ac.title AS term_name')
+            ->join('standard as s', function ($join) {
+                $join->on('s.id', '=', 'ram.standard')
+                     ->on('s.sub_institute_id', '=', 'ram.sub_institute_id');
+            })
+            ->leftJoin('result_sub_activity as rsa', 'rsa.sub_skill_id', '=', 'ram.id')
+            ->leftJoin('academic_year as ac', function ($join) {
+                $join->on('ac.term_id', '=', 'ram.term_id')
+                     ->on('ac.sub_institute_id', '=', 'ram.sub_institute_id');
+            })
             ->where('ram.sub_institute_id', $sub_institute_id)
+            ->where('ac.syear', $syear)
+            ->selectRaw('
+                ram.*,
+                ac.title AS term_name,
+                rs.main_title AS result_main_title,
+                rs.title AS result_title,
+                s.name AS standard,
+                GROUP_CONCAT(rsa.title ORDER BY rsa.sort_order SEPARATOR "|||") AS sub_activity
+            ')
             ->groupBy('ram.id')
-            ->get()->toArray();
+            ->get()
+            ->toArray();
+
         // echo "<pre>";print_r($get_result_activity_masters);exit;
         $res['status_code'] = 1;
         $res['message'] = "Success";
