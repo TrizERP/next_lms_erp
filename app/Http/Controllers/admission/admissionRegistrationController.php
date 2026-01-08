@@ -545,8 +545,8 @@ class admissionRegistrationController extends Controller
                 ->select('enrollment_prefix_master.*')
                 ->whereRaw("sub_institute_id = '" . $sub_institute_id . "' AND FIND_IN_SET ('" . $admission_standard_id . "', standards)")
                 ->get()->toArray();
-        
-            $prefix = $get_prefix_result[0]->prefix;
+
+            $prefix = !empty($get_prefix_result) ? $get_prefix_result[0]->prefix : null;
         
             if ($prefix != '' && $prefix != null) {
         
