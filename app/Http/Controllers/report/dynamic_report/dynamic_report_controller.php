@@ -321,8 +321,9 @@ class dynamic_report_controller extends Controller
             $this->query->join("standard as st", $std_join);
             $this->query->join("division as di", $div_join);
             $this->query->whereRaw("s.sub_institute_id=$sub_institute_id AND se.syear=$syear");
+            $this->query->whereNull('se.end_date');
             $this->query->groupBy("s.mobile");
-            $this->query->havingRaw("COUNT(s.mobile) > 1");  
+            $this->query->havingRaw("(SELECT COUNT(*) FROM tblstudent s2 JOIN tblstudent_enrollment se2 ON se2.student_id = s2.id WHERE s2.mobile = s.mobile AND s2.sub_institute_id = $sub_institute_id AND se2.syear = $syear) > 1");
         }
         // 2024-12-07
         else {
