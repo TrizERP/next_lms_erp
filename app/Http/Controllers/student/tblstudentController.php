@@ -108,7 +108,8 @@ class tblstudentController extends Controller
         ])->get();
         $stateData = tblstateModel::get()->toArray();
         $cityData = [];
-        if ($sub_institute_id == 202) {
+        $array = [201,202,203,204];
+        if (in_array($sub_institute_id, $array)) {
             $maxEnrollmentYear = DB::table('tblstudent as s')
                 ->join('tblstudent_enrollment as se', function ($join) {
                     $join->on('se.student_id', '=', 's.id')
@@ -119,8 +120,7 @@ class tblstudentController extends Controller
                 ->where('s.sub_institute_id', $sub_institute_id)
                 ->where('se.syear', $syear) // year from enrollment table
                 ->first();
-
-            $new_enrollment_no = $maxEnrollmentYear ? $maxEnrollmentYear->new_enrollment_no : 1;
+            $new_enrollment_no = ($maxEnrollmentYear && $maxEnrollmentYear->new_enrollment_no != null) ? $maxEnrollmentYear->new_enrollment_no : 1001;
         } else {
             $maxEnrollment = DB::table('tblstudent')->selectRaw("(MAX(CAST(enrollment_no AS INT)) + 1) AS new_enrollment_no")
                 ->where('sub_institute_id', $sub_institute_id)->orderBy('id')->limit(1)->get()->toArray();
