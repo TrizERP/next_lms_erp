@@ -126,7 +126,7 @@ class consolidateReportController extends Controller
                         $marksLookup = [];
                         foreach ($allMarks as $mark) {
                             $marks = 0;
-                            if ($mark->points) {
+                            if ($mark->points && $mark->is_absent === '') {
                                 $marks = $mark->points;
                             } elseif ($mark->is_absent != '') {
                                 $marks = $mark->is_absent;
@@ -145,7 +145,7 @@ class consolidateReportController extends Controller
                             
                             $studentMarks[$student['student_id']]['terms'][$termId]['exams'][$examTitle][$subjectName][$title] = [
                                 'exam_details' => $exam,
-                                'ob_marks' => $marksLookup[$student['student_id']] ?? 0
+                                'ob_marks' => $marksLookup[$student['student_id']] ?? 0,
                             ];
                         }
                     }
