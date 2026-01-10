@@ -81,6 +81,8 @@ use App\Http\Controllers\agenticAI\agentRunLogController;
 use App\Http\Controllers\agenticAI\agentAnalyticController;
 use App\Http\Controllers\agenticAI\agentReflectionController;
 use App\Http\Controllers\agenticAI\agentDashboardController;
+use App\Http\Controllers\agenticAI\multiAgentController;
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -651,4 +653,5 @@ Route::group(['prefix' => 'agent', 'middleware' => ['session', 'menu', 'logRoute
     route::resource('agent_analytic', agentAnalyticController::class);
     route::resource('agent_reflection', agentReflectionController::class);
     route::resource('agent_dashboard', agentDashboardController::class);
+    route::resource('multi_agent', multiAgentController::class);
 });
