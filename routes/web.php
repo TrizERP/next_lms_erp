@@ -72,8 +72,17 @@ use App\Http\Controllers\ChatbotController;
 use App\Http\Controllers\lms\chapterController as LmsChapterController;
 use App\Http\Controllers\library\itemVerificationController;
 use App\Http\Controllers\library\itemScanController;
+use App\Http\Controllers\DataMigrationController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\library\LostandDamage;
+use App\Http\Controllers\agenticAI\createAgentController;
+use App\Http\Controllers\agenticAI\agentLibraryController;
+use App\Http\Controllers\agenticAI\agentRunLogController;
+use App\Http\Controllers\agenticAI\agentAnalyticController;
+use App\Http\Controllers\agenticAI\agentReflectionController;
+use App\Http\Controllers\agenticAI\agentDashboardController;
+use App\Http\Controllers\agenticAI\multiAgentController;
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -548,10 +557,10 @@ Route::get('/dashboardnew', function () {
     return view('dashboardNeo4j');
 })->name('dashboardNeo4j');
 Route::get('/new', function () {
-    return view('newD3visualsnew');
+    return view('newD3visuals');
 });
 Route::get('/dashboard_new', function () {
-    return view('newD3recommendnew');
+    return view('newD3recommend');
 });
 Route::get('/sync-neo4j', [Neo4jSyncController::class, 'sync']);
 
@@ -580,7 +589,6 @@ Route::get('/scatter-line-chart-data', [FeesReportController::class, 'getScatter
 Route::get('/polar-area-chart-data', [FeesReportController::class, 'getPolarAreaChartData']);
 
 use App\Models\ReportDynamic;
-
 Route::get('/get-fields', function (Request $request) {
     $reportType = $request->query('report_type');
 
@@ -591,13 +599,13 @@ Route::get('/get-fields', function (Request $request) {
         ]);
     }
 
-    $sYear = session()->get('syear');
-    $reportDynamics = ReportDynamic::where('report_name', $reportType)->where('syear',$sYear)->get();
+    $reportDynamics = ReportDynamic::where('report_name', $reportType)->get();
     
     $xFieldsArray = [];
     $yFieldsArray = [];
     $reportName = null;
     $dataType = null;
+    $sYear = null;
     $countType = null;
     foreach ($reportDynamics as $reportDynamic) {
         if (!$reportName) {
@@ -632,12 +640,18 @@ Route::get('/get-fields', function (Request $request) {
 
 Route::resource('blogs', BlogController::class);
 Route::get('/migrate-data', [DataMigrationController::class, 'migrateDataToNeo4j']);
-Route::get('dashboard_rights',[dashboardController::class,'dashboardRights'])->name('dashboard_rights'); // 13-03-2025 by uma
 // added hills nursey hc
 Route::post('getHillsHPCPDF', [AJAXController::class, 'getHillsHPCPDF'])->name('getHillsHPCPDF');
 
-Route::get('/my-leave', [LeaveSummaryReportController::class, 'MyLeave'])->name('my-leave');
-// routes/web.php or api.php
-Route::get('/neo4j-test', function (\App\Services\Neo4jService $neo4j) {
-    return $neo4j->testConnection();
+// Route::get('/my-leave', [LeaveSummaryReportController::class, 'MyLeave'])->name('my-leave');
+
+// added by uma for agents 
+Route::group(['prefix' => 'agent', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
+    route::resource('create_agent', createAgentController::class);
+    route::resource('agent_library', agentLibraryController::class);
+    route::resource('agent_run_log', agentRunLogController::class);
+    route::resource('agent_analytic', agentAnalyticController::class);
+    route::resource('agent_reflection', agentReflectionController::class);
+    route::resource('agent_dashboard', agentDashboardController::class);
+    route::resource('multi_agent', multiAgentController::class);
 });
