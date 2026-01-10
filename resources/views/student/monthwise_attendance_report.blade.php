@@ -20,6 +20,11 @@
             }
                 $getInstitutes = session()->get('getInstitutes');
                  $academicYears = session()->get('academicYears');
+
+    $years = collect($academicYears)->pluck('syear')->unique()->sort()->values();
+    $maxYear = $years->max();
+    $extraYear = $maxYear + 1;
+
                  $month_name=[1=>"January",2=>"February",3=>"March",4=>"April",5=>"May",6=>"June",7=>"July",8=>"August",9=>"September",10=>"October",11=>"November",12=>"December"];                 
         @endphp
         <div class="card">
@@ -56,6 +61,11 @@
                                                 <option value="{{$vay->syear}}"
                                                         @if(isset($data['year'])) @if($data['year'] == $vay->syear) selected="selected" @endif @endif>{{$vay->syear}}</option>
                                             @endforeach
+                                            {{-- Append +1 Year --}}
+                                                <option value="{{ $extraYear }}"
+                                                    {{ (isset($data['year']) && $data['year'] == $extraYear) ? 'selected' : '' }}>
+                                                    {{ $extraYear }}
+                                                </option>
                                         @endif
                                     </select>
                                 </div>
