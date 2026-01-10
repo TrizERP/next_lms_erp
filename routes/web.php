@@ -77,6 +77,7 @@ use App\Http\Controllers\BlogController;
 use App\Http\Controllers\library\LostandDamage;
 use App\Http\Controllers\agenticAI\createAgentController;
 use App\Http\Controllers\agenticAI\agentLibraryController;
+use App\Http\Controllers\agenticAI\agentRunLogController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -643,4 +644,5 @@ Route::post('getHillsHPCPDF', [AJAXController::class, 'getHillsHPCPDF'])->name('
 Route::group(['prefix' => 'agent', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
     route::resource('create_agent', createAgentController::class);
     route::resource('agent_library', agentLibraryController::class);
+    route::resource('agent_run_log', agentRunLogController::class);
 });
