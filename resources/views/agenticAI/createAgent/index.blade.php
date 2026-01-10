@@ -64,7 +64,7 @@
     ];
 @endphp
 <div id="page-wrapper">
-    <div class="container-fluid">
+    <div class="container-fluid" style="background-color:#fff;">
         <div class="mx-auto space-y-4 p-4">
             <!-- Header -->
             <div class="flex items-center gap-4">
