@@ -28,7 +28,7 @@ use function App\Helpers\OtherBreackOffHead;
 use function App\Helpers\OtherBreackOfMonth;
 use function App\Helpers\OtherBreackOfMonthHead;
 use function App\Helpers\sortStudentName;
-use function Illuminate\Session\expired;
+// use function Illuminate\Session\expired;
 use App\Models\fees\fees_breackoff\fees_breackoff;
 use function App\Helpers\SearchStudent;
 use function App\Helpers\getStudents;
@@ -1818,7 +1818,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             $regularDisplay = 'style="display:block;"';
             $receiptType=null;  // differentiate ssmission reciepts 10-02-2025
             if($receipt_book_arr->receipt_id==2 && $sub_institute_id==76){
-                $panNo = isset($_REQUEST['pan_card']) ? $_REQUEST['pan_card'] : '-';
+                $panNo = isset($_REQUEST['pan_card']) ? $_REQUEST['pan_card'] : $studentDetailsArr[$_REQUEST['student_id']]['pan_card'];
                 
                 $panCardTag .=  'PAN : <label><b>'.$panNo.'</tr><tr>';
                 $ssmission_note = $thankFull = $parent_pan_display = 'style="display:block;"';

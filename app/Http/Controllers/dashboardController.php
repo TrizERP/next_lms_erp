@@ -127,19 +127,10 @@ class dashboardController extends Controller
                     ->take(10)->get()->toArray();
 
 // RAJESH leftjoin to join
-                $admissionBlock = DB::table("standard as s")
-                    ->join("admission_enquiry as e", function ($join) {
-                        $join->on('s.id', "=", "e.admission_standard")->on('e.sub_institute_id', '=', 's.sub_institute_id');
-                    })
-                    ->join("admission_form as f", function ($join) {
-                        $join->on('f.admission_standard', "=", "s.id")->on('f.sub_institute_id', '=', 's.sub_institute_id')->on('e.enquiry_no', '=', 'f.enquiry_no');
-                    })
-                    ->join("admission_registration as r", function ($join) {
-                        $join->on('r.enquiry_no', "=", "f.enquiry_no")->on('r.sub_institute_id', '=', 's.sub_institute_id');
-                    })
-                    ->selectRaw("COUNT(e.id) as total_enquiry, COUNT(f.id) as total_form, COUNT(r.id) as total_registration, s.name as standard_name")
-                    ->where("s.sub_institute_id", "=", $sub_institute_id)
-                    ->groupBy("s.id")->having('total_enquiry', '<>', 0)->get()->toArray();
+                $admissionBlock = DB::table('admission_enquiry')
+                    ->where('sub_institute_id', $sub_institute_id)
+                    ->whereYear('syear', $syear)
+                    ->count();
 
                 $visitorBlock = DB::table("visitor_master as v")
                     ->join("tbluser as u", function ($join) {

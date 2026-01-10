@@ -88,7 +88,19 @@ class tbluserModel extends Model
         'sunday_out_date',
         'bank_name',
         'account_no',
-        'ifsc_code'
+        'ifsc_code',
+        'pf_no',
+        'uan_no',
+        'pan_no',
+        'esic_no',
+        'tds_deduction',
+        'pf_deduction',
+        'pt_deduction',
+        'esic_deduction',
+        'total_experience',
+        'employee_deposite',
+        'oasis_id',
+        'udise_-_pen'
     ];
 
     public function getFullNameAttribute()

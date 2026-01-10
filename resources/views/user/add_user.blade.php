@@ -331,7 +331,7 @@
                     <!-- end qualification and occupation -->
                       <!--  added on 01-08-2024 mmis -->
                       @php 
-                        $radioArr = ['tds_deduction'=>'TDS Deduction','pf_deduction'=>'PF Deduction','pt_deduction'=>'PT Deduction'];
+                        $radioArr = ['tds_deduction'=>'TDS Deduction','pf_deduction'=>'PF Deduction','pt_deduction'=>'PT Deduction','esic_deduction'=>'ESIC Deduction'];
                         $textArr = ['pf_no'=>"PF No",'pan_no'=>"PAN No",'aadhar_no'=>"Aadhar No",'esic_no'=>"ESIC No",'uan_no'=>"UAN No"];
                     @endphp
                     @foreach($radioArr as $k => $v)

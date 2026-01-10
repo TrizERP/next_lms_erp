@@ -51,7 +51,7 @@ class register_parents_report_controller extends Controller
             ->join('tblstudent as s', function ($join) use ($sub_institute_id) {
                 $join->whereRaw('s.mobile=gu.mobile_no AND s.sub_institute_id= '.$sub_institute_id.'');
             })->join('tblstudent_enrollment as se', function ($join) use ($sub_institute_id) {
-                $join->whereRaw('se.student_id=s.id AND se.sub_institute_id = '.$sub_institute_id.'');
+                $join->whereRaw('se.student_id=s.id AND se.sub_institute_id = '.$sub_institute_id.' AND se.end_date IS NULL');
             })->join('standard as ss', function ($join) use($marking_period_id){
                 $join->whereRaw('ss.id = se.standard_id');
                 // ->when($marking_period_id,function($query) use($marking_period_id){

@@ -191,20 +191,70 @@ class lms_apiController extends Controller
         $sub_institute_id = $request->input("sub_institute_id");
         $syear = $request->input("syear");
 
+        $is_lms = $this->is_lms($sub_institute_id);
+
         if ($student_id != "" && $sub_institute_id != "" && $syear != "") {
             $subjectdata = DB::table('tblstudent as s')
                 ->join('tblstudent_enrollment as se', function ($join) {
-                    $join->whereRaw('s.id = se.student_id');
-                })->join('sub_std_map as sb', function ($join) {
-                    $join->whereRaw('sb.sub_institute_id = se.sub_institute_id and sb.standard_id = se.standard_id');
-                })->selectRaw("sb.standard_id,sb.subject_id,sb.display_name,sb.allow_grades,sb.allow_content,sb.display_image,
-                    sb.sort_order,sb.elective_subject,sb.subject_category,sb.status,
-                    if(sb.display_image = '','',concat('https://".$_SERVER['SERVER_NAME']."/storage',sb.display_image)) as display_image")
-                ->where('s.sub_institute_id', $sub_institute_id)
+                    $join->on('se.student_id', '=', 's.id')
+                         ->whereNull('se.end_date');
+                })
+                ->join('standard as st_student', function ($join) {
+                    $join->on('st_student.id', '=', 'se.standard_id');
+                })
+                ->join('standard as st_all', function ($join) {
+                    $join->on('st_all.course_duration', '=', 'st_student.course_duration');
+                })
+                ->join('sub_std_map as sb', function ($join) use ($sub_institute_id, $is_lms) {
+
+                    $join->on('sb.standard_id', '=', 'st_all.id');
+
+                    if ($is_lms === 'Y') {
+                        $join->where(function ($q) use ($sub_institute_id) {
+                            $q->where('sb.sub_institute_id', 1)
+                              ->orWhere('sb.sub_institute_id', $sub_institute_id);
+                        });
+                    } else {
+                        $join->where('sb.sub_institute_id', $sub_institute_id);
+                    }
+                })
+                ->selectRaw("
+                    sb.standard_id,
+                    sb.subject_id,
+
+                    CASE
+                        WHEN sb.sub_institute_id = 1
+                        THEN CONCAT('Triz-',sb.display_name)
+                        ELSE sb.display_name
+                    END AS display_name,
+
+                    sb.allow_grades,
+                    sb.allow_content,
+                    sb.display_image,
+                    sb.sort_order,
+                    sb.elective_subject,
+                    CASE
+                        WHEN sb.sub_institute_id = 1
+                             AND sb.subject_category = 'My Course'
+                        THEN 'Triz'
+                        ELSE sb.subject_category
+                    END AS subject_category,
+                    sb.status,
+                    IF(
+                        sb.display_image = '',
+                        '',
+                        CONCAT('https://".$_SERVER['SERVER_NAME']."/storage', sb.display_image)
+                    ) AS display_image,
+                    sb.sub_institute_id
+                ")
+                ->where('s.sub_institute_id', $sub_institute_id)   // student institute (e.g. 328)
                 ->where('s.id', $student_id)
                 ->where('se.syear', $syear)
-                ->where('sb.allow_content', '=', 'Yes')
-                ->get()->toArray();
+                ->where('sb.allow_content', 'Yes')
+                ->orderByRaw("sb.sub_institute_id,sb.sort_order")
+                ->get()
+                ->toArray();
+
 
             $res['status'] = 1;
             $res['message'] = "Success";
@@ -320,19 +370,43 @@ class lms_apiController extends Controller
         $student_id = $request->input("student_id");
         $type = $request->input("type");
         $sub_institute_id = $request->input("sub_institute_id");
-        $syear = $request->input("syear");        
-        $subject_id = $request->input("subject_id");        
+        $syear = $request->input("syear");
+        $subject_id = $request->input("subject_id");
+
+        $is_lms = $this->is_lms($sub_institute_id);
+
+        $subInstituteIds = ($is_lms === 'Y')
+            ? [$sub_institute_id, 1]
+            : [$sub_institute_id];
+
+        $subInstituteIdsStr = implode(',', array_map('intval', $subInstituteIds));
 
         if($student_id != "" && $sub_institute_id != "" && $syear != "" && $subject_id != "")
-        {         
-            $chapterdata = DB::select("SELECT c.id AS chapter_id, c.syear, c.standard_id, c.subject_id, c.chapter_name, c.chapter_desc, c.availability, c.show_hide, c.sort_order, ssm.add_content
-                    FROM tblstudent s
-                    INNER JOIN tblstudent_enrollment se ON s.id = se.student_id
-                    INNER JOIN chapter_master c ON c.sub_institute_id = se.sub_institute_id AND c.standard_id = se.standard_id
-                    INNER JOIN sub_std_map ssm ON c.subject_id = ssm.subject_id AND c.standard_id = ssm.standard_id
-                    WHERE s.sub_institute_id = '".$sub_institute_id."' AND s.id = '".$student_id."' AND se.syear = '".$syear."'
-                    AND c.subject_id = '".$subject_id."' AND c.show_hide = '1'
-                    ORDER BY c.sort_order");
+        {
+            $chapterdata = DB::table('chapter_master as c')
+                ->join('sub_std_map as ssm', function ($join) {
+                    $join->on('c.subject_id', '=', 'ssm.subject_id')
+                        ->on('c.standard_id', '=', 'ssm.standard_id');
+                })
+                ->where('c.subject_id', $subject_id)
+                ->where('c.show_hide', '1')
+                ->whereIn('c.sub_institute_id', $subInstituteIds)
+                ->whereIn('c.standard_id', function ($query) use ($subInstituteIds, $syear, $student_id) {
+                    $query->select('s1.id')
+                        ->from('standard as s')
+                        ->join('tblstudent_enrollment as te', 'te.standard_id', '=', 's.id')
+                        ->join('standard as s1', function ($join) use ($subInstituteIds) {
+                            $join->on('s1.course_duration', '=', 's.course_duration')
+                                ->whereIn('s1.sub_institute_id', $subInstituteIds);
+                        })
+                        ->where('te.syear', $syear)
+                        ->where('te.student_id', $student_id);
+                })
+                ->orderBy('c.sort_order')
+                ->select('c.id as chapter_id', 'c.syear', 'c.standard_id', 'c.subject_id', 'c.chapter_name', 'c.chapter_desc', 'c.availability', 'c.show_hide', 'c.sort_order', 'ssm.add_content')
+                ->get()
+                ->toArray();
+
                     // AND c.syear = se.syear
             //echo("<pre>");print_r($chapterdata);exit;
             $chapterdata = json_decode(json_encode($chapterdata),true);
@@ -351,7 +425,7 @@ class lms_apiController extends Controller
                         $finaldata[$chapter_id] = $val;
                         $finaldata[$chapter_id]['topicData'] = $topicData;
                     } else {
-                        $topicData = contentModel::where('content_master.sub_institute_id', $sub_institute_id)
+                        $topicData = contentModel::whereIn('content_master.sub_institute_id', $subInstituteIds)
                             ->where('content_master.chapter_id', $chapter_id)
                             ->where('content_master.show_hide', '1')
                             ->select('content_master.sub_institute_id', 'content_master.chapter_id', 'content_master.content_category as name' , 'content_master.syear', 'content_master.created_at')->groupBy('content_master.content_category')
@@ -369,7 +443,7 @@ class lms_apiController extends Controller
                                     if(filename = '', '',
                                         if(file_type = 'link', filename, concat('".env('DO_PATH')."public', file_folder, '/', filename))) as full_path 
                                     FROM content_master 
-                                    WHERE sub_institute_id = '".$sub_institute_id."' AND chapter_id = '".$chapter_id."'  
+                                    WHERE sub_institute_id in (".$subInstituteIdsStr.") AND chapter_id = '".$chapter_id."'  
                                     AND topic_id = '".$tval['id']."' 
                                     AND subject_id = '".$subject_id."' AND show_hide = '1'");
                                 $contentData = json_decode(json_encode($contentData), true);
@@ -381,7 +455,7 @@ class lms_apiController extends Controller
                                     if(filename = '', '',
                                         if(file_type = 'link', filename, concat('".env('DO_PATH')."public', file_folder, '/', filename))) as full_path 
                                     FROM content_master 
-                                    WHERE sub_institute_id = '".$sub_institute_id."' AND chapter_id = '".$chapter_id."'  
+                                    WHERE sub_institute_id in (".$subInstituteIdsStr.") AND chapter_id = '".$chapter_id."'  
                                     AND content_category = '".$tval['name']."'  AND subject_id = '".$subject_id."' AND show_hide = '1'");
                                 $contentData = json_decode(json_encode($contentData), true);
                                 $finaldata[$chapter_id]['topicData'][$tkey]['contentData'] = $contentData;
@@ -1172,6 +1246,12 @@ class lms_apiController extends Controller
         $res['data'] = $data;
 
         return json_encode($res);
+    }
+    protected function is_lms($sub_institute_id)
+    {
+        return DB::table('school_setup')
+            ->where('Id', $sub_institute_id)
+            ->value('is_lms');
     }
 
 }

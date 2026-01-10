@@ -108,15 +108,29 @@ class tblstudentController extends Controller
         ])->get();
         $stateData = tblstateModel::get()->toArray();
         $cityData = [];
+        if ($sub_institute_id == 202) {
+            $maxEnrollmentYear = DB::table('tblstudent as s')
+                ->join('tblstudent_enrollment as se', function ($join) {
+                    $join->on('se.student_id', '=', 's.id')
+                        ->on('se.sub_institute_id', '=', 's.sub_institute_id')
+                        ->whereNull('se.end_date'); // active enrollment only
+                })
+                ->selectRaw('(MAX(CAST(s.enrollment_no AS UNSIGNED)) + 1) AS new_enrollment_no')
+                ->where('s.sub_institute_id', $sub_institute_id)
+                ->where('se.syear', $syear) // year from enrollment table
+                ->first();
 
-        $maxEnrollment = DB::table('tblstudent')->selectRaw("(MAX(CAST(enrollment_no AS INT)) + 1) AS new_enrollment_no")
-            ->where('sub_institute_id', $sub_institute_id)->orderBy('id')->limit(1)->get()->toArray();
+            $new_enrollment_no = $maxEnrollmentYear ? $maxEnrollmentYear->new_enrollment_no : 1;
+        } else {
+            $maxEnrollment = DB::table('tblstudent')->selectRaw("(MAX(CAST(enrollment_no AS INT)) + 1) AS new_enrollment_no")
+                ->where('sub_institute_id', $sub_institute_id)->orderBy('id')->limit(1)->get()->toArray();
 
-        $maxEnrollment = array_map(function ($value) {
-            return (array) $value;
-        }, $maxEnrollment);
+            $maxEnrollment = array_map(function ($value) {
+                return (array) $value;
+            }, $maxEnrollment);
 
-        $new_enrollment_no = $maxEnrollment['0']['new_enrollment_no'];
+            $new_enrollment_no = $maxEnrollment['0']['new_enrollment_no'];
+        }
         /*Hide By Rajesh
         $admission_year = DB::table(DB::raw("(SELECT ".$syear." AS year
             UNION ALL SELECT ".$syear - 1 ."
@@ -465,6 +479,21 @@ class tblstudentController extends Controller
                 }, $maxEnrollment);
 
                 $finalArray[$key] = $maxEnrollment['0']['new_enrollment_no'];
+            }
+            // added for sub_institute_id 202 admission year wise enrollment
+            if($key=="enrollment_no" && $sub_institute_id==202){
+                $syear = $request->input('syear');
+                $maxEnrollment = DB::table('tblstudent')->selectRaw('MAX(CAST(enrollment_no AS INT)) AS new_enrollment_no')
+                    ->join('tblstudent_enrollment as se', function ($join) {
+                        $join->on('se.student_id', '=', 's.id')
+                            ->on('se.sub_institute_id', '=', 's.sub_institute_id')
+                            ->whereNull('se.end_date'); // active enrollment only
+                    })    
+                    ->where('sub_institute_id', $sub_institute_id)
+                    ->where('se.syear', $syear)
+                    ->first();
+                $new_enrollment_no = ($maxEnrollment->new_enrollment_no ?? 0) + 1;
+                $finalArray[$key] = $new_enrollment_no;
             }
             // 19-04-24
             // 05-04-2022 START if city is not exist in table then insert city in table

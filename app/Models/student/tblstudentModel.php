@@ -104,7 +104,13 @@ class tblstudentModel extends Model
         'updated_on',
         'father_dob',
         'expire_date',
-        'marking_period_id'
+        'marking_period_id',
+        'aapar_id',
+        'pan_card',
+        'father_image',
+        'mother_image',
+        'admission_standard',
+        'student_pen_no'
     ];
 
     public function getFullNameAttribute()

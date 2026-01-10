@@ -96,6 +96,7 @@ class admissionRegistrationController extends Controller
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $marking_period_id = session()->get('term_id');
+        $syear = session()->get("syear");
         if($type=="API"){
             try {
                 if (!$this->jwtToken()->validate()) {
@@ -492,9 +493,9 @@ class admissionRegistrationController extends Controller
         return is_mobile($type, "admission_confirmation.index", $res);
     }
 
-    public function max_enrollment_no($sub_institute_id, $admission_standard_id)
+    public function max_enrollment_no($sub_institute_id, $admission_standard_id, $syear = null)
     {
-        $array = [201,202,203,204];
+        $array = [201,203,204];
 
         if ($sub_institute_id == 47)//Generate Enrollment No for MMISERP
         {
@@ -544,8 +545,8 @@ class admissionRegistrationController extends Controller
                 ->select('enrollment_prefix_master.*')
                 ->whereRaw("sub_institute_id = '" . $sub_institute_id . "' AND FIND_IN_SET ('" . $admission_standard_id . "', standards)")
                 ->get()->toArray();
-        
-            $prefix = $get_prefix_result[0]->prefix;
+
+            $prefix = !empty($get_prefix_result) ? $get_prefix_result[0]->prefix : null;
         
             if ($prefix != '' && $prefix != null) {
         
@@ -595,7 +596,26 @@ class admissionRegistrationController extends Controller
                     $new_enrollment_no = 1;
                 }
             }
-        }  
+        }
+        else if ($sub_institute_id == 202) {
+            $syear = $syear ?? session()->get('syear');
+            $maxEnrollment = DB::table('tblstudent as s')
+                ->join('tblstudent_enrollment as se', function ($join) {
+                    $join->on('se.student_id', '=', 's.id')
+                        ->on('se.sub_institute_id', '=', 's.sub_institute_id')
+                        ->whereNull('se.end_date'); // only active enrollment
+                })
+                ->selectRaw('MAX(CAST(s.enrollment_no AS UNSIGNED)) AS new_enrollment_no')
+                ->where('s.sub_institute_id', $sub_institute_id)
+                ->where('se.syear', $syear) // syear from tblstudent_enrollment
+                ->first();
+
+            if ($maxEnrollment && $maxEnrollment->new_enrollment_no) {
+                $new_enrollment_no = $maxEnrollment->new_enrollment_no + 1;
+            } else {
+                $new_enrollment_no = 1;
+            }
+        }
         else {
             $maxEnrollment = DB::table('tblstudent')
                 ->selectRaw('(MAX(CAST(enrollment_no AS INT)) + 1) AS new_enrollment_no')
@@ -650,7 +670,8 @@ class admissionRegistrationController extends Controller
                 WHERE sub_institute_id = '" . $sub_institute_id . "'";
         }
 
-        return $enrollment_no_sql;
+        $result = DB::select($enrollment_no_sql);
+        return $result[0]->new_enrollment_no ?? 1;
     }
 
     public function ajax_getDivision(Request $request)

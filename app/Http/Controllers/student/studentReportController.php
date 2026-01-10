@@ -270,7 +270,7 @@ class studentReportController extends Controller
             if ($hasOptionalSubjects) {
                 $optionalSubjectsQuery = DB::table('student_optional_subject as sos')
                     ->join('subject as s', 'sos.subject_id', '=', 's.id')
-                    ->select('sos.student_id', DB::raw('GROUP_CONCAT(DISTINCT s.subject_name SEPARATOR ", ") as optional_subject'))
+                    ->select('sos.student_id', DB::raw('GROUP_CONCAT(DISTINCT s.subject_name SEPARATOR ",") as optional_subject'))
                     ->where('sos.syear', $syear)
                     ->where('sos.sub_institute_id', $sub_institute_id)
                     ->groupBy('sos.student_id')
