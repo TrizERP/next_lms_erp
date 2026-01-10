@@ -173,7 +173,15 @@ class admissionRegistrationController extends Controller
             $res['new_enrollment_no'] = isset($enroll) ? $enroll : 0;
         }
         // if enrollment no already exists then get new enrollment and make add button hidden 
-        $checkGrnoExist = tblstudentModel::where('enrollment_no',$res['new_enrollment_no'])->where('sub_institute_id',$sub_institute_id)->get()->toArray();
+        $array = [201, 202, 203, 204];
+
+		$checkGrnoExist = tblstudentModel::where('enrollment_no', $res['new_enrollment_no'])
+		    ->where('sub_institute_id', $sub_institute_id)
+		    ->when(in_array($sub_institute_id, $array), function ($query) use ($syear) {
+		        $query->where('admission_year', $syear);
+		    })
+		    ->get()
+		    ->toArray();
 
         if(!empty($checkGrnoExist) && $res['display_save_student']==1){
             $res['new_enrollment_no'] = $this->max_enrollment_no($sub_institute_id, $editData[0]['admission_standard']);
@@ -495,7 +503,7 @@ class admissionRegistrationController extends Controller
 
     public function max_enrollment_no($sub_institute_id, $admission_standard_id, $syear = null)
     {
-        $array = [201,203,204];
+        $array = [201,202,203,204];
 
         if ($sub_institute_id == 47)//Generate Enrollment No for MMISERP
         {
@@ -554,11 +562,17 @@ class admissionRegistrationController extends Controller
                 $syearShort = substr($syear, -2);
                 $finalPrefix = $prefix . "-" . $syearShort . "-";
         
-                $enrollment_result = DB::table('tblstudent')
-                    ->selectRaw("MAX(CAST(SUBSTRING_INDEX(enrollment_no, '-', -1) AS UNSIGNED)) as new_enrollment_no")
-                    ->where('sub_institute_id', $sub_institute_id)
-                    ->where('enrollment_no', 'LIKE', $finalPrefix . '%')
-                    ->first();
+				$enrollment_result = DB::table('tblstudent as s')
+				    ->join('tblstudent_enrollment as se', function ($join) use ($syear) {
+				        $join->on('se.student_id', '=', 's.id')
+				             ->on('se.sub_institute_id', '=', 's.sub_institute_id')
+				             ->whereNull('se.end_date')
+				             ->where('se.syear', $syear);
+				    })
+				    ->selectRaw("MAX(CAST(SUBSTRING_INDEX(s.enrollment_no, '-', -1) AS UNSIGNED)) AS new_enrollment_no")
+				    ->where('s.sub_institute_id', $sub_institute_id)
+				    ->where('s.enrollment_no', 'LIKE', $finalPrefix . '%')
+				    ->first();
 
                 if ($enrollment_result->new_enrollment_no) {
                     $full = $enrollment_result->new_enrollment_no;
@@ -572,7 +586,7 @@ class admissionRegistrationController extends Controller
                 $new_enrollment_no = $finalPrefix . $new_enrollment_number;
         
             } else {
-        
+
                 $get_prefix_null_result = DB::table('enrollment_prefix_master')
                     ->selectRaw('GROUP_CONCAT(prefix) as all_prefix')
                     ->where('sub_institute_id', $sub_institute_id)
@@ -580,43 +594,30 @@ class admissionRegistrationController extends Controller
         
                 $prefix_expload = explode(',', $get_prefix_null_result->all_prefix);
         
-                $enrollment_result = DB::table('tblstudent')
-                    ->selectRaw('MAX(enrollment_no) as new_enrollment_no')
-                    ->where('sub_institute_id', $sub_institute_id)
-                    ->when(!empty($prefix_expload), function ($q) use ($prefix_expload) {
-                        foreach ($prefix_expload as $value) {
-                            $q->whereRaw("enrollment_no NOT LIKE '%" . $value . "%'");
-                        }
-                    })
-                    ->first();
-        
+				$syear = $syear ?? session()->get('syear');
+				$enrollment_result = DB::table('tblstudent as s')
+				    ->join('tblstudent_enrollment as se', function ($join) use ($syear) {
+				        $join->on('se.student_id', '=', 's.id')
+				             ->on('se.sub_institute_id', '=', 's.sub_institute_id')
+				             ->whereNull('se.end_date')
+				             ->where('se.syear', $syear);
+				    })
+				    ->selectRaw('MAX(CAST(s.enrollment_no AS UNSIGNED)) AS new_enrollment_no')
+				    ->where('s.sub_institute_id', $sub_institute_id)
+				    ->when(!empty($prefix_expload), function ($q) use ($prefix_expload) {
+				        foreach ($prefix_expload as $value) {
+				            $q->where('s.enrollment_no', 'NOT LIKE', "%{$value}%");
+				        }
+				    })
+				    ->first();
+
                 if ($enrollment_result->new_enrollment_no) {
                     $new_enrollment_no = $enrollment_result->new_enrollment_no + 1;
                 } else {
-                    $new_enrollment_no = 1;
+                    $new_enrollment_no = 1001;
                 }
             }
-        }
-        else if ($sub_institute_id == 202) {
-            $syear = $syear ?? session()->get('syear');
-            $maxEnrollment = DB::table('tblstudent as s')
-                ->join('tblstudent_enrollment as se', function ($join) {
-                    $join->on('se.student_id', '=', 's.id')
-                        ->on('se.sub_institute_id', '=', 's.sub_institute_id')
-                        ->whereNull('se.end_date'); // only active enrollment
-                })
-                ->selectRaw('MAX(CAST(s.enrollment_no AS UNSIGNED)) AS new_enrollment_no')
-                ->where('s.sub_institute_id', $sub_institute_id)
-                ->where('se.syear', $syear) // syear from tblstudent_enrollment
-                ->first();
-
-            if ($maxEnrollment && $maxEnrollment->new_enrollment_no) {
-                $new_enrollment_no = $maxEnrollment->new_enrollment_no + 1;
-            } else {
-                $new_enrollment_no = 1;
-            }
-        }
-        else {
+        } else {
             $maxEnrollment = DB::table('tblstudent')
                 ->selectRaw('(MAX(CAST(enrollment_no AS INT)) + 1) AS new_enrollment_no')
                 ->where('sub_institute_id', $sub_institute_id)
