@@ -74,6 +74,12 @@ use App\Http\Controllers\library\itemVerificationController;
 use App\Http\Controllers\library\itemScanController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\library\LostandDamage;
+use App\Http\Controllers\neo4jGraph\GraphController;
+
+Route::get('/avionics-graph', [GraphController::class, 'showAvionicsGraph']);
+Route::get('/graph-view', function () {
+    return view('graph-view');
+});
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -528,10 +534,9 @@ Route::post('/flush-session', function () {
 });
 
 use App\Http\Controllers\Neo4jSyncController;
-use App\Http\Controllers\GraphController;
+use App\Http\Controllers\Graph1Controller;
 use App\Http\Controllers\RecommendationController;
 use App\Http\Controllers\GraphControllerNew;
-
 
 Route::get('/get-students', [GraphControllerNew::class, 'getStudents']);
 Route::get('/get-related-data/{nodeId}', [GraphControllerNew::class, 'getRelatedData']);
