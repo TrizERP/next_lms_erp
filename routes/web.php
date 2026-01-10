@@ -75,6 +75,14 @@ use App\Http\Controllers\library\itemScanController;
 use App\Http\Controllers\DataMigrationController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\library\LostandDamage;
+use App\Http\Controllers\agenticAI\createAgentController;
+use App\Http\Controllers\agenticAI\agentLibraryController;
+use App\Http\Controllers\agenticAI\agentRunLogController;
+use App\Http\Controllers\agenticAI\agentAnalyticController;
+use App\Http\Controllers\agenticAI\agentReflectionController;
+use App\Http\Controllers\agenticAI\agentDashboardController;
+use App\Http\Controllers\agenticAI\multiAgentController;
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -634,5 +642,13 @@ Route::resource('blogs', BlogController::class);
 Route::get('/migrate-data', [DataMigrationController::class, 'migrateDataToNeo4j']);
 // added hills nursey hc
 Route::post('getHillsHPCPDF', [AJAXController::class, 'getHillsHPCPDF'])->name('getHillsHPCPDF');
-
-// Route::get('/my-leave', [LeaveSummaryReportController::class, 'MyLeave'])->name('my-leave');
+// added by uma for agents 
+Route::group(['prefix' => 'agent', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
+    route::resource('create_agent', createAgentController::class);
+    route::resource('agent_library', agentLibraryController::class);
+    route::resource('agent_run_log', agentRunLogController::class);
+    route::resource('agent_analytic', agentAnalyticController::class);
+    route::resource('agent_reflection', agentReflectionController::class);
+    route::resource('agent_dashboard', agentDashboardController::class);
+    route::resource('multi_agent', multiAgentController::class);
+});
