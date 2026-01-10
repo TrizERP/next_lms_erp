@@ -78,6 +78,7 @@ use App\Http\Controllers\library\LostandDamage;
 use App\Http\Controllers\agenticAI\createAgentController;
 use App\Http\Controllers\agenticAI\agentLibraryController;
 use App\Http\Controllers\agenticAI\agentRunLogController;
+use App\Http\Controllers\agenticAI\agentAnalyticController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -645,4 +646,5 @@ Route::group(['prefix' => 'agent', 'middleware' => ['session', 'menu', 'logRoute
     route::resource('create_agent', createAgentController::class);
     route::resource('agent_library', agentLibraryController::class);
     route::resource('agent_run_log', agentRunLogController::class);
+    route::resource('agent_analytic', agentAnalyticController::class);
 });
