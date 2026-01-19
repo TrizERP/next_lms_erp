@@ -126,7 +126,7 @@ class consolidateReportController extends Controller
                         $marksLookup = [];
                         foreach ($allMarks as $mark) {
                             $marks = 0;
-                            if ($mark->points && $mark->is_absent === '') {
+                            if ($mark->points && !in_array($mark->is_absent,["AB","N.A.","EX"])) {
                                 $marks = $mark->points;
                             } elseif ($mark->is_absent != '') {
                                 $marks = $mark->is_absent;
