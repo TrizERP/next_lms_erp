@@ -37,47 +37,51 @@ class resultActivityMarksV1Controller extends Controller
         // get student Lists
         $studentsList = SearchStudent($request->grade,$request->standard,$request->division);
         // get activity Lists
-        $activityData=$groupActivity=$subActivity=[];
+        $activityData=$groupActivity=$subActivity=$mainTitlesOrder=[];
         $activitySkillSet = DB::table('result_skillset')
             ->where('standard',$request->standard)
             ->where('sub_institute_id',$sub_institute_id)
+            ->orderBy('main_sort_order')
             ->orderBy('sort_order')
             ->get()->toArray();
         // get grouped activity and other
         foreach ($activitySkillSet as $key => $value) {
-           $activityData[$value->main_title][]=$value;
+           $activityData[$value->main_sort_order][]=$value;
+           if (!in_array($value->main_sort_order, $mainTitlesOrder)) {
+               $mainTitlesOrder[] = $value->main_sort_order;
+           }
 
            $termwiseHpc = $this->getTermwiseHpc();
 
-           // get grouped Data 
+           // get grouped Data
            $query = DB::table('result_activity_master')
-            ->where('standard',$request->standard)
-            ->where('sub_institute_id',$sub_institute_id)
-            ->where('skill_id',$value->id);
+             ->where('standard',$request->standard)
+             ->where('sub_institute_id',$sub_institute_id)
+             ->where('skill_id',$value->id);
 
-            // Apply term filter ONLY if termwise_hpc = "Yes"
-            if ($termwiseHpc === 'Yes') {
-                $query->where('term_id',$term_id);
-            }
+           // Apply term filter ONLY if termwise_hpc = "Yes"
+           if ($termwiseHpc === 'Yes') {
+               $query->where('term_id',$term_id);
+           }
 
-            $activityGroupData = $query->orderBy('sort_order')
-                ->get()
-                ->toArray();
+           $activityGroupData = $query->orderBy('sort_order')
+               ->get()
+               ->toArray();
 
-            foreach ($activityGroupData as $key2 => $value2) {
-                $groupActivity[$value2->skill_id][] = $value2;
-                // get subactivity
-                $subActivityData = DB::table('result_sub_activity')
-                ->where('sub_institute_id',$sub_institute_id)
-                ->where('skill_id',$value->id)
-                ->where('sub_skill_id',$value2->id)
-                ->orderBy('sort_order')
-                ->get()->toArray();
+           foreach ($activityGroupData as $key2 => $value2) {
+               $groupActivity[$value2->skill_id][] = $value2;
+               // get subactivity
+               $subActivityData = DB::table('result_sub_activity')
+               ->where('sub_institute_id',$sub_institute_id)
+               ->where('skill_id',$value->id)
+               ->where('sub_skill_id',$value2->id)
+               ->orderBy('sort_order')
+               ->get()->toArray();
 
-                foreach ($subActivityData as $key3 => $value3) {
-                    $subActivity[$value3->sub_skill_id][] = $value3;
-                }
-            }
+               foreach ($subActivityData as $key3 => $value3) {
+                   $subActivity[$value3->sub_skill_id][] = $value3;
+               }
+           }
         }
 
         // get students marks 
@@ -114,6 +118,7 @@ class resultActivityMarksV1Controller extends Controller
         $res['division_id'] = $request->division;
         $res['studentsList'] = $studentsList;
         $res['skillData'] = $activityData;
+        $res['mainTitlesOrder'] = $mainTitlesOrder;
         $res['activityGroup'] = $groupActivity;
         $res['subActivityGroup'] = $subActivity;
         $res['marksType'] = $activityGroup;

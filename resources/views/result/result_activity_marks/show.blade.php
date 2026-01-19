@@ -97,12 +97,13 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @php $i = 1; @endphp
+                            @php $main_counter = 1; @endphp
                             @if(isset($data['skillData']))
-                                @foreach($data['skillData'] as $skillKey=>$skillValue)
+                                @foreach($data['mainTitlesOrder'] as $mainSortOrder)
+                                    @php $skillValue = $data['skillData'][$mainSortOrder]; $mainTitle = $skillValue[0]->main_title; @endphp
                                     <tr>
-                                        {{-- <td colspan="{{count($data['studentsList'])}}"><h4><b>{{$skillKey}}<b></h4></td> --}}
-                                        <td>{{$i++}}.<b>{{$skillKey}}<b></td>
+                                        {{-- <td colspan="{{count($data['studentsList'])}}"><h4><b>{{$mainTitle}}<b></h4></td> --}}
+                                        <td>{{$main_counter++}}.<b>{{$mainTitle}}<b></td>
                                         @foreach($data['studentsList'] as $stukey=>$stuvalue)
                                         <td>
                                             &nbsp;
@@ -110,10 +111,11 @@
                                         @endforeach
                                     </tr>
 
+                                    @php $cg_counter = 1; @endphp
                                     @foreach($skillValue as $key=>$value)
                                     <!-- sub Title  -->
                                     <tr>
-                                        <td>{{$i++}}.<b>{{$value->title}}<b></td>
+                                        <td>{{$main_counter-1}}.{{$cg_counter++}}.<b>{{$value->title}}<b></td>
                                         @foreach($data['studentsList'] as $stukey=>$stuvalue)
                                         <td>
                                             &nbsp;
@@ -122,12 +124,13 @@
                                     </tr>
                                     <!-- grouped Data  -->
                                     @if(isset($data['activityGroup'][$value->id]))
+                                    @php $activity_counter = 1; @endphp
                                     @foreach($data['activityGroup'][$value->id] as $key2=>$value2)
                                         <tr>
-                                            <td>{{$i++}}.
+                                            <td>{{$main_counter-1}}.{{$cg_counter-1}}.{{$activity_counter++}}.
                                                 @if(isset($data['subActivityGroup'][$value2->id]))
                                                     <b>{{$value2->title}}</b>
-                                                @else 
+                                                @else
                                                     {{$value2->title}}
                                                 @endif
                                             </td>
@@ -136,15 +139,15 @@
                                             <td>
                                                 @if(isset($data['subActivityGroup'][$value2->id]))
                                                     &nbsp;
-                                                @else 
+                                                @else
                                                     <select name="marksArr[{{$stuvalue['id']}}][activity_id][{{$value2->id}}]" id="groupedData" class="form-control">
                                                         <option value="">--Select--</option>
                                                         @foreach($data['marksType'] as $mkey => $mvalue)
-                                                            @php 
-                                                            $selected = ""; 
+                                                            @php
+                                                            $selected = "";
                                                             if(isset($data['studentMarks']['activity'][$stuvalue['id']][$value2->id]) && $data['studentMarks']['activity'][$stuvalue['id']][$value2->id]==$mvalue->id)
                                                             {
-                                                                $selected = "Selected"; 
+                                                                $selected = "Selected";
                                                             }
                                                             @endphp
                                                         <option value="{{$mvalue->id}}" {{$selected}}>{{$mvalue->title}}</option>
@@ -156,19 +159,20 @@
                                         </tr>
                                         <!-- sub grouped activity  -->
                                         @if(isset($data['subActivityGroup'][$value2->id]))
+                                            @php $sub_counter = 1; @endphp
                                             @foreach($data['subActivityGroup'][$value2->id] as $key3=>$value3)
                                             <tr>
-                                                <td>{{$i++}}.{{$value3->title}}</td>
+                                                <td>{{$main_counter-1}}.{{$cg_counter-1}}.{{$activity_counter-1}}.{{$sub_counter++}}.{{$value3->title}}</td>
                                                 @foreach($data['studentsList'] as $stukey=>$stuvalue)
                                                 <td>
                                                     <select name="marksArr[{{$stuvalue['id']}}][sub_activity_id][{{$value2->id}}][{{$value3->id}}]" id="groupedData" class="form-control">
                                                         <option value="">--Select--</option>
                                                         @foreach($data['marksType'] as $mkey => $mvalue)
-                                                        @php 
-                                                            $selected1 = ""; 
+                                                        @php
+                                                            $selected1 = "";
                                                             if(isset($data['studentMarks']['sub_activity_id'][$stuvalue['id']][$value3->id]) && $data['studentMarks']['sub_activity_id'][$stuvalue['id']][$value3->id]==$mvalue->id)
                                                             {
-                                                                $selected1 = "Selected"; 
+                                                                $selected1 = "Selected";
                                                             }
                                                         @endphp
                                                         <option value="{{$mvalue->id}}" {{$selected1}}>{{$mvalue->title}}</option>
@@ -182,7 +186,7 @@
                                         <!-- last data -->
                                     @endforeach
                                     @endif
-                                <!-- grouped Data end  --> 
+                                <!-- grouped Data end  -->
                                     @endforeach
                                 @endforeach
                             @endif
