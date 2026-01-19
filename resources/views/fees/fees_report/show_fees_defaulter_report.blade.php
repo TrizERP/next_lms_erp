@@ -240,6 +240,9 @@ $remain = ($fees_value['end_date'] === 'Inactive') ? 0 : ($fees_value['-']['rema
                                @foreach($feesTotal as $key => $value)
                                 <td>{{$value}}</td>
                                @endforeach
+                                @if(session()->get('sub_institute_id') == 47)
+                                    <td></td>
+                                @endif
                                 <td>{{$total_breakoff}}</td>
                                 <td>{{$total_paid}}</td>
                                 <td>{{$total_discount}}</td>
@@ -292,16 +295,16 @@ $remain = ($fees_value['end_date'] === 'Inactive') ? 0 : ($fees_value['-']['rema
         ],
         dom: 'Bfrtip',
         buttons: [
-            {
-                extend: 'pdfHtml5',
-                title: 'Fees Defaulter Report',
-                orientation: 'landscape',
-                pageSize: 'LEGAL',
-                pageSize: 'A0',
-                exportOptions: {
-                     columns: ':visible'
-                },
-            },
+            // {
+            //     extend: 'pdfHtml5',
+            //     title: 'Fees Defaulter Report',
+            //     orientation: 'landscape',
+            //     pageSize: 'LEGAL',
+            //     pageSize: 'A0',
+            //     exportOptions: {
+            //          columns: ':visible'
+            //     },
+            // },
             { extend: 'csv', text: ' CSV', title: 'Fees Defaulter Report' },
             { extend: 'excel', text: ' EXCEL', title: 'Fees Defaulter Report' },
             { 
