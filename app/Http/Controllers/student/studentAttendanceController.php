@@ -89,11 +89,12 @@ class studentAttendanceController extends Controller
 
         $sundays = getCountDays($date, $date);
        
-        $holidays = DB::table("calendar_events")
-            ->where('school_date', '=', $date)
-            ->whereIn('event_type',['holiday','event'])
-            ->where('sub_institute_id', '=', $sub_institute_id)
-            ->where('syear', '=', $syear)
+        $holidays = DB::table('calendar_events')
+            ->whereDate('school_date', $date)
+            ->whereIn('event_type', ['holiday', 'event'])
+            ->where('sub_institute_id', $sub_institute_id)
+            ->whereRaw('FIND_IN_SET(?, standard)', [$standard])
+            ->where('syear', $syear)
             ->get()
             ->toArray();
 
@@ -490,6 +491,7 @@ class studentAttendanceController extends Controller
             ->where($whereAtt)
             ->where('event_type', '=', 'holiday')
             ->whereRaw("month(school_date) = " . $month)
+            ->whereRaw('FIND_IN_SET(?, standard)', [$standard_id])
             ->pluck('DATE')
             ->toArray();
 
@@ -498,6 +500,7 @@ class studentAttendanceController extends Controller
             ->where($whereAtt)
             ->where('event_type', '=', 'vacation')
             ->whereRaw("month(school_date) = " . $month)
+            ->whereRaw('FIND_IN_SET(?, standard)', [$standard_id])
             ->pluck('DATE')
             ->toArray();
             
@@ -506,6 +509,7 @@ class studentAttendanceController extends Controller
             ->where($whereAtt)
             ->where('event_type', '=', 'event')
             ->whereRaw("month(school_date) = " . $month)
+            ->whereRaw('FIND_IN_SET(?, standard)', [$standard_id])
             ->get();
         
         $eventsArray = [];
