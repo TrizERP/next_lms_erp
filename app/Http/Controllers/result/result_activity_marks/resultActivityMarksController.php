@@ -47,13 +47,23 @@ class resultActivityMarksController extends Controller
      */
     public function create(Request $request)
     {
-        // echo "<pre>";print_r($request->all());exit;
+        //echo "<pre>";print_r($request->all());exit;
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
+
+        if ($request->has('grade')) {
+            // Store search parameters in session
+            session(['activity_marks_search' => $request->only(['grade', 'standard', 'division','sub_institute_id', 'skillset_id', 'activity_master', 'sub_activity_master', 'term'])]);
+        } else {
+            // Merge session data into request if no params
+            $request->merge(session('activity_marks_search', []));
+        }
+        $res['sub_institute_id'] = $request->sub_institute_id ?? $sub_institute_id;
         $res['standard'] = $request->standard;
         $res['grade'] = $request->grade;
         $res['division'] = $request->division;
         $res['skillset_id'] = $request->skillset_id;
+        $res['term'] = $request->term;
 
         $student_datas = SearchStudent($request->grade, $request->standard, $request->division);
         // echo "<pre>";print_r($request->all());exit;
@@ -96,28 +106,31 @@ class resultActivityMarksController extends Controller
             ->where('sub_institute_id', $sub_institute_id)
             ->where('id', $request->skillset_id)
             ->first();
-        
-        $get_result_activity_groups = DB::table('result_activity_group')
-            ->where('sub_institute_id', $sub_institute_id)
-            ->whereIn('group', [$get_result_skillset->group])
-            ->get()->toArray();
+
+        $get_result_activity_groups = [];
+        if ($get_result_skillset) {
+            $get_result_activity_groups = DB::table('result_activity_group')
+                ->where('sub_institute_id', $sub_institute_id)
+                ->whereIn('group', [$get_result_skillset->group])
+                ->get()->toArray();
+        }
         
         $res['result_skillsets'] = $get_result_skillsets;
 
         if($request->activity_master != '')
         {
-            $res['activity_master'] = $this->getRActivityMaster($request->skillset_id,$_REQUEST['standard']);
+            $res['activity_master'] = $this->getRActivityMaster($request->skillset_id,$request->standard);
         }
         $res['sub_activity_master'] = null;
 
         if($request->sub_activity_master != '')
         {
-            $res['sub_activity_value'] = DB::table('result_sub_activity')->where('sub_institute_id', $sub_institute_id)->where('sub_skill_id',$_REQUEST['activity_master'])->get()->toArray();
+            $res['sub_activity_value'] = DB::table('result_sub_activity')->where('sub_institute_id', $sub_institute_id)->where('sub_skill_id',$request->activity_master)->get()->toArray();
             $res['sub_activity_master'] = $request->sub_activity_master;
         }
      
         $res['result_skillsets'] = $get_result_skillsets;
-        $res['activity_value'] = $_REQUEST['activity_master'];
+        $res['activity_value'] = $request->activity_master;
         $res['student_datas'] = $student_datas;
         $res['result_activity_groups'] = $get_result_activity_groups;
         $res['get_activity_marks'] = $get_activity_marks;
@@ -197,11 +210,9 @@ class resultActivityMarksController extends Controller
                 );
             }
         }
-        
-        $res['status_code'] = 1;
-        $res['message'] = "Result activity marks added/updated successfully.";
 
-        return is_mobile($type, "result_activity_marks.index", $res);
+        $searchParams = session('activity_marks_search', []);
+        return redirect()->route('result_activity_marks.create', $searchParams)->with('success', 'Result activity marks added/updated successfully.');
     }
 
     protected function getTermwiseHpc()
