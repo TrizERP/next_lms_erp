@@ -149,7 +149,8 @@
                                     $examObt +=$obt_mark;
                                 }
                                 if(isset($all_data['examData']['Average'][$value->subject_name]) && $ev=='Average'){
-                                    $obt_mark = ($all_data['examData']['Average'][$value->subject_name] > 0) ? number_format(($all_data['examData'][$ev][$value->subject_name] * $all_data['examData']['Grand Total'][$value->subject_name]) / 100,2) : 0;
+                                    $obt_mark = ($all_data['examData']['Average'][$value->subject_name] > 0) ? number_format((100 * $all_data['examData']['Grand Total'][$value->subject_name]) / $all_data['examData'][$ev][$value->subject_name],2) : 0;
+
                                     $display_points = ($obt_mark>0) ? $obt_mark : '';
                                     $examObt +=$obt_mark;
                                     $examTotal += $all_data['examData']['Average'][$value->subject_name];
@@ -185,13 +186,12 @@
                                 }
                                 if($ev=='Average'){
                                     $rank='';
+                                    $percentage='';
                                 }
                             @endphp
                             <td>{{$examObt}}</td>
                             <td>{{$rank}}</td>
-                            <td>
-                                {{$percentage}}
-                            </td>
+                            <td>{{$percentage}}</td>
                             <td>{{$att}}</td>
                             <td>{{$remarksText}}</td> <!-- app as remarks changed on 21-01-2025 by as per frangelo instruction -->
                             <td>{{$conduct}}</td>
