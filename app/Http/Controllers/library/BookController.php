@@ -188,7 +188,6 @@ return DataTables::of($books)
 
     public function store(Request $request)
     {
-        //echo "<pre>";print_r($request->all());exit;
         DB::beginTransaction();
 
         try {
@@ -197,20 +196,25 @@ return DataTables::of($books)
             $item_status_id   = $request->item_status ?? 0;
 
             /**
-             * 1️⃣ Always find book by TITLE + institute
-             *    (TITLE is the master identity)
+             * 1️⃣ If edit time $request->id isset so edit, else find by title
              */
-            $book = LibraryBook::where('title', $request->title)
-                ->where('sub_institute_id', $sub_institute_id)
-                ->whereNull('deleted_at')
-                ->first();
+            if ($request->id) {
+                // Edit: find by id
+                $book = LibraryBook::find($request->id);
+            } else {
+                // Create: find by title + institute
+                $book = LibraryBook::where('title', $request->title)
+                    ->where('sub_institute_id', $sub_institute_id)
+                    ->whereNull('deleted_at')
+                    ->first();
 
-            /**
-             * 2️⃣ If book does NOT exist → create
-             *    If exists → ONLY UPDATE book fields
-             */
-            if (!$book) {
-                $book = new LibraryBook();
+                if ($book) {
+                    return back()->withErrors(['title' => 'Book already exists']);
+                }
+
+                if (!$book) {
+                    $book = new LibraryBook();
+                }
             }
 
             // 🔹 Update only book master fields
