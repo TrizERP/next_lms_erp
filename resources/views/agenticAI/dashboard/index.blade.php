@@ -305,7 +305,7 @@
         const apiStatus = newStatus === 'deployed' ? 'deployed' : 'draft';
         
         try {
-            const response = await fetch(`https://pariharajit6348-agenticai.hf.space/agents/${agentId}`, {
+            const response = await fetch(`https://trizk-12-agenticai.hf.space/agents/${agentId}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status: apiStatus }),

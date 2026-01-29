@@ -665,6 +665,8 @@
             max_tokens: formData.maxTokens,
             system_prompt: formData.systemPrompt,
             tools: formData.tools,
+            sub_institute_id: {{ session()->get('sub_institute_id') }},
+            created_by: {{ session()->get('user_id') }},
         };
         
         // Get agent ID if editing
@@ -673,8 +675,8 @@
         const editId = isEdit ? agentIdElement.value : null;
         
         const url = isEdit 
-            ? `https://pariharajit6348-agenticai.hf.space/agents/${editId}` 
-            : 'https://pariharajit6348-agenticai.hf.space/agents';
+            ? `https://trizk-12-agenticai.hf.space/agents/${editId}` 
+            : 'https://trizk-12-agenticai.hf.space/agents';
         const method = isEdit ? 'PUT' : 'POST';
         
         // Show loading state
