@@ -386,7 +386,7 @@ ${getIconSVG(iconName) || 'N/A'}
     // Fetch agents from API
     async function fetchAgents() {
         try {
-            const response = await fetch('https://pariharajit6348-agenticai.hf.space/agents');
+            const response = await fetch('https://trizk-12-agenticai.hf.space/agents?status=draft&sub_institute_id='+{{session()->get('sub_institute_id')}});
             if (response.ok) {
                 const data = await response.json();
                 return data.map(agent => ({
@@ -398,7 +398,7 @@ ${getIconSVG(iconName) || 'N/A'}
                     workflow: ['Agent is deployed and ready to use'],
                     outputs: ['AI-generated responses', 'Task automation', 'Intelligent recommendations'],
                     cta: 'View Agent',
-                    ctaLink: `/content/AgenticAI/AgentDetail?id=${agent.id}`
+                    ctaLink: '{{route("agent_library.create")}}?agent_id=' + agent.id
                 }));
             } else {
                 console.error('Failed to fetch agents');
