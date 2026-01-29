@@ -155,7 +155,7 @@
     // Fetch agents
     async function fetchAgents() {
         try {
-            const response = await fetch('https://pariharajit6348-agenticai.hf.space/agents');
+            const response = await fetch('https://trizk-12-agenticai.hf.space/agents');
             if (response.ok) {
                 const data = await response.json();
                 agents = Array.isArray(data) ? data : [];
@@ -175,7 +175,7 @@
         document.getElementById('runs-container').classList.add('hidden');
         
         try {
-            const response = await fetch('https://pariharajit6348-agenticai.hf.space/runs');
+            const response = await fetch('https://trizk-12-agenticai.hf.space/runs');
             if (response.ok) {
                 const data = await response.json();
                 runs = Array.isArray(data) ? data : [];
@@ -205,7 +205,7 @@
         
         for (const runId of runIds) {
             try {
-                const response = await fetch(`https://pariharajit6348-agenticai.hf.space/runs/${runId}/trace`);
+                const response = await fetch(`https://trizk-12-agenticai.hf.space/runs/${runId}/trace`);
                 if (response.ok) {
                     const data = await response.json();
                     console.log(`Trace for run ${runId}:`, data);
