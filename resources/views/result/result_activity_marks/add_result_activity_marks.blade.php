@@ -18,15 +18,15 @@
                         <div class="row">
                             {{ App\Helpers\SearchChain('4','required','grade,std,div',$data['grade'],$data['standard'],$data['division']) }}
                             @if($data['termwise_hpc'] == 'Yes')
-                                {{ App\Helpers\TermDD() }}
+                                {{ App\Helpers\TermDD($data['term']) }}
                             @endif
                             <div class="col-md-4 form-group">
-                                <label for="title">Select Skillset:</label>
+                                <label for="title">2Select Skillset:</label>
                                 <select name="skillset_id" id="skillset_id" class="form-control" required>
                                     <option value="">Select</option>
                                     @foreach($data['result_skillsets'] as $key => $result_skillset)
                                         <option value="{{ $result_skillset->id }}" @if(isset($data['skillset_id']) && $data['skillset_id'] == $result_skillset->id) selected @endif>
-                                        {{ $result_skillset->title }}
+                                        {{ $result_skillset->main_title }} ({{ $result_skillset->title }})
                                         </option>
                                     @endforeach
                                 </select>
