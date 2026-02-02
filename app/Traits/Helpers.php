@@ -29,7 +29,8 @@ trait Helpers
           2022,
           2023,
           2024,
-          2025
+          2025,
+          2026
         ];
     }
 
@@ -44,7 +45,7 @@ trait Helpers
     }
 
     public static function getESIC($totalAllowance) {
-        // BASIC + GRADPAY + DA for MMIS
+        // Sum of all allowance plus
         $ESIC = 0;
         if($totalAllowance <= 21000 && $totalAllowance > 0){
             $ESIC =round(($totalAllowance * 0.75)/100);

@@ -65,32 +65,35 @@
                             <tbody>
                             @php
                                 $j=1;
-                                if(count($data['report_data']) > 0)
-                                {
-                                    foreach($data['report_data'] as $std => $quota_data)
-                                    {
+                                if (count($data['report_data']) > 0) {
+                                    foreach ($data['report_data'] as $std => $quota_data) {
+
                                         $colspan = count($quota_data) + 1;
-                                        echo "<tr><td rowspan='$colspan'>".$j++."</td>";
+                                        echo "<tr><td rowspan='$colspan'>" . $j++ . "</td>";
                                         echo "<td rowspan='$colspan'>$std</td>";
-                                        foreach($quota_data as $quota => $type_data)
-                                        {
+
+                                        foreach ($quota_data as $quota => $type_data) {
+
                                             echo "<tr><td>$quota</td>";
-                                            foreach($type_data as $type => $amt_data)
-                                            {
+
+                                            //FORCE NEW & OLD ORDER
+                                            foreach (['NEW', 'OLD'] as $type) {
+
+                                                $amt_data = $type_data[$type] ?? [];
                                                 $total = 0;
-                                                foreach($data['months_arr'] as $month_id => $new_amt)
-                                                {
-                                                    if(isset($amt_data[$month_id]) )
-                                                    {
-                                                        echo "<td>$amt_data[$month_id]</td>";
+
+                                                foreach ($data['months_arr'] as $month_id => $new_amt) {
+                                                    if (isset($amt_data[$month_id])) {
+                                                        echo "<td>{$amt_data[$month_id]}</td>";
                                                         $total += $amt_data[$month_id];
-                                                    }else
-                                                    {
+                                                    } else {
                                                         echo "<td>-</td>";
                                                     }
                                                 }
+
                                                 echo "<td>$total</td>";
                                             }
+
                                             echo "</tr>";
                                         }
                                     }

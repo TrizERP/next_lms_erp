@@ -719,9 +719,10 @@
                     $('#mmisItemCOde').hide();
                     $('#otherItemCOde').show();
                     // added on 15-01-2025
-                    $('#title,#item_code_value,#no_of_items,#author_name,#isbn_issn,#classification,#publisher_name,#publish_year,#publish_place,#pages,#series_title,#call_number,#language,#subject,#price, #no_of_items')
-                        .prop('required', true);
-                        // removed from required for hills #source,#price_currency,#notes,#review, #edition, #tags, on 09-09-2025 by uma
+                    /*$('#title,#item_code_value,#no_of_items,#author_name,#isbn_issn,#classification,#publisher_name,#publish_year,#publish_place,#pages,#series_title,#call_number,#language,#subject,#price, #no_of_items')
+                        .prop('required', true);*/
+                    // removed from required for hills #source,#price_currency,#notes,#review, #edition, #tags, on 09-09-2025 by uma
+                    $('#title,#item_code_value,#no_of_items').prop('required', true);
                 @else
                     $('#otherItemCOde').hide();
                     $('#mmisItemCOde').show();

@@ -804,11 +804,16 @@ class lms_apiController extends Controller
                 })
                 ->selectRaw('s.id,s.student_id,
                     f_ss.shift_title AS from_shift ,f_v.title AS from_bus ,f_st.stop_name AS from_stop_name,
-                    t_ss.shift_title AS to_shift ,t_v.title AS to_bus ,t_st.stop_name AS to_stop_name')
+                    t_ss.shift_title AS to_shift ,t_v.title AS to_bus ,t_st.stop_name AS to_stop_name,f_v.gps_link')
                 ->where('s.student_id', $student_id)
                 ->where('s.syear', $syear)
                 ->where('s.sub_institute_id', $sub_institute_id)->get()->toArray();
-
+$data = collect($data)->map(function ($row) {
+    if (empty($row->gps_link)) {
+        unset($row->gps_link);
+    }
+    return $row;
+})->values();
             $res['status'] = 1;
             $res['message'] = "Success";
             $res['data'] = $data;

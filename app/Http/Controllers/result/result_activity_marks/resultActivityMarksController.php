@@ -99,6 +99,7 @@ class resultActivityMarksController extends Controller
         
         $get_result_skillsets = DB::table('result_skillset')
             ->where('sub_institute_id', $sub_institute_id)
+            ->where('standard', $request->standard)
             ->get()->toArray();
 
         $get_result_skillset = DB::table('result_skillset')

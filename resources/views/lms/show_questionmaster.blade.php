@@ -77,7 +77,7 @@
                                                 <td>{{$quesdata->standard_name}}</td>
                                                 <td>{{$quesdata->subject_name}}</td>
                                                 <td>{{$quesdata->chapter_name}}</td>
-                                                <td>{!!$quesdata->question_title!!}</td>
+                                                <td>{!! html_entity_decode($quesdata->question_title, ENT_QUOTES | ENT_HTML5, 'UTF-8') !!}</td> <!-- added by saroj uma on 02-02-2026 -->
                                                 <td>{{ucwords($quesdata->question_type)}}</td>
                                                 <td>
                                                     @foreach($map_type as $map)

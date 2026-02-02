@@ -261,7 +261,7 @@ class PayrollController extends Controller
                     $getPF = ($hasPF == 2) ? Helpers::getPF($totalAllowance) : $getPfFlat; // getPfFlat is for set flat amounts
 
                 if($esic_deduction == 'Y')
-                    $getESIC = ($hasESIC == 2) ? Helpers::getESIC($totalAllowance) : $getEsicFlat; // calculate ESIC based on total allowance by rajesh 29-12-2025
+                    $getESIC = ($hasESIC == 2) ? Helpers::getESIC($totalGrossSalary) : $getEsicFlat; // calculate ESIC based on total allowance by rajesh 29-12-2025
                 
                 // PT Calculation
                 if($pt_deduction == 'Y')
@@ -1895,7 +1895,7 @@ class PayrollController extends Controller
                     }
                 }
                 elseif($getEligible->esic_deduction=="Y" && $value['deduction'][3]=="ESIC"){
-                    $deduction = Helpers::getESIC($totalSal);
+                    $deduction = Helpers::getESIC($totalallowance);//$totalSal
                 }
                 else if($value['deduction'][1] == 1 && !$deductionName && $value['deduction'][3]!="PF" && $value['deduction'][4]==0){
                     $deduction = round(($deduction / $payrollMonthDays) * $request->totalDay);
