@@ -4,6 +4,7 @@ use App\Http\Controllers\api\apiController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\settings\instituteDetailController;
+use App\Http\Controllers\neo4jGraph\StudentResultGraphController;
 
 /*
 |--------------------------------------------------------------------------
@@ -16,6 +17,7 @@ use App\Http\Controllers\settings\instituteDetailController;
 |
 */
 
+Route::get('/student-results/{stuId}/graph', [StudentResultGraphController::class, 'show']);
 
 Route::post('whats-send-app',function (Request $request) {
     \Illuminate\Support\Facades\Log::info(json_encode($request->all()));
@@ -50,3 +52,4 @@ Route::get('/compliance/list',[instituteDetailController::class,'index']);
 Route::post('/compliance/create',[instituteDetailController::class,'store']);
 Route::post('/compliance/update/{id}',[instituteDetailController::class,'update']);
 Route::post('/compliance/delete/{id}',[instituteDetailController::class,'destroy']);
+
