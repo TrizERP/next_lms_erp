@@ -76,6 +76,11 @@ use App\Http\Controllers\DataMigrationController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\library\LostandDamage;
 use App\Http\Controllers\neo4jGraph\GraphController;
+use App\Http\Controllers\neo4jGraph\StudentResultGraphController;
+
+Route::get('/student-results/{stuId}', function ($stuId) {
+    return view('student-result-graph', compact('stuId'));
+});
 
 Route::get('/avionics-graph', [GraphController::class, 'showAvionicsGraph']);
 Route::get('/graph-view', function () {
