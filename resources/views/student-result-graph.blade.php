@@ -35,16 +35,53 @@
         height: 600px;
         border: 1px solid #ddd;
     }
+    
+    /* Add proper margin to main content */
+    .main-content {
+        margin-left: 200px; /* Adjust based on sidebar width */
+        margin-top: 70px; /* Adjust based on header height */
+        padding: 20px;
+        width: calc(100% - 250px); /* Adjust based on sidebar width */
+        box-sizing: border-box;
+    }
+    
+    /* Make container-fluid adjust properly */
+    .container-fluid {
+        width: 100%;
+        padding-right: 15px;
+        padding-left: 15px;
+        margin-right: auto;
+        margin-left: auto;
+    }
+    
+    /* Ensure the card doesn't overflow */
+    .card {
+        margin-top: 20px;
+        overflow: visible;
+    }
+    
+    /* Controls styling */
+    .controls {
+        margin: 20px 0;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    
+    .controls button {
+        padding: 8px 16px;
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    
+    .controls button:hover {
+        background: #0056b3;
+    }
 </style>
-<div class="controls">
-    <button onclick="layoutGrid()">Grid Layout</button>
-    <button onclick="layoutCircle()">Circle Layout</button>
-    <button onclick="layoutRandom()">Random Layout</button>
-    <button onclick="zoomIn()">Zoom In</button>
-    <button onclick="zoomOut()">Zoom Out</button>
-    <button onclick="resetView()">Reset View</button>
-    <button onclick="exportPNG()">Export as PNG</button>
-</div>
+
 <script>
     const stuId = 95551;
 
