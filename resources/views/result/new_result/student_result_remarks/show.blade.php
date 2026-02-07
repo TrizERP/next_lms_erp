@@ -73,7 +73,9 @@
 												'Passed Promoted to class 10',
 												'Detain',
 												'Essential repeat',
-												'Promoted as per RTE Guidelines (Conditional Promotion)'
+												'Promoted as per RTE Guidelines (Conditional Promotion)',
+												'Not appeared in Annual Exam',
+												'Not appeared in Term-II',
 												];
 										@endphp
 
