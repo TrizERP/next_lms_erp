@@ -13,18 +13,18 @@
         </div>
         @php
         $grade_id = $standard_id = $division_id = '';
-            if(isset($data['grade_id'])){
-                $grade_id = $data['grade_id'];
-                $standard_id = $data['standard_id'];
-                $division_id = $data['division_id'];
-            }
+        if(isset($data['grade_id'])){
+        $grade_id = $data['grade_id'];
+        $standard_id = $data['standard_id'];
+        $division_id = $data['division_id'];
+        }
         @endphp
         <div class="card">
             @if ($sessionData = Session::get('data'))
-                <div class="alert alert-success alert-block">
-                    <button type="button" class="close" data-dismiss="alert">×</button>
-                    <strong>{{ $sessionData['message'] }}</strong>
-                </div>
+            <div class="alert alert-success alert-block">
+                <button type="button" class="close" data-dismiss="alert">×</button>
+                <strong>{{ $sessionData['message'] }}</strong>
+            </div>
             @endif
             <form action="{{ route('student_homework_submission.create') }}">
                 @csrf
@@ -34,7 +34,7 @@
                         <label for="subject">Select Subject:</label>
                         <select name="subject" id="subject" class="form-control">
                             <option value="">Select Subject</option>
-                        <!-- @foreach($data['subjects'] as $key => $value)
+                            <!-- @foreach($data['subjects'] as $key => $value)
                             <option value="{{$value['id']}}" @if(isset($data['subject'])) @if($data['subject']==$value['id']) selected='selected' @endif @endif>{{$value['subject_name']}}</option>
                             @endforeach -->
                         </select>
@@ -42,7 +42,7 @@
                     <div class="col-sm-3 form-group">
                         <label>Submission Date</label>
                         <input type="text" name="submission_date" class="form-control mydatepicker" placeholder="Please select submission date." required="required" value="@if(isset($data['submission_date'])){{$data['submission_date']}}@endif"
-                               autocomplete="off">
+                            autocomplete="off">
                     </div>
                     <div class="col-sm-12 form-group">
                         <center>
@@ -53,21 +53,21 @@
             </form>
         </div>
         @if(isset($data['student_data']))
-            @php
-                if(isset($data['student_data'])){
-                    $student_data = $data['student_data'];
-                    $finalData = $data;
-                }
-            @endphp
-            <div class="card">
-                <form method="POST" enctype="multipart/form-data"
-                      action="{{ route('student_homework_submission.store') }}">
-                    @csrf
-                    <div class="row">
-                        <div class="col-lg-12 col-sm-12 col-xs-12">
-                            <div class="table-responsive">
-                                <table id="example" class="table table-striped">
-                                    <thead>
+        @php
+        if(isset($data['student_data'])){
+        $student_data = $data['student_data'];
+        $finalData = $data;
+        }
+        @endphp
+        <div class="card">
+            <form method="POST" enctype="multipart/form-data"
+                action="{{ route('student_homework_submission.store') }}">
+                @csrf
+                <div class="row">
+                    <div class="col-lg-12 col-sm-12 col-xs-12">
+                        <div class="table-responsive">
+                            <table id="example" class="table table-striped">
+                                <thead>
                                     <tr>
                                         <th><input id="checkall" onchange="checkAll(this);" type="checkbox"></th>
                                         <th>{{App\Helpers\get_string('grno','request')}}</th>
@@ -85,73 +85,62 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                        @php
-                                        $j=1;
-                                        @endphp
-                                    @foreach($student_data as $key => $data)
+                                    @php
+                                    $j=1;
+                                    @endphp
+                                    @foreach($student_data as $key => $value)
                                     <tr>
-                                        <td><input id="{{$data->CHECKBOX}}" value="{{$data->CHECKBOX}}" name="students[]" type="checkbox"></td>
-                                        <td>{{$data->enrollment_no}}</td>
-                                        <td>{{App\Helpers\sortStudentName($data->student_name)}}</td>
-                                        <td>{{$data->standard}}</td>
-                                        <td>{{$data->division}}</td>
-                                        <td>{{$data->mobile}}</td>
-                                        <td>{{$data->HOMEWORK_DATE}}</td>
-                                        <td>{{$data->title}}</td>
-                                        <td>{{$data->description}}</td>
-                                        <td>{{$data->image}}</td>
-                                        <td>{{$data->SUBMISSION_DATE}}</td>
-                                        <td><textarea class="form-control" rows="2" name="submission_remarks[{{$data->CHECKBOX}}]">{{$data->submission_remarks}}</textarea></td>
-                                        <td><input type="file" id="image[{{$data->CHECKBOX}}]" name="image[{{$data->CHECKBOX}}]" class="form-control"></td>
+                                        <td><input id="{{$value->CHECKBOX}}" value="{{$value->CHECKBOX}}" name="students[]" type="checkbox"></td>
+                                        <td>{{$value->enrollment_no}}</td>
+                                        <td>{{App\Helpers\sortStudentName($value->student_name)}}</td>
+                                        <td>{{$value->standard}}</td>
+                                        <td>{{$value->division}}</td>
+                                        <td>{{$value->mobile}}</td>
+                                        <td>{{$value->HOMEWORK_DATE}}</td>
+                                        <td>{{$value->title}}</td>
+                                        <td>{{$value->description}}</td>
+                                        <td>{{$value->image}}</td>
+                                        <td>{{$value->SUBMISSION_DATE}}</td>
+                                        <td><textarea class="form-control" rows="2" name="submission_remarks[{{$value->CHECKBOX}}]">{{$value->submission_remarks}}</textarea></td>
+                                        <td><input type="file" id="image[{{$value->CHECKBOX}}]" name="image[{{$value->CHECKBOX}}]" class="form-control"></td>
                                     </tr>
-                                        @php
-                                        $j++;
-                                        @endphp
+                                    @php
+                                    $j++;
+                                    @endphp
                                     @endforeach
                                 </tbody>
-                                </table>
-                            </div>
-                        </div>
-                        <div class="col-md-12 form-group">
-                            <center>
-                                <input type="hidden" name="division_id"
-                                       @if(isset($finalData['division_id'])) value="{{$finalData['division_id']}}" @endif
-                                ">
-                                <input type="hidden" name="standard_id"
-                                       @if(isset($finalData['standard_id'])) value="{{$finalData['standard_id']}}" @endif
-                                ">
-                                <input type="hidden" name="subject_id"
-                                       @if(isset($finalData['subject'])) value="{{$finalData['subject']}}" @endif">
-                                <input type="submit" name="submit" value="Submit" class="btn btn-success">
-                            </center>
+                            </table>
                         </div>
                     </div>
-                </form>
-            </div>
+                    <div class="col-md-12 form-group">
+                        <center>
+                            <input type="hidden" name="division_id"
+                                @if(isset($finalData['division_id'])) value="{{$finalData['division_id']}}" @endif ">
+                                <input type="hidden" name="standard_id"
+                                @if(isset($finalData['standard_id'])) value="{{$finalData['standard_id']}}" @endif ">
+                                <input type="hidden" name="subject_id"
+                                @if(isset($finalData['subject'])) value="{{$finalData['subject']}}" @endif">
+                            <input type="submit" name="submit" value="Submit" class="btn btn-success">
+                        </center>
+                    </div>
+                </div>
+            </form>
+        </div>
         @endif
     </div>
 </div>
 
 @include('includes.footerJs')
 <script>
-    $(document).ready(function () {
-        $('#standard').on('change',function () {
-            var standard_id = $(this).val();
-            getSubject(standard_id);
-        })
-
-       @if($standard_id!='')
-            var standard_id = "{{$standard_id}}";
-            getSubject(standard_id);
-       @endif 
-    });
-    function getSubject(standard_id){
-        var sub = "{{isset($data['subject']) ? $data['subject'] : 0 }}";
+    function loadSubjects(standard_id, sub) {
         var path = "{{ route('ajax_getHomeworkSubjects') }}";
+
         $.ajax({
             url: path,
             data: 'standard_id=' + standard_id,
-            success: function (result) {
+            success: function(result) {
+                console.log(result);
+
                 var e = $('select[name="subject"]');
                 $(e).find('option').remove().end();
                 $(e).append($("<option></option>").val("").html('Select Subject'));
@@ -159,7 +148,7 @@
                     var option = $("<option></option>")
                         .val(result[i]['subject_id'])
                         .html(result[i]['display_name']);
-                    
+
                     if (result[i]['subject_id'] == sub) {
                         option.prop('selected', true);
                     }
@@ -169,28 +158,47 @@
             }
         });
     }
-	function checkAll(ele) {
-	     var checkboxes = document.getElementsByTagName('input');
-	     if (ele.checked) {
-	         for (var i = 0; i < checkboxes.length; i++) {
-	             if (checkboxes[i].type == 'checkbox') {
-	                 checkboxes[i].checked = true;
-	             }
-	         }
-	     } else {
-	         for (var i = 0; i < checkboxes.length; i++) {
-	             console.log(i)
-	             if (checkboxes[i].type == 'checkbox') {
-	                 checkboxes[i].checked = false;
-	             }
-	         }
-	     }
-	}
-</script>
-<script>
-$(document).ready(function () {
-    $('#example').DataTable();
-});
+
+    $(document).on('change', '#standard', function() {
+        var standard_id = $(this).val();
+        var sub = 0;
+        loadSubjects(standard_id);
+    });
+
+    @if(isset($data['standard_id']) && isset($data['subject']))
+    var standard_id = "{{ $data['standard_id'] }}";
+    var sub = "{{isset($data['subject']) ? $data['subject'] : 0 }}";
+    loadSubjects(standard_id, sub);
+    @endif
+
+    function validateData() {
+        var c = $('#grade').find('option:selected').length;
+        if (c == 0) {
+            alert("Please Select Atleast One Academic Section");
+            return false;
+        } else {
+            return true;
+        }
+
+    }
+
+    function checkAll(ele) {
+        var checkboxes = document.getElementsByTagName('input');
+        if (ele.checked) {
+            for (var i = 0; i < checkboxes.length; i++) {
+                if (checkboxes[i].type == 'checkbox') {
+                    checkboxes[i].checked = true;
+                }
+            }
+        } else {
+            for (var i = 0; i < checkboxes.length; i++) {
+                console.log(i)
+                if (checkboxes[i].type == 'checkbox') {
+                    checkboxes[i].checked = false;
+                }
+            }
+        }
+    }
 </script>
 @include('includes.footer')
 @endsection
