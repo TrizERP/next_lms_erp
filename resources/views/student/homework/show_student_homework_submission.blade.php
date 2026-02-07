@@ -53,21 +53,22 @@
             </form>
         </div>
         @if(isset($data['student_data']))
-        @php
-        if(isset($data['student_data'])){
-        $student_data = $data['student_data'];
-        $finalData = $data;
-        }
-        @endphp
-        <div class="card">
-            <form method="POST" enctype="multipart/form-data"
-                action="{{ route('student_homework_submission.store') }}">
-                @csrf
-                <div class="row">
-                    <div class="col-lg-12 col-sm-12 col-xs-12">
-                        <div class="table-responsive">
-                            <table id="example" class="table table-striped">
-                                <thead>
+            @php
+                if(isset($data['student_data'])){
+                    $student_data = $data['student_data'];
+                    $finalData = $data;
+                    $subject = $data['subject'];
+                }
+            @endphp
+            <div class="card">
+                <form method="POST" enctype="multipart/form-data"
+                      action="{{ route('student_homework_submission.store') }}">
+                    @csrf
+                    <div class="row">
+                        <div class="col-lg-12 col-sm-12 col-xs-12">
+                            <div class="table-responsive">
+                                <table id="example" class="table table-striped">
+                                    <thead>
                                     <tr>
                                         <th><input id="checkall" onchange="checkAll(this);" type="checkbox"></th>
                                         <th>{{App\Helpers\get_string('grno','request')}}</th>
@@ -132,7 +133,19 @@
 
 @include('includes.footerJs')
 <script>
-    function loadSubjects(standard_id, sub) {
+    $(document).ready(function () {
+        $('#standard').on('change',function () {
+            var standard_id = $(this).val();
+            getSubject(standard_id);
+        })
+
+       @if($standard_id!='')
+            var standard_id = "{{$standard_id}}";
+            getSubject(standard_id);
+       @endif 
+    });
+    function getSubject(standard_id){
+        var sub = "{{isset($subject) ? $subject : 0 }}";
         var path = "{{ route('ajax_getHomeworkSubjects') }}";
 
         $.ajax({

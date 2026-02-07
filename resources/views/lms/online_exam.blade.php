@@ -77,7 +77,7 @@ html {
                                             <!-- <a href="javascript:void(0)" class="float-right" data-container="body" data-toggle="popover" data-placement="left" data-content="Vivamus sagittis lacus vel augue laoreet rutrum faucibus." data-trigger="hover">
                                                 <i class="mdi mdi-alert-circle-outline"></i>
                                             </a> -->
-                                            <div class="quiz-title">{!!$quesarr['question_title']!!}</div>
+                                            <div class="quiz-title">{!! html_entity_decode($quesarr['question_title'], ENT_QUOTES | ENT_HTML5, 'UTF-8') !!}</div>
                                             @if($quesarr['question_type_id'] == "2") <!--Narrative Question-->
                                             <div class="quiz-option">
                                                 <textarea type="text" rows="4" placeholder="Enter Answer" class="form-control" name="answer_narrative[{{$quesarr['id']}}]"></textarea>
