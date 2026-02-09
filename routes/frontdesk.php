@@ -17,6 +17,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\school_setup\timetableController as oldtimetableController;
 use App\Http\Controllers\front_desk\castController;
 use App\Http\Controllers\front_desk\dicipline\diciplineMasterController;
+use App\Http\Controllers\front_desk\studentFaceAttendanceController;
+use App\Http\Controllers\front_desk\classFaceAttendanceController;
 
 Route::group(['prefix' => 'frontdesk', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
     Route::resource('frontdesk', frontdeskController::class);
@@ -51,4 +53,9 @@ Route::group(['prefix' => 'front_desk', 'middleware' => ['session', 'menu', 'log
     Route::get('add_new_stdandardDiv', [oldtimetableController::class, 'addNewStdandardDiv'])->name('add_new_stdandardDiv');	
 	Route::resource('add_cast', castController::class);
 	Route::resource('dicipline-Master', diciplineMasterController::class);
+});
+// added on 06-02-2026 by uma
+Route::group(['prefix' => 'face_attendance', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
+    Route::resource('student_face_attendance', studentFaceAttendanceController::class);
+    Route::resource('class_face_attendance', classFaceAttendanceController::class);
 });
