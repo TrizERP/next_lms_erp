@@ -5048,8 +5048,11 @@ while ($current_date <= $post_end_date) {
                             if ($obtained_mark_arr[0] != 'N.A.' || $obtained_mark_arr[0] != 'EX') {
                                 $total_marks = $w_m;
                             }
-                            $table .= '<td class="data_center"><span '.$underline.'>' . number_format($obtained_mark_arr[0], 2) .$asterisk. '</span></td>';// ' . $exam_id . '-' . $val->subject_id . '-' . $standard_id . '
-                            $ob_main_mark += ($obtained_mark_arr[0] !== 0) ? $obtained_mark_arr[0] : 0;
+                            // Convert to float safely
+                            $numeric_value = is_numeric($obtained_mark_arr[0]) ? (float)$obtained_mark_arr[0] : 0;
+
+                            $table .= '<td class="data_center"><span '.$underline.'>' . number_format($numeric_value, 2) .$asterisk. '</span></td>';// ' . $exam_id . '-' . $val->subject_id . '-' . $standard_id . '
+                            $ob_main_mark += $numeric_value;
                         }
                         // echo $exam_id;echo "<pre>";print_r($obtained_mark_sum);
 
