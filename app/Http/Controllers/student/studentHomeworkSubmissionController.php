@@ -329,10 +329,7 @@ class studentHomeworkSubmissionController extends Controller
                 $join->whereRaw('(ss.id = ah.division_id)');
             })->join('tbluser as tu', function ($join) {
                 $join->whereRaw('tu.id = ah.created_by')->where('tu.status', 1);   // 23-04-24 by uma
-            })->selectRaw("ah.*,s.enrollment_no, CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name,
-                concat_ws('-',cs.name,ss.name) as std_div,s.mobile,DATE_FORMAT(ah.date,'%d-%m-%Y') AS HOMEWORK_DATE,ah.title,
-                ah.description,ah.image,DATE_FORMAT(ah.submission_date,'%d-%m-%Y') AS SUBMISSION_DATE,ah.submission_remarks,
-                CONCAT_WS(' ',tu.first_name,tu.last_name) AS submission_taken_by")
+            })->selectRaw("ah.*,s.enrollment_no, CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name,concat_ws('-',cs.name,ss.name) as std_div,s.mobile,DATE_FORMAT(ah.date,'%d-%m-%Y') AS HOMEWORK_DATE,ah.title,ah.description,ah.image,DATE_FORMAT(ah.submission_date,'%d-%m-%Y') AS SUBMISSION_DATE,ah.submission_remarks,CONCAT_WS(' ',tu.first_name,tu.last_name) AS submission_taken_by")
             ->where('se.syear', $syear)
             ->where('ah.sub_institute_id', $sub_institute_id)
             ->where('ah.syear', $syear)
