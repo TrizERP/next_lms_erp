@@ -25,7 +25,7 @@
                             {{ App\Helpers\TermDD() }}
                         @endif
                         <div class="col-md-4 form-group">
-                            <label for="title">Select Skillset:</label>
+                            <label for="title">1Select Skillset:</label>
                             <select name="skillset_id" id="skillset_id" class="form-control">
                                 <option value="">Select</option>
                                 @foreach($data['result_skillsets'] as $key => $result_skillset)

@@ -26,8 +26,10 @@ class studentHomeworkSubmissionController extends Controller
         $res['status_code'] = 1;
         $res['message'] = "Success";
 
-        $subjects = subjectModel::select('id',
-            'subject_name')->where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
+        $subjects = subjectModel::select(
+            'id',
+            'subject_name'
+        )->where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
 
         $res['subjects'] = $subjects;
 
@@ -41,6 +43,7 @@ class studentHomeworkSubmissionController extends Controller
      */
     public function create(Request $request)
     {
+        // return $request;
         $grade = $request->input('grade');
         $standard = $request->input('standard');
         $division = $request->input('division');
@@ -56,7 +59,7 @@ class studentHomeworkSubmissionController extends Controller
             ->join('tblstudent as s', function ($join) {
                 $join->whereRaw('s.id = ah.student_id');
             })->join('tblstudent_enrollment as se', function ($join) {
-                $join->whereRaw('(s.id = se.student_id AND se.end_date IS NULL)');
+                $join->whereRaw('(s.id = se.student_id AND ah.syear=se.syear AND se.end_date IS NULL)');
             })->join('standard as cs', function ($join) use ($marking_period_id){
                 $join->whereRaw('(cs.id = ah.standard_id)');
                 // ->when($marking_period_id,function($query) use($marking_period_id) {
@@ -89,25 +92,25 @@ class studentHomeworkSubmissionController extends Controller
         }
 
         if ($submission_date != '') {
-            $result = $result->whereRaw("DATE_FORMAT(ah.submission_date,'%Y-%m-%d') = '".$submission_date."'");
+            $result = $result->whereRaw("DATE_FORMAT(ah.submission_date,'%Y-%m-%d') = '" . $submission_date . "'");
         }
 
         $result = $result->get()->toArray();
 
-        $subjects = subjectModel::select('id',
-            'subject_name')->where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
-
+        $subjects = subjectModel::select(
+            'id',
+            'subject_name'
+        )->where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
 
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['student_data'] = $result;
         $res['subjects'] = $subjects;
+        $res['subject'] = $subject;
         $res['grade_id'] = $grade;
         $res['standard_id'] = $standard;
         $res['division_id'] = $division;
         $res['submission_date'] = $submission_date;
-
-        $res['subject'] = $subject;
 
         return is_mobile($type, "student/homework/show_student_homework_submission", $res, "view");
     }
@@ -130,35 +133,81 @@ class studentHomeworkSubmissionController extends Controller
         $standard_id = $request->get('standard_id');
         $subject_id = $request->get('subject_id');
         $submission_remarks = $request->input('submission_remarks');
-
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
 
         // $file_name = "";
-
-
-        foreach ($students as $key => $student_id) {
+        foreach ($students as $key => $hw_id) {
             $file_name = $file_size = $ext = "";
             if ($request->hasFile('image')) {
-                $file = $request->file('image')[$student_id];
+                $file = $request->file('image')[$hw_id];
                 $originalname = $file->getClientOriginalName();
                 $file_size = $file->getSize();
-                $name = "homework-submission-".$request->get('user_name').date('YmdHis').'-'.$student_id;
+                $name = "homework-submission-" . $request->get('user_name') . date('YmdHis') . '-' . $hw_id;
                 $ext = File::extension($originalname);
-                $file_name = $name.'.'.$ext;
+                $file_name = $name . '.' . $ext;
                 $path = $file->storeAs('public/student/', $file_name);
             }
 
             $homeworksubmissionArray = [];
 
-            $homeworksubmissionArray['submission_remarks'] = $submission_remarks[$student_id];
+            $homeworksubmissionArray['submission_remarks'] ='';
             $homeworksubmissionArray['completion_status'] = 'Y';
             $homeworksubmissionArray['submission_image'] = $file_name;
             $homeworksubmissionArray['submission_image_size'] = $file_size;
             $homeworksubmissionArray['submission_image_type'] = $ext;
+            // added on 06-02-2026 by uma for submission check and reponse from AI
+            $getHomeworkSubmission = studentHomeworkModel::where([
+                "id"               => $hw_id,
+                'syear' => $syear,
+                'sub_institute_id' => $sub_institute_id,
+            ])->first();
+            $url = "https://moncey10-homework-validation-system.hf.space/submit";
+            $payloads = [
+                'student_id' => $getHomeworkSubmission->student_id,
+                'homework_id' => $hw_id,
+                'images' => $request->file('image')[$hw_id],
+            ];
 
+            // Call the API and capture the response
+            $client = new \GuzzleHttp\Client(['verify' => false]);
+            try {
+                $response = $client->request('POST', $url, [
+                    'multipart' => [
+                        [
+                            'name'     => 'student_id',
+                            'contents' => $getHomeworkSubmission->student_id
+                        ],
+                        [
+                            'name'     => 'homework_id',
+                            'contents' => $hw_id
+                        ],
+                        [
+                            'name'     => 'images',
+                            'contents' => fopen($request->file('image')[$hw_id]->getPathname(), 'r'),
+                            'filename' => $request->file('image')[$hw_id]->getClientOriginalName()
+                        ]
+                    ]
+                ]);
+
+                $body = json_decode($response->getBody()->getContents(), true);
+                
+                // Extract submission_remarks and completion_status from API response
+                $submission_remarks = $body['submission_remarks'] ?? null;
+                // $completion_status    = $body['completion_status']    ?? null;
+
+                // Override the variables used in the update
+                $homeworksubmissionArray['submission_remarks'] = $submission_remarks;
+                // $homeworksubmissionArray['completion_status']  = $completion_status;
+            } catch (\Exception $e) {
+                // On API failure, keep existing values or set defaults
+                $submission_remarks = $submission_remarks[$hw_id] ?? '';
+                // $completion_status  = 'Y';
+            }
+            // end 05-02-2026
             studentHomeworkModel::where([
-                "id"               => $student_id, 'syear' => $syear,
+                "id"               => $hw_id,
+                'syear' => $syear,
                 'sub_institute_id' => $sub_institute_id,
             ])
                 ->update($homeworksubmissionArray);
@@ -221,14 +270,16 @@ class studentHomeworkSubmissionController extends Controller
         $submit = $request->input('submit');
         $sub_institute_id = $request->session()->get('sub_institute_id');
 
-        $subjects = subjectModel::select('id',
-            'subject_name')->where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
+        $subjects = subjectModel::select(
+            'id',
+            'subject_name'
+        )->where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
 
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['subjects'] = $subjects;
         // for student 01-01-2024
-        if(session()->get('user_profile_name')=="Student"){
+        if (session()->get('user_profile_name') == "Student") {
             $res['grade_id'] = session()->get('stu_grade');
             $res['standard_id'] = session()->get('stu_std');
             $res['division_id'] = session()->get('stu_div');
@@ -252,22 +303,24 @@ class studentHomeworkSubmissionController extends Controller
         $user_id = session()->get('user_id');
         $user_profile = session()->get('user_profile_name');
 
-        if(in_array($type,["API","JSON"])){
+        if (in_array($type, ["API", "JSON"])) {
             $sub_institute_id = $request->get('sub_institute_id');
             $syear = $request->get('syear');
             $user_id = $request->user_id;
             $user_profile = $request->get('user_profile_name');
         }
 
-        $subjects = subjectModel::select('id',
-            'subject_name')->where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
+        $subjects = subjectModel::select(
+            'id',
+            'subject_name'
+        )->where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
 
         $result = DB::table('homework as ah')
             ->join('tblstudent as s', function ($join) {
                 $join->whereRaw('s.id = ah.student_id AND s.sub_institute_id = ah.sub_institute_id');
             })->join('tblstudent_enrollment as se', function ($join) {
                 $join->whereRaw('(s.id = se.student_id AND se.end_date IS NULL)');
-            })->join('standard as cs', function ($join) use($marking_period_id) {
+            })->join('standard as cs', function ($join) use ($marking_period_id) {
                 $join->whereRaw('(cs.id = ah.standard_id)');
                 // ->when($marking_period_id,function($query) use($marking_period_id) {
                 //     $query->where('cs.marking_period_id',$marking_period_id);
@@ -275,7 +328,7 @@ class studentHomeworkSubmissionController extends Controller
             })->join('division as ss', function ($join) {
                 $join->whereRaw('(ss.id = ah.division_id)');
             })->join('tbluser as tu', function ($join) {
-                $join->whereRaw('tu.id = ah.created_by')->where('tu.status',1);   // 23-04-24 by uma
+                $join->whereRaw('tu.id = ah.created_by')->where('tu.status', 1);   // 23-04-24 by uma
             })->selectRaw("ah.*,s.enrollment_no, CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name,
                 concat_ws('-',cs.name,ss.name) as std_div,s.mobile,DATE_FORMAT(ah.date,'%d-%m-%Y') AS HOMEWORK_DATE,ah.title,
                 ah.description,ah.image,DATE_FORMAT(ah.submission_date,'%d-%m-%Y') AS SUBMISSION_DATE,ah.submission_remarks,
@@ -284,8 +337,8 @@ class studentHomeworkSubmissionController extends Controller
             ->where('ah.sub_institute_id', $sub_institute_id)
             ->where('ah.syear', $syear)
             // for student 01-01-2025
-            ->when($user_profile=="Student",function($q) use($user_id){
-                $q->where('h.student_id',$user_id);
+            ->when($user_profile == "Student", function ($q) use ($user_id) {
+                $q->where('h.student_id', $user_id);
             });
 
         if ($standard != '') {
@@ -309,7 +362,7 @@ class studentHomeworkSubmissionController extends Controller
         }
 
         if ($from_date != '' && $to_date != '') {
-            $result = $result->whereRaw("DATE_FORMAT(ah.submission_date,'%Y-%m-%d') BETWEEN '".$from_date."' AND '".$to_date."'");
+            $result = $result->whereRaw("DATE_FORMAT(ah.submission_date,'%Y-%m-%d') BETWEEN '" . $from_date . "' AND '" . $to_date . "'");
         }
 
         $result = $result->get()->toArray();
