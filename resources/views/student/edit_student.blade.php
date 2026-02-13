@@ -177,6 +177,7 @@ datalist {
                                     if(isset($data['data'])){
                                         $student_data = $data['data'];
                                     }
+                                    $admissionEnquiryData = $data['admissionEnquiryData'];
                                     $studentArr[0] = $student_data->id;
                                     $getStudentDataArr = App\Helpers\getStudents($studentArr);
                                     $getStudentData = $getStudentDataArr[$student_data->id];
@@ -679,6 +680,108 @@ datalist {
                                         @endforeach
                                         @endif
 
+                                        @if(isset($data['custom_fields1']) && session()->get('sub_institute_id')==76)
+    @php
+        // Get the actual admission enquiry object (first element of the array)
+        $enquiryData = $admissionEnquiryData[0] ?? null;
+    @endphp
+    
+    @foreach($data['custom_fields1'] as $key1 => $value1)
+        <div class="col-md-4 form-group">
+            <label>{{ $value1['field_label'] }}</label>
+            
+            @php
+                // Safely get the field value from the object
+                $fieldValue = '';
+                if($enquiryData && isset($value1['field_name'])) {
+                    $fieldName = $value1['field_name'];
+                    if(property_exists($enquiryData, $fieldName)) {
+                        $fieldValue = $enquiryData->$fieldName;
+                    }
+                }
+            @endphp
+            
+            @if($value1['field_type'] == 'file')
+                <input type="{{ $value1['field_type'] }}" 
+                       id="input-file-now"  
+                       @if($value1['required'] == 1) required @endif 
+                       data-default-file="/storage/student/{{ $fieldValue }}"  
+                       class="dropify" 
+                       readonly>
+                @if(!empty($fieldValue))
+                    <a href="/storage/student/{{ $fieldValue }}" 
+                       download="{{ $enquiryData->username ?? 'document' }}_{{ $fieldValue }}">
+                        <label>Download</label>
+                    </a>
+                @endif
+                
+            @elseif($value1['field_type'] == 'date')
+                <div class="input-daterange input-group">
+                    <input type="text" 
+                           class="form-control mydatepicker" 
+                           placeholder="dd/mm/yyyy" 
+                           autocomplete="off" 
+                           id="{{ $value1['field_name'] }}" 
+                           @if($value1['required'] == 1) required @endif 
+                           value="{{ $fieldValue }}" 
+                           readonly>
+                    <span class="input-group-addon"><i class="icon-calender"></i></span>
+                </div>
+                
+            @elseif($value1['field_type'] == 'checkbox')
+                <div class="checkbox-list">
+                    @if(isset($data['data_fields'][$value1['id']]))
+                        @foreach($data['data_fields'][$value1['id']] as $keyData => $valueData)
+                            <label class="checkbox-inline">
+                                <div class="checkbox checkbox-success">
+                                    <input type="checkbox" 
+                                           @if($valueData['display_value'] == $fieldValue) checked @endif  
+                                           value="{{ $valueData['display_value'] }}"  
+                                           id="{{ $valueData['display_value'] }}" 
+                                           @if($value1['required'] == 1) required @endif 
+                                           readonly>
+                                    <label for="{{ $valueData['display_value'] }}">{{ $valueData['display_text'] }}</label>
+                                </div>
+                            </label>
+                        @endforeach
+                    @endif
+                </div>
+                
+            @elseif($value1['field_type'] == 'dropdown')
+                <select class="form-control" 
+                        @if($value1['required'] == 1) required @endif 
+                        id="{{ $value1['field_name'] }}" 
+                        readonly>
+                    <option value="">SELECT {{ strtoupper($value1['field_label']) }}</option>
+                    
+                    @if(isset($data['data_fields'][$value1['id']]))
+                        @foreach($data['data_fields'][$value1['id']] as $keyData => $valueData)
+                            <option value="{{ $valueData['display_value'] }}" 
+                                    @if($valueData['display_value'] == $fieldValue) selected @endif>
+                                {{ $valueData['display_text'] }}
+                            </option>
+                        @endforeach
+                    @endif
+                </select>
+                
+            @elseif($value1['field_type'] == 'textarea')
+                <textarea id="{{ $value1['field_name'] }}" 
+                          class="form-control" 
+                          @if($value1['required'] == 1) required @endif 
+                          readonly>{{ $fieldValue }}</textarea>
+                          
+            @else
+                <input type="{{ $value1['field_type'] }}" 
+                       id="{{ $value1['field_name'] }}" 
+                       placeholder="{{ $value1['field_message'] ?? '' }}" 
+                       value="{{ $fieldValue }}" 
+                       @if($value1['required'] == 1) required @endif  
+                       class="form-control" 
+                       readonly>
+            @endif
+        </div>
+    @endforeach
+@endif
                                         @if(Session::get('user_profile_name') != 'Student')
                                         <div class="col-md-12 form-group">
                                             <input type="submit" name="submit" value="Update" class="btn btn-success triz-btn" >
