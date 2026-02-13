@@ -30,7 +30,7 @@
                 @endif
                 <div class="col-md-3 form-group">
                     <label for="">File</label>
-                    <input type="file" class="form-control" name="stu_image[]">
+                    <input type="file" class="form-control" name="stu_image[]" multiple="multiple">
                 </div>
                 <div class="col-md-12">
                     <center>
