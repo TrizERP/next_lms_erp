@@ -78,7 +78,7 @@ tbody tr th th {
                             @php $i = 1; @endphp
                             @foreach($data['question_arr'] as $quesid => $quesarr)
                             <tr>
-                                <td style="text-align:left;background: #303030;color: #ffffff;">{{$i++}}) &nbsp;&nbsp; {!!$quesarr['question_title']!!}
+                                <td style="text-align:left;background: #303030;color: #ffffff;">{{$i++}}) &nbsp;&nbsp; {!! html_entity_decode($quesarr['question_title'], ENT_QUOTES | ENT_HTML5, 'UTF-8') !!}
                                 <span style="float:right;">({{$quesarr['points']}}) 
                                     <span style="padding:0px 10px" onclick="mapValueModel({{$quesarr['id']}});"><i class="fa fa-ellipsis-v" aria-hidden="true"></i></span> 
                                 </span> 

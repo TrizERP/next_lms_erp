@@ -5048,8 +5048,11 @@ while ($current_date <= $post_end_date) {
                             if ($obtained_mark_arr[0] != 'N.A.' || $obtained_mark_arr[0] != 'EX') {
                                 $total_marks = $w_m;
                             }
-                            $table .= '<td class="data_center"><span '.$underline.'>' . number_format($obtained_mark_arr[0], 2) .$asterisk. '</span></td>';// ' . $exam_id . '-' . $val->subject_id . '-' . $standard_id . '
-                            $ob_main_mark += ($obtained_mark_arr[0] !== 0) ? $obtained_mark_arr[0] : 0;
+                            // Convert to float safely
+                            $numeric_value = is_numeric($obtained_mark_arr[0]) ? (float)$obtained_mark_arr[0] : 0;
+
+                            $table .= '<td class="data_center"><span '.$underline.'>' . number_format($numeric_value, 2) .$asterisk. '</span></td>';// ' . $exam_id . '-' . $val->subject_id . '-' . $standard_id . '
+                            $ob_main_mark += $numeric_value;
                         }
                         // echo $exam_id;echo "<pre>";print_r($obtained_mark_sum);
 
@@ -6116,20 +6119,43 @@ while ($current_date <= $post_end_date) {
                         ->where('type', 'hrms')
                         ->where('fieldname', 'termwise_hpc')
                         ->value('fieldvalue');   // This returns 'Yes' or 'No'
-                    $query = DB::table('result_activity_master')
+                    $query = DB::table('result_activity_master as t')
                         ->selectRaw('*, 
-                            GROUP_CONCAT(title ORDER BY sort_order ASC SEPARATOR "|") as activity_master_title,
-                            GROUP_CONCAT(id ORDER BY sort_order ASC) as ids')
-                        ->where('sub_institute_id', $sub_institute_id)
-                        ->where('skill_id', $skill_ids[$key])
-                        ->where('standard', $standard_id);
+                            GROUP_CONCAT(t.title ORDER BY t.sort_order ASC SEPARATOR "|") as activity_master_title,
+                            GROUP_CONCAT(t.id ORDER BY t.sort_order ASC) as ids')
+                        ->where('t.sub_institute_id', $sub_institute_id)
+                        ->where('t.skill_id', $skill_ids[$key])
+                        ->where('t.standard', $standard_id);
                     
+if ($format === 'yearly') {
+
+    $query->join(
+        DB::raw('(
+            SELECT 
+                r.title,
+                CASE 
+                    WHEN SUM(r.term_id = 2) > 0 THEN 2
+                    ELSE MIN(r.term_id)
+                END AS selected_term
+            FROM result_activity_master as r
+            WHERE r.sub_institute_id = ' . (int)$sub_institute_id . '
+              AND r.skill_id = ' . (int)$skill_ids[$key] . '
+              AND r.standard = ' . (int)$standard_id . '
+            GROUP BY r.title
+        ) as x'),
+        function ($join) {
+            $join->on('x.title', '=', 't.title')
+                 ->on('x.selected_term', '=', 't.term_id');
+        }
+    );
+}
+
                     // Apply term filter ONLY if termwise_hpc = "Yes"
                     if ($termwiseHpc === 'Yes') {
                         $query->whereRaw($extra_term);
                     }
 
-                    $get_result_activity_masters = $query->orderBy('sort_order')
+                    $get_result_activity_masters = $query->orderBy('t.sort_order')
                         ->get()
                         ->toArray();
 
