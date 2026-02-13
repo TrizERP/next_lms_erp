@@ -51,10 +51,26 @@
                 <div class="col-md-12">
                     @if(!empty($data['allCapturedImage']))
                     <div class="card-body table-responsive mt-20 tz-report-table">
+                        <!-- Bulk delete form for admin -->
+                        @if(strtoupper(session()->get('user_profile_name'))=="ADMIN")
+                        <form id="bulk-delete-form" action="{{ route('student_face_attendance.destroy', 0) }}" method="post" class="mb-2">
+                            @csrf
+                            @method('DELETE')
+                            <input type="hidden" name="delete_type" value="1">
+                            <button type="submit" id="bulk-delete-btn" class="btn btn-danger" style="display:none;" onclick="return confirm('Are you sure you want to delete selected records?');">
+                                <i class="ti-trash"></i> Delete Selected
+                            </button>
+                        @endif
                         <table id="example" class="table table-striped" style="width:100% !important">
 
                             <thead>
                                 <tr>
+                                    <!-- Checkbox column for admin only -->
+                                    @if(strtoupper(session()->get('user_profile_name'))=="ADMIN")
+                                    <th>
+                                        <input type="checkbox" id="select-all">
+                                    </th>
+                                    @endif
                                     <th>Sr No</th>
                                     <th>{{ App\Helpers\get_string('grno','request')}}</th>
                                     <th>{{ App\Helpers\get_string('studentname','request')}}</th>
@@ -70,13 +86,19 @@
                             <tbody>
                                 @foreach($data['allCapturedImage'] as $key=>$value)
                                 <tr>
+                                    <!-- Checkbox for each row for admin only -->
+                                    @if(strtoupper(session()->get('user_profile_name'))=="ADMIN")
+                                    <td>
+                                        <input type="checkbox" name="ids[]" value="{{ $value->id }}" class="row-checkbox">
+                                    </td>
+                                    @endif
                                     <td>{{$key+1}}</td>
                                     <td>{{$value->enrollment_no}}</td>
                                     <td>{{$value->full_name}}</td>
                                     <td>{{$value->mobile}}</td>
                                     <td>{{$value->standard_name}}</td>
                                     <td>{{$value->division_name}}</td>
-                                    <td><img src="{{asset('public/student_face_image/'.$value->stu_image)}}" alt="" width="50" height="50"></td>
+                                    <td><img src="{{asset('storage/capture_photos/'.$value->student_id.'/'.$value->stu_image)}}" alt="" width="50" height="50"></td>
                                     @if(strtoupper(session()->get('user_profile_name'))=="ADMIN")
                                     <td>
                                        <form action="{{ route('student_face_attendance.destroy', $value->id)}}" method="post" class="d-inline">
@@ -90,6 +112,10 @@
                                 @endforeach
                             </tbody>
                         </table>
+                        <!-- Close bulk delete form for admin -->
+                        @if(strtoupper(session()->get('user_profile_name'))=="ADMIN")
+                        </form>
+                        @endif
                     </div>
                     @endif
                 </div>
@@ -137,11 +163,24 @@
                 },
                 'pageLength'
             ],
+            // Exclude checkbox column from DataTables operations for admin
+            columnDefs: [
+                @if(strtoupper(session()->get('user_profile_name'))=="ADMIN")
+                { orderable: false, targets: 0 }
+                @endif
+            ]
         });
 
         $('#example thead tr').clone(true).appendTo('#example thead');
         $('#example thead tr:eq(1) th').each(function(i) {
             var title = $(this).text();
+            @if(strtoupper(session()->get('user_profile_name'))=="ADMIN")
+            // Skip checkbox column in second header row
+            if (i === 0) {
+                $(this).html('');
+                return;
+            }
+            @endif
             $(this).html('<input type="text" placeholder="Search ' + title + '" />');
 
             $('input', this).on('keyup change', function() {
@@ -153,7 +192,39 @@
                 }
             });
         });
+
+        // Checkbox functionality for admin
+        @if(strtoupper(session()->get('user_profile_name'))=="ADMIN")
+        // Select all checkbox
+        $('#select-all').on('click', function(){
+            $('.row-checkbox').prop('checked', this.checked);
+            toggleBulkDeleteBtn();
+        });
+
+        // Individual row checkbox
+        $(document).on('change', '.row-checkbox', function(){
+            toggleBulkDeleteBtn();
+            if ($('.row-checkbox:checked').length === $('.row-checkbox').length) {
+                $('#select-all').prop('checked', true);
+            } else {
+                $('#select-all').prop('checked', false);
+            }
+        });
+
+        // Toggle bulk delete button visibility
+        function toggleBulkDeleteBtn(){
+            if ($('.row-checkbox:checked').length > 0) {
+                $('#bulk-delete-btn').show();
+            } else {
+                $('#bulk-delete-btn').hide();
+            }
+        }
+        @endif
     });
+
+    function confirmDelete(){
+        return confirm('Are you sure you want to delete this record?');
+    }
 </script>
 @include('includes.footer')
 @endsection
