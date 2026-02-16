@@ -143,8 +143,8 @@
 
     function addMore() {
         let total = $('#image_wrapper .image-block').length;
-        if (total >= 10) {
-            alert('Maximum 10 images allowed');
+        if (total >= 5) {
+            alert('Maximum 5 images allowed');
             return;
         }
         

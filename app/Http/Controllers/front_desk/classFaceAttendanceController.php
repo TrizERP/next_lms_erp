@@ -37,29 +37,38 @@ class classFaceAttendanceController extends Controller
         $harshitApiResponses = [];
 
         // Call harshit API outside of getAllStudents loop
-            $url = 'https://harshit20991999-face-recognition-attandance-project.hf.space/api/v1/attendance';
-            $postData = [
-                'type' => 'API',
-                'sub_institute_id' => $sub_institute_id,
-                'syear' => $syear,
-                'date' => $date,
-                'user_profile_name' => 'admin',
-                'files'=>$request->images,
-                'submit' => 1,
+        $url = 'https://harshit20991999-multi-face-detection-modal.hf.space/api/v1/attendance';
+        $client = new \GuzzleHttp\Client(['verify' => false]);
+
+        // Build multipart form-data payload
+        $multipart = [];
+        foreach ($request->images as $image) {
+            $multipart[] = [
+                'name'     => 'files',
+                'contents' => fopen($image->getRealPath(), 'r'),
+                'filename' => $image->getClientOriginalName(),
             ];
+        }
+        $multipart[] = ['name' => 'confidence_threshold', 'contents' => '0.65'];
+        $multipart[] = ['name' => 'standard_id',          'contents' => $standard_id];
+        $multipart[] = ['name' => 'division_id',          'contents' => $division_id];
+        $multipart[] = ['name' => 'sub_institute_id',     'contents' => $sub_institute_id];
+        $multipart[] = ['name' => 'date_str',             'contents' => $date];
+        $multipart[] = ['name' => 'year',                 'contents' => $syear];
 
-            $response = \Illuminate\Support\Facades\Http::asForm()
-                ->withOptions(['verify' => false])
-                ->post($url, $postData)
-                ->body();
+        $response = $client->request('POST', $url, [
+            'headers' => ['Accept' => 'application/json'],
+            'multipart' => $multipart,
+        ])->getBody()->getContents();
 
-            $data = json_decode($response, true);
-            $matchedStudents = [];
-            if(isset($data['matchedStudent']) && !empty($data['matchedStudent'])){
-                foreach($data['matchedStudent'] as $key=>$value){
-                    $matchedStudents[$value] = 'P';
-                }
+        $harshitData = json_decode($response, true);
+        $matchedStudents = [];
+        if (isset($harshitData['matched_student']) && !empty($harshitData['matched_student'])) {
+            foreach ($harshitData['matched_student'] as $key => $value) {
+                $matchedStudents[$value] = 'P';
             }
+        }
+
         // teacher captured photos
         foreach ($request->images as $image) {
             $file_name = $file_size = $ext = "";
