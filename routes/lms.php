@@ -285,6 +285,10 @@ Route::post('/ai/processData',[contentController::class,'processAIData'])->name(
 Route::post('/ai/generateLessonPlan', [contentController::class, 'generateLessonPlan'])->name('ai.generateLessonPlan');
 Route::post('/ai/generateLessonPlanNew', [contentController::class, 'generateLessonPlanNew'])->name('ai.generateLessonPlanNew');
 Route::post('/ai/generateSportsData', [contentController::class, 'generateSportsData'])->name('ai.generateSportsData');
+Route::post('/ai/generateSlides', [contentController::class, 'generateSlides'])->name('ai.generateSlides');
+Route::post('/ai/generateKAABSlides', [contentController::class, 'generateKAABSlides'])->name('ai.generateKAABSlides');
+Route::post('/ai/generateGammaPresentation', [contentController::class, 'generateGammaPresentation'])->name('ai.generateGammaPresentation');
+Route::post('/ai/getGammaPresentationStatus', [contentController::class, 'getGammaPresentationStatus'])->name('ai.getGammaPresentationStatus');
 Route::post('/paraphraseNew', [ParaphraseController::class, 'paraphrase']);
 Route::post('/set-book-session',[contentController::class,'setBookSession'])->name('set-book-session');
 
