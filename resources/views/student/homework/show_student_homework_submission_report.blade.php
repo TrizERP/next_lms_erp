@@ -90,13 +90,14 @@
                                     <th>{{App\Helpers\get_string('studentname','request')}}</th>
                                     <th>{{App\Helpers\get_string('std/div','request')}}</th>
                                     <th>SMS No.</th>
-                                    <th>Homework Date</th>
-                                    <th>Homework Title</th>
+                                    <th>Sent Date</th>
+                                    <th>Title</th>
                                     <th>Description</th>
-                                    <th>Homework Image</th>
+                                    <th>File</th>
                                     <th>Submission Date</th>
-                                    <th>Submission Remark</th>
-                                    <th>Submission Taken By</th>
+                                    <th>Remark</th>
+                                    <th>Taken By</th>
+                                    <th>StudentFile</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -113,10 +114,11 @@
                                     <td>{{$data['HOMEWORK_DATE']}}</td>
                                     <td>{{$data['title']}}</td>
                                     <td>{{$data['description']}}</td>
-                                    <td>@if($data['image']!=null && $data['image']!=='')<a target="blank" href="/storage/student/{{$data['image']}}">view</a>@else - @endif</td>
+                                    <td>@if($data['image']!=null && $data['image']!=='')<a target="blank" href="/storage/student/{{$data['image']}}"><u>homework</u></a>@else - @endif</td>
                                     <td>{{$data['SUBMISSION_DATE']}}</td>
                                     <td>{{$data['submission_remarks']}}</td>
                                     <td>{{$data['submission_taken_by']}}</td>
+                                    <td>@if($data['submission_image']!=null && $data['submission_image']!=='')<a target="blank" href="/storage/student/{{$data['submission_image']}}"><u>submission</u></a>@else - @endif</td>
                                 </tr>
                                     @php
                                     $j++;

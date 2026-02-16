@@ -754,12 +754,17 @@ class tblstudentController extends Controller
                     'tblstudent.id' => $id,
                 ])->first();
         }
-        //echo "<pre>";print_r($student_data);exit;
+        $admissionEnquiryData = DB::table('admission_enquiry')->where(['id' => $student_data->admission_id ?? 0])->get()->toArray();
+        // echo "<pre>";print_r($admissionEnquiryData);exit;      
 		// RAJESH	->whereRaw('tblstudent_enrollment.end_date is NULL')
 		$dataCustomFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "tblstudent"])
         ->whereRaw('(sub_institute_id = ' . $sub_institute_id . ' OR common_to_all = 1) and user_type= "" ')
 			->get();
 
+        $dataCustomFields1 = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "admission_enquiry"])
+        ->whereRaw('(sub_institute_id = ' . $sub_institute_id . ' OR common_to_all = 1) and user_type= "" ')
+			->get();
+            
         $fieldsData = tblfields_dataModel::get()->toArray();
         $i = 0;
         $finalfieldsData = [];
@@ -1063,6 +1068,7 @@ die; */
 		$res['total_distance'] = $total_distance;
         //$res['student_data'] = $student_data;
 		$res['custom_fields'] = $dataCustomFields;
+        $res['custom_fields1'] = $dataCustomFields1;
 
         if (count($finalfieldsData) > 0) {
 			$res['data_fields'] = $finalfieldsData;
@@ -1172,7 +1178,7 @@ die; */
         }else{
             $res['trans_details']=[];
         }
-        
+        $res['admissionEnquiryData'] = $admissionEnquiryData;
 		return is_mobile($type, "student/edit_student", $res, "view");
 	}
 

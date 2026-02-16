@@ -229,19 +229,26 @@ class studentHealthController extends Controller
         $syear = $request->input("syear");
         $type = $request->input("type");
 
-        if ($student_id != "" && $sub_institute_id != "" && $syear != "") {
-            // $data = DB::select("SELECT doctor_name,doctor_contact,DATE_FORMAT(date,'%d-%m-%Y') AS date, if(file = '','',concat('https://".$_SERVER['SERVER_NAME']."/storage/frontdesk/',file)) as file
-            // FROM student_health
-            // WHERE syear = '".$syear."' AND sub_institute_id = '".$sub_institute_id."'
-            // AND student_id = '".$student_id."'
-            // ORDER BY date");
+        if ($student_id != "" && $sub_institute_id != "") {// && $syear != ""
+
             $data = DB::table('student_health')
-            ->select('doctor_name', 'doctor_contact', 'remarks', DB::raw("DATE_FORMAT(date, '%d-%m-%Y') AS date"), DB::raw("IF(file = '', CONCAT('https://".$_SERVER['SERVER_NAME']."/storage/frontdesk/noimages.png'), CONCAT('https://".$_SERVER['SERVER_NAME']."/storage/frontdesk/', file)) AS file"))
-            ->where('syear', $syear)
-            ->where('sub_institute_id', $sub_institute_id)
-            ->where('student_id', $student_id)
-            ->orderBy('date')
-            ->get();
+                ->select(
+                    DB::raw("IFNULL(doctor_name, '') AS doctor_name"),
+                    DB::raw("IFNULL(doctor_contact, '') AS doctor_contact"),
+                    DB::raw("IFNULL(remarks, '') AS remarks"),
+                    DB::raw("IFNULL(DATE_FORMAT(date, '%d-%m-%Y'), '') AS date"),
+                    DB::raw("
+                        IF(
+                            file IS NULL OR file = '',
+                            CONCAT('https://" . $_SERVER['SERVER_NAME'] . "/storage/frontdesk/noimages.png'),
+                            CONCAT('https://" . $_SERVER['SERVER_NAME'] . "/storage/frontdesk/', file)
+                        ) AS file
+                    ")
+                )
+                ->where('sub_institute_id', $sub_institute_id)
+                ->where('student_id', $student_id)
+                ->orderBy('date')
+                ->get();
 
 
             $res['status'] = 1;

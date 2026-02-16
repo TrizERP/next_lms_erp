@@ -23,17 +23,17 @@ class studentFaceAttendanceController extends Controller
         $student_id = session()->get('user_id');
         // return  session()->all();
         if ($type == "API") {
-            try {
-                if (! $this->jwtToken()->validate()) {
-                    $response = ['status' => '2', 'message' => 'Token Auth Failed'];
+            // try {
+            //     if (! $this->jwtToken()->validate()) {
+            //         $response = ['status' => '2', 'message' => 'Token Auth Failed'];
 
-                    return response()->json($response, 401);
-                }
-            } catch (\Exception $e) {
-                $response = ['status' => '2', 'message' => $e->getMessage()];
+            //         return response()->json($response, 401);
+            //     }
+            // } catch (\Exception $e) {
+            //     $response = ['status' => '2', 'message' => $e->getMessage()];
 
-                return response()->json($response, 401);
-            }
+            //     return response()->json($response, 401);
+            // }
             $sub_institute_id=$request->sub_institute_id;
             $syear=$request->syear;
             $userProfile=$request->user_profile_name;
@@ -124,17 +124,17 @@ class studentFaceAttendanceController extends Controller
                 $files_array = explode(',', $check_data[0]->stu_images);
 
                 // START UNLINK files 
-                $folder_path = $_SERVER['DOCUMENT_ROOT'].'/storage/capture_photos/'.$student_id;
-                foreach ($files_array as $file) { // iterate files
-                    if (is_file($file)) {
-                        unlink($folder_path.'/'.$file); // delete file
-                    }
-                }
+                // $folder_path = $_SERVER['DOCUMENT_ROOT'].'/storage/capture_photos/'.$student_id;
+                // foreach ($files_array as $file) { // iterate files
+                //     if (is_file($file)) {
+                //         unlink($folder_path.'/'.$file); // delete file
+                //     }
+                // }
                 // END UNLINK files
-                $delete_record = DB::table('student_capture_photos')
-                    ->where('student_id', $student_id)
-                    ->where('sub_institute_id', $sub_institute_id)
-                    ->where('syear', $syear)->where('type_id',$request->type_id)->delete();
+                // $delete_record = DB::table('student_capture_photos')
+                //     ->where('student_id', $student_id)
+                //     ->where('sub_institute_id', $sub_institute_id)
+                //     ->where('syear', $syear)->where('type_id',$request->type_id)->delete();
                 $insert = 0;
                 if ($request->hasFile('stu_image')) {
                     foreach ($request->file('stu_image') as $key => $file_data) {
@@ -194,12 +194,21 @@ class studentFaceAttendanceController extends Controller
         // return $student_id;
         return is_mobile($type, 'student_face_attendance.index', $res);
     }
-    public function destroy(Request $request,$id)
+    public function destroy(Request $request, $id)
     {
-        $type = $request->id;
-        $del = DB::table('student_capture_photos')->where('id',$id)->delete();
-        $res['status'] = $del ? 1 : 0;
-        $res['message'] = $del ? 'Image deleted successfully' : 'Image not deleted';
-        return is_mobile($type, 'front_desk/faceAttendance/studentAttendance/index', $res, 'view');
-    }   
+        $ids = $request->get('delete_type') === '1' && !empty($request->ids) ? $request->ids : [$id];
+
+        foreach ($ids as $id) {
+            $photo = DB::table('student_capture_photos')->where('id', $id)->first();
+            if ($photo) {
+                unlink($_SERVER['DOCUMENT_ROOT'] . '/storage/capture_photos/' . $photo->student_id . '/' . $photo->stu_image);
+                DB::table('student_capture_photos')->where('id', $id)->delete();
+            }
+        }
+
+        return is_mobile($request->type, 'student_face_attendance.index', [
+            'status'  => 1,
+            'message' => 'Image deleted successfully'
+        ]);
+    }
 }

@@ -59,8 +59,8 @@ class studentHomeworkSubmissionController extends Controller
             ->join('tblstudent as s', function ($join) {
                 $join->whereRaw('s.id = ah.student_id');
             })->join('tblstudent_enrollment as se', function ($join) {
-                $join->whereRaw('(s.id = se.student_id AND se.end_date IS NULL)');
-            })->join('standard as cs', function ($join) use ($marking_period_id) {
+                $join->whereRaw('(s.id = se.student_id AND ah.syear=se.syear AND se.end_date IS NULL)');
+            })->join('standard as cs', function ($join) use ($marking_period_id){
                 $join->whereRaw('(cs.id = ah.standard_id)');
                 // ->when($marking_period_id,function($query) use($marking_period_id) {
                 //     $query->where('cs.marking_period_id');
@@ -194,15 +194,15 @@ class studentHomeworkSubmissionController extends Controller
                 
                 // Extract submission_remarks and completion_status from API response
                 $submission_remarks = $body['submission_remarks'] ?? null;
-                $completion_status    = $body['completion_status']    ?? null;
+                // $completion_status    = $body['completion_status']    ?? null;
 
                 // Override the variables used in the update
                 $homeworksubmissionArray['submission_remarks'] = $submission_remarks;
-                $homeworksubmissionArray['completion_status']  = $completion_status;
+                // $homeworksubmissionArray['completion_status']  = $completion_status;
             } catch (\Exception $e) {
                 // On API failure, keep existing values or set defaults
                 $submission_remarks = $submission_remarks[$hw_id] ?? '';
-                $completion_status  = 'Y';
+                // $completion_status  = 'Y';
             }
             // end 05-02-2026
             studentHomeworkModel::where([
@@ -329,10 +329,7 @@ class studentHomeworkSubmissionController extends Controller
                 $join->whereRaw('(ss.id = ah.division_id)');
             })->join('tbluser as tu', function ($join) {
                 $join->whereRaw('tu.id = ah.created_by')->where('tu.status', 1);   // 23-04-24 by uma
-            })->selectRaw("ah.*,s.enrollment_no, CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name,
-                concat_ws('-',cs.name,ss.name) as std_div,s.mobile,DATE_FORMAT(ah.date,'%d-%m-%Y') AS HOMEWORK_DATE,ah.title,
-                ah.description,ah.image,DATE_FORMAT(ah.submission_date,'%d-%m-%Y') AS SUBMISSION_DATE,ah.submission_remarks,
-                CONCAT_WS(' ',tu.first_name,tu.last_name) AS submission_taken_by")
+            })->selectRaw("ah.*,s.enrollment_no, CONCAT_WS(' ',s.first_name,s.middle_name,s.last_name) AS student_name,concat_ws('-',cs.name,ss.name) as std_div,s.mobile,DATE_FORMAT(ah.date,'%d-%m-%Y') AS HOMEWORK_DATE,ah.title,ah.description,ah.image,DATE_FORMAT(ah.submission_date,'%d-%m-%Y') AS SUBMISSION_DATE,ah.submission_remarks,CONCAT_WS(' ',tu.first_name,tu.last_name) AS submission_taken_by")
             ->where('se.syear', $syear)
             ->where('ah.sub_institute_id', $sub_institute_id)
             ->where('ah.syear', $syear)
