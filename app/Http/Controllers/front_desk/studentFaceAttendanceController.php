@@ -23,17 +23,17 @@ class studentFaceAttendanceController extends Controller
         $student_id = session()->get('user_id');
         // return  session()->all();
         if ($type == "API") {
-            try {
-                if (! $this->jwtToken()->validate()) {
-                    $response = ['status' => '2', 'message' => 'Token Auth Failed'];
+            // try {
+            //     if (! $this->jwtToken()->validate()) {
+            //         $response = ['status' => '2', 'message' => 'Token Auth Failed'];
 
-                    return response()->json($response, 401);
-                }
-            } catch (\Exception $e) {
-                $response = ['status' => '2', 'message' => $e->getMessage()];
+            //         return response()->json($response, 401);
+            //     }
+            // } catch (\Exception $e) {
+            //     $response = ['status' => '2', 'message' => $e->getMessage()];
 
-                return response()->json($response, 401);
-            }
+            //     return response()->json($response, 401);
+            // }
             $sub_institute_id=$request->sub_institute_id;
             $syear=$request->syear;
             $userProfile=$request->user_profile_name;
