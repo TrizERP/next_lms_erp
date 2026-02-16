@@ -1028,14 +1028,14 @@ class contentController extends Controller
                 'standard_id' => 'required',
                 'subject_name' => 'required',
                 'chapter_name' => 'required',
-                'topic_name' => 'required',
+                //'topic_name' => 'required',
                 'slide_count' => 'required|integer|min:1|max:50',
             ]);
 
             $standardId = $request->standard_id;
             $subjectName = $request->subject_name;
             $chapterName = $request->chapter_name;
-            $topicName = $request->topic_name;
+            //$topicName = $request->topic_name;
             $contentCategory = $request->content_category ?? $request->mapping_value ?? 'General';
             $slideCount = $request->slide_count;
 
@@ -1089,12 +1089,12 @@ class contentController extends Controller
                 'standard_id' => 'required',
                 'subject_name' => 'required',
                 'chapter_name' => 'required',
-                'topic_name' => 'required',
+                //'topic_name' => 'required',
                 'slide_count' => 'required|integer|min:1|max:50',
             ]);
 
             $params = [
-                'topicName' => $request->topic_name,
+                //'topicName' => $request->topic_name,
                 'chapterName' => $request->chapter_name,
                 'subjectName' => $request->subject_name,
                 'standardId' => $request->standard_id,
@@ -1127,7 +1127,7 @@ class contentController extends Controller
         $slidesData = $openAIService->generateKAABSlideOutline($params);
         
         // Save as JSON file
-        $jsonResult = $openAIService->saveSlideOutlineAsJson($slidesData, $request->topic_name);
+        $jsonResult = $openAIService->saveSlideOutlineAsJson($slidesData);
         
         if ($jsonResult) {
             // Get the filename
@@ -1159,21 +1159,16 @@ class contentController extends Controller
  */
 public function generateGammaPresentation(Request $request)
 {
-    \Log::info('========================================');
-    \Log::info('=== Controller: generateGammaPresentation ===');
-    \Log::info('========================================');
-    \Log::info('Request Data:', $request->all());
-    
     try {
         $request->validate([
-            'topic_name' => 'required',
+            //'topic_name' => 'required',
             'chapter_name' => 'required',
             'subject_name' => 'required',
             'slide_count' => 'required|integer|min:1|max:50',
         ]);
 
         $params = [
-            'topicName' => $request->topic_name,
+            //'topicName' => $request->topic_name,
             'chapterName' => $request->chapter_name,
             'subjectName' => $request->subject_name,
             'standardId' => $request->standard_id ?? '',
@@ -1182,19 +1177,15 @@ public function generateGammaPresentation(Request $request)
             'keyTopics' => $request->key_topics ?? '',
         ];
 
-        \Log::info('Calling OpenAIService->generateGammaPresentation with params:', $params);
+       
 
         $openAIService = new OpenAIService();
         $result = $openAIService->generateGammaPresentation($params);
 
-        \Log::info('Gamma Presentation Result:', $result);
-        \Log::info('========================================');
-
         return response()->json($result);
 
     } catch (\Exception $e) {
-        \Log::error('Error in generateGammaPresentation: ' . $e->getMessage());
-        \Log::error('Stack trace: ' . $e->getTraceAsString());
+
         return response()->json([
             'success' => false,
             'message' => 'Error generating presentation: ' . $e->getMessage()
@@ -1207,10 +1198,6 @@ public function generateGammaPresentation(Request $request)
  */
 public function getGammaPresentationStatus(Request $request)
 {
-    \Log::info('========================================');
-    \Log::info('=== Controller: getGammaPresentationStatus ===');
-    \Log::info('========================================');
-    \Log::info('Generation ID: ' . $request->generation_id);
     
     try {
         $request->validate([
@@ -1220,14 +1207,11 @@ public function getGammaPresentationStatus(Request $request)
         $openAIService = new OpenAIService();
         $result = $openAIService->getGammaPresentationStatus($request->generation_id);
 
-        \Log::info('Status Check Result:', $result);
-        \Log::info('========================================');
 
         return response()->json($result);
 
     } catch (\Exception $e) {
-        \Log::error('Error in getGammaPresentationStatus: ' . $e->getMessage());
-        \Log::error('Stack trace: ' . $e->getTraceAsString());
+       
         return response()->json([
             'success' => false,
             'message' => 'Error getting status: ' . $e->getMessage()
