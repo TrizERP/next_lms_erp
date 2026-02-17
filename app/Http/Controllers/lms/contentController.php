@@ -231,6 +231,11 @@ class contentController extends Controller
         {
             $newfilename = $request->get('link');
             $ext = "link";
+            $file_url= $request->get('link');
+            // If Gamma presentation name is provided, use it as filename
+            if($request->has('gamma_presentation_name') && !empty($request->get('gamma_presentation_name'))) {
+                $newfilename = $request->get('gamma_presentation_name');
+            }
         }       
            
         $chapter_data = chapterModel::select('*')        
@@ -262,6 +267,7 @@ class contentController extends Controller
             'description'                  => $request->get('description'),
             'file_folder'                  => $file_folder,
             'filename'                     => $newfilename,
+            'url'                     => $file_url ?? '',
             'file_type'                    => $ext,
             'file_size'                    => $size,
             'show_hide'                    => $show_hide_val,
@@ -325,108 +331,159 @@ class contentController extends Controller
             $user_id = $request->session()->get('user_id');
         }
 
-        $show_hide = $request->get('show_hide');
-        $show_hide_val = $show_hide ?? '';
+    $show_hide = $request->get('show_hide');
+    $show_hide_val = $show_hide ?? '';
 
-        //Basic means 1 and advance means 0 
-        $basic_advanced = $request->get('toggle_basic_advanced');
-        $basic_advanced_val = ! isset($basic_advanced) ? '0' : '1';
+    //Basic means 1 and advance means 0 
+    $basic_advanced = $request->get('toggle_basic_advanced');
+    $basic_advanced_val = ! isset($basic_advanced) ? '0' : '1';
+    
+    $file_folder = $ext = $size = $newfilename = "";
+    
+    // Check if Gamma presentation URL is present (this should be treated as link)
+    $gamma_presentation_url = $request->get('gamma_presentation_url');
+    $gamma_presentation_name = $request->get('gamma_presentation_name');
+    
+    // Check if IBL generated URL is present
+    $ibl_generated_url = $request->get('ibl_generated_url');
+    $ibl_content_type = $request->get('ibl_content_type');
+    
+    // Priority 1: Gamma Presentation (URL) - Store the URL as filename with file_type = 'link'
+    if (!empty($gamma_presentation_url)) {
+        // This is a Gamma presentation - store the actual URL as filename
+        $newfilename = $gamma_presentation_url; // Store the URL, not the name
+        $ext = 'link';
+        $file_folder = '/lms_content_file';
         
-        $file_folder = $ext = $size = $newfilename = "";
-        if($request->hasFile('filename'))
-        {           
-            $img = $request->file('filename');
-            $filename = $img->getClientOriginalName();
-            $ext = $img->getClientOriginalExtension();
-            $size = $img->getSize();
-            $newfilename = 'lms_'.date('Y-m-d_h-i-s').'.'.$ext;             
-            $file_folder = '/lms_content_file';
-            //$img->move(public_path().'/lms_content_file/',$newfilename);
-            // $img->storeAs('public/lms_content_file/',$newfilename);  20-05-24
-            Storage::disk('digitalocean')->putFileAs('public/lms_content_file/', $img, $newfilename, 'public');
-        }
-
-        if($request->get('contentType') == "link")
-        {
-            $newfilename = $request->get('link');
-            $ext = "link";
-        }       
-           
-        $chapter_data = chapterModel::select('*')        
-        ->where(['chapter_master.sub_institute_id'=>$sub_institute_id,'chapter_master.id'=>$request->get('hid_chapter_id')])         
-        ->get()->toArray(); 
-        $chapter_data = $chapter_data[0] ?? []; 
-
-        $pre_topic = $post_topic = $cross_curriculum_topic = "";
-        if($request->get('prechapter') != "")
-        {
-            $pre_topic = $request->get('prechapter').'####'.$request->get('pretopic');
-        } 
-        if($request->get('postchapter') != "")
-        {
-            $post_topic = $request->get('postchapter').'####'.$request->get('posttopic');
-        }
-        if($request->get('cross-curriculumchapter') != "")
-        {
-            $cross_curriculum_topic = $request->get('cross-curriculumchapter').'####'.$request->get('cross-curriculumtopic');
-        }
-
-        $content = [
-            'grade_id'                     => $chapter_data['grade_id'],
-            'standard_id'                  => $chapter_data['standard_id'],
-            'subject_id'                   => $chapter_data['subject_id'],
-            'chapter_id'                   => $request->get('hid_chapter_id'),
-            'topic_id'                     => $request->get('hid_topic_id'),
-            'title'                        => $request->get('title'),
-            'description'                  => $request->get('description'),
-            'file_folder'                  => $file_folder,
-            'filename'                     => $newfilename,
-            'file_type'                    => $ext,
-            'file_size'                    => $size,
-            'show_hide'                    => $show_hide_val,
-            'sort_order'                   => $request->get('sort_order'),
-            'meta_tags'                    => $request->get('meta_tags'),
-            'content_category'             => $request->get('content_category'),
-            'created_by'                   => $user_id,
-            'sub_institute_id'             => $sub_institute_id,
-            'restrict_date'                => date('Y-m-d', strtotime($request->get('restrict_date'))),
-            'pre_grade_topic'              => $pre_topic,
-            'post_grade_topic'             => $post_topic,
-            'cross_curriculum_grade_topic' => $cross_curriculum_topic,
-            'basic_advance'                => $basic_advanced_val,
-            'syear'                        => $syear,
-        ];
-
-        // dd($content);
-        //'sub_topic_id' => $request->get('subtopic'),  
-        //DB::enableQueryLog();
-        contentModel::insert($content);
-//echo "RAJESH";print_r($content); exit;
-        $last_id = DB::getPDO()->lastInsertId();
-
-        $mapping_type = $request->get('mapping_type');
-        $mapping_value = $request->get('mapping_value');
-        foreach ($mapping_type as $key => $val) {
-            if ($val != "" && $mapping_value[$key] != "") {
-                $contentmappingtype = [
-                    'content_id'       => $last_id,
-                    'mapping_type_id'  => $val,
-                    'mapping_value_id' => $mapping_value[$key],
-                ];
-                contentmappingtypeModel::insert($contentmappingtype);
-            }
-        }
-
-        $res = array(
-            "status_code" => 1,
-			"message" => "Content Added Successfully",
-		);
-
-        if($type == "API")
-            return is_mobile($type, "content_master.index", $res, "redirect");
-        else
-            return redirect()->route('chapter_master.index', ['standard_id' => $request->get('hid_standard_id'), 'subject_id' => $request->get('hid_subject_id'),'perm'=>$sub_institute_id]);
+        // Also store the name in title field (already done via form)
+        \Log::info('Gamma URL stored in filename: ' . $newfilename);
     }
+    // Priority 2: IBL generated content
+    elseif (!empty($ibl_generated_url)) {
+        if ($ibl_content_type === 'link') {
+            $newfilename = $ibl_generated_url; // Store the URL
+            $ext = 'link';
+        } else {
+            // For PDF, store the URL as filename
+            $newfilename = $ibl_generated_url;
+            $ext = $ibl_content_type ?? 'pdf';
+        }
+        $file_folder = '/lms_content_file';
+    }
+    // Priority 3: AI generated filename
+    elseif (!empty($request->get('ai_generated_filename'))) {
+        // AI generated file - use the generated filename
+        $newfilename = $request->get('ai_generated_filename');
+        $file_folder = '/lms_content_file';
+        $ext = 'pdf';
+        
+        // Move the file from storage to DigitalOcean
+        $sourcePath = storage_path('app/public/pdfs/' . $request->get('ai_generated_filename'));
+        if (file_exists($sourcePath)) {
+            $newfilename = 'lms_'.date('Y-m-d_h-i-s').'.pdf';
+            // Read the file content and upload to DigitalOcean
+            $fileContent = file_get_contents($sourcePath);
+            Storage::disk('digitalocean')->put('public/lms_content_file/' . $newfilename, $fileContent, 'public');
+        }
+    }
+    // Priority 4: Regular file upload
+    elseif($request->hasFile('filename'))
+    {           
+        $img = $request->file('filename');
+        $filename = $img->getClientOriginalName();
+        $ext = $img->getClientOriginalExtension();
+        $size = $img->getSize();
+        $newfilename = 'lms_'.date('Y-m-d_h-i-s').'.'.$ext;             
+        $file_folder = '/lms_content_file';
+        Storage::disk('digitalocean')->putFileAs('public/lms_content_file/', $img, $newfilename, 'public');
+    }
+    // Priority 5: Manual link entry
+    elseif($request->get('contentType') == "link")
+    {
+        $newfilename = $request->get('link'); // Store the URL
+        $ext = "link";
+    }
+   
+    $chapter_data = chapterModel::select('*')        
+    ->where(['chapter_master.sub_institute_id'=>$sub_institute_id,'chapter_master.id'=>$request->get('hid_chapter_id')])         
+    ->get()->toArray(); 
+    $chapter_data = $chapter_data[0] ?? []; 
+
+    $pre_topic = $post_topic = $cross_curriculum_topic = "";
+    if($request->get('prechapter') != "")
+    {
+        $pre_topic = $request->get('prechapter').'####'.$request->get('pretopic');
+    } 
+    if($request->get('postchapter') != "")
+    {
+        $post_topic = $request->get('postchapter').'####'.$request->get('posttopic');
+    }
+    if($request->get('cross-curriculumchapter') != "")
+    {
+        $cross_curriculum_topic = $request->get('cross-curriculumchapter').'####'.$request->get('cross-curriculumtopic');
+    }
+
+    // Log what's being stored
+    \Log::info('Storing content:', [
+        'filename' => $newfilename,
+        'file_type' => $ext,
+        'title' => $request->get('title'),
+        'gamma_url' => $gamma_presentation_url
+    ]);
+
+    $content = [
+        'grade_id'                     => $chapter_data['grade_id'],
+        'standard_id'                  => $chapter_data['standard_id'],
+        'subject_id'                   => $chapter_data['subject_id'],
+        'chapter_id'                   => $request->get('hid_chapter_id'),
+        'topic_id'                     => $request->get('hid_topic_id'),
+        'title'                        => $request->get('title'),
+        'description'                  => $request->get('description'),
+        'file_folder'                  => $file_folder,
+        'filename'                     => $newfilename, // This will store the URL for link type
+        'file_type'                    => $ext, // This will be 'link'
+        'file_size'                    => $size,
+        'show_hide'                    => $show_hide_val,
+        'sort_order'                   => $request->get('sort_order'),
+        'meta_tags'                    => $request->get('meta_tags'),
+        'content_category'             => $request->get('content_category'),
+        'created_by'                   => $user_id,
+        'sub_institute_id'             => $sub_institute_id,
+        'restrict_date'                => date('Y-m-d', strtotime($request->get('restrict_date'))),
+        'pre_grade_topic'              => $pre_topic,
+        'post_grade_topic'             => $post_topic,
+        'cross_curriculum_grade_topic' => $cross_curriculum_topic,
+        'basic_advance'                => $basic_advanced_val,
+        'syear'                        => $syear,
+    ];
+
+    contentModel::insert($content);
+
+    $last_id = DB::getPDO()->lastInsertId();
+
+    $mapping_type = $request->get('mapping_type');
+    $mapping_value = $request->get('mapping_value');
+    foreach ($mapping_type as $key => $val) {
+        if ($val != "" && $mapping_value[$key] != "") {
+            $contentmappingtype = [
+                'content_id'       => $last_id,
+                'mapping_type_id'  => $val,
+                'mapping_value_id' => $mapping_value[$key],
+            ];
+            contentmappingtypeModel::insert($contentmappingtype);
+        }
+    }
+
+    $res = array(
+        "status_code" => 1,
+        "message" => "Content Added Successfully",
+    );
+
+    if($type == "API")
+        return is_mobile($type, "content_master.index", $res, "redirect");
+    else
+        return redirect()->route('chapter_master.index', ['standard_id' => $request->get('hid_standard_id'), 'subject_id' => $request->get('hid_subject_id'),'perm'=>$sub_institute_id]);
+}
 		
     public function edit(Request $request,$id){
         $type = $request->input('type');
@@ -772,10 +829,10 @@ class contentController extends Controller
             }
             
         }
-      
+       
         $subject_data = sub_std_mapModel::where(['sub_institute_id' => $sub_institute_id,'standard_id' => $standard])
         ->orderBy('display_name')->get()->toArray();		
-        
+		
         $data['subject_arr'] = $subject_data;        
         $data['status_code'] = 1;
         $data['message'] = "SUCCESS";           
@@ -820,8 +877,8 @@ class contentController extends Controller
                 'title' => '',
                 'description' => '',
             ]);
-        // $request->validate([
-        //     'standard_id' => 'required',
+        //([
+        //     $request->validate 'standard_id' => 'required',
         //     'subject_name' => 'required',
         //     'chapter_name' => 'required',
         //     'topic_name' => 'required',
@@ -850,114 +907,316 @@ class contentController extends Controller
         // }
     }
     public function generateSportsData(Request $request)
-{   
-    try {
-    $request->validate([
-        'standard_id' => 'required',
-        'subject_name' => 'required',
-        'chapter_name' => 'required',
-        'topic_name' => 'required',
-        'content_category' => 'required',
-        'content_type' => 'required',
-    ]);
+    {   
+        try {
+        $request->validate([
+            'standard_id' => 'required',
+            'subject_name' => 'required',
+            'chapter_name' => 'required',
+            'topic_name' => 'required',
+            'content_category' => 'required',
+            'content_type' => 'required',
+        ]);
 
-    $openAIService = new OpenAIService();
-    $filePath = $openAIService->generateSportsData(
-        $request->topic_name,
-        $request->chapter_name,
-        $request->subject_name,
-        $request->content_category,
-        $request->content_type,
-    );
+        $openAIService = new OpenAIService();
+        $filePath = $openAIService->generateSportsData(
+            $request->topic_name,
+            $request->chapter_name,
+            $request->subject_name,
+            $request->content_category,
+            $request->content_type,
+        );
 
-    if ($filePath) {
-        return response()->json(['file_url' => $filePath]);
-    } else {
-        return response()->json(['error' => 'Failed to generate.'], 500);
+        if ($filePath) {
+            return response()->json(['file_url' => $filePath]);
+        } else {
+            return response()->json(['error' => 'Failed to generate.'], 500);
+        }
+    }catch (\Exception $e) {
+            // Log::error('Error generating Data: ' . $e->getMessage());
+            return response()->json(['error' => 'Internal Server Error'], 500);
+        }
     }
-}catch (\Exception $e) {
-        // Log::error('Error generating Data: ' . $e->getMessage());
-        return response()->json(['error' => 'Internal Server Error'], 500);
-    }
-}
-public function generateLessonPlan(Request $request)
-{   
-//     try {
-//     $request->validate([
-//         'standard_id' => 'required',
-//         'subject_name' => 'required',
-//         'chapter_name' => 'required',
-//         'topic_name' => 'required',
-//         'content_category' => 'required',
-//         'content_type' => 'required',
-//         'booklist_data' => 'required|array',
-//     ]);
+    public function generateLessonPlan(Request $request)
+    {   
+    //     try {
+    //     $request->validate([
+    //         'standard_id' => 'required',
+    //         'subject_name' => 'required',
+    //         'chapter_name' => 'required',
+    //         'topic_name' => 'required',
+    //         'content_category' => 'required',
+    //         'content_type' => 'required',
+    //         'booklist_data' => 'required|array',
+    //     ]);
 
-//     $openAIService = new OpenAIService();
-//     $result = $openAIService->generateLessonPlan(
-//         $request->topic_name,
-//         $request->chapter_name,
-//         $request->subject_name,
-//         $request->content_category,
-//         $request->content_type,
-//         $request->booklist_data
-//     );
-//     if (isset($result['fileUrl']) && isset($result['prompt'])) {
-//         return response()->json([
-//             'file_url' => $result['fileUrl'],
-//             'prompt' => $result['prompt']
-//         ]);
-//     } else {
-//         return response()->json(['error' => 'Failed to generate.'], 500);
-//     }
-// }catch (\Exception $e) {
-//         // Log::error('Error generating Data: ' . $e->getMessage());
-//         return response()->json(['error' => 'Internal Server Error'], 500);
-//     }
-return response()->json([
+    //     $openAIService = new OpenAIService();
+    //     $result = $openAIService->generateLessonPlan(
+    //         $request->topic_name,
+    //         $request->chapter_name,
+    //         $request->subject_name,
+    //         $request->content_category,
+    //         $request->content_type,
+    //         $request->booklist_data
+    //     );
+    //     if (isset($result['fileUrl']) && isset($result['prompt'])) {
+    //         return response()->json([
+    //             'file_url' => $result['fileUrl'],
+    //             'prompt' => $result['prompt']
+    //         ]);
+    //     } else {
+    //         return response()->json(['error' => 'Failed to generate.'], 500);
+    //     }
+    // }catch (\Exception $e) {
+            // Log::error('Error generating Data: ' . $e->getMessage());
+            return response()->json(['error' => 'Internal Server Error'], 500);
+    //     }
+    return response()->json([
             'file_url' => '',
             'prompt' => ''
         ]);
-}
-public function generateLessonPlanNew(Request $request)
-{   
-//     try {
-//     $request->validate([
-//         'standard_id' => 'required',
-//         'subject_name' => 'required',
-//         'chapter_name' => 'required',
-//         'topic_name' => 'required',
-//         'content_category' => 'required',
-//         'content_type' => 'required',
-//         'booklist_data' => 'required|array',
-//         'prompt' => 'required'
-//     ]);
-//     $openAIService = new OpenAIService();
-//     $result = $openAIService->generateLessonPlanNew(
-//         $request->topic_name,
-//         $request->chapter_name,
-//         $request->subject_name,
-//         $request->content_category,
-//         $request->content_type,
-//         $request->booklist_data,
-//         $request -> prompt
-//     );
-//     if (isset($result['fileUrl']) && isset($result['prompt'])) {
-//         return response()->json([
-//             'file_url' => $result['fileUrl'],
-//             'prompt' => $result['prompt']
-//         ]);
-//     } else {
-//         return response()->json(['error' => 'Failed to generate.'], 500);
-//     }
-// }catch (\Exception $e) {
-//         // Log::error('Error generating Data: ' . $e->getMessage());
-//         return response()->json(['error' => 'Internal Server Error'], 500);
-//     }
- return response()->json([
+    }
+    public function generateLessonPlanNew(Request $request)
+    {   
+    //     try {
+    //     $request->validate([
+    //         'standard_id' => 'required',
+    //         'subject_name' => 'required',
+    //         'chapter_name' => 'required',
+    //         'topic_name' => 'required',
+    //         'content_category' => 'required',
+    //         'content_type' => 'required',
+    //         'booklist_data' => 'required|array',
+    //         'prompt' => 'required'
+    //     ]);
+    //     $openAIService = new OpenAIService();
+    //     $result = $openAIService->generateLessonPlanNew(
+    //         $request->topic_name,
+    //         $request->chapter_name,
+    //         $request->subject_name,
+    //         $request->content_category,
+    //         $request->content_type,
+    //         $request->booklist_data,
+    //         $request -> prompt
+    //     );
+    //     if (isset($result['fileUrl']) && isset($result['prompt'])) {
+    //         return response()->json([
+    //             'file_url' => $result['fileUrl'],
+    //             'prompt' => $result['prompt']
+    //         ]);
+    //     } else {
+    //         return response()->json(['error' => 'Failed to generate.'], 500);
+    //     }
+    // }catch (\Exception $e) {
+            // Log::error('Error generating Data: ' . $e->getMessage());
+            return response()->json(['error' => 'Internal Server Error'], 500);
+    //     }
+     return response()->json([
             'file_url' => '',
             'prompt' =>''
         ]);
+    }
+
+    /**
+     * Generate slides based on slide count
+     * Creates PDF from AI-generated outline and uploads it
+     */
+    public function generateSlides(Request $request)
+    {
+        try {
+            $request->validate([
+                'standard_id' => 'required',
+                'subject_name' => 'required',
+                'chapter_name' => 'required',
+                //'topic_name' => 'required',
+                'slide_count' => 'required|integer|min:1|max:50',
+            ]);
+
+            $standardId = $request->standard_id;
+            $subjectName = $request->subject_name;
+            $chapterName = $request->chapter_name;
+            //$topicName = $request->topic_name;
+            $contentCategory = $request->content_category ?? $request->mapping_value ?? 'General';
+            $slideCount = $request->slide_count;
+
+            // Generate outline using OpenAI service
+            $openAIService = new OpenAIService();
+            
+            // Generate the outline using the service method (returns JSON structured data)
+            $slidesData = $openAIService->generateSlideOutline(
+                $topicName, 
+                $chapterName, 
+                $subjectName, 
+                $standardId, 
+                $contentCategory, 
+                $slideCount
+            );
+            
+            // Save as JSON file
+            $jsonResult = $openAIService->saveSlideOutlineAsJson($slidesData, $topicName);
+            
+            if ($jsonResult) {
+                // Get the filename
+                $fileName = $jsonResult['file_name'];
+                
+                return response()->json([
+                    'success' => true,
+                    'file_name' => $fileName,
+                    'message' => 'Slides generated successfully'
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to save slide outline'
+                ], 500);
+            }
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Internal Server Error: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Generate slides with KAAB competencies and pedagogical approach
+     */
+    public function generateKAABSlides(Request $request)
+    {
+        try {
+            $request->validate([
+                'standard_id' => 'required',
+                'subject_name' => 'required',
+                'chapter_name' => 'required',
+                //'topic_name' => 'required',
+                'slide_count' => 'required|integer|min:1|max:50',
+            ]);
+
+            $params = [
+                //'topicName' => $request->topic_name,
+                'chapterName' => $request->chapter_name,
+                'subjectName' => $request->subject_name,
+                'standardId' => $request->standard_id,
+            'contentCategory' => $request->content_category ?? $request->mapping_value ?? 'General',
+            'slideCount' => $request->slide_count,
+            
+            // KAAB competencies
+            'knowledge' => $request->knowledge ?? [],
+            'ability' => $request->ability ?? [],
+            'attitude' => $request->attitude ?? [],
+            'behaviour' => $request->behaviour ?? [],
+            
+            // Pedagogical approach
+            'mappingType' => $request->mapping_type ?? '',
+            'mappingValue' => $request->mapping_value ?? '',
+            'mappingReason' => $request->mapping_reason ?? '',
+            
+            // Additional context
+            'instructionTaskText' => $request->instruction_task_text ?? '',
+            'criticalWorkFunction' => $request->critical_work_function ?? '',
+            'jobRole' => $request->job_role ?? '',
+            'keyTask' => $request->key_task ?? '',
+            'industry' => $request->industry ?? '',
+            'department' => $request->department ?? '',
+            'modalityString' => $request->modality_string ?? 'Online',
+        ];
+
+        // Generate outline using OpenAI service with KAAB
+        $openAIService = new OpenAIService();
+        $slidesData = $openAIService->generateKAABSlideOutline($params);
+        
+        // Save as JSON file
+        $jsonResult = $openAIService->saveSlideOutlineAsJson($slidesData);
+        
+        if ($jsonResult) {
+            // Get the filename
+            $fileName = $jsonResult['file_name'];
+            
+            return response()->json([
+                'success' => true,
+                'file_name' => $fileName,
+                'slides_data' => $slidesData,
+                'message' => 'KAAB slides generated successfully'
+            ]);
+        } else {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to save slide outline'
+            ], 500);
+        }
+        
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Internal Server Error: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+/**
+ * Generate PDF Presentation using Gamma API
+ */
+public function generateGammaPresentation(Request $request)
+{
+    try {
+        $request->validate([
+            //'topic_name' => 'required',
+            'chapter_name' => 'required',
+            'subject_name' => 'required',
+            'slide_count' => 'required|integer|min:1|max:50',
+        ]);
+
+        $params = [
+            //'topicName' => $request->topic_name,
+            'chapterName' => $request->chapter_name,
+            'subjectName' => $request->subject_name,
+            'standardId' => $request->standard_id ?? '',
+            'contentCategory' => $request->content_category ?? 'General',
+            'slideCount' => $request->slide_count,
+            'keyTopics' => $request->key_topics ?? '',
+        ];
+
+       
+
+        $openAIService = new OpenAIService();
+        $result = $openAIService->generateGammaPresentation($params);
+
+        return response()->json($result);
+
+    } catch (\Exception $e) {
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Error generating presentation: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+/**
+ * Get Gamma Presentation Generation Status
+ */
+public function getGammaPresentationStatus(Request $request)
+{
+    
+    try {
+        $request->validate([
+            'generation_id' => 'required',
+        ]);
+
+        $openAIService = new OpenAIService();
+        $result = $openAIService->getGammaPresentationStatus($request->generation_id);
+
+
+        return response()->json($result);
+
+    } catch (\Exception $e) {
+       
+        return response()->json([
+            'success' => false,
+            'message' => 'Error getting status: ' . $e->getMessage()
+        ], 500);
+    }
 }
 
 }

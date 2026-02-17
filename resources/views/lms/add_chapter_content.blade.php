@@ -12,8 +12,8 @@
 </style-->
 <style>
     #overlay {
-        position: fixed; /* Sit on top of the page content */
-        display: none; /* Hidden by default */
+        position: fixed; /* Sit on top of the page: none; /* content */
+        display Hidden by default */
         width: 100%; /* Full width (cover the whole page) */
         height: 100%; /* Full height (cover the whole page) */
         top: 0;
@@ -172,6 +172,33 @@
                             </div>
                         </div>
 
+                        <!-- Slide Count Section -->
+                        <div class="addButtonCheckbox">
+                            <div class="row align-items-center">
+                                <div class="col-md-4 my-2">
+                                    <div class="form-group mb-0">
+                                        <label for="slideCount">Slide Count</label>
+                                        <input type="number" id="slideCount" name="slide_count"
+                                               class="form-control mb-0" placeholder="Enter slide count"
+                                               min="1" max="50">
+                                    </div>
+                                </div>
+                                <div class="col-md-4 my-2">
+                                    <div class="form-group mb-0">
+                                        <label for="aiSlideBtn">&nbsp;</label>
+                                        <div class="d-flex align-items-center mt-2">
+                                            <button type="button" id="aiSlideBtn" class="btn btn-success">
+                                                <i class="fa fa-search-plus mr-1"></i>AI
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- IBL Key Topics Input -->
+                      
+
                         <div class="row ml-1 mt-2">
                             <div class="col-md-8 border">
                                 <label for="title" class="mt-2 text-primary font-weight-bold">Pre Topic</label>
@@ -240,7 +267,7 @@
                             <div class="form-group">
                                 <label for="prompt" id="test123">Prompt</label>
                                 <textarea type="text" rows="4" class="form-control" id="prompt" name="prompt" placeholder="Prompt"></textarea>
-                                <button id="refreshPrompt" style="cursor: pointer;">🔄</button> <!-- Refresh icon -->
+                                <button id="refreshPrompt" style="cursor: pointer;">Refresh</button>
                             </div>
                         </div>
                     </div>
@@ -277,12 +304,8 @@
                                         @foreach($data['content_category'] as $key => $value)
                                             <option
                                                 value="{{$value['category_name']}}">{{$value['category_name']}}</option>
-                                    @endforeach
-                                @endif
-                                <!-- <option value="My Course" @if(isset($data['content_data']['lo_indicator_ids'])) @if( $data['loindicator_array'] == "My Course" ) selected='selected' @endif @endif>My Course</option>
-                                    <option value="Soft Skill" @if(isset($data['content_data']['lo_indicator_ids'])) @if( $data['loindicator_array'] == "Soft Skill" ) selected='selected' @endif @endif>Soft Skill</option>
-                                    <option value="Sports" @if(isset($data['content_data']['lo_indicator_ids'])) @if( $data['loindicator_array'] == "Sports" ) selected='selected' @endif @endif>Sports</option>
-                                    <option value="Triz" @if(isset($data['content_data']['lo_indicator_ids'])) @if( $data['loindicator_array'] == "Triz" ) selected='selected' @endif @endif>Triz</option>                                 -->
+                                        @endforeach
+                                    @endif
                                 </select>
                             </div>
                         </div>
@@ -356,6 +379,13 @@
         $(document).ready(function () {
             //var bar = $('.bar');
             //var percent = $('.percent');
+
+            // Bind AI button click event - use .one() to ensure single execution
+            $('#aiSlideBtn').off('click').on('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                generateGammaPresentation();
+            });
 
             $('form').ajaxForm({
                 beforeSend: function () {
@@ -488,26 +518,19 @@
   var fileName = name.substring(0, lastDot);
   var ext = name.substring(lastDot + 1);
 
-//alert(fileName);
-//alert(ext);
-
         var contentType = $("#contentType").val();
-        //alert(contentType);
 
         if (contentType != ext) {
             $("#filename").val("");
             alert("Please Upload file of " + contentType + " extension");
             return false;
         }
-        // outputfile.value = fileName;
-        // extension.value = ext;
     }
 
     function add_data() {
         var default_keyword = $("#hid_standard_name").val() + ' / ' + $("#hid_subject_name").val() + ' / ' + $("#hid_chapter_name").val() + ' / ' + $("#hid_topic_name").val();
         $("#keyword1").val(default_keyword);
         $('#ContentSuggestionModal').modal('show');
-        //$('#YouTubeList').html("");
     }
 
     function load_content_data() {
@@ -520,7 +543,6 @@
                 data: 'keyword=' + keywords + '&type=' + third_party_content,
                 success: function (result) {
 
-                    // $('#YouTubeList').css('display','block');
                     $('#YouTubeList').html("");
                     var e = $('#YouTubeList');
                     for (var i = 0; i < result.length; i++) {
@@ -529,7 +551,6 @@
                         var title = result[i]['title'];
                         var image_url = result[i]['image_url'];
                         var description = result[i]['description'];
-                        // todo : make dynamic label and input id.
                         var html = '<li class="col-md-3 mb-3"><input type="radio" value=' + video_link + ' name="youtube_link" hidden><a href="' + video_link + '" target="_blank" class="list-group-item list-group-item-action d-block h-100 p-0"> <div class="custom-control custom-radio mb-2"> <input type="radio" value=' + video_link + ' name="youtube_link" class="custom-control-input" id=' + video_link + '> <label class="custom-control-label p-1" for=' + video_link + '></label> </div> <div class="image-parent text-center"><img src="' + image_url + '" class="img-fluid w-100" alt="quixote"></div> <div class="flex-column p-3"> <h5>' + title + '<p></h5> <small>' + description + '</small> </p>  <span class="badge badge-info badge-pill text-wrap">' + video_link + '</span>  </div>  </a></li>';
 
                         $(e).append(html);
@@ -555,6 +576,724 @@
             $(".basic_advanced_div").show();
         }
     }
+
+    // Add new slide count row
+    function addNewSlideRow() {
+        var slideCountContainer = $('.slide-count-container');
+        if (slideCountContainer.length === 0) {
+            $('.addButtonCheckbox:last').after('<div class="slide-count-container"></div>');
+            slideCountContainer = $('.slide-count-container');
+        }
+        
+        var rowCount = slideCountContainer.find('.slide-count-row').length;
+        var htmlcontent = '';
+        htmlcontent += '<div class="clearfix"></div><div class="slide-count-row" style="display: flex; margin-right: -15px; margin-left: -15px; flex-wrap: wrap;">';
+        htmlcontent += '<div class="col-md-4 my-2"><div class="form-group mb-0"><label for="slideCount">Slide Count</label><input type="number" id="slideCount' + rowCount + '" name="slide_count[]" class="form-control mb-0" placeholder="Enter slide count" min="1" max="50"></div></div>';
+        htmlcontent += '<div class="col-md-4 my-2"><div class="form-group mb-0"><label for="aiSlideBtn">&nbsp;</label><div class="d-flex align-items-center mt-2"><button type="button" class="btn btn-primary" onclick="generateAISlidesForRow(' + rowCount + ');">AI</button><a href="javascript:void(0);" onclick="removeSlideRow(this);" class="d-inline btn btn-danger ml-2"><i class="mdi mdi-minus"></i></a></div></div></div>';
+        htmlcontent += '</div>';
+        
+        slideCountContainer.append(htmlcontent);
+    }
+
+    // Remove slide count row
+    function removeSlideRow(element) {
+        $(element).closest('.slide-count-row').remove();
+    }
+
+    // Generate AI slides for a specific row
+    function generateAISlidesForRow(rowId) {
+        var slideCount = $('#slideCount' + rowId).val();
+        if (!slideCount || slideCount < 1) {
+            alert('Please enter a valid slide count');
+            return;
+        }
+        generateAISlides(slideCount);
+    }
+
+    // Main function to generate AI slides
+    function generateAISlides(slideCount) {
+        if (!slideCount) {
+            slideCount = $('#slideCount').val();
+        }
+        
+        if (!slideCount || slideCount < 1) {
+            alert('Please enter a valid slide count');
+            return;
+        }
+
+        var standardId = "{{ $data['breadcrum_data']->standard_id ?? '' }}";
+        var contentCategory = $('#content_category').val();
+        
+        // Also get the mapping value ID for fallback
+        var mappingValue = '';
+        var mappingValueSelect = $('select[name="mapping_value[]"]');
+        if (mappingValueSelect.length > 0) {
+            mappingValue = mappingValueSelect.find('option:selected').val();
+        }
+        
+        // If content category dropdown is empty, try to get from selected mapping value
+        if (!contentCategory) {
+            if (mappingValueSelect.length > 0) {
+                contentCategory = mappingValueSelect.find('option:selected').text();
+            }
+        }
+        
+        if (!contentCategory) {
+            contentCategory = 'General';
+        }
+        
+        // Show loading overlay
+        $("#overlay").css("display", "block");
+        
+        $.ajax({
+            url: "{{ route('ai.generateSlides') }}",
+            type: 'POST',
+            data: {
+                standard_id: standardId,
+                subject_name: subjectName,
+                chapter_name: chapterName,
+                topic_name: topicName,
+                content_category: contentCategory,
+                mapping_value: mappingValue,
+                slide_count: slideCount,
+                _token: '{{ csrf_token() }}'
+            },
+            success: function(response) {
+                $("#overlay").css("display", "none");
+                
+                if (response.success) {
+                    // Auto-fill the uploaded PDF name into the Upload Name field
+                    if (response.file_name) {
+                        // Create a hidden input or trigger file upload
+                        $('#filename').attr('data-auto-generated', 'true');
+                        $('#filename').attr('data-generated-name', response.file_name);
+                        
+                        // Store the generated filename in a hidden field for form submission
+                        var hiddenInput = $('<input>', {
+                            type: 'hidden',
+                            name: 'ai_generated_filename',
+                            value: response.file_name
+                        });
+                        $('form').append(hiddenInput);
+                        
+                        alert('Slide content generated successfully! File: ' + response.file_name);
+                    }
+                } else {
+                    alert('Error: ' + (response.message || 'Failed to generate slides'));
+                }
+            },
+            error: function(xhr) {
+                $("#overlay").css("display", "none");
+                console.error(xhr);
+                alert('An error occurred while generating slides.');
+            }
+        });
+    }
+
+    // NEW: Generate AI slides with KAAB competencies
+    function generateKAABSlides() {
+        var slideCount = $('#slideCount').val();
+        
+        if (!slideCount || slideCount < 1) {
+            alert('Please enter a valid slide count');
+            return;
+        }
+
+        // Get basic context
+        var standardId = "{{ $data['breadcrum_data']->standard_id ?? '' }}";
+        var subjectName = "{{ $data['breadcrum_data']->subject_name ?? '' }}";
+        var chapterName = "{{ $data['breadcrum_data']->chapter_name ?? '' }}";
+        var topicName = "{{ $data['breadcrum_data']->topic_name ?? '' }}";
+        var contentCategory = $('#content_category').val() || 'General';
+        
+        // Get mapping type and value
+        var mappingTypeId = $('select[name="mapping_type[]"]').first().val();
+        var mappingValueId = $('select[name="mapping_value[]"]').first().val();
+        var mappingTypeText = $('select[name="mapping_type[]"]').first().find('option:selected').text();
+        var mappingValueText = $('select[name="mapping_value[]"]').first().find('option:selected').text();
+        
+        // Get KAAB competencies (from hidden fields or data attributes if available)
+        var knowledgeItems = [];
+        var abilityItems = [];
+        var attitudeItems = [];
+        var behaviourItems = [];
+        
+        // Try to get KAAB items from form fields (if they exist)
+        $('input[name^="knowledge"]').each(function() {
+            if ($(this).val()) {
+                knowledgeItems.push({title: $(this).val()});
+            }
+        });
+        $('input[name^="ability"]').each(function() {
+            if ($(this).val()) {
+                abilityItems.push({title: $(this).val()});
+            }
+        });
+        $('input[name^="attitude"]').each(function() {
+            if ($(this).val()) {
+                attitudeItems.push({title: $(this).val()});
+            }
+        });
+        $('input[name^="behaviour"]').each(function() {
+            if ($(this).val()) {
+                behaviourItems.push({title: $(this).val()});
+            }
+        });
+        
+        // Additional context from form
+        var instructionTaskText = $('#instruction_task_text').val() || '';
+        var criticalWorkFunction = $('#critical_work_function').val() || '';
+        var jobRole = $('#job_role').val() || '';
+        var keyTask = $('#key_task').val() || '';
+        var industry = $('#industry').val() || '';
+        var department = $('#department').val() || '';
+        var modalityString = $('#modality_string').val() || 'Online';
+        var mappingReason = $('#mapping_reason').val() || '';
+        
+        // Show loading overlay
+        $("#overlay").css("display", "block");
+        
+        $.ajax({
+            url: "{{ route('ai.generateKAABSlides') }}",
+            type: 'POST',
+            data: {
+                standard_id: standardId,
+                subject_name: subjectName,
+                chapter_name: chapterName,
+                topic_name: topicName,
+                content_category: contentCategory,
+                slide_count: slideCount,
+                mapping_type: mappingTypeText,
+                mapping_value: mappingValueText,
+                mapping_reason: mappingReason,
+                knowledge: knowledgeItems,
+                ability: abilityItems,
+                attitude: attitudeItems,
+                behaviour: behaviourItems,
+                instruction_task_text: instructionTaskText,
+                critical_work_function: criticalWorkFunction,
+                job_role: jobRole,
+                key_task: keyTask,
+                industry: industry,
+                department: department,
+                modality_string: modalityString,
+                _token: '{{ csrf_token() }}'
+            },
+            success: function(response) {
+                $("#overlay").css("display", "none");
+                
+                if (response.success) {
+                    // Log the response to console (NOT to UI)
+                    console.log('=== KAAB Slide Generation Response ===');
+                    console.log(JSON.stringify(response, null, 2));
+                    
+                    if (response.slides_data) {
+                        console.log('=== Generated Slides ===');
+                        console.log(JSON.stringify(response.slides_data, null, 2));
+                        
+                        if (response.slides_data.kaab_summary) {
+                            console.log('=== KAAB Summary ===');
+                            console.log('Knowledge items used: ' + response.slides_data.kaab_summary.knowledge_used);
+                            console.log('Ability items used: ' + response.slides_data.kaab_summary.ability_used);
+                            console.log('Attitude items used: ' + response.slides_data.kaab_summary.attitude_used);
+                            console.log('Behaviour items used: ' + response.slides_data.kaab_summary.behaviour_used);
+                            console.log('Total KAAB items: ' + response.slides_data.kaab_summary.total_items);
+                        }
+                        
+                        if (response.slides_data.slides) {
+                            console.log('Total slides generated: ' + response.slides_data.slides.length);
+                        }
+                    }
+                    
+                    // Auto-fill the uploaded filename into the Upload Name field
+                    if (response.file_name) {
+                        $('#filename').attr('data-auto-generated', 'true');
+                        $('#filename').attr('data-generated-name', response.file_name);
+                        
+                        var hiddenInput = $('<input>', {
+                            type: 'hidden',
+                            name: 'ai_generated_filename',
+                            value: response.file_name
+                        });
+                        $('form').append(hiddenInput);
+                        
+                        alert('Slide content generated successfully! File: ' + response.file_name + '\nCheck console for detailed output.');
+                    } else {
+                        alert('Slide content generated successfully!\nCheck console for detailed JSON output.');
+                    }
+                } else {
+                    alert('Error: ' + (response.message || 'Failed to generate slides'));
+                }
+            },
+            error: function(xhr) {
+                $("#overlay").css("display", "none");
+                console.error('Error response:', xhr.responseText);
+                alert('An error occurred while generating slides. Check console for details.');
+            }
+        });
+    }
+
+    // Generate PDF Presentation using Gamma API
+    // Generate PDF Presentation using Gamma API
+var isGammaGenerating = false; // Flag to prevent multiple generations
+
+function generateGammaPresentation() {
+    // Prevent multiple clicks
+    if (isGammaGenerating) {
+        alert('A presentation is already being generated. Please wait...');
+        return;
+    }
+    
+    var slideCount = $('#slideCount').val();
+    
+    if (!slideCount || slideCount < 1) {
+        alert('Please enter a valid slide count');
+        return;
+    }
+
+    // Set generating flag and disable button
+    isGammaGenerating = true;
+    $('#aiSlideBtn').prop('disabled', true).html('<i class="fa fa-spinner fa-spin mr-1"></i>Generating...');
+
+    // Get basic context
+    var standardId = "{{ $data['breadcrum_data']->standard_id ?? '' }}";
+    var subjectName = "{{ $data['breadcrum_data']->subject_name ?? '' }}";
+    var chapterName = "{{ $data['breadcrum_data']->chapter_name ?? '' }}";
+    var topicName = "{{ $data['breadcrum_data']->topic_name ?? '' }}";
+    var contentCategory = $('#content_category').val() || 'General';
+    var keyTopics = $('#keyTopics').val() || '';
+    
+    // Get mapping type and value
+    var mappingValueSelect = $('select[name="mapping_value[]"]');
+    var mappingValue = '';
+    if (mappingValueSelect.length > 0) {
+        mappingValue = mappingValueSelect.find('option:selected').val();
+    }
+    
+    // Show loading overlay
+    $("#overlay").css("display", "block");
+    
+    $.ajax({
+        url: "{{ route('ai.generateGammaPresentation') }}",
+        type: 'POST',
+        data: {
+            standard_id: standardId,
+            subject_name: subjectName,
+            chapter_name: chapterName,
+            topic_name: topicName,
+            content_category: contentCategory,
+            slide_count: parseInt(slideCount, 10),
+            mapping_value: mappingValue,
+            key_topics: keyTopics,
+            _token: '{{ csrf_token() }}'
+        },
+        success: function(response) {
+            console.log('=== Gamma Presentation Initial Response ===');
+            console.log(JSON.stringify(response, null, 2));
+            
+            if (response.success) {
+                console.log('Response is successful');
+                
+                if (response.data && response.data.generationId) {
+                    console.log('Generation ID found:', response.data.generationId);
+                    // Store generation ID for polling
+                    localStorage.setItem('gamma_generation_id', response.data.generationId);
+                    
+                    // Update overlay message and keep it visible
+                    $('#overlay p').text('Presentation generation started! Please wait while we fetch your presentation...');
+                    
+                    // Start polling for status
+                    pollGammaGenerationStatus(response.data.generationId); 
+                } else if (response.generation_id) {
+                    console.log('Generation ID found (alternate location):', response.generation_id);
+                    localStorage.setItem('gamma_generation_id', response.generation_id);
+                    $('#overlay p').text('Presentation generation started! Please wait while we fetch your presentation...');
+                    pollGammaGenerationStatus(response.generation_id);
+                }
+                
+                if (response.url) {
+                    console.log('Direct URL found in response:', response.url);
+                    // If URL is returned directly, auto-fill the form
+                    autoFillGammaForm(response.url, topicName, chapterName, subjectName);
+                    // Reset flag and button
+                    resetGammaButton();
+                }
+            } else {
+                console.log('Response failed:', response.message);
+                $("#overlay").css("display", "none");
+                resetGammaButton();
+                alert('Error: ' + (response.message || 'Failed to generate presentation'));
+            }
+        },
+        error: function(xhr) {
+            $("#overlay").css("display", "none");
+            resetGammaButton();
+            console.error('Error response:', xhr.responseText);
+            alert('An error occurred while generating the presentation. Check console for details.');
+        }
+    });
+}
+
+// Reset Gamma button state
+function resetGammaButton() {
+    isGammaGenerating = false;
+    $('#aiSlideBtn').prop('disabled', false).html('<i class="fa fa-search-plus mr-1"></i>AI');
+}
+
+// Poll for Gamma generation status
+function pollGammaGenerationStatus(generationId) {
+    var pollCount = 0;
+    var maxPolls = 70; // Maximum 70 polls (2 minutes at 1 second interval)
+    
+    console.log('========================================');
+    console.log('=== Starting Gamma Status Polling ===');
+    console.log('Generation ID:', generationId);
+    console.log('========================================');
+    
+    var pollInterval = setInterval(function() {
+        pollCount++;
+        
+        // Update overlay message with progress
+        $('#overlay p').text('Generating presentation... Please wait. Attempt ' + pollCount + '/' + maxPolls);
+        
+        $.ajax({
+            url: "{{ route('ai.getGammaPresentationStatus') }}",
+            type: 'POST',
+            data: {
+                generation_id: generationId,
+                _token: '{{ csrf_token() }}'
+            },
+            success: function(response) {
+                console.log('--- Poll #' + pollCount + ' Response ---');
+                console.log('Full response:', JSON.stringify(response, null, 2));
+                
+                if (response.success) {
+                    var status = response.status || (response.data && response.data.status) || 'unknown';
+                    var rawData = response.raw_response || response.data || {};
+                    
+                    console.log('Current status:', status);
+                    
+                    // Check for completed/succeeded status
+                    if (status === 'completed' || status === 'succeeded' || status === 'done') {
+                        clearInterval(pollInterval);
+                        $("#overlay").css("display", "none");
+                        resetGammaButton();
+                        
+                        console.log('========================================');
+                        console.log('=== PRESENTATION GENERATION COMPLETE ===');
+                        console.log('========================================');
+                        
+                        // Try multiple possible URL locations
+                        var pdfUrl = null;
+                        
+                        // Check direct response fields
+                        if (response.pdf_url) {
+                            pdfUrl = response.pdf_url;
+                            console.log('Found URL in response.pdf_url:', pdfUrl);
+                        } else if (response.url) {
+                            pdfUrl = response.url;
+                            console.log('Found URL in response.url:', pdfUrl);
+                        }
+                        
+                        // Check nested data fields
+                        if (!pdfUrl && response.data) {
+                            if (response.data.pdf_url) {
+                                pdfUrl = response.data.pdf_url;
+                                console.log('Found URL in response.data.pdf_url:', pdfUrl);
+                            } else if (response.data.url) {
+                                pdfUrl = response.data.url;
+                                console.log('Found URL in response.data.url:', pdfUrl);
+                            } else if (response.data.exportUrl) {
+                                pdfUrl = response.data.exportUrl;
+                                console.log('Found URL in response.data.exportUrl:', pdfUrl);
+                            } else if (response.data.shareUrl) {
+                                pdfUrl = response.data.shareUrl;
+                                console.log('Found URL in response.data.shareUrl:', pdfUrl);
+                            } else if (response.data.presentation_url) {
+                                pdfUrl = response.data.presentation_url;
+                                console.log('Found URL in response.data.presentation_url:', pdfUrl);
+                            }
+                            
+                            // Check exports array
+                            if (!pdfUrl && response.data.exports && Array.isArray(response.data.exports)) {
+                                console.log('Checking exports array:', response.data.exports);
+                                for (var i = 0; i < response.data.exports.length; i++) {
+                                    var exportItem = response.data.exports[i];
+                                    if (exportItem.url) {
+                                        if (exportItem.type === 'pdf' || !pdfUrl) {
+                                            pdfUrl = exportItem.url;
+                                            console.log('Found URL in exports[' + i + ']:', pdfUrl);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // Check raw_response fields
+                        if (!pdfUrl && rawData) {
+                            console.log('Checking raw data:', rawData);
+                            if (rawData.pdf_url) {
+                                pdfUrl = rawData.pdf_url;
+                                console.log('Found URL in rawData.pdf_url:', pdfUrl);
+                            } else if (rawData.url) {
+                                pdfUrl = rawData.url;
+                                console.log('Found URL in rawData.url:', pdfUrl);
+                            } else if (rawData.exportUrl) {
+                                pdfUrl = rawData.exportUrl;
+                                console.log('Found URL in rawData.exportUrl:', pdfUrl);
+                            } else if (rawData.shareUrl) {
+                                pdfUrl = rawData.shareUrl;
+                                console.log('Found URL in rawData.shareUrl:', pdfUrl);
+                            } else if (rawData.presentation_url) {
+                                pdfUrl = rawData.presentation_url;
+                                console.log('Found URL in rawData.presentation_url:', pdfUrl);
+                            }
+                            
+                            // Check presentation object in raw data
+                            if (!pdfUrl && rawData.presentation) {
+                                console.log('Checking presentation object:', rawData.presentation);
+                                if (rawData.presentation.url) {
+                                    pdfUrl = rawData.presentation.url;
+                                    console.log('Found URL in rawData.presentation.url:', pdfUrl);
+                                } else if (rawData.presentation.shareUrl) {
+                                    pdfUrl = rawData.presentation.shareUrl;
+                                    console.log('Found URL in rawData.presentation.shareUrl:', pdfUrl);
+                                }
+                            }
+                            
+                            // Check exports in raw data
+                            if (!pdfUrl && rawData.exports && Array.isArray(rawData.exports)) {
+                                console.log('Checking rawData.exports array:', rawData.exports);
+                                for (var j = 0; j < rawData.exports.length; j++) {
+                                    var rawExport = rawData.exports[j];
+                                    if (rawExport.url) {
+                                        if (rawExport.type === 'pdf' || !pdfUrl) {
+                                            pdfUrl = rawExport.url;
+                                            console.log('Found URL in rawData.exports[' + j + ']:', pdfUrl);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // Construct URL from presentation ID if available
+                        if (!pdfUrl && rawData) {
+                            var presentationId = rawData.presentationId || rawData.id || (rawData.presentation && rawData.presentation.id) || (response.data && (response.data.presentationId || response.data.id));
+                            if (presentationId && (status === 'completed' || status === 'succeeded')) {
+                                pdfUrl = "https://gamma.app/docs/" + presentationId;
+                                console.log('Constructed URL from presentation ID:', pdfUrl);
+                            }
+                        }
+                        
+                        console.log('========================================');
+                        console.log('=== FINAL EXTRACTED PDF URL ===');
+                        console.log('PDF URL:', pdfUrl);
+                        console.log('========================================');
+                        
+                        if (pdfUrl) {
+                            var topicName = $('#hid_topic_name').val() || '';
+                            var chapterName = $('#hid_chapter_name').val() || '';
+                            var subjectName = $('#hid_subject_name').val() || '';
+                            
+                            console.log('=== Form Field Values ===');
+                            console.log('Topic Name (hid_topic_name):', topicName);
+                            console.log('Chapter Name (hid_chapter_name):', chapterName);
+                            console.log('Subject Name (hid_subject_name):', subjectName);
+                            
+                            // Use setTimeout to ensure DOM is ready
+                            setTimeout(function() {
+                                autoFillGammaForm(pdfUrl, topicName, chapterName, subjectName);
+                            }, 100);
+                        } else {
+                            console.log('========================================');
+                            console.log('ERROR: No URL found in response!');
+                            console.log('Full response for debugging:', JSON.stringify(response, null, 2));
+                            console.log('========================================');
+                            alert('Presentation generated but URL not found. Check console for full response.');
+                        }
+                    } else if (status === 'failed' || status === 'error') {
+                        clearInterval(pollInterval);
+                        $("#overlay").css("display", "none");
+                        resetGammaButton();
+                        console.log('ERROR: Presentation generation failed with status:', status);
+                        alert('Presentation generation failed. Status: ' + status);
+                    } else {
+                        console.log('Status: ' + status + ' - continuing to poll...');
+                    }
+                }
+            },
+            error: function(xhr) {
+                console.error('Polling error:', xhr);
+                // Don't clear interval on error, continue polling
+            }
+        });
+        
+        // Stop polling after max attempts
+        if (pollCount >= maxPolls) {
+            clearInterval(pollInterval);
+            $("#overlay").css("display", "none");
+            resetGammaButton();
+            console.log('Polling timeout reached after ' + maxPolls + ' attempts');
+            alert('Presentation generation is taking longer than expected. Generation ID: ' + generationId + '\nPlease check back later or try again.');
+        }
+    }, 1000); // Poll every 1 second
+}
+
+// Auto-fill form with Gamma presentation data
+function autoFillGammaForm(url, topicName, chapterName, subjectName) {
+    console.log('========================================');
+    console.log('=== autoFillGammaForm CALLED ===');
+    console.log('========================================');
+    console.log('URL received:', url);
+    console.log('Topic Name:', topicName);
+    console.log('Chapter Name:', chapterName);
+    console.log('Subject Name:', subjectName);
+    
+    // Create a meaningful title
+    var titleName = topicName;
+    if (chapterName) {
+        titleName = topicName + ' - ' + chapterName;
+    }
+    if (subjectName) {
+        titleName += ' (' + subjectName + ')';
+    }
+    
+    // If still empty, use a default name
+    if (!titleName || titleName.trim() === '') {
+        titleName = 'Generated Presentation';
+    }
+    
+    console.log('Title Name generated:', titleName);
+    
+    // Set content type to LINK (important!)
+    $('#contentType').val('link');
+    console.log('ContentType field value set to: link');
+    
+    // Auto-fill Content Category to "Classroom Presentation"
+    $('#content_category option').each(function() {
+        if ($(this).text().toLowerCase().includes('classroom presentation') || 
+            $(this).text().toLowerCase().includes('classroom')) {
+            $(this).prop('selected', true);
+            console.log('Content Category set to:', $(this).text());
+        }
+    });
+    
+    // Trigger change event to update UI (show link field)
+    restrict_filetype('link');
+    console.log('restrict_filetype called with: link');
+    
+    // Small delay to ensure UI is updated before setting link
+    setTimeout(function() {
+        // Auto-fill the generated URL in the Link field
+        $('#link').val(url);
+        console.log('Link field value set to:', $('#link').val());
+        
+        // Auto-fill the title field
+        $('#title').val(titleName);
+        console.log('Title field value set to:', $('#title').val());
+        
+        // ============================================
+        // ADD HIDDEN INPUTS FOR FORM SUBMISSION
+        // ============================================
+        // Remove any existing hidden inputs
+        $('input[name="gamma_presentation_url"]').remove();
+        $('input[name="gamma_presentation_name"]').remove();
+        $('input[name="ibl_generated_url"]').remove();
+        $('input[name="ibl_content_type"]').remove();
+        
+        // IMPORTANT: Store the ACTUAL URL in gamma_presentation_url
+        $('form').append($('<input>', { 
+            type: 'hidden', 
+            name: 'gamma_presentation_url', 
+            value: url  // This is the Gamma PDF URL
+        }));
+        
+        // Store the title separately (this is for reference only)
+        $('form').append($('<input>', { 
+            type: 'hidden', 
+            name: 'gamma_presentation_name', 
+            value: titleName 
+        }));
+        
+        // Also set ibl fields for backward compatibility
+        $('form').append($('<input>', { 
+            type: 'hidden', 
+            name: 'ibl_generated_url', 
+            value: url 
+        }));
+        $('form').append($('<input>', { 
+            type: 'hidden', 
+            name: 'ibl_content_type', 
+            value: 'link' 
+        }));
+        
+        console.log('Hidden inputs added to form');
+        console.log('Gamma URL stored in hidden field:', url);
+        console.log('=== autoFillGammaForm COMPLETED ===');
+        console.log('========================================');
+        
+        // Log the final values for verification
+        console.log('=== FINAL FORM VALUES ===');
+        console.log('Title:', $('#title').val());
+        console.log('File Upload Type:', $('#contentType').val());
+        console.log('Content Category:', $('#content_category').val());
+        console.log('Link URL:', $('#link').val());
+        console.log('Gamma URL hidden field:', $('input[name="gamma_presentation_url"]').val());
+        console.log('========================================');
+        
+        // Show success notification
+        showSuccessNotification('link', url);
+    }, 200);
+}
+
+// Show success notification without blocking UI
+function showSuccessNotification(contentType, url) {
+    // Remove any existing notification
+    $('#success-notification').remove();
+    
+    // Create notification element
+    var notification = $('<div>', {
+        id: 'success-notification',
+        css: {
+            position: 'fixed',
+            top: '20px',
+            right: '20px',
+            backgroundColor: '#28a745',
+            color: 'white',
+            padding: '15px 20px',
+            borderRadius: '5px',
+            boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+            zIndex: 9999,
+            maxWidth: '400px'
+        },
+        html: '<strong>✓ Presentation Created!</strong><br>' +
+              '<small>File Type: ' + contentType.toUpperCase() + '</small><br>' +
+              '<small>URL: <a href="' + url + '" target="_blank" style="color: #fff; text-decoration: underline;">Open ' + contentType.toUpperCase() + '</a></small><br>' +
+              '<small style="font-size: 11px;">Form fields have been auto-filled.</small>'
+    });
+    
+    // Add close button
+    var closeBtn = $('<span>', {
+        css: {
+            marginLeft: '15px',
+            cursor: 'pointer',
+            fontWeight: 'bold'
+        },
+        text: '×',
+        click: function() {
+            $('#success-notification').fadeOut(300, function() { $(this).remove(); });
+        }
+    });
+    notification.prepend(closeBtn);
+    
+    // Add to page
+    $('body').append(notification);
+    
+    // Auto-hide after 5 seconds
+    setTimeout(function() {
+        $('#success-notification').fadeOut(500, function() { $(this).remove(); });
+    }, 5000);
+}
 
 </script>
 <script type="text/javascript">
