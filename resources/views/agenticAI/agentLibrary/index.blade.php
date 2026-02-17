@@ -108,118 +108,6 @@
 <script>
     // Static agents data
     const staticAgents = [
-        {
-            id: 'task-management',
-            name: 'Task Management Agent',
-            module: 'Organization Management → Task Assignment',
-            summary: 'Intelligently supports task creation, allocation, and prioritization using organizational context',
-            function: 'This agent intelligently supports task creation, allocation, and prioritization by analyzing organizational context, roles, and workload distribution.',
-            workflow: [
-                'User initiates task creation or assignment',
-                'Agent analyzes task intent and complexity',
-                'Maps tasks to relevant roles or users',
-                'Suggests priority, dependencies, and timelines'
-            ],
-            outputs: ['Smart Task Assignments', 'Priority & Effort Recommendations', 'Role-Aligned Task Distribution', 'Reduced Manual Planning Overhead'],
-            cta: 'Go to Task Assignment',
-            ctaLink: '/content/task'
-        },
-        {
-            id: 'skill-generator',
-            name: 'Skill Generator Agent',
-            module: 'Competency Library',
-            summary: 'Dynamically creates standardized skill definitions aligned with industry frameworks',
-            function: 'The Skill Generator Agent dynamically creates standardized skill definitions aligned with industry frameworks, job roles, and organizational needs.',
-            workflow: [
-                'User inputs domain, role, or competency requirement',
-                'Agent references internal frameworks and standards',
-                'Generates structured skill taxonomy',
-                'Skills are published to the competency library'
-            ],
-            outputs: ['Skill Name & Description', 'Category & Sub-Category Mapping', 'Proficiency Level Definitions', 'Reusable Skill Objects'],
-            cta: 'Open Competency Library',
-            ctaLink: '/content/Libraries/skillLibrary'
-        },
-        {
-            id: 'job-role-generator',
-            name: 'Job Role Generator Agent',
-            module: 'Competency Library',
-            summary: 'Automates creation of detailed job role definitions with skill and responsibility mappings',
-            function: 'This agent automates the creation of detailed job role definitions using industry-aligned skill and responsibility mappings.',
-            workflow: [
-                'User specifies role intent or industry context',
-                'Agent analyzes benchmark data and competencies',
-                'Generates role structure with expectations',
-                'Role is added to the competency ecosystem'
-            ],
-            outputs: ['Job Role Description', 'Required Skills & Proficiency Levels', 'Responsibility & Outcome Mapping', 'Career Path Alignment'],
-            cta: 'Manage Job Roles',
-            ctaLink: '/job-roles'
-        },
-        {
-            id: 'sanity-check',
-            name: 'Sanity Check Agent',
-            module: 'User Profile → Self Rating of Skills',
-            summary: 'Validates user self-assessments by identifying inconsistencies and rating gaps',
-            function: 'The Sanity Check Agent validates user self-assessments by identifying inconsistencies, overstatements, or gaps in skill ratings.',
-            workflow: [
-                'User submits self-rated skills',
-                'Agent cross-validates ratings against benchmarks',
-                'Flags anomalies or unrealistic scores',
-                'Provides corrective guidance'
-            ],
-            outputs: ['Skill Rating Validation', 'Confidence & Gap Indicators', 'Rating Adjustment Suggestions', 'Improved Data Accuracy'],
-            cta: 'Review Skill Self-Rating',
-            ctaLink: '/content/user/edit'
-        },
-        {
-            id: 'course-generator',
-            name: 'Build with AI – Course Generator Agent',
-            module: 'Competency Library',
-            summary: 'Creates structured, modular learning courses tailored to specific skills and roles',
-            function: 'This agent creates structured, modular learning courses tailored to specific skills, roles, or competency gaps.',
-            workflow: [
-                'User selects skill or role',
-                'Agent designs learning objectives',
-                'Generates course structure and modules',
-                'Content is published for learning delivery'
-            ],
-            outputs: ['Course Outline & Modules', 'Learning Objectives', 'Skill-to-Content Mapping', 'AI-Generated Learning Assets'],
-            cta: 'Create AI Course',
-            ctaLink: '/course-generator'
-        },
-        {
-            id: 'pal-agent',
-            name: 'Personalized Adaptive Learning (PAL) Agent',
-            module: 'Agentic AI → PAL',
-            summary: 'Delivers adaptive learning journeys with real-time content adjustment based on performance',
-            function: 'PAL delivers adaptive learning journeys by continuously adjusting content based on user performance, behavior, and progress.',
-            workflow: [
-                'Agent analyzes user skill profile',
-                'Maps learning goals and gaps',
-                'Dynamically adjusts learning path',
-                'Continuously optimizes recommendations'
-            ],
-            outputs: ['Personalized Learning Paths', 'Real-Time Adaptation', 'Skill Progress Insights', 'Outcome-Oriented Learning'],
-            cta: 'Launch PAL Agent',
-            ctaLink: 'https://learningagent-kxvkny4y8p5ud4abjappvx7.streamlit.app/'
-        },
-        {
-            id: 'smart-recruitment',
-            name: 'Smart Recruitment Agent',
-            module: 'Talent Management → Talent Acquisition',
-            summary: 'Enhances hiring through intelligent candidate-job matching using competency alignment',
-            function: 'The Smart Recruitment Agent enhances hiring by matching candidates with job roles using skill, experience, and competency alignment.',
-            workflow: [
-                'Job role and requirements are defined',
-                'Agent evaluates candidate profiles',
-                'Performs intelligent matching',
-                'Ranks candidates by fitment score'
-            ],
-            outputs: ['Candidate Fit Scores', 'Skill Match Analysis', 'Hiring Recommendations', 'Reduced Screening Time'],
-            cta: 'Go to Talent Acquisition',
-            ctaLink: '/content/Telent-management/Recruitment-management'
-        }
     ];
 
     // Icon mapping
@@ -386,7 +274,7 @@ ${getIconSVG(iconName) || 'N/A'}
     // Fetch agents from API
     async function fetchAgents() {
         try {
-            const response = await fetch('https://trizk-12-agenticai.hf.space/agents?status=draft&sub_institute_id='+{{session()->get('sub_institute_id')}});
+            const response = await fetch('https://trizk-12-agenticai.hf.space/agents?sub_institute_id='+{{session()->get('sub_institute_id')}});
             if (response.ok) {
                 const data = await response.json();
                 return data.map(agent => ({
