@@ -1,10 +1,7 @@
-{{--
 @include('../includes.headcss')
 @include('../includes.header')
 @include('../includes.sideNavigation')
---}}
-@extends('layout')
-@section('container')
+
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row bg-title">
@@ -26,8 +23,8 @@
                                 <input type="radio" name="payment_gatway_name" value="hdfc" checked>
                                 <img style="height:100px;" src="{{url('/online_fees_logo/hdfcpayment.jpg')}}">
                             </label>
-
-
+                            
+                                
                         </div>
                         <div class="col-md-12 form-group">
                             <label>
@@ -58,4 +55,3 @@
 
 @include('includes.footerJs')
 @include('includes.footer')
-@endsection

@@ -84,7 +84,7 @@ class Neo4jService
     //       MERGE (a)-[$alias:$relationshipType]->(b)";
 
     $query = "MATCH (a {".$keyStart.": '".$startNode."'}), (b {".$keyEnd.": '".$endNode."'}) 
-              MERGE (a)-[".$alias.":".$relationshipType."]->(b)";
+          CREATE (a)-[".$alias.":".$relationshipType."]->(b)";
          // MATCH (a {acedemic_section: 'PRIMARY'}), (b {standard: '1'}) CREATE (a)-[r1:OFFERS]->(b)
          // MATCH (a {standard: '2'}), (b {subject: 'Social Awareness'}) CREATE (a)-[r2:OFFERS]->(b)
       Log::Info("Relationship In process");
@@ -112,17 +112,6 @@ class Neo4jService
   
       return $message;
   }
-
-  public function testConnection()
-{
-    try {
-        $result = $this->client->run('RETURN "Neo4j Connected" AS message');
-        return $result->first()->get('message');
-    } catch (\Exception $e) {
-        Log::error('Neo4j connection failed: '.$e->getMessage());
-        return false;
-    }
-}
   
   
 }

@@ -20,7 +20,7 @@
                         <thead>
                             <tr>
                                 <th>Term</th>
-                                <th>Medium</th>
+                                <!-- <th>Medium</th> -->
                                 <th>Exam Type</th>
                                 <th>App Status</th>
                                 <th>Standard</th>
@@ -38,7 +38,7 @@
                             @foreach($data['data'] as $key => $data)
                             <tr>    
                                 <td>{{$data->term_name}}</td>
-                                <td>{{$data->medium}}</td>
+                                <!-- <td>{{$data->medium}}</td> -->
                                 <td>{{$data->exam_type}}</td>
                                 <td>{{$data->app_disp_status}}</td>
                                 <td>{{$data->std_name}}</td>

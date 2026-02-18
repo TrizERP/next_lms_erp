@@ -78,9 +78,9 @@
                             <th>Division</th>
                             <th>IMEI No.</th>
                             <th>Mobile</th>
-                            <th>Current Version</th>
-                            <th>New Version</th>
-                            <th>Creadted On</th>                                                         
+                            <!--<th>Current Version</th>
+                            <th>New Version</th>-->
+                            <th>Created On</th>                                                         
                         </tr>
                     </thead>
                     <tbody>
@@ -98,8 +98,8 @@
                             <td>{{$val['div_name']}}</td> 
                             <td>{{$val['imei_no']}}</td> 
                             <td>{{$val['mobile_no']}}</td> 
-                            <td>{{$val['curr_version']}}</td> 
-                            <td>{{$val['new_version']}}</td>
+                            <!--<td>{{$val['curr_version']}}</td> 
+                            <td>{{$val['new_version']}}</td>-->
                             <td>{{$val['CREATED_ON']}}</td>
                         </tr>
                         @php

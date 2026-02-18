@@ -170,7 +170,7 @@ class complaintController extends Controller
 		    CONCAT_WS(' ',u2.first_name,u2.middle_name,u2.last_name) AS COMPLAINT_SOLUTION_BY")
             ->where("c.SYEAR", "=", $syear)
             ->where("c.SUB_INSTITUTE_ID", "=", $sub_institute_id)
-            ->whwre("c.ID", "=", $id)
+            ->where("c.ID", "=", $id)
             ->get()->toArray();
 
         $result = array_map(function ($value) {
@@ -254,7 +254,8 @@ class complaintController extends Controller
     {
         $type = $request->input('type');
 
-        taskModel::where(["id" => $id])->delete();
+        // taskModel::where(["id" => $id])->delete();
+        complaintModel::where(["id" => $id])->delete();
 
         $res['status_code'] = "1";
         $res['message'] = "Deleted successfully";

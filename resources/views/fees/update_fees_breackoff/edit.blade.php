@@ -1,15 +1,14 @@
-{{--@include('../includes.headcss')
+@include('../includes.headcss')
 @include('../includes.header')
-@include('../includes.sideNavigation')--}}
-@extends('layout')
-@section('container')
+@include('../includes.sideNavigation')
+
 
 <div id="page-wrapper">
     <div class="container-fluid">
-        <div class="row bg-title">
-            <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
-                <h4 class="page-title">Update Fees Structure</h4>
-            </div>
+        <div class="row bg-title">            
+            <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">                
+                <h4 class="page-title">Update Fees Structure</h4>      
+            </div>     
         </div>
         <div class="card">
         <div class="col-md-12 form-group">
@@ -22,7 +21,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
+                            <tr>    
                                 <td>
                                 <span class="badge badge-success mb-1">
                                     {{$data['grade']}}</span>
@@ -37,7 +36,7 @@
                             </tr>
                         </tbody>
                     </table>
-                </div>
+                </div>      
             <span class="d-inline-block mb-2" tabindex="0" data-toggle="tooltip" title="Pink color indicates records for which fees is already taken , so you are not allowed to edit that fees structure">
             <button class="btn btn-danger" style="pointer-events: none;" type="button" disabled="">Note</button>
             </span>
@@ -58,8 +57,8 @@
                                         <th class="text-center">Total</th>
                                     </tr>
                                 </thead>
-                                @foreach ($data['data']['quota_arr'] as $quota_id => $quota_val)
-                                    @php
+                                <?php
+                                foreach ($data['data']['quota_arr'] as $quota_id => $quota_val) {
                                     $total = 0;
 //                                                    $amount_val = 0;
 //                                                    $amount_val = "";
@@ -71,37 +70,36 @@
                                     }
                                     else
                                     {
-                                        $disable_new_edit = "";
-                                        $disable_new_tr = "";
+                                        $disable_new_edit = "";  
+                                        $disable_new_tr = "";  
                                     }
                                     //END If fees collected breakoff cant be edited
-                                   @endphp
+                                    ?>
                                     <tr style="{{$disable_new_tr}}">
                                         <td>
-                                            {{$quota_val}}
+                                            <?php echo $quota_val; ?>
                                         </td>
-
-                                        @foreach ($data['data']['title_arr'] as $id => $val)
-                                            @php
+                                        <?php
+                                        foreach ($data['data']['title_arr'] as $id => $val) {
                                             $amount_val = 0;
                                             if (isset($data['data']['bk_arr']['new'][$quota_id][$id])) {
                                                 $amount_val = $data['data']['bk_arr']['new'][$quota_id][$id];
                                                 $total += $amount_val;
                                             }
-                                           @endphp
+                                            ?>
                                             <td>
                                                 <input {{$disable_new_edit}} type="text" class="form-control" value="{{$amount_val}}" name="NewValues[{{$quota_id}}][{{$id}}]">
                                             </td>
-                                        @endforeach
+                                        <?php } ?>
                                         <td class="total">
-                                            <input {{$disable_new_edit}} type="text" class="form-control w-auto" value="{{$total}}" name="total">
+                                            <input {{$disable_new_edit}} type="text" class="form-control w-auto" value="<?php echo $total; ?>" name="total">
                                         </td>
-                                        @endforeach
+                                    <?php } ?>
                                 </tr>
                             </table>
                         </div>
                     </div>
-
+                    
                     <div class="col-md-12 form-group">
                         <div class="h4 mt-2 text-primary font-weight-bold">Old Student</div>
                         <div class="table-responsive">
@@ -111,19 +109,18 @@
                                         <th>
                                         {{ App\Helpers\get_string('studentquota','request')}}
                                         </th>
-                                         @foreach ($data['data']['title_arr'] as $id => $val)
+                                        <?php foreach ($data['data']['title_arr'] as $id => $val) { ?>
                                             <th>
-                                                {{$val}}
+                                                <?php echo $val; ?>
                                             </th>
-                                        @endforeach
+                                        <?php } ?>
                                         <th>
                                             Total
                                         </th>
                                     </tr>
                                 </thead>
-
-                                @foreach ($data['data']['quota_arr'] as $quota_id => $quota_val)
-                                    @php
+                                <?php
+                                foreach ($data['data']['quota_arr'] as $quota_id => $quota_val) {
                                     $total = 0;
 //                                                    $amount_val = 0;
                                     //START If fees collected breakoff cant be edited
@@ -134,38 +131,37 @@
                                     }
                                     else
                                     {
-                                        $disable_old_edit = "";
-                                        $disable_old_tr = "";
+                                        $disable_old_edit = "";  
+                                        $disable_old_tr = "";  
                                     }
                                     //END If fees collected breakoff cant be edited
-                                   @endphp
+                                    ?>
                                     <tr style="{{$disable_old_tr}}">
                                         <td>
-                                            {{$quota_val}}
+                                            <?php echo $quota_val; ?>
                                         </td>
-
-                                        @foreach ($data['data']['title_arr'] as $id => $val)
-                                            @php
+                                        <?php
+                                        foreach ($data['data']['title_arr'] as $id => $val) {
                                             $amount_val = 0;
                                             if (isset($data['data']['bk_arr']['old'][$quota_id][$id])) {
                                                 $amount_val = $data['data']['bk_arr']['old'][$quota_id][$id];
                                                 $total += $amount_val;
                                             }
-                                           @endphp
+                                            ?>
                                             <td>
-                                                <input {{$disable_old_edit}} type="text" class="form-control" value="{{$amount_val}}" name="OldValues[{{$quota_id}}][{{$id}}]">
+                                                <input {{$disable_old_edit}} type="text" class="form-control" value="<?php echo $amount_val; ?>" name="<?php echo 'OldValues[' . $quota_id . '][' . $id . ']'; ?>">
                                             </td>
-                                        @endforeach
+                                        <?php } ?>
                                         <td class="total">
-                                            <input {{$disable_old_edit}} type="text" class="form-control w-auto" name="total" value="{{$total}}">
+                                            <input {{$disable_old_edit}} type="text" class="form-control w-auto" name="total" value="<?php echo $total; ?>">
                                         </td>
-                                        @endforeach
+                                    <?php } ?>
                                 </tr>
-
+                                       
                             </table>
                         </div>
                     </div>
-                    <div class="col-md-12 form-group">
+                    <div class="col-md-12 form-group">                        
                         <center>
                             <button type="submit" class="btn btn-info">Submit</button>
                         </center>
@@ -204,4 +200,3 @@
     }
 </script>
 @include('includes.footer')
-@endsection

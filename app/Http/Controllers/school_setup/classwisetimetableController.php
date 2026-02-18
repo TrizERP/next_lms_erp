@@ -310,10 +310,7 @@ class classwisetimetableController extends Controller
             $res['status'] = 0;
             $res['message'] = "Parameter Missing";
         }
-        if($type=="JSON"){
-            return response()->json($res);
-        }else{
-            return json_encode($res);
-        }
+
+        return json_encode($res);
     }
 }

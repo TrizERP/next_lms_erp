@@ -1153,6 +1153,7 @@ class lmsCounsellingController extends Controller
 
         return response()->json($response);
     }
+
     public function intrestQuestions(Request $request)
     {
         $start = $request->input('start') ?? 1;

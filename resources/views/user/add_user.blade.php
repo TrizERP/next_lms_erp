@@ -476,11 +476,23 @@
                         <input type="text" id='amount' name="amount" class="form-control">
                     </div>
                     <div class="col-md-4 form-group">
+                    @if(isset($masterSetups['Bank Transfer Type']) && !empty($masterSetups['Bank Transfer Type']))
+                    @php 
+                        $options  = explode('||',$masterSetups['Bank Transfer Type']['fieldvalue']);
+                    @endphp
+                        <label>{{$masterSetups['Bank Transfer Type']['fieldname']}}</label>                       
+                        <select id='transfer_type' name="transfer_type" class="form-control">
+                            @foreach($options as $key => $value)
+                            <option value="{{$value}}}">{{$value}}</option>
+                            @endforeach
+                        </select>
+                    @else
                         <label>Transfer Type</label>
                         <select id='transfer_type' name="transfer_type" class="form-control">
                             <option value="Direct">Direct</option>
                             <option value="Indirect">In Direct</option>
                         </select>
+                    @endif
                     </div>
 
                     <div class="col-md-12 form-group">
@@ -568,16 +580,15 @@
                         <label>Saturday Out Date</label>
                         <input type="time" id='saturday_out_date' name="saturday_out_date" class="form-control">
                     </div>
-
-                    <!-- <div class="col-md-6 form-group">
+<!--                <div class="col-md-6 form-group">
                         <label>Sunday In Date</label>
                         <input type="time" id='sunday_in_date' name="sunday_in_date" class="form-control">
-                    </div> -->
-                    <!-- <div class="col-md-6 form-group">
+                    </div>
+                    <div class="col-md-6 form-group">
                         <label>Sunday Out Date</label>
                         <input type="time" id='sunday_out_date' name="sunday_out_date" class="form-control">
-                    </div> -->
-
+                    </div>
+-->
                     <div class="col-md-12 form-group">
                         <center>
                             <input type="submit" name="submit" id="Submit" value="Save" class="btn btn-success">

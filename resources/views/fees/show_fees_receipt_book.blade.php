@@ -1,11 +1,7 @@
-{{--
 @include('includes.headcss')
---}}
-@extends('layout')
-@section('container')
 <link rel="stylesheet" href="../../../tooltip/enjoyhint/jquery.enjoyhint.css">
-{{--@include('includes.header')
-@include('includes.sideNavigation')--}}
+@include('includes.header')
+@include('includes.sideNavigation')
 
 <div id="page-wrapper">
     <div class="container-fluid">
@@ -14,7 +10,7 @@
                 <h4 class="page-title">Fees Receipt Book</h4>
             </div>
         </div>
-        <div class="card">
+        <div class="card">                
             @if ($sessionData = Session::get('data'))
                 @if($sessionData['status_code'] == 1)
                 <div class="alert alert-success alert-block">
@@ -28,7 +24,7 @@
 			<div class="row">
                 <div class="col-lg-3 col-sm-3 col-xs-3 mb-30">
                     <a href="{{ route('fees_receipt_book_master.create') }}?implementation=1" class="btn btn-info add-new">
-                        <i class="fa fa-plus"></i> Add New Receipt Book
+                        <i class="fa fa-plus"></i> Add New Receipt Book 
                     </a>
                 </div>
                 <div class="col-lg-12 col-sm-12 col-xs-12">
@@ -73,11 +69,11 @@
                                     <td>{{$data->status}}</td>
                                     <td>{{$data->account_number}}</td>
                                     <td>
-                                        <div class="d-flex align-items-center justify-content-end">
+                                        <div class="d-flex align-items-center justify-content-end">                                            
                                             <a href="{{ route('fees_receipt_book_master.edit',$data->receipt_id)}}" class="btn btn-info btn-outline mr-1">
                                                 <i class="ti-pencil-alt"></i>
                                             </a>
-
+                                        
                                             <form action="{{ route('fees_receipt_book_master.destroy', $data->receipt_id)}}" method="post" class="d-inline">
                                             @csrf
                                             @method('DELETE')
@@ -164,4 +160,3 @@ $(document).ready(function () {
 </script>
 @endif
 @include('includes.footer')
-@endsection

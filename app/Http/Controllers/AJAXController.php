@@ -517,6 +517,7 @@ class AJAXController extends Controller
                         $sub_query->select('subject_id')
                             ->from('timetable')
                             ->where('teacher_id', session()->get('user_id'))
+                            ->where('syear', session()->get('syear')) // added by uma on 2025-07-15
                             ->where('standard_id', $request->standard_id)
                             ->where('division_id', $request->division_id);
                     })
@@ -1145,6 +1146,7 @@ class AJAXController extends Controller
                 'se.end_date'
             )
             ->where(['s.mobile' => $mobile,'se.syear' => DB::raw('ss.syear')]) //,'fo.sub_institute_id' => $sub_institute_id
+            ->whereNull('se.end_date')
             ->get();
 
         return response()->json($all_student);
@@ -2529,6 +2531,13 @@ class AJAXController extends Controller
 
             if ($orderColumn && Schema::hasColumn($table, $orderColumn)) {
                 $query->orderBy($orderColumn, $orderDirection);
+            }
+        }
+        // added by uma 30-05-2025
+        if ($request->has('group_by') && $request->group_by) {
+            // echo $request->group_by;exit;
+            if ($request->group_by && Schema::hasColumn($table, $request->group_by)) {
+                $query->groupBy($request->group_by);
             }
         }
 

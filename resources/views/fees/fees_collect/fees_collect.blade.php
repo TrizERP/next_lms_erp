@@ -39,7 +39,8 @@
 									<th>Remaining</th>
 								</tr>
 								@php
-                  					$remainFees=$paidFees  = 0;
+                  					$remainFees = $paidFees = 0;
+
 									$feesDetails= [];
 									$bk=$paid=$remain=$discount=$Paid_and_discount=$busAmount=array();
 
@@ -69,7 +70,6 @@
 								@php
                                     }
                                         $remainFees += $arr['remain'];
-                                        $paidFees += $arr['paid'];
                                         } 
 								@endphp
 								<!-- hills previous pending fees Previous Year Fees Not Display in Current Year - Rajesh 01-07-2024  -->

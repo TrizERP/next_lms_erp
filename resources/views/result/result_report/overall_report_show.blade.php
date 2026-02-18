@@ -178,7 +178,7 @@
                                 <td class="fw-bold">MARKS ({{ $term1Total + $term2Total + $term3Total + $term4Total }})</td>
                                 <td class="fw-bold">GRADES</td>
                                 @php
-                                    $mainFinalTotal += $term1Total ?? + $term2Total ?? + $term3Total ?? 0 + $term4Total ?? 0;
+                                    $mainFinalTotal += $term1Total + $term2Total + $term3Total + $term4Total;
                                 @endphp
                             @endforeach
                             @endif

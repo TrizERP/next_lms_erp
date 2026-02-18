@@ -252,7 +252,7 @@ body, table, td, div, p {font-family: Arial, Helvetica, sans-serif !important;}
       <p style="font-size:15px;"><b>* Final Fee subject to Honorable Court decision.</b></p>
   
       <p style="line-height:1.7; font-size:15px;">
-        Pay <b style="color:#943634;">₹ 26,933/-</b> by <b>Demand Draft / Cheque</b> payable to <b>Hills High School</b>.  
+        Pay <b style="color:#943634;">₹ 26,933/-</b> by <b>Demand Draft</b> payable to <b>Hills High School</b>.  
         <br><b>No NEFT / No Cash will be accepted.</b>
       </p>
   

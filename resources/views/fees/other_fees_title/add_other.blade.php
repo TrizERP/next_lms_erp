@@ -1,8 +1,7 @@
-{{--@include('../includes.headcss')
+@include('../includes.headcss')
 @include('../includes.header')
-@include('../includes.sideNavigation')--}}
-@extends('layout')
-@section('container')
+@include('../includes.sideNavigation')
+
 
 <div id="page-wrapper">
     <div class="container-fluid">
@@ -24,7 +23,7 @@
                 @else
                 {{ method_field("PUT") }}
                 @endif
-
+            
                 {{csrf_field()}}
                 <div class="row">
                     <div class="col-md-4 form-group">
@@ -72,11 +71,11 @@
                                 </div>
                             </label>
                         </div>
-                    </div>
-                    <div class="col-md-4 form-group ml-0">
+                    </div>                    
+                    <div class="col-md-4 form-group ml-0">                        
                         <input type="submit" name="submit" value="Submit" class="btn btn-success">
                     </div>
-                </div>
+                </div>    
           </form>
         </div>
     </div>
@@ -84,4 +83,3 @@
 
 @include('includes.footerJs')
 @include('includes.footer')
-@endsection

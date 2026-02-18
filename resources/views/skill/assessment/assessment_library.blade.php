@@ -71,6 +71,7 @@ body {
                     $typeBadges[$type] = $badgeColors[$randomKey];
                 @endphp
             @endforeach
+
             </ul>
         </div>
         <div class="row mt-1">

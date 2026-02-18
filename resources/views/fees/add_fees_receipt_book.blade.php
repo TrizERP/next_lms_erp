@@ -1,18 +1,14 @@
-{{--
 @include('includes.headcss')
---}}
-@extends('layout')
-@section('container')
 <link rel="stylesheet" href="../../../plugins/bower_components/dropify/dist/css/dropify.min.css">
 <link rel="stylesheet" href="../../../tooltip/enjoyhint/jquery.enjoyhint.css">
-{{--@include('includes.header')
-@include('includes.sideNavigation')--}}
+@include('includes.header')
+@include('includes.sideNavigation')
 
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row bg-title">
             <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
-                <h4 class="page-title">Add Fees Receipt Book</h4>
+                <h4 class="page-title">Add Fees Receipt Book</h4> 
             </div>
         </div>
         <div class="card">
@@ -27,12 +23,12 @@
                     <strong>{{ $sessionData['message'] }}</strong>
                 </div>
             @endif
-            <div class="row">
+            <div class="row">                
                 <div class="col-lg-12 col-sm-12 col-xs-12">
                     <form action="{{ route('fees_receipt_book_master.store') }}" enctype="multipart/form-data" method="post">
                     {{ method_field("POST") }}
                     @csrf
-                        <div class="row">
+                        <div class="row">                        
                             <div class="col-md-4 form-group">
                                 <label>Receipt Line 1 </label>
                                 <input type="text" id='receipt_line_1' required name="receipt_line_1" class="form-control">
@@ -100,7 +96,7 @@
                                 <input type="file" accept="image/*" name="fees_receipt_logo" id="input-file-now" class="dropify" />
                             </div>
                             <div class="col-md-12 form-group">
-                                <center>
+                                <center>                                    
                                     <input type="submit" name="submit" value="Save" class="btn btn-success" >
                                 </center>
                             </div>
@@ -109,7 +105,7 @@
                 </div>
             </div>
         </div>
-    </div>
+    </div>    
 </div>
 
 @include('includes.footerJs')
@@ -254,4 +250,3 @@ $(document).ready(function() {
 </script>
 @endif
 @include('includes.footer')
-@endsection

@@ -24,6 +24,8 @@ class GraphController extends Controller
             LIMIT 50';
         
         $result = $this->neo4jService->getClient()->run($query);
+        //echo "<pre>";print_r($result);exit;
+        return response()->json($result);exit;
         // Initialize arrays for nodes and edges
         $nodes = [];
         $edges = [];

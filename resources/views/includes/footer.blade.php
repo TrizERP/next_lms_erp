@@ -1,4 +1,3 @@
- 
 
 <div id="loading-overlay" style="display:none;">
 <center>

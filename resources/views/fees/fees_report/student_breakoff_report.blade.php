@@ -111,7 +111,7 @@
                             <th>{{ App\Helpers\get_string('grno','request')}}</th>
                             <th>{{ App\Helpers\get_string('studentname','request')}}</th>
                             <th>{{ App\Helpers\get_string('std/div','request')}}</th>
-                            <th>{{ App\Helpers\get_string('studentquota','request')}}</th>
+                            <!--<th>{{ App\Helpers\get_string('studentquota','request')}}</th>-->
                             <th>{{ App\Helpers\get_string('uniqueid','request')}}</th>
                             @if (isset($data['fees_titles']))
                                 @foreach ($data['fees_titles'] as $key => $value)
@@ -138,7 +138,7 @@
                             <td>{{$fees_value['enrollment_no']}}</td>
                             <td>{{$fees_value['student_name'].' '.$fees_value['surname']}}</td>
                             <td>{{$fees_value['standard_name'].'/'.$fees_value['division_name']}}</td>
-                            <td>{{$fees_value['quota']}}</td>
+                            <!--<td>{{$fees_value['quota']}}</td>-->
                             <td>{{$fees_value['uniqueid']}}</td>
                              @php
                                 $totalAmount = 0; // Initialize the total amount variable
@@ -158,11 +158,18 @@
                 }
             }
         }
-        foreach($fees_value['otherfees'] as $k => $v) {
-            if ($k==$display_name ) {
-                $amount+=$v;
+
+        foreach ($fees_value['otherfees'] as $outer_key => $fees_array) {
+            foreach ($fees_array as $key => $values) {
+                if($key == $fees_title){
+                    foreach ($values as $inner_key => $inner_value) {
+                        if (isset($inner_value['bf_amount']) && $inner_value['bf_amount'] != 0) {
+                            $amount += $inner_value['bf_amount'];
+                        }
+                    }
+                }
             }
-        }
+        }        
         // Add the current amount to the total amount
         $totalAmount += $amount;
     @endphp
@@ -178,7 +185,7 @@
                         @endforeach
                         
                         <tr class="font-weight-bold">
-                            <td style="text-align:right;" colspan="{{ count($data['fees_titles']) + 6}}">Total</td>
+                            <td style="text-align:right;" colspan="{{ count($data['fees_titles']) + 5}}">Total</td>
                             <td style="text-align:right;">{{ $final_total_amount }}</td>
                         </tr>
                     @endif

@@ -1,18 +1,17 @@
-{{--@include('../includes.headcss')
+@include('../includes.headcss')
 @include('../includes.header')
-@include('../includes.sideNavigation')--}}
+@include('../includes.sideNavigation')
 
-@extends('layout')
-@section('container')
+
 <div id="page-wrapper">
     <div class="container-fluid">
-        <div class="row">
-            <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
-                <h4 class="page-title">Fees Breakoff</h4>
-            </div>
+        <div class="row">            
+            <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">                
+                <h4 class="page-title">Fees Breakoff</h4>            
+            </div>                    
         </div>
         <div class="card">
-            <div class="row">
+            <div class="row">                
                 <div class="col-lg-3 col-sm-3 col-xs-3 mb-3">
                     <a href="{{ route('fees_breackoff.create') }}" class="btn btn-info add-new"><i class="fa fa-plus mr-1"></i> Reset</a>
                 </div>
@@ -26,32 +25,32 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
+                            <tr>    
                                 <td>
                                     <!-- <ul class="list-icons"> -->
-                                        @foreach ($data['data']['grade_arr'] as $id => $val)
+                                        <?php foreach ($data['data']['grade_arr'] as $id => $val) { ?>
                                             <span class="badge badge-success mb-1">
-                                               {{$val}}
+                                                <?php echo $val; ?>
                                             </span>
-                                        @endforeach
+                                        <?php } ?>
                                     <!-- </ul> -->
                                 </td>
                                 <td>
                                     <!-- <ul class="list-icons"> -->
-                                        @foreach ($data['data']['std_arr'] as $id => $val)
+                                        <?php foreach ($data['data']['std_arr'] as $id => $val) { ?>
                                             <span class="badge badge-info mb-1">
-                                               {{$val}}
+                                                <?php echo $val; ?>
                                             </span>
-                                        @endforeach
+                                        <?php } ?>
                                     <!-- </ul> -->
                                 </td>
                                 <td>
                                     <!-- <ul class="list-icons"> -->
-                                        @foreach ($data['data']['month_arr'] as $id => $val)
+                                        <?php foreach ($data['data']['month_arr'] as $id => $val) { ?>
                                             <span class="badge badge-dark mb-1">
-                                                {{$val}}
+                                                <?php echo $val; ?>
                                             </span>
-                                        @endforeach
+                                        <?php } ?>
                                     <!-- </ul> -->
                                 </td>
                             </tr>
@@ -82,29 +81,29 @@
                                         <th>
                                         {{ App\Helpers\get_string('studentquota','request')}}
                                         </th>
-                                        @foreach ($data['data']['title_arr'] as $id => $val)
+                                        <?php foreach ($data['data']['title_arr'] as $id => $val) { ?>
                                             <th>
-                                                {{$val}}
+                                                <?php echo $val; ?>
                                             </th>
-                                        @endforeach
+                                        <?php } ?>
                                         <th>
                                             Total
                                         </th>
                                     </tr>
-                                   @foreach ($data['data']['quota_arr'] as $quota_id => $quota_val)
+                                    <?php foreach ($data['data']['quota_arr'] as $quota_id => $quota_val) { ?>
                                         <tr>
                                             <td>
-                                                {{$quota_val}}
+                                                <?php echo $quota_val; ?>
                                             </td>
-                                           @foreach ($data['data']['title_arr'] as $id => $val)
+                                            <?php foreach ($data['data']['title_arr'] as $id => $val) { ?>
                                                 <td>
-                                                    <input style="width: 60pt;" type="text" class="form-control" name="NewValues[{{$quota_id}}][{{$id}}]">
+                                                    <input style="width: 60pt;" type="text" class="form-control" name="<?php echo 'NewValues[' . $quota_id . '][' . $id . ']'; ?>">
                                                 </td>
-                                            @endforeach
+                                            <?php } ?>
                                             <td class="total">
                                                 <input style="width: 60pt;" readonly="readonly" type="text" class="form-control" name="total">
                                             </td>
-                                    @endforeach
+                                        <?php } ?>
                                     </tr>
                                 </table>
                             </div>
@@ -126,35 +125,35 @@
                                         <th>
                                         {{ App\Helpers\get_string('quota','request')}}
                                         </th>
-                                        @foreach ($data['data']['title_arr'] as $id => $val)
+                                        <?php foreach ($data['data']['title_arr'] as $id => $val) { ?>
                                             <th>
-                                                {{$val}}
+                                                <?php echo $val; ?>
                                             </th>
-                                        @endforeach
+                                        <?php } ?>
                                         <th>
                                             Total
                                         </th>
                                     </tr>
-                                   @foreach ($data['data']['quota_arr'] as $quota_id => $quota_val)
+                                    <?php foreach ($data['data']['quota_arr'] as $quota_id => $quota_val) { ?>
                                         <tr>
                                             <td>
-                                                {{$quota_val}}
+                                                <?php echo $quota_val; ?>
                                             </td>
-                                            @foreach ($data['data']['title_arr'] as $id => $val)
+                                            <?php foreach ($data['data']['title_arr'] as $id => $val) { ?>
                                                 <td>
-                                                    <input style="width: 60pt;" type="text" class="form-control" name="OldValues[{{$quota_id}}][{{$id}}]">
+                                                    <input style="width: 60pt;" type="text" class="form-control" name="<?php echo 'OldValues[' . $quota_id . '][' . $id . ']'; ?>">
                                                 </td>
-                                            @endforeach
+                                            <?php } ?>
                                             <td class="total">
                                                 <input style="width: 60pt;" readonly="readonly" type="text" class="form-control" name="total">
                                             </td>
-                                    @endforeach
+                                        <?php } ?>
                                     </tr>
                                 </table>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-12">
+                    <div class="col-md-12">                        
                         <center>
                             <button type="submit" class="btn btn-info">Submit</button>
                         </center>
@@ -192,4 +191,3 @@
     }
 </script>
 @include('includes.footer')
-@endsection

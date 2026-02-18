@@ -147,8 +147,8 @@ class questionmasterController extends Controller
 
         $data['questionmaster_data'] = lmsQuestionMasterModel::select('lms_question_master.*',
             'standard.name as standard_name',
-            'academic_section.title as grade_name', 'subject_name', 'chapter_name', 'question_type'
-            ,DB::raw('group_concat(DISTINCT t1.name SEPARATOR "||") as type_name'),
+            'academic_section.title as grade_name', 'subject_name', 'chapter_name', 'question_type',
+            DB::raw('group_concat(DISTINCT t1.name SEPARATOR "||") as type_name'),
             DB::raw('IFNULL(loea.question_id,"0") as attempt_question')
             // , 't.id as type_id'
             // , 't1.name as value_name', 't1.id as value_id'

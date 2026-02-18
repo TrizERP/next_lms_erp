@@ -668,7 +668,7 @@ document.getElementById('user_input').addEventListener('keypress', function(even
                         <div style="display: flex; flex-direction: column; gap: 10px;"> <!-- Reduced gap -->
                             <button class="fees-button" data-message="Pending Fees" style="width: 100%; padding: 0px; border-radius: 5px; background-color:rgb(108, 194, 111); color: white; border: 2px solid #4CAF50; cursor: pointer; font-size: 12px;">Pending Fees</button>
                         <button class="fees-button" data-message="Student not showing while collecting the fees." style="width: 100%; padding: 0px; border-radius: 5px; background-color:rgb(108, 194, 111); color: white; border: 2px solid #4CAF50; cursor: pointer; font-size: 12px;">Student Not Visible</button>
-   
+    
     <button class="fees-button" data-message="The fee amount is displayed as more than the specified break-off limit." style="width: 100%; padding: 0px; border-radius: 5px; background-color:rgb(108, 194, 111); color: white; border: 2px solid #4CAF50; cursor: pointer; font-size: 12px;">Excess Fee Amount</button>
     
     <button class="fees-button" data-message="How do I access the fees module?" style="width: 100%; padding: 0px; border-radius: 5px; background-color:rgb(108, 194, 111); color: white; border: 2px solid #4CAF50; cursor: pointer; font-size: 12px;">Access Fees Module</button>
@@ -701,8 +701,8 @@ document.getElementById('user_input').addEventListener('keypress', function(even
     
     <button class="fees-button" data-message="What reports should I generate at the end of each term or year?" style="width: 100%; padding: 0px; border-radius: 5px; background-color:rgb(108, 194, 111); color: white; border: 2px solid #4CAF50; cursor: pointer; font-size: 12px;">Term Reports</button>
 
-      </div>
-    </div>`;
+                        </div>
+                    </div>`;
             });
             document.getElementById('messages').addEventListener('click', function(event) {
                 var message=''; 
