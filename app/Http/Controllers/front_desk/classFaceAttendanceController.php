@@ -62,10 +62,16 @@ class classFaceAttendanceController extends Controller
         ])->getBody()->getContents();
 
         $harshitData = json_decode($response, true);
-        $matchedStudents = [];
+        $matchedStudents = $unmatchedStudents = [];
         if (isset($harshitData['matched_student']) && !empty($harshitData['matched_student'])) {
             foreach ($harshitData['matched_student'] as $key => $value) {
                 $matchedStudents[$value] = 'P';
+            }
+        }
+
+         if (isset($harshitData['unmatchedStudent']) && !empty($harshitData['unmatchedStudent'])) {
+            foreach ($harshitData['unmatchedStudent'] as $key => $value) {
+                $unmatchedStudents[$value] = 'A';
             }
         }
 
@@ -133,7 +139,7 @@ class classFaceAttendanceController extends Controller
         }
 
         $res['status'] = $getAllStudents ? 1 : 0;
-        $res['message'] = $getAllStudents ? 'Attendance Marked Successfully' : 'Attendance Marked Failed';
+        $res['message'] = $getAllStudents ? 'Attendance Marked Successfully !! matched students = ' . count($matchedStudents) .' and unmatch students = ' . count($getAllStudents) - count($matchedStudents) : 'Attendance Marked Failed';
 
         return is_mobile($type, 'class_face_attendance.index', $res);
     }
