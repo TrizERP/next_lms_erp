@@ -23,13 +23,13 @@ class agentLibraryController extends Controller
         $agent_id = $request->input('agent_id');
         $res['agent_id'] = $agent_id;
         $res['agent_data'] = [];
-        $agents = json_decode(file_get_contents('https://trizk-12-agenticai.hf.space/agents'), true);
-        foreach ($agents as $agent) {
-            if ($agent['id'] == $agent_id) {
-                $res['agent_data'] = $agent;
-                break;
-            }
-        }
+        // $agents = json_decode(file_get_contents('https://trizk-12-agenticai.hf.space/agents'), true);
+        // foreach ($agents as $agent) {
+        //     if ($agent['id'] == $agent_id) {
+        //         $res['agent_data'] = $agent;
+        //         break;
+        //     }
+        // }
         return is_mobile($type, "agenticAI.agentLibrary.detail", $res, "view");
     }
 }

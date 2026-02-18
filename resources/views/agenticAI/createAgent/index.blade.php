@@ -656,6 +656,9 @@
         
         // Prepare payload
         const payload = {
+            sub_institute_id: {{ session()->get('sub_institute_id') }},
+            user_id: {{ session()->get('user_id') }},
+            user_profile: "{{ session()->get('user_profile_name') }}",
             name: formData.name,
             description: formData.description,
             module: formData.module,
@@ -663,10 +666,7 @@
             role: formData.role || 'agent',
             temperature: formData.temperature,
             max_tokens: formData.maxTokens,
-            system_prompt: formData.systemPrompt,
-            tools: formData.tools,
-            sub_institute_id: {{ session()->get('sub_institute_id') }},
-            created_by: {{ session()->get('user_id') }},
+            system_prompt: formData.systemPrompt
         };
         
         // Get agent ID if editing
