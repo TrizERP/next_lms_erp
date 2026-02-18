@@ -134,8 +134,6 @@
                                     @endforeach
                                 </tr>
                                 </tbody>
-
-
                             </table>
                            
                             @if(isset($data['pdf_link']))

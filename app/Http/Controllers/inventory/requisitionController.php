@@ -105,6 +105,7 @@ $item_setting_data = inventory_master_setupModel::where([
 
         if (isset($item_setting_data[0]['ITEM_SETTING_FOR_REQUISITION']) &&
             $item_setting_data[0]['ITEM_SETTING_FOR_REQUISITION'] != '') {
+
             $item_setting_data_value = $item_setting_data[0]['ITEM_SETTING_FOR_REQUISITION'];
         }
 

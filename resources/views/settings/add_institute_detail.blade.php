@@ -25,7 +25,7 @@
                     </div>
             @endif
            
-        <center>            
+        <center>       
             <ul class="nav nav-tabs tab-title mb-4 inst-nav">
                 <li class="nav-item"><a href="#section-linemove-1" class="nav-link section-linemove-1 active" aria-selected="true" data-toggle="tab"><span>Institute Details</span></a></li>
                 <li class="nav-item"><a href="#section-linemove-2" class="nav-link section-linemove-2" aria-selected="false" data-toggle="tab"><span>Add Departments</span></a></li>

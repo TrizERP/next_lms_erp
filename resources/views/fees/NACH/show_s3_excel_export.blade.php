@@ -1,6 +1,8 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <link rel="stylesheet" href="../../../tooltip/enjoyhint/jquery.enjoyhint.css">
 <div id="page-wrapper">
     <div class="container-fluid">
@@ -176,3 +178,4 @@
     });
 </script>
 @include('includes.footer')
+@endsection

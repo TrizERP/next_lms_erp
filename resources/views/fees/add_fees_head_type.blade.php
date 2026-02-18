@@ -1,7 +1,8 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row bg-title">
@@ -21,12 +22,12 @@
                     <strong>{{ $sessionData['message'] }}</strong>
                 </div>
             @endif
-            <div class="row">                
+            <div class="row">
                 <div class="col-lg-12 col-sm-12 col-xs-12">
                     <form action="{{ route('fees_head_type_master.store') }}" enctype="multipart/form-data" method="post">
-                    {{ method_field("POST") }}                        
+                    {{ method_field("POST") }}
                     @csrf
-                        <div class="row">                        
+                        <div class="row">
                             <div class="col-md-3 form-group">
                                 <label>Code </label>
                                 <input type="text" id='code' value="@if(isset($newcode)){{ $newcode }}@endif" required name="code" class="form-control">
@@ -45,19 +46,20 @@
                                     <input id="mandatory" name="mandatory" value="1" type="checkbox">
                                     <label for="mandatory"> Mandatory </label>
                                 </div>
-                            </div>                
+                            </div>
                             <div class="col-md-12 form-group">
-                                <center>                                
+                                <center>
                                     <input type="submit" name="submit" value="Save" class="btn btn-success" >
                                 </center>
                             </div>
-                        </div>    
+                        </div>
                     </form>
                 </div>
             </div>
         </div>
-    </div>    
+    </div>
 </div>
 
 @include('includes.footerJs')
 @include('includes.footer')
+@endsection

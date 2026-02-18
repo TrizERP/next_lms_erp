@@ -3029,7 +3029,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
         }
         $res = $this->getBk($request, $id);
         // echo "<pre>";print_r($res);exit;
-        $res['bank_data'] = bankmasterModel::orderBy('bank_name', 'asc')->get()->toArray();
+        $res['bank_data'] = bankmasterModel::get()->toArray();
         // 18-01-2025 start get term 1 selected
         $res['header_month'] = DB::table('fees_month_header')
         ->where('sub_institute_id', $sub_institute_id)
@@ -3563,7 +3563,6 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
         $allFeesMonth =  FeeMonthId($syear,$sub_institute_id);
         // getFees Here
         $feesData = $this->getBk($request, $studentId);
-
         $config = tblfeesConfigModel::where([
             'sub_institute_id' => $sub_institute_id, 'syear' => $syear,
         ])->first();
@@ -3587,7 +3586,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
         $currentFees = 0;
         if(!empty($feesData) && isset($feesData['total_fees'])){
             $feesBreakOff = $feesData['total_fees'];
-            //echo "<pre>";print_r($feesBreakOff);exit;
+            // echo "<pre>";print_r($feesBreakOff);exit;
             foreach ($feesBreakOff as $key => $value) {
                if($value['remain'] > 0){
                     $getMonthYear = explode('/',$value['month']);
@@ -3605,17 +3604,26 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                         }
 
                         // previous month and current month pending fees  added condition on 30-06-2025 by uma
-                        /*if($value['month_id'] < $currentMonth && $value['month_id'] != $currentMonth && $feeYear <= date('Y')){
+                        if($value['month_id'] < $currentMonth && $value['month_id'] != $currentMonth && $feeYear <= date('Y')){
                             $currentFees += $value['remain']; // commented on 02-04-2025
-                        }*/
-                        // added by rajesh 07-01-2026
-                        $feeSortable = (int)($feeYear . str_pad($feeMonth, 2, '0', STR_PAD_LEFT));
-                        $currentSortable = (int)date('Ym');
-                        if ($feeSortable < $currentSortable && $feeYear <= date('Y')) {
-                            $currentFees += $value['remain'];
                         }
                     }
                }
+               // old code
+            //    elseif($value['remain'] > 0){
+            //         $getMonthYear = explode('/',$value['month']);
+            //         $feesMonth = isset($getMonthYear[1]) ? $getMonthYear[1] : 0;
+            //         if(($feesMonth == $syear || $feesMonth== $nextYear) && array_key_exists($currentMonth,$allFeesMonth)){
+            //             $feesMonths[] = $value['month_id'];
+            //             $pendingFees[] = $value;
+            //             if($value['month_id'] == $currentMonth){
+            //                 $currentFees += $value['remain'];
+            //                 break;
+            //             }
+            //             // previous month and current month pending fees 
+            //             $currentFees += $currentFees; // commented on 02-04-2025
+            //         }
+            //    }
             }
             $status = 1;
             $message = "Student Fees Data Found";

@@ -119,7 +119,7 @@
 							<div class="col-md-4 form-group">
 								<label>Visitor Name </label>
 								<input type="text" id='name' required name="name" value="@if(isset($data->name)) {{ $data->name }} @endif" class="form-control">									
-								<input type="hidden" id='hid_exit_msg_sent' name="hid_exit_msg_sent" value="@if(isset($data->exit_msg_sent)){{$data->exit_msg_sent}}@endif" class="form-control">
+								<input type="hidden" id='hid_exit_msg_sent' name="hid_exit_msg_sent" value="@if(isset($data->exit_msg_sent)){{$data->exit_msg_sent}}@endif" class="form-control">									
 							</div>
 							
 							<div class="col-md-4 form-group">
@@ -157,6 +157,7 @@
 								value="{{ isset($data->relation) ? $data->relation : '' }}"
 								{{ $type == 'webForm' ? 'readonly' : 'required' }}>
 						    </div>
+								
         @if($type == 'webForm')
             <input type="hidden" name="relation" value="">
         @endif
@@ -181,7 +182,7 @@
 																
 						<div class="col-md-4 form-group">
 							<label>Visitor Photo</label>
-							<input type="file" id='visitor_photo' name="visitor_photo" class="form-control" {{ $type == 'webForm' ? 'required' : '' }}>
+							<input type="file" id='visitor_photo' name="visitor_photo" required class="form-control">
 							@php
 							if(isset($data->photo) && $data->photo !="")
 							{
@@ -314,36 +315,24 @@ function ValidateNo() {
 
 function show_date_time(type)
 {
-    if(type == 'Direct') {
-        $('.hideDiv').show();
-        $('.studentForm').hide();
-
-        $("#meet_date").prop('disabled', true);        
-        $("#in_time").prop('disabled', true);        
-        $("#out_time").prop('disabled', true);        
-
-    } else if(type == 'pickUp') {
-
-        // hide all normal fields
-        $('.hideDiv').hide();
-
-        // show only student form
-        $('.studentForm').show();
-
-        // disable validation fields
-        $("#meet_date").prop('disabled', true);  
-        $("#in_time").prop('disabled', true);        
-        $("#out_time").prop('disabled', true);        
-
-    } else {  // Prior
-        $('.hideDiv').show();
-        $('.studentForm').hide();
-
-        $("#meet_date").prop('disabled', false);  
-        $("#in_time").prop('disabled', false);        
-        $("#out_time").prop('disabled', false);        
+	if(type == 'Direct')//Show Date and Time
+    {
+		$('.hideDiv').show();
+		$('.studentForm').hide();
+		//$('.clockpicker').clockpicker('hide');
+        $("#meet_date").prop('disabled',true);        
+        $("#in_time").prop('disabled',true);        
+        $("#out_time").prop('disabled',true);        
+    }else if(type == 'pickUp'){
+		$('.hideDiv').hide();
+		$('.studentForm').show();
+	}else{ //Hide Date And Time
+		$('.hideDiv').show();
+		$('.studentForm').hide();
+        $("#meet_date").prop('disabled',false);  
+		$("#in_time").prop('disabled',false);        
+        $("#out_time").prop('disabled',false);        
     }
 }
-
 </script>
 @include('includes.footer')

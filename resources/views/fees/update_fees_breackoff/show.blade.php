@@ -1,13 +1,14 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">
-        <div class="row">            
-            <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">                
-                <h4 class="page-title">Update Fees Structure</h4>            
-            </div>                    
+        <div class="row">
+            <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
+                <h4 class="page-title">Update Fees Structure</h4>
+            </div>
         </div>
         <div class="card">
             @if ($sessionData = Session::get('data'))
@@ -15,25 +16,23 @@
                 <button type="button" class="close" data-dismiss="alert">×</button>
                 <strong>{{ $sessionData['message'] }}</strong>
             </div>
-            @endif            
+            @endif
             <form action="{{ route('update_fees_breackoff.store') }}" enctype="multipart/form-data" method="post">
             {{ method_field("POST") }}
             @csrf
-                <div class="row">                    
+                <div class="row">
                     {{ App\Helpers\SearchChain('4','single','grade,std') }}
-                                                 
+
                     <div class="col-md-4 form-group">
                         <label>Month</label>
     					{{-- <div class="custom-select"> --}}
                         <select name="month_id" class="form-control" required>
                             <option value="">--Select--</option>
-                            <?php
-                            foreach ($data['data']['ddMonth'] as $id => $val) {
-                                ?>
-                                <option value="<?php echo $id ; ?>"><?php echo $val; ?></option>
-                                <?php
-                            }
-                            ?>
+
+                            @foreach ($data['data']['ddMonth'] as $id => $val)
+
+                                <option value="{{$id}}">{{$val}}</option>
+                            @endforeach
                         </select>
     					{{-- </div> --}}
                     </div>
@@ -63,3 +62,4 @@ $(document).ready(function () {
     $("#standard").attr('required', true);
 </script>
 @include('includes.footer')
+@endsection

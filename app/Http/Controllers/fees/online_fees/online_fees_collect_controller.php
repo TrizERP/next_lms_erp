@@ -1929,7 +1929,6 @@ exit; */
                 "bank_branch" => "",
                 "send_sms"=>$send_sms,
                 "inprocess"=>$inProcess, // added on 29-04-2025 for ssmission 
-                "pan_card" => $fees_bk_data["stu_data"]["pan_card"], // added on 27-12-2025 for ssmission by rajesh
                 "submit" => "Save",
             );
             // echo '<pre>';

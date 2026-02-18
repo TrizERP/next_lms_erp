@@ -21,7 +21,14 @@ class StudentResultGraphController extends Controller
 
         $result = $client->run(
             'MATCH (stu:Student {stuId: $stuId})
-             OPTIONAL MATCH (stu)-[r1:ACHIEVED]->(r:Result)
+             WITH stu
+             MATCH (stu)-[r1:ACHIEVED]->(r:Result)
+             WITH stu, r, r1
+             ORDER BY r.id
+             LIMIT 2
+             WITH stu, collect(r) as results, collect(r1) as r1s
+             UNWIND range(0, size(results)-1) as i
+             WITH stu, results[i] as r, r1s[i] as r1
              OPTIONAL MATCH (r)-[r2:FOR_SUBJECT]->(sub:Subject)
              OPTIONAL MATCH (r)-[r3:PART_OF_EXAM]->(ex:Exam)
              OPTIONAL MATCH (r)-[r4:DURING_YEAR]->(y:AcademicYear)

@@ -76,6 +76,11 @@ use App\Http\Controllers\DataMigrationController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\library\LostandDamage;
 use App\Http\Controllers\neo4jGraph\GraphController;
+use App\Http\Controllers\neo4jGraph\StudentResultGraphController;
+
+Route::get('/student-results/{stuId}', function ($stuId) {
+    return view('student-result-graph', compact('stuId'));
+});
 
 Route::get('/avionics-graph', [GraphController::class, 'showAvionicsGraph']);
 Route::get('/graph-view', function () {
@@ -647,6 +652,9 @@ Route::resource('blogs', BlogController::class);
 Route::get('/migrate-data', [DataMigrationController::class, 'migrateDataToNeo4j']);
 // added hills nursey hc
 Route::post('getHillsHPCPDF', [AJAXController::class, 'getHillsHPCPDF'])->name('getHillsHPCPDF');
+
+// Route::get('/my-leave', [LeaveSummaryReportController::class, 'MyLeave'])->name('my-leave');
+
 // added by uma for agents 
 Route::group(['prefix' => 'agent', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
     route::resource('create_agent', createAgentController::class);

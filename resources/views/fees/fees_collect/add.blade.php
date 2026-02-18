@@ -1,7 +1,8 @@
-@include('../includes.headcss')
+{{--@include('../includes.headcss')
 @include('../includes.header')
-@include('../includes.sideNavigation')
-
+@include('../includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <style>
     @font-face
     {
@@ -49,7 +50,7 @@
         border-width:5px;
     }
     .particulars
-    {	
+    {
         height:180px;
         overflow:hidden;
         display:block;
@@ -101,7 +102,7 @@
     }
     .padding
     {
-        padding-bottom:20px !important;		
+        padding-bottom:20px !important;
     }
     .logo-width
     {
@@ -109,14 +110,14 @@
         text-align:center;
     }
 
- 
+
 </style>
 <div id="page-wrapper">
     <div class="container-fluid">
-        <div class="row bg-title">            
-            <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">                
-                <h4 class="page-title">Fees Receipt</h4>            
-            </div>                    
+        <div class="row bg-title">
+            <div class="col-lg-3 col-md-4 col-sm-4 col-xs-12">
+                <h4 class="page-title">Fees Receipt</h4>
+            </div>
         </div>
         <div id="printableArea" class="row" style=" margin-top: 25px;">
             <div class="panel-body white-box">
@@ -143,7 +144,7 @@
 //        document.body.innerHTML = originalContents;
 //    }
 //    document.getElementsByTagName('button')[0].addEventListener('click', function () {
-//        
+//
 //    });
     function PrintDiv(divName) {
         var divToPrint = document.getElementById(divName);
@@ -157,3 +158,4 @@
     }
 </script>
 @include('includes.footer')
+@endsection

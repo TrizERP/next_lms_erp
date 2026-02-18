@@ -1,7 +1,8 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
-
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row bg-title">
@@ -112,7 +113,7 @@
                                     <td class="w-25">Date of Deduction:</td>
                                     <td class="w-25">
                                         <input type="text" id="deduction_date" name="deduction_date"
-                                               value="@php echo date('Y-m-d'); @endphp"
+                                               value="{{date('Y-m-d')}}"
                                                class="form-control mydatepicker">
                                     </td>
                                     <td class="w-25">Other Fees Head:</td>
@@ -160,7 +161,7 @@
                                     </td>
                                     <td>Cheque/DD Date:</td>
                                     <td>
-                                        <input type="text" id="cheque_date" name="cheque_date" value="@php echo date('Y-m-d'); @endphp"
+                                        <input type="text" id="cheque_date" name="cheque_date" value="{{date('Y-m-d')}}"
                                                class="form-control mydatepicker">
                                     </td>
                                 </tr>
@@ -338,3 +339,4 @@
     }
 </script>
 @include('includes.footer')
+@endsection

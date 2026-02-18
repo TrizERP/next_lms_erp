@@ -1,6 +1,8 @@
-@include('includes.headcss')
+{{--@include('includes.headcss')
 @include('includes.header')
-@include('includes.sideNavigation')
+@include('includes.sideNavigation')--}}
+@extends('layout')
+@section('container')
 
 <div id="page-wrapper">
     <div class="container-fluid">
@@ -41,11 +43,22 @@
                             </div>
                         </div>
                     </div>
-                    
-                    <!--<div class="col-md-4 form-group">
+
+                    <div class="col-md-4 form-group">
                         <label>{{App\Helpers\get_string('uniqueid')}}<i class="mdi mdi-lead-pencil"></i></label>
                         <input type="text" id="uniqueid" placeholder="{{App\Helpers\get_string('uniqueid')}}" name="uniqueid" class="form-control" @if(isset($data['uniqueid'])) value="{{$data['uniqueid']}}" @endif>
-                    </div>-->
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label>Mobile</label>
+                        <input type="text" id="mobile" placeholder="Mobile" name="mobile" class="form-control" @if(isset($data['mobile'])) value="{{$data['mobile']}}" @endif>
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <div class="d-inline">
+                            <input type="checkbox" name="including_inactive" value="Yes"
+                                   @if(isset($data['including_inactive'])) @if($data['including_inactive'] == 'Yes') checked @endif @endif>
+                            <span>In-active Students</span>
+                        </div>
+                    </div>
                     @endif
                     <div class="col-md-4 form-group">
                         <label>{{App\Helpers\get_string('studentname')}}<i class="mdi mdi-lead-pencil"></i></label>
@@ -57,19 +70,6 @@
                         @if(app('request')->input('implementation') == 1)
                         <input type="hidden" name="implementation" value="1">
                         @endif
-                    </div>
-                    @if(session()->get('sub_institute_id') != 76)
-                    <div class="col-md-4 form-group">
-                        <label>Mobile</label>
-                        <input type="text" id="mobile" placeholder="Mobile" name="mobile" class="form-control" @if(isset($data['mobile'])) value="{{$data['mobile']}}" @endif>
-                    </div>
-                    @endif
-                    <div class="col-md-4 form-group">
-                        <div class="d-inline">
-                            <input type="checkbox" name="including_inactive" value="Yes"
-                                   @if(isset($data['including_inactive'])) @if($data['including_inactive'] == 'Yes') checked @endif @endif>
-                            <span>In-active Students</span>
-                        </div>
                     </div>
                     <div class="col-md-12 form-group">
                         <center>
@@ -97,7 +97,7 @@
                             <th>{{ App\Helpers\get_string('studentname')}}</th>
                             <th>{{ App\Helpers\get_string('grno')}}</th>
                             <th>{{ App\Helpers\get_string('standard')}}</th>
-                            <th>{{ App\Helpers\get_string('division')}}</a></th>                            
+                            <th>{{ App\Helpers\get_string('division')}}</a></th>
                             <th>{{ App\Helpers\get_string('studentquota')}}</th>
                             <th>Mobile</th>
                             <th>{{App\Helpers\get_string('uniqueid')}}</th>
@@ -106,17 +106,17 @@
                         </tr>
                         </thead>
                         <tbody>
-                        @foreach ($data['stu_data'] as $id => $arr) 
+                        @foreach ($data['stu_data'] as $id => $arr)
                             <tr>
                                 <td>{{$id + 1 }}</td>
                                 {{-- <td>{{$arr->first_name . ' ' . $arr->middle_name . ' ' . $arr->last_name }}</td> --}} 
                                 <td>{{App\Helpers\sortStudentName("",$arr->first_name,$arr->middle_name,$arr->last_name,"")}}</td>
                                 <td>{{$arr->enrollment_no }}</td>
                                 <td>{{$arr->standard_name }}</td>
-                                <td>{{$arr->division_name }}</td>                                 
-                                <td>{{$arr->stu_quota }}</td>                                 
+                                <td>{{$arr->division_name }}</td>
+                                <td>{{$arr->stu_quota }}</td>
                                 <td>{{$arr->mobile }}</td>
-                                <td>{{$arr->uniqueid }}</td>                                        
+                                <td>{{$arr->uniqueid }}</td>
                                 <td>{{$arr->bkoff }}</td>
                                 <td>
                                     <a href="{{ route('fees_collect.edit',$arr->student_id)}}"><button style="float:left;" type="button" class="btn btn-info btn-outline ">Collect Fees</button></a>
@@ -290,3 +290,4 @@
 </script>
 @endif
 @include('includes.footer')
+@endsection

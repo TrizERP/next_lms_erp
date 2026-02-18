@@ -16,7 +16,7 @@ class imprestFeesCancelController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index(Request $request)
+    /*public function index(Request $request)
     {
         $type = $request->input('type');
         $syear = $request->session()->get('syear');
@@ -44,7 +44,32 @@ class imprestFeesCancelController extends Controller
         $res['paper_size'] = $paper_size;
 
         return is_mobile($type, "fees/imprest_fees_cancel/index", $res , "view");
+    }*/
+
+    public function index(Request $request)
+    {
+        $type = $request->input('type');
+        $syear = $request->session()->get('syear');
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+
+        // Fetch fees_config and receipt_css in a single query
+        $feesConfigData = DB::table('fees_config_master as fc')
+            ->leftJoin('fees_receipt_css as frc', 'frc.receipt_id', '=', 'fc.fees_receipt_template')
+            ->selectRaw('fc.* ,frc.css')
+            ->where('fc.sub_institute_id', $sub_institute_id)
+            ->where('fc.syear', $syear)
+            ->first();
+
+        $res = [
+            'status_code' => '1',
+            'message' => 'Success',
+            'receipt_css_data' => $feesConfigData->css,
+            'paper_size' => $feesConfigData->fees_receipt_template,
+        ];
+
+        return is_mobile($type, "fees/imprest_fees_cancel/index", $res, "view");
     }
+
 
     public function showImprestFees(Request $request)
     {
@@ -307,22 +332,39 @@ class imprestFeesCancelController extends Controller
 
             $feesCancelLog = array();
 
-            $sql = "SELECT *,GROUP_CONCAT(fees_head_id) heads
+            /*$sql = "SELECT *,GROUP_CONCAT(fees_head_id) heads
             FROM fees_receipt_book_master
             WHERE syear = '".$syear."'
             AND sub_institute_id = '".$sub_institute_id."'
             GROUP BY receipt_line_1,receipt_line_2,receipt_line_3,
             receipt_line_4,receipt_prefix,receipt_logo,last_receipt_number";
             $sql = preg_replace('/\n+/', '', $sql);
-            $result = DB::select($sql);
+            $result = DB::select($sql);*/
 
-            $get_receipt_id = "SELECT IFNULL(MAX(CONVERT(SUBSTRING_INDEX(cancel_fees_receipt_id,'/',-1), UNSIGNED)),0) AS rid
+            $result = DB::table('fees_receipt_book_master')
+                ->selectRaw('*, GROUP_CONCAT(fees_head_id) as heads')
+                ->where('syear', $syear)
+                ->where('sub_institute_id', $sub_institute_id)
+                ->groupBy('receipt_line_1', 'receipt_line_2', 'receipt_line_3', 'receipt_line_4', 'receipt_prefix', 'receipt_logo', 'last_receipt_number')
+                ->get();
+
+
+            /*$get_receipt_id = "SELECT IFNULL(MAX(CONVERT(SUBSTRING_INDEX(cancel_fees_receipt_id,'/',-1), UNSIGNED)),0) AS rid
                             FROM imprest_fees_cancel
                             WHERE sub_institute_id = '".$sub_institute_id."' AND syear = '".$syear."' ";
 
             $sql_receipt = preg_replace('/\n+/', '', $get_receipt_id);
             $RECEIPT_NO_result = DB::select($sql_receipt);
+            $RECEIPT_NO = $syear.'/'.($RECEIPT_NO_result[0]->rid + 1);*/
+
+            $RECEIPT_NO_result = DB::table('imprest_fees_cancel')
+                ->selectRaw('IFNULL(MAX(CONVERT(SUBSTRING_INDEX(cancel_fees_receipt_id, "/", -1), UNSIGNED)), 0) AS rid')
+                ->where('sub_institute_id', $sub_institute_id)
+                ->where('syear', $syear)
+                ->get();
+
             $RECEIPT_NO = $syear.'/'.($RECEIPT_NO_result[0]->rid + 1);
+
 
             // $student_sql = "SELECT s.id,CONCAT_WS(' ',s.first_name,s.last_name) AS stu_name,
             //                 CONCAT_WS('/',st.name,d.name) AS std_name,s.enrollment_no,s.mobile

@@ -35,6 +35,10 @@
                                 </datalist>
                             </div>
                             <div class="col-md-4 form-group">
+                                <label>Medical Case No.</label>
+                                <input type="text" id='medical_case_no' value="@if(isset($data['medical_case_no'])){{ $data['medical_case_no'] }}@endif" name="medical_case_no" class="form-control">
+                            </div>
+                            <div class="col-md-4 form-group">
                                 <label>{{ App\Helpers\get_string('caseno','request')}}</label>
                                 <input type="text" id='medical_case_no' value="@if(isset($data['medical_case_no'])){{ $data['medical_case_no'] }}@endif" name="medical_case_no" class="form-control" readonly="readonly">
                             </div>

@@ -123,7 +123,7 @@
                         $j=1;
                         $total_breakoff = $total_paid = $total_unpaid = $total_discount = 0;
                         $totalSum = 0;
-                        $toSum = $regularTotal= $rgBusTotal =$transTotal = $busBk = $regBk =$differntBk= 0;
+                        $toSum = $regularTotal= $rgBusTotal =$transTotal = 0;
                         $feesTotal = [];
                         $displayNamesToExclude = !empty($data['other_fees_titles']) ? $data['other_fees_titles'] : [];
                         @endphp
@@ -158,17 +158,12 @@
                                     }
                                     $toSum = $regBk - $excSum;
 
-                                    $busBk = (isset($fees_value['regBus']['bus_amount_tot'])) ? $fees_value['regBus']['bus_amount_tot'] : 0;
-                                    $regBk = (isset($fees_value['regBus']['reg_amount_tot'])) ? $fees_value['regBus']['reg_amount_tot'] : 0;
-                                    $differntBk = ($regBk - $busBk);
-                                    
                                     $regbus = ($fees_value['final_fee']['Transport Fees'] ?? 0) + $toSum;
                                     $rgBusTotal +=$regbus;
-                                    $regularTotal += $differntBk ?? 0;
-                                    $transTotal += $busBk;
+                                    $regularTotal += $toSum ?? 0;
+                                    $transTotal += $fees_value['final_fee']['Transport Fees'] ?? 0;
                                 @endphp
-                                <td style="background-color:#7befef;">{{ $busBk }}</td>
-                                <td style="background-color:#7befef;">{{ $differntBk ?? 0 }}</td>
+                                <td style="background-color:#7befef;">{{ $toSum ?? 0 }}</td>
                                 <td style="background-color:#7befef;">{{ $regbus }}</td>
                                 @foreach($data['fees_titles'] as $values)
                                     @php

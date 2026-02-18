@@ -739,30 +739,30 @@ class OpenAIService
         try {
             $conversationHistory = Session::get('conversationHistory', []);
             $conversationHistory[] = ['role' => 'user', 'content' => $input];
-
-            $response = $this->client->post('https://api.openai.com/v1/chat/completions', [
+            $response = $this->client->post('https://openrouter.ai/api/v1/chat/completions', [
                 'verify' => false,
                 'headers' => [
-                    'Authorization' => 'Bearer ' . $this->apiKey,
+                    'Authorization' => 'Bearer ' . $this->apiKey_deepseek,
                     'Content-Type' => 'application/json',
+                    'HTTP-Referer' => 'https://nextlms.in',
+                    'X-Title' => 'Next LMS ERP',
                 ],
                 'json' => [
-                    'model' => 'gpt-3.5-turbo',
+                    'model' => 'deepseek/deepseek-chat',
                     'messages' => $conversationHistory,
                     'max_tokens' => 4096,
                     'temperature' => 1.8,
                     'top_p' => 0.5,
                 ],
             ]);
-    
+
             $data = json_decode($response->getBody(), true);
             $generatedText = $data['choices'][0]['message']['content'];
             $conversationHistory[] = ['role' => 'assistant', 'content' => $generatedText];
             Session::put('conversationHistory', $conversationHistory);
             return $generatedText;
-            
-        }catch (RequestException $e) {
-            Log::error('OpenAI API Error: ' . $e->getMessage());
+        } catch (RequestException $e) {
+            Log::error('OpenRouter API Error: ' . $e->getResponse()->getBody()->getContents());
             return [
                 'title' => 'Error generating title',
                 'description' => 'Error: ' . $e->getMessage(),

@@ -124,7 +124,7 @@ class bulkStudentController extends Controller
             $tblcustom_fields['student_quota']['name'] = get_string('studentquota', 'request');
             $tblcustom_fields['student_quota']['type'] = 'dropdown';
         }
-        if (in_array($sub_institute_id,[254,76])) {
+        if (in_array($sub_institute_id,[195,254])) {
             $tblcustom_fields['student_height']['name'] = 'Student Height';
             $tblcustom_fields['student_height']['type'] = 'textbox';
 
@@ -353,7 +353,7 @@ class bulkStudentController extends Controller
         //     ->whereIn("name", $validDivisions) // Filter only valid names
         //     ->pluck("name", "id")
         //     ->toArray();
-        
+
         // edit by riddhi 13/06/2025
         $tbldivision = DB::table('std_div_map')
             ->join('division', 'division.id', '=', 'std_div_map.division_id')
@@ -576,6 +576,7 @@ class bulkStudentController extends Controller
                         // have to use this for image entering
                         $file_path = 'public/parents_image/' . $parent_image;
                         if (Storage::disk('digitalocean')->exists($file_path)) {
+                            //  echo "<pre>";print_r($file_path);exit;
                             Storage::disk('digitalocean')->delete($file_path);
                         }
 
