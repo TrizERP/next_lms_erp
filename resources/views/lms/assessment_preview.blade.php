@@ -23,11 +23,11 @@
                     <div class="card-body">
                         <form id="mappingSettingsForm" method="POST" action="{{ route('assessment_question.store') }}">
                             @csrf
-                            <input type="hidden" name="grade_id" id="grade_id" value="{{ $data['grade_id'] ?? '' }}">
-                            <input type="hidden" name="standard_id" id="standard_id" value="{{ $data['standard_id'] ?? '' }}">
-                            <input type="hidden" name="subject_id" id="subject_id" value="{{ $data['subject_id'] ?? '' }}">
-                            <input type="hidden" name="chapter_id" id="chapter_id" value="{{ $data['chapter_id'] ?? '' }}">
-                            <input type="hidden" name="topic_id" id="topic_id" value="{{ $data['topic_id'] ?? '' }}">
+                            <input type="hidden" name="grade_id" id="grade_id" value="{{ request()->get('grade_id', $data['grade_id'] ?? '') }}">
+                            <input type="hidden" name="standard_id" id="standard_id" value="{{ request()->get('standard_id', $data['standard_id'] ?? '') }}">
+                            <input type="hidden" name="subject_id" id="subject_id" value="{{ request()->get('subject_id', $data['subject_id'] ?? '') }}">
+                            <input type="hidden" name="chapter_id" id="chapter_id" value="{{ request()->get('chapter_id', $data['chapter_id'] ?? '') }}">
+                            <input type="hidden" name="topic_id" id="topic_id" value="{{ request()->get('topic_id', $data['topic_id'] ?? '') }}">
                             <div id="mappingRowsContainer">
                                 <!-- Mapping Row 1 -->
                                 <div class="mapping-row mb-3" data-row="1">
@@ -411,6 +411,12 @@ $(document).ready(function() {
     // Generate Questions Button - Call AI based on mapping selections
     $('#generateQuestionsBtn').on('click', function() {
     var $btn = $(this);
+    
+    // Prevent double-clicking
+    if ($btn.prop('disabled')) {
+        return;
+    }
+    
     var originalText = $btn.html();
     
     // Show loading state
@@ -430,6 +436,13 @@ $(document).ready(function() {
         });
     });
     
+    // Validate mappings
+    if (mappings.length === 0 || !mappings[0].mapping_type || !mappings[0].mapping_value) {
+        alert('Please select mapping type and value first.');
+        $btn.prop('disabled', false).html(originalText);
+        return;
+    }
+    
     // Get context data
     var standard = $('#standard_id').val() || 'standard';
     var subject = $('#subject_id').val() || 'subject';
@@ -446,7 +459,7 @@ $(document).ready(function() {
     
     // Call the AI endpoint
     $.ajax({
-        url: "{{ route('chat') }}",
+        url: "{{ route('lms_chat') }}",
         type: 'POST',
         data: {
             _token: "{{ csrf_token() }}",
@@ -461,37 +474,70 @@ $(document).ready(function() {
         success: function(result) {
             console.log('AI Response:', result);
             
-            // Handle the response based on your API structure
-            var questionText = '';
+            // Handle the new response format (array of question objects)
+            var generatedQuestions = [];
             
-            if (Array.isArray(result)) {
-                questionText = result[0];
-            } else if (result.questions && Array.isArray(result.questions)) {
-                questionText = result.questions[0];
-            } else if (typeof result === 'string') {
-                questionText = result;
+            if (Array.isArray(result) && result.length > 0) {
+                // Process each question from AI
+                result.forEach(function(q, index) {
+                    var questionText = q.question || '';
+                    var questionType = q.question_type || 'MCQ';
+                    var difficulty = q.difficulty || 'Medium';
+                    
+                    // Convert options to the format expected by display
+                    var options = [];
+                    if (q.options && Array.isArray(q.options)) {
+                        options = q.options.map(function(opt, optIndex) {
+                            return {
+                                text: opt.text || ('Option ' + String.fromCharCode(65 + optIndex)),
+                                correct: opt.correct || false
+                            };
+                        });
+                    } else if (questionType === 'MCQ') {
+                        // Generate default MCQ options if none provided
+                        options = [
+                            { text: "Option A", correct: true },
+                            { text: "Option B", correct: false },
+                            { text: "Option C", correct: false },
+                            { text: "Option D", correct: false }
+                        ];
+                    }
+                    
+                    generatedQuestions.push({
+                        id: index + 1,
+                        question: questionText,
+                        question_type: questionType,
+                        difficulty: difficulty,
+                        options: options,
+                        correct_answer: q.correct_answer || '',
+                        explanation: q.explanation || '',
+                        question_title: questionText,
+                        mappings: mappings,
+                        points: mappings[0]?.marks || 1
+                    });
+                });
             } else {
-                questionText = JSON.stringify(result);
+                // Fallback - create a single question if no results
+                generatedQuestions = [{
+                    id: 1,
+                    question: 'Sample question - please regenerate',
+                    question_type: 'MCQ',
+                    difficulty: 'Medium',
+                    options: [
+                        { text: "Option A", correct: true },
+                        { text: "Option B", correct: false },
+                        { text: "Option C", correct: false },
+                        { text: "Option D", correct: false }
+                    ],
+                    correct_answer: 'Option A',
+                    explanation: 'Sample explanation',
+                    question_title: 'Sample question',
+                    mappings: mappings,
+                    points: mappings[0]?.marks || 1
+                }];
             }
             
-            // Auto map depth/bloom/learning
-            check_input_from_ai(questionText);
-            
-            // Display question
-            var generatedQuestions = [{
-                id: 1,
-                question: questionText,
-                options: [
-                    { text: "Option A", correct: true },
-                    { text: "Option B", correct: false },
-                    { text: "Option C", correct: false },
-                    { text: "Option D", correct: false }
-                ],
-                question_title: questionText,
-                mappings: mappings,
-                points: mappings[0]?.marks || 1
-            }];
-            
+            // Display questions (but DON'T call check_input_from_ai to avoid duplicates)
             displayQuestions(generatedQuestions);
             displayAnswerKey(generatedQuestions);
             $('#generated_questions_data').val(JSON.stringify(generatedQuestions));
@@ -525,21 +571,45 @@ $(document).ready(function() {
         
         questions.forEach(function(q, index) {
             var optionsHtml = '';
-            q.options.forEach(function(opt, optIndex) {
-                var optionLetter = String.fromCharCode(65 + optIndex);
-                optionsHtml += `
-                    <div class="option-item">
-                        <strong>${optionLetter}.</strong> ${opt.text}
-                        ${opt.correct ? '<span class="badge badge-success ml-2">Correct</span>' : ''}
-                    </div>
-                `;
-            });
+            
+            // Handle different question types
+            if (q.question_type === 'MCQ' || (q.options && q.options.length > 0)) {
+                q.options.forEach(function(opt, optIndex) {
+                    var optionLetter = String.fromCharCode(65 + optIndex);
+                    optionsHtml += `
+                        <div class="option-item ${opt.correct ? 'correct' : ''}">
+                            <strong>${optionLetter}.</strong> ${opt.text}
+                            ${opt.correct ? '<span class="badge badge-success ml-2">Correct</span>' : ''}
+                        </div>
+                    `;
+                });
+            } else if (q.question_type === 'ShortAnswer' || q.question_type === 'LongAnswer') {
+                optionsHtml = '<p><em>Answer type: ' + q.question_type + '</em></p>';
+                if (q.correct_answer) {
+                    optionsHtml += '<p><strong>Suggested Answer:</strong> ' + q.correct_answer + '</p>';
+                }
+            } else if (q.question_type === 'FillInBlanks') {
+                optionsHtml = '<p><em>Fill in the blanks question</em></p>';
+                if (q.correct_answer) {
+                    optionsHtml += '<p><strong>Answer:</strong> ' + q.correct_answer + '</p>';
+                }
+            }
+            
+            // Get mapping info from mappings array
+            var mappingInfo = '';
+            if (q.mappings && q.mappings.length > 0) {
+                mappingInfo = q.mappings.map(function(m, mIndex) {
+                    return `<span class="d-block"><i class="mdi mdi-tag-outline"></i> Mapping ${mIndex + 1}: ${m.reason || 'N/A'}</span>`;
+                }).join('');
+            }
             
             var questionHtml = `
                 <div class="question-item">
                     <div class="question-header" onclick="toggleQuestion(${q.id})">
                         <div>
                             <strong>Q${index + 1}.</strong> ${q.question.substring(0, 80)}${q.question.length > 80 ? '...' : ''}
+                            <span class="badge badge-info ml-2">${q.question_type || 'MCQ'}</span>
+                            <span class="badge badge-secondary ml-1">${q.difficulty || 'Medium'}</span>
                         </div>
                         <i class="mdi mdi-chevron-down" id="icon-${q.id}"></i>
                     </div>
@@ -547,15 +617,11 @@ $(document).ready(function() {
                         <div class="question-text mb-3">
                             <strong>Question:</strong> ${q.question}
                         </div>
-                        <div class="question-options">
-                            <strong>Options:</strong>
-                            ${optionsHtml}
-                        </div>
+                        ${optionsHtml ? `<div class="question-options"><strong>Answer:</strong>${optionsHtml}</div>` : ''}
+                        ${q.explanation ? `<div class="alert alert-info mt-2"><strong>Explanation:</strong> ${q.explanation}</div>` : ''}
                         <div class="question-meta">
-                            <span><i class="mdi mdi-tag-outline"></i> Mapping Type: ${q.mapping_type}</span>
-                            <span><i class="mdi mdi-tag"></i> Mapping Value: ${q.mapping_value}</span>
-                            <span><i class="mdi mdi-text-box-outline"></i> Reason: ${q.reason}</span>
-                            <span><i class="mdi mdi-folder-outline"></i> Domain: ${q.domain_category}</span>
+                            ${mappingInfo}
+                            <span><i class="mdi mdi-star"></i> Points: ${q.points || 1}</span>
                         </div>
                     </div>
                 </div>
@@ -635,26 +701,25 @@ $(document).ready(function() {
             data: formData,
             success: function(result) {
                 console.log('Save result:', result);
-                alert('Questions saved successfully!');
-                $btn.prop('disabled', false);
-                $btn.html(originalText);
                 
-                // Reset the form
-                $('#generated_questions_data').val('');
-                $('#questionsContainer').html(`
-                    <div class="text-center py-5 text-muted">
-                        <i class="mdi mdi-file-question-outline mdi-48px mb-3"></i>
-                        <p class="mb-0">No questions available.</p>
-                        <p class="small">Click 'Generate Question (AI)' to create questions.</p>
-                    </div>
-                `);
-                $('#answerkeyContainer').html(`
-                    <div class="text-center py-5 text-muted">
-                        <i class="mdi mdi-key-variant mdi-48px mb-3"></i>
-                        <p class="mb-0">No answer key available.</p>
-                        <p class="small">Generate questions to see the answer key.</p>
-                    </div>
-                `);
+                if (result.status_code === 1) {
+                    alert('Questions saved successfully! Total saved: ' + result.saved_questions.length);
+                    
+                    // Trigger custom event to notify parent page
+                    $(document).trigger('questionsSaved', [result.saved_questions]);
+                    
+                    // Close the modal and refresh parent page
+                    $('#assessmentPreviewModal').modal('hide');
+                    
+                    // Reload the page to show saved questions
+                    setTimeout(function() {
+                        window.location.reload();
+                    }, 500);
+                } else {
+                    alert(result.message || 'Error saving questions');
+                    $btn.prop('disabled', false);
+                    $btn.html(originalText);
+                }
             },
             error: function(xhr, status, error) {
                 console.error('Error saving questions:', error);
@@ -668,8 +733,10 @@ $(document).ready(function() {
 </script>
 <script>
 /* ---------- AI AUTO MAPPING HELPERS ---------- */
+// NOTE: check_input_from_ai is disabled to prevent duplicate mapping fields
+// The mapping is now done directly from user selection
 
-// Select mapping value by text
+// Select mapping value by text (available for manual use)
 function selectMappingValue(rowId, valueText) {
     $('select[name="mapping_value[]"][data-row="' + rowId + '"] option').each(function () {
         if ($(this).text().trim() === valueText.trim()) {
@@ -678,74 +745,10 @@ function selectMappingValue(rowId, valueText) {
     });
 }
 
-// Ensure mapping row exists
+// Ensure mapping row exists (available for manual use)
 function ensureMappingRow(rowId) {
     if ($('.mapping-row[data-row="' + rowId + '"]').length === 0) {
         $('#addMappingBtn').click();
     }
-}
-
-// AI analysis → auto fill mapping
-function check_input_from_ai(questionText) {
-
-    var standard = $('#standard_id').val();
-
-    var data = {
-        question: questionText,
-        standard: standard,
-        type_depth: 9,
-        type_bloom: 82,
-        type_learning: "learn"
-    };
-
-    var path = "{{ route('chat') }}";
-
-    $.ajax({
-        url: path,
-        data: data,
-        success: function (result) {
-
-            let parsed;
-            try {
-                parsed = JSON.parse(result);
-            } catch (e) {
-                parsed = result;
-            }
-
-            let depthVal, bloomVal, reasonDepth, reasonBloom, learning;
-
-            if (Array.isArray(parsed)) {
-                depthVal     = parsed[0]?.question_depth;
-                bloomVal     = parsed[0]?.question_bloom;
-                reasonDepth  = parsed[0]?.reason_depth;
-                reasonBloom  = parsed[0]?.reason_bloom;
-                learning     = parsed[0]?.question_learning;
-            } else {
-                depthVal     = parsed.question_depth;
-                bloomVal     = parsed.question_bloom;
-                reasonDepth  = parsed.reason_depth;
-                reasonBloom  = parsed.reason_bloom;
-                learning     = parsed.question_learning;
-            }
-
-            /* ---------- ROW 1 : DEPTH ---------- */
-            $('#mapping_type_1').val(9).trigger('change');
-            setTimeout(function () {
-                selectMappingValue(1, depthVal);
-                $('#reason_1').val(reasonDepth);
-            }, 400);
-
-            /* ---------- ROW 2 : BLOOM ---------- */
-            ensureMappingRow(2);
-            $('#mapping_type_2').val(82).trigger('change');
-            setTimeout(function () {
-                selectMappingValue(2, bloomVal);
-                $('#reason_2').val(reasonBloom);
-            }, 600);
-
-            /* ---------- LEARNING OUTCOME ---------- */
-            $('textarea[name="learning_outcome"]').val(learning);
-        }
-    });
 }
 </script>
