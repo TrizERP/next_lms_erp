@@ -29,7 +29,7 @@ class contentController extends Controller
 
     public function getData($request){
         if($request->has('preload_lms')){
-            $sub_institute_id = 1;
+            $sub_institute_id = $request->input('sub_institute_id');
         }else{
         $sub_institute_id = $request->session()->get('sub_institute_id');
         }

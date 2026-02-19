@@ -523,6 +523,8 @@ Route::any('check_permissions',[AJAXController::class, 'check_access'])->name('c
 Route::any('check_access',[AJAXController::class, 'check_access'])->name('check_access');
 
 Route::any('chat',[AJAXController::class, 'chat'])->name('chat');
+Route::post('/chat', [App\Http\Controllers\lms\assessmentQuestionController::class, 'chat'])->name('chat');
+Route::post('assessment_question/store', [\App\Http\Controllers\lms\assessmentQuestionController::class, 'store'])->name('assessment_question.store');
 Route::any('geminiAI',[AJAXController::class, 'geminiAI'])->name('geminiAI');
 Route::get('lms_data',[AJAXController::class, 'lmsDataApi'])->name('lms_data');
 Route::any('python_timetable',[AJAXController::class, 'pythonTimetable'])->name('python_timetable');
