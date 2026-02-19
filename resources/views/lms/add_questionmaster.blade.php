@@ -218,6 +218,7 @@ br {
                         </div>
                     </div>
                     <button class="btn btn-primary" type="submit">Submit</button>
+                    <button type="button" class="btn btn-success" id="save_question_btn">Save Question</button>
                 </form>
             </div>
         </div>
@@ -563,7 +564,7 @@ $("#lomaster").change(function(){
 //END Bind LO Indicator
 </script>
 
- <script>
+<script>
 //map value
 
 // Define the load_map_value function
@@ -682,5 +683,129 @@ function check_input(inputElement) {
 
 }
 </script>
+
+<script>
+// Save Question via AJAX
+$(document).on('click', '#save_question_btn', function(e) {
+    e.preventDefault();
+    
+    // Validate required fields
+    var questionTypeId = $('#question_type_id').val();
+    var points = $('#points').val();
+    var editor = CKEDITOR.instances['question_title'];
+    var questionTitle = editor ? editor.getData() : $('#question_title').val();
+    
+    if (!questionTypeId) {
+        alert('Please select a Question Type');
+        return;
+    }
+    if (!points) {
+        alert('Please enter Question Mark');
+        return;
+    }
+    if (!questionTitle || questionTitle.trim() === '') {
+        alert('Please enter a Question');
+        return;
+    }
+    
+    // Get form data
+    var formData = {
+        '_token': '{{ csrf_token() }}',
+        '_method': 'POST',
+        'grade_id': $('#grade_id').val(),
+        'standard_id': $('#standard_id').val(),
+        'subject_id': $('#subject_id').val(),
+        'chapter_id': $('#chapter_id').val(),
+        'topic_id': $('#topic_id').val() || '',
+        'question_type_id': questionTypeId,
+        'points': points,
+        'description': $('#description').val(),
+        'hint_text': $('#hint_text').val(),
+        'learning_outcome': $('textarea[name="learning_outcome"]').val(),
+        'answer': $('#answer').val(),
+        'status': $('#status').is(':checked') ? 1 : 0,
+        'multiple_answer': $('#multiple_answer').is(':checked') ? 1 : 0,
+        'question_title': questionTitle
+    };
+    
+    // Get mapping type values
+    var mappingTypes = [];
+    var mappingValues = [];
+    var reasons = [];
+    
+    $('select[name="mapping_type[]"]').each(function() {
+        mappingTypes.push($(this).val());
+    });
+    $('select[name="mapping_value[]"]').each(function() {
+        mappingValues.push($(this).val());
+    });
+    $('textarea[name="reasons[]"]').each(function() {
+        reasons.push($(this).val());
+    });
+    
+    formData['mapping_type'] = mappingTypes;
+    formData['mapping_value'] = mappingValues;
+    formData['reasons'] = reasons;
+    
+    // Get pre/post/cross curriculum topics
+    formData['prechapter'] = $('select[name="prechapter"]').val() || '';
+    formData['pretopic'] = $('select[name="pretopic"]').val() || '';
+    formData['postchapter'] = $('select[name="postchapter"]').val() || '';
+    formData['posttopic'] = $('select[name="posttopic"]').val() || '';
+    formData['cross-curriculumchapter'] = $('select[name="cross-curriculumchapter"]').val() || '';
+    formData['cross-curriculumtopic'] = $('select[name="cross-curriculumtopic"]').val() || '';
+    
+    // Get options for multiple choice questions
+    if (questionTypeId == 1) {
+        var options = [];
+        var feedback = [];
+        var correctAnswers = [];
+        
+        $('input[name="options[NEW][]"]').each(function(index) {
+            options.push($(this).val());
+        });
+        $('input[name="feedback[NEW][]"]').each(function(index) {
+            feedback.push($(this).val());
+        });
+        $('input[name="correct_answer[]"]:checked').each(function(index) {
+            correctAnswers.push($(this).val());
+        });
+        
+        formData['options'] = {'NEW': options};
+        formData['feedback'] = {'NEW': feedback};
+        formData['correct_answer'] = correctAnswers;
+    }
+    
+    // Show loading indicator
+    $('#save_question_btn').prop('disabled', true).text('Saving...');
+    
+    $.ajax({
+        url: '{{ route("question_master.store") }}',
+        type: 'POST',
+        data: formData,
+        success: function(response) {
+            // Get the redirect URL
+            var chapterId = $('#chapter_id').val();
+            var topicId = $('#topic_id').val();
+            var standardId = $('#standard_id').val();
+            
+            var redirectUrl = '{{ route("question_master.index") }}?chapter_id=' + chapterId + '&standard_id=' + standardId;
+            if (topicId) {
+                redirectUrl += '&topic_id=' + topicId;
+            }
+            
+            // Show success message and redirect
+            alert('Question saved successfully!');
+            window.location.href = redirectUrl;
+        },
+        error: function(xhr, status, error) {
+            console.error('Error saving question:', error);
+            alert('Error saving question. Please try again.');
+            $('#save_question_btn').prop('disabled', false).text('Save Question');
+        }
+    });
+});
+</script>
+
 @include('includes.footer')
 @endsection

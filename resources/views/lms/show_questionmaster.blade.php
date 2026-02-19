@@ -28,6 +28,9 @@
                 </nav>
             </div>
             <div class="col-md-3 mb-4 text-md-right">
+                <a href="#" id="openAssessmentPreview" class="btn btn-info add-new" data-toggle="modal" data-target="#assessmentPreviewModal">
+                    <i class="fa fa-plus"></i> Add Question (AI)
+                </a>
                 <a href="{{ route('question_master.create',['chapter_id' => $_REQUEST['chapter_id'],'topic_id' => $_REQUEST['topic_id'],'standard_id'=>$_REQUEST['standard_id']]) }}"
                    class="btn btn-info add-new"><i class="fa fa-plus"></i> Add Question</a>
             </div>
@@ -163,6 +166,8 @@
 </div>
 
 @include('includes.lmsfooterJs')
+
+@include('lms.assessment_preview')
 
 <script src="//cdn.mathjax.org/mathjax/latest/MathJax.js">
     MathJax.Hub.Config({
