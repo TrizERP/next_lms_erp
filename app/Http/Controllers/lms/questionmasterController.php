@@ -44,6 +44,13 @@ class questionmasterController extends Controller
         })
         ->get()->toArray();
         
+        // Pass grade_id, standard_id, subject_id, chapter_id, topic_id for assessment preview modal
+        $res['grade_id'] = $request->get('grade_id');
+        $res['standard_id'] = $request->get('standard_id');
+        $res['subject_id'] = $request->get('subject_id');
+        $res['chapter_id'] = $request->get('chapter_id');
+        $res['topic_id'] = $request->get('topic_id');
+        
         // echo "<pre>";print_r($data);exit;
         return is_mobile($type, 'lms/show_questionmaster', $res, "view");
     }
@@ -147,6 +154,14 @@ class questionmasterController extends Controller
                 ->orWhere('topic_id', $request->get('topic_id'));
         })
         ->get()->toArray();
+        
+        // Pass grade_id, standard_id, subject_id, chapter_id, topic_id for assessment preview modal
+        $res['grade_id'] = $request->get('grade_id');
+        $res['standard_id'] = $request->get('standard_id');
+        $res['subject_id'] = $request->get('subject_id');
+        $res['chapter_id'] = $request->get('chapter_id');
+        $res['topic_id'] = $request->get('topic_id');
+        
         // echo "<pre>";print_r($res['lms_mapping_type']);exit;
         return is_mobile($type, 'lms/show_chapter_questionmaster', $res, "view");
     }
