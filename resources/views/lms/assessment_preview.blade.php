@@ -145,6 +145,9 @@
                 <button type="button" class="btn btn-secondary" disabled>
                     <i class="mdi mdi-arrow-left mr-1"></i> Previous
                 </button>
+                <button type="button" class="btn btn-success" id="saveQuestionsBtn">
+                    <i class="mdi mdi-content-save mr-1"></i> Save Questions
+                </button>
                 <button type="button" class="btn btn-primary" id="nextBtn">
                     Next <i class="mdi mdi-arrow-right ml-1"></i>
                 </button>
@@ -602,25 +605,32 @@ $(document).ready(function() {
     };
     
     // Save Questions Button - Submit to controller
-    $('#mappingSettingsForm').on('submit', function(e) {
-        e.preventDefault();
-        
+    $('#saveQuestionsBtn').on('click', function() {
         var generatedData = $('#generated_questions_data').val();
         if (!generatedData) {
             alert('Please generate questions first before saving.');
             return false;
         }
         
-        var $btn = $('#saveQuestionsBtn');
+        var $btn = $(this);
         var originalText = $btn.html();
         
         $btn.prop('disabled', true);
         $btn.html('<span class="generate-loading"></span> Saving...');
         
-        var formData = $(this).serialize();
+        // Get form data
+        var formData = {
+            _token: "{{ csrf_token() }}",
+            generated_questions: generatedData,
+            grade_id: $('#grade_id').val(),
+            standard_id: $('#standard_id').val(),
+            subject_id: $('#subject_id').val(),
+            chapter_id: $('#chapter_id').val(),
+            topic_id: $('#topic_id').val()
+        };
         
         $.ajax({
-            url: $(this).attr('action'),
+            url: "{{ route('assessment_question.store') }}",
             type: 'POST',
             data: formData,
             success: function(result) {
