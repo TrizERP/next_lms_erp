@@ -32,6 +32,17 @@ class questionmasterController extends Controller
         $res['message'] = "SUCCESS";
         $res['data'] = $data['questionmaster_data'];
         $res['breadcrum_data'] = $data['breadcrum_data'];
+        $res['lms_mapping_type'] = DB::table('lms_mapping_type')
+        ->where('status', '=', 1)
+        ->where('parent_id', '=', 0)
+        ->where(function ($q) use ($request) {
+            $q->where('globally', '=', 1)
+                ->orWhere('chapter_id', $request->get('chapter_id'));
+        })->where(function ($q) use ($request) {
+            $q->where('topic_id', '=', 0)
+                ->orWhere('topic_id', $request->get('topic_id'));
+        })
+        ->get()->toArray();
         
         // echo "<pre>";print_r($data);exit;
         return is_mobile($type, 'lms/show_questionmaster', $res, "view");
