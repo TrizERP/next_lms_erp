@@ -31,13 +31,34 @@ class assessmentQuestionController extends Controller
      */
     public function store(Request $request)
     {
+        // return $request;
+        // Log the incoming request for debugging
+        \Log::info('Assessment Question Store Request:', $request->all());
+        
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $user_id = $request->session()->get('user_id');
         
+        // Validate required fields
+        if (!$request->has('generated_questions') || empty($request->get('generated_questions'))) {
+            return response()->json([
+                'status_code' => 0,
+                'message' => 'No questions generated. Please generate questions first.'
+            ]);
+        }
+        
+        if (!$request->has('chapter_id') || empty($request->get('chapter_id'))) {
+            return response()->json([
+                'status_code' => 0,
+                'message' => 'Chapter ID is required.'
+            ]);
+        }
+        
         // Get question type mapping from database
         $questionTypesList = DB::table('question_type_master')
-            ->where('sub_institute_id', $sub_institute_id)
-            ->orWhere('sub_institute_id', 0)
+            ->where(function($q) use ($sub_institute_id) {
+                $q->where('sub_institute_id', $sub_institute_id)
+                  ->orWhere('sub_institute_id', 0);
+            })
             ->get();
         
         $questionTypeMap = [];
@@ -54,6 +75,7 @@ class assessmentQuestionController extends Controller
         } else {
             $generatedQuestions = $generatedQuestionsJson;
         }
+        // return $generatedQuestions; 
         
         if (empty($generatedQuestions)) {
             return response()->json([
