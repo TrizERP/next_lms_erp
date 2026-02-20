@@ -11,6 +11,7 @@
                 <nav aria-label="breadcrumb">
                     <ol class="breadcrumb bg-transparent p-0">
                         <li class="breadcrumb-item"><a href="{{route('course_master.index')}}">LMS</a></li>
+                        @if($data['breadcrum_data'])
                         <li class="breadcrumb-item"><a
                                 href="{{ route('chapter_master.index',['standard_id'=>$data['breadcrum_data']->standard_id,'subject_id'=>$data['breadcrum_data']->subject_id]) }}">{{$data['breadcrum_data']->subject_name}}</a>
                         </li>
@@ -18,8 +19,9 @@
                                 href="{{ route('topic_master.index',['id'=>$data['breadcrum_data']->chapter_id]) }}">{{$data['breadcrum_data']->chapter_name}}</a>
                         </li>
                         <li class="breadcrumb-item"><a
-                                href="{{ route('topic_master.index',['id'=>$data['breadcrum_data']->chapter_id]) }}">{{$data['breadcrum_data']->topic_name}}</a>
+                                href="{{ route('topic_master.index',['id'=>$data['breadcrum_data']->chapter_id]) }}">{{$data['breadcrum_data']->topic_name ?? ''}}</a>
                         </li>
+                        @endif
                         <li class="breadcrumb-item active" aria-current="page">Create Question Bank</li>
                     </ol>
                 </nav>

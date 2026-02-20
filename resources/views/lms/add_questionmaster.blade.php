@@ -788,8 +788,10 @@ $(document).on('click', '#save_question_btn', function(e) {
             var chapterId = $('#chapter_id').val();
             var topicId = $('#topic_id').val();
             var standardId = $('#standard_id').val();
+            var gradeId = $('#grade_id').val();
+            var subjectId = $('#subject_id').val();
             
-            var redirectUrl = '{{ route("question_master.index") }}?chapter_id=' + chapterId + '&standard_id=' + standardId;
+            var redirectUrl = '{{ route("question_master.index") }}?chapter_id=' + chapterId + '&standard_id=' + standardId + '&grade_id=' + gradeId + '&subject_id=' + subjectId;
             if (topicId) {
                 redirectUrl += '&topic_id=' + topicId;
             }

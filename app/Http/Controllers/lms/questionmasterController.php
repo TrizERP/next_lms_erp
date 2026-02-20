@@ -44,10 +44,24 @@ class questionmasterController extends Controller
         })
         ->get()->toArray();
         
-        // Pass grade_id, standard_id, subject_id, chapter_id, topic_id for assessment preview modal
-        $res['grade_id'] = $request->get('grade_id');
-        $res['standard_id'] = $request->get('standard_id');
-        $res['subject_id'] = $request->get('subject_id');
+        // Get grade_id and subject_id from chapter_master table if not provided in request
+        $chapter_id = $request->get('chapter_id');
+        if ($chapter_id) {
+            $chapterData = chapterModel::find($chapter_id);
+            if ($chapterData) {
+                $res['grade_id'] = $request->get('grade_id') ?? $chapterData->grade_id;
+                $res['subject_id'] = $request->get('subject_id') ?? $chapterData->subject_id;
+                $res['standard_id'] = $request->get('standard_id') ?? $chapterData->standard_id;
+            } else {
+                $res['grade_id'] = $request->get('grade_id');
+                $res['subject_id'] = $request->get('subject_id');
+                $res['standard_id'] = $request->get('standard_id');
+            }
+        } else {
+            $res['grade_id'] = $request->get('grade_id');
+            $res['subject_id'] = $request->get('subject_id');
+            $res['standard_id'] = $request->get('standard_id');
+        }
         $res['chapter_id'] = $request->get('chapter_id');
         $res['topic_id'] = $request->get('topic_id');
         
@@ -122,11 +136,14 @@ class questionmasterController extends Controller
             $breadcrum_data->join('topic_master as t', 't.chapter_id', '=', 'c.id');
         }
 
-        // dd($breadcrum_data);
-        if (!empty($breadcrum_data)) {
-            return $breadcrum_data->first();
+        // Execute the query and get the result
+        $result = $breadcrum_data->first();
+        
+        // Check if result exists before returning
+        if (!empty($result)) {
+            return $result;
         } else {
-            return 0;
+            return null;
         }
     }
 
@@ -155,10 +172,24 @@ class questionmasterController extends Controller
         })
         ->get()->toArray();
         
-        // Pass grade_id, standard_id, subject_id, chapter_id, topic_id for assessment preview modal
-        $res['grade_id'] = $request->get('grade_id');
-        $res['standard_id'] = $request->get('standard_id');
-        $res['subject_id'] = $request->get('subject_id');
+        // Get grade_id and subject_id from chapter_master table if not provided in request
+        $chapter_id = $request->get('chapter_id');
+        if ($chapter_id) {
+            $chapterData = chapterModel::find($chapter_id);
+            if ($chapterData) {
+                $res['grade_id'] = $request->get('grade_id') ?? $chapterData->grade_id;
+                $res['subject_id'] = $request->get('subject_id') ?? $chapterData->subject_id;
+                $res['standard_id'] = $request->get('standard_id') ?? $chapterData->standard_id;
+            } else {
+                $res['grade_id'] = $request->get('grade_id');
+                $res['subject_id'] = $request->get('subject_id');
+                $res['standard_id'] = $request->get('standard_id');
+            }
+        } else {
+            $res['grade_id'] = $request->get('grade_id');
+            $res['subject_id'] = $request->get('subject_id');
+            $res['standard_id'] = $request->get('standard_id');
+        }
         $res['chapter_id'] = $request->get('chapter_id');
         $res['topic_id'] = $request->get('topic_id');
         
@@ -264,6 +295,8 @@ class questionmasterController extends Controller
     public function store(Request $request)
     {
         // echo ('<pre>');print_r($_REQUEST);die;
+        // return $request;
+
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $user_id = $request->session()->get('user_id');
         $status = $request->get('status');

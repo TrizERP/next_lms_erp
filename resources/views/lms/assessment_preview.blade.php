@@ -23,11 +23,11 @@
                     <div class="card-body">
                         <form id="mappingSettingsForm" method="POST" action="{{ route('assessment_question.store') }}">
                             @csrf
-                            <input type="hidden" name="grade_id" id="grade_id" value="{{ request()->get('grade_id', $data['grade_id'] ?? '') }}">
-                            <input type="hidden" name="standard_id" id="standard_id" value="{{ request()->get('standard_id', $data['standard_id'] ?? '') }}">
-                            <input type="hidden" name="subject_id" id="subject_id" value="{{ request()->get('subject_id', $data['subject_id'] ?? '') }}">
-                            <input type="hidden" name="chapter_id" id="chapter_id" value="{{ request()->get('chapter_id', $data['chapter_id'] ?? '') }}">
-                            <input type="hidden" name="topic_id" id="topic_id" value="{{ request()->get('topic_id', $data['topic_id'] ?? '') }}">
+                            <input type="hidden" name="grade_id" id="grade_id" value="{{ request()->get('grade_id', $data['grade_id'] ?? (request()->old('grade_id') ?? '')) }}">
+                            <input type="hidden" name="standard_id" id="standard_id" value="{{ request()->get('standard_id', $data['standard_id'] ?? (request()->old('standard_id') ?? '')) }}">
+                            <input type="hidden" name="subject_id" id="subject_id" value="{{ request()->get('subject_id', $data['subject_id'] ?? (request()->old('subject_id') ?? '')) }}">
+                            <input type="hidden" name="chapter_id" id="chapter_id" value="{{ request()->get('chapter_id', $data['chapter_id'] ?? (request()->old('chapter_id') ?? '')) }}">
+                            <input type="hidden" name="topic_id" id="topic_id" value="{{ request()->get('topic_id', $data['topic_id'] ?? (request()->old('topic_id') ?? '')) }}">
                             <div id="mappingRowsContainer">
                                 <!-- Mapping Row 1 -->
                                 <div class="mapping-row mb-3" data-row="1">
@@ -427,16 +427,25 @@ $(document).ready(function() {
     var mappings = [];
     $('.mapping-row').each(function() {
         var rowId = $(this).data('row');
-        mappings.push({
-            mapping_type: $('#mapping_type_' + rowId).val(),
-            mapping_value: $('#mapping_value_' + rowId).val(),
-            reason: $('#reason_' + rowId).val(),
-            questions: $('#questions_' + rowId).val(),
-            marks: $('#marks_' + rowId).val()
-        });
+        var mappingType = $('#mapping_type_' + rowId).val();
+        var mappingValue = $('#mapping_value_' + rowId).val();
+        var reason = $('#reason_' + rowId).val();
+        var questions = $('#questions_' + rowId).val();
+        var marks = $('#marks_' + rowId).val();
+        
+        // Validate this row
+        if (mappingType && mappingValue) {
+            mappings.push({
+                mapping_type: mappingType,
+                mapping_value: mappingValue,
+                reason: reason || '',
+                questions: questions || 1,
+                marks: marks || 1
+            });
+        }
     });
     
-    // Validate mappings
+    // Validate mappings - ensure at least one complete mapping
     if (mappings.length === 0 || !mappings[0].mapping_type || !mappings[0].mapping_value) {
         alert('Please select mapping type and value first.');
         $btn.prop('disabled', false).html(originalText);
@@ -444,10 +453,31 @@ $(document).ready(function() {
     }
     
     // Get context data
-    var standard = $('#standard_id').val() || 'standard';
-    var subject = $('#subject_id').val() || 'subject';
-    var chapter = $('#chapter_id').val() || 'chapter';
-    var topic = $('#topic_id').val() || '';
+    var gradeId = $('#grade_id').val();
+    var standardId = $('#standard_id').val();
+    var subjectId = $('#subject_id').val();
+    var chapterId = $('#chapter_id').val();
+    var topicId = $('#topic_id').val();
+    
+    // Debug logging
+    console.log('Context values:');
+    console.log('grade_id:', gradeId);
+    console.log('standard_id:', standardId);
+    console.log('subject_id:', subjectId);
+    console.log('chapter_id:', chapterId);
+    console.log('topic_id:', topicId);
+    
+    // Validate context values exist
+    if (!chapterId) {
+        alert('Chapter ID is missing. Please refresh the page and try again.');
+        $btn.prop('disabled', false).html(originalText);
+        return;
+    }
+    
+    var standard = standardId || 'standard';
+    var subject = subjectId || 'subject';
+    var chapter = chapterId || 'chapter';
+    var topic = topicId || '';
     
     // Build prompt
     var questionCount = mappings[0]?.questions || 1;
@@ -673,8 +703,24 @@ $(document).ready(function() {
     // Save Questions Button - Submit to controller
     $('#saveQuestionsBtn').on('click', function() {
         var generatedData = $('#generated_questions_data').val();
+        
+        console.log('Generated data:', generatedData);
+        
         if (!generatedData) {
             alert('Please generate questions first before saving.');
+            return false;
+        }
+        
+        // Validate the JSON data
+        try {
+            var parsedData = JSON.parse(generatedData);
+            if (!parsedData || parsedData.length === 0) {
+                alert('No questions to save. Please generate questions first.');
+                return false;
+            }
+        } catch (e) {
+            console.error('Error parsing generated questions:', e);
+            alert('Invalid question data. Please regenerate questions.');
             return false;
         }
         
@@ -695,6 +741,8 @@ $(document).ready(function() {
             topic_id: $('#topic_id').val()
         };
         
+        console.log('Form data being sent:', formData);
+        
         $.ajax({
             url: "{{ route('assessment_question.store') }}",
             type: 'POST',
@@ -703,12 +751,13 @@ $(document).ready(function() {
                 console.log('Save result:', result);
                 
                 if (result.status_code === 1) {
+                    // Show success message
                     alert('Questions saved successfully! Total saved: ' + result.saved_questions.length);
                     
-                    // Trigger custom event to notify parent page
-                    $(document).trigger('questionsSaved', [result.saved_questions]);
+                    // Clear the generated questions data after successful save
+                    $('#generated_questions_data').val('');
                     
-                    // Close the modal and refresh parent page
+                    // Close the modal
                     $('#assessmentPreviewModal').modal('hide');
                     
                     // Reload the page to show saved questions
@@ -723,6 +772,7 @@ $(document).ready(function() {
             },
             error: function(xhr, status, error) {
                 console.error('Error saving questions:', error);
+                console.error('Response:', xhr.responseText);
                 alert('Error saving questions. Please try again.');
                 $btn.prop('disabled', false);
                 $btn.html(originalText);
