@@ -1128,26 +1128,27 @@ class AJAXController extends Controller
     }
 
     // added by uma on 19-02-2026 
-    public function ajaxQuestionLists(Request $request){
-        // return $request;
+    public function ajaxQuestionLists(Request $request)
+    {
+        // return $request;    
         $questionType = [];
         $multiple = $narrative = 0;
-        if($request->has('question_types') && $request->question_types!=''){
-            $questionType = explode(',',$request->question_types);
-            if(in_array('multiple',$questionType)){
+        if ($request->has('question_types') && $request->question_types != '') {
+            $questionType = explode(',', $request->question_types);
+            if (in_array('multiple', $questionType)) {
                 $multiple = 1;
             }
-            if(in_array('narrative',$questionType)){
+            if (in_array('narrative', $questionType)) {
                 $narrative = 1;
             }
         }
-        // DB::enableQueryLog();
+        DB::enableQueryLog();
         $getQuestions = DB::table('lms_question_master')
-            ->where('standard_id',$request->standard_id)
-            ->where('subject_id',$request->subject_id)
-            ->whereRaw('chapter_id IN ("'.$request->chapter_ids.'")')
-            ->when($multiple && $narrative!=1, fn($q) => $q->where('multiple_answer', 1))
-            ->when($multiple!=1 && $narrative, fn($q) => $q->where('multiple_answer', 0))
+            ->where('standard_id', $request->standard_id)
+            ->where('subject_id', $request->subject_id)
+            ->whereRaw('chapter_id IN (' . $request->chapter_ids . ')')
+            ->when($multiple && $narrative != 1, fn($q) => $q->where('multiple_answer', 1))
+            ->when($multiple != 1 && $narrative, fn($q) => $q->where('multiple_answer', 0))
             ->get()
             ->toArray();
         $questionAnswer = [];
@@ -2741,106 +2742,67 @@ class AJAXController extends Controller
         return $PDF_path_for_open;
     }
 
-    public function getAvailableApiKey($api_key)
-    {
-        $today = Carbon::today()->toDateString();
-
-        // Step 1: Get all active API keys for given type
-        $apiKeys = DB::table('ai_api_keys')
-            ->where('status', 1)
-            ->where('api_type', $api_key)
-            ->orderBy('id')
-            ->get();
-
-        foreach ($apiKeys as $key) {
-
-            // Step 2: Get today's usage
-            $usage = DB::table('ai_api_usedkeys')
-                ->where('api_id', $key->id)
-                ->whereDate('date', $today)
-                ->first();
-
-            $usedCount = $usage ? $usage->daily_limit_count : 0;
-
-            // Step 3: Check limit
-            if ($usedCount < $key->api_limit) {
-
-                return response()->json([
-                    'status' => true,
-                    'api_type' => $api_key,
-                    'api_id' => $key->id,
-                    'api_key' => $key->api_key
-                ]);
-            }
-        }
-
-        return response()->json([
-            'status' => false,
-            'message' => 'All API limits reached for today'
-        ]);
-    }
-
-    public function increaseApiUsage($api_id)
-    {
-        $today = now()->toDateString();
-
-        $usage = DB::table('ai_api_usedkeys')
-            ->where('api_id', $api_id)
-            ->whereDate('date', $today)
-            ->first();
-
-        if ($usage) {
-            DB::table('ai_api_usedkeys')
-                ->where('id', $usage->id)
-                ->increment('daily_limit_count');
-        } else {
-            DB::table('ai_api_usedkeys')
-                ->insert([
-                    'api_id' => $api_id,
-                    'daily_limit_count' => 1,
-                    'date' => $today,
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ]);
-        }
-    }
-
     public function geminiChat(Request $request)
     {
         $prompt = $request->input('prompt');
 
+        // Fallback model list - ordered from preferred → fallback (Feb 2026 reality)
         $modelsToTry = [
-            'gemini-2.5-flash',
-            'gemini-flash-latest',
-            'gemini-2.5-pro',
-            'gemini-3-flash-preview',
+            'gemini-2.5-flash',         // Fast, cheap, stable GA
+            'gemini-flash-latest',      // Alias to newest Flash (good longevity)
+            'gemini-2.5-pro',           // Stronger reasoning when needed
+            'gemini-3-flash-preview',   // Newer preview (if your project allows)
+            // Add more previews/experimental if needed: 'gemini-3-pro-preview', etc.
         ];
 
-        // ✅ Get API Key
-        // getAvailableApiKey already returns a JsonResponse, so we treat it as an object
-        $geminiKeyResponse = $this->getAvailableApiKey($request->api_type);
+        // Collect usable keys (with quota left)
+        $availableKeys = [];
 
-        // Convert the JsonResponse object to a real array
-        $geminiKey = $geminiKeyResponse->getData(true);
+        $todayUsed = DB::table('ai_daily_used_api')
+            ->where('api_name', 'gemini')
+            ->where('date', date('Y-m-d'))
+            ->whereNull('sub_institute_id')
+            ->get()
+            ->keyBy('parent_id');
 
-        if (!$geminiKey['status']) {
-            return response()->json([
-                'status' => false,
-                'message' => $geminiKey['message']
-            ]);
+        $allActiveKeys = DB::table('api_details')
+            ->where('status', 1)
+            ->whereNull('sub_institute_id')
+            ->orderBy('id')
+            ->get();
+
+        foreach ($allActiveKeys as $keyRow) {
+            $usage = $todayUsed->get($keyRow->id);
+            $currentCount = $usage ? $usage->count : 0;
+
+            if ($currentCount < $keyRow->limit) {
+                $availableKeys[] = [
+                    'key'       => $keyRow->key,
+                    'parent_id' => $keyRow->id,
+                    'count'     => $currentCount,
+                    'usage_id'  => $usage ? $usage->id : null,
+                ];
+            }
         }
 
-        $apiKey = $geminiKey['api_key'];
-        $apiId  = $geminiKey['api_id'];
-        $this->increaseApiUsage($apiId);
+        if (empty($availableKeys)) {
+            return response()->json([
+                'error' => 'No available Gemini API keys (all at limit or none active)',
+            ], 503);
+        }
+
         $lastError = null;
+        $attemptKey = 0;
 
-        // 🔁 Loop models
-        foreach ($modelsToTry as $model) {
+        foreach ($availableKeys as $keyEntry) {
+            $attemptKey++;
+            $geminiKey = $keyEntry['key'];
+            $attemptModel = 0;
 
-            $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
+            foreach ($modelsToTry as $model) {
+                $attemptModel++;
 
-            try {
+                $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key=" . $geminiKey;
 
                 $response = Http::withHeaders([
                     'Content-Type' => 'application/json',
@@ -2864,49 +2826,68 @@ class AJAXController extends Controller
                     ?? $data['error']['message']
                     ?? 'No content returned';
 
-                // Clean markdown
+                // Clean markdown if present
                 $cleanText = trim($text);
                 $cleanText = preg_replace('/^```json\s*|\s*```$/m', '', $cleanText);
 
                 $jsonData = json_decode($cleanText, true);
 
-                // ✅ SUCCESS
+                // Success condition
                 if (json_last_error() === JSON_ERROR_NONE && !empty($jsonData)) {
+                    // Update usage only on real success
+                    if ($keyEntry['usage_id']) {
+                        DB::table('ai_daily_used_api')
+                            ->where('id', $keyEntry['usage_id'])
+                            ->increment('count');
+                    } else {
+                        DB::table('ai_daily_used_api')->insert([
+                            'api_name'   => 'gemini',
+                            'key'        => $geminiKey,
+                            'parent_id'  => $keyEntry['parent_id'],
+                            'date'       => date('Y-m-d'),
+                            'count'      => 1,
+                        ]);
+                    }
 
-                    // 🔥 Update usage only on success
-                    $this->increaseApiUsage($apiId);
+                    // Optional: log success
+                    // \Log::info("Gemini success", ['key' => substr($geminiKey,0,10).'...', 'model' => $model]);
 
-                    return response()->json([
-                        'status' => true,
-                        'data' => $jsonData
-                    ]);
+                    return response()->json($jsonData);
                 }
 
-                // ❌ Handle error
+                // Handle failure
+                $errorMsg = json_last_error() !== JSON_ERROR_NONE
+                    ? 'JSON decode failed: ' . json_last_error_msg()
+                    : ($data['error']['message'] ?? 'Unknown response');
+
                 $lastError = [
-                    'model' => $model,
-                    'status' => $httpStatus,
-                    'message' => $data['error']['message'] ?? 'Invalid JSON response'
+                    'key_attempt' => $attemptKey,
+                    'model_attempt' => $attemptModel,
+                    'model'       => $model,
+                    'key_prefix'  => substr($geminiKey, 0, 10) . '...',
+                    'http_status' => $httpStatus,
+                    'message'     => $errorMsg,
                 ];
 
-                // If model not found → try next
-                if ($httpStatus == 404) {
-                    continue;
+                // Optional logging
+                // \Log::warning("Gemini attempt failed", $lastError);
+
+                // Early exit on clear "model not found" to save time
+                if ($httpStatus === 404) {
+                    continue; // next model
                 }
-            } catch (\Exception $e) {
 
-                $lastError = [
-                    'model' => $model,
-                    'message' => $e->getMessage()
-                ];
+                // You could break here if error is non-recoverable (e.g. 401 auth), but for now continue
             }
+
+            // If all models failed for this key → try next key
         }
 
-        // ❌ All models failed
+        // All keys + all models failed
         return response()->json([
-            'status' => false,
-            'message' => 'All models failed',
-            'error' => $lastError
-        ]);
+            'error'      => 'All available Gemini API keys and fallback models failed',
+            'last_error' => $lastError,
+            'attempts_keys'   => $attemptKey,
+        ], 503);
     }
 }

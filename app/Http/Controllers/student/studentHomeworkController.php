@@ -167,7 +167,7 @@ class studentHomeworkController extends Controller
 
     public function store(Request $request)
     {
-
+        // return $request;
         $type = $request->get('type');
         if ($type == "API") {
             $sub_institute_id = $request->input('sub_institute_id');
@@ -177,7 +177,6 @@ class studentHomeworkController extends Controller
             $syear = session()->get('syear');
         }
 
-       
         $students = $request->get('students');
         $student_details = getStudents($students, $sub_institute_id, $syear);
         
@@ -228,6 +227,8 @@ class studentHomeworkController extends Controller
                     $addhomeworkArray['image_type'] = $ext;
                     $addhomeworkArray['created_ip'] = $_SERVER['REMOTE_ADDR'];
                     $addhomeworkArray['created_by'] = $created_by;
+                    $addhomeworkArray['prompt'] = $request->prompt ?? null;
+                    $addhomeworkArray['student_level'] = $request->student_level ?? 'Easy';
                     studentHomeworkModel::insert($addhomeworkArray);
 
                     //START Send Notification Code
@@ -248,7 +249,7 @@ class studentHomeworkController extends Controller
                     // if($sms_sent!=1){
                     //     $res['sms_not_sent'][] = $student_id;
                     // }
-                    //END Send Notification Code
+                    // END Send Notification Code
             }
 
             $res['status_code'] = "1";

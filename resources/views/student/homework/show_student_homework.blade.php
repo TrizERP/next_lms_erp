@@ -184,7 +184,7 @@
                                         @endforeach
                                     @endif
                                     
-                                    <input type="hidden" name="subject_id" @if(isset($finalData['subject'])) value="{{$finalData['subject']}}" @endif>
+                                    <input type="hidden" name="subject_id" @if(isset($subject_id)) value="{{$subject_id}}" @endif>
                                     <input type="hidden" name="pdf_generated" id="pdfGenerated" value="0">
                                     <input type="submit" name="submit" value="Submit" class="btn btn-success">
                                 </div>
@@ -501,7 +501,7 @@
             data: {
                 standard_id: $('#standard').val(),
                 subject_id: $('#subject').val(),
-                chapter_ids: chapterIds.join(','),
+                chapter_ids: chapterIds.filter(id => id).join(','),
                 question_types: questionTypes ? questionTypes.join(',') : ''
             },
             type: 'GET',
@@ -730,9 +730,9 @@
                     html += '<div class="pdf-option">';
                     html += '<span style="display:inline-block; width:25px; color:#7f8c8d;">' + letter + '.</span>';
                     html += '<span>' + ans.answer + '</span>';
-                    if (ans.correct_answer == 1) {
-                        html += '<span class="pdf-correct"> ✓ Correct</span>';
-                    }
+                    // if (ans.correct_answer == 1) {
+                    //     html += '<span class="pdf-correct"> ✓ Correct</span>';
+                    // }
                     html += '</div>';
                 }
                 html += '</div>';
@@ -751,11 +751,6 @@
         if (selectedQuestions.length === 0) {
             html += '<p class="text-center text-muted">No questions selected</p>';
         }
-        
-        html += '<div class="pdf-footer">';
-        html += '<p class="pdf-signature-line">Teacher\'s Signature: __________________</p>';
-        html += '<p class="pdf-signature-line">Date: ' + date + '</p>';
-        html += '</div>';
         html += '</div>';
         
         return html;
