@@ -55,7 +55,6 @@
     {{ method_field('POST') }}
     @csrf
     @php
-
         $student_id_arr = implode(',', array_values($data['students_ids']));
     @endphp
     <input type="hidden" id="grade_id" name="grade_id" value="{{ $data['grade_id'] }}">
