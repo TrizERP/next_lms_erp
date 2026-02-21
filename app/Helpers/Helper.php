@@ -1056,7 +1056,8 @@ if (!function_exists('FeeBreakoffHeadWise')) {
             })
             ->join('fees_title as ft', 'fb.fee_type_id', '=', 'ft.id')
             ->leftJoin('admission_registration as ar', function ($join) {
-                $join->on('ar.enrollment_no', '=', 's.enrollment_no')
+                //$join->on('ar.enrollment_no', '=', 's.enrollment_no')
+                $join->on('ar.register_number', '=', 's.registration_no')
                     ->on('ar.sub_institute_id', '=', 's.sub_institute_id');
             })
             ->leftJoin('admission_enquiry as ae', function ($join) {

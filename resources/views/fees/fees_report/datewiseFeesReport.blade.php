@@ -96,10 +96,10 @@
                 @endphp 
             <div style="width:100%;display:flex;justify-content:center;flex-wrap:wrap;text-align:center;margin-bottom:8px;margin-top:15px">
                     <div><img style="height:50px;" src="https://erp.triz.co.in/storage/fees/{{$data['school_details']->receipt_logo}}"></div>
-                    <div class="schoolData" style="text-align:left;">
-                        <h4 style="margin:0px;"><b>{{$instituteName}}</b></h4>
-                        <p style="margin:0px;"><b>{{$data['school_details']->receipt_line_3}}</b></p>
-                        <p style="margin:0px;">
+                    <div class="schoolData" style="text-align:center;">
+                        <h4 style="margin:0px;font-size: 22px;"><b>{{$instituteName}}</b></h4>
+                        <p style="margin:0px;font-size: 18px;"><b>{{$data['school_details']->receipt_line_3}}</b></p>
+                        <p style="margin:0px;font-size: 14px;">
                         <b> {{--DATE : {{date('d-m-y',strtotime($from_date))}} to {{date('d-m-y',strtotime($to_date))}}--}}
                             ACADEMIC YEAR : {{$academicYear}}
                         </b></p>
@@ -149,7 +149,7 @@
                                 $grandTotal+=$value->total_amount;
                             @endphp
                             <tr>
-                                <td>{{$key+1}}</td>
+                                <td style="text-align:center;">{{$key+1}}</td>
                                 <td>{{$value->receipt_no}}</td>
                                 <td>{{ strtoupper($value->student_name)}}</td>
                                 <td>{{ strtoupper($value->short_standard_name)}} - {{$value->div_name}}</td>
@@ -264,7 +264,7 @@ document.addEventListener("DOMContentLoaded", function () {
         var printWindow = window.open("", "", "width=800,height=600");
 
         printWindow.document.write('<html><head><title>Print</title>');
-        printWindow.document.write('<style>@page{margin:20px}@media print{ table{border:0.8px solid #ddd;width:100%;} th,td{border:0.8px solid #ddd;padding:0px;font-size:14px;} .schoolData{margin-left:8px;} }</style>');
+        printWindow.document.write('<style>@page{margin:20px}@media print{table{width:100%;border-collapse: collapse;} th,td{border:1px solid #000;padding:0px;font-size:12px;} .schoolData{margin-left:8px;} }</style>');
         printWindow.document.write('</head><body>');
         printWindow.document.write(printContents);
         printWindow.document.write('</body></html>');
