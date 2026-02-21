@@ -39,6 +39,7 @@ use Spatie\Async\Pool;
 use Log;
 use function App\Helpers\getSubCordinates;
 use Carbon\Carbon;
+use App\Models\lms\answermasterModel;
 
 class AJAXController extends Controller
 {
@@ -1126,6 +1127,41 @@ class AJAXController extends Controller
         return response()->json($all_sub_module);
     }
 
+    // added by uma on 19-02-2026 
+    public function ajaxQuestionLists(Request $request){
+        // return $request;
+        $questionType = [];
+        $multiple = $narrative = 0;
+        if($request->has('question_types') && $request->question_types!=''){
+            $questionType = explode(',',$request->question_types);
+            if(in_array('multiple',$questionType)){
+                $multiple = 1;
+            }
+            if(in_array('narrative',$questionType)){
+                $narrative = 1;
+            }
+        }
+        // DB::enableQueryLog();
+        $getQuestions = DB::table('lms_question_master')
+            ->where('standard_id',$request->standard_id)
+            ->where('subject_id',$request->subject_id)
+            ->whereRaw('chapter_id IN ("'.$request->chapter_ids.'")')
+            ->when($multiple && $narrative!=1, fn($q) => $q->where('multiple_answer', 1))
+            ->when($multiple!=1 && $narrative, fn($q) => $q->where('multiple_answer', 0))
+            ->get()
+            ->toArray();
+        $questionAnswer = [];
+        foreach ($getQuestions as $key => $value) {
+            // cast stdClass to array to avoid "Cannot use object of type stdClass as array"
+            $questionAnswer[$key] = (array) $value;
+            $ansData = answermasterModel::where(['question_id' => $value->id])
+                ->get()->toArray();
+            $questionAnswer[$key]['answers'] = $ansData;
+        }
+        // dd(DB::getQueryLog($getQuestions));
+        return $questionAnswer;
+    }
+    // end of 19-02-2026
     public function getStudentFromMobile(Request $request)
     {
         $mobile = $_REQUEST["mobile_number"];

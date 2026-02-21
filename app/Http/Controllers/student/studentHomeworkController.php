@@ -79,16 +79,22 @@ class studentHomeworkController extends Controller
         $subjects = subjectModel::select('id',
             'subject_name')->where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
 
+        $chaptersList = DB::table('chapter_master')
+        ->where(['sub_institute_id' => $sub_institute_id,'subject_id'=>$subject,'standard_id'=>$standard])
+        ->get()->toArray();
+
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['student_data'] = $data;
         $res['subjects'] = $subjects;
+        $res['chaptersList'] = $chaptersList;
+        $res['questionTypes'] = ['multiple','narrative'];
         $res['grade_id'] = $grade;
         $res['standard_id'] = $standard;
         $res['division_id'] = $division;
+        $res['subject_id'] = $subject;
 
-        $res['subject'] = $subject;
-
+        // return $res;exit;
         return is_mobile($type, "student/homework/show_student_homework", $res, "view");
     }
 
