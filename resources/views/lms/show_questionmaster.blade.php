@@ -14,6 +14,7 @@
                 <nav aria-label="breadcrumb">
                     <ol class="breadcrumb bg-transparent p-0">
                         <li class="breadcrumb-item"><a href="{{route('course_master.index')}}">LMS</a></li>
+                        @if($data['breadcrum_data'])
                         <li class="breadcrumb-item"><a
                                 href="{{ route('chapter_master.index',['standard_id'=>$data['breadcrum_data']->standard_id,'subject_id'=>$data['breadcrum_data']->subject_id]) }}">{{$data['breadcrum_data']->subject_name}}</a>
                         </li>
@@ -21,13 +22,17 @@
                                 href="{{ route('topic_master.index',['id'=>$data['breadcrum_data']->chapter_id]) }}">{{$data['breadcrum_data']->chapter_name}}</a>
                         </li>
                         <li class="breadcrumb-item"><a
-                                href="{{ route('topic_master.index',['id'=>$data['breadcrum_data']->chapter_id]) }}">{{$data['breadcrum_data']->topic_name}}</a>
+                                href="{{ route('topic_master.index',['id'=>$data['breadcrum_data']->chapter_id]) }}">{{$data['breadcrum_data']->topic_name ?? ''}}</a>
                         </li>
+                        @endif
                         <li class="breadcrumb-item active" aria-current="page">Create Question Bank</li>
                     </ol>
                 </nav>
             </div>
             <div class="col-md-3 mb-4 text-md-right">
+                <a href="#" id="openAssessmentPreview" class="btn btn-info add-new">
+                    <i class="fa fa-plus"></i> Add Question (AI)
+                </a>
                 <a href="{{ route('question_master.create',['chapter_id' => $_REQUEST['chapter_id'],'topic_id' => $_REQUEST['topic_id'],'standard_id'=>$_REQUEST['standard_id']]) }}"
                    class="btn btn-info add-new"><i class="fa fa-plus"></i> Add Question</a>
             </div>
@@ -163,6 +168,8 @@
 </div>
 
 @include('includes.lmsfooterJs')
+
+@include('lms.assessment_preview')
 
 <script src="//cdn.mathjax.org/mathjax/latest/MathJax.js">
     MathJax.Hub.Config({

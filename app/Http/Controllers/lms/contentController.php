@@ -29,7 +29,7 @@ class contentController extends Controller
 
     public function getData($request){
         if($request->has('preload_lms')){
-            $sub_institute_id = 1;
+            $sub_institute_id = $request->input('sub_institute_id');
         }else{
         $sub_institute_id = $request->session()->get('sub_institute_id');
         }
@@ -201,96 +201,147 @@ class contentController extends Controller
         return $video_arr;
     }      
     
-    public function store(Request $request){               
-        $sub_institute_id = $request->session()->get('sub_institute_id'); 		
-        $syear = $request->session()->get('syear'); 		
-        $user_id = $request->session()->get('user_id');       
-        $show_hide = $request->get('show_hide');             
-        $show_hide_val = isset($show_hide) ? $show_hide : '';
+   public function store(Request $request){               
+    $sub_institute_id = $request->session()->get('sub_institute_id'); 		
+    $syear = $request->session()->get('syear'); 		
+    $user_id = $request->session()->get('user_id');       
+    $show_hide = $request->get('show_hide');             
+    $show_hide_val = isset($show_hide) ? $show_hide : '';
 
-        //Basic means 1 and advance means 0 
-        $basic_advanced = $request->get('toggle_basic_advanced');             
-        $basic_advanced_val = isset($basic_advanced) ? '1' : '0';
+    //Basic means 1 and advance means 0 
+    $basic_advanced = $request->get('toggle_basic_advanced');             
+    $basic_advanced_val = isset($basic_advanced) ? '1' : '0';
+    
+    $file_folder = $ext = $size = $newfilename = $file_url = '';
+    
+    // Check if Gamma presentation URL is present (this should be treated as link)
+    $gamma_presentation_url = $request->get('gamma_presentation_url');
+    $gamma_presentation_name = $request->get('gamma_presentation_name');
+    
+    // Check if IBL generated URL is present
+    $ibl_generated_url = $request->get('ibl_generated_url');
+    $ibl_content_type = $request->get('ibl_content_type');
+    
+    // Priority 1: Gamma Presentation (URL) - Store the URL as filename with file_type = 'link'
+    if (!empty($gamma_presentation_url)) {
+        // This is a Gamma presentation - store the actual URL as filename
+        $newfilename = $gamma_presentation_url; // Store the URL, not the name
+        $ext = 'link';
+        $file_folder = '/lms_content_file';
+        $file_url = $gamma_presentation_url;
         
-        $file_folder = $ext = $size = $newfilename = "";
-        if($request->hasFile('filename'))
-        {           
-            $img = $request->file('filename');
-            $filename = $img->getClientOriginalName();
-            $ext = $img->getClientOriginalExtension();
-            $size = $img->getSize();
-            $newfilename = 'lms_'.date('Y-m-d_h-i-s').'.'.$ext;             
-            $file_folder = '/lms_content_file';
-            //$img->move(public_path().'/lms_content_file/',$newfilename);
-            // $img->storeAs('public/lms_content_file/',$newfilename); 20-05-2024
-            Storage::disk('digitalocean')->putFileAs('public/lms_content_file/', $img, $newfilename, 'public');
-
+        // Also store the name in title field (already done via form)
+        \Log::info('Gamma URL stored in filename (topic-wise): ' . $newfilename);
+    }
+    // Priority 2: IBL generated content
+    elseif (!empty($ibl_generated_url)) {
+        if ($ibl_content_type === 'link') {
+            $newfilename = $ibl_generated_url; // Store the URL
+            $ext = 'link';
+            $file_url = $ibl_generated_url;
+        } else {
+            // For PDF, store the URL as filename
+            $newfilename = $ibl_generated_url;
+            $ext = $ibl_content_type ?? 'pdf';
+            $file_url = $ibl_generated_url;
         }
-
-        if($request->get('contentType') == "link")
-        {
-            $newfilename = $request->get('link');
-            $ext = "link";
-            $file_url= $request->get('link');
-            // If Gamma presentation name is provided, use it as filename
-            if($request->has('gamma_presentation_name') && !empty($request->get('gamma_presentation_name'))) {
-                $newfilename = $request->get('gamma_presentation_name');
-            }
-        }       
-           
-        $chapter_data = chapterModel::select('*')        
-        ->where(['chapter_master.sub_institute_id'=>$sub_institute_id,'chapter_master.id'=>$request->get('hid_chapter_id')])         
-        ->get()->toArray(); 
-        $chapter_data = $chapter_data[0] ?? []; 
-
-        $pre_topic = $post_topic = $cross_curriculum_topic = "";
-        if($request->get('prechapter') != "")
-        {
-            $pre_topic = $request->get('prechapter').'####'.$request->get('pretopic');
-        } 
-        if($request->get('postchapter') != "")
-        {
-            $post_topic = $request->get('postchapter').'####'.$request->get('posttopic');
+        $file_folder = '/lms_content_file';
+    }
+    // Priority 3: Regular file upload (This includes Classroom Presentation PDFs)
+    elseif($request->hasFile('filename'))
+    {           
+        $img = $request->file('filename');
+        $filename = $img->getClientOriginalName();
+        $ext = $img->getClientOriginalExtension();
+        $size = $img->getSize();
+        $newfilename = 'lms_'.date('Y-m-d_h-i-s').'.'.$ext;             
+        $file_folder = '/lms_content_file';
+        Storage::disk('digitalocean')->putFileAs('public/lms_content_file/', $img, $newfilename, 'public');
+        $file_url = ''; // No URL for uploaded files
+    }
+    // Priority 4: Manual link entry
+    elseif($request->get('contentType') == "link")
+    {
+        $newfilename = $request->get('link');
+        $ext = "link";
+        $file_url = $request->get('link');
+        // If Gamma presentation name is provided, use it as filename
+        if($request->has('gamma_presentation_name') && !empty($request->get('gamma_presentation_name'))) {
+            $newfilename = $request->get('gamma_presentation_name');
         }
-        if($request->get('cross-curriculumchapter') != "")
-        {
-            $cross_curriculum_topic = $request->get('cross-curriculumchapter').'####'.$request->get('cross-curriculumtopic');
-        }
+    }       
+       
+    $chapter_data = chapterModel::select('*')        
+    ->where(['chapter_master.sub_institute_id'=>$sub_institute_id,'chapter_master.id'=>$request->get('hid_chapter_id')])         
+    ->get()->toArray(); 
+    $chapter_data = $chapter_data[0] ?? []; 
 
-        $content = [
-            'grade_id'                     => $chapter_data['grade_id'],
-            'standard_id'                  => $chapter_data['standard_id'],
-            'subject_id'                   => $chapter_data['subject_id'],
-            'chapter_id'                   => $request->get('hid_chapter_id'),
-            'topic_id'                     => $request->get('hid_topic_id'),
-            'title'                        => $request->get('title'),
-            'description'                  => $request->get('description'),
-            'file_folder'                  => $file_folder,
-            'filename'                     => $newfilename,
-            'url'                     => $file_url ?? '',
-            'file_type'                    => $ext,
-            'file_size'                    => $size,
-            'show_hide'                    => $show_hide_val,
-            'sort_order'                   => $request->get('sort_order'),
-            'meta_tags'                    => $request->get('meta_tags'),
-            'content_category'             => $request->get('content_category'),
-            'created_by'                   => $user_id,
-            'sub_institute_id'             => $sub_institute_id,
-            'restrict_date'                => $request->get('restrict_date'),
-            'pre_grade_topic'              => $pre_topic,
-            'post_grade_topic'             => $post_topic,
-            'cross_curriculum_grade_topic' => $cross_curriculum_topic,
-            'basic_advance'                => $basic_advanced_val,
-            'syear'                        => $syear,
-        ];
-        //'sub_topic_id' => $request->get('subtopic'),                            
-        contentModel::insert($content);
-        $last_id = DB::getPDO()->lastInsertId();
+    $pre_topic = $post_topic = $cross_curriculum_topic = "";
+    if($request->get('prechapter') != "")
+    {
+        $pre_topic = $request->get('prechapter').'####'.$request->get('pretopic');
+    } 
+    if($request->get('postchapter') != "")
+    {
+        $post_topic = $request->get('postchapter').'####'.$request->get('posttopic');
+    }
+    if($request->get('cross-curriculumchapter') != "")
+    {
+        $cross_curriculum_topic = $request->get('cross-curriculumchapter').'####'.$request->get('cross-curriculumtopic');
+    }
 
-        $mapping_type = $request->get('mapping_type');
-        $mapping_value = $request->get('mapping_value');
+    // Debug log to check what's being saved
+    \Log::info('Content being saved:', [
+        'content_category' => $request->get('content_category'),
+        'file_type' => $ext,
+        'filename' => $newfilename,
+        'title' => $request->get('title')
+    ]);
+
+    $content = [
+        'grade_id'                     => $chapter_data['grade_id'] ?? null,
+        'standard_id'                  => $chapter_data['standard_id'] ?? null,
+        'subject_id'                   => $chapter_data['subject_id'] ?? null,
+        'chapter_id'                   => $request->get('hid_chapter_id'),
+        'topic_id'                     => $request->get('hid_topic_id'),
+        'title'                        => $request->get('title'),
+        'description'                  => $request->get('description'),
+        'file_folder'                  => $file_folder,
+        'filename'                     => $newfilename,
+        'url'                          => $file_url,
+        'file_type'                    => $ext,
+        'file_size'                    => $size,
+        'show_hide'                    => $show_hide_val,
+        'sort_order'                   => $request->get('sort_order'),
+        'meta_tags'                    => $request->get('meta_tags'),
+        'content_category'             => $request->get('content_category'), // This will save "Classroom Presentation"
+        'created_by'                   => $user_id,
+        'sub_institute_id'             => $sub_institute_id,
+        'restrict_date'                => !empty($request->get('restrict_date')) ? date('Y-m-d', strtotime($request->get('restrict_date'))) : null,
+        'pre_grade_topic'              => $pre_topic,
+        'post_grade_topic'             => $post_topic,
+        'cross_curriculum_grade_topic' => $cross_curriculum_topic,
+        'basic_advance'                => $basic_advanced_val,
+        'syear'                        => $syear,
+    ];
+    
+    // Log what's being stored (topic-wise)
+    \Log::info('Storing topic-wise content:', [
+        'filename' => $newfilename,
+        'file_type' => $ext,
+        'title' => $request->get('title'),
+        'content_category' => $request->get('content_category'),
+        'gamma_url' => $gamma_presentation_url ?? ''
+    ]);
+    
+    contentModel::insert($content);
+    $last_id = DB::getPDO()->lastInsertId();
+
+    $mapping_type = $request->get('mapping_type');
+    $mapping_value = $request->get('mapping_value');
+    if (!empty($mapping_type)) {
         foreach ($mapping_type as $key => $val) {
-            if ($val != "" && $mapping_value[$key] != "") {
+            if ($val != "" && isset($mapping_value[$key]) && $mapping_value[$key] != "") {
                 $contentmappingtype = [
                     'content_id'       => $last_id,
                     'mapping_type_id'  => $val,
@@ -299,23 +350,24 @@ class contentController extends Controller
                 contentmappingtypeModel::insert($contentmappingtype);
             }
         }
+    }
 
-        $res = [
-            "status_code" => 1,
-            "message"     => "Content Added Successfully",
-        ];
-        $type = $request->input('type');
-        if($type == "API")
-            return is_mobile($type, "content_master.index", $res, "redirect");
-        else{
-            // return redirect()->route('topic_master.index', ['id' => $request->get('hid_chapter_id')]);
-            if ( $request->has('hid_topic_id') ) {
-                return redirect()->route('topic_master.index', ['id' => $request->get('hid_chapter_id'),'standard_id' => $chapter_data['standard_id'],'perm'=>$sub_institute_id]);
-            } else {
-                return redirect()->route('chapter_master.index', ['standard_id' => $chapter_data['standard_id'], 'subject_id' => $chapter_data['subject_id'],'perm'=>$sub_institute_id]);
-            }
+    $res = [
+        "status_code" => 1,
+        "message"     => "Content Added Successfully",
+    ];
+    $type = $request->input('type');
+    if($type == "API")
+        return is_mobile($type, "content_master.index", $res, "redirect");
+    else{
+        if ($request->has('hid_topic_id') && !empty($request->get('hid_topic_id'))) {
+            return redirect()->route('topic_master.index', ['id' => $request->get('hid_chapter_id'),'standard_id' => $chapter_data['standard_id'] ?? '', 'subject_id' => $chapter_data['subject_id'] ?? '', 'perm' => $sub_institute_id]);
+        } else {
+            return redirect()->route('chapter_master.index', ['standard_id' => $chapter_data['standard_id'] ?? '', 'subject_id' => $chapter_data['subject_id'] ?? '', 'perm' => $sub_institute_id]);
         }
     }
+}
+
 
     public function storeChapter(Request $request){      
         //echo "<pre>"; print_r($request->all()); exit;

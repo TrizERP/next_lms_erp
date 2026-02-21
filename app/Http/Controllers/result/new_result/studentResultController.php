@@ -6975,7 +6975,7 @@ while ($current_date <= $post_end_date) {
                 //     $margin_bottom="40px";
                 // }
                 if ($key == 2) {
-                    $margin_bottom = "30px";
+                    $margin_bottom = "50px";
                 }
                 // if($key==3 || $key==4 || $key==5){
                 // $margin_bottom="40px";

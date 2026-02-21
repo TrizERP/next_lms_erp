@@ -32,6 +32,39 @@ class questionmasterController extends Controller
         $res['message'] = "SUCCESS";
         $res['data'] = $data['questionmaster_data'];
         $res['breadcrum_data'] = $data['breadcrum_data'];
+        $res['lms_mapping_type'] = DB::table('lms_mapping_type')
+        ->where('status', '=', 1)
+        ->where('parent_id', '=', 0)
+        ->where(function ($q) use ($request) {
+            $q->where('globally', '=', 1)
+                ->orWhere('chapter_id', $request->get('chapter_id'));
+        })->where(function ($q) use ($request) {
+            $q->where('topic_id', '=', 0)
+                ->orWhere('topic_id', $request->get('topic_id'));
+        })
+        ->get()->toArray();
+        
+        // Get grade_id and subject_id from chapter_master table if not provided in request
+        $chapter_id = $request->get('chapter_id');
+        if ($chapter_id) {
+            $chapterData = chapterModel::find($chapter_id);
+            if ($chapterData) {
+                $res['grade_id'] = $request->get('grade_id') ?? $chapterData->grade_id;
+                $res['subject_id'] = $request->get('subject_id') ?? $chapterData->subject_id;
+                $res['standard_id'] = $request->get('standard_id') ?? $chapterData->standard_id;
+            } else {
+                $res['grade_id'] = $request->get('grade_id');
+                $res['subject_id'] = $request->get('subject_id');
+                $res['standard_id'] = $request->get('standard_id');
+            }
+        } else {
+            $res['grade_id'] = $request->get('grade_id');
+            $res['subject_id'] = $request->get('subject_id');
+            $res['standard_id'] = $request->get('standard_id');
+        }
+        $res['chapter_id'] = $request->get('chapter_id');
+        $res['topic_id'] = $request->get('topic_id');
+        
         // echo "<pre>";print_r($data);exit;
         return is_mobile($type, 'lms/show_questionmaster', $res, "view");
     }
@@ -103,11 +136,14 @@ class questionmasterController extends Controller
             $breadcrum_data->join('topic_master as t', 't.chapter_id', '=', 'c.id');
         }
 
-        // dd($breadcrum_data);
-        if (!empty($breadcrum_data)) {
-            return $breadcrum_data->first();
+        // Execute the query and get the result
+        $result = $breadcrum_data->first();
+        
+        // Check if result exists before returning
+        if (!empty($result)) {
+            return $result;
         } else {
-            return 0;
+            return null;
         }
     }
 
@@ -124,7 +160,40 @@ class questionmasterController extends Controller
         $res['message'] = "SUCCESS";
         $res['data'] = $data['questionmaster_data'];
         $res['breadcrum_data'] = $data['breadcrum_data'];
-        // echo "<pre>";print_r($data['questionmaster_data']);exit;
+        $res['lms_mapping_type'] = DB::table('lms_mapping_type')
+        ->where('status', '=', 1)
+        ->where('parent_id', '=', 0)
+        ->where(function ($q) use ($request) {
+            $q->where('globally', '=', 1)
+                ->orWhere('chapter_id', $request->get('chapter_id'));
+        })->where(function ($q) use ($request) {
+            $q->where('topic_id', '=', 0)
+                ->orWhere('topic_id', $request->get('topic_id'));
+        })
+        ->get()->toArray();
+        
+        // Get grade_id and subject_id from chapter_master table if not provided in request
+        $chapter_id = $request->get('chapter_id');
+        if ($chapter_id) {
+            $chapterData = chapterModel::find($chapter_id);
+            if ($chapterData) {
+                $res['grade_id'] = $request->get('grade_id') ?? $chapterData->grade_id;
+                $res['subject_id'] = $request->get('subject_id') ?? $chapterData->subject_id;
+                $res['standard_id'] = $request->get('standard_id') ?? $chapterData->standard_id;
+            } else {
+                $res['grade_id'] = $request->get('grade_id');
+                $res['subject_id'] = $request->get('subject_id');
+                $res['standard_id'] = $request->get('standard_id');
+            }
+        } else {
+            $res['grade_id'] = $request->get('grade_id');
+            $res['subject_id'] = $request->get('subject_id');
+            $res['standard_id'] = $request->get('standard_id');
+        }
+        $res['chapter_id'] = $request->get('chapter_id');
+        $res['topic_id'] = $request->get('topic_id');
+        
+        // echo "<pre>";print_r($res['lms_mapping_type']);exit;
         return is_mobile($type, 'lms/show_chapter_questionmaster', $res, "view");
     }
 
@@ -226,6 +295,8 @@ class questionmasterController extends Controller
     public function store(Request $request)
     {
         // echo ('<pre>');print_r($_REQUEST);die;
+        // return $request;
+
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $user_id = $request->session()->get('user_id');
         $status = $request->get('status');
