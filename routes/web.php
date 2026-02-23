@@ -667,3 +667,6 @@ Route::group(['prefix' => 'agent', 'middleware' => ['session', 'menu', 'logRoute
     route::resource('agent_dashboard', agentDashboardController::class);
     route::resource('multi_agent', multiAgentController::class);
 });
+
+route::get('geminiChat', [AJAXController::class, 'geminiChat']);
+Route::get('ajaxQuestionLists', [AJAXController::class, 'ajaxQuestionLists'])->name('ajaxQuestionLists');

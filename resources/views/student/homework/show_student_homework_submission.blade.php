@@ -12,11 +12,12 @@
             </div>
         </div>
         @php
-        $grade_id = $standard_id = $division_id = '';
+        $grade_id = $standard_id = $division_id = $subject='';
         if(isset($data['grade_id'])){
         $grade_id = $data['grade_id'];
         $standard_id = $data['standard_id'];
         $division_id = $data['division_id'];
+        $subject = $data['subject'];
         }
         @endphp
         <div class="card">
@@ -26,7 +27,7 @@
                 <strong>{{ $sessionData['message'] }}</strong>
             </div>
             @endif
-            <form action="{{ route('student_homework_submission.create') }}">
+            <form action="{{ route('student_homework_submission.create') }}" method="GET">
                 @csrf
                 <div class="row">
                     {{ App\Helpers\SearchChain('3','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
@@ -34,9 +35,6 @@
                         <label for="subject">Select Subject:</label>
                         <select name="subject" id="subject" class="form-control">
                             <option value="">Select Subject</option>
-                            <!-- @foreach($data['subjects'] as $key => $value)
-                            <option value="{{$value['id']}}" @if(isset($data['subject'])) @if($data['subject']==$value['id']) selected='selected' @endif @endif>{{$value['subject_name']}}</option>
-                            @endforeach -->
                         </select>
                     </div>
                     <div class="col-sm-3 form-group">
@@ -57,7 +55,6 @@
                 if(isset($data['student_data'])){
                     $student_data = $data['student_data'];
                     $finalData = $data;
-                    $subject = $data['subject'];
                 }
             @endphp
             <div class="card">
@@ -116,11 +113,11 @@
                     <div class="col-md-12 form-group">
                         <center>
                             <input type="hidden" name="division_id"
-                                @if(isset($finalData['division_id'])) value="{{$finalData['division_id']}}" @endif ">
+                                @if(isset($finalData['division_id'])) value="{{$finalData['division_id']}}" @endif>
                                 <input type="hidden" name="standard_id"
-                                @if(isset($finalData['standard_id'])) value="{{$finalData['standard_id']}}" @endif ">
+                                @if(isset($finalData['standard_id'])) value="{{$finalData['standard_id']}}" @endif>
                                 <input type="hidden" name="subject_id"
-                                @if(isset($finalData['subject'])) value="{{$finalData['subject']}}" @endif">
+                                @if(isset($finalData['subject'])) value="{{$finalData['subject']}}" @endif>
                             <input type="submit" name="submit" value="Submit" class="btn btn-success">
                         </center>
                     </div>
@@ -130,88 +127,94 @@
         @endif
     </div>
 </div>
-
-@include('includes.footerJs')
 <script>
-    $(document).ready(function () {
-        $('#standard').on('change',function () {
-            var standard_id = $(this).val();
-            getSubject(standard_id);
-        })
-
-       @if($standard_id!='')
-            var standard_id = "{{$standard_id}}";
-            getSubject(standard_id);
-       @endif 
+$(document).ready(function () {
+    // Load subjects when standard changes
+    $('#standard').on('change', function () {
+        var standard_id = $(this).val();
+        if (standard_id) {
+            loadSubjects(standard_id, 0);
+        } else {
+            // Clear subject dropdown if no standard selected
+            $('#subject').empty().append('<option value="">Select Subject</option>');
+        }
     });
-    function getSubject(standard_id){
-        var sub = "{{isset($subject) ? $subject : 0 }}";
-        var path = "{{ route('ajax_getHomeworkSubjects') }}";
 
-        $.ajax({
-            url: path,
-            data: 'standard_id=' + standard_id,
-            success: function(result) {
-                console.log(result);
+    // Load subjects on page load if standard is already selected
+    @if(isset($standard_id) && $standard_id != '')
+        loadSubjects("{{$standard_id}}", "{{isset($subject) ? $subject : 0}}");
+    @endif
+});
 
-                var e = $('select[name="subject"]');
-                $(e).find('option').remove().end();
-                $(e).append($("<option></option>").val("").html('Select Subject'));
-                for (var i = 0; i < result.length; i++) {
-                    var option = $("<option></option>")
-                        .val(result[i]['subject_id'])
-                        .html(result[i]['display_name']);
-
-                    if (result[i]['subject_id'] == sub) {
+// Consolidated function to load subjects
+function loadSubjects(standard_id, selected_subject = 0) {
+    var path = "{{ route('ajax_getHomeworkSubjects') }}";
+    
+    $.ajax({
+        url: path,
+        type: 'GET',
+        data: { standard_id: standard_id },
+        dataType: 'json',
+        success: function(result) {
+            console.log(result);
+            
+            // Clear and repopulate subject dropdown
+            var subjectSelect = $('#subject');
+            subjectSelect.empty();
+            subjectSelect.append($('<option>', {
+                value: '',
+                text: 'Select Subject'
+            }));
+            
+            if (result && result.length > 0) {
+                $.each(result, function(index, item) {
+                    var option = $('<option>', {
+                        value: item.subject_id,
+                        text: item.display_name
+                    });
+                    
+                    // Set selected if matches the selected_subject
+                    if (item.subject_id == selected_subject) {
                         option.prop('selected', true);
                     }
-
-                    $(e).append(option);
-                }
+                    
+                    subjectSelect.append(option);
+                });
             }
-        });
-    }
-
-    $(document).on('change', '#standard', function() {
-        var standard_id = $(this).val();
-        var sub = 0;
-        loadSubjects(standard_id);
+        },
+        error: function(xhr, status, error) {
+            console.error('Error loading subjects:', error);
+        }
     });
+}
 
-    @if(isset($data['standard_id']) && isset($data['subject']))
-    var standard_id = "{{ $data['standard_id'] }}";
-    var sub = "{{isset($data['subject']) ? $data['subject'] : 0 }}";
-    loadSubjects(standard_id, sub);
-    @endif
-
-    function validateData() {
-        var c = $('#grade').find('option:selected').length;
-        if (c == 0) {
-            alert("Please Select Atleast One Academic Section");
-            return false;
-        } else {
-            return true;
-        }
-
+function validateData() {
+    var c = $('#grade').find('option:selected').length;
+    if (c == 0) {
+        alert("Please Select Atleast One Academic Section");
+        return false;
+    } else {
+        return true;
     }
+}
 
-    function checkAll(ele) {
-        var checkboxes = document.getElementsByTagName('input');
-        if (ele.checked) {
-            for (var i = 0; i < checkboxes.length; i++) {
-                if (checkboxes[i].type == 'checkbox') {
-                    checkboxes[i].checked = true;
-                }
+function checkAll(ele) {
+    var checkboxes = document.getElementsByTagName('input');
+    if (ele.checked) {
+        for (var i = 0; i < checkboxes.length; i++) {
+            if (checkboxes[i].type == 'checkbox') {
+                checkboxes[i].checked = true;
             }
-        } else {
-            for (var i = 0; i < checkboxes.length; i++) {
-                console.log(i)
-                if (checkboxes[i].type == 'checkbox') {
-                    checkboxes[i].checked = false;
-                }
+        }
+    } else {
+        for (var i = 0; i < checkboxes.length; i++) {
+            if (checkboxes[i].type == 'checkbox') {
+                checkboxes[i].checked = false;
             }
         }
     }
+}
 </script>
+@include('includes.footerJs')
 @include('includes.footer')
 @endsection
