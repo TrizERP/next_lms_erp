@@ -134,6 +134,7 @@ class studentHomeworkSubmissionController extends Controller
         $subject_id = $request->get('subject_id');
         $submission_remarks = $request->input('submission_remarks');
         $sub_institute_id = $request->session()->get('sub_institute_id');
+        $user_id = $request->session()->get('user_id');
         $syear = $request->session()->get('syear');
 
         // $file_name = "";
@@ -162,6 +163,7 @@ class studentHomeworkSubmissionController extends Controller
                 'syear' => $syear,
                 'sub_institute_id' => $sub_institute_id,
             ])->first();
+
             $url = "https://moncey10-homework-validation-system.hf.space/submit";
             $payloads = [
                 'student_id' => $getHomeworkSubmission->student_id,
@@ -205,6 +207,22 @@ class studentHomeworkSubmissionController extends Controller
                 // $completion_status  = 'Y';
             }
             // end 05-02-2026
+
+            // get and store AI response in ai interaction table 21-02-2026
+            $aiData = DB::table('ai_interaction_logs')
+            ->insert([
+                'menu_type'=>'homework',
+                'student_level'=>$getHomeworkSubmission->student_level,
+                'student_id'=>$getHomeworkSubmission->student_id,
+                'prompt_by_user'=>$getHomeworkSubmission->prompt,
+                'response_ai'=>$homeworksubmissionArray['submission_remarks'] ?? null,
+                'sub_institute_id' => $sub_institute_id,
+                'syear' => $syear,
+                'created_by' => $user_id,
+                'created_at' => date('Y-m-d H:i:s'),
+            ]);
+            // end 21-02-2026
+
             studentHomeworkModel::where([
                 "id"               => $hw_id,
                 'syear' => $syear,
