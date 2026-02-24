@@ -384,7 +384,7 @@ LIMIT 1");
         $mainSub = $optionalSub = [];
         //echo "<pre>";print_r($get_standard_subjects[0]);exit;
         // mmis optional and main subject in different lines
-        if($sub_institute_id==47){
+        if(in_array($sub_institute_id,[47,76])){
             if(isset($get_standard_subjects[0]->elective_subject)){
 
                 $electiveExplode = explode(',',$get_standard_subjects[0]->elective_subject);
