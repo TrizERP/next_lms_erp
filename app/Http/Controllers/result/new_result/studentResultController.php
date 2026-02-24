@@ -3416,10 +3416,15 @@ while ($current_date <= $post_end_date) {
         $sub_institute_id = session()->get('sub_institute_id');
         $extra_term  = $extra_exam = "1=1";
         $att_term = "atd.term_id = 2";
+        
+        // For upper academic type, we need to get both terms and merge exam titles
+        $merge_both_terms = false;
         if ($format != '1' && $academic_type == "upper") {
-            $extra_term = "term_id = 2";
-            $extra_exam = "rce.term_id = 2";
+            // Check if we need to merge both terms - use term_id = 2 but get data from both terms for merging
+            $extra_term = "term_id IN (1,2)";
+            $extra_exam = "rce.term_id IN (1,2)";
             $att_term = "atd.term_id = 2";
+            $merge_both_terms = true;
         } elseif ($format != "yearly") {
             $extra_term = "term_id = " . $format;
             $extra_exam = "rce.term_id = " . $format;
@@ -3434,6 +3439,44 @@ while ($current_date <= $post_end_date) {
         $exam_name = $this->get_exam_name($sub_institute_id, $syear, $standard_id, $extra_exam);
         // get exam title 
         $exam_title = $this->get_exam_title($sub_institute_id, $syear, $standard_id, $extra_exam);
+        
+        // For upper academic type with merge_both_terms, group exam titles by ExamTitle
+        $merged_exam_titles = [];
+        $term_exam_titles_all = [];
+        if ($merge_both_terms) {
+            // Group exam titles by ExamTitle and collect weightage from both terms
+            $exam_title_by_term = [];
+            foreach ($exam_title as $title) {
+                $examTitleName = $title->ExamTitle;
+                if (!isset($exam_title_by_term[$examTitleName])) {
+                    $exam_title_by_term[$examTitleName] = [];
+                }
+                $exam_title_by_term[$examTitleName][$title->term_id] = $title;
+                
+                // Collect all term exam titles for header
+                if (!isset($term_exam_titles_all[$title->term_id])) {
+                    $term_exam_titles_all[$title->term_id] = [];
+                }
+                $term_exam_titles_all[$title->term_id][] = $title;
+            }
+            
+            // Create merged exam titles array
+            foreach ($exam_title_by_term as $examTitleName => $termData) {
+                $merged_item = new \stdClass();
+                $merged_item->ExamTitle = $examTitleName;
+                $merged_item->term_id = 0; // Indicates merged
+                
+                // If there's only one term, use that weightage
+                // If there are multiple terms, pick only one weightage (not the sum)
+                $firstTerm = reset($termData);
+                $merged_item->weightage = $firstTerm->weightage;
+                $merged_item->total_weightage = $firstTerm->weightage;
+                $merged_item->term_data = $termData;
+                
+                $merged_exam_titles[] = $merged_item;
+            }
+        }
+//        echo "<pre>";print_r($merged_exam_titles);print_r($term_exam_titles_all);exit;
         //get exam marks
         $exam_marks = $this->get_exam_marks($sub_institute_id, $student_id, 'best_of_2');
 
@@ -3465,36 +3508,59 @@ while ($current_date <= $post_end_date) {
             $total_sub_marks[$terms->term_id] = 0;
             $all_colspan += count($term_exam_titles);
         }
-        // 9 to 12 
-        if ($academic_type == "upper") {
-            $table .= '<th colspan="' . (count($term_exam_titles) + $colspan + 2) . '" style="text-align:center;background:black;color:white">&nbsp;</th>'; //<b>ACADEMIC YEAR (100)</b> remove from rajesh 22_02_2024
+        
+        // For upper academic type with merged terms, show combined exam titles
+        if ($merge_both_terms && !empty($merged_exam_titles)) {
+            $total_weightage = 0;
+            foreach ($merged_exam_titles as $mt) {
+                $total_weightage += $mt->total_weightage;
+            }
+            $table .= '<th colspan="' . (count($merged_exam_titles) + 3) . '" style="text-align:center;background:black;color:white"><b>Academic Year (' . $total_weightage . ' marks)</b></th>';
+        } elseif ($academic_type == "upper") {
+            $table .= '<th colspan="' . (count($term_exam_titles) + $colspan + 1) . '" style="text-align:center;background:black;color:white">&nbsp;</th>'; //<b>ACADEMIC YEAR (100)</b> remove from rajesh 22_02_2024
         }
         $table .= '</tr><tr><th><b>Subject</b></th>';
         $weigthage = '';
-        // get exam names heading like PA,SA,NB
-        foreach ($term_name as $keys => $terms) {
+        
+        // For merged exam titles (upper academic type)
+        if ($merge_both_terms && !empty($merged_exam_titles)) {
             $total_mark = 0;
-            foreach ($exam_title as $key => $title) {
-                $weigthage = '(' . $title->weightage . ')';
-
-                $exam_head = $title->ExamTitle;
-
-                if ($terms->term_id == $title->term_id) {
-                    $table .= '<th class="data_center"><b>' . $exam_head . '<br>' . $weigthage . '</b></th>';
-                    $total_mark += $title->weightage;
-                }
+            foreach ($merged_exam_titles as $mexam) {
+                $weigthage = '(' . $mexam->total_weightage . ')';
+                $table .= '<th class="data_center"><b>' . $mexam->ExamTitle . '<br>' . $weigthage . '</b></th>';
+                $total_mark += $mexam->total_weightage;
             }
             $mark_tot = '(' . $total_mark . ')';
-            $overall_total += $total_mark;
-            if ($academic_type == "primary") {
-                // mark obt for term for 1 to 5                
-                $table .= '<th style="text-align:center"><b>Mark <br> Obtained (' . $total_mark . ')</b></th><th style="text-align:center"><b>Grade</b></th>';
-            }
-        }
-        //total marks of both term headings    
-        if ($academic_type == "upper") {
+            $overall_total = $total_mark;
             $table .= '<th class="data_center"><b>Total Marks <br>Obtained (' . $overall_total . ')</b></th>
+                <!--<th class="data_center"><b>Avg Marks</b></th>-->
                 <th class="data_center"><b>Grade</b></th>';
+        } else {
+            // get exam names heading like PA,SA,NB
+            foreach ($term_name as $keys => $terms) {
+                $total_mark = 0;
+                foreach ($exam_title as $key => $title) {
+                    $weigthage = '(' . $title->weightage . ')';
+
+                    $exam_head = $title->ExamTitle;
+
+                    if ($terms->term_id == $title->term_id) {
+                        $table .= '<th class="data_center"><b>' . $exam_head . '<br>' . $weigthage . '</b></th>';
+                        $total_mark += $title->weightage;
+                    }
+                }
+                $mark_tot = '(' . $total_mark . ')';
+                $overall_total += $total_mark;
+                if ($academic_type == "primary") {
+                    // mark obt for term for 1 to 5                
+                    $table .= '<th style="text-align:center"><b>Mark <br> Obtained (' . $total_mark . ')</b></th><th style="text-align:center"><b>Grade</b></th>';
+                }
+            }
+            //total marks of both term headings    
+            if ($academic_type == "upper") {
+                $table .= '<th class="data_center"><b>Total Marks <br>Obtained (' . $overall_total . ')</b></th>
+                    <th class="data_center"><b>Grade</b></th>';
+            }
         }
         $table .= '</tr>
                 </thead>
@@ -3508,6 +3574,84 @@ while ($current_date <= $post_end_date) {
             $both_term_ob_mark = 0;
             $table .= '<tr>
                     <td>' . $val->subject_name . '</td>';
+            
+            // For merged exam titles (upper academic type)
+            if ($merge_both_terms && !empty($merged_exam_titles)) {
+                $subject_total_obtained = 0;
+                $subject_total_weightage = 0;
+                
+                foreach ($merged_exam_titles as $mexam) {
+                    $term_marks_data = [];
+                    $term_weights = [];
+                    $term_obtained = [];
+                    $term_marks = [];
+                    
+                    // Get marks from each term for this exam title
+                    foreach ($mexam->term_data as $termId => $titleObj) {
+                        $obtained_marks = 0;
+                        $to_marks = 0;
+                        
+                        foreach ($exam_name as $key => $title) {
+                            if ($title->subject_id == $val->subject_id && $termId == $title->term_id && $title->ExamTitle == $mexam->ExamTitle) {
+                                $to_marks = $title->points;
+                                
+                                foreach ($exam_marks as $index => $marks) {
+                                    if ($title->id == $marks->exam_id) {
+                                        if ($marks->is_absent != "") {
+                                            $obtained_marks = ($marks->is_absent == "AB") ? "AB" : $marks->is_absent;
+                                        } else {
+                                            $obtained_marks = $marks->points;
+                                        }
+                                        break;
+                                    }
+                                }
+                                break;
+                            }
+                        }
+                        
+                        $term_marks_data[$termId] = $obtained_marks;
+                        $term_marks[$termId] = $to_marks;                        
+                    }
+                    
+                    // Sum of obtained marks
+                    $obtained_sum = array_sum($term_marks_data);
+
+                    // Sum of total marks
+                    $total_sum = array_sum($term_marks);
+
+                    // Convert to weightage
+                    $converted_sum = ($obtained_sum / $total_sum) * $mexam->weightage;
+
+                    // Optional: number format to 2 decimal places
+                    $display_val = number_format($converted_sum, 2);
+                    $sub_per = ($obtained_sum > 0) ? ($display_val / $mexam->total_weightage) * 100 : 0;
+                    
+                    $subject_total_obtained += is_numeric($converted_sum) ? $converted_sum : 0;
+                    $subject_total_weightage += $mexam->total_weightage;
+                    
+                    $underline = ($sub_per < 33 && $academic_type == "upper") ? 'style="border-bottom: 2px solid red;"' : '';
+                    $table .= '<td class="data_center"><span '.$underline.'>' . $display_val . '</span></td>';
+                }
+                
+                // Total marks obtained
+                $total_underline = ($subject_total_obtained < ($subject_total_weightage * 0.33) && $academic_type == "upper") ? 'style="border-bottom: 2px solid red;"' : '';
+                $table .= '<td class="data_center tot_of_both"><span '.$total_underline.'>' . round($subject_total_obtained, 0) . '</span></td>';
+                
+                // Average marks
+                $avg_total = $subject_total_weightage > 0 ? ($subject_total_obtained / $subject_total_weightage) * 100 : 0;
+                $avg_underline = ($avg_total < 33 && $academic_type == "upper") ? 'style="border-bottom: 2px solid red;"' : '';
+                //$table .= '<td class="data_center"><span '.$avg_underline.'>' . number_format($avg_total, 2) . '</span></td>';
+                
+                // Grade
+                $grade_std = $this->getGrade($grade_arr, $subject_total_weightage, round($subject_total_obtained, 0));
+                if ($grade_std == "E") {
+                    $pass_fail[] = 'Failed';
+                }
+                $grade_underline = ($grade_std == "E") ? 'style="border-bottom: 2px solid red;"' : '';
+                $table .= '<td class="data_center grade_of_both"><span '.$grade_underline.'>' . $grade_std . '</span></td>';
+                
+                $both_term_ob_mark = $subject_total_obtained;
+            } else {
             // get term wise eam and marks 
             foreach ($term_name as $keys => $terms) {
                 $obtained_marks = $to_marks = $to_weight = $title_exam = $asteriskMark = [];
@@ -3645,6 +3789,7 @@ while ($current_date <= $post_end_date) {
             $get_all_tot_mark += $overall_total;
 
             $table .= '</tr>';
+        }
         }
         // exit;
         $table .= '<tr>';
@@ -5147,7 +5292,7 @@ while ($current_date <= $post_end_date) {
         $extra_term = ($format == "yearly") ?
             (($academic_type != "primary") ? "term_id = 2" : "1=1") :
             "term_id = $format";
-        $extra_term_co = ($format == "yearly" && $academic_type != "primary") ? "comark.term_id = 2" : "1=1";
+        $extra_term_co = ($format == "yearly" && $academic_type != "primary") ? "1=1" : "1=1";
         $extra_exam = ($format == "yearly") ? "1=1" : "comark.term_id = $format";
 
         $both_term = DB::table('academic_year')
@@ -5159,28 +5304,54 @@ while ($current_date <= $post_end_date) {
         $ret_mark_grade = DB::select(DB::raw("SELECT * FROM result_co_scholastic WHERE sub_institute_id = $sub_institute_id AND $extra_term"));
 
         if (count($ret_mark_grade) > 0) {
-            $ret_data = DB::table('result_co_scholastic_marks_entries as comark')
-                ->selectRaw(
-                    'comark.student_id, comark.co_scholastic_id, comark.term_id, cop.id as parent_id, cop.title as parent_title, co.title as child_title, co.id as coid,co.mark_type,
-                IF(comark.grade = 0, comark.points, cograde.title) as obtain_grade, co.max_mark'
-                )
-                ->leftJoin('result_co_scholastic_grades as cograde', 'cograde.id', '=', 'comark.grade')
-                ->join('result_co_scholastic as co', 'co.id', '=', 'comark.co_scholastic_id')
-                ->join('result_co_scholastic_parent as cop', 'cop.id', '=', 'co.parent_id')
-                ->where('comark.syear', $syear)
-                ->whereRaw($extra_exam)
-                ->whereRaw($extra_term_co)
-                ->where([
-                    'comark.standard_id' => $standard_id,
-                    'co.standard_id' => $standard_id,
-                    'comark.student_id' => $student_id,
-                    'comark.sub_institute_id' => $sub_institute_id
-                ])
-                ->orderBy('comark.student_id')
-                ->orderBy('cop.sort_order')
-                ->orderBy('co.sort_order')
-                ->orderBy('comark.term_id')
-                ->get();
+            // If format is yearly and academic type is not primary, merge both terms
+            if ($format == "yearly" && $academic_type != "primary") {
+                $ret_data = DB::table('result_co_scholastic_marks_entries as comark')
+                    ->selectRaw(
+                        'comark.student_id, comark.co_scholastic_id, 2 as term_id, cop.id as parent_id, cop.title as parent_title, co.title as child_title, co.id as coid,co.mark_type,
+                    IF(comark.grade = 0, SUM(comark.points), cograde.title) as obtain_grade, SUM(co.max_mark) as max_mark'
+                    )
+                    ->leftJoin('result_co_scholastic_grades as cograde', 'cograde.id', '=', 'comark.grade')
+                    ->join('result_co_scholastic as co', 'co.id', '=', 'comark.co_scholastic_id')
+                    ->join('result_co_scholastic_parent as cop', 'cop.id', '=', 'co.parent_id')
+                    ->where('comark.syear', $syear)
+                    ->whereRaw($extra_exam)
+                    ->whereRaw($extra_term_co)
+                    ->where([
+                        'comark.standard_id' => $standard_id,
+                        'co.standard_id' => $standard_id,
+                        'comark.student_id' => $student_id,
+                        'comark.sub_institute_id' => $sub_institute_id
+                    ])
+                    ->groupBy('comark.student_id', 'cop.id', 'cop.title', 'co.title', 'co.mark_type')
+                    ->orderBy('comark.student_id')
+                    ->orderBy('cop.sort_order')
+                    ->orderBy('co.sort_order')
+                    ->get();
+            } else {
+                $ret_data = DB::table('result_co_scholastic_marks_entries as comark')
+                    ->selectRaw(
+                        'comark.student_id, comark.co_scholastic_id, comark.term_id, cop.id as parent_id, cop.title as parent_title, co.title as child_title, co.id as coid,co.mark_type,
+                    IF(comark.grade = 0, comark.points, cograde.title) as obtain_grade, co.max_mark'
+                    )
+                    ->leftJoin('result_co_scholastic_grades as cograde', 'cograde.id', '=', 'comark.grade')
+                    ->join('result_co_scholastic as co', 'co.id', '=', 'comark.co_scholastic_id')
+                    ->join('result_co_scholastic_parent as cop', 'cop.id', '=', 'co.parent_id')
+                    ->where('comark.syear', $syear)
+                    ->whereRaw($extra_exam)
+                    ->whereRaw($extra_term_co)
+                    ->where([
+                        'comark.standard_id' => $standard_id,
+                        'co.standard_id' => $standard_id,
+                        'comark.student_id' => $student_id,
+                        'comark.sub_institute_id' => $sub_institute_id
+                    ])
+                    ->orderBy('comark.student_id')
+                    ->orderBy('cop.sort_order')
+                    ->orderBy('co.sort_order')
+                    ->orderBy('comark.term_id')
+                    ->get();
+            }
 
             $skill_data = $criteria_data = $decipline_data = $co_data =$hpe_data = [];
             $get_grade = DB::table('result_co_scholatic_range')
@@ -5245,38 +5416,6 @@ while ($current_date <= $post_end_date) {
         ];
     }
 
-    // private function buildCoScholasticTable($both_term, $co_data, $term_name, $flex, $academic_type)
-    // {
-    //     $co_scholastic = '<div style=' . $flex . ' class="co_scho_hills">
-    //     <div style="width:50%;">
-    //         <table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" cellpadding="0" border="1">
-    //             <thead>
-    //                 <tr>
-    //                     <th><b>CO SCHOLASTIC</b></th>';
-
-    //     foreach ($both_term as $terms) {
-    //         $co_scholastic .= '<th class="data_center"><b>' . ($academic_type == "primary" ? $terms->title : $term_name) . '</b></th>';
-    //     }
-
-    //     $co_scholastic .= '</tr></thead><tbody>';
-    //     $groupedData = [];
-
-    //     foreach ($co_data as $value) {
-    //         $groupedData[$value->child_title][$value->term_id] = $value->obtain_grade;
-    //     }
-
-    //     foreach ($groupedData as $childTitle => $termGrades) {
-    //         $co_scholastic .= '<tr><td>' . $childTitle . '</td>';
-    //         foreach ($both_term as $terms) {
-    //             $grade = $termGrades[$terms->term_id] ?? '-';
-    //             $co_scholastic .= '<td class="data_center">' . $grade . '</td>';
-    //         }
-    //         $co_scholastic .= '</tr>';
-    //     }
-
-    //     $co_scholastic .= '</tbody></table></div></div>';
-    //     return $co_scholastic;
-    // }
     private function buildCoScholasticTable($both_term, $co_data, $term_name, $flex, $academic_type)
     {
         $co_scholastic = '<div style=' . $flex . ' class="co_scho_hills">';
