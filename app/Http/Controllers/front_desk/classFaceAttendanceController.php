@@ -101,7 +101,7 @@ class classFaceAttendanceController extends Controller
                 'created_on' => now(),
             ]);
         }
-
+        $studentData = [];
         // add student attendance
         foreach ($getAllStudents as $key => $student) {
             $student_id = $student['id'];
@@ -125,22 +125,43 @@ class classFaceAttendanceController extends Controller
             $attendanceArray['user_group_id'] = $user_profile_id;
             $attendanceArray['created_by'] = $user_id;
 
-            if (count($existing) > 0) {
-                DB::table("attendance_student")->where(['id' => $existing[0]->id])->update($attendanceArray);
-            } else {
-                DB::table("attendance_student")->insert($attendanceArray);
+            // Build student data array for frontend table
+            $studentData[] = [
+                'id'            => $student_id,
+                'enrollment_no' => $student['enrollment_no'] ?? '',
+                'roll_no'       => $student['roll_no'] ?? '',
+                'first_name'    => $student['first_name'] ?? '',
+                'middle_name'   => $student['middle_name'] ?? '',
+                'last_name'     => $student['last_name'] ?? '',
+                'batch_title'   => $student['batch_title'] ?? '',
+            ];
 
-                $sendRequest = new Request(['student_id' => $student_id, 'attendance' => $attendance, 'date' => $date, 'created_by' => $user_id, 'syear' => $syear, 'sub_institute_id' => $sub_institute_id]);
+            // Store attendance data for frontend pre-selection
+            $attendance_data[$student_id] = $attendance;
 
-                if ($date == date('Y-m-d')) {
-                    // $sendNotification = $this->sendNotificationAtt($sendRequest);
-                }
-            }
+            // if (count($existing) > 0) {
+            //     DB::table("attendance_student")->where(['id' => $existing[0]->id])->update($attendanceArray);
+            // } else {
+            //     DB::table("attendance_student")->insert($attendanceArray);
+
+            //     $sendRequest = new Request(['student_id' => $student_id, 'attendance' => $attendance, 'date' => $date, 'created_by' => $user_id, 'syear' => $syear, 'sub_institute_id' => $sub_institute_id]);
+
+            //     if ($date == date('Y-m-d')) {
+            //         // $sendNotification = $this->sendNotificationAtt($sendRequest);
+            //     }
+            // }
         }
+
+        // Pass student data and attendance data to frontend
+        $res['student_data']   = $studentData;
+        $res['attendance_data'] = $attendance_data;
+        $res['date']            = $date;
+        $res['standard_division'] = $standard_id . '||' . $division_id;
 
         $res['status'] = $getAllStudents ? 1 : 0;
         $res['message'] = $getAllStudents ? 'Attendance Marked Successfully !! matched students = ' . count($matchedStudents) .' and unmatch students = ' . count($getAllStudents) - count($matchedStudents) : 'Attendance Marked Failed';
 
-        return is_mobile($type, 'class_face_attendance.index', $res);
+        // return is_mobile($type, 'class_face_attendance.index', $res); 
+        return is_mobile($type, 'front_desk/faceAttendance/classAttendance/index', $res, 'view');
     }
 }
