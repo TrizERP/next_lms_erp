@@ -214,7 +214,7 @@ class courseController extends Controller
                 INNER JOIN standard STD ON STD.id = s.standard_id
                 LEFT JOIN chapter_master cp ON cp.subject_id = s.subject_id
                 LEFT JOIN content_master c ON c.subject_id = s.subject_id AND c.standard_id = s.standard_id AND c.sub_institute_id = s.sub_institute_id
-                WHERE s.sub_institute_id = $sub_institute_id AND allow_content = 'Yes'
+                WHERE s.sub_institute_id in ($sub_institute_id,1) AND allow_content = 'Yes'
                  ".$extra." AND s.subject_category!='SEL'
                 GROUP BY s.subject_id,s.standard_id,s.subject_category ORDER BY s.sort_order");
 

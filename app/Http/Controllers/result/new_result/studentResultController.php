@@ -3644,7 +3644,7 @@ while ($current_date <= $post_end_date) {
                             }
                         }
                         
-                        $term_marks_data[$termId] = $obtained_marks;
+                        $term_marks_data[$termId] = (float) $obtained_marks;
                         $term_marks[$termId] = $to_marks;                        
                     }
                     
