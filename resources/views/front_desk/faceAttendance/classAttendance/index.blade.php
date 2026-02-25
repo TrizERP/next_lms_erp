@@ -32,7 +32,7 @@
         <div class="card">
 
             @if ($sessionData = Session::get('data'))
-            <div class="alert {{isset($sessionData['status']) && $sessionData['status']==1?'alert-success':'alert-danger'}}">
+            <div class="alert {{isset($sessionData['status_code']) && $sessionData['status_code']==1?'alert-success':'alert-danger'}}">
                 <button type="button" class="close" data-dismiss="alert">×</button>
                 <strong>{{$sessionData['message']}}</strong>
             </div>
@@ -119,6 +119,7 @@
                         <div class="card">
                             <form method="POST" action="{{route('save_student_attendance')}}">
                             @csrf
+                            <input type="hidden" name="formType" value="classAttendance">
                             <div class="table-responsive">
                                 <table id="example" class="table table-striped">
                                 <thead>
@@ -126,9 +127,8 @@
                                         <th>Sr No</th>
                                         <th>{{App\Helpers\get_string('grno','request')}}</th>
                                         <th>Roll No</th>
-                                        <th>Last Name</th>
+                                        <th>Student Image</th>
                                         <th>{{App\Helpers\get_string('studentname','request')}}</th>
-                                        <th>Middle Name</th>
                                         @if(isset($data['batch_id']) && !empty($data['batchs']))
                                         <th>Batch</th>
                                         @endif
@@ -142,9 +142,15 @@
                                             <td> {{$j++}} </td>
                                             <td> {{$value['enrollment_no']}} </td>
                                             <td> {{$value['roll_no']}} </td>
-                                            <td> {{$value['last_name']}} </td>
-                                            <td> {{$value['first_name']}} </td>
-                                            <td> {{$value['middle_name']}} </td>
+                                            @php
+                                                $imgPath = isset($value['image']) ? '/storage/student/'.$value['image'] : null;
+                                                $imgFullPath = $imgPath ? public_path($imgPath) : null;
+                                                $imgExists = $imgFullPath && file_exists($imgFullPath);
+                                            @endphp
+                                            <td>
+                                                <img src="{{ $imgExists ? asset($imgPath) : asset('/admin_dep/images/no-student.jpg') }}" alt="Student Image" style="width: 50px; height: 50px;">
+                                            </td>
+                                            <td> {{$value['first_name'] ?? '-'}} {{$value['middle_name'] ?? '-'}} {{$value['last_name'] ?? '-'}} </td>
                                             @if(isset($data['batch_id']) && !empty($data['batchs']))
                                             <td>{{$value['batch_title']}}</td>
                                             @endif

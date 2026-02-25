@@ -31,8 +31,14 @@ class classFaceAttendanceController extends Controller
         $standard_division = explode('||', $request->standard_division);
         $standard_id = $standard_division[0] ?? 0;
         $division_id = $standard_division[1] ?? 0;
-        $getAllStudents = SearchStudent('', $standard_id, $division_id);
 
+        if($type=="API"){
+            $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');
+            $user_id = $request->get('user_id');
+            $user_profile_id = $request->get('user_profile_id');
+        }
+        $getAllStudents = SearchStudent('', $standard_id, $division_id);
         // Array to store student_id and API response
         $harshitApiResponses = [];
 
@@ -134,6 +140,7 @@ class classFaceAttendanceController extends Controller
                 'middle_name'   => $student['middle_name'] ?? '',
                 'last_name'     => $student['last_name'] ?? '',
                 'batch_title'   => $student['batch_title'] ?? '',
+                'image'         => $student['image'] ?? '',
             ];
 
             // Store attendance data for frontend pre-selection
@@ -158,7 +165,7 @@ class classFaceAttendanceController extends Controller
         $res['date']            = $date;
         $res['standard_division'] = $standard_id . '||' . $division_id;
 
-        $res['status'] = $getAllStudents ? 1 : 0;
+        $res['status_code'] = $getAllStudents ? 1 : 0;
         $res['message'] = $getAllStudents ? 'Attendance Marked Successfully !! matched students = ' . count($matchedStudents) .' and unmatch students = ' . count($getAllStudents) - count($matchedStudents) : 'Attendance Marked Failed';
 
         // return is_mobile($type, 'class_face_attendance.index', $res); 

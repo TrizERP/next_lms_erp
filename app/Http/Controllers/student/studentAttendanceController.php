@@ -278,8 +278,9 @@ class studentAttendanceController extends Controller
         $standard_division = explode("||", $standard_division_orignal);
         $standard = $standard_division[0];
         $division = $standard_division[1];
-
+        $i = $studentCount = $presentStudent =0;
         foreach ($students as $student_id => $attendance) {
+            $studentCount++;
             $attendanceArray = [];
             $attendanceArray['syear'] = $syear;
             $attendanceArray['sub_institute_id'] = $sub_institute_id;
@@ -295,11 +296,15 @@ class studentAttendanceController extends Controller
             $attendanceArray['teacher_id'] = $user_id;
             $attendanceArray['user_group_id'] = $user_profile_id;
             $attendanceArray['created_by'] = $user_id;
-
+            if($attendance == 'P'){
+                $presentStudent++;
+            }
             if (count($data) > 0) {
                 DB::table("attendance_student")->where(['id' => $data[0]->id])->update($attendanceArray);
+                $i++;
             } else {
                 DB::table("attendance_student")->insert($attendanceArray);
+                $i++;
 
                 $sendRequest = new Request(['student_id'=>$student_id,'attendance'=>$attendance,'date'=>$date,'created_by'=>$user_id,'syear'=>$syear,'sub_institute_id'=>$sub_institute_id]);
             
@@ -309,9 +314,13 @@ class studentAttendanceController extends Controller
             }
         }
 
-        $res['status_code'] = 1;
-        $res['message'] = "Attendance successfully taken";
-
+        $res['status_code'] = $i> 0 ? 1 : 0;
+        $res['message'] = $i> 0 ? "Attendance successfully taken for $presentStudent students out of $studentCount" : "Fail to take attendance";
+        // added by saroj uma for class attendance on 25-02-2026
+        if($request->has('formType') && $request->input('formType') == 'classAttendance'){
+            return is_mobile($type, 'class_face_attendance.index', $res);
+        }       
+        // added by saroj uma for class attendance on 25-02-2026
         return is_mobile($type, "student_attendance.index", $res);
     }
 
