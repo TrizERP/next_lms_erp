@@ -32,7 +32,7 @@
         <div class="card">
 
             @if ($sessionData = Session::get('data'))
-            <div class="alert {{isset($sessionData['status_code']) && $sessionData['status_code']==1?'alert-success':'alert-danger'}}">
+            <div class="alert {{isset($sessionData['status']) && $sessionData['status']==1?'alert-success':'alert-danger'}}">
                 <button type="button" class="close" data-dismiss="alert">×</button>
                 <strong>{{$sessionData['message']}}</strong>
             </div>
@@ -109,74 +109,6 @@
             </form>
         </div>
 
-        @if(isset($data['student_data']))
-                    @php
-                    $j = 1;
-                        if(isset($data['student_data'])){
-                            $student_data = $data['student_data'];
-                        }
-                    @endphp
-                        <div class="card">
-                            <form method="POST" action="{{route('save_student_attendance')}}">
-                            @csrf
-                            <input type="hidden" name="formType" value="classAttendance">
-                            <div class="table-responsive">
-                                <table id="example" class="table table-striped">
-                                <thead>
-                                    <tr>
-                                        <th>Sr No</th>
-                                        <th>{{App\Helpers\get_string('grno','request')}}</th>
-                                        <th>Roll No</th>
-                                        <th>Student Image</th>
-                                        <th>{{App\Helpers\get_string('studentname','request')}}</th>
-                                        @if(isset($data['batch_id']) && !empty($data['batchs']))
-                                        <th>Batch</th>
-                                        @endif
-                                        <th>Present <input id="checkall" name="attendance" onchange="checkAll(this,'Present');" type="radio"></th>
-                                        <th class="text-left">Absent <input id="checkall" name="attendance" onchange="checkAll(this,'Absent');" type="radio"></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($student_data as $key => $value)
-                                        <tr>
-                                            <td> {{$j++}} </td>
-                                            <td> {{$value['enrollment_no']}} </td>
-                                            <td> {{$value['roll_no']}} </td>
-                                            @php
-                                                $imgPath = isset($value['image']) ? '/storage/student/'.$value['image'] : null;
-                                                $imgFullPath = $imgPath ? public_path($imgPath) : null;
-                                                $imgExists = $imgFullPath && file_exists($imgFullPath);
-                                            @endphp
-                                            <td>
-                                                <img src="{{ $imgExists ? asset($imgPath) : asset('/admin_dep/images/no-student.jpg') }}" alt="Student Image" style="width: 50px; height: 50px;">
-                                            </td>
-                                            <td> {{$value['first_name'] ?? '-'}} {{$value['middle_name'] ?? '-'}} {{$value['last_name'] ?? '-'}} </td>
-                                            @if(isset($data['batch_id']) && !empty($data['batchs']))
-                                            <td>{{$value['batch_title']}}</td>
-                                            @endif
-                                            <!-- <td> <input type="radio" value="P" @if(isset($data['attendance_data'][$value['id']])) @if($data['attendance_data'][$value['id']] == 'P') checked @endif  @endif class="Present" name="student[{{$value['id']}}]"> </td>
-                                            <td> <input type="radio" value="A" @if(isset($data['attendance_data'][$value['id']])) @if($data['attendance_data'][$value['id']] == 'A') checked @endif  @endif class="Absent" name="student[{{$value['id']}}]"> </td> -->
-
-                                            <td> <input type="radio" value="P" @if(!isset($data['attendance_data'][$value['id']]) || $data['attendance_data'][$value['id']] == 'P') checked @endif class="Present" name="student[{{$value['id']}}]"> </td>
-                                            <td> <input type="radio" value="A" @if(isset($data['attendance_data'][$value['id']]) && $data['attendance_data'][$value['id']] == 'A') checked @endif class="Absent" name="student[{{$value['id']}}]"> </td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                        </table>
-                        <div class="row">
-                            <div class="col-md-12 form-group">
-                                <center>
-                                    <input type="hidden" name="date" @if(isset($data['date'])) value="{{$data['date']}}" @endif">
-                                    <input type="hidden" name="standard_division" @if(isset($data['standard_division'])) value="{{$data['standard_division']}}" @endif">
-                                    <input type="submit" name="submit" value="Submit" class="btn btn-success" >
-                                </center>
-                            </div>
-                        </div>
-                </div>
-            </form>
-        </div>
-
-                    @endif
     </div>
 </div>
 
