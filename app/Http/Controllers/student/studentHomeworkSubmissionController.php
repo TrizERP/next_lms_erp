@@ -138,6 +138,7 @@ class studentHomeworkSubmissionController extends Controller
         $syear = $request->session()->get('syear');
 
         // $file_name = "";
+        $i =0;
         foreach ($students as $key => $hw_id) {
             $file_name = $file_size = $ext = "";
             if ($request->hasFile('image')) {
@@ -152,7 +153,7 @@ class studentHomeworkSubmissionController extends Controller
 
             $homeworksubmissionArray = [];
 
-            $homeworksubmissionArray['submission_remarks'] ='';
+            $homeworksubmissionArray['submission_remarks'] ='Dear Student, your homework submission has been received. You will be notified with feedback soon.';
             $homeworksubmissionArray['completion_status'] = 'Y';
             $homeworksubmissionArray['submission_image'] = $file_name;
             $homeworksubmissionArray['submission_image_size'] = $file_size;
@@ -164,16 +165,16 @@ class studentHomeworkSubmissionController extends Controller
                 'sub_institute_id' => $sub_institute_id,
             ])->first();
 
-            $url = "https://moncey10-homework-validation-system.hf.space/submit";
-            $payloads = [
-                'student_id' => $getHomeworkSubmission->student_id,
-                'homework_id' => $hw_id,
-                'images' => $request->file('image')[$hw_id],
-            ];
-
             // Call the API and capture the response
-            $client = new \GuzzleHttp\Client(['verify' => false]);
-            try {
+            $url = "https://moncey10-homework-validation-system.hf.space/homework/validate";
+                $payloads = [
+                    'student_id' => $getHomeworkSubmission->student_id,
+                    'homework_id' => $hw_id,
+                    'student_file' => $request->file('image')[$hw_id],
+                ];
+
+                $client = new \GuzzleHttp\Client(['verify' => false]);
+                try{
                 $response = $client->request('POST', $url, [
                     'multipart' => [
                         [
@@ -185,7 +186,7 @@ class studentHomeworkSubmissionController extends Controller
                             'contents' => $hw_id
                         ],
                         [
-                            'name'     => 'images',
+                            'name'     => 'student_file', // Changed from 'images' to 'student_file'
                             'contents' => fopen($request->file('image')[$hw_id]->getPathname(), 'r'),
                             'filename' => $request->file('image')[$hw_id]->getClientOriginalName()
                         ]
@@ -193,9 +194,9 @@ class studentHomeworkSubmissionController extends Controller
                 ]);
 
                 $body = json_decode($response->getBody()->getContents(), true);
-                
+                // return $body;
                 // Extract submission_remarks and completion_status from API response
-                $submission_remarks = $body['submission_remarks'] ?? null;
+                $submission_remarks = $body['submission_remarks'] ?? 'Dear Student, your homework submission has been received. You will be notified with feedback soon.';
                 // $completion_status    = $body['completion_status']    ?? null;
 
                 // Override the variables used in the update
@@ -203,7 +204,7 @@ class studentHomeworkSubmissionController extends Controller
                 // $homeworksubmissionArray['completion_status']  = $completion_status;
             } catch (\Exception $e) {
                 // On API failure, keep existing values or set defaults
-                $submission_remarks = $submission_remarks[$hw_id] ?? '';
+                $submission_remarks = $submission_remarks[$hw_id] ?? 'Dear Student, your homework submission has been received. You will be notified with feedback soon.';
                 // $completion_status  = 'Y';
             }
             // end 05-02-2026
@@ -222,17 +223,21 @@ class studentHomeworkSubmissionController extends Controller
                 'created_at' => date('Y-m-d H:i:s'),
             ]);
             // end 21-02-2026
-
-            studentHomeworkModel::where([
+            // echo "<pre>";print_r($homeworksubmissionArray);exit;
+            $update = studentHomeworkModel::where([
                 "id"               => $hw_id,
                 'syear' => $syear,
                 'sub_institute_id' => $sub_institute_id,
             ])
                 ->update($homeworksubmissionArray);
+
+                if($update){
+                    $i++;
+                }
         }
 
-        $res['status_code'] = "1";
-        $res['message'] = "Homework Submited successfully";
+        $res['status_code'] = $i>0 ? "1" : "0";
+        $res['message'] = $i>0 ? "Homework Submited successfully" : "Failed to submit homework please try again";
 
         return is_mobile($type, "student_homework_submission.index", $res);
     }

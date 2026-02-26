@@ -669,4 +669,4 @@ Route::group(['prefix' => 'agent', 'middleware' => ['session', 'menu', 'logRoute
 });
 
 route::get('geminiChat', [AJAXController::class, 'geminiChat']);
-Route::get('ajaxQuestionLists', [AJAXController::class, 'ajaxQuestionLists'])->name('ajaxQuestionLists');
+Route::get('ajaxQuestionLists', [AJAXController::class, 'ajaxQuestionListsFunction'])->name('ajaxQuestionLists');
