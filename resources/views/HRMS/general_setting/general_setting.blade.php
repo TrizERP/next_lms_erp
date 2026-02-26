@@ -17,6 +17,7 @@
                     $parent_communication = ['N'=>"Subject Wise","Y"=>"Class Teacher wise"];
                     $timetable_ai = ["0"=>"Standard Wise","1"=>"Teacher wise"];
                     $sandwich_leave = $multi_login = $timeTableTeacher = $previousAdmission = $termwise_hpc = ['Yes'=>"Yes",'No'=>"No"];
+                    $get_tc_info = ['No'=>"No",'Yes'=>"Yes"];
                     $bulkDiscount = ["No","Yes"];
                     $casual_leave = [0,1,2,3,4,5];
                     $sat_late_day = [0,0.5,1];
@@ -261,6 +262,23 @@
                                             <select id='previousAdmission' name="previousAdmission" class="form-control"  >
                                             @foreach($previousAdmission as $key=>$value)
                                                 <option value="{{ $key }}" @if(isset($data['get_previousAdmission']->fieldvalue) && $data['get_previousAdmission']->fieldvalue == $key) selected @endif >
+                                                    {{ $value }}
+                                                </option>
+                                            @endforeach
+                                            </select>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <!-- TC Information -->
+                             <tr>
+                                <th>TC subjects are fetched from the Student Report Card.</th>
+                                <td>
+                                    <div class="row">
+                                        <div class="col-md-6 form-group" style="margin-left: 0px !important">
+                                            <select id='get_tc_info' name="get_tc_info" class="form-control"  >
+                                            @foreach($get_tc_info as $key=>$value)
+                                                <option value="{{ $key }}" @if(isset($data['get_tc_info']->fieldvalue) && $data['get_tc_info']->fieldvalue == $key) selected @endif >
                                                     {{ $value }}
                                                 </option>
                                             @endforeach
