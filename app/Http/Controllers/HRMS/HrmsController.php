@@ -727,6 +727,7 @@ $day = Carbon::parse($punchin_time)->format('Y-m-d');
         $get_previousAdmission = DB::table('general_data')->where(['fieldname' => 'previous_year_admission', 'sub_institute_id' => $sub_institute_id])->first();
 
         $getallow_leave_days = DB::table('general_data')->where(['fieldname' => 'half_days_allowed', 'sub_institute_id' => $sub_institute_id])->first();
+        $get_tc_info = DB::table('general_data')->where(['fieldname' => 'tc_info', 'sub_institute_id' => $sub_institute_id])->first();
 
         $res['leaveTypeArr'] = $leaveTypeArr;
         $res['get_sandwich_leave_data'] = $get_sandwich_leave_data;
@@ -742,6 +743,7 @@ $day = Carbon::parse($punchin_time)->format('Y-m-d');
         $res['get_previousAdmission'] = $get_previousAdmission;
         $res['getallow_leave_days'] = $getallow_leave_days;
         $res['get_termwise_hpc'] = $get_termwise_hpc;
+        $res['get_tc_info'] = $get_tc_info;
 
         // echo "<pre>";print_r($res);exit;  
 
@@ -775,6 +777,25 @@ $day = Carbon::parse($punchin_time)->format('Y-m-d');
         $previousAdmission = $request->previousAdmission;
 
         $half_days_allowed = $request->half_days_allowed; // added on 08-05-2025
+
+        // Start TC Information added on 26-02-2026
+        $get_tc_info = $request->input('get_tc_info') ?? 'No';
+        $existingTcInfo = general_dataModel::where('fieldname', 'tc_info')
+            ->where('sub_institute_id', $sub_institute_id)
+            ->first();
+        $general_data = new general_dataModel();
+
+        if ($existingTcInfo) {
+            $existingTcInfo->fieldvalue = $get_tc_info;
+            $existingTcInfo->save();
+        } else {
+            $general_data->fieldname = 'tc_info';
+            $general_data->fieldvalue = $get_tc_info;
+            $general_data->sub_institute_id = $sub_institute_id;
+            $general_data->type = 'cms';
+            $general_data->save();
+        }
+        // End TC Information added on 26-02-2026
 
         if ($sandwich_leave !== null) {
             // Check if a record with fieldname 'sandwich_leave' and sub_institute_id exists
