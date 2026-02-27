@@ -153,18 +153,20 @@ class studentHomeworkSubmissionController extends Controller
 
             $homeworksubmissionArray = [];
 
-            $homeworksubmissionArray['submission_remarks'] ='Dear Student, your homework submission has been received. You will be notified with feedback soon.';
+            $homeworksubmissionArray['submission_remarks'] ='';
             $homeworksubmissionArray['completion_status'] = 'Y';
             $homeworksubmissionArray['submission_image'] = $file_name;
             $homeworksubmissionArray['submission_image_size'] = $file_size;
             $homeworksubmissionArray['submission_image_type'] = $ext;
+            $homeworksubmissionArray['updated_by'] = $user_id;
+            $homeworksubmissionArray['updated_on'] = date('Y-m-d H:i:s');
             // added on 06-02-2026 by uma for submission check and reponse from AI
             $getHomeworkSubmission = studentHomeworkModel::where([
                 "id"               => $hw_id,
                 'syear' => $syear,
                 'sub_institute_id' => $sub_institute_id,
             ])->first();
-
+            $aiJsonResponse = $annotedPDF = null;
             // Call the API and capture the response
             $url = "https://moncey10-homework-validation-system.hf.space/homework/validate";
                 $payloads = [
@@ -192,19 +194,26 @@ class studentHomeworkSubmissionController extends Controller
                         ]
                     ]
                 ]);
+                // read the JSON once and reuse it
+                $aiJsonResponse = $response->getBody()->getContents();
+                $body = json_decode($aiJsonResponse, true);
 
-                $body = json_decode($response->getBody()->getContents(), true);
-                // return $body;
-                // Extract submission_remarks and completion_status from API response
-                $submission_remarks = $body['submission_remarks'] ?? 'Dear Student, your homework submission has been received. You will be notified with feedback soon.';
-                // $completion_status    = $body['completion_status']    ?? null;
+                // pull the exact values from the API payload
+                $submission_remarks = $body['submission_remarks']
+                    ?? 'Dear Student, your homework submission has been received. You will be notified with feedback soon.';
 
-                // Override the variables used in the update
+                $annotedPDF = ! empty($body['annotated_pdf'])
+                    ? 'https://moncey10-homework-validation-system.hf.space/storage/' . $body['annotated_pdf']
+                    : null;
+
+                // overwrite the DB-bound array so the defaults are not used
                 $homeworksubmissionArray['submission_remarks'] = $submission_remarks;
+                $homeworksubmissionArray['ai_generated_file']  = $annotedPDF;
                 // $homeworksubmissionArray['completion_status']  = $completion_status;
             } catch (\Exception $e) {
                 // On API failure, keep existing values or set defaults
                 $submission_remarks = $submission_remarks[$hw_id] ?? 'Dear Student, your homework submission has been received. You will be notified with feedback soon.';
+                $homeworksubmissionArray['ai_generated_file'] = $annotedPDF;
                 // $completion_status  = 'Y';
             }
             // end 05-02-2026
@@ -216,7 +225,7 @@ class studentHomeworkSubmissionController extends Controller
                 'student_level'=>$getHomeworkSubmission->student_level,
                 'student_id'=>$getHomeworkSubmission->student_id,
                 'prompt_by_user'=>$getHomeworkSubmission->prompt,
-                'response_ai'=>$homeworksubmissionArray['submission_remarks'] ?? null,
+                'response_ai'=>$aiJsonResponse ?? null,
                 'sub_institute_id' => $sub_institute_id,
                 'syear' => $syear,
                 'created_by' => $user_id,
