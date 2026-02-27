@@ -218,175 +218,6 @@
     </div>
 </div>
 
-<style>
-    .accordion-panel {
-        display: none;
-        padding: 10px;
-        margin-top: 8px;
-        background-color: #fff;
-        border: 1px solid #e0e0e0;
-        border-radius: 4px;
-    }
-    .accordion-btn {
-        background: none;
-        border: none;
-        color: #3498db;
-        cursor: pointer;
-        font-size: 16px;
-        margin-left: 8px;
-        padding: 0 4px;
-    }
-    .accordion-btn:hover {
-        color: #2980b9;
-    }
-    .accordion-btn.active {
-        color: #27ae60;
-    }
-    .question-item {
-        margin-bottom: 8px;
-        padding: 8px;
-        background-color: #f8f9fa;
-        border-radius: 6px;
-        border-left: 2px solid #3498db;
-        transition: transform 0.2s;
-        display: flex;
-        align-items: flex-start;
-        gap: 8px;
-    }
-    .question-item:hover {
-        background-color: #edf2f7;
-    }
-    .question-checkbox {
-        width: 16px;
-        height: 16px;
-        margin-top: 2px;
-        cursor: pointer;
-        accent-color: #27ae60;
-    }
-    .question-label {
-        font-weight: 600;
-        color: #2c3e50;
-        cursor: pointer;
-        display: block;
-        margin-bottom: 5px;
-    }
-    .question-meta {
-        margin: 0;
-        color: #7f8c8d;
-        font-size: 14px;
-    }
-    .answers-list {
-        margin: 0;
-        padding-left: 20px;
-        color: #555;
-        font-size: 14px;
-    }
-    .correct-answer {
-        font-weight: 600;
-        color: #27ae60;
-    }
-    /* PDF Preview Styles */
-    .pdf-paper {
-        font-family: Arial, sans-serif;
-        max-width: 800px;
-        margin: 0 auto;
-        padding: 20px;
-        background: white;
-    }
-    .pdf-header {
-        text-align: center;
-        margin-bottom: 30px;
-        padding-bottom: 20px;
-        border-bottom: 2px solid #3498db;
-    }
-    .pdf-header-top {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 10px;
-    }
-    .pdf-school-name {
-        font-size: 24px;
-        font-weight: bold;
-        color: #2c3e50;
-        margin: 0;
-    }
-    .pdf-date {
-        color: #7f8c8d;
-        font-size: 14px;
-        margin: 0;
-    }
-    .pdf-title {
-        font-size: 20px;
-        color: #34495e;
-        margin: 5px 0;
-    }
-    .pdf-question {
-        margin-bottom: 25px;
-        padding: 15px;
-        background: #f8f9fa;
-        border-radius: 8px;
-        border-left: 4px solid #3498db;
-    }
-    .pdf-question-header {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 10px;
-    }
-    .pdf-question-number {
-        font-size: 16px;
-        font-weight: bold;
-        color: #2c3e50;
-    }
-    .pdf-marks {
-        background: #e74c3c;
-        color: white;
-        padding: 2px 8px;
-        border-radius: 12px;
-        font-size: 12px;
-    }
-    .pdf-question-text {
-        font-size: 15px;
-        color: #34495e;
-        margin: 10px 0;
-    }
-    .pdf-options {
-        margin-top: 10px;
-        padding-left: 20px;
-    }
-    .pdf-option {
-        margin: 5px 0;
-        padding: 5px;
-        background: white;
-        border-radius: 4px;
-    }
-    .pdf-correct {
-        color: #27ae60;
-        font-size: 12px;
-        margin-left: 10px;
-    }
-    .pdf-footer {
-        margin-top: 40px;
-        text-align: right;
-    }
-    .pdf-signature-line {
-        color: #7f8c8d;
-        margin-bottom: 5px;
-    }
-    .pdf-attached-badge {
-        background-color: #27ae60;
-        color: white;
-        padding: 2px 8px;
-        border-radius: 12px;
-        font-size: 12px;
-        margin-left: 10px;
-    }
-    .prompt-indicator {
-        font-weight: 600;
-        color: #27ae60;
-    }
-</style>
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -426,7 +257,6 @@
     // Store selections for restoration
     var selectedChapters = [], selectedQuestionTypes = [];
     var allQuestions = []; // Store all questions for PDF generation
-    var generatedPDFBlob = null; // Store generated PDF blob
     
     function storeSelections() {
         selectedChapters = $('#chapterList').val() || [];
@@ -532,7 +362,7 @@
             html += '<div class="question-item" data-question-id="' + q.id + '">';
             html += '<input type="checkbox" name="question_ids[]" value="' + q.id + '" class="question-checkbox" onchange="updatePromptBasedOnToggle()">';
             html += '<div style="flex:1;">';
-            html += '<label class="question-label">' + (q.question_title || 'N/A') + '</label>';
+            html += '<label class="question-label">' + decodeHTMLEntities(q.question_title || 'N/A') + '</label>';
             html += '<p class="question-meta">';
             html += 'Type: ' + (q.multiple_answer == 1 ? 'Multiple Choice' : 'Narrative') + ' | Marks: ' + (q.points || 'N/A');
             
@@ -542,10 +372,11 @@
                 html += '<div class="accordion-panel">';
                 html += '<ul class="answers-list">';
                 
+                // Add answers here
                 for (var j = 0; j < q.answers.length; j++) {
                     var ans = q.answers[j];
                     var answerClass = ans.correct_answer == 1 ? 'correct-answer' : '';
-                    html += '<li class="' + answerClass + '">' + ans.answer + (ans.correct_answer == 1 ? ' (Correct)' : '') + '</li>';
+                    html += '<li class="' + answerClass + '">' + decodeHTMLEntities(ans.answer) + (ans.correct_answer == 1 ? ' (Correct)' : '') + '</li>';
                 }
                 
                 html += '</ul>';
@@ -566,16 +397,22 @@
         updatePromptBasedOnToggle();
     }
     
-    // Get selected questions
-    function getSelectedQuestions() {
+    // Get selected questions sorted by type (MCQ first, then Narrative)
+    function getSelectedQuestionsSorted() {
         var selectedIds = [];
         $('.question-checkbox:checked').each(function() {
             selectedIds.push($(this).val());
         });
         
         // Filter allQuestions to get only selected ones
-        return allQuestions.filter(function(q) {
+        var selected = allQuestions.filter(function(q) {
             return selectedIds.includes(q.id.toString());
+        });
+        
+        // Sort: MCQ first (multiple_answer == 1), then Narrative (multiple_answer == 0)
+        return selected.sort(function(a, b) {
+            // Sort by multiple_answer in descending order (1 comes before 0)
+            return b.multiple_answer - a.multiple_answer;
         });
     }
     
@@ -591,7 +428,7 @@
     
     // Generate prompt from questions (when toggle is true)
     function generateQuestionsPrompt() {
-        var selectedQuestions = getSelectedQuestions();
+        var selectedQuestions = getSelectedQuestionsSorted();
         var info = getStandardSubjectInfo();
         
         if (selectedQuestions.length === 0) {
@@ -603,27 +440,32 @@
         prompt += "Standard: " + info.standard + "\n";
         prompt += "Subject: " + info.subject + "\n";
         prompt += "Total Questions: " + selectedQuestions.length + "\n\n";
+        
+        // Count MCQ and Narrative
+        var mcqCount = selectedQuestions.filter(q => q.multiple_answer == 1).length;
+        var narrativeCount = selectedQuestions.filter(q => q.multiple_answer == 0).length;
+        
+        prompt += "Multiple Choice Questions (MCQ): " + mcqCount + "\n";
+        prompt += "Narrative Questions: " + narrativeCount + "\n\n";
         prompt += "QUESTIONS:\n";
         prompt += "----------\n\n";
         
         for (var i = 0; i < selectedQuestions.length; i++) {
             var q = selectedQuestions[i];
-            prompt += "Q" + (i + 1) + ": " + (q.question_title || 'N/A') + "\n";
+            prompt += "Q" + (i + 1) + ": " + stripHtmlTags(decodeHTMLEntities(q.question_title || 'N/A')) + "\n";
             prompt += "   Type: " + (q.multiple_answer == 1 ? 'Multiple Choice Question (MCQ)' : 'Narrative Question') + "\n";
             prompt += "   Marks: " + (q.points || 'N/A') + "\n";
             
-            // Add correct answer if MCQ
+            // Only show correct answers for MCQ questions (multiple_answer == 1) in prompt
             if (q.multiple_answer == 1 && q.answers && q.answers.length) {
                 var correctAnswers = q.answers.filter(function(ans) { return ans.correct_answer == 1; });
                 if (correctAnswers.length > 0) {
                     prompt += "   Correct Answer(s):\n";
                     correctAnswers.forEach(function(ans, index) {
                         var letter = String.fromCharCode(65 + index);
-                        prompt += "      " + letter + ". " + ans.answer + "\n";
+                        prompt += "      " + letter + ". " + stripHtmlTags(decodeHTMLEntities(ans.answer)) + "\n";
                     });
                 }
-            } else if (q.multiple_answer == 0 && q.answers && q.answers.length) {
-                prompt += "   Answer: " + (q.answers[0].answer || 'N/A') + "\n";
             }
             
             prompt += "\n";
@@ -663,7 +505,7 @@
         
         if (isChecked) {
             promptText = generateQuestionsPrompt();
-            indicatorText = 'Showing prompt from: <span class="prompt-indicator">Selected Questions (with correct answers)</span>';
+            indicatorText = 'Showing prompt from: <span class="prompt-indicator">Selected Questions (MCQ first, then Narrative)</span>';
         } else {
             promptText = generateTitleDescriptionPrompt();
             indicatorText = 'Showing prompt from: <span class="prompt-indicator">Title & Description</span>';
@@ -687,78 +529,10 @@
         var subjectName = $('#subject option:selected').text() || 'Subject';
         return standardName + ' - ' + subjectName + ' Question Paper';
     }
-    
-    // Generate PDF preview HTML
-    function generatePreviewHTML() {
-        var selectedQuestions = getSelectedQuestions();
-        var title = getPaperTitle();
-        var schoolName = "{{ session('school_name') ?? 'School Name' }}";
-        var date = new Date().toLocaleDateString('en-GB', {
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric'
-        });
         
-        var html = '<div class="pdf-paper">';
-        html += '<div class="pdf-header">';
-        html += '<div class="pdf-header-top">';
-        html += '<h1 class="pdf-school-name">' + schoolName + '</h1>';
-        html += '<p class="pdf-date">' + date + '</p>';
-        html += '</div>';
-        html += '<h2 class="pdf-title">' + title + '</h2>';
-        html += '</div>';
-        
-        for (var i = 0; i < selectedQuestions.length; i++) {
-            var q = selectedQuestions[i];
-            
-            html += '<div class="pdf-question">';
-            html += '<div class="pdf-question-header">';
-            html += '<span class="pdf-question-number">Q' + (i + 1) + '.</span>';
-            if (q.points) {
-                html += '<span class="pdf-marks">' + q.points + ' marks</span>';
-            }
-            html += '</div>';
-            html += '<p class="pdf-question-text">' + (q.question_title || 'N/A') + '</p>';
-            
-            if (q.multiple_answer == 1 && q.answers && q.answers.length) {
-                html += '<div class="pdf-options">';
-                html += '<p style="font-weight:600; color:#27ae60; margin-bottom:5px;">Options:</p>';
-                
-                for (var j = 0; j < q.answers.length; j++) {
-                    var ans = q.answers[j];
-                    var letter = String.fromCharCode(65 + j);
-                    html += '<div class="pdf-option">';
-                    html += '<span style="display:inline-block; width:25px; color:#7f8c8d;">' + letter + '.</span>';
-                    html += '<span>' + ans.answer + '</span>';
-                    // if (ans.correct_answer == 1) {
-                    //     html += '<span class="pdf-correct"> ✓ Correct</span>';
-                    // }
-                    html += '</div>';
-                }
-                html += '</div>';
-            }
-            
-            if (q.multiple_answer == 0 && q.answers && q.answers.length) {
-                html += '<div style="margin-top:10px; padding:8px; background:#e8f5e9; border-radius:4px;">';
-                html += '<span style="font-weight:600; color:#27ae60;">Answer: </span>';
-                html += '<span style="color:#2c3e50;">' + (q.answers[0].answer || 'N/A') + '</span>';
-                html += '</div>';
-            }
-            
-            html += '</div>';
-        }
-        
-        if (selectedQuestions.length === 0) {
-            html += '<p class="text-center text-muted">No questions selected</p>';
-        }
-        html += '</div>';
-        
-        return html;
-    }
-    
     // Preview PDF
     function previewPDF() {
-        var selectedQuestions = getSelectedQuestions();
+        var selectedQuestions = getSelectedQuestionsSorted();
         
         if (selectedQuestions.length === 0) {
             Swal.fire({
@@ -769,107 +543,9 @@
             return;
         }
         
-        var previewHTML = generatePreviewHTML();
+        var previewHTML = generatePreviewHTML(selectedQuestions);
         $('#pdfPreviewContent').html(previewHTML);
         $('#pdfPreviewModal').modal('show');
-    }
-    
-    // Generate PDF and attach to file input
-    function generateAndAttachPDF() {
-        var selectedQuestions = getSelectedQuestions();
-        
-        if (selectedQuestions.length === 0) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'No Questions Selected',
-                text: 'Please select at least one question to generate PDF'
-            });
-            return;
-        }
-        
-        // Update prompt field with questions
-        updatePromptBasedOnToggle();
-        
-        // Show loading message
-        Swal.fire({
-            title: 'Generating PDF...',
-            text: 'Please wait',
-            allowOutsideClick: false,
-            didOpen: () => {
-                Swal.showLoading();
-            }
-        });
-        
-        // Create a temporary container for PDF content
-        var element = document.createElement('div');
-        element.innerHTML = generatePreviewHTML();
-        element.style.width = '800px';
-        element.style.padding = '20px';
-        element.style.background = 'white';
-        element.style.position = 'absolute';
-        element.style.left = '-9999px';
-        document.body.appendChild(element);
-        
-        // Use html2canvas to convert HTML to canvas
-        html2canvas(element, {
-            scale: 2,
-            backgroundColor: '#ffffff',
-            logging: false,
-            allowTaint: false,
-            useCORS: true
-        }).then(function(canvas) {
-            // Create PDF
-            var imgData = canvas.toDataURL('image/png');
-            var pdf = new jspdf.jsPDF({
-                orientation: 'portrait',
-                unit: 'px',
-                format: [canvas.width * 0.75, canvas.height * 0.75]
-            });
-            
-            pdf.addImage(imgData, 'PNG', 0, 0, canvas.width * 0.75, canvas.height * 0.75);
-            
-            // Convert PDF to blob
-            var pdfBlob = pdf.output('blob');
-            var fileName = getPaperTitle().replace(/[^a-z0-9]/gi, '-').toLowerCase() + '.pdf';
-            
-            // Create a File object from the blob
-            var pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
-            
-            // Create a DataTransfer object to set the file input
-            var dataTransfer = new DataTransfer();
-            dataTransfer.items.add(pdfFile);
-            
-            // Set the file input's files
-            var fileInput = document.getElementById('image');
-            fileInput.files = dataTransfer.files;
-            
-            // Update UI to show PDF is attached
-            $('#pdfFileName').html('<span class="pdf-attached-badge">✓ PDF Attached: ' + fileName + '</span>');
-            $('#pdfGenerated').val('1');
-            
-            // Close the modal if open
-            $('#pdfPreviewModal').modal('hide');
-            
-            // Remove temporary element
-            document.body.removeChild(element);
-            
-            // Close loading message and show success
-            Swal.fire({
-                icon: 'success',
-                title: 'Success!',
-                text: 'PDF has been generated and attached to the homework',
-                timer: 2000,
-                showConfirmButton: false
-            });
-        }).catch(function(error) {
-            console.error('Error generating PDF:', error);
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'Failed to generate PDF. Please try again.'
-            });
-            document.body.removeChild(element);
-        });
     }
     
     // Validate form
@@ -938,8 +614,24 @@
     function checkAll(ele) {
         $('input[type="checkbox"]').prop('checked', $(ele).prop('checked'));
     }
+    
+    // Helper function to decode HTML entities
+    function decodeHTMLEntities(text) {
+        if (!text) return '';
+        var textArea = document.createElement('textarea');
+        textArea.innerHTML = text;
+        return textArea.value;
+    }
+    
+    // Helper function to strip HTML tags for plain text
+    function stripHtmlTags(html) {
+        if (!html) return '';
+        var tmp = document.createElement('DIV');
+        tmp.innerHTML = html;
+        return tmp.textContent || tmp.innerText || '';
+    }
 </script>
-
+@include('student.homework.homeworkPDFHtml')
 @include('includes.footerJs')
 @include('includes.footer')
 @endsection
