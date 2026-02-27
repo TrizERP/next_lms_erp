@@ -28,6 +28,24 @@
                             <input type="hidden" name="subject_id" id="subject_id" value="{{ request()->get('subject_id', $data['subject_id'] ?? (request()->old('subject_id') ?? '')) }}">
                             <input type="hidden" name="chapter_id" id="chapter_id" value="{{ request()->get('chapter_id', $data['chapter_id'] ?? (request()->old('chapter_id') ?? '')) }}">
                             <input type="hidden" name="topic_id" id="topic_id" value="{{ request()->get('topic_id', $data['topic_id'] ?? (request()->old('topic_id') ?? '')) }}">
+                            
+                            <!-- Question Type and Multiple Answers Row -->
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <div class="form-group mb-0">
+                                        <label for="question_type_id">Question Type</label>
+                                        <select class="form-control" name="question_type_id" id="question_type_id">
+                                            <option value="">Select Question Type</option>
+                                            @if(isset($data['questiontype_data']))
+                                                @foreach($data['questiontype_data'] as $key => $value)
+                                                    <option value="{{$value->id}}">{{ucwords($value->question_type)}}</option>
+                                                @endforeach
+                                            @endif
+                                        </select>
+                                    </div>
+</div>
+                            </div>
+                            
                             <div id="mappingRowsContainer">
                                 <!-- Mapping Row 1 -->
                                 <div class="mapping-row mb-3" data-row="1">
@@ -423,6 +441,10 @@ $(document).ready(function() {
     $btn.prop('disabled', true);
     $btn.html('<span class="generate-loading"></span> Generating...');
     
+    // Get Question Type and Multiple Answers
+    var questionTypeId = $('#question_type_id').val();
+    var multipleAnswer = $('#multiple_answer').is(':checked') ? 1 : 0;
+    
     // Collect mapping data
     var mappings = [];
     $('.mapping-row').each(function() {
@@ -466,6 +488,8 @@ $(document).ready(function() {
     console.log('subject_id:', subjectId);
     console.log('chapter_id:', chapterId);
     console.log('topic_id:', topicId);
+    console.log('question_type_id:', questionTypeId);
+    console.log('multiple_answer:', multipleAnswer);
     
     // Validate context values exist
     if (!chapterId) {
@@ -499,7 +523,9 @@ $(document).ready(function() {
             topic_id: topic,
             question_prompt: prompt,
             search: 'question',
-            mappings: mappings
+            mappings: mappings,
+            question_type_id: questionTypeId,
+            multiple_answer: multipleAnswer
         },
         success: function(result) {
             console.log('AI Response:', result);
@@ -738,7 +764,9 @@ $(document).ready(function() {
             standard_id: $('#standard_id').val(),
             subject_id: $('#subject_id').val(),
             chapter_id: $('#chapter_id').val(),
-            topic_id: $('#topic_id').val()
+            topic_id: $('#topic_id').val(),
+            question_type_id: $('#question_type_id').val(),
+            multiple_answer: $('#multiple_answer').is(':checked') ? 1 : 0
         };
         
         console.log('Form data being sent:', formData);
