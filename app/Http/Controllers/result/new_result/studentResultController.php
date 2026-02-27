@@ -750,6 +750,39 @@ if (isset($attendance['table'])) {
         //  return $main_result;     ssmission_term_ssmission_term_higher    
     }
 
+    protected function tc_information($sub_institute_id, $syear, $student_id, $value, $field)
+    {
+        $data = [];
+        $data['created_on'] = now();
+
+        if ($field == 'subjects_studied') {
+            $data['subjects_studied'] = collect($value)->pluck('subject_name')->implode(', ');
+        }
+
+        if ($field == 'total_working_days_present') {
+            $data['total_working_days_present'] = $value;
+        }
+
+        if ($field == 'total_working_days') {
+            $data['total_working_days'] = $value;
+        }
+        
+        // get general data
+        $get_tc_info = DB::table('general_data')->where(['fieldname' => 'tc_info', 'sub_institute_id' => $sub_institute_id])->first();
+
+        if (!empty($data) && isset($get_tc_info->fieldvalue) && $get_tc_info->fieldvalue == "Yes") {
+            DB::table('tblstudent_tc_details')->updateOrInsert(
+                [
+                    'sub_institute_id' => $sub_institute_id,
+                    'syear'            => $syear,
+                    'student_id'       => $student_id,
+                ],
+                $data
+            );
+        }
+        return true;
+    }
+
     public function getExamMasterSettigs($standard_id)
     {
         $result = DB::table('result_master_confrigration')
@@ -1677,6 +1710,7 @@ if (isset($attendance['table'])) {
 
         // get subject
         $get_subject = $this->get_subject($sub_institute_id, $syear, $student_id, $standard_id);
+        $subjects_studied = $this->tc_information($sub_institute_id, $syear, $student_id, $get_subject, 'subjects_studied');
         // get exam name
         $exam_name = $this->get_exam_name($sub_institute_id, $syear, $standard_id, $extra_exam);
         // get exam title 
@@ -3259,6 +3293,8 @@ if (isset($attendance['table'])) {
         if ($type == 'simple') {
             $res['remark'] = $sim_tr;
             $res['attendance'] = $sim_att . '/' . $sim_twd;
+            $total_working_days_present = $this->tc_information($sub_institute_id, $syear, $student_id, $sim_att, 'total_working_days_present');
+            $total_working_days = $this->tc_information($sub_institute_id, $syear, $student_id, $sim_twd, 'total_working_days');
             return $res;
             exit;
         }
@@ -3609,7 +3645,7 @@ while ($current_date <= $post_end_date) {
                             }
                         }
                         
-                        $term_marks_data[$termId] = $obtained_marks;
+                        $term_marks_data[$termId] = (float) $obtained_marks;
                         $term_marks[$termId] = $to_marks;                        
                     }
                     

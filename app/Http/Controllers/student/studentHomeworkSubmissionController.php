@@ -138,6 +138,7 @@ class studentHomeworkSubmissionController extends Controller
         $syear = $request->session()->get('syear');
 
         // $file_name = "";
+        $i =0;
         foreach ($students as $key => $hw_id) {
             $file_name = $file_size = $ext = "";
             if ($request->hasFile('image')) {
@@ -157,23 +158,25 @@ class studentHomeworkSubmissionController extends Controller
             $homeworksubmissionArray['submission_image'] = $file_name;
             $homeworksubmissionArray['submission_image_size'] = $file_size;
             $homeworksubmissionArray['submission_image_type'] = $ext;
+            $homeworksubmissionArray['updated_by'] = $user_id;
+            $homeworksubmissionArray['updated_on'] = date('Y-m-d H:i:s');
             // added on 06-02-2026 by uma for submission check and reponse from AI
             $getHomeworkSubmission = studentHomeworkModel::where([
                 "id"               => $hw_id,
                 'syear' => $syear,
                 'sub_institute_id' => $sub_institute_id,
             ])->first();
-
-            $url = "https://moncey10-homework-validation-system.hf.space/submit";
-            $payloads = [
-                'student_id' => $getHomeworkSubmission->student_id,
-                'homework_id' => $hw_id,
-                'images' => $request->file('image')[$hw_id],
-            ];
-
+            $aiJsonResponse = $annotedPDF = null;
             // Call the API and capture the response
-            $client = new \GuzzleHttp\Client(['verify' => false]);
-            try {
+            $url = "https://moncey10-homework-validation-system.hf.space/homework/validate";
+                $payloads = [
+                    'student_id' => $getHomeworkSubmission->student_id,
+                    'homework_id' => $hw_id,
+                    'student_file' => $request->file('image')[$hw_id],
+                ];
+
+                $client = new \GuzzleHttp\Client(['verify' => false]);
+                try{
                 $response = $client->request('POST', $url, [
                     'multipart' => [
                         [
@@ -185,25 +188,32 @@ class studentHomeworkSubmissionController extends Controller
                             'contents' => $hw_id
                         ],
                         [
-                            'name'     => 'images',
+                            'name'     => 'student_file', // Changed from 'images' to 'student_file'
                             'contents' => fopen($request->file('image')[$hw_id]->getPathname(), 'r'),
                             'filename' => $request->file('image')[$hw_id]->getClientOriginalName()
                         ]
                     ]
                 ]);
+                // read the JSON once and reuse it
+                $aiJsonResponse = $response->getBody()->getContents();
+                $body = json_decode($aiJsonResponse, true);
 
-                $body = json_decode($response->getBody()->getContents(), true);
-                
-                // Extract submission_remarks and completion_status from API response
-                $submission_remarks = $body['submission_remarks'] ?? null;
-                // $completion_status    = $body['completion_status']    ?? null;
+                // pull the exact values from the API payload
+                $submission_remarks = $body['submission_remarks']
+                    ?? 'Dear Student, your homework submission has been received. You will be notified with feedback soon.';
 
-                // Override the variables used in the update
+                $annotedPDF = ! empty($body['annotated_pdf'])
+                    ? 'https://moncey10-homework-validation-system.hf.space/storage/' . $body['annotated_pdf']
+                    : null;
+
+                // overwrite the DB-bound array so the defaults are not used
                 $homeworksubmissionArray['submission_remarks'] = $submission_remarks;
+                $homeworksubmissionArray['ai_generated_file']  = $annotedPDF;
                 // $homeworksubmissionArray['completion_status']  = $completion_status;
             } catch (\Exception $e) {
                 // On API failure, keep existing values or set defaults
-                $submission_remarks = $submission_remarks[$hw_id] ?? '';
+                $submission_remarks = $submission_remarks[$hw_id] ?? 'Dear Student, your homework submission has been received. You will be notified with feedback soon.';
+                $homeworksubmissionArray['ai_generated_file'] = $annotedPDF;
                 // $completion_status  = 'Y';
             }
             // end 05-02-2026
@@ -215,24 +225,28 @@ class studentHomeworkSubmissionController extends Controller
                 'student_level'=>$getHomeworkSubmission->student_level,
                 'student_id'=>$getHomeworkSubmission->student_id,
                 'prompt_by_user'=>$getHomeworkSubmission->prompt,
-                'response_ai'=>$homeworksubmissionArray['submission_remarks'] ?? null,
+                'response_ai'=>$aiJsonResponse ?? null,
                 'sub_institute_id' => $sub_institute_id,
                 'syear' => $syear,
                 'created_by' => $user_id,
                 'created_at' => date('Y-m-d H:i:s'),
             ]);
             // end 21-02-2026
-
-            studentHomeworkModel::where([
+            // echo "<pre>";print_r($homeworksubmissionArray);exit;
+            $update = studentHomeworkModel::where([
                 "id"               => $hw_id,
                 'syear' => $syear,
                 'sub_institute_id' => $sub_institute_id,
             ])
                 ->update($homeworksubmissionArray);
+
+                if($update){
+                    $i++;
+                }
         }
 
-        $res['status_code'] = "1";
-        $res['message'] = "Homework Submited successfully";
+        $res['status_code'] = $i>0 ? "1" : "0";
+        $res['message'] = $i>0 ? "Homework Submited successfully" : "Failed to submit homework please try again";
 
         return is_mobile($type, "student_homework_submission.index", $res);
     }

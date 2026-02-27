@@ -94,8 +94,9 @@
                     }
                     $academicYear = session()->get('syear').'-'.(session()->get('syear')+1);
                 @endphp 
-            <div style="width:100%;display:flex;justify-content:center;flex-wrap:wrap;text-align:center;margin-bottom:8px;margin-top:15px">
-                    <div><img style="height:50px;" src="https://erp.triz.co.in/storage/fees/{{$data['school_details']->receipt_logo}}"></div>
+            <div style="width:100%;text-align:center;margin-bottom:8px;margin-top:15px">
+                <!-- display:flex;justify-content:center;flex-wrap:wrap; -->
+                    <!--<div><img style="height:50px;" src="https://erp.triz.co.in/storage/fees/{{$data['school_details']->receipt_logo}}"></div>-->
                     <div class="schoolData" style="text-align:center;">
                         <h4 style="margin:0px;font-size: 22px;"><b>{{$instituteName}}</b></h4>
                         <p style="margin:0px;font-size: 18px;"><b>{{$data['school_details']->receipt_line_3}}</b></p>
@@ -150,15 +151,15 @@
                             @endphp
                             <tr>
                                 <td style="text-align:center;">{{$key+1}}</td>
-                                <td>{{$value->receipt_no}}</td>
-                                <td>{{ strtoupper($value->student_name)}}</td>
-                                <td>{{ strtoupper($value->short_standard_name)}} - {{$value->div_name}}</td>
+                                <td style="padding-left:5px;">{{$value->receipt_no}}</td>
+                                <td style="padding-left:5px;">{{ strtoupper($value->student_name)}}</td>
+                                <td style="padding-left:5px;">{{ strtoupper($value->short_standard_name)}} - {{$value->div_name}}</td>
                                 @if(strtoupper($data['selPaymentMode']) != 'CASH')
-                                <td>{{$value->cheque_bank_name}}</td>
-                                <td>{{$value->cheque_no}}</td>
+                                <td style="padding-left:5px;">{{$value->cheque_bank_name}}</td>
+                                <td style="padding-left:5px;">{{$value->cheque_no}}</td>
                                 @endif
                                 {{--<td>{{$value->user_name}}</td>--}}
-                                <td>{{$value->remarks}}</td>
+                                <td style="padding-left:5px;">{{$value->remarks}}</td>
                                 {{--@foreach($data['selTitle'] as $key=>$title)
                                 <td>
                                 @if(isset($value->{'total_'.$title}))
@@ -166,7 +167,7 @@
                                 @endif
                                 </td>
                                 @endforeach --}}
-                                <td>{{$value->total_amount}}</td>
+                                <td style="padding-left:5px;">{{$value->total_amount}}</td>
                             </tr>
                             @endforeach
                         <tr>
