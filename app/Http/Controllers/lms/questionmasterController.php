@@ -65,6 +65,9 @@ class questionmasterController extends Controller
         $res['chapter_id'] = $request->get('chapter_id');
         $res['topic_id'] = $request->get('topic_id');
         
+        // Get question types for AI question generation
+        $res['questiontype_data'] = questiontypeModel::select('*')->get();
+        
         // echo "<pre>";print_r($data);exit;
         return is_mobile($type, 'lms/show_questionmaster', $res, "view");
     }
@@ -193,6 +196,9 @@ class questionmasterController extends Controller
         $res['chapter_id'] = $request->get('chapter_id');
         $res['topic_id'] = $request->get('topic_id');
         
+        // Get question types for AI question generation
+        $res['questiontype_data'] = questiontypeModel::select('*')->get();
+        
         // echo "<pre>";print_r($res['lms_mapping_type']);exit;
         return is_mobile($type, 'lms/show_chapter_questionmaster', $res, "view");
     }
@@ -303,7 +309,7 @@ class questionmasterController extends Controller
         $status_val = isset($status) ? $status : '';
 
         $multiple_answer = $request->get('multiple_answer');
-        $multiple_answer_val = isset($multiple_answer) ? $multiple_answer : '';
+        $multiple_answer_val = isset($multiple_answer) ? $multiple_answer : 0;
 
         $pre_topic = $post_topic = $cross_curriculum_topic = "";
         if ($request->get('prechapter') != "") {
@@ -325,7 +331,6 @@ class questionmasterController extends Controller
             'topic_id'                     => $request->get('topic_id'),
             'question_title'               => htmlspecialchars($request->get('question_title')),
             'description'                  => $request->get('description'),
-            'multiple_answer'              => $multiple_answer_val,
             'pre_grade_topic'              => $pre_topic,
             'post_grade_topic'             => $post_topic,
             'cross_curriculum_grade_topic' => $cross_curriculum_topic,
@@ -335,6 +340,7 @@ class questionmasterController extends Controller
             'sub_institute_id'             => $sub_institute_id,
             'hint_text'                    => $request->get('hint_text'),
             'learning_outcome'             => $request->get('learning_outcome'),
+            'multiple_answer'              => $multiple_answer_val,
         );
         $question_id = lmsQuestionMasterModel::insertGetId($question);
         // echo "<pre>";print_r($question);
@@ -578,8 +584,8 @@ class questionmasterController extends Controller
         $status = $request->get('status');
         $status_val = $status ?? '';
 
-        // $multiple_answer = $request->get('multiple_answer');
-        // $multiple_answer_val = isset($multiple_answer) ? $multiple_answer : '';
+        $multiple_answer = $request->get('multiple_answer');
+        $multiple_answer_val = isset($multiple_answer) ? $multiple_answer : 0;
         $pre_topic = $post_topic = $cross_curriculum_topic = "";
         if ($request->get('prechapter') != "") {
             $pre_topic = $request->get('prechapter').'####'.$request->get('pretopic');
@@ -608,6 +614,7 @@ class questionmasterController extends Controller
             'sub_institute_id'             => $sub_institute_id,
             'hint_text'                    => $request->get('hint_text'),
             'learning_outcome'             => $request->get('learning_outcome'),
+            'multiple_answer'              => $multiple_answer_val,
         );
 
         lmsQuestionMasterModel::where(["id" => $id])->update($question);
