@@ -12,18 +12,18 @@
         </div>
         @php
         $grade_id = $standard_id = $division_id = '';
-            if(isset($data['grade_id'])){
-                $grade_id = $data['grade_id'];
-                $standard_id = $data['standard_id'];
-                $division_id = $data['division_id'];
-            }
+        if(isset($data['grade_id'])){
+        $grade_id = $data['grade_id'];
+        $standard_id = $data['standard_id'];
+        $division_id = $data['division_id'];
+        }
         @endphp
         <div class="card">
             @if ($sessionData = Session::get('data'))
-                <div class="alert alert-success alert-block">
-                    <button type="button" class="close" data-dismiss="alert">×</button>
-                    <strong>{{ $sessionData['message'] }}</strong>
-                </div>
+            <div class="alert alert-success alert-block">
+                <button type="button" class="close" data-dismiss="alert">×</button>
+                <strong>{{ $sessionData['message'] }}</strong>
+            </div>
             @endif
             <form action="{{ route('student_homework_submission_report') }}" method="POST">
                 @csrf
@@ -34,30 +34,29 @@
                         <select name="subject" id="subject" class="form-control">
                             <option value="">Select Subject</option>
                             @foreach($data['subjects'] as $key => $value)
-                                <option value="{{$value['id']}}"
-                                        @if(isset($data['subject']))
-                                        @if($data['subject'] == $value['id'])
-                                        selected='selected'
-                                    @endif
+                            <option value="{{$value['id']}}"
+                                @if(isset($data['subject']))
+                                @if($data['subject']==$value['id'])
+                                selected='selected'
                                 @endif
-                                >{{$value['subject_name']}}</option>
+                                @endif>{{$value['subject_name']}}</option>
                             @endforeach
                         </select>
                     </div>
                     <div class="col-md-4 form-group">
                         <label>From Date</label>
-                        <input type="text" id="from_date" @if(isset($data['from_date'])) value="{{$data['from_date']}}"  @endif name="from_date" class="form-control mydatepicker" required="required" autocomplete="off">
+                        <input type="text" id="from_date" @if(isset($data['from_date'])) value="{{$data['from_date']}}" @endif name="from_date" class="form-control mydatepicker" required="required" autocomplete="off">
                     </div>
                     <div class="col-md-4 form-group">
                         <label>To Date</label>
-                        <input type="text" id="to_date" @if(isset($data['to_date'])) value="{{$data['to_date']}}"  @endif name="to_date" class="form-control mydatepicker" required="required" autocomplete="off">
+                        <input type="text" id="to_date" @if(isset($data['to_date'])) value="{{$data['to_date']}}" @endif name="to_date" class="form-control mydatepicker" required="required" autocomplete="off">
                     </div>
                     <div class="col-md-4 form-group">
                         <label>Homework Submission Status</label>
                         <select id='status' name="status" class="form-control" required>
                             <option>--Select Status--</option>
-                            <option value="Y" @if(isset($data['submission_status'])) @if($data['submission_status'] == 'Y') selected @endif @endif>Yes</option>
-                            <option value="N" @if(isset($data['submission_status'])) @if($data['submission_status'] == 'N') selected @endif @endif>
+                            <option value="Y" @if(isset($data['submission_status'])) @if($data['submission_status']=='Y' ) selected @endif @endif>Yes</option>
+                            <option value="N" @if(isset($data['submission_status'])) @if($data['submission_status']=='N' ) selected @endif @endif>
                                 No
                             </option>
                         </select>
@@ -72,18 +71,18 @@
         </div>
         @if(isset($data['report_data']))
         @php
-            if(isset($data['report_data'])){
-                $report_data = $data['report_data'];
-                $finalData = $data;
-            }
+        if(isset($data['report_data'])){
+        $report_data = $data['report_data'];
+        $finalData = $data;
+        }
         @endphp
-            <div class="card">
-                <div class="row">
-                    <div class="col-lg-12 col-sm-12 col-xs-12">
-                        <div class="table-responsive">
-                            {!! App\Helpers\get_school_details("$grade_id","$standard_id","$division_id") !!}
-                            <table id="example" class="table table-striped">
-                                <thead>
+        <div class="card">
+            <div class="row">
+                <div class="col-lg-12 col-sm-12 col-xs-12">
+                    <div class="table-responsive">
+                        {!! App\Helpers\get_school_details("$grade_id","$standard_id","$division_id") !!}
+                        <table id="example" class="table table-striped">
+                            <thead>
                                 <tr>
                                     <th>Sr.No.</th>
                                     <th>{{App\Helpers\get_string('grno','request')}}</th>
@@ -101,9 +100,9 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                    @php
-                                    $j=1;
-                                    @endphp
+                                @php
+                                $j=1;
+                                @endphp
                                 @foreach($report_data as $key => $data)
                                 <tr>
                                     <td>{{$j}}</td>
@@ -118,18 +117,21 @@
                                     <td>{{$data['SUBMISSION_DATE']}}</td>
                                     <td>{{$data['submission_remarks']}}</td>
                                     <td>{{$data['submission_taken_by']}}</td>
-                                    <td>@if($data['submission_image']!=null && $data['submission_image']!=='')<a target="blank" href="/storage/student/{{$data['submission_image']}}"><u>submission</u></a>@else - @endif</td>
+                                    <td>
+                                        @if($data['submission_image']!=null && $data['submission_image']!=='')<a target="blank" href="/storage/student/{{$data['submission_image']}}" class="btn btn-sm btn-primary">View Submitted Homework</a><br>@else - @endif
+                                        @if($data['ai_generated_file']!=null && $data['ai_generated_file']!=='')<a target="blank" href="{{$data['ai_generated_file']}}" class="btn btn-sm btn-success">View Checked Homework</a>@endif
+                                    </td>
                                 </tr>
-                                    @php
-                                    $j++;
-                                    @endphp
+                                @php
+                                $j++;
+                                @endphp
                                 @endforeach
                             </tbody>
-                            </table>
-                        </div>
+                        </table>
                     </div>
                 </div>
             </div>
+        </div>
         @endif
     </div>
 </div>
@@ -137,7 +139,7 @@
 @include('includes.footerJs')
 
 <script>
-    $(document).ready(function () {
+    $(document).ready(function() {
         var table = $('#example').DataTable({
             select: true,
             lengthMenu: [
@@ -145,8 +147,7 @@
                 ['100', '500', '1000', 'Show All']
             ],
             dom: 'Bfrtip',
-            buttons: [
-                {
+            buttons: [{
                     extend: 'pdfHtml5',
                     title: 'Student Homework Submission Report',
                     orientation: 'landscape',
@@ -156,13 +157,21 @@
                         columns: ':visible'
                     },
                 },
-                {extend: 'csv', text: ' CSV', title: 'Student Homework Submission Report'},
-                {extend: 'excel', text: ' EXCEL', title: 'Student Homework Submission Report'},
+                {
+                    extend: 'csv',
+                    text: ' CSV',
+                    title: 'Student Homework Submission Report'
+                },
+                {
+                    extend: 'excel',
+                    text: ' EXCEL',
+                    title: 'Student Homework Submission Report'
+                },
                 {
                     extend: 'print',
                     text: ' PRINT',
                     title: 'Student Homework Submission Report',
-                    customize: function (win) {
+                    customize: function(win) {
                         $(win.document.body).prepend(`{!! App\Helpers\get_school_details("$grade_id", "$standard_id", "$division_id") !!}`);
                         $(win.document.body).append(`<div style="text-align: right;margin-top:20px">Printed on: {{date('d-m-Y H:i:s')}}</div>`);
                     }
@@ -171,20 +180,20 @@
             ],
         });
         $('#example thead tr').clone(true).appendTo('#example thead');
-        $('#example thead tr:eq(1) th').each(function (i) {
+        $('#example thead tr:eq(1) th').each(function(i) {
             var title = $(this).text();
             $(this).html('<input type="text" placeholder="Search ' + title + '" />');
 
-            $('input', this).on('keyup change', function () {
+            $('input', this).on('keyup change', function() {
                 if (table.column(i).search() !== this.value) {
                     table
                         .column(i)
                         .search(this.value)
                         .draw();
                 }
-            } );
-        } );
-    } );
+            });
+        });
+    });
 </script>
 
 @include('includes.footer')
