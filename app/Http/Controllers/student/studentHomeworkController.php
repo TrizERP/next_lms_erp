@@ -259,7 +259,7 @@ class studentHomeworkController extends Controller
                 //     'CREATED_IP'               => $_SERVER['REMOTE_ADDR'],
                 // ];
                 // sendNotification($app_notification_content);
-                $sms_sent = $this->sendHomewokNotification($student_id, $sub_institute_id, $syear, $title, $created_by, $mobile);
+                // $sms_sent = $this->sendHomewokNotification($student_id, $sub_institute_id, $syear, $title, $created_by, $mobile);
                 // if($sms_sent!=1){
                 //     $res['sms_not_sent'][] = $student_id;
                 // }
