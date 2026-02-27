@@ -88,7 +88,7 @@ use DB;
                         <form action="{{ route('course_search') }}" method="GET">
                             {{ method_field("POST") }}
                             @csrf
-                            @if(in_array(session()->get('sub_institute_id'),[195]))
+                            @if(in_array(session()->get('sub_institute_id'),[195,328]))
                             <input type="hidden" name="perm" value="1">
                             @endif
                             <div class="row form-group align-items-center justify-content-center">
