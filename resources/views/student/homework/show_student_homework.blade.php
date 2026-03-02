@@ -80,8 +80,8 @@
                                                 <label for="questionTypes">Select Question Types:</label>
                                                 <select name="question_types[]" id="questionTypes" class="form-control resize" multiple onchange="getQuestionLists();">
                                                     <option value="">Select Question Types</option>
-                                                    @foreach($data['questionTypes'] as $value)
-                                                        <option value="{{$value}}">{{$value}}</option>
+                                                    @foreach($data['questionTypes'] as $key=>$value)
+                                                        <option value="{{$key}}">{{$value}}</option>
                                                     @endforeach
                                                 </select>
                                             </div>
