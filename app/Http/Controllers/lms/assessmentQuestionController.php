@@ -86,14 +86,38 @@ class assessmentQuestionController extends Controller
         
         $savedQuestions = [];
         
+        // Get question type from form selection (user's selection)
+        $userQuestionTypeId = $request->get('question_type_id');
+        $userMultipleAnswer = $request->get('multiple_answer', 0);
+        
+        // Debug log
+        \Log::info('User Question Type ID: ' . $userQuestionTypeId);
+        \Log::info('User Multiple Answer: ' . $userMultipleAnswer);
+        \Log::info('Question Type Map:', $questionTypeMap);
+        
         foreach ($generatedQuestions as $questionData) {
             // Map question_type string to ID (AI returns strings like 'MCQ', 'ShortAnswer')
-            $questionTypeId = 1; // Default to MCQ (id=1)
-            $questionTypeStr = isset($questionData['question_type']) ? $questionData['question_type'] : 'MCQ';
+            // Use user's selected question type if available, otherwise use AI's response
+            if (!empty($userQuestionTypeId)) {
+                $questionTypeId = $userQuestionTypeId;
+            } else {
+                $questionTypeId = 1; // Default to MCQ (id=1)
+                $questionTypeStr = isset($questionData['question_type']) ? $questionData['question_type'] : 'MCQ';
+                
+                // Try to find the question type ID (case-insensitive)
+                if (isset($questionTypeMap[strtolower($questionTypeStr)])) {
+                    $questionTypeId = $questionTypeMap[strtolower($questionTypeStr)];
+                }
+            }
             
-            // Try to find the question type ID (case-insensitive)
-            if (isset($questionTypeMap[strtolower($questionTypeStr)])) {
-                $questionTypeId = $questionTypeMap[strtolower($questionTypeStr)];
+            // Use user's multiple_answer selection if available
+            $multipleAnswerValue = !empty($userMultipleAnswer) ? $userMultipleAnswer : ($questionData['multiple_answer'] ?? 0);
+            
+            // If question type is Multiple Choice, set multiple_answer to 1
+            // Find the Multiple Choice question type ID dynamically
+            $mcqTypeId = isset($questionTypeMap['mcq']) ? $questionTypeMap['mcq'] : (isset($questionTypeMap['multiple choice']) ? $questionTypeMap['multiple choice'] : null);
+            if ($mcqTypeId && $questionTypeId == $mcqTypeId) {
+                $multipleAnswerValue = 1;
             }
             
             // Create the question
@@ -106,7 +130,7 @@ class assessmentQuestionController extends Controller
                 'topic_id'             => $request->get('topic_id'),
                 'question_title'      => htmlspecialchars($questionData['question_title']),
                 'description'          => $questionData['description'] ?? '',
-                'multiple_answer'      => $questionData['multiple_answer'] ?? 0,
+                // 'multiple_answer'      => $multipleAnswerValue,
                 'points'               => $questionData['points'] ?? 1,
                 'status'               => 1,
                 'created_by'           => $user_id,
@@ -114,6 +138,10 @@ class assessmentQuestionController extends Controller
                 'hint_text'            => $questionData['hint_text'] ?? '',
                 'learning_outcome'     => $questionData['learning_outcome'] ?? '',
             );
+            
+            if($questionTypeId==1){
+                $question['multiple_answer'] = 1;
+            }
             
             $question_id = lmsQuestionMasterModel::insertGetId($question);
             
@@ -222,33 +250,65 @@ class assessmentQuestionController extends Controller
             $search = $request->get('search');
             $mappings = $request->get('mappings', []);
             
+            // Get question type ID to check if "Multiple" (MCQ only) is selected
+            $questionTypeId = $request->get('question_type_id');
+            $isMultipleType = !empty($questionTypeId) && $questionTypeId == 1;
+            
             // Generate a unique seed for variety
             $seed = rand(1, 10000);
             
-            // Build a more specific prompt for varied questions
-            $prompt = "Generate unique, varied questions for " .
-                "Standard: " . ($standard ?? 'General') .
-                ", Subject: " . ($subject_id ?? 'General') .
-                ", Chapter: " . ($chapter_id ?? 'General');
-            
-            if ($topic_id) {
-                $prompt .= ", Topic: " . $topic_id;
-            }
-            
-            // Add mapping info to make questions more specific
-            if (!empty($mappings)) {
-                foreach ($mappings as $mapping) {
-                    if (!empty($mapping['reason'])) {
-                        $prompt .= ". Focus on: " . $mapping['reason'];
+            // Build the prompt - check if we need MCQ only
+            if ($isMultipleType) {
+                // If "Multiple" is selected, only generate MCQ questions
+                $prompt = "Generate unique MCQ questions (Multiple Choice Questions with 4 options) for " .
+                    "Standard: " . ($standard ?? 'General') .
+                    ", Subject: " . ($subject_id ?? 'General') .
+                    ", Chapter: " . ($chapter_id ?? 'General');
+                
+                if ($topic_id) {
+                    $prompt .= ", Topic: " . $topic_id;
+                }
+                
+                // Add mapping info to make questions more specific
+                if (!empty($mappings)) {
+                    foreach ($mappings as $mapping) {
+                        if (!empty($mapping['reason'])) {
+                            $prompt .= ". Focus on: " . $mapping['reason'];
+                        }
                     }
                 }
+                
+                // Add instruction for MCQ only
+                $questionCount = !empty($mappings[0]['questions']) ? (int)$mappings[0]['questions'] : 5;
+                $prompt .= ". Generate exactly " . $questionCount . " MCQ question(s) ONLY. ";
+                $prompt .= "Make each question unique and different from each other. Use this seed for variety: " . $seed . ". ";
+                $prompt .= "Return the response as a JSON array of question objects with fields: question, question_type (always 'MCQ'), difficulty (Easy/Medium/Hard), options (array of 4 objects with 'text' and 'correct' boolean fields), correct_answer, and explanation.";
+            } else {
+                // Original behavior - generate varied question types
+                $prompt = "Generate unique, varied questions for " .
+                    "Standard: " . ($standard ?? 'General') .
+                    ", Subject: " . ($subject_id ?? 'General') .
+                    ", Chapter: " . ($chapter_id ?? 'General');
+                
+                if ($topic_id) {
+                    $prompt .= ", Topic: " . $topic_id;
+                }
+                
+                // Add mapping info to make questions more specific
+                if (!empty($mappings)) {
+                    foreach ($mappings as $mapping) {
+                        if (!empty($mapping['reason'])) {
+                            $prompt .= ". Focus on: " . $mapping['reason'];
+                        }
+                    }
+                }
+                
+                // Add variety instruction
+                $questionCount = !empty($mappings[0]['questions']) ? (int)$mappings[0]['questions'] : 5;
+                $prompt .= ". Generate exactly " . $questionCount . " different question(s) that vary in type (MCQ, short answer, long answer, fill in the blanks) and difficulty level. ";
+                $prompt .= "Make each question unique and different from each other. Use this seed for variety: " . $seed . ". ";
+                $prompt .= "Return the response as a JSON array of question objects with fields: question, question_type (MCQ/ShortAnswer/LongAnswer/FillInBlanks), difficulty (Easy/Medium/Hard), options (array of 4 for MCQ), correct_answer, and explanation.";
             }
-            
-            // Add variety instruction
-            $questionCount = !empty($mappings[0]['questions']) ? (int)$mappings[0]['questions'] : 5;
-            $prompt .= ". Generate exactly " . $questionCount . " different question(s) that vary in type (MCQ, short answer, long answer, fill in the blanks) and difficulty level. ";
-            $prompt .= "Make each question unique and different from each other. Use this seed for variety: " . $seed . ". ";
-            $prompt .= "Return the response as a JSON array of question objects with fields: question, question_type (MCQ/ShortAnswer/LongAnswer/FillInBlanks), difficulty (Easy/Medium/Hard), options (array of 4 for MCQ), correct_answer, and explanation.";
             
             // Call the AI service
             $response = $this->openAIService->generateContent($prompt);
@@ -258,7 +318,7 @@ class assessmentQuestionController extends Controller
             
             // If AI service fails, generate fallback questions
             if (empty($questions)) {
-                $questions = $this->generateFallbackQuestions($questionCount, $standard, $subject_id, $chapter_id, $topic_id, $seed);
+                $questions = $this->generateFallbackQuestions($questionCount, $standard, $subject_id, $chapter_id, $topic_id, $seed, $isMultipleType);
             }
             
             return response()->json($questions);
@@ -278,7 +338,8 @@ class assessmentQuestionController extends Controller
                 $request->get('subject_id'),
                 $request->get('chapter_id'),
                 $request->get('topic_id'),
-                rand(1, 10000)
+                rand(1, 10000),
+                $isMultipleType
             ));
         }
     }
@@ -325,9 +386,14 @@ class assessmentQuestionController extends Controller
     /**
      * Generate fallback questions when AI fails
      */
-    private function generateFallbackQuestions($count, $standard, $subject, $chapter, $topic, $seed)
+    private function generateFallbackQuestions($count, $standard, $subject, $chapter, $topic, $seed, $isMultipleType = false)
     {
-        $questionTypes = ['MCQ', 'ShortAnswer', 'LongAnswer', 'FillInBlanks'];
+        // If Multiple type is selected, only use MCQ
+        if ($isMultipleType) {
+            $questionTypes = ['MCQ'];
+        } else {
+            $questionTypes = ['MCQ', 'ShortAnswer', 'LongAnswer', 'FillInBlanks'];
+        }
         $difficulties = ['Easy', 'Medium', 'Hard'];
         
         // Use seed for randomness
