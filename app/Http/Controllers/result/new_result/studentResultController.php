@@ -3515,7 +3515,23 @@ while ($current_date <= $post_end_date) {
         $exam_name = $this->get_exam_name($sub_institute_id, $syear, $standard_id, $extra_exam);
         // get exam title 
         $exam_title = $this->get_exam_title($sub_institute_id, $syear, $standard_id, $extra_exam);
-        
+
+        if ($format != '1' && $academic_type == "upper") {        
+            $exam_name = array_map(function ($exam) {
+                if ($exam->ExamTitle === 'Half Yearly Exam') {
+                    $exam->ExamTitle = 'Yearly Exam';
+                }
+                return $exam;
+            }, $exam_name);
+
+            $exam_title = array_map(function ($exam) {
+                if ($exam->ExamTitle === 'Half Yearly Exam') {
+                    $exam->ExamTitle = 'Yearly Exam';
+                }
+                return $exam;
+            }, $exam_title);
+        }
+        //echo "<pre>";print_r($exam_name);exit();
         // For upper academic type with merge_both_terms, group exam titles by ExamTitle
         $merged_exam_titles = [];
         $term_exam_titles_all = [];
@@ -3673,11 +3689,13 @@ while ($current_date <= $post_end_date) {
                                 
                                 foreach ($exam_marks as $index => $marks) {
                                     if ($title->id == $marks->exam_id) {
+                                        $asteriskRemark += ($marks->comment == '*');
                                         if ($marks->is_absent != "") {
                                             $obtained_marks = ($marks->is_absent == "AB") ? "AB" : $marks->is_absent;
                                         } else {
                                             $obtained_marks = $marks->points;
                                         }
+                                        $asteriskMark[$termId] = ($marks->comment == '*') ? true : false;
                                         break;
                                     }
                                 }
@@ -3688,12 +3706,14 @@ while ($current_date <= $post_end_date) {
                         $term_marks_data[$termId] = (float) $obtained_marks;
                         $term_marks[$termId] = $to_marks;                        
                     }
-                    
+                    //echo "<pre>";print_r($asteriskMark);exit();
                     // Sum of obtained marks
                     $obtained_sum = array_sum($term_marks_data);
 
                     // Sum of total marks
                     $total_sum = array_sum($term_marks);
+
+                    $asterisk = (!empty($asteriskMark) && array_sum($asteriskMark) > 0) ? '*' : '';
 
                     // Convert to weightage
                     $converted_sum = ($obtained_sum / $total_sum) * $mexam->weightage;
@@ -3706,7 +3726,7 @@ while ($current_date <= $post_end_date) {
                     $subject_total_weightage += $mexam->total_weightage;
                     
                     $underline = ($sub_per < 33 && $academic_type == "upper") ? 'style="border-bottom: 2px solid red;"' : '';
-                    $table .= '<td class="data_center"><span '.$underline.'>' . $display_val . '</span></td>';
+                    $table .= '<td class="data_center"><span '.$underline.'>' . $display_val . $asterisk.'</span></td>';
                 }
                 
                 // Total marks obtained
