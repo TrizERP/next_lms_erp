@@ -355,11 +355,11 @@
                 html += '</div>';
 
                 // Narrative answer - directly show answer without "Answer:" label
-                if (q.answers && q.answers.length) {
-                    html += '<div class="preview-answer">';
-                    html += decodeAndRenderHTML(q.answers[0].answer || 'N/A');
-                    html += '</div>';
-                }
+                // if (q.answers && q.answers.length) {
+                //     html += '<div class="preview-answer">';
+                //     html += decodeAndRenderHTML(q.answers[0].answer || 'N/A');
+                //     html += '</div>';
+                // }
 
                 html += '</div>';
             }
@@ -610,24 +610,24 @@
                     yPosition += (questionLines.length * 14) + 5;
 
                     // Narrative answer - directly show answer without "Answer:" label
-                    if (q.answers && q.answers.length) {
-                        // Check if answer will fit
-                        if (yPosition > pageHeight - margin - 60) {
-                            pdf.addPage();
-                            currentPage++;
-                            pdf.setPage(currentPage);
-                            yPosition = margin + 20;
-                        }
+                    // if (q.answers && q.answers.length) {
+                    //     // Check if answer will fit
+                    //     if (yPosition > pageHeight - margin - 60) {
+                    //         pdf.addPage();
+                    //         currentPage++;
+                    //         pdf.setPage(currentPage);
+                    //         yPosition = margin + 20;
+                    //     }
 
-                        pdf.setFont('helvetica', 'normal');
-                        pdf.setTextColor(52, 73, 94);
+                    //     pdf.setFont('helvetica', 'normal');
+                    //     pdf.setTextColor(52, 73, 94);
 
-                        const answerText = stripHtmlForPDF(q.answers[0].answer || 'N/A');
-                        const answerLines = pdf.splitTextToSize(answerText, contentWidth - 40);
+                    //     const answerText = stripHtmlForPDF(q.answers[0].answer || 'N/A');
+                    //     const answerLines = pdf.splitTextToSize(answerText, contentWidth - 40);
 
-                        pdf.text(answerLines, margin + 25, yPosition);
-                        yPosition += (answerLines.length * 13) + 10;
-                    }
+                    //     pdf.text(answerLines, margin + 25, yPosition);
+                    //     yPosition += (answerLines.length * 13) + 10;
+                    // }
 
                     // Add space between questions
                     yPosition += 10;
