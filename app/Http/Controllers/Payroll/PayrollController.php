@@ -1367,37 +1367,138 @@ class PayrollController extends Controller
 
     public function getHTML($sub_institute_id,$employeeData){
         $templateHTML = '';
-        $template = DB::table('template_master')->where('sub_institute_id',$sub_institute_id)->where('module_name','salary')->first();
-        if(!$template){
-           $template = DB::table('template_master')->where('sub_institute_id',0)->where('module_name','salary')->first();
+        
+        // First try to get template for the specific sub_institute_id
+        $template = DB::table('template_master')
+            ->where('sub_institute_id', $sub_institute_id)
+            ->where('module_name', 'salary')
+            ->first();
+        
+        // If not found, try to get the default template (sub_institute_id = 0)
+        if(!$template) {
+            $template = DB::table('template_master')
+                ->where('sub_institute_id', 0)
+                ->where('module_name', 'salary')
+                ->first();
         }
         
-        // Check if template exists before accessing html_content
-        if($template && isset($template->html_content) && !empty($template->html_content)){
+        // Check if template exists AND has html_content before using it
+        if($template && !empty($template->html_content)){
             $templateHTML = $template->html_content;
         } else {
-            // Provide a fallback template if no template is found
-            $templateHTML = '<h1>Pay Slip</h1><p>School: {{ $employeeData["school_name"] }}</p><p>Month: {{ $employeeData["month"] }} {{ $employeeData["year"] }}</p><p>Employee: {{ $employeeData["name"] }}</p><p>Net Salary: Rs. {{ $employeeData["net_salary"] }}</p>';
+            // Provide a fallback template if no template is found in database
+            $templateHTML = '<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Pay Slip</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .school-name { font-size: 18px; font-weight: bold; }
+        .title { font-size: 16px; text-decoration: underline; margin: 15px 0; }
+        table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+        th, td { border: 1px solid #000; padding: 8px; text-align: left; }
+        th { background-color: #f0f0f0; }
+        .total-row { font-weight: bold; }
+        .footer { margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="school-name"><<school_name>></div>
+    </div>
+    <div class="title" style="text-align:center;">PAY SLIP</div>
+    <table>
+        <tr>
+            <td><strong>Employee Name:</strong></td>
+            <td><<employee_name>></td>
+            <td><strong>Employee Code:</strong></td>
+            <td><<employee_code>></td>
+        </tr>
+        <tr>
+            <td><strong>Designation:</strong></td>
+            <td><<employee_designation>></td>
+            <td><strong>Month/Year:</strong></td>
+            <td><<salary_month>>/<<salary_year>></td>
+        </tr>
+        <tr>
+            <td><strong>Joining Date:</strong></td>
+            <td><<joining_date>></td>
+            <td><strong>Bank Account:</strong></td>
+            <td><<bank_account_number>></td>
+        </tr>
+        <tr>
+            <td><strong>PF Number:</strong></td>
+            <td><<pf_number>></td>
+            <td><strong>Total Days:</strong></td>
+            <td><<total_present_days>></td>
+        </tr>
+    </table>
+    
+    <table>
+        <tr>
+            <th>Earnings</th>
+            <th>Amount</th>
+            <th>Deductions</th>
+            <th>Amount</th>
+        </tr>
+        <tr>
+            <td>Gross Salary (Current)</td>
+            <td><<gross_current_salary>></td>
+            <td>Total Deduction</td>
+            <td><<total_deduction>></td>
+        </tr>
+        <tr>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+        </tr>
+        <tr class="total-row">
+            <td>Gross Salary (Actual)</td>
+            <td><<gross_actual_salary>></td>
+            <td>Net Salary</td>
+            <td>Rs. <<net_salary>></td>
+        </tr>
+    </table>
+    
+    <p><strong>Net Salary in Words:</strong> <<net_salary_in_words>></p>
+    <p><strong>Leave Without Pay:</strong> <<leave_without_pay>></p>
+    
+    <div class="footer">
+        <p>Authorized Signatory</p>
+    </div>
+</body>
+</html>';
         }
         
         // Replace all placeholders with employee data
-        $schoolNameString = $employeeData['school_name'] instanceof \stdClass ? ($employeeData['school_name']->SchoolName ?? '') : $employeeData['school_name'];
-        $templateHTML = str_replace(htmlspecialchars("<<school_name>>"), $schoolNameString, $templateHTML);
-        $templateHTML = str_replace(htmlspecialchars("<<salary_month>>"), ($employeeData['month'] ?? ''), $templateHTML);
-        $templateHTML = str_replace(htmlspecialchars("<<salary_year>>"), ($employeeData['year'] ?? ''), $templateHTML);
-        $templateHTML = str_replace(htmlspecialchars("<<employee_name>>"), ($employeeData['name'] ?? ''), $templateHTML);
-        $templateHTML = str_replace(htmlspecialchars("<<employee_code>>"), ($employeeData['emp_code'] ?? ''), $templateHTML);
-         $templateHTML = str_replace(htmlspecialchars("<<employee_designation>>"), ($employeeData['designation'] ?? ''), $templateHTML);
-        $templateHTML = str_replace(htmlspecialchars("<<joining_date>>"), ($employeeData['join_date'] ?? ''), $templateHTML);
-        $templateHTML = str_replace(htmlspecialchars("<<bank_account_number>>"), ($employeeData['bank_ac_no'] ?? ''), $templateHTML);
-        $templateHTML = str_replace(htmlspecialchars("<<total_present_days>>"), ($employeeData['total_day'] ?? ''), $templateHTML);
-        $templateHTML = str_replace(htmlspecialchars("<<pf_number>>"), ($employeeData['pf_no'] ?? ''), $templateHTML);
-        $templateHTML = str_replace(htmlspecialchars("<<leave_without_pay>>"), ($employeeData['leave_without_pay'] ?? 0), $templateHTML);
-        $templateHTML = str_replace(htmlspecialchars("<<gross_actual_salary>>"), ($employeeData['total_actual_payment'] ?? 0), $templateHTML);
-        $templateHTML = str_replace(htmlspecialchars("<<gross_current_salary>>"), ($employeeData['total_payment'] ?? 0), $templateHTML);
-        $templateHTML = str_replace(htmlspecialchars("<<total_deduction>>"), ($employeeData['deduction'] ?? 0), $templateHTML);
-        $templateHTML = str_replace(htmlspecialchars("<<net_salary>>"), ($employeeData['net_salary'] ?? 0), $templateHTML);
-        $templateHTML = str_replace(htmlspecialchars("<<net_salary_in_words>>"), ($employeeData['ruppee_in_word'] ?? ''), $templateHTML);
+        $schoolNameString = '';
+        if (isset($employeeData['school_name'])) {
+            if (is_object($employeeData['school_name'])) {
+                $schoolNameString = $employeeData['school_name']->SchoolName ?? '';
+            } else {
+                $schoolNameString = $employeeData['school_name'];
+            }
+        }
+        
+        $templateHTML = str_replace("<<school_name>>", $schoolNameString, $templateHTML);
+        $templateHTML = str_replace("<<salary_month>>", ($employeeData['month'] ?? ''), $templateHTML);
+        $templateHTML = str_replace("<<salary_year>>", ($employeeData['year'] ?? ''), $templateHTML);
+        $templateHTML = str_replace("<<employee_name>>", ($employeeData['name'] ?? ''), $templateHTML);
+        $templateHTML = str_replace("<<employee_code>>", ($employeeData['emp_code'] ?? ''), $templateHTML);
+        $templateHTML = str_replace("<<employee_designation>>", ($employeeData['designation'] ?? ''), $templateHTML);
+        $templateHTML = str_replace("<<joining_date>>", ($employeeData['join_date'] ?? ''), $templateHTML);
+        $templateHTML = str_replace("<<bank_account_number>>", ($employeeData['bank_ac_no'] ?? ''), $templateHTML);
+        $templateHTML = str_replace("<<total_present_days>>", ($employeeData['total_day'] ?? ''), $templateHTML);
+        $templateHTML = str_replace("<<pf_number>>", ($employeeData['pf_no'] ?? ''), $templateHTML);
+        $templateHTML = str_replace("<<leave_without_pay>>", ($employeeData['leave_without_pay'] ?? 0), $templateHTML);
+        $templateHTML = str_replace("<<gross_actual_salary>>", ($employeeData['total_actual_payment'] ?? 0), $templateHTML);
+        $templateHTML = str_replace("<<gross_current_salary>>", ($employeeData['total_payment'] ?? 0), $templateHTML);
+        $templateHTML = str_replace("<<total_deduction>>", ($employeeData['deduction'] ?? 0), $templateHTML);
+        $templateHTML = str_replace("<<net_salary>>", ($employeeData['net_salary'] ?? 0), $templateHTML);
+        $templateHTML = str_replace("<<net_salary_in_words>>", ($employeeData['ruppee_in_word'] ?? ''), $templateHTML);
         
         return $templateHTML;
     }
