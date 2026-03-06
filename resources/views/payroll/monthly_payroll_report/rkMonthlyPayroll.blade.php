@@ -153,7 +153,7 @@
                             @endforeach
 
                             <td>@if(isset($value['monthlyData']->total_day))
-                                <a href="{{ env('APP_URL')."monthly-payroll-report/pdf/".$value['id']."/".$data['selMonth'].'/'.$data['selYear'] }}" class="btn btn-primary">PDF</a> 
+                                <a href="{{ config('app.url').'monthly-payroll-report/pdf/'.$value['id'].'/'.$data['selMonth'].'/'.$data['selYear'].'?sub_institute_id='.session()->get('sub_institute_id') }}" target="_blank" download class="btn btn-primary">PDF</a> 
                                 @else - @endif </td>
                             @if(!isset($value['monthlyData']->total_day))
                                  <script>

@@ -137,8 +137,8 @@
                             </table>
                            
                             @if(isset($data['pdf_link']))
-                                <a href="{{url('monthly-payroll-report/pdf').'/'.$employeeName['id'].'/'.$data['list']['month'].'/'.$data['list']['year']}}"
-                                   class="btn btn-primary">pdf</a>
+                                <a href="{{ rtrim(config('app.url'), '/') }}/monthly-payroll-report/pdf/{{ $employeeName['id'] }}/{{ $data['list']['month'] }}/{{ $data['list']['year'] }}?sub_institute_id={{ session()->get('sub_institute_id') }}"
+                                   class="btn btn-primary" target="_blank" download>pdf</a>
                             @else 
                             <input type="submit" name="save" value="save" class="btn btn-success" >
                             @endif
