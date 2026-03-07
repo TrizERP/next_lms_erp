@@ -32,9 +32,13 @@ class AppServiceProvider extends ServiceProvider
         Blade::component('filters', filters::class);
         Paginator::useBootstrap();
 
-        if (env('APP_ENV') !== 'local') {
-            URL::forceScheme('https');
-        }
+        // if (env('APP_ENV') !== 'local') {
+        //     URL::forceScheme('https');
+        // }
+        if (app()->environment('production')) {
+        \URL::forceScheme('https');
+    }
+
 
         Schema::defaultStringLength(191);
         DB::listen(function ($query) {

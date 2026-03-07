@@ -101,7 +101,8 @@
     .preview-school-name {
         font-size: 20pt;
         font-weight: bold;
-        color: #2c3e50;
+        color: #3498db;
+        /* Blue color */
         margin: 0 0 5px 0;
         font-family: helvetica, Arial, sans-serif;
     }
@@ -156,7 +157,8 @@
     .preview-question-text {
         font-size: 11pt;
         font-weight: normal;
-        color: #34495e;
+        color: #000000;
+        /* Black color for question text */
         word-wrap: break-word;
         white-space: pre-wrap;
         flex: 1;
@@ -165,6 +167,7 @@
 
     .preview-marks {
         background: #e74c3c;
+        /* Red background */
         color: white;
         padding: 2px 8px;
         border-radius: 12px;
@@ -272,6 +275,14 @@
         return tempDiv.innerHTML;
     }
 
+    // Helper function to strip HTML for PDF text (since PDF can't render HTML)
+    function stripHtmlForPDF(html) {
+        if (!html) return '';
+        var tmp = document.createElement('DIV');
+        tmp.innerHTML = html;
+        return tmp.textContent || tmp.innerText || '';
+    }
+
     function generatePreviewHTML(selectedQuestions) {
         var title = getPaperTitle();
         var schoolName = "{{ session('school_name') ?? 'School Name' }}";
@@ -289,15 +300,13 @@
 
         var html = '<div class="pdf-preview-container">';
 
-        // Header - exactly matching PDF
+        // Header - exactly matching new design
         html += '<div class="preview-header">';
         html += '<div class="preview-school-name">' + schoolName + '</div>';
-        html += '<div class="preview-title">' + standardName + ' - ' + subjectName + '</div>';
-        html += '<div class="preview-date">Date: ' + date + '</div>';
         html += '<div class="preview-info-row">';
         html += '<span><strong>Standard:</strong> ' + standardName + '</span>';
         html += '<span><strong>Subject:</strong> ' + subjectName + '</span>';
-        html += '<span><strong>Total Questions:</strong> ' + selectedQuestions.length + '</span>';
+        html += '<span><strong>Date:</strong> ' + date + '</span>';
         html += '</div>';
         html += '</div>';
 
@@ -305,7 +314,7 @@
         if (mcqQuestions.length > 0) {
             for (var i = 0; i < mcqQuestions.length; i++) {
                 var q = mcqQuestions[i];
-                var globalQNumber = i + 1; // Number within MCQ section
+                var globalQNumber = i + 1;
 
                 html += '<div class="preview-question">';
 
@@ -318,10 +327,9 @@
                 }
                 html += '</div>';
 
-                // MCQ options - directly show options without "Options:" label
+                // MCQ options - directly show options
                 if (q.answers && q.answers.length) {
                     html += '<div class="preview-options">';
-
                     for (var j = 0; j < q.answers.length; j++) {
                         var ans = q.answers[j];
                         var letter = String.fromCharCode(65 + j);
@@ -341,7 +349,7 @@
         if (narrativeQuestions.length > 0) {
             for (var i = 0; i < narrativeQuestions.length; i++) {
                 var q = narrativeQuestions[i];
-                var globalQNumber = mcqQuestions.length + i + 1; // Continue numbering from MCQ
+                var globalQNumber = mcqQuestions.length + i + 1;
 
                 html += '<div class="preview-question">';
 
@@ -353,13 +361,6 @@
                     html += '<span class="preview-marks">' + q.points + ' marks</span>';
                 }
                 html += '</div>';
-
-                // Narrative answer - directly show answer without "Answer:" label
-                // if (q.answers && q.answers.length) {
-                //     html += '<div class="preview-answer">';
-                //     html += decodeAndRenderHTML(q.answers[0].answer || 'N/A');
-                //     html += '</div>';
-                // }
 
                 html += '</div>';
             }
@@ -377,7 +378,7 @@
         return html;
     }
 
-    // Generate PDF and attach to file input - UPDATED VERSION WITH SORTING AND HEADER MATCHING PREVIEW
+    // Generate PDF and attach to file input - EXACTLY MATCHING HTML PREVIEW
     function generateAndAttachPDF() {
         var selectedQuestions = getSelectedQuestionsSorted();
 
@@ -406,17 +407,17 @@
         // Use setTimeout to ensure UI updates
         setTimeout(function() {
             try {
-                // Create PDF with exact A4 dimensions (595.28 x 841.89 points)
+                // Create PDF with exact A4 dimensions
                 const pdf = new jspdf.jsPDF({
                     orientation: 'portrait',
                     unit: 'pt',
                     format: 'a4'
                 });
 
-                // A4 dimensions in points
+                // A4 dimensions
                 const pageWidth = 595.28;
                 const pageHeight = 841.89;
-                const margin = 40; // 40pt margin on all sides
+                const margin = 40;
                 const contentWidth = pageWidth - (margin * 2);
 
                 // School info
@@ -434,119 +435,114 @@
                 var narrativeQuestions = selectedQuestions.filter(q => q.multiple_answer == 0);
 
                 let currentPage = 1;
-                let yPosition = margin + 30;
+                let yPosition = margin;
 
                 // Set initial page
                 pdf.setPage(currentPage);
 
-                // HEADER - EXACTLY MATCHING PREVIEW STYLING
-                // School Name
+                // HEADER - EXACTLY MATCHING HTML PREVIEW
+                // School Name - Blue color (#3498db)
                 pdf.setFontSize(20);
                 pdf.setFont('helvetica', 'bold');
-                pdf.setTextColor(44, 62, 80);
-                pdf.text(schoolName, pageWidth / 2, margin + 15, {
+                pdf.setTextColor(52, 152, 219); // #3498db in RGB
+                pdf.text(schoolName, pageWidth / 2, yPosition, {
                     align: 'center'
                 });
+                yPosition += 25;
 
-                // Standard - Subject Title
-                pdf.setFontSize(16);
-                pdf.setTextColor(52, 73, 94);
-                pdf.text(standardName + ' - ' + subjectName, pageWidth / 2, margin + 35, {
-                    align: 'center'
-                });
-
-                // Date (right aligned)
-                pdf.setFontSize(12);
-                pdf.setFont('helvetica', 'normal');
-                pdf.setTextColor(127, 140, 141);
-                pdf.text('Date: ' + date, pageWidth - margin, margin + 35, {
-                    align: 'right'
-                });
-
-                // Info Row: Standard, Subject, Total Questions
+                // Info Row: Standard, Subject, Date
                 pdf.setFontSize(11);
                 pdf.setFont('helvetica', 'normal');
-                pdf.setTextColor(44, 62, 80);
+                pdf.setTextColor(44, 62, 80); // #2c3e50
 
-                // Calculate positions for info row
-                const infoY = margin + 55;
-                const infoCol1 = margin;
-                const infoCol2 = pageWidth / 2;
-                const infoCol3 = pageWidth - margin;
+                // Calculate positions for info row - exactly centered like HTML
+                const infoY = yPosition;
+                const colWidth = pageWidth / 3;
 
-                pdf.text('Standard: ' + standardName, infoCol1, infoY);
-                pdf.text('Subject: ' + subjectName, infoCol2, infoY, {
+                pdf.text('Standard: ' + standardName, margin, infoY);
+                pdf.text('Subject: ' + subjectName, pageWidth / 2, infoY, {
                     align: 'center'
                 });
-                pdf.text('Total Questions: ' + selectedQuestions.length, infoCol3, infoY, {
+                pdf.text('Date: ' + date, pageWidth - margin, infoY, {
                     align: 'right'
                 });
+
+                yPosition += 15;
 
                 // Draw blue line
                 pdf.setDrawColor(52, 152, 219);
                 pdf.setLineWidth(1);
-                pdf.line(margin, margin + 60, pageWidth - margin, margin + 60);
+                pdf.line(margin, yPosition, pageWidth - margin, yPosition);
 
-                yPosition = margin + 75;
+                yPosition += 20;
 
                 // Process MCQ questions first
                 let questionCounter = 1;
-
-                // Helper function to strip HTML for PDF text (since PDF can't render HTML)
-                function stripHtmlForPDF(html) {
-                    if (!html) return '';
-                    var tmp = document.createElement('DIV');
-                    tmp.innerHTML = html;
-                    return tmp.textContent || tmp.innerText || '';
-                }
 
                 // MCQ Section
                 for (let i = 0; i < mcqQuestions.length; i++) {
                     const q = mcqQuestions[i];
 
                     // Check if we need a new page
-                    if (yPosition > pageHeight - margin - 80) {
+                    if (yPosition > pageHeight - margin - 50) {
                         pdf.addPage();
                         currentPage++;
                         pdf.setPage(currentPage);
                         yPosition = margin + 20;
                     }
 
-                    // Question number, text and marks in one line
+                    // Question number - Blue color (#2980b9)
                     pdf.setFontSize(12);
                     pdf.setFont('helvetica', 'bold');
-                    pdf.setTextColor(41, 128, 185);
+                    pdf.setTextColor(41, 128, 185); // #2980b9
 
-                    const questionText = 'Q' + questionCounter + '. ' + stripHtmlForPDF(q.question_title || 'N/A');
-                    const availableWidth = contentWidth - 60; // Leave space for marks
+                    const qNumber = 'Q' + questionCounter + '.';
+                    pdf.text(qNumber, margin, yPosition);
 
-                    // Split question text if too long
+                    // Question text - Black color
+                    pdf.setFont('helvetica', 'normal');
+                    pdf.setTextColor(0, 0, 0); // Black
+
+                    const questionText = stripHtmlForPDF(q.question_title || 'N/A');
+                    const availableWidth = contentWidth - 80; // Leave space for marks and number
+
+                    // Split question text
                     const questionLines = pdf.splitTextToSize(questionText, availableWidth);
 
-                    // Write question text
-                    pdf.text(questionLines, margin, yPosition);
+                    // Calculate vertical position for first line of question text
+                    const textX = margin + 25; // Indent after Q number
 
-                    // Add marks on the same line, aligned to right
-                    if (q.points) {
-                        pdf.setFont('helvetica', 'normal');
-                        pdf.setFontSize(10);
-                        pdf.setTextColor(231, 76, 60);
-
-                        const marksText = '[' + q.points + ' marks]';
-                        const marksWidth = pdf.getTextWidth(marksText);
-                        pdf.text(marksText, pageWidth - margin - marksWidth, yPosition);
+                    // Write first line of question text
+                    if (questionLines.length > 0) {
+                        pdf.text(questionLines[0], textX, yPosition);
                     }
 
-                    yPosition += (questionLines.length * 14) + 5;
+                    // Add marks - Black text, no background
+                    if (q.points) {
+                        const marksText = '[' + q.points + ' marks]';
 
-                    // MCQ options - directly show options without "Options:" label
+                        // Set black text color
+                        pdf.setTextColor(231, 76, 60); // black
+                        pdf.setFontSize(10);
+
+                        pdf.text(marksText, pageWidth - margin - 10, yPosition - 1, {
+                            align: 'right'
+                        });
+
+                        // Optional: reset font size for next content
+                        pdf.setFontSize(11);
+                    }
+
+                    yPosition += (questionLines.length * 14);
+
+                    // MCQ options
                     if (q.answers && q.answers.length) {
                         for (let j = 0; j < q.answers.length; j++) {
                             const ans = q.answers[j];
                             const letter = String.fromCharCode(65 + j);
 
-                            // Check if option will fit on current page
-                            if (yPosition > pageHeight - margin - 50) {
+                            // Check if option will fit
+                            if (yPosition > pageHeight - margin - 40) {
                                 pdf.addPage();
                                 currentPage++;
                                 pdf.setPage(currentPage);
@@ -554,18 +550,17 @@
                             }
 
                             pdf.setFont('helvetica', 'normal');
-                            pdf.setTextColor(100, 100, 100);
+                            pdf.setTextColor(68, 68, 68); // #444
 
                             const optionText = letter + '. ' + stripHtmlForPDF(ans.answer);
                             const optionLines = pdf.splitTextToSize(optionText, contentWidth - 40);
-                            pdf.text(optionLines, margin + 25, yPosition);
 
+                            pdf.text(optionLines, margin + 25, yPosition);
                             yPosition += (optionLines.length * 13) + 3;
                         }
                         yPosition += 5;
                     }
 
-                    // Add space between questions
                     yPosition += 10;
                     questionCounter++;
                 }
@@ -575,62 +570,52 @@
                     const q = narrativeQuestions[i];
 
                     // Check if we need a new page
-                    if (yPosition > pageHeight - margin - 80) {
+                    if (yPosition > pageHeight - margin - 50) {
                         pdf.addPage();
                         currentPage++;
                         pdf.setPage(currentPage);
                         yPosition = margin + 20;
                     }
 
-                    // Question number, text and marks in one line
+                    // Question number - Blue color
                     pdf.setFontSize(12);
                     pdf.setFont('helvetica', 'bold');
                     pdf.setTextColor(41, 128, 185);
 
-                    const questionText = 'Q' + questionCounter + '. ' + stripHtmlForPDF(q.question_title || 'N/A');
-                    const availableWidth = contentWidth - 60; // Leave space for marks
+                    const qNumber = 'Q' + questionCounter + '.';
+                    pdf.text(qNumber, margin, yPosition);
 
-                    // Split question text if too long
+                    // Question text - Black color
+                    pdf.setFont('helvetica', 'normal');
+                    pdf.setTextColor(0, 0, 0);
+
+                    const questionText = stripHtmlForPDF(q.question_title || 'N/A');
+                    const availableWidth = contentWidth - 80;
+
                     const questionLines = pdf.splitTextToSize(questionText, availableWidth);
+                    const textX = margin + 25;
 
-                    // Write question text
-                    pdf.text(questionLines, margin, yPosition);
-
-                    // Add marks on the same line, aligned to right
-                    if (q.points) {
-                        pdf.setFont('helvetica', 'normal');
-                        pdf.setFontSize(10);
-                        pdf.setTextColor(231, 76, 60);
-
-                        const marksText = '[' + q.points + ' marks]';
-                        const marksWidth = pdf.getTextWidth(marksText);
-                        pdf.text(marksText, pageWidth - margin - marksWidth, yPosition);
+                    if (questionLines.length > 0) {
+                        pdf.text(questionLines[0], textX, yPosition);
                     }
 
-                    yPosition += (questionLines.length * 14) + 5;
+                    // Add marks - Red background with white text
+                                        if (q.points) {
+                        const marksText = '[' + q.points + ' marks]';
 
-                    // Narrative answer - directly show answer without "Answer:" label
-                    // if (q.answers && q.answers.length) {
-                    //     // Check if answer will fit
-                    //     if (yPosition > pageHeight - margin - 60) {
-                    //         pdf.addPage();
-                    //         currentPage++;
-                    //         pdf.setPage(currentPage);
-                    //         yPosition = margin + 20;
-                    //     }
+                        // Set black text color
+                        pdf.setTextColor(231, 76, 60); // black
+                        pdf.setFontSize(10);
 
-                    //     pdf.setFont('helvetica', 'normal');
-                    //     pdf.setTextColor(52, 73, 94);
+                        pdf.text(marksText, pageWidth - margin - 10, yPosition - 1, {
+                            align: 'right'
+                        });
 
-                    //     const answerText = stripHtmlForPDF(q.answers[0].answer || 'N/A');
-                    //     const answerLines = pdf.splitTextToSize(answerText, contentWidth - 40);
+                        // Optional: reset font size for next content
+                        pdf.setFontSize(11);
+                    }
 
-                    //     pdf.text(answerLines, margin + 25, yPosition);
-                    //     yPosition += (answerLines.length * 13) + 10;
-                    // }
-
-                    // Add space between questions
-                    yPosition += 10;
+                    yPosition += (questionLines.length * 14) + 10;
                     questionCounter++;
                 }
 
