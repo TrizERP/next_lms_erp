@@ -92,7 +92,7 @@ class studentHomeworkController extends Controller
         $res['student_data'] = $data;
         $res['subjects'] = $subjects;
         $res['chaptersList'] = $chaptersList;
-        $res['questionTypes'] = ['multiple', 'narrative'];
+        $res['questionTypes'] = ['multiple'=>'Multiple Choice Questions', 'narrative'=>'Other Questions'];
         $res['grade_id'] = $grade;
         $res['standard_id'] = $standard;
         $res['division_id'] = $division;

@@ -141,6 +141,8 @@ class assessmentQuestionController extends Controller
             
             if($questionTypeId==1){
                 $question['multiple_answer'] = 1;
+            }else{
+                $question['multiple_answer'] = 0;
             }
             
             $question_id = lmsQuestionMasterModel::insertGetId($question);
@@ -309,9 +311,11 @@ class assessmentQuestionController extends Controller
                 $prompt .= "Make each question unique and different from each other. Use this seed for variety: " . $seed . ". ";
                 $prompt .= "Return the response as a JSON array of question objects with fields: question, question_type (MCQ/ShortAnswer/LongAnswer/FillInBlanks), difficulty (Easy/Medium/Hard), options (array of 4 for MCQ), correct_answer, and explanation.";
             }
-            
+            if($request->get('question_type_id')==1){
+                $prompt .= " and it must have different types of 4 options which differentiate between them. give me corre t_answer also below the options array.";
+            }
             // Call the AI service
-            $response = $this->openAIService->generateContent($prompt);
+            $generatedQuestions = $response = $this->openAIService->generateContent($prompt);
             
             // Parse the AI response
             $questions = $this->parseAIResponse($response);
@@ -320,8 +324,14 @@ class assessmentQuestionController extends Controller
             if (empty($questions)) {
                 $questions = $this->generateFallbackQuestions($questionCount, $standard, $subject_id, $chapter_id, $topic_id, $seed, $isMultipleType);
             }
-            
-            return response()->json($questions);
+            // Decode the JSON data
+                $aiData = [];
+                if (!empty($generatedQuestions)) {
+                $cleanJson = preg_replace('/^```json\s*|\s*```$/m', '', $generatedQuestions);
+                    $aiData = json_decode($cleanJson, true);
+                }
+
+            return response()->json(['main'=>$response,'ai_response'=>$aiData,'questions'=>$questions]);
             
         } catch (\Exception $e) {
             // Log the error
