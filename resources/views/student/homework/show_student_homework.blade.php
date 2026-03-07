@@ -507,7 +507,7 @@
             promptText = generateQuestionsPrompt();
             indicatorText = 'Showing prompt from: <span class="prompt-indicator">Selected Questions (MCQ & Other)</span>';
         } else {
-            promptText = generateTitleDescriptionPrompt();
+            promptTText = generateTitleDescriptionPrompt();
             indicatorText = 'Showing prompt from: <span class="prompt-indicator">Title & Description</span>';
         }
         
