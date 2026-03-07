@@ -1,4 +1,4 @@
-<table style="border-collapse: collapse;" border="1" width="100%">
+<!-- <table style="border-collapse: collapse;" border="1" width="100%">
     <tr>
         <td colspan=4 align="center">
             <h2>{{ $employeeData['school_name']->ReceiptHeader }}</h2>
@@ -48,11 +48,7 @@
         <td></td>
         <td></td>
     </tr>
-    <?php
-    $actualSalary = 0;
-    $currentSalary = 0;
-    $deduction = 0;
-    ?>
+  
     @foreach($employeeData['salary_data'] as $key =>$employeeSalary)
         <tr>
             <td>&nbsp;&nbsp;{{ $employeeSalary[0][3] == 'allowance' ? $employeeSalary[0][0] : '-'}}</td>
@@ -139,4 +135,7 @@
 <h4>
     <center><font color="red">This is a computer generated payslip and does not require signature.</font>
         <center>
-</h4><br><br><br>
+</h4><br><br><br> -->
+
+
+{!! $templateHTML !!}
