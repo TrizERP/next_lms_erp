@@ -727,6 +727,32 @@ class studentResultController extends Controller
             $html_content = str_replace(htmlspecialchars("<<class_teacher_remark>>"), $scholastic['teacher_remark'], $html_content);
             $html_content = str_replace(htmlspecialchars("<<remark>>"), $scholastic['remark'], $html_content);
         }
+
+        if (strpos($html_content, htmlspecialchars('<<scholastic_marks_ssmission>>')) !== false) {
+            $main_result = $this->get_scholastic_ssmission($standard_id, $value['id'], $format, "no_zero");
+            $html_content = str_replace(htmlspecialchars("<<scholastic_marks_ssmission>>"), $main_result['table'], $html_content);
+            $html_content = str_replace(htmlspecialchars("<<ssmission_result>>"), strtoupper($main_result['result']), $html_content);
+            $html_content = str_replace(htmlspecialchars("<<class_teacher_remark>>"), $main_result['remark'], $html_content);
+        }
+        
+        if (strpos($html_content, htmlspecialchars('<<scholastic_marks_ssmission9>>')) !== false) {
+            $scholastic = $this->get_scholastic_ssmission9($standard_id, $value['id'], $format, "");
+            $html_content = str_replace(htmlspecialchars("<<scholastic_marks_ssmission9>>"), $scholastic['table'], $html_content);
+            $html_content = str_replace(htmlspecialchars("<<total_marks>>"), $scholastic['total_marks'], $html_content);
+            $html_content = str_replace(htmlspecialchars("<<overallPercentage>>"), $scholastic['overallPercentage'], $html_content);
+            $html_content = str_replace(htmlspecialchars("<<overall_grade>>"), $scholastic['overall_grade'], $html_content);
+            $html_content = str_replace(htmlspecialchars("<<class_teacher_remark>>"), $scholastic['teacher_remark'], $html_content);
+            $html_content = str_replace(htmlspecialchars("<<remark>>"), $scholastic['remark'], $html_content);
+        }
+
+        if (strpos($html_content, htmlspecialchars('<<scholastic_marks_11_ssmision>>')) !== false) {
+            $main_result = $this->get_scholastic_11_ssmission($standard_id, $value['id'], $format, "no_zero");
+            $html_content = str_replace(htmlspecialchars("<<scholastic_marks_11_ssmision>>"), $main_result['table'], $html_content);
+            $html_content = str_replace(htmlspecialchars("<<teacher_remark>>"), $main_result['remark'],$html_content);
+            $html_content = str_replace(htmlspecialchars("<<result>>"), $main_result['result'], $html_content);
+            $html_content = str_replace(htmlspecialchars("<<custom_note_1>>"), $main_result['custom_note_1'],$html_content);
+            $html_content = str_replace(htmlspecialchars("<<simple_result>>"), $main_result['simple_result'],$html_content);
+        }
         // 1. Get attendance (working / present)
         $attendance = $this->get_attendance($standard_id, $value['id'], $format, "total_attendance");
        
@@ -847,11 +873,15 @@ if (isset($attendance['table'])) {
 
     public function get_scholastic_mmis($standard_id, $student_id, $format, $digit)
     {
-        // echo "<pre>";print_r($student_id);exit;
+        //echo "<pre>";print_r($standard_id);exit;
         $syear = session()->get('syear');
         $sub_institute_id = session()->get('sub_institute_id');
         $extra_term = $extra_exam = "1=1";
-        if ($format != "yearly") {
+        $standard_array = [106]; //CBSE-9
+        if(in_array($standard_id, $standard_array)) {
+            $extra_term = "term_id = 151"; //TERM-2
+            $extra_exam = "rce.term_id = 151"; //TERM-2
+        }elseif ($format != "yearly") {
             $extra_term = "term_id = " . $format;
             $extra_exam = "rce.term_id = " . $format;
         }
@@ -1739,7 +1769,7 @@ if (isset($attendance['table'])) {
         $syear = session()->get('syear');
         $sub_institute_id = session()->get('sub_institute_id');
         // sub_institute want foramt like lions 
-        $format_sub_different = [61, 195];
+        $format_sub_different = [61,195,76];
         $extra_term =  $extra_exam = "1=1";
         if ($format != "yearly") {
             $extra_term = "term_id = " . $format;
@@ -3022,7 +3052,7 @@ if (isset($attendance['table'])) {
         $syear = session()->get('syear');
         $sub_institute_id = session()->get('sub_institute_id');
         // co scholoastic like lions
-        $format_sub_different = [61, 195, 76];
+        $format_sub_different = [61,195,76];
         $extra_term =  $extra_exam = "1=1";
         if ($format != "yearly") {
             $extra_term = "term_id = " . $format;
@@ -4433,6 +4463,7 @@ while ($current_date <= $post_end_date) {
             ->toArray();
 
         $get_subject = $this->get_subject($sub_institute_id, $syear, $student_id, $standard_id);
+        $subjects_studied = $this->tc_information($sub_institute_id, $syear, $student_id, $get_subject, 'subjects_studied');
         $exam_name  = $this->get_exam_name($sub_institute_id, $syear, $standard_id, $extra_exam);
         $exam_title = $this->get_exam_title($sub_institute_id, $syear, $standard_id, $extra_exam);
         $exam_marks = $this->get_exam_marks($sub_institute_id, $student_id, $syear, $standard_id, $extra_exam, 'lions');
@@ -4704,6 +4735,7 @@ while ($current_date <= $post_end_date) {
         /* ================= FETCH DATA ================= */
 
         $get_subject  = $this->get_subject($sub_institute_id, $syear, $student_id, $standard_id);
+        $subjects_studied = $this->tc_information($sub_institute_id, $syear, $student_id, $get_subject, 'subjects_studied');
         $exam_created = $this->get_exam_name($sub_institute_id, $syear, $standard_id, $extra_exam);
         $exam_marks   = $this->get_exam_marks($sub_institute_id, $student_id, 'examWise', $syear);
         $grade_arr    = $this->getGradeScale($standard_id, '');
@@ -4925,6 +4957,7 @@ while ($current_date <= $post_end_date) {
 
         // get subject
         $get_subject = $this->get_subject($sub_institute_id, $syear, $student_id, $standard_id);
+        $subjects_studied = $this->tc_information($sub_institute_id, $syear, $student_id, $get_subject, 'subjects_studied');
         $exam_name = $this->get_exam_name($sub_institute_id, $syear, $standard_id, $extra_exam);
         // get exam title 
         $exam_title = $this->get_exam_title($sub_institute_id, $syear, $standard_id, $extra_exam);
@@ -6216,12 +6249,17 @@ while ($current_date <= $post_end_date) {
     {
         $syear = session()->get('syear');
         $sub_institute_id = session()->get('sub_institute_id');
+        $standard_array = [3303,3316];
 
-        $extra_term = ($format == "yearly") ?
-            (($academic_type != "primary") ? "term_id = 2" : "1=1") :
-            "term_id = $format";
-        $extra_term_co = ($format == "yearly" && $academic_type != "primary") ? "1=1" : "1=1";
-        $extra_exam = ($format == "yearly") ? "1=1" : "comark.term_id = $format";
+        $extra_term = ($format == "yearly")
+            ? (($academic_type != "primary") ? "term_id = 2" : "1=1")
+            : "term_id = $format";
+
+        $extra_term_co = "1=1";
+
+        $extra_exam = ($format == "yearly")
+            ? (in_array($standard_id, $standard_array) ? "comark.term_id = 2" : "1=1")
+            : "comark.term_id = $format";
 
         $both_term = DB::table('academic_year')
             ->whereRaw($extra_term)
@@ -7419,7 +7457,7 @@ while ($current_date <= $post_end_date) {
     {
         $syear = session()->get('syear');
         $sub_institute_id = session()->get('sub_institute_id');
-        $format_sub_different = [61, 195];
+        $format_sub_different = [61,195,76];
 
         if ($format == "yearly") {
             $extra_term = $extra_exam = "1=1";
@@ -7701,7 +7739,7 @@ if ($format === 'yearly') {
     {
         $syear = session()->get('syear');
         $sub_institute_id = session()->get('sub_institute_id');
-        $format_sub_different = [61, 195];
+        $format_sub_different = [61,195,76];
 
         if ($format == "yearly") {
             $extra_term = $extra_exam = "1=1";
@@ -10619,6 +10657,7 @@ if ($format === 'yearly') {
 
         // Get subjects
         $get_subject = $this->get_subject($sub_institute_id, $syear, $student_id, $standard_id);
+        $subjects_studied = $this->tc_information($sub_institute_id, $syear, $student_id, $get_subject, 'subjects_studied');
         $exam_created = $this->get_exam_name($sub_institute_id, $syear, $standard_id, $extra_exam);
 
         // Group exams by ExamTitle and collect all create_exam entries for each ExamTitle
@@ -10827,6 +10866,7 @@ if ($format === 'yearly') {
 
         // Get subjects
         $get_subject = $this->get_subject($sub_institute_id, $syear, $student_id, $standard_id);
+        $subjects_studied = $this->tc_information($sub_institute_id, $syear, $student_id, $get_subject, 'subjects_studied');
         $exam_created = $this->get_exam_name($sub_institute_id, $syear, $standard_id, $extra_exam);
 
         // Group exams by ExamType and then by ExamTitle
@@ -11106,6 +11146,7 @@ if ($format === 'yearly') {
 
         // Get subjects
         $get_subject = $this->get_subject($sub_institute_id, $syear, $student_id, $standard_id);
+        $subjects_studied = $this->tc_information($sub_institute_id, $syear, $student_id, $get_subject, 'subjects_studied');
         $exam_created = $this->get_exam_name($sub_institute_id, $syear, $standard_id, $extra_exam);
 
         // Group exams by ExamType and then by ExamTitle
@@ -11555,6 +11596,7 @@ if ($format === 'yearly') {
 
         // Get subjects
         $get_subject = $this->get_subject($sub_institute_id, $syear, $student_id, $standard_id);
+        $subjects_studied = $this->tc_information($sub_institute_id, $syear, $student_id, $get_subject, 'subjects_studied');
         $exam_created = $this->get_exam_name($sub_institute_id, $syear, $standard_id, $extra_exam);
 
         // Group exams by ExamTitle and collect all create_exam entries for each ExamTitle
