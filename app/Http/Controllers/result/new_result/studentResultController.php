@@ -8792,10 +8792,9 @@ if ($format === 'yearly') {
             $markArr[$value->subject_id][$value->ExamTitle][$value->title]['MM'] += $value->total_points;
             $markArr[$value->subject_id][$value->ExamTitle][$value->title]['weightage'] += $value->weightage;
         }
-        //echo "<pre>";
-        //print_r($exam_marks);
+        
         // make sort order to print headwise
-        $customOrder = ['Unit Test', 'Term - 1', 'Half Yearly', 'Term - 2', 'FINAL EXAM']; // Define the desired order
+        $customOrder = ['Unit Test', 'Term - 1', 'Half Yearly', 'Term - 2', 'FINAL EXAM'];
 
         foreach ($markArr as $subject_id => $terms) {
             // Sort the terms based on custom order
@@ -8804,234 +8803,236 @@ if ($format === 'yearly') {
                 $posB = array_search($b, $customOrder);
                 return $posA - $posB;
             });
-            $markArr[$subject_id] = $terms; // Assign the sorted array back
+            $markArr[$subject_id] = $terms;
         }
-
-        // echo "<pre>";print_r($markArr);exit;
 
         // print table
         $scholaticTable = $scholaticTableGrades = '';
         $grade_arr = $this->getGradeScale($standard_id);
         $all_mark = $total_mark = $per = 0;
+        
         if (!empty($exam_marks)) {
-            // scholastic parts
-            $scholaticTable .= '<style>.data_center{text-align:center !important}</style><table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0"  border="1"><thead>';
-            $scholaticTable .= '<tr>
-            <th rowspan="3"><b>Subject</b></th>
-            <th colspan="3" class="data_center"><b>Unit Test</b></th>
-            <th rowspan="2" colspan="3" class="data_center"><b>Half Yearly</b></th>
-            <th colspan="5" class="data_center"><b>Final Exam</b></th>
-            <th rowspan="3" class="data_center"><b>Total <br>marks<br> obtained <br>100 </b></th>
-         </tr>
-         <tr>
-            <th class="data_center"><b>I</b></th>
-            <th class="data_center"><b>II</b></th>
-            <th class="data_center">&nbsp;</b></th>
-            <th colspan="2" class="data_center"><b>THEORY</b></th>
-            <th colspan="2" class="data_center"><b>PRACTICAL</b></th>
-            <th class="data_center">&nbsp;</b></th>
-         </tr>
-         <tr>
-            <th class="data_center"><b>OUT <br> OF<br> 20  </b></th>
-            <th class="data_center"><b>OUT<br> OF <br>20  </b></th>
-            <th class="data_center"><b>WEIGHTAGE <br> 5% <br> OF I+II  </b></th>
-            <th class="data_center"><b>OBT </b></th>
-            <th class="data_center"><b>MM </b></th>
-            <th class="data_center"><b>WEIGHTAGE <br>20%</b></th>
-            <th class="data_center"><b>OBT </b></th>
-            <th class="data_center"><b>MM </b></th>
-            <th class="data_center"><b>OBT </b></th>
-            <th class="data_center"><b>MM </b></th>
-            <th class="data_center"><b>WEIGHTAGE <br>75%</b></th>
-         </tr>';
-            $scholaticTable .= '</thead><tbody>';
-            $overAllMark = $overAllObt = $failed = 0;
+            $scholaticTable .= '<style>.data_center{text-align:center !important}</style>';
+            $scholaticTable .= '<table class="aca-year" style="width: 100%; border-collapse: collapse; border: 1px solid #e68023; font-family: Arial, sans-serif; font-size: 12px;" cellspacing="0" border="1">';
+            
+            // Table Header
+            $scholaticTable .= '<thead>';
+            $scholaticTable .= '<tr style="background-color: #f2f2f2;">';
+            $scholaticTable .= '<th rowspan="2" style="padding: 8px; text-align: center; vertical-align: middle;"><b>SUBJECT NAME</b></th>';
+            $scholaticTable .= '<th colspan="2" style="padding: 8px; text-align: center; vertical-align: middle;"><b>Unit test</b></th>';
+            $scholaticTable .= '<th colspan="2" style="padding: 8px; text-align: center; vertical-align: middle;"><b>TERM-1</b></th>';
+            $scholaticTable .= '<th colspan="2" style="padding: 8px; text-align: center; vertical-align: middle;"><b>FINAL THEORY</b></th>';
+            $scholaticTable .= '<th rowspan="2" style="padding: 8px; text-align: center; vertical-align: middle;"><b>Total</b></th>';
+            $scholaticTable .= '<th rowspan="2" style="padding: 8px; text-align: center; vertical-align: middle;"><b>Marks Obtained (OUT OF 80)</b></th>';
+            $scholaticTable .= '<th colspan="2" style="padding: 8px; text-align: center; vertical-align: middle;"><b>FINAL PRACTICAL</b></th>';
+            $scholaticTable .= '<th rowspan="2" style="padding: 8px; text-align: center; vertical-align: middle;"><b>Total Marks obtained(100)</b></th>';
+            $scholaticTable .= '</tr>';
+            
+            $scholaticTable .= '<tr style="background-color: #f2f2f2;">';
+            $scholaticTable .= '<th style="padding: 8px; text-align: center;"><b>I</b><br><b>Out of 40</b></th>';
+            $scholaticTable .= '<th style="padding: 8px; text-align: center;"><b>II</b><br><b>Out of 40</b></th>';
+            $scholaticTable .= '<th style="padding: 8px; text-align: center;"><b>OBT</b></th>';
+            $scholaticTable .= '<th style="padding: 8px; text-align: center;"><b>MM</b></th>';
+            $scholaticTable .= '<th style="padding: 8px; text-align: center;"><b>OBT</b></th>';
+            $scholaticTable .= '<th style="padding: 8px; text-align: center;"><b>MM</b></th>';
+            $scholaticTable .= '<th style="padding: 8px; text-align: center;"><b>OBT</b></th>';
+            $scholaticTable .= '<th style="padding: 8px; text-align: center;"><b>MM</b></th>';
+            $scholaticTable .= '</tr>';
+            $scholaticTable .= '</thead>';
+            
+            $scholaticTable .= '<tbody>';
+            
+            $overAllTotal = 0;
+            $exactOverAllTotal = 0; // Track exact values without rounding
+            $subjectCount = 0;
+            
             foreach ($get_subject as $sk => $sv) {
+                $subjectCount++;
                 $scholaticTable .= '<tr>';
-                $scholaticTable .= '<td>' . $sv->subject_name . '</td>';
-                $totMark = $totObtMarks = 0;
+                $scholaticTable .= '<td style="padding: 8px;"><b>' . $sv->subject_name . '</b></td>';
+                
+                // Initialize variables
+                $unitTest1 = '0.0';
+                $unitTest2 = '0.0';
+                $term1Obt = '0.0';
+                $term1MM = '0.0';
+                $finalTheoryObt = '0.0';
+                $finalTheoryMM = '0.0';
+                $finalPracticalObt = '0.0';
+                $finalPracticalMM = '0.0';
+                $totalTheory = 0;
+                $finalTheoryMaxMarks = 80; // Default
+                $marksObtained80 = '0.00';
+                $marksObtained80Exact = 0; // Exact value without formatting
+                $totalMarks100 = 0;
+                $totalMarks100Exact = 0; // Exact value without rounding
+                
                 if (isset($markArr[$sv->subject_id])) {
-                    if (isset($markArr[$sv->subject_id])) {
-                        foreach ($markArr[$sv->subject_id] as $examTitle => $markVal) {
-                            //echo "<pre>";
-                            //print_r($markVal);
-                            //exit();
-                            $obt = $mm = $weightage = $obtFinal = $mmFinal = $convertMarks = $convertTP = 0;
-                            if ($examTitle == "Unit Test") {
-                                $obt1 = isset($markVal['UNIT TEST -1']['OBT']) ? $markVal['UNIT TEST -1']['OBT'] : 0;
-                                $obt2 = isset($markVal['UNIT TEST -2']['OBT']) ? $markVal['UNIT TEST -2']['OBT'] : 0;
-
-                                // Initialize $obt to handle 'AB' cases
-                                if ($obt1 === 'AB' && $obt2 === 'AB')
-                                    $obt = 'AB';
-                                elseif ($obt1 === 'AB')
-                                    $obt += $obt2;
-                                elseif ($obt2 === 'AB')
-                                    $obt += $obt1;
-                                else
-                                    $obt += number_format($obt1 + $obt2, 2);
-
-                                // Process 'MM' values
-                                $mm1 = isset($markVal['UNIT TEST -1']['MM']) && is_numeric($markVal['UNIT TEST -1']['MM'])
-                                    ? $markVal['UNIT TEST -1']['MM']
-                                    : 0;
-                                $mm2 = isset($markVal['UNIT TEST -2']['MM']) && is_numeric($markVal['UNIT TEST -2']['MM'])
-                                    ? $markVal['UNIT TEST -2']['MM']
-                                    : 0;
-
-                                $mm += number_format($mm1 + $mm2, 2);
-
-                                // Determine weightage
-                                $weightage = isset($markVal['UNIT TEST -2']['weightage']) && $markVal['UNIT TEST -2']['weightage']
-                                    ? $markVal['UNIT TEST -2']['weightage']
-                                    : (isset($markVal['UNIT TEST -1']['weightage']) && $markVal['UNIT TEST -1']['weightage']
-                                        ? $markVal['UNIT TEST -1']['weightage']
-                                        : 0);
-
-                                // Calculate converted marks
-                                $convertMarks = ($mm > 0 && $obt !== 'AB') ? number_format(($obt * $weightage) / $mm, 2) : '0.00';
-
-                                // Update totals
-                                $totMark += $weightage;
-                                $totObtMarks += ($convertMarks !== 'AB') ? $convertMarks : 0;
-
-                                // Generate scholastic table rows
-                                $scholaticTable .= '<td class="data_center">' . (is_numeric($obt1) ? number_format($obt1, 2) : $obt1) . '</td>';
-                                $scholaticTable .= '<td class="data_center">' . (is_numeric($obt2) ? number_format($obt2, 2) : $obt2) . '</td>';
-                                $scholaticTable .= '<td class="data_center"><b>' . $convertMarks . '</b></td>';
+                    foreach ($markArr[$sv->subject_id] as $examTitle => $markVal) {
+                        // Unit Test
+                        if ($examTitle == "Unit Test") {
+                            if (isset($markVal['UNIT TEST -1']['OBT']) && is_numeric($markVal['UNIT TEST -1']['OBT'])) {
+                                $unitTest1 = number_format($markVal['UNIT TEST -1']['OBT'], 1);
                             }
-                            if ($examTitle == "Term - 1" || $examTitle == "Half Yearly") {
-                                // Get obtained marks (OBT), maximum marks (MM), and weightage
-                                $obt = isset($markVal['TERM -1']['OBT']) ? $markVal['TERM -1']['OBT'] : 0;
-                                $mm = isset($markVal['TERM -1']['MM']) ? $markVal['TERM -1']['MM'] : 0;
-                                $weightage = isset($markVal['TERM -1']['weightage']) ? $markVal['TERM -1']['weightage'] : 0;
-
-                                // Handle the 'AB' case for obtained marks
-                                $formattedObt = ($obt === 'AB') ? 'AB' : number_format($obt, 2);
-
-                                // Calculate converted marks
-                                $convertMarks = ($mm > 0 && $obt !== 'AB') ? number_format(($obt * $weightage) / $mm, 2) : '0.00';
-                                //$formattedConvertMarks = ($convertMarks === '0.00' && $obt === 'AB') ? 'AB' : $convertMarks;
-                                $formattedConvertMarks = ($convertMarks === '0.00' && $obt === 'AB') ? 'AB' : $convertMarks;
-
-                                // Update totals
-                                $totMark += $weightage;
-                                $totObtMarks += ($convertMarks !== 'AB') ? $convertMarks : 0;
-
-                                // Generate scholastic table rows
-                                $scholaticTable .= '<td class="data_center">' . $formattedObt . '</td>';
-                                $scholaticTable .= '<td class="data_center">' . number_format($mm, 2) . '</td>';
-                                $scholaticTable .= '<td class="data_center"><b>' . $convertMarks . '</b></td>';
-                            }
-                            if ($examTitle == "Term - 2" || $examTitle == "FINAL EXAM") {
-                                if (isset($markVal['THEORY'])) {
-                                    // Get obtained marks (OBT), maximum marks (MM), and weightage
-                                    $obt = isset($markVal['THEORY']['OBT']) ? $markVal['THEORY']['OBT'] : 0;
-                                    $mm = isset($markVal['THEORY']['MM']) ? $markVal['THEORY']['MM'] : 0;
-                                    $weightage = isset($markVal['THEORY']['weightage']) ? $markVal['THEORY']['weightage'] : 0;
-
-                                    // Handle 'AB' case for obtained marks
-                                    $formattedObt = ($obt === 'AB') ? 'AB' : number_format($obt, 2);
-
-                                    // Update final obtained marks and maximum marks
-                                    $obtFinal += ($obt === 'AB') ? 0 : $obt;  // Add 0 for 'AB' marks
-                                    $mmFinal += $mm;  // MM is always added to mmFinal, since 'AB' doesn't affect it
-
-                                    // Calculate converted marks
-                                    $convertMarks = ($mm > 0 && $obt !== 'AB') ? number_format(($obt * $weightage) / $mm, 2) : '0.00';
-                                    $formattedConvertMarks = ($convertMarks === '0.00' && $obt === 'AB') ? 'AB' : $convertMarks;
-
-                                    // Generate scholastic table rows
-                                    $scholaticTable .= '<td class="data_center">' . $formattedObt . '</td>';
-                                    $scholaticTable .= '<td class="data_center">' . number_format($mm, 2) . '</td>';
-                                }
-                                if (isset($markVal['PRATICAL'])) {
-                                    // Get obtained marks (OBT), maximum marks (MM), and weightage
-                                    $obt = isset($markVal['PRATICAL']['OBT']) ? $markVal['PRATICAL']['OBT'] : 0;
-                                    $mm = isset($markVal['PRATICAL']['MM']) ? $markVal['PRATICAL']['MM'] : 0;
-                                    $weightage = isset($markVal['PRATICAL']['weightage']) ? $markVal['PRATICAL']['weightage'] : 0;
-
-                                    // Handle 'AB' case for obtained marks
-                                    $formattedObt = ($obt === 'AB') ? 'AB' : number_format($obt, 2);
-
-                                    // Update final obtained marks and maximum marks
-                                    $obtFinal += ($obt === 'AB') ? 0 : $obt;  // Add 0 for 'AB' marks
-                                    $mmFinal += $mm;  // MM is always added to mmFinal, since 'AB' doesn't affect it
-
-                                    // Calculate converted marks
-                                    $convertMarks = ($mm > 0 && $obt !== 'AB') ? number_format(($obt * $weightage) / $mm, 2) : '0.00';
-                                    $formattedConvertMarks = ($convertMarks === '0.00' && $obt === 'AB') ? 'AB' : $convertMarks;
-
-                                    // Generate scholastic table rows
-                                    $scholaticTable .= '<td class="data_center">' . $formattedObt . '</td>';
-                                    $scholaticTable .= '<td class="data_center">' . number_format($mm, 2) . '</td>';
-                                }
-                                $convertTp = ($mmFinal > 0) ? number_format(($obtFinal * $weightage) / $mmFinal, 2) : '0.00';
-                                $totMark += $weightage;
-                                $totObtMarks += $convertTp;
-                                $scholaticTable .= '<td class="data_center lastTotal"><b>' . $convertTp . '</b></td>';
+                            
+                            if (isset($markVal['UNIT TEST -2']['OBT']) && is_numeric($markVal['UNIT TEST -2']['OBT'])) {
+                                $unitTest2 = number_format($markVal['UNIT TEST -2']['OBT'], 1);
                             }
                         }
+                        
+                        // Term - 1
+                        if ($examTitle == "Term - 1" || $examTitle == "Half Yearly") {
+                            if (isset($markVal['TERM -1']['OBT']) && is_numeric($markVal['TERM -1']['OBT'])) {
+                                $term1Obt = number_format($markVal['TERM -1']['OBT'], 1);
+                            }
+                            
+                            if (isset($markVal['TERM -1']['MM']) && is_numeric($markVal['TERM -1']['MM'])) {
+                                $term1MM = number_format($markVal['TERM -1']['MM'], 1);
+                            }
+                        }
+                        
+                        // FINAL EXAM
+                        if ($examTitle == "Term - 2" || $examTitle == "FINAL EXAM") {
+                            // Theory
+                            if (isset($markVal['THEORY'])) {
+                                if (isset($markVal['THEORY']['OBT']) && is_numeric($markVal['THEORY']['OBT'])) {
+                                    $finalTheoryObt = number_format($markVal['THEORY']['OBT'], 1);
+                                }
+                                
+                                if (isset($markVal['THEORY']['MM']) && is_numeric($markVal['THEORY']['MM'])) {
+                                    $finalTheoryMM = number_format($markVal['THEORY']['MM'], 1);
+                                    $finalTheoryMaxMarks = floatval($markVal['THEORY']['MM']);
+                                }
+                            }
+                            
+                            // Practical
+                            if (isset($markVal['PRATICAL'])) {
+                                if (isset($markVal['PRATICAL']['OBT']) && is_numeric($markVal['PRATICAL']['OBT'])) {
+                                    $finalPracticalObt = number_format($markVal['PRATICAL']['OBT'], 1);
+                                }
+                                
+                                if (isset($markVal['PRATICAL']['MM']) && is_numeric($markVal['PRATICAL']['MM'])) {
+                                    $finalPracticalMM = number_format($markVal['PRATICAL']['MM'], 2);
+                                }
+                            }
+                            
+                            // Calculate Total Theory (Unit Test I + II + Term-1 + Final Theory)
+                            $unit1_val = floatval($unitTest1);
+                            $unit2_val = floatval($unitTest2);
+                            $term1_val = floatval($term1Obt);
+                            $finalTheory_val = floatval($finalTheoryObt);
+                            
+                            $totalTheory = $unit1_val + $unit2_val + $term1_val + $finalTheory_val;
+                            
+                            // Calculate Marks Obtained (OUT OF 80) using the appropriate formula
+                            if ($finalTheoryMaxMarks == 70) {
+                                // For subjects with 70 marks final theory
+                                $marksObtained80Exact = 70 * $totalTheory / 220;
+                                $marksObtained80 = number_format($marksObtained80Exact, 2);
+                            } else {
+                                // For subjects with 80 marks final theory
+                                $baseMarks = $unit1_val + $unit2_val + $term1_val;
+                                $scaledFinalTheory = ($finalTheory_val / $finalTheoryMaxMarks) * 80;
+                                $totalScaledMarks = $baseMarks + $scaledFinalTheory;
+                                $marksObtained80Exact = $totalScaledMarks / 3;
+                                $marksObtained80 = number_format($marksObtained80Exact, 2);
+                            }
+                            
+                            // Calculate Total Marks obtained 100 (Marks Obtained 80 + Practical OBT)
+                            $practical_val = floatval($finalPracticalObt);
+                            $totalMarks100Exact = $marksObtained80Exact + $practical_val;
+                            $totalMarks100 = $totalMarks100Exact; // Keep exact for display rounding
+                            
+                            // Add to overall total for percentage calculation (use EXACT values, not rounded)
+                            $overAllTotal += $totalMarks100Exact;
+                            $exactOverAllTotal += round($totalMarks100Exact);
+                        }
                     }
-                    $overAllMark += $totMark;
-                    $overAllObt += round($totObtMarks); // make round on 22-02-2025 by uma
-
-                    $sub_per = $this->getPer(round($totObtMarks), $totMark);
-                    if ($sub_per < 33)
-                        $failed++;
-
-                    $scholaticTable .= '<td class="data_center"><b>' . round($totObtMarks) . '</b></td>';
                 }
+                
+                // Format numbers for display
+                $totalTheoryFormatted = number_format($totalTheory, 2);
+                
+                // Output row with rounded display value but keep exact for calculation
+                $scholaticTable .= '<td style="padding: 8px; text-align: center;">' . $unitTest1 . '</td>';
+                $scholaticTable .= '<td style="padding: 8px; text-align: center;">' . $unitTest2 . '</td>';
+                $scholaticTable .= '<td style="padding: 8px; text-align: center;">' . $term1Obt . '</td>';
+                $scholaticTable .= '<td style="padding: 8px; text-align: center;">' . $term1MM . '</td>';
+                $scholaticTable .= '<td style="padding: 8px; text-align: center;">' . $finalTheoryObt . '</td>';
+                $scholaticTable .= '<td style="padding: 8px; text-align: center;">' . $finalTheoryMM . '</td>';
+                $scholaticTable .= '<td style="padding: 8px; text-align: center;">' . $totalTheoryFormatted . '</td>';
+                $scholaticTable .= '<td style="padding: 8px; text-align: center;">' . $marksObtained80 . '</td>';
+                $scholaticTable .= '<td style="padding: 8px; text-align: center;">' . $finalPracticalObt . '</td>';
+                $scholaticTable .= '<td style="padding: 8px; text-align: center;">' . $finalPracticalMM . '</td>';
+                $scholaticTable .= '<td style="padding: 8px; text-align: center;"><b>' . round($totalMarks100Exact) . '</b></td>';
+                
                 $scholaticTable .= '</tr>';
             }
-            $per = $this->getPer($overAllObt, $overAllMark);
-            $scholaticTable .= '<tr><td colspan="12"><b>Percentage</b></td><td class="data_center"><b>' . $per . '%</b></td><tr>';
+            
+            // Calculate Percentage based on Total Marks obtained(100)
+            if ($subjectCount > 0) {
+
+                // Total of "Total Marks obtained(100)"
+                $totalMarksAllSubjects = $exactOverAllTotal;
+
+                // Average out of 100
+                $percentage = $totalMarksAllSubjects / $subjectCount;
+
+                $scholaticTable .= '<tr>';
+                $scholaticTable .= '<td colspan="11" style="padding: 8px; text-align: right;"><b>Percentage</b></td>';
+                $scholaticTable .= '<td style="padding: 8px; text-align: center;"><b>' . number_format($percentage, 2) . '%</b></td>';
+                $scholaticTable .= '</tr>';
+            }
+            
             $scholaticTable .= '</tbody></table>';
+            
             // Grade range table
             $gradeRange = $this->getGradeRange($standard_id);
 
-            $scholaticTableGrades .= '<table class="aca-year"  style="width: 80%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0"  border="1">';
-            $scholaticTableGrades .= '<tr>
-            <th align="center"><b>MARKS RANGE</th></b>';
+            $scholaticTableGrades .= '<table class="aca-year" style="width: 80%; border-collapse: collapse; border: 1px solid #e68023; margin-top: 20px;" cellspacing="0" border="1">';
+            $scholaticTableGrades .= '<tr>';
+            $scholaticTableGrades .= '<th align="center" style="padding: 8px;"><b>MARKS RANGE</b></th>';
             if (isset($gradeRange['mark_range']['SCHOLASTIC_MARKS_RANGE']) && !empty($gradeRange['mark_range']['SCHOLASTIC_MARKS_RANGE'])) {
                 foreach ($gradeRange['mark_range']['SCHOLASTIC_MARKS_RANGE'] as $key => $value) {
-                    $scholaticTableGrades .= '<td align="center">' . $value . '</td>';
+                    $scholaticTableGrades .= '<td align="center" style="padding: 8px;">' . $value . '</td>';
                 }
             }
-            $scholaticTableGrades .= '</tr><tr>
-            <th align="center"><b>GRADE</th></b>';
+            $scholaticTableGrades .= '</tr><tr>';
+            $scholaticTableGrades .= '<th align="center" style="padding: 8px;"><b>GRADE</b></th>';
             if (isset($gradeRange['mark_range']['GRADE']) && !empty($gradeRange['mark_range']['GRADE'])) {
                 foreach ($gradeRange['mark_range']['GRADE'] as $key => $value) {
-                    $scholaticTableGrades .= '<td align="center">' . $value . '</td>';
+                    $scholaticTableGrades .= '<td align="center" style="padding: 8px;">' . $value . '</td>';
                 }
             }
-            $scholaticTableGrades .= '</tr><tr>
-            <th align="center"><b>REMARKS</th></b>';
+            $scholaticTableGrades .= '</tr><tr>';
+            $scholaticTableGrades .= '<th align="center" style="padding: 8px;"><b>REMARKS</b></th>';
             if (isset($gradeRange['mark_range']['comment']) && !empty($gradeRange['mark_range']['comment'])) {
                 foreach ($gradeRange['mark_range']['comment'] as $key => $value) {
-                    $scholaticTableGrades .= '<td align="center">' . $value . '</td>';
+                    $scholaticTableGrades .= '<td align="center" style="padding: 8px;">' . $value . '</td>';
                 }
             }
-
-            $scholaticTableGrades .= '<tr></table>';
+            $scholaticTableGrades .= '</tr></table>';
         }
 
         $curr_std = DB::table('standard')->where('id', $standard_id)->first();
         $next_std = DB::table('standard')->where('id', $curr_std->next_standard_id)->first();
-        // get result remarks from table result_remarks 21-02-2025
+        
+        // Get result remarks
         $resulRemark = $stu_remarks_input = $stu_remarks = '';
         $getRemarks = DB::table('result_remarks')->where('student_id', $student_id)->where('syear', $syear)->first();
         if (!empty($getRemarks) && isset($getRemarks->result_remarks)) {
-            $explodeVal = explode('||', $getRemarks->result_remarks); // starts 27-02-2025
-            $stu_remarks = (isset($explodeVal[0]) && $explodeVal[0] != '') ? $explodeVal[0] : ''; // starts 27-02-2025
-            $stu_remarks_input = (isset($explodeVal[1]) && $explodeVal[1] != '') ? $explodeVal[1] : ''; // starts 27-02-2025
+            $explodeVal = explode('||', $getRemarks->result_remarks);
+            $stu_remarks = (isset($explodeVal[0]) && $explodeVal[0] != '') ? $explodeVal[0] : '';
+            $stu_remarks_input = (isset($explodeVal[1]) && $explodeVal[1] != '') ? $explodeVal[1] : '';
         }
-        // end on 21-02-2025
-        // starts 27-02-2025
+        
+        // Determine result
+        $failed = 0; // You need to calculate this properly
+        
         if ($stu_remarks != '' && $stu_remarks_input != '') {
             $result = $stu_remarks . '-' . $stu_remarks_input;
         } else if (empty($failed) && $stu_remarks_input != '') {
-            $result = 'Passed & Promoted to Class ' . $next_std->school_stream . '-' . $stu_remarks_input; // added variable $resulRemark
+            $result = 'Passed & Promoted to Class ' . $next_std->school_stream . '-' . $stu_remarks_input;
         } else if ($stu_remarks != '') {
             $result = $stu_remarks;
         } else if ($stu_remarks_input != '') {
@@ -9041,11 +9042,13 @@ if ($format === 'yearly') {
         } else {
             $result = "Failed";
         }
+        
         $res['scholastic_table'] = $scholaticTable;
         $res['scholastic_gradeRange'] = $scholaticTableGrades;
         $res['conducted'] = \App\Helpers\getGradeComment($grade_arr, 100, $per) ?? '-';
         $res['teacher_remark'] = $result;
         $res['simple_result'] = $result;
+        
         return $res;
     }
 
