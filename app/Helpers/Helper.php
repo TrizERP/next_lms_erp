@@ -2915,5 +2915,19 @@ if (!function_exists('get_string')) {
         }
     }
 
-
+    // added by uma get data from any table 
+   if (!function_exists('getTableFieldFromId')) {
+    function getTableFieldFromId($table,$getfield,$id,$fromField=''){
+        $data = DB::table($table)
+            ->when($fromField!='',function($q)use($fromField,$id){
+                $q->where($fromField,$id);
+            },function($q)use($id){
+                $q->where('id',$id);
+            })
+            // ->where('id', $id)
+            ->select($getfield)
+            ->first();
+        return $data->$getfield ?? '-';
+    }
+   }
 }

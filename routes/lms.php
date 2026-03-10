@@ -53,6 +53,8 @@ use App\Http\Controllers\lms\curriculum\curriculumLessonplanController;
 use App\Http\Controllers\lms\library\skillLibraryController;
 use App\Http\Controllers\lms\library\H5PController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\lms\h5p\H5PIndexController;
+use App\Http\Controllers\lms\h5p\H5PScenarioController;
 
 Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
     Route::get('o-net-data-category',[\App\Http\Controllers\lms\ONetOnlineDataController::class,'index'])->name('o-net-data-category.index');
@@ -294,6 +296,10 @@ Route::post('/set-book-session',[contentController::class,'setBookSession'])->na
 
 Route::get('/download-File', [contentLibraryController::class, 'downloadFile'])->name('downloadFile');
 
+Route::prefix('h5p')->group(function () {
+    Route::resource('html_contents',H5PIndexController::class);
+    Route::resource('scenario_based',H5PScenarioController::class);
+});
 // use App\Http\Controllers\lms\Neo4jSyncController;
 // use App\Http\Controllers\lms\GraphController;
 // use App\Http\Controllers\lms\RecommendationController;
