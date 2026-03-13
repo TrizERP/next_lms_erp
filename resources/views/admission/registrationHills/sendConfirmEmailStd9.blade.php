@@ -253,7 +253,7 @@ body, table, td, div, p {font-family: Arial, Helvetica, sans-serif !important;}
     <table style="width:100%; border:2px solid #000; border-collapse:collapse; margin:15px 0;">
       <tr style="background:#f0e8e8;">
         <th style="border:2px solid #000; padding:10px; text-align:center;">1st Quarter Provisional Tuition Fees</th>
-        <th style="border:2px solid #000; padding:10px; text-align:center;">Elective Processing Charges, Analysis & Evaluation Charges</th>
+        <th style="border:2px solid #000; padding:10px; text-align:center;">One-Time Provisional  Admission Fees</th>
         <th style="border:2px solid #000; padding:10px; text-align:center;">Total Provisional Fees to be paid at time of  the admission</th>
       </tr>
       <tr>

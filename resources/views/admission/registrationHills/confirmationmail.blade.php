@@ -357,7 +357,7 @@ body, table, td, div, p {font-family: Arial, Helvetica, sans-serif !important;}
                                                     1st Quarter Provisional Tuition Fees </td>
                                                 <td width="33%"
                                                     style="border:2px solid #000000; padding:10px; text-align:center; font-weight:bold; font-family: Arial, sans-serif;">
-                                                    Elective Processing Charges, Analysis & Evaluation Charges</td>
+                                                    One time  Provisional Admission Fees</td>
                                                 <td width="34%"
                                                     style="border:2px solid #000000; padding:10px; text-align:center; font-weight:bold; font-family: Arial, sans-serif;">
                                                     Total provisional fees to be paid at time of  the admission</td>
