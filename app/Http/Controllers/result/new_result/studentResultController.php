@@ -4433,7 +4433,7 @@ if (isset($attendance['table'])) {
         //    standar grade array 
         $grade_arr_mmis = $this->getGradeScale($standard_id, '');
         // scholastic table started 
-        $table = '<style>.data_center{text-align:center !important;}</style><table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0"  border="1">
+        $table = '<style>.data_center{text-align:center !important;}</style><table style="width: 100%;border-collapse:collapse; border:1px solid #000;" border="1">
         <thead>
             <tr>
                 <th rowspan="2" class="data_center"><b>Subjects</b></th>';
@@ -4639,7 +4639,11 @@ if (isset($attendance['table'])) {
                     for ($i = 0; $i < count($term_exam_titles); $i++) {
                         $table .= '<td class="data_center">-</td>';
                     }
+                    if($val->subject_name == 'ART & CRAFT'){
+                    $table .= '<td class="data_center all_mark"'.$ob_main_mark.'-'.$total_marks.'><b>' . Helpers::getMarkGrade_term2($ob_main_mark,$total_marks) . "</b></td>";
+                    }else{
                     $table .= '<td class="data_center all_mark"'.$ob_main_mark.'-'.$total_marks.'><b>' . $this->getGrade($grade_arr_mmis, $total_marks, $ob_main_mark) . '</b></td>';
+                    }
                 }
 
                 $both_term_ob_mark += $obtained_mark_formatted;
@@ -4650,7 +4654,9 @@ if (isset($attendance['table'])) {
             }
             // get percentage 
             // echo "<pre>";print_r($total_mark);exit;
-            $both_term_ob_mark = round((100*$both_term_ob_mark/$both_term_to_mark),0);
+            $both_term_ob_mark = ($both_term_to_mark > 0) 
+                ? round((100 * $both_term_ob_mark / $both_term_to_mark), 0) 
+                : 0;
             $both_term_to_mark = 100;
 
             $subTot = isset($subjectTot[$val->subject_id]) ? $subjectTot[$val->subject_id] : 0;
@@ -4661,7 +4667,12 @@ if (isset($attendance['table'])) {
             else{
                 $table .= '<td class="data_center grade_of_both"'.$both_term_ob_mark.'>-</td>';   
             }
-            $table .= '<td class="data_center"'.$subTot.'-'.$both_term_ob_mark.'-'.$both_term_to_mark.'><b>' . $this->getGrade($grade_arr_mmis, $both_term_to_mark, $both_term_ob_mark) . '</b></td>';
+
+            if($val->subject_name == 'ART & CRAFT'){
+                $table .= '<td class="data_center"'.$subTot.'-'.$both_term_ob_mark.'-'.$both_term_to_mark.'><b>' . Helpers::getMarkGrade_term2($ob_main_mark,$total_marks) . '</b></td>';
+            }else{
+                $table .= '<td class="data_center"'.$subTot.'-'.$both_term_ob_mark.'-'.$both_term_to_mark.'><b>' . $this->getGrade($grade_arr_mmis, $both_term_to_mark, $both_term_ob_mark) . '</b></td>';
+            }
 
             if($val->elective_subject != 'Yes'){
                 $sub_per = $this->getPer($both_term_ob_mark, $both_term_to_mark);
@@ -4712,10 +4723,10 @@ if (isset($attendance['table'])) {
         $res['term2_remark'] = $att['anual'] ?? '-';
 //      echo "<pre>";print_r($att);exit();
 
-        $table .= '<br/><table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" border="1">';
+        $table .= '<br/><table style="width: 100%;border-collapse:collapse; border:1px solid #000;" border="1">';
         $table .= '<tr>';
-        $table .= '<td>Total Marks Obtained : <b>'.$get_all_ob_mark.'/'.$get_all_tot_mark.'</b></td>';
-        $table .= '<td>Percentage : <b>'.round($per, 1) . '%</b></td>';
+        $table .= '<td>Total Marks Obtained : <b>'.$get_all_ob_mark.' / '.$get_all_tot_mark.'</b></td>';
+        $table .= '<td>Percentage : <b>'.number_format($per, 1) . ' %</b></td>';
         $table .= '<td>Overall Grade : <b>'.$this->getGrade($grade_arr_mmis, $get_all_tot_mark, $get_all_ob_mark).'</b></td>';
         $table .= '<tr/>';
         $table .= '<tr>';
@@ -6938,116 +6949,159 @@ if (isset($attendance['table'])) {
         $syear = session()->get('syear');
         $sub_institute_id = session()->get('sub_institute_id');
 
-            $extra_os = "rce.term_id = 159";
-            $extra_term = "term_id = 159";
-            $extra_exam = 'comark.term_id=159';
+        $extra_os = "rce.term_id = 159";
+        $extra_term = "term_id = 159";
+        $extra_exam = "comark.term_id = 159";
 
-        // get term_name 
-        $term_name = DB::table('academic_year')->whereRaw($extra_term)->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->get()->toArray();
+        /* ---------- TERM NAME ---------- */
 
-        // get grade if mark 
-        $sql_mark_grade = "select * from result_co_scholastic where sub_institute_id = " . $sub_institute_id . " and " . $extra_term . " ";
+        $term_name = DB::table('academic_year')
+            ->whereRaw($extra_term)
+            ->where([
+                'sub_institute_id' => $sub_institute_id,
+                'syear' => $syear
+            ])
+            ->get()
+            ->toArray();
+
+        /* ---------- CHECK MARK TYPE ---------- */
+
+        $sql_mark_grade = "select * from result_co_scholastic 
+                           where sub_institute_id = ".$sub_institute_id." 
+                           and ".$extra_term;
+
         $ret_mark_grade = DB::select(DB::raw($sql_mark_grade));
 
         if (count($ret_mark_grade) > 0) {
+
             $type = $ret_mark_grade[0]->mark_type;
+
             if ($type == "GRADE") {
+
                 $ret_data = DB::table('result_co_scholastic_marks_entries as comark')
-                    ->selectRaw(
-                        'comark.student_id,comark.co_scholastic_id,co.parent_id,comark.term_id,cop.title as parent_title,co.title as child_title,
-                  if(comark.grade=0,comark.points,cograde.title) obtain_grade,co.max_mark'
-                    )
-                    ->leftjoin('result_co_scholastic_grades as cograde', 'cograde.id', '=', 'comark.grade')
-                    ->join('result_co_scholastic as co', 'co.id', '=', 'comark.co_scholastic_id')
-                    ->join('result_co_scholastic_parent as cop', 'cop.id', '=', 'co.parent_id')
-                    ->where('comark.syear', $syear)
+                    ->selectRaw("
+                        comark.student_id,
+                        comark.co_scholastic_id,
+                        co.parent_id,
+                        comark.term_id,
+                        cop.title as parent_title,
+                        co.title as child_title,
+                        if(comark.grade=0,comark.points,cograde.title) obtain_grade,
+                        co.max_mark
+                    ")
+                    ->leftJoin('result_co_scholastic_grades as cograde','cograde.id','=','comark.grade')
+                    ->join('result_co_scholastic as co','co.id','=','comark.co_scholastic_id')
+                    ->join('result_co_scholastic_parent as cop','cop.id','=','co.parent_id')
+                    ->where('comark.syear',$syear)
                     ->whereRaw($extra_exam)
-                    ->where('comark.standard_id', $standard_id)
-                    ->where('co.standard_id', $standard_id)
-                    ->where('comark.student_id', $student_id)
-                    ->where('comark.sub_institute_id', $sub_institute_id)
-                    ->orderBy('comark.student_id')
+                    ->where('comark.standard_id',$standard_id)
+                    ->where('co.standard_id',$standard_id)
+                    ->where('comark.student_id',$student_id)
+                    ->where('comark.sub_institute_id',$sub_institute_id)
                     ->orderBy('cop.sort_order')
                     ->orderBy('co.sort_order')
-                    ->orderBy('comark.term_id')
                     ->get();
-
-                // for disiplins 
-                $grade_scale = 7;
             }
         }
-        $get_grade = DB::table('result_co_scholatic_range')->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->get();
-        $co_data = [];
-        $dis_data = [];
-        $counter = 1;
-        $width = '';
-        $width = '';
 
-        if (isset($ret_data)) {
-            foreach ($ret_data as $item) {
+        /* ---------- GRADE RANGE ---------- */
+
+        $get_grade = DB::table('result_co_scholatic_range')
+            ->where([
+                'sub_institute_id'=>$sub_institute_id,
+                'syear'=>$syear
+            ])
+            ->get();
+
+        /* ---------- PREPARE DATA ---------- */
+
+        $co_data = [];
+
+        if(isset($ret_data)){
+
+            foreach($ret_data as $item){
+
                 $obtainGrade = $item->obtain_grade;
-                // Check if the obtain_grade contains digits
-                if (preg_match('/\d/', $obtainGrade) && is_numeric($obtainGrade)) {
-                    $item->obtain_grade = $obtainGrade;
-                    $item->obtain_grade = $this->getGrade($get_grade, $item->max_mark, $obtainGrade, "co_scholastic");
-                } else {
-                    $item->obtain_grade = $obtainGrade;
+
+                if(preg_match('/\d/',$obtainGrade) && is_numeric($obtainGrade)){
+
+                    $item->obtain_grade = $this->getGrade(
+                        $get_grade,
+                        $item->max_mark,
+                        $obtainGrade,
+                        "co_scholastic"
+                    );
+
                 }
+
                 $co_data[] = $item;
             }
         }
-        // dicipline 
-        if (isset($ret_data_disipline)) {
-            foreach ($ret_data_disipline as $item) {
-                $dis_data[] = $item;
-            }
-        }
-        $coHead = '';
-        if ($standard_id < 106 && $sub_institute_id == 47) {
-            $coHead = '[on a 3-point (A-C) Grading Scale]';
-        } elseif ($sub_institute_id == 76) {
-            $coHead = '[on a 5-point (A-E) Grading Scale]';
-        }
+
+        /* ---------- TABLE GENERATION ---------- */
+
         $co_scholastic = '';
-        if (!empty($co_data)) {
-            $co_scholastic = '<div style="display:block !important"><div style="width:100%">
-            <table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" cellpadding="0" border="1">
-                <thead>
-                    <tr>
-                        <th style="width:80%"><b>Co-Scholastic Areas: ' . $coHead . '</b></th>'; // [on a 3-point (A-C) Grading Scale]
-            if (count($term_name) > 1) {
-                foreach ($term_name as $keys => $terms) {
-                    $co_scholastic .= '<th class="data_center ' . $terms->term_id . '"><b>' . $terms->title . '</b></th>';
-                    $term_ids[] = $terms->term_id;
-                }
-            } else {
-                $co_scholastic .= '<th class="data_center"><b>Grade</b></th>';
-            }
-            '</tr>  
-                </thead>
-                <tbody>';
-            $counter = 0;
 
-            $groupedData = [];
-            foreach ($co_data as $key => $value) {
-                $groupedData[$value->child_title][$value->term_id] = $value->obtain_grade;
+        if(!empty($co_data)){
+
+            /* GROUP BY PARENT */
+
+            $grouped = [];
+
+            foreach($co_data as $row){
+                $grouped[$row->parent_title][] = $row;
             }
 
-            foreach ($groupedData as $childTitle => $termGrades) {
+            $parents = array_keys($grouped);
+
+            /* FIND MAX ROWS */
+
+            $maxRows = 0;
+
+            foreach($grouped as $items){
+                $maxRows = max($maxRows,count($items));
+            }
+
+            $co_scholastic .= '<table style="width:100%;border-collapse:collapse;border:1px solid #000;" border="1">';
+
+            /* HEADER */
+
+            $co_scholastic .= '<thead><tr>';
+
+            foreach($parents as $parent){
+                $co_scholastic .= '<th colspan="2" style="text-align:center;font-weight:bold">'.$parent.'</th>';
+            }
+
+            $co_scholastic .= '</tr></thead><tbody>';
+
+            /* ROWS */
+
+            for($i=0;$i<$maxRows;$i++){
+
                 $co_scholastic .= '<tr>';
-                $co_scholastic .= '<td class="' . $value->co_scholastic_id . '">' . $childTitle . '</td>';
 
-                foreach ($term_name as $keys => $terms) {
-                    $grade = $termGrades[$terms->term_id] ?? '-';
-                    $co_scholastic .= '<td class="data_center co_term-' . $terms->term_id . ' mterm-' . $terms->term_id . ' ">' . $grade . '</td>';
+                foreach($parents as $parent){
+
+                    if(isset($grouped[$parent][$i])){
+
+                        $title = ($i+1).') '.$grouped[$parent][$i]->child_title;
+                        $grade = $grouped[$parent][$i]->obtain_grade;
+
+                    }else{
+
+                        $title = '';
+                        $grade = '';
+                    }
+
+                    $co_scholastic .= '<td style="width:40%;padding:4px">'.$title.'</td>';
+                    $co_scholastic .= '<td style="width:10%;text-align:center">'.$grade.'</td>';
                 }
 
                 $co_scholastic .= '</tr>';
             }
-        }
 
-        $co_scholastic .= '</tbody></table></div>';
-        $co_scholastic .= '</div>';
+            $co_scholastic .= '</tbody></table>';
+        }
 
         $res['co_scholastic'] = $co_scholastic ?? '';
 
@@ -7113,7 +7167,6 @@ if (isset($attendance['table'])) {
 
         $getHillsOptional = [254];
         $getMMISOptional = [47];
-        $getSSMISSIONOptional = [76];
         // only for hills
         if (in_array($sub_institute_id, $getHillsOptional)) {
             $get_subject = array_filter($get_subject, function ($value) use ($student_id, $syear, $sub_institute_id) {
@@ -7140,34 +7193,6 @@ if (isset($attendance['table'])) {
             $get_subject = array_filter($get_subject, function ($subject) use ($student_id, $syear, $sub_institute_id) {
                 $isElectiveSubject = $subject->elective_subject === 'Yes' && $subject->allow_grades === 'Yes' && $subject->optional_type != 1;
                 $check_optional_subject_with_student = DB::table('student_optional_subject as sos')
-                    ->where('sos.student_id', $student_id)
-                    ->where('sos.subject_id', $subject->subject_id)
-                    ->where('sos.syear', $syear)
-                    ->count();
-
-                // Conditional checks based on sub_institute_id and subject type
-                if ($isElectiveSubject) {
-                    return $sub_institute_id == 47 ? $check_optional_subject_with_student < 0 : $check_optional_subject_with_student > 0;
-                } elseif ($subject->optional_type == 1) {
-                    return $check_optional_subject_with_student > 0;
-                }
-
-                return true;
-            });
-
-            $get_subject = array_values($get_subject);
-        }
-        //only for SSMISSION
-        else if (in_array($sub_institute_id, $getSSMISSIONOptional)) {
-            //Filter subjects based on elective and optional conditions
-            $get_subject = array_filter($get_subject, function ($subject) use ($student_id, $syear, $sub_institute_id) {
-                $isElectiveSubject = $subject->elective_subject === 'Yes' && $subject->allow_grades === 'Yes' && $subject->optional_type != 1;
-                $check_optional_subject_with_student = DB::table('student_optional_subject as sos')
-                    ->join('result_marks as rm', 'sos.student_id', '=', 'rm.student_id')
-                    ->join('result_create_exam as rc', function ($join) {
-                        $join->on('rc.subject_id', '=', 'sos.subject_id')
-                            ->on('rc.id', '=', 'rm.exam_id');
-                    })
                     ->where('sos.student_id', $student_id)
                     ->where('sos.subject_id', $subject->subject_id)
                     ->where('sos.syear', $syear)

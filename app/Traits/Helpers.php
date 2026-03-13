@@ -109,4 +109,22 @@ trait Helpers
             return 'E';
         }
     }
+    public static function getMarkGrade_term2($obt,$total)
+    {
+        $mark = round((100*$obt/$total),0);
+        
+        if (!is_numeric($mark) || $mark === null || $mark === '') {
+            $mark = 0; // default value if mark is invalid
+        }
+        
+        //$mark = round(($mark / 2), 0);
+
+        if ($mark >= 70 && $mark <= 100) {
+            return 'A';
+        } elseif ($mark >= 40 && $mark <= 69) {
+            return 'B';
+        } else {
+            return 'C';
+        }
+    }
 }
