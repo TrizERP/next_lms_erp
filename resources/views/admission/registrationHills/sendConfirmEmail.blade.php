@@ -219,7 +219,7 @@
            <table style="border: 2px solid black; border-collapse: collapse;" align="center">
             <tr>
                 <th style="border: 2px solid black; padding: 8px; color:black">1<sup>st</sup> Quarter Provisional Tuition Fees </th>
-                <th style="border: 2px solid black; padding: 8px; color:black">One time  Provisional Admission Fees</th>
+                <th style="border: 2px solid black; padding: 8px; color:black">Elective Processing Charges, Analysis & Evaluation Charges</th>
                 <th style="border: 2px solid black; padding: 8px; color:black">* Total provisional fees to be paid at time of the admission</th>
             </tr>
             <tr>
