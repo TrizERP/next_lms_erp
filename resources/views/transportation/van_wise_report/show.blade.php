@@ -68,8 +68,19 @@
                                 </select>
                             </div>
                             <div class="col-md-4 form-group">
-                                <h4>Stop :</h4>
-                                <select name="stop" id="stop" class="form-control shift">
+                                <h4>From Stop :</h4>
+                                <select name="from_stop" id="from_stop" class="form-control shift">
+                                    <option value="">--Select--</option>
+                                    <?php
+                                    foreach ($data['data']['ddStop'] as $id => $arr) {
+                                        echo "<option value='$id'>$arr</option>";
+                                    }
+                                    ?>
+                                </select>
+                            </div>
+                            <div class="col-md-4 form-group">
+                                <h4>To Stop :</h4>
+                                <select name="to_stop" id="to_stop" class="form-control shift">
                                     <option value="">--Select--</option>
                                     <?php
                                     foreach ($data['data']['ddStop'] as $id => $arr) {
