@@ -120,8 +120,11 @@ class van_wise_report_controller extends Controller
         if (isset($_REQUEST['route']) && $_REQUEST['route'] != '') {
             $where .= " and tr.id ='".$_REQUEST['route']."' ";
         }
-        if (isset($_REQUEST['stop']) && $_REQUEST['stop'] != '') {
-            $where .= " and st.id ='".$_REQUEST['stop']."'  ";
+        if (isset($_REQUEST['from_stop']) && $_REQUEST['from_stop'] != '') {
+            $where .= " and tm.from_stop ='".$_REQUEST['from_stop']."'  ";
+        }
+        if (isset($_REQUEST['to_stop']) && $_REQUEST['to_stop'] != '') {
+            $where .= " and tm.to_stop ='".$_REQUEST['to_stop']."'  ";
         }
 
         $student_data = DB::table("tblstudent as ts")
@@ -146,8 +149,11 @@ class van_wise_report_controller extends Controller
             ->join('transport_school_shift as ss', function ($join) use ($search) {
                 $join->whereRaw("ss.id = tm.".$search."_shift_id");
             })
-            ->join('transport_stop as st', function ($join) use ($search) {
-                $join->whereRaw("st.id = tm.".$search."_stop");
+            ->join('transport_stop as from_stop', function ($join) {
+                $join->whereRaw("from_stop.id = tm.from_stop");
+            })
+            ->join('transport_stop as to_stop', function ($join) {
+                $join->whereRaw("to_stop.id = tm.to_stop");
             })
             ->join('transport_route_bus as rb', function ($join) {
                 $join->whereRaw("rb.bus_id = tv.id");
@@ -161,8 +167,8 @@ class van_wise_report_controller extends Controller
             ->leftJoin('transport_driver_detail as cd', function ($join) {
                 $join->whereRaw("cd.id = tv.conductor")->where('cd.status', 'Active');
             })
-            ->selectRaw("ts.id AS student_id,CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name) name, 
-    concat(s.name,'/',d.name) as stddiv,ts.mobile,ts.enrollment_no,ts.address, tr.route_name, ss.shift_title,tv.title as bus_name, st.stop_name,
+            ->selectRaw("ts.id AS student_id,CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name) name,
+    concat(s.name,'/',d.name) as stddiv,ts.mobile,ts.enrollment_no,ts.address, tr.route_name, ss.shift_title,tv.title as bus_name, from_stop.stop_name as from_stop_name, to_stop.stop_name as to_stop_name,
     dd.first_name driver, cd.first_name conductor, tm.amount as van_vise_amount")
             ->whereRaw($where)
             ->groupBy('student_id')
