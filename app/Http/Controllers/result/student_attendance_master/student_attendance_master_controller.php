@@ -139,17 +139,17 @@ class student_attendance_master_controller extends Controller {
                 $responce_arr['stu_data'][$id]['teacher_remark'] = $temp_arr["teacher_remark"];
             } else {
                 $responce_arr['stu_data'][$id]['att'] = 0;
-                $responce_arr['stu_data'][$id]['day'] = 0;
+                $responce_arr['stu_data'][$id]['day'] = $working_day[0]['total_working_day'];
                 $responce_arr['stu_data'][$id]['per'] = 0;
                 $responce_arr['stu_data'][$id]['remark'] = "";
                 $responce_arr['stu_data'][$id]['teacher_remark'] = "";
             }
-            //$responce_arr['stu_data'][$id]['att_out'] = $working_day[0]['total_working_day'];
+            $responce_arr['stu_data'][$id]['att_out'] = $working_day[0]['total_working_day'];
             $responce_arr['stu_data'][$id]['student_id'] = $arr['student_id'];
             
     
-            $total_working_day = $working_day[0]['total_working_day'];
-            $responce_arr['stu_data'][$id]['att_out'] = 113; 
+            //$total_working_day = $working_day[0]['total_working_day'];
+            //$responce_arr['stu_data'][$id]['att_out'] = 113; 
 
         }
         //        echo "<pre>";
