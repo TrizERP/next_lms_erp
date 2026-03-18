@@ -111,11 +111,14 @@ trait Helpers
     }
     public static function getMarkGrade_term2($obt,$total)
     {
-        $mark = round((100*$obt/$total),0);
+        //$mark = round((100*$obt/$total),0);
+        $mark = ($total > 0) 
+            ? round((100 * $obt / $total), 0) 
+            : 0;
         
-        if (!is_numeric($mark) || $mark === null || $mark === '') {
+        /*if (!is_numeric($mark) || $mark === null || $mark === '') {
             $mark = 0; // default value if mark is invalid
-        }
+        }*/
         
         //$mark = round(($mark / 2), 0);
 
