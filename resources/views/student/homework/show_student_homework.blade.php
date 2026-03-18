@@ -30,7 +30,7 @@
                 <form action="{{ route('student_homework.create') }}">
                     @csrf
                     <div class="row">
-                        {{ App\Helpers\SearchChain('3','required','grade,std,div',$grade_id,$standard_id,$division_id) }}
+                        {{ App\Helpers\SearchChain('3',' ', 'grade,std,div',$grade_id,$standard_id,$division_id) }}
                         
                         <div class="col-md-3 form-group">
                             <label for="subject">Select Subject:</label>
@@ -223,6 +223,7 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
+    
     $(document).ready(function() {
         var standardId = $('#standard').val() || "{{ $standard_id ?? '' }}";
         if (standardId) getSubject(standardId);
