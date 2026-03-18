@@ -123,7 +123,7 @@ class donationController extends Controller
             $res['message'] = 'Failed to Find Details !';
         }
 
-        $res['donation_head'] = ['CORP./CONST.'=>'CORP./CONST.','EDUCATION'=>'EDUCATION','FOOD'=>'FOOD','OTHERS'=>'OTHERS'];
+        $res['donation_head'] = ['CORP./CONST.'=>'CORP./CONST.','EDUCATIONAL,SOCIAL'=>'EDUCATIONAL,SOCIAL','FOOD'=>'FOOD','OTHERS'=>'OTHERS'];
 
         if($sub_institute_id==76){
             $res['paymentModes'] = ['Cash'=>'CASH','Cheque'=>'CHEQUE','POS'=>'POS','Online'=>'ONLINE','UPI'=>'UPI','RTGS/NEFT'=>'RTGS/NEFT'];
