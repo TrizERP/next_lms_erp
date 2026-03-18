@@ -6141,6 +6141,16 @@ $table .= '</div>';
                         if ($value == "Yearly Exam") {
                             $infoTotPracticalOb = ($infoTotPractical > 0) ? ($infoTotPracticalM / $infoTotPractical) * 50 : 0;
                         }
+                        $table .= '<td  class="data_center">' . $tdVal . '</td>';
+                    }
+
+                    if ($value == "Periodic Test") {
+                        $infoTotTheoryOb = ($infoTotTheory > 0) ? ($infoTotTheoryM / $infoTotTheory) * 50 : 0;
+                        $infoTotTheoryOb = round($infoTotTheoryOb,0);
+                    }
+                    if ($value == "Yearly Exam") {
+                        $infoTotPracticalOb = ($infoTotPractical > 0) ? ($infoTotPracticalM / $infoTotPractical) * 50 : 0;
+                        $infoTotPracticalOb = round($infoTotPracticalOb,0);
                     }
                 }
 
