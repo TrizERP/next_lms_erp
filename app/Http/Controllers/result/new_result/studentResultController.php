@@ -122,7 +122,7 @@ class studentResultController extends Controller
             }
             $new_html_content = '<div id="' . $value['id'] . '"><div ' . $class . ' style="' . $style . '">' . $this->create_html_content($syear, $sub_institute_id, $html_content, $value, $template, $result_trust, $format, ($srNo)) . '</div></div>';
             $new_html .= $new_html_content;
-            $institutes = [47,76,61,254];
+            $institutes = [47,76,61];//,254
             if (in_array($sub_institute_id, $institutes)) {
                 $all_stud_html[$value['roll_no']] = $new_html_content;
             } else {
@@ -3333,6 +3333,10 @@ if (isset($attendance['table'])) {
         $res['remark'] = $remark[0] ?? '';
         $res['anual'] = $remark[1] ?? '';
         $res['attendance'] = $sim_att . '/' . $sim_twd;
+        if($sub_institute_id == 76){
+            $total_working_days_present = $this->tc_information($sub_institute_id, $syear, $student_id, $sim_att, 'total_working_days_present');
+            $total_working_days = $this->tc_information($sub_institute_id, $syear, $student_id, $sim_twd, 'total_working_days');
+        }
 
         if ($type == "attendance_hills") {
             $get_term = DB::table('academic_year')->selectRaw('group_concat(id) as id,group_concat(term_id) as term_id,group_concat(title) as title,group_concat(start_date) as start_date,group_concat(end_date) as end_date,group_concat(post_start_date) as post_start_date,group_concat(post_end_date) as post_end_date')->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->groupBy('syear')->first();

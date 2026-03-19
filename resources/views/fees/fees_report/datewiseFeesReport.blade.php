@@ -100,10 +100,7 @@
                     <div class="schoolData" style="text-align:center;">
                         <h4 style="margin:0px;font-size: 22px;"><b>{{$instituteName}}</b></h4>
                         <p style="margin:0px;font-size: 18px;"><b>{{$data['school_details']->receipt_line_3}}</b></p>
-                        <p style="margin:0px;font-size: 14px;">
-                        <b> {{--DATE : {{date('d-m-y',strtotime($from_date))}} to {{date('d-m-y',strtotime($to_date))}}--}}
-                            ACADEMIC YEAR : {{$academicYear}}
-                        </b></p>
+                        <p style="margin:0px;font-size: 14px;"><b>ACADEMIC YEAR : {{$academicYear}}</b></p>
                     </div>
                 </div>
             @endif
