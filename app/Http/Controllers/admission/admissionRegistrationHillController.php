@@ -178,7 +178,31 @@ class admissionRegistrationHillController extends Controller
                     $nextYear = ((int) substr($syear, 2, 2)+1);
                     $getStandard = DB::table('standard')->where(['id'=>$data['admission_standard'],'sub_institute_id'=>$sub_institute_id])->first();
                     $standard_id = $getStandard->id?? '';
-                    if(in_array($standard_id,[3291, 3308])){
+                    
+                    // Check if this is admission ID 3300,3306 - send Std 11 Commerce & Arts provisional admission email
+                    if(in_array($standard_id, [3300, 3306])) {
+                        $htmlContent = view('admission.registrationHills.provisionalAdmissionStd11', [
+                            'page_type'=>'confirm',
+                            'conf_date' => $condate,
+                            'conf' => $data["conf"] ?? '',
+                            'parent_time' => '9:00 a.m. to 11:00 am OR 2:30 p.m. to 4:30 p.m.',
+                            'aca_year'    => $syear.'-'.$nextYear,
+                            'admission_std'    => $getStandard->name ?? '-',
+                            'medium'    => $getStandard->medium ?? '-'
+                        ])->render();
+                    }
+                    elseif(in_array($standard_id, [3305])){
+                        $htmlContent = view('admission.registrationHills.11scienceAdmission', [
+                            'page_type'=>'confirm',
+                            'conf_date' => $condate,
+                            'conf' => $data["conf"] ?? '',
+                            'parent_time' => '9:00 a.m. to 11:00 am OR 2:30 p.m. to 4:30 p.m.',
+                            'aca_year'    => $syear.'-'.$nextYear,
+                            'admission_std'    => $getStandard->name ?? '-',
+                            'medium'    => $getStandard->medium ?? '-'
+                        ])->render();
+                    }
+                    elseif(in_array($standard_id,[3291, 3308])){
                         $htmlContent = view('admission.registrationHills.sendConfirmEmail', [
                             'page_type'=>'confirm',
                             'conf_date' => $condate,

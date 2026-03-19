@@ -37,7 +37,8 @@
                                     <th>Route Name</th>
                                     <th>Shift</th>
                                     <th>Bus</th>
-                                    <th>Stop</th>
+                                    <th>From Stop</th>
+                                    <th>To Stop</th>
                                     <th>Driver</th>
                                     <th>Amount</th>
                                 </tr>
@@ -58,7 +59,8 @@
                                     <td>{{$data->route_name}}</td>
                                     <td>{{$data->shift_title}}</td>
                                     <td>{{$data->bus_name}}</td>
-                                    <td>{{$data->stop_name}}</td>
+                                    <td>{{$data->from_stop_name}}</td>
+                                    <td>{{$data->to_stop_name}}</td>
                                     <td>{{$data->driver}}</td>
                                     <td>{{$data->van_vise_amount}}</td>
                                 </tr>

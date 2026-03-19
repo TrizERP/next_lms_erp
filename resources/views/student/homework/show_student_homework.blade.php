@@ -30,7 +30,7 @@
                 <form action="{{ route('student_homework.create') }}">
                     @csrf
                     <div class="row">
-                        {{ App\Helpers\SearchChain('3','required','grade,std,div',$grade_id,$standard_id,$division_id) }}
+                        {{ App\Helpers\SearchChain('3',' ', 'grade,std,div',$grade_id,$standard_id,$division_id) }}
                         
                         <div class="col-md-3 form-group">
                             <label for="subject">Select Subject:</label>
@@ -80,8 +80,8 @@
                                                 <label for="questionTypes">Select Question Types:</label>
                                                 <select name="question_types[]" id="questionTypes" class="form-control resize" multiple onchange="getQuestionLists();">
                                                     <option value="">Select Question Types</option>
-                                                    @foreach($data['questionTypes'] as $value)
-                                                        <option value="{{$value}}">{{$value}}</option>
+                                                    @foreach($data['questionTypes'] as $key=>$value)
+                                                        <option value="{{$key}}">{{$value}}</option>
                                                     @endforeach
                                                 </select>
                                             </div>
@@ -223,6 +223,7 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
+    
     $(document).ready(function() {
         var standardId = $('#standard').val() || "{{ $standard_id ?? '' }}";
         if (standardId) getSubject(standardId);
@@ -364,7 +365,7 @@
             html += '<div style="flex:1;">';
             html += '<label class="question-label">' + decodeHTMLEntities(q.question_title || 'N/A') + '</label>';
             html += '<p class="question-meta">';
-            html += 'Type: ' + (q.multiple_answer == 1 ? 'Multiple Choice' : 'Narrative') + ' | Marks: ' + (q.points || 'N/A');
+            html += 'Type: ' + (q.multiple_answer == 1 ? 'Multiple Choice' : 'Other') + ' | Marks: ' + (q.points || 'N/A');
             
             // Add eye button and answers panel for multiple choice questions
             if (q.multiple_answer == 1 && q.answers && q.answers.length) {
@@ -453,7 +454,7 @@
         for (var i = 0; i < selectedQuestions.length; i++) {
             var q = selectedQuestions[i];
             prompt += "Q" + (i + 1) + ": " + stripHtmlTags(decodeHTMLEntities(q.question_title || 'N/A')) + "\n";
-            prompt += "   Type: " + (q.multiple_answer == 1 ? 'Multiple Choice Question (MCQ)' : 'Narrative Question') + "\n";
+            prompt += "   Type: " + (q.multiple_answer == 1 ? 'Multiple Choice Question (MCQ)' : 'Other Question') + "\n";
             prompt += "   Marks: " + (q.points || 'N/A') + "\n";
             
             // Only show correct answers for MCQ questions (multiple_answer == 1) in prompt
@@ -505,9 +506,9 @@
         
         if (isChecked) {
             promptText = generateQuestionsPrompt();
-            indicatorText = 'Showing prompt from: <span class="prompt-indicator">Selected Questions (MCQ first, then Narrative)</span>';
+            indicatorText = 'Showing prompt from: <span class="prompt-indicator">Selected Questions (MCQ & Other)</span>';
         } else {
-            promptText = generateTitleDescriptionPrompt();
+            promptTText = generateTitleDescriptionPrompt();
             indicatorText = 'Showing prompt from: <span class="prompt-indicator">Title & Description</span>';
         }
         
