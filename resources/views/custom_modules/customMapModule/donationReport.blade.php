@@ -1,5 +1,10 @@
 @extends('layout')
 @section('container')
+<style>
+    .schoolData{
+        margin-left:12px;
+    }
+</style>
 <div id="page-wrapper">
     <div class="container-fluid">
         <div class="row bg-title">
@@ -15,11 +20,11 @@
         @endif
         <div class="card">
             <form method="GET" action="{{ route('donation_report.index') }}" class="row">
-                <div class="col-md-4 mt-2">
+                <div class="col-md-3 mt-2">
                     <label for="from_date">From Date:</label>
                     <input type="text" class="form-control mydatepicker" id="from_date" name="from_date" value="{{ $data['from_date'] }}">
                 </div>
-                <div class="col-md-4 mt-2">
+                <div class="col-md-3 mt-2">
                     <label for="to_date">To Date:</label>
                     <input type="text" class="form-control mydatepicker" id="to_date" name="to_date" value="{{ $data['to_date'] }}">
                 </div>
@@ -38,15 +43,24 @@
                     <input type="text" class="form-control" pattern="[1-9]{1}[0-9]{9}" name="mobile_number" placeholder="Enter Mobile Number" autocomplete="off" value="{{ $data['mobile_number'] ?? '' }}">
                 </div>
 -->
-                    <div class="col-md-4">
+                    <div class="col-md-3">
+                        <label for="">Donation Head</label>
+                        <select name="donation_head" id="donation_head" class="form-control">
+                        <option value="">-Select Head-</option>
+                        @foreach($data['donation_head'] as $key=>$head)
+                         <option value="{{$key}}" @if($data['selDonationHead']==$key) selected @endif>{{$head}}</option>
+                        @endforeach 
+                        </select>
+                    </div>
+                    <div class="col-md-3">
                         <label for="">Payment Mode</label>
                         <select name="payment_mode" id="payment_mode" class="form-control" required>
-                        <option value="">Select Mode</option>
+                        <option value="">-Select Mode-</option>
                         @foreach($data['payment_mode'] as $key=>$mode)
                          <option value="{{$key}}" @if($data['selPaymentMode']==$key) selected @endif>{{$mode}}</option>
                         @endforeach 
                         </select>
-                    </div>                
+                    </div>
                 <div class="col-md-12 mt-2">
                     <center>
                         <input type="submit" value="Search" class="btn btn-primary" name="Search" id="Search">
@@ -106,12 +120,12 @@
                 @php 
                     $academicYear = session()->get('syear').'-'.(session()->get('syear')+1);
                 @endphp 
-            <div style="width:100%;display:flex;justify-content:center;flex-wrap:wrap;text-align:center;margin-bottom:8px;margin-top:15px">
-                    <div><img style="height:50px;" src="https://erp.triz.co.in/storage/fees/{{$data['school_details']->receipt_logo}}"></div>
-                    <div class="schoolData" style="text-align:left;">
-                        <h4 style="margin:0px;"><b>SHRI SWAMINARAYAN MISSION</b></h4>
-                        <p style="margin:0px;"><b>{{$data['school_details']->receipt_line_3}}</b></p>
-                        <p style="margin:0px;"><b>ACADEMIC YEAR : {{$academicYear}}</b></p>
+            <div style="width:100%;text-align:center;margin-bottom:8px;margin-top:15px">
+                    <!--<div><img style="height:50px;" src="https://erp.triz.co.in/storage/fees/{{$data['school_details']->receipt_logo}}"></div>-->
+                    <div class="schoolData" style="text-align:center;">
+                        <h4 style="margin:0px;font-size: 22px;"><b>SHRI SWAMINARAYAN MISSION</b></h4>
+                        <p style="margin:0px;font-size: 18px;"><b>{{$data['school_details']->receipt_line_3}}</b></p>
+                        <p style="margin:0px;font-size: 14px;"><b>ACADEMIC YEAR : {{$academicYear}}</b></p>
                     </div>
                 </div>
             @endif
@@ -127,7 +141,13 @@
                 <table class="table table-striped">
                     <thead>
                         <tr>
-                            <th colspan="{{$colspan}}" style="text-align:left;"><b><span>DATE : {{ \Carbon\Carbon::parse($date)->format('d/m/Y') }}</span><span style="padding-left:70px;">PAYMENT MODE : {{strtoupper($pay_mode)}}</span><b></th>
+                            <th colspan="{{$colspan}}" style="text-align:left;"><b>
+                                <span>DATE : {{ \Carbon\Carbon::parse($date)->format('d/m/Y') }}</span>
+                                <span style="padding-left:70px;">PAYMENT MODE : {{strtoupper($pay_mode)}}</span>
+                                @if(!empty($data['selDonationHead']))
+                                    <span style="padding-left:70px;">DONATION HEAD : {{$data['selDonationHead']}}</span>
+                                @endif
+                            <b></th>
                         </tr>
                         <tr>
                             <th style="text-align:center;"><b>Sr.NO</b></th>
@@ -136,7 +156,7 @@
                             <th style="text-align:center;"><b>MOBILE</b></th>
                             @if($data['selPaymentMode']!='CASH')
                             <th><b>BANK NAME</b></th>
-                            <th style="text-align:center;"><b>CHEQUE NO.</b></th>
+                            <th style="text-align:center;"><b>CHEQUE/REF NO.</b></th>
                             @endif
                             <!-- <th><b>RECIEVED BY</b></th> -->
                             <th style="text-align:center;"><b>REMARKS</b></th>
@@ -158,17 +178,17 @@
                                 $grandTotal+=$value->donation_amount;
                             @endphp
                             <tr>
-                                <td>{{$key+1}}</td>
-                                <td>{{$value->reciept_no}}</td>
-                                <td>{{ strtoupper($value->full_name)}}</td>
-                                <td>{{ strtoupper($value->mobile_number)}}</td>
+                                <td style="text-align:center;">{{$key+1}}</td>
+                                <td style="padding-left:5px;">{{$value->reciept_no}}</td>
+                                <td style="padding-left:5px;">{{ strtoupper($value->full_name)}}</td>
+                                <td style="padding-left:5px;">{{ strtoupper($value->mobile_number)}}</td>
                                 @if($data['selPaymentMode']!='CASH')
-                                <td>{{$value->bank_name}}</td>
-                                <td>{{$value->cheque_number}}</td>
+                                <td style="padding-left:5px;">{{$value->bank_name}}</td>
+                                <td style="padding-left:5px;">{{$value->cheque_number}}</td>
                                 @endif
                                 {{--<td>{{$value->user_name}}</td>--}}
-                                <td>{{$value->remarks}}</td>
-                                <td>{{$value->donation_amount}}</td>
+                                <td style="padding-left:5px;">{{$value->remarks}}</td>
+                                <td style="padding-left:5px;">{{$value->donation_amount}}</td>
                             </tr>
                             @endforeach
                         <tr>
@@ -233,7 +253,7 @@ document.addEventListener("DOMContentLoaded", function () {
         var printWindow = window.open("", "", "width=800,height=600");
 
         printWindow.document.write('<html><head><title>Print</title>');
-        printWindow.document.write('<style>@page{margin:20px}@media print{ table{border:0.8px solid #ddd;width:100%;} th,td{border:0.8px solid #ddd;padding:0px;font-size:14px;} .schoolData{margin-left:8px;} }</style>');
+        printWindow.document.write('<style>@page{margin:20px}@media print{table{width:100%;border-collapse: collapse;} th,td{border:1px solid #000;padding:0px;font-size:12px;} .schoolData{margin-left:8px;} }</style>');
         printWindow.document.write('</head><body>');
         printWindow.document.write(printContents);
         printWindow.document.write('</body></html>');
