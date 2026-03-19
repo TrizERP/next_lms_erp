@@ -152,6 +152,8 @@
                         <div class="w-100 d-block form-group">
                             <center>
                                 <input type="submit" name="submit" value="Save" class="btn btn-success" >
+                                &nbsp;&nbsp;&nbsp;&nbsp;
+                                <button type="button" class="btn btn-danger" onclick="deleteSelectedStudents()">Delete</button>
                             </center>
                         </div>
 
@@ -426,6 +428,57 @@
             var row = checkbox.closest('tr'); // Get the closest row
             disableInputs($(row)); // Wrap row in jQuery before passing
         });
+    }
+
+    function deleteSelectedStudents() {
+        var selectedStudents = [];
+        $('.ckbox1:checked').each(function() {
+            // Extract student_id from the checkbox name (values[student_id][ckbox])
+            var name = $(this).attr('name');
+            var match = name.match(/values\[(\d+)\]/);
+            if (match) {
+                selectedStudents.push(match[1]);
+            }
+        });
+
+        if (selectedStudents.length === 0) {
+            alert('Please select at least one student to delete.');
+            return;
+        }
+
+        if (confirm('Are you sure you want to delete the mapping for ' + selectedStudents.length + ' student(s)?')) {
+            // Create a hidden form for delete action
+            var form = $('<form>', {
+                action: '{{ route("map_student.bulk-delete") }}',
+                method: 'POST'
+            });
+
+            // Add CSRF token
+            form.append($('<input>', {
+                type: 'hidden',
+                name: '_token',
+                value: '{{ csrf_token() }}'
+            }));
+
+            // Add method spoofing for DELETE
+            form.append($('<input>', {
+                type: 'hidden',
+                name: '_method',
+                value: 'DELETE'
+            }));
+
+            // Add delete_students array
+            selectedStudents.forEach(function(studentId) {
+                form.append($('<input>', {
+                    type: 'hidden',
+                    name: 'delete_students[]',
+                    value: studentId
+                }));
+            });
+
+            // Append form to body and submit
+            form.appendTo('body').submit();
+        }
     }
 
     function disableInputs(row){
