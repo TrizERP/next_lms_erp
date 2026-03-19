@@ -399,4 +399,40 @@ class map_student_controller extends Controller
             return ['status' => 200, 'total_capacity' => $totalCapacity, 'total_remain_capacity' => $remainCapacity];
         }
     }
+
+    /**
+     * Delete selected student mappings
+     */
+    public function destroy(Request $request)
+    {
+        $type = $request->input('type');
+        
+        if (isset($_REQUEST['delete_students']) && is_array($_REQUEST['delete_students'])) {
+            $deletedCount = 0;
+            
+            foreach ($_REQUEST['delete_students'] as $student_id) {
+                $deleted = map_student::where([
+                    "syear"            => session()->get('syear'),
+                    "student_id"       => $student_id,
+                    "sub_institute_id" => session()->get('sub_institute_id'),
+                ])->delete();
+                
+                if ($deleted) {
+                    $deletedCount++;
+                }
+            }
+            
+            $res = [
+                "status_code" => 1,
+                "message"     => "$deletedCount Student(s) Unmapped Successfully",
+            ];
+        } else {
+            $res = [
+                "status_code" => 0,
+                "message"     => "No students selected for deletion",
+            ];
+        }
+
+        return is_mobile($type, "map_student.index", $res, "redirect");
+    }
 }
