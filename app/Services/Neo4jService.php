@@ -2,7 +2,7 @@
 
 namespace App\Services;
 use Illuminate\Support\Facades\Log;
-
+use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\ClientBuilder;
 
 class Neo4jService
@@ -12,32 +12,64 @@ class Neo4jService
     public function __construct()
     {
         $this->client = ClientBuilder::create()
-        ->withDriver('bolt', 'bolt://' . env('NEO4J_USER') . ':' . env('NEO4J_PASSWORD') . '@' . env('NEO4J_HOST') . ':' . env('NEO4J_PORT').'?timeout=12000s')
+        ->withDriver(
+            'neo4j',
+            config('neo4j.uri'),
+            Authenticate::basic(
+                config('neo4j.username'),
+                config('neo4j.password')
+            )
+        )
         ->build();
     }
+
     public function getClient()
     {
         return $this->client;
+    }
+
+    // ✅ ADD THIS METHOD
+    public function testConnection()
+    {
+        try {
+            $result = $this->client->run('RETURN 1 AS status');
+            return 'Neo4j Connected Successfully';
+        } catch (\Exception $e) {
+            Log::error('Neo4j Connection Error: ' . $e->getMessage());
+            return $e->getMessage();
+        }
     }
 
     public function createNode($data)
     {
         // Created a node with selected fields from the model
 
-        $query = 'CREATE (n:Content {institute_name: $institute_name, acedemic_section: $acedemic_section, 
-                  standard: $standard, subject: $subject, chapter: $chapter, source: $source, 
-                  title: $title, filepath: $filepath}) RETURN n';
+        $query = 'CREATE (n:Content {Organization : $Organization , Departments : $Departments , 
+                  JobRoles: $JobRoles, Skill: $Skill,EducationLevel: $EducationLevel,ExperienceLevel: $ExperienceLevel }) RETURN n';
 
         return $this->client->run($query, [
-            'institute_name'   => $data->institute_name,
-            'acedemic_section' => $data->acedemic_section,
-            'standard'         => $data->standard,
-            'subject'          => $data->subject,
-            'chapter'          => $data->chapter,
-            'source'           => $data->source,
-            'title'            => $data->title,
-            'filepath'         => $data->filepath,
+            'Organization'   => $data->Organization ,
+            'Departments'    => $data->Departments ,
+            'JobRoles'       => $data->JobRoles,
+            'Skill'          => $data->Skill,
+            'EducationLevel' => $data->EducationLevel,  
+            'ExperienceLevel' => $data->ExperienceLevel,  
         ]);
+         if ($result->count() > 0) {
+        // Node was created successfully
+        $node = $result->first()->get('n')->getProperties();
+        return [
+            'status' => true,
+            'message' => 'Node created successfully ',
+            'data' => $node
+        ];
+    }
+
+    // If no record returned
+    return [
+        'status' => false,
+        'message' => 'Node not created '
+    ];
     }
 
     public function createOrGetNode($label, $property, $value)
