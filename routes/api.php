@@ -5,6 +5,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\settings\instituteDetailController;
 use App\Http\Controllers\neo4jGraph\StudentResultGraphController;
+use App\Http\Controllers\StudentGraphController;
+
+
+
+// Student Assessment API - Get student assessment data with scores and levels
+Route::get('/student-assessment', [StudentGraphController::class, 'getStudentAssessment']);
 
 /*
 |--------------------------------------------------------------------------
