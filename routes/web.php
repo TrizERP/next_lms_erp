@@ -77,6 +77,12 @@ use App\Http\Controllers\BlogController;
 use App\Http\Controllers\library\LostandDamage;
 use App\Http\Controllers\neo4jGraph\GraphController;
 use App\Http\Controllers\neo4jGraph\StudentResultGraphController;
+use App\Services\Neo4jService;
+
+
+Route::get('/neo4j-test', function (Neo4jService $neo4j) {
+    return $neo4j->testConnection();
+});
 
 Route::get('/student-results/{stuId}', function ($stuId) {
     return view('student-result-graph', compact('stuId'));
