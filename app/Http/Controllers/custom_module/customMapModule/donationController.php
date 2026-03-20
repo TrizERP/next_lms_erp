@@ -123,7 +123,7 @@ class donationController extends Controller
             $res['message'] = 'Failed to Find Details !';
         }
 
-        $res['donation_head'] = ['CORP./CONST.'=>'CORP./CONST.','EDUCATION'=>'EDUCATION','FOOD'=>'FOOD','OTHERS'=>'OTHERS'];
+        $res['donation_head'] = ['CORP./CONST.'=>'CORP./CONST.','EDUCATION'=>'EDUCATION','FOOD'=>'FOOD','OTHERS'=>'OTHERS','EDUCATIONAL,SOCIAL'=>'EDUCATIONAL,SOCIAL'];
 
         if($sub_institute_id==76){
             $res['paymentModes'] = ['Cash'=>'CASH','Cheque'=>'CHEQUE','POS'=>'POS','Online'=>'ONLINE','UPI'=>'UPI','RTGS/NEFT'=>'RTGS/NEFT'];
@@ -454,7 +454,6 @@ class donationController extends Controller
         $type = $request->input('type');
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
-        $payment_mode = $request->input('payment_mode');
 
         if(in_array($type,['API','JSON'])){
             try {
@@ -504,8 +503,11 @@ class donationController extends Controller
             ->when($request->has('from_date') && $request->from_date != '', function ($q) use ($request) {
                 $q->whereBetween('dc.paid_date', [$request->from_date,$request->to_date]);
             })
-            ->when($request->has('payment_mode'),function($q) use($request){
+            ->when($request->input('payment_mode'),function($q) use($request){
                     $q->where('dc.payment_mode',$request->payment_mode);
+            })
+            ->when($request->input('donation_head'),function($q) use($request){
+                    $q->where('dc.donation_head',$request->donation_head);
             })
             ->whereNull('dc.deleted_at')
             ->orderByRaw('dc.paid_date,CAST(reciept_no AS UNSIGNED)')
@@ -524,6 +526,8 @@ class donationController extends Controller
             $res['message']='No Data Found';
         }
 
+        $res['donation_head'] = ['CORP./CONST.'=>'CORP./CONST.','EDUCATION'=>'EDUCATION','FOOD'=>'FOOD','OTHERS'=>'OTHERS','EDUCATIONAL,SOCIAL'=>'EDUCATIONAL,SOCIAL'];
+
         $res['payment_mode'] = ['Cash'=>'CASH','Cheque'=>'CHEQUE','POS'=>'POS','Online'=>'ONLINE','UPI'=>'UPI','RTGS/NEFT'=>'RTGS/NEFT'];
 
         $res['datewiseData'] = $datewiseData;
@@ -532,6 +536,7 @@ class donationController extends Controller
         $from_date = $request->from_date ?? now();
         $to_date = $request->to_date ?? now();
         $res['selPaymentMode'] = isset($request->payment_mode) ? $request->payment_mode : '';
+        $res['selDonationHead'] = isset($request->donation_head) ? $request->donation_head : '';
         $res['from_date'] = $from_date;
         $res['to_date'] = $to_date;
         $res['full_name'] = $request->full_name;

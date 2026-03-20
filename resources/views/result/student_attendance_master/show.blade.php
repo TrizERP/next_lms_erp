@@ -18,7 +18,11 @@
                         <div class="row">                            
                             {{ App\Helpers\SearchChain('4','single','grade,std,div') }}
                             <!-- <input type="text" name=""> -->
-                            {{ App\Helpers\TermDD() }}
+                            @if(session()->get('sub_institute_id')==76)
+                                {{ App\Helpers\TermDDSsmission() }}
+                            @else
+                                {{ App\Helpers\TermDD() }}
+                            @endif
                             <div class="col-md-12 form-group mt-2">
                                 <center>
                                     <input type="submit" name="submit" value="Save" class="btn btn-success" >

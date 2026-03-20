@@ -37,6 +37,7 @@ Route::get('api/get-bus-list', [AJAXController::class, 'getBusList']);
 Route::get('api/get-stop-list', [AJAXController::class, 'getStopList']);
 Route::get('map_student/fetchData', [map_student_controller::class, 'fetchData']);
 Route::get('ajaxCheckRemainCapacity', [map_student_controller::class, 'ajaxChackRemainCapacity'])->name('ajaxCheckRemainCapacity');
+Route::delete('map_student/bulk-delete', [map_student_controller::class, 'destroy'])->name('map_student.bulk-delete');
 
 Route::get('/transportation/transportationLists/studentLists/{t_id}/{t_s_id}', [van_wise_students_detail_report_controller::class, 'retrieveDataByUserId']);
 

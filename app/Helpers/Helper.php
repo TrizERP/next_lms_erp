@@ -2914,20 +2914,42 @@ if (!function_exists('get_string')) {
             return $selectHtml;
         }
     }
+    
+    if (!function_exists('userProfileEmployee')) {
+    function TermDDSsmission($selected_val = "", $col = 4)
+    {
+        $option = "<option value=''>Select Term</option>";
 
-    // added by uma get data from any table 
-   if (!function_exists('getTableFieldFromId')) {
-    function getTableFieldFromId($table,$getfield,$id,$fromField=''){
-        $data = DB::table($table)
-            ->when($fromField!='',function($q)use($fromField,$id){
-                $q->where($fromField,$id);
-            },function($q)use($id){
-                $q->where('id',$id);
-            })
-            // ->where('id', $id)
-            ->select($getfield)
-            ->first();
-        return $data->$getfield ?? '-';
+        $academic_year = DB::table("academic_year")
+            ->where([
+                "sub_institute_id" => session()->get('sub_institute_id'),
+                "syear" => session()->get('syear'),
+            ])
+            ->pluck("title", "term_id");
+
+        foreach ($academic_year as $id => $val) {
+            $selected = "";
+            $value = ($id == 159) 
+                    ? $val.' | Participation / Achievement' 
+                    : $val.' | Special Remarks';
+            if ($selected_val == $id) {
+                $selected = 'selected="selected"';
+            }
+
+            $option .= "<option $selected value=$id>".$value."</option>";
+        }
+
+        $term = '<div class="col-md-' . $col . ' form-group">
+                    <label for="title">Select Term:</label>
+                    <select name="term" id="term" class="form-control">
+                        ' . $option . '
+                    </select>
+                </div>';
+
+        $html = $term;
+
+        echo $html;
     }
-   }
+    }
+
 }

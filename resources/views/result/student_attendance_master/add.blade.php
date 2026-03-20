@@ -17,7 +17,12 @@
                         {{csrf_field()}}
                         <div class="row">                            
                             {{ App\Helpers\SearchChain('4','single','grade,std,div',$data['grade'],$data['standard'],$data['division']) }}
-                            {{ App\Helpers\TermDD($data['term_id']) }}
+                            @if(session()->get('sub_institute_id')==76)
+                                {{ App\Helpers\TermDDSsmission($data['term_id']) }}
+                            @else
+                                {{ App\Helpers\TermDD($data['term_id']) }}
+                            @endif
+                            
                             <div class="col-md-12 form-group">
                                 <center>
                                     <input type="submit" name="submit" value="Search" class="btn btn-success" >

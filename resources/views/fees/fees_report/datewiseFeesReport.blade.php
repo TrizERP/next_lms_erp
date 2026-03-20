@@ -100,10 +100,7 @@
                     <div class="schoolData" style="text-align:center;">
                         <h4 style="margin:0px;font-size: 22px;"><b>{{$instituteName}}</b></h4>
                         <p style="margin:0px;font-size: 18px;"><b>{{$data['school_details']->receipt_line_3}}</b></p>
-                        <p style="margin:0px;font-size: 14px;">
-                        <b> {{--DATE : {{date('d-m-y',strtotime($from_date))}} to {{date('d-m-y',strtotime($to_date))}}--}}
-                            ACADEMIC YEAR : {{$academicYear}}
-                        </b></p>
+                        <p style="margin:0px;font-size: 14px;"><b>ACADEMIC YEAR : {{$academicYear}}</b></p>
                     </div>
                 </div>
             @endif
@@ -127,8 +124,10 @@
                             <th style="text-align:center;"><b>NAME</b></th>
                             <th style="text-align:center;"><b>STD.</b></th>
                             @if(strtoupper($data['selPaymentMode']) != 'CASH')
-                            <th><b>BANK NAME</b></th>
-                            <th style="text-align:center;" title="CHEQUE NO./RRF NO."><b>CHEQUE NO./Ref No.</b></th>
+                                @if(strtoupper($data['selPaymentMode']) != 'ONLINE')
+                                    <th><b>BANK NAME</b></th>
+                                @endif
+                            <th style="text-align:center;" title="CHEQUE NO./REF NO."><b>CHEQUE NO./Ref No.</b></th>
                             @endif
                             <!-- <th><b>RECIEVED BY</b></th> -->
                             <th style="text-align:center;"><b>REMARKS</b></th>
@@ -155,7 +154,9 @@
                                 <td style="padding-left:5px;">{{ strtoupper($value->student_name)}}</td>
                                 <td style="padding-left:5px;">{{ strtoupper($value->short_standard_name)}} - {{$value->div_name}}</td>
                                 @if(strtoupper($data['selPaymentMode']) != 'CASH')
-                                <td style="padding-left:5px;">{{$value->cheque_bank_name}}</td>
+                                    @if(strtoupper($data['selPaymentMode']) != 'ONLINE')
+                                        <td style="padding-left:5px;">{{$value->cheque_bank_name}}</td>
+                                    @endif    
                                 <td style="padding-left:5px;">{{$value->cheque_no}}</td>
                                 @endif
                                 {{--<td>{{$value->user_name}}</td>--}}
