@@ -367,263 +367,7 @@ class fees_collect_controller extends Controller
 
         return is_mobile($type, "fees/fees_collect/show", $responce_arr, "view");
     }
-    // public function show_student(Request $request)
-    // {
-    //     $responce_arr = [];
-    //     $type = $request->type ?? "";
-    //     $last_year = (session()->get('syear') - 1);
-
-    //     $sub_institute_id = session()->get('sub_institute_id');
-    //     $syear = session()->get('syear');
-
-    //     if($type=="API"){
-    //         $sub_institute_id=$request->sub_institute_id;
-    //         $syear=$request->syear;
-    //         $last_syear = ($syear-1);
-    //     }
-    //     // get month_id by month name
-    //     $month_arr = FeeMonthId();
-    //     $currunt_month = date('m');
-    //     $currunt_year = date('Y');
-    //     $currunt_month_id = $currunt_month . $currunt_year;
-
-    //     $search_ids = [];
-    //     foreach ($month_arr as $id => $arr) {
-    //         if ($id == $currunt_month_id) {
-    //             $search_ids[] = $id;
-    //         } else {
-    //             $search_ids[] = $id;
-    //         }
-    //     }
-
-    //     $breackoff_join = $breackoff_other_join = $fees_join = $paid_other_join = "";
-
-    //     // below foreach is for where condition to search month_id wise
-    //     foreach ($search_ids as $id => $val) {
-    //         if ($id == 0) {
-    //             $breackoff_join .= " AND (";
-    //             $breackoff_other_join .= " AND (";
-    //             $fees_join .= " AND (";
-    //             $paid_other_join .= " AND (";
-    //         }
-    //         if (count($search_ids) == ($id + 1)) {
-    //             $breackoff_join .= "fb.month_id = $val)";
-    //             $breackoff_other_join .= "fbo.month_id = $val)";
-    //             $fees_join .= "fc.term_id = $val)";
-    //             $paid_other_join .= "fpo.month_id = $val)";
-    //         } else {
-    //             $breackoff_join .= "fb.month_id = $val OR ";
-    //             $breackoff_other_join .= "fbo.month_id = $val OR ";
-    //             $fees_join .= "fc.term_id = $val OR ";
-    //             $paid_other_join .= "fpo.month_id = $val OR ";
-    //         }
-    //     }
-
-    //     $extra_where = "";
-    //     if (isset($request->mobile) && $request->mobile != '') {
-    //         $responce_arr['mobile'] = $request->mobile;
-    //     }
-    //     if (isset($request->grno) && $request->grno != '') {
-    //         $responce_arr['grno'] = $request->grno;
-    //     }
-    //     if (isset($request->uniqueid) && $request->uniqueid != '') {
-    //         $responce_arr['uniqueid'] = $request->uniqueid;
-    //     }
-    //     if (isset($_REQUEST['grade']) && $_REQUEST['grade'] != '') {
-    //         $grade_val = $_REQUEST['grade'];
-    //         $responce_arr['grade'] = $_REQUEST['grade'];
-
-    //     }
-    //     if (isset($request->standard) && $request->standard != '') {
-    //         $responce_arr['standard'] = $request->standard;
-    //     }
-    //     if (isset($request->division) && $request->division != '') {
-    //         $responce_arr['division'] = $request->division;
-    //     }
-    //     if (isset($request->stu_name) && $request->stu_name != '') {
-    //         $responce_arr['stu_name'] = $request->stu_name;
-    //     }
-    //     if (isset($request->including_inactive) && $request->including_inactive != '') {
-    //         $responce_arr['including_inactive'] = $request->including_inactive;
-    //     }
-        
-    //     // get fees_breakoff of student by matching above conditions
-    //     $result = DB::table('tblstudent as s')
-    //         ->join('tblstudent_enrollment as se','se.student_id', '=' ,'s.id')
-    //         ->join('academic_section as g', 'g.id', '=', 'se.grade_id')
-    //         ->join('standard as st','st.id' ,'=' ,'se.standard_id')
-    //         ->join('division as d', 'd.id' ,'=','se.section_id')
-    //         ->join('student_quota as sq', function ($join) {
-    //             $join->whereRaw('sq.id = se.student_quota AND sq.sub_institute_id = se.sub_institute_id');
-    //         })->join('fees_breackoff as fb', function ($join) use ($breackoff_join, $last_year,$syear,$sub_institute_id) {
-    //             $join->whereRaw("(fb.syear = '" . $syear . "' AND
-    //              fb.admission_year = s.admission_year AND fb.quota = se.student_quota AND fb.grade_id = se.grade_id AND
-    //              fb.standard_id = se.standard_id AND fb.sub_institute_id = '" . $sub_institute_id . "' $breackoff_join)");
-    //         })->selectRaw("s.*,se.syear,se.student_id,se.grade_id,
-    //             se.standard_id,se.section_id,se.student_quota,sq.title AS stu_quota,se.start_date,
-    //             se.end_date,se.enrollment_code,se.drop_code,se.drop_remarks,
-    //             se.drop_remarks,se.term_id,se.remarks,se.admission_fees,
-    //             se.house_id,se.lc_number,
-    //             sum(fb.amount) + (select ifnull(sum(fbo.amount),0) from fees_breakoff_other fbo
-    //              where fbo.syear = '" . $syear . "' AND fbo.student_id = s.id AND fb.grade_id = se.grade_id AND
-    //              fb.standard_id = se.standard_id AND fbo.sub_institute_id = '" . $sub_institute_id . "' $breackoff_other_join)
-    //             bkoff, st.name standard_name, d.name as division_name")
-    //         ->where('s.sub_institute_id', $sub_institute_id)
-    //         ->where('se.syear', $syear)
-    //         ->where(function ($q) use ($request) {
-    //             if (isset($request->mobile) && $request->mobile != '') {
-    //                 $q->where('s.mobile', $request->mobile);
-    //             }
-    //             if (isset($request->grno) && $request->grno != '') {
-    //                 $q->where('s.enrollment_no', $request->grno);
-    //             }
-    //             if (isset($request->uniqueid) && $request->uniqueid != '') {
-    //                 $q->where('s.uniqueid', $request->uniqueid);
-    //             }
-    //             if (isset($request->grade) && $request->grade != '') {
-    //                 $q->where('se.grade_id', $request->grade);
-    //             }
-    //             if (isset($request->standard) && $request->standard != '') {
-    //                 $q->where('se.standard_id', $request->standard);
-    //             }
-    //             if (isset($request->division) && $request->division != '') {
-    //                 $q->where('se.section_id', $request->division);
-    //             }
-    //             if (isset($request['stu_name']) && $request['stu_name'] != '') {
-    //                 $q->where(function ($query) use ($request) {
-    //                     $query->where('s.first_name', 'like', '%' . $request->stu_name . '%')
-    //                         ->orWhere('s.middle_name', 'like', '%' . $request->stu_name . '%')
-    //                         ->orWhere('s.last_name', 'like', '%' . $request->stu_name . '%');
-    //                 });
-    //             }
-    //             if (isset($request['including_inactive']) && $request['including_inactive'] != '' && $request['including_inactive'] == 'Yes') {
-    //                     $q->whereNotNull('se.end_date');
-    //             } else {
-    //                 $q->whereNull('se.end_date');
-    //             }
-    //         })->groupBy('s.id')->havingNotNull('bkoff')->get()->toArray();
-
-    //     $request = Request::capture();
-
-    //     foreach ($result as $id => $arr) {
-    //         $bk_stu_id = $arr->id;
-    //         // get paid and unpiad history of student by his/her id
-    //         $paid_result = $this->getBk($request, $bk_stu_id);
-    //         // echo "<pre>";print_r($paid_result);
-    //         if(isset($paid_result) && !empty($paid_result)){
-    //             $pd_stu_id = $paid_result['stu_data']['student_id'];
-    //             // $remain = $paid_result['final_fee']['Total'];
-    //             $remain = $paid_result['stu_data']['pending'] ?? 0; // 2024-07-26
-    //             $previous = $paid_result['stu_data']['previous_fees'] ?? 0;
-    //             if ($bk_stu_id == $pd_stu_id) {
-                    
-    //                 if ($remain > 0 && $sub_institute_id==254){
-    //                     $arr->bkoff = ($remain + $previous);
-    //                 }
-    //                 else if ($previous < 0) {
-    //                     $arr->bkoff = ($remain - $previous);
-    //                 }else if($previous > 0){
-    //                     $arr->bkoff = ($remain - $previous);                    
-    //                 } else {
-    //                     if ($remain > 0){
-    //                     $arr->bkoff = $remain;
-    //                     }else{
-    //                         $arr->bkoff = 0;
-    //                     }
-    //                 }
-    //             }
-    //         }
-    //     }
-    //     // exit;
-    //     if (empty($result)) {
-
-    //         // if student details are missing then this code will give missing detail in message
-    //         $check = DB::table('tblstudent as s')
-    //             ->join('tblstudent_enrollment as se','se.student_id','=' ,'s.id')
-    //             ->join('standard as st', 'st.id' ,'=', 'se.standard_id')
-    //             ->leftJoin('division as d','d.id', '=' ,'se.section_id')
-    //             ->leftJoin('student_quota as sq',function($join){
-    //                 $join->whereRaw('sq.id = se.student_quota AND sq.sub_institute_id = se.sub_institute_id');
-    //             })
-    //             ->where('s.sub_institute_id',$sub_institute_id)
-    //             ->where('se.syear', $syear)
-    //             ->selectRaw("s.*,se.syear,se.student_id,se.grade_id,concat(s.first_name,' ',s.middle_name,' ',s.last_name) as full_name,
-    //             se.standard_id,se.section_id,se.student_quota,sq.title AS stu_quota,se.start_date,
-    //             se.end_date, st.name standard_name, d.name as division_name,s.admission_year")
-    //             ->where(function ($q) use ($request) {
-    //                 if (isset($request->mobile) && $request->mobile != '') {
-    //                     $q->where('s.mobile', $request->mobile);
-    //                 }
-    //                 if (isset($request->grno) && $request->grno != '') {
-    //                     $q->where('s.enrollment_no', $request->grno);
-    //                 }
-    //                 if (isset($request->uniqueid) && $request->uniqueid != '') {
-    //                     $q->where('s.uniqueid', $request->uniqueid);
-    //                 }
-    //                 if (isset($request->grade) && $request->grade != '') {
-    //                     $q->where('se.grade_id', $request->grade);
-    //                 }
-    //                 if (isset($request->standard) && $request->standard != '') {
-    //                     $q->where('se.standard_id', $request->standard);
-    //                 }
-    //                 if (isset($request->division) && $request->division != '') {
-    //                     $q->where('se.section_id', $request->division);
-    //                 }
-    //                 if (isset($request['stu_name']) && $request['stu_name'] != '') {
-    //                     $q->where(function ($query) use ($request) {
-    //                         $query->where('s.first_name', 'like', '%' . $request->stu_name . '%')
-    //                             ->orWhere('s.middle_name', 'like', '%' . $request->stu_name . '%')
-    //                             ->orWhere('s.last_name', 'like', '%' . $request->stu_name . '%');
-    //                     });
-    //                 }
-    //                 if (isset($request->including_inactive) && $request->including_inactive != '') {
-    //                     if ($request->including_inactive == 'Yes') {
-    //                         $q->whereNotNull('se.end_date');
-    //                     }
-    //                 } else {
-    //                     $q->whereNull('se.end_date');
-    //                 }
-    //             })->groupBy('s.id')->get()->toArray();
-
-    //         if (!empty($check)) {
-    //             if ($check[0]->section_id == null || $check[0]->section_id == 0) {
-    //                 $responce_arr['status_code'] = 0;
-    //                 $responce_arr['message'] = "Devision Not Found";
-    //             } elseif ($check[0]->student_quota == null || $check[0]->student_quota == 0) {
-    //                 $responce_arr['status_code'] = 0;
-    //                 $responce_arr['message'] = "Student Quota Not Found";
-    //             } elseif ($check[0]->admission_year == null || $check[0]->admission_year == 0) {
-    //                 $responce_arr['status_code'] = 0;
-    //                 $responce_arr['message'] = "Admission Year Not Found";
-    //             } elseif ($check[0]->end_date != null) {
-    //                 $responce_arr['status_code'] = 0;
-    //                 $responce_arr['message'] = "Inactive User Not Found";
-    //             } else {
-    //                 $responce_arr['status_code'] = 0;
-    //                 $responce_arr['message'] = "Fees Breakoff Not Found";
-    //             }
-    //             $stud_details=[
-    //                 "Student Name"=>$check[0]->full_name,
-    //                 "Standard"=>$check[0]->standard_name  ,
-    //                 "Division"=>$check[0]->division_name,
-    //                 "Student Quota"=>$check[0]->stu_quota,
-    //                 "Admission Year"=>$check[0]->admission_year,
-    //             ];
-    //             $responce_arr['Error_details']=$stud_details;
-    //         } else {
-    //             $responce_arr['status_code'] = 0;
-    //             $responce_arr['message'] = "Student Details Not Found";
-    //         }
-    //     }
-    //     $responce_arr['stu_data'] = $result;
-
-    //     $responce_arr['grade_id'] = $request->grade ?? '';
-    //     $responce_arr['standard_id'] = $request->standard ?? '';
-    //     $responce_arr['division_id'] = $request->division ?? '';
-
-    //     return is_mobile($type, "fees/fees_collect/show", $responce_arr, "view");
-    // }
-
+    
     /**
      * function is to insert fees data into database by getting details from other functions
      *
@@ -1648,19 +1392,6 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                   <td style="background-color:lightgray;white-space:nowrap;"><b>Amount (Rs.)</b></td>
                </tr>';
 
-            // start 08-01-2025 by uma for ssmission
-            // $noDiscountCount = [76];
-            // if(in_array($sub_institute_id,$noDiscountCount)){
-            //     foreach ($arr as $disKey => $desVal) {
-            //         if($disKey=="Discount" || $disKey=="discount"){
-            //             $arr['TUITION FEE']+=$desVal;
-            //         }else{
-            //             $arr[$disKey]=$desVal;
-            //         }
-            //     }
-            // }
-            // start 08-01-2025 by uma for ssmission end
-
             // 31/03/2021 START for Cumulative Fees Receipt
             if (count($cumulative_arr) > 0) {
                 $arrnew = $appendnew = [];
@@ -1815,7 +1546,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             // 2025-01-20 by uma
             $panCardTag = '';
             $ssmission_note = $thankFull = $parent_pan_display = $foodDisplay = 'style="display:none;"';
-            $regularDisplay = 'style="display:block;"';
+            $regularDisplay = $display_months = 'style="display:block;"';
             $receiptType=null;  // differentiate ssmission reciepts 10-02-2025
             if($receipt_book_arr->receipt_id==2 && $sub_institute_id==76){
                 $panNo = isset($_REQUEST['pan_card']) ? $_REQUEST['pan_card'] : $studentDetailsArr[$_REQUEST['student_id']]['pan_card'];
@@ -1832,13 +1563,17 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                 $receiptType = "SCHOOL";
             }
 
+            if($receipt_book_arr->receipt_id==2 && $sub_institute_id==254){
+                $display_months = 'style="display:none;"';
+            }
+
             $html_content = str_replace(htmlspecialchars("<<parent_pan_card>>"), $panCardTag, $html_content);
             $html_content = str_replace(htmlspecialchars("<<parent_pan_display>>"), $parent_pan_display, $html_content); // added on 12-03-2025
             $html_content = str_replace(htmlspecialchars("<<for_regular_fees>>"), $regularDisplay, $html_content); // added on 12-03-2025
             $html_content = str_replace(htmlspecialchars("<<for_food_fees>>"), $foodDisplay, $html_content); // added on 12-03-2025
-            
             $html_content = str_replace(htmlspecialchars("<<ssmission_note>>"), $ssmission_note, $html_content);
             $html_content = str_replace(htmlspecialchars("<<ssmission_thank_full>>"), $thankFull, $html_content);
+            $html_content = str_replace(htmlspecialchars("<<display_months>>"), $display_months, $html_content); // For Hills added on 21-03-2026
 
             // 2025-01-20 by uma end
             
@@ -1874,7 +1609,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                 DB::table('tblstudent')->where('id',$_REQUEST['student_id'])->update(['pan_card'=>$_REQUEST['pan_card']]);
              }
             
-             $html_content = str_replace(htmlspecialchars("<<parent_pan_card>>"), $pan_no, $html_content);
+            $html_content = str_replace(htmlspecialchars("<<parent_pan_card>>"), $pan_no, $html_content);
 
             $html_content = str_replace(htmlspecialchars("<<student_enrollment_value>>"), $enrollment, $html_content);
             $html_content = str_replace(htmlspecialchars("<<student_roll_value>>"), $roll_no, $html_content);
@@ -2860,20 +2595,6 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
         $full_bk["Total"] = ($total > 0 ) ? $total : 0;
         $full_bk_new["Total"] = ($total > 0 ) ? $total : 0;
        
-        // // start 08-01-2025 by uma for ssmission fees heads
-        // $changeMonthHead = [76];
-        // if(in_array($sub_institute_id,$changeMonthHead)){
-        //     $getMonthHeaders = DB::table('fees_month_header')->where('sub_institute_id',$sub_institute_id)->get()->toArray();
-        //     if(!empty($getMonthHeaders)){
-        //         foreach ($getMonthHeaders as $key => $value) {
-        //             if(isset($new_month_arr[$value->month_id])){
-        //                 $new_month_arr[$value->month_id] = $value->header;
-        //             }
-        //         }
-        //     }
-        // }
-        // // end 08-01-2025 by uma for ssmission
-
         $type = "web";
         $res['total_fees'] = $left_bk_table ?? [];
         $res['stu_data'] = $stu_detail;
