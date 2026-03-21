@@ -779,6 +779,7 @@ if (isset($attendance['table'])) {
     {
         $data = [];
         $data['created_on'] = now();
+        $data['syear'] = $syear;
 
         if ($field == 'subjects_studied') {
             $data['subjects_studied'] = collect($value)->pluck('subject_name')->implode(', ');
@@ -799,7 +800,6 @@ if (isset($attendance['table'])) {
             DB::table('tblstudent_tc_details')->updateOrInsert(
                 [
                     'sub_institute_id' => $sub_institute_id,
-                    'syear'            => $syear,
                     'student_id'       => $student_id,
                 ],
                 $data
@@ -3074,7 +3074,7 @@ if (isset($attendance['table'])) {
         }
         $table = '';
         if (in_array($sub_institute_id, $format_sub_different) && !empty($responce_arr)) {
-            $table = '<table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" cellpadding="0" border="1">
+            $table = '<table style="width: 100%;border-collapse:collapse; border:1px solid #000;" border="1">
                 <thead>
                 <tr>';
             $optional_head = "Co-Scholastic Areas";
@@ -3441,7 +3441,7 @@ if (isset($attendance['table'])) {
         }
         // FOR LIONS 
         else {
-            $table = '<table class="aca-year" style="width: 100%;height:fit-content;margin-top:8%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" cellpadding="0" border="1">
+            $table = '<table style="width: 100%;height:fit-content;margin-top:8%;border-collapse:collapse; border:1px solid #000;" border="1">
         <tbody>
         <tr>
             <th colspan="2" style="text-align: left;"><b>Total Attendance</b></th>
@@ -4592,7 +4592,7 @@ if (isset($attendance['table'])) {
                             } else {
                                 $tdVal = number_format($convert_mark, 0);
                             }
-                            if($val->elective_subject != 'Yes')
+                            if($val->elective_subject != 'Yes' || $val->optional_type == 1)
                                 $table .= '<td class="data_center"  ' . $exam_id . '-' . $val->subject_id . '-' . $pAB . '>' . $tdVal . '</td>';
                         } else {
                             if (!empty($obtained_mark_arr) && !in_array($obtained_mark_arr[0], ["N.A.", "EX"])) {
@@ -4604,7 +4604,7 @@ if (isset($attendance['table'])) {
                             } else {
                                 $tdVal = $obtained_mark_arr[0] ?? "-"; // print AB,NA,EX
                             }
-                            if($val->elective_subject != 'Yes')
+                            if($val->elective_subject != 'Yes' || $val->optional_type == 1)
                                 $table .= '<td class="data_center else" ' . $exam_id . '-' . $val->subject_id . '-' . $pAB . ' >' . $tdVal . '</td>';
                         }
                     }
@@ -4621,7 +4621,7 @@ if (isset($attendance['table'])) {
                 
 
                 //echo "<pre>";print_r($exam_name);exit();
-                if($val->elective_subject != 'Yes')
+                if($val->elective_subject != 'Yes' || $val->optional_type == 1)
                     $table .= '<td class="data_center all_mark"'.$ob_main_mark.'-'.$total_marks.'><b>' . $obtained_mark_formatted . '</b></td>';
                 else
                 {
@@ -4650,7 +4650,7 @@ if (isset($attendance['table'])) {
 
             $subTot = isset($subjectTot[$val->subject_id]) ? $subjectTot[$val->subject_id] : 0;
 
-            if ($format == "yearly" && $val->elective_subject != 'Yes') {
+            if ($format == "yearly" && ($val->elective_subject != 'Yes' || $val->optional_type == 1)) {
                 $table .= '<td class="data_center grade_of_both"'.$both_term_ob_mark.'-'.$both_term_to_mark.'><b>' . $both_term_ob_mark.'</b></td>';
             }
             else{
@@ -4663,7 +4663,7 @@ if (isset($attendance['table'])) {
                 $table .= '<td class="data_center"'.$subTot.'-'.$both_term_ob_mark.'-'.$both_term_to_mark.'><b>' . $this->getGrade($grade_arr_mmis, $both_term_to_mark, $both_term_ob_mark) . '</b></td>';
             }
 
-            if($val->elective_subject != 'Yes'){
+            if($val->elective_subject != 'Yes' || $val->optional_type == 1){
                 $sub_per = $this->getPer($both_term_ob_mark, $both_term_to_mark);
                 if ($sub_per < 33)
                     $failed++;
@@ -5463,7 +5463,7 @@ $table .= '</div>';
         //get exam marks
         $exam_marks = $this->get_exam_marks($sub_institute_id, $student_id, $syear, $standard_id, $extra_exam, 'lions');
 
-        $table = '<style>.data_center{text-align:center !important;}</style><table class="aca-year"  style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0"  border="1">
+        $table = '<style>.data_center{text-align:center !important;}</style><table style="width: 100%;border-collapse:collapse; border:1px solid #000;" border="1">
         <thead>
             <tr>
                 <th><b>Scholastic Areas:</b></th>';
@@ -5693,7 +5693,7 @@ $table .= '</div>';
         $exam_title = $this->get_exam_title($sub_institute_id, $syear, $standard_id, $extra_exam);
         $exam_marks = $this->get_exam_marks($sub_institute_id, $student_id, $syear, $standard_id, $extra_exam, 'lions');
 
-        $table = '<style>.data_center{text-align:center !important;}</style><table class="aca-year"  style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0"  border="1">
+        $table = '<style>.data_center{text-align:center !important;}</style><table style="width: 100%;border-collapse:collapse; border:1px solid #000;" border="1">
             <thead>
                 <tr>
                     <th><b>Scholastic Areas:</b></th>
@@ -6001,7 +6001,7 @@ $table .= '</div>';
         //get exam marks
         $exam_marks = $this->get_exam_marks($sub_institute_id, $student_id, $syear, $standard_id, $extra_exam, 'lions');
 
-        $table = '<style>.data_center{text-align:center !important;}</style><table class="aca-year"  style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0"  border="1">
+        $table = '<style>.data_center{text-align:center !important;}</style><table style="width: 100%;border-collapse:collapse; border:1px solid #000;" border="1">
             <thead>
                 <tr>
                     <th><b> Scholastic Areas:	</b></th>
@@ -6137,7 +6137,7 @@ $table .= '</div>';
 
         $per = $this->getPer($get_all_ob_mark, $get_all_tot_mark) ?? '-';
         $table .= "</tr><tr>
-        <td style='text-align:right'  colspan=" . (count($exam_ids) + 1) . "><b>Total</b></td>
+        <td style='text-align:right' colspan=" . (count($exam_ids) + 1) . "><b>Total</b></td>
         <td class='data_center'><b>" . $get_all_ob_mark . "</b></td>
         <td rowspan='2' class='data_center'><b>" . $this->getGrade($grade_arr, $get_all_tot_mark, $get_all_ob_mark) . "</b></td>
     </tr>
