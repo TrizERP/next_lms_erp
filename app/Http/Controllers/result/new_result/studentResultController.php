@@ -5693,8 +5693,8 @@ $table .= '</div>';
         $exam_title = $this->get_exam_title($sub_institute_id, $syear, $standard_id, $extra_exam);
         $exam_marks = $this->get_exam_marks($sub_institute_id, $student_id, $syear, $standard_id, $extra_exam, 'lions');
 
-        $table = '<style>.data_center{text-align:center !important;}</style><table style="width: 100%;border-collapse:collapse; border:1px solid #000;" border="1">
-            <thead>
+        $table = '<style>.data_center{text-align:center !important;}</style><table style="width: 100%;border-collapse:collapse; border:1px solid #000;" border="1" class="scholastic">
+                <tbody>
                 <tr>
                     <th><b>Scholastic Areas:</b></th>
                     <th colspan="13" style="text-align:center;"><b>ACADEMIC YEAR EXAM</b></th>
@@ -5704,9 +5704,9 @@ $table .= '</div>';
                 </tr>
                 <tr>
                     <th class="data_center" colspan="2"><b>UNIT TEST</b></th>
-                    <th class="data_center" rowspan="2" colspan="2"><b>HALF YEARLY <br> EXAM</b></th>
-                    <th class="data_center" rowspan="2" colspan="2"><b>YEARLY <br> PRACTICAL/ASL/PROJECT</b></th>
-                    <th class="data_center" rowspan="2" colspan="2"><b>YEARLY <br> EXAM</b></th>
+                    <th class="data_center" rowspan="2" colspan="2"><b>HALF YEARLY<br>EXAM</b></th>
+                    <th class="data_center" rowspan="2" colspan="2"><b>YEARLY<br>PRACTICAL<br>/ASL/PROJECT</b></th>
+                    <th class="data_center" rowspan="2" colspan="2"><b>YEARLY<br>EXAM</b></th>
                     <th class="data_center"  rowspan="3"><b>TOTAL</b></th>
                     <th class="data_center"  rowspan="3"><b>GRAND <br> TOTAL</b></th>            
                     <th class="data_center" rowspan="3"><b>AVERAGE</b></th>
@@ -5735,19 +5735,15 @@ $table .= '</div>';
                 }
             }
 
-            $table .= '<th><b>MAX. MARKS</b></th>
-                <th><b>OBT. MARKS</b></th>
-
-                <th><b>MAX. MARKS</b></th>
-                <th><b>OBT. MARKS</b></th>
-    
-                <th><b>MAX. MARKS</b></th>
-                <th><b>OBT. MARKS</b></th>';
+            $table .= '<th class="data_center"><b>MAX. MARKS</b></th>
+                <th class="data_center"><b>OBT. MARKS</b></th>
+                <th class="data_center"><b>MAX. MARKS</b></th>
+                <th class="data_center"><b>OBT. MARKS</b></th>
+                <th class="data_center"><b>MAX. MARKS</b></th>
+                <th class="data_center"><b>OBT. MARKS</b></th>';
         }
 
-        $table .= '</tr>
-            </thead>
-            <tbody>';
+        $table .= '</tr>';
 
         $sort_exam = ['UT1', 'UT2', 'Half Yearly', 'Practical/ASL/Project', 'Yearly'];
 
