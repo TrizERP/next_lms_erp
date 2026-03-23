@@ -300,6 +300,10 @@ Route::prefix('h5p')->group(function () {
     Route::resource('html_contents',H5PIndexController::class);
     Route::resource('scenario_based',H5PScenarioController::class);
 });
+Route::post('get-h5p-ai-output', [H5PIndexController::class, 'getH5pAIOutput'])->name('get-h5p-ai-output');
+Route::post('get-h5p-ai-scenario', [H5PScenarioController::class, 'getH5pAIScenario'])->name('get-h5p-ai-scenario');
+
+
 // use App\Http\Controllers\lms\Neo4jSyncController;
 // use App\Http\Controllers\lms\GraphController;
 // use App\Http\Controllers\lms\RecommendationController;

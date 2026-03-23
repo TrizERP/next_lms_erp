@@ -171,8 +171,8 @@ use DB;
                             @endif
   <!-- added  by uma 2026-03-07 for h5p -->
                                        <a target="_blank"
-                                       href="{{ route('scenario_based.index',['chapter_id'=>$chdata->id,'subject_id'=>$chdata->subject_id,'standard_id'=>$chdata->standard_id,$preload_lms ?? '']) }}"
-                                       class="btn btn-outline-dark mx-1 my-1">Scenario Base</a>
+                                       href="{{ route('html_contents.index',['chapter_id'=>$chdata->id,'subject_id'=>$chdata->subject_id,'standard_id'=>$chdata->standard_id,$preload_lms ?? '']) }}"
+                                       class="btn btn-outline-dark mx-1 my-1">H5P Content</a>
                             @if($show_block == 'YES')
                                 @php
                                     $chapter_name = addslashes($chdata->chapter_name);

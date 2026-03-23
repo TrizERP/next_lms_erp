@@ -261,7 +261,7 @@
                         <th>Title</th>
                         <th>Description</th>
                         <th>Total Points</th>
-                        <th>Actions</th>
+                        <th class="text-left">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -273,7 +273,7 @@
                             <img src="{{ $scenario->file_path }}" class="scenario-thumb" alt="{{ $scenario->title }}">
                         </td>
                         <td>{{ $scenario->title }}</td>
-                        <td title="{{ $scenario->description }}">{{ Str::limit($scenario->description, 50) }}</td>
+                        <td title="{{ $scenario->description }}">{!! Str::limit($scenario->description, 50) !!}</td>
                         <td>{{ $scenario->points->count() }}</td>
                         <td>
                              
