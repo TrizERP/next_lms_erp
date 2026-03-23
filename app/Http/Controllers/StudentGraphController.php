@@ -206,6 +206,7 @@ class StudentGraphController extends Controller
 
     /**
      * Get student assessment data with scores and levels
+     * Gets all assessments and returns the last exam for each chapter
      * 
      * @param Request $request
      * @return JsonResponse
@@ -218,7 +219,12 @@ class StudentGraphController extends Controller
             // Required parameters
             $studentId = (int) $request->get('student_id');
             $subInstituteId = (int) $request->get('sub_institute_id');
-            $year = (int) $request->get('syear', 2024); // Default to 2024
+            $year = (int) $request->get('syear', 2025); // Default to 2025
+
+            // Optional filter parameters
+            $standardId = $request->get('standard_id');
+            $subjectId = $request->get('subject_id');
+            $chapterId = $request->get('chapter_id');
 
             // Validation
             if (!$studentId || !$subInstituteId) {
@@ -228,7 +234,36 @@ class StudentGraphController extends Controller
                 ], 400);
             }
 
-            // Cypher query converted from the user's request
+            // Build dynamic WHERE clauses for optional filters
+            $whereClauses = [];
+            $params = [
+                'studentId' => $studentId,
+                'subInstituteId' => $subInstituteId,
+                'year' => $year
+            ];
+
+            if ($standardId) {
+                $whereClauses[] = 'st.standard_id = $standardId';
+                $params['standardId'] = (int) $standardId;
+            }
+
+            if ($subjectId) {
+                $whereClauses[] = 'sub.subject_id = $subjectId';
+                $params['subjectId'] = (int) $subjectId;
+            }
+
+            if ($chapterId) {
+                $whereClauses[] = 'ch.chId = $chapterId';
+                $params['chapterId'] = (int) $chapterId;
+            }
+
+            // Build WHERE clause for filters
+            $filterWhere = '';
+            if (!empty($whereClauses)) {
+                $filterWhere = ' AND ' . implode(' AND ', $whereClauses);
+            }
+
+            // Cypher query - gets all results, picks last exam per chapter
             $query = '
             MATCH (sd:StuDetail {student_id: $studentId, sub_institute_id: $subInstituteId})
             -[:HAS_STUDENT]->(stu:Student)
@@ -242,20 +277,47 @@ class StudentGraphController extends Controller
             MATCH (stu)-[m:MASTERS]->(ch)
             WHERE m.proficiency_score IS NOT NULL
 
-            /* Result → Assessment (filtered by year) */
-            MATCH (stu)-[:HAS_RESULT]->(r:Result)
-            MATCH (r)-[:FOR_ASSESSMENT]->(ass:Assessment)
-            WHERE stu.syear = $year
+            /* Get ALL results */
+             MATCH (stu)-[:HAS_RESULT]->(r:Result)
+             MATCH (r)-[:FOR_ASSESSMENT]->(ass:Assessment)
 
-            OPTIONAL MATCH (ass)-[:ASSESSES_CHAPTER]->(ch)
+            /* Filter year */
+            WHERE stu.syear = $year' . $filterWhere . '
+
+            /* Pick LAST exam */
+            WITH sd, stu, st, sub, ch, r, ass
+            ORDER BY ass.exam_date DESC
+
+            WITH sd, stu, st, sub, ch,
+                 COLLECT({r: r, ass: ass}) AS exams
+
+            WITH sd, stu, st, sub, ch,
+                 CASE 
+                    WHEN SIZE(exams) > 0 THEN [exams[0]]
+                    ELSE exams
+                 END AS selected_exams
+
+            UNWIND selected_exams AS ex
+
+            WITH sd, stu, st, sub, ch,
+                 ex.r AS r,
+                 ex.ass AS ass
+
+            /* Link chapter with assessment */
+             MATCH (ass)-[:ASSESSES_CHAPTER]->(ch)
+
+            /* Questions */
+             MATCH (ass)-[:HAS_QUESTION]->(q:Question)
 
             /* Aggregation */
             WITH sd, stu, st, sub, ch, ass,
+                 COLLECT(DISTINCT q.qId) AS question_ids,
                  MAX(r.obtain_marks) AS obtained_marks,
                  COALESCE(ass.total_marks, 0) AS total_marks
 
             /* Percentage */
             WITH sd, stu, st, sub, ch, ass,
+                 question_ids,
                  obtained_marks,
                  total_marks,
                  CASE 
@@ -266,6 +328,7 @@ class StudentGraphController extends Controller
 
             /* Level */
             WITH sd, stu, st, sub, ch, ass,
+                 question_ids,
                  total_marks,
                  obtained_marks,
                  percentage,
@@ -285,7 +348,7 @@ class StudentGraphController extends Controller
               sub.display_name                   AS subject_name,
               ass.assId                          AS assessment_id,
               ass.paper_name                     AS assessment_name,
-              COALESCE(ass.question_ids, [])    AS question_ids,
+              ass.question_ids                   AS question_ids,
               ch.chId                            AS chapter_id,
               ch.chapter_name                    AS chapter_name,
               total_marks                        AS assessment_total,
@@ -295,12 +358,6 @@ class StudentGraphController extends Controller
 
             ORDER BY sub.display_name, ch.chapter_name
             ';
-
-            $params = [
-                'studentId' => $studentId,
-                'subInstituteId' => $subInstituteId,
-                'year' => $year
-            ];
 
             $result = $client->run($query, $params);
 
@@ -333,7 +390,10 @@ class StudentGraphController extends Controller
                 'filters' => [
                     'student_id' => $studentId,
                     'sub_institute_id' => $subInstituteId,
-                    'syear' => $year
+                    'syear' => $year,
+                    'standard_id' => $standardId ? (int) $standardId : null,
+                    'subject_id' => $subjectId ? (int) $subjectId : null,
+                    'chapter_id' => $chapterId ? (int) $chapterId : null
                 ]
             ], 200);
 
