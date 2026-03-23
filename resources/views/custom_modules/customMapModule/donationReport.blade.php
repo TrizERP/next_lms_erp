@@ -54,7 +54,7 @@
                     </div>
                     <div class="col-md-3">
                         <label for="">Payment Mode</label>
-                        <select name="payment_mode" id="payment_mode" class="form-control" required>
+                        <select name="payment_mode" id="payment_mode" class="form-control">
                         <option value="">-Select Mode-</option>
                         @foreach($data['payment_mode'] as $key=>$mode)
                          <option value="{{$key}}" @if($data['selPaymentMode']==$key) selected @endif>{{$mode}}</option>

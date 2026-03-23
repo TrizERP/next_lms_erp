@@ -84,7 +84,7 @@ class classwiseGradeReportController extends Controller
             ->leftJoin('result_marks as rm', function ($join) {
                 $join->on("rm.exam_id","=" ,"e.id")->on("rm.sub_institute_id", "=", "e.sub_institute_id");
             })
-            ->selectRaw("e.id,e.title AS ExamTitle, sum(e.points) AS total_points, e.subject_id,s.display_name AS subject_name,rm.student_id,round(SUM(rm.points),0) AS obtained_points,rm.is_absent,s.elective_subject")
+            ->selectRaw("e.id,e.title AS ExamTitle, sum(e.points) AS total_points, e.subject_id,s.display_name AS subject_name,rm.student_id,round(SUM(rm.points),0) AS obtained_points,rm.is_absent,s.elective_subject,s.optional_type")
             ->when($term_id!='', function ($q) use ($term_id) {
                 $q->where('e.term_id', $term_id);
             })
@@ -110,7 +110,7 @@ class classwiseGradeReportController extends Controller
         // echo "<pre>";print_r($result);exit;
         foreach ($result as $key => $value) {
             $value->display_points='';
-            if($value->elective_subject=="Yes"){
+            if($value->elective_subject=="Yes" && $value->optional_type != 1){
                 $value->obtained_points = \App\Helpers\getGrade($grade_arr, $value->total_points, $value->obtained_points);
                 $value->display_points ="<b>".$value->obtained_points."</b>";
             }
@@ -143,7 +143,7 @@ class classwiseGradeReportController extends Controller
                 $studentResults[$value->student_id]['Average'][$value->subject_name] += $tot;
             }
         }
-        // echo "<pre>";print_r($studentResults);exit;
+        //echo "<pre>";print_r($studentResults);exit;
 
         $req = New Request(['stdId'=>$standard_id,'termID'=>$term_id,'title'=>$exam_create]);
 

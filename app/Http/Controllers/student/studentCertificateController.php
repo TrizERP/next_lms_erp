@@ -931,6 +931,7 @@ LIMIT 1");
         $template = $request->input('template');
         $student_ids = explode(',', $student_id);
         $certificate_reason = $request->input('certificate_reason');
+        $certificates = ['Transfer Certificate','Bonafide'];
 
         // 22-03-2025 start duplication prevent
         $studentDetails = DB::table('certificate_history as a')
@@ -981,14 +982,17 @@ LIMIT 1");
                 ->selectRaw('(IFNULL(MAX(cast(c.certificate_number AS UNSIGNED)),0) + 1) AS certificate_no')
                 ->where('c.sub_institute_id', $sub_institute_id)
                 ->where('certificate_type', $template)
-                ->when($sub_institute_id != 47, function ($query) use ($syear) {
-                    return $query->where('syear', $syear);
-                })
+                ->when(
+                    ($sub_institute_id != 47) || ($sub_institute_id == 47 && !in_array($template, $certificates)),
+                    function ($query) use ($syear) {
+                        return $query->where('syear', $syear);
+                    }
+                )
                 ->get()->toArray();
 
             $certificate_no = $certificate_no_result[0]->certificate_no;
 
-            if(in_array($template,['Transfer Certificate','Bonafide']) && $sub_institute_id==254){
+            if(in_array($template,$certificates) && $sub_institute_id==254){
                 $certificate_no_result = DB::table('certificate_history as c')
                 ->selectRaw('c.certificate_number')
                 ->where('c.sub_institute_id', $sub_institute_id)
