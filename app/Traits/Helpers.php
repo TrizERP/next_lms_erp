@@ -116,9 +116,9 @@ trait Helpers
             ? round((100 * $obt / $total), 0) 
             : 0;
         
-        /*if (!is_numeric($mark) || $mark === null || $mark === '') {
-            $mark = 0; // default value if mark is invalid
-        }*/
+        if ($obt == 0 && $total == 0){
+            return '-';
+        }
         
         //$mark = round(($mark / 2), 0);
 
