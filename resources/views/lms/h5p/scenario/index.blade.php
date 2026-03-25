@@ -278,10 +278,10 @@
                         <td>
                              
                             <div class="action-buttons">
-                            @if(!in_array(session()->get('user_profile_name'),['student','Student','STUDENT']))
                                 <a href="{{ route('scenario_based.show', $scenario->id) }}?chapter_id={{$data['chapter_id']}}&standard_id={{$data['standard_id']}}&subject_id={{$data['subject_id']}}" class="btn-view">
                                     <i class="fas fa-eye"></i>
                                 </a>
+                            @if(!in_array(session()->get('user_profile_name'),['student','Student','STUDENT']))
                                 <a href="{{ route('scenario_based.edit', $scenario->id) }}?chapter_id={{$data['chapter_id']}}&standard_id={{$data['standard_id']}}&subject_id={{$data['subject_id']}}" class="btn-edit">
                                     <i class="fas fa-edit"></i>
                                 </a>
