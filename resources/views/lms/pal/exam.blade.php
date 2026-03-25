@@ -22,7 +22,9 @@ html {
             {{ method_field('POST') }}
             @csrf
 
-            <input type="hidden" name="hid_session_quiz" id="hid_session_quiz" value="{{ request()->session()->get('session_quiz') }}">
+            <input type="hidden" name="hid_session_quiz" id="hid_session_quiz" 
+value="{{ \Carbon\Carbon::parse(request()->session()->get('session_quiz'))->format('Y-m-d H:i:s') }}">
+            <!-- <input type="hidden" name="hid_session_quiz" id="hid_session_quiz" value="{{ request()->session()->get('session_quiz') }}"> -->
             <div class="tab-content" id="pills-tabContent">
                 <div class="tab-pane fade show active" id="chat" role="tabpanel" aria-labelledby="chat-tab">
                     <div class="card border-0 rounded mb-5">
@@ -43,7 +45,9 @@ html {
                                 </div>
                                 <div class="quiz-time">
                                     <!-- <a href="#" class="btn btn-outline-primary mb-3">Start a new Preview</a>-->
-                                    <div class="color-primary mb-2">Total Marks : {{$data['questionpaper_data']['total_marks']}}</div> 
+                                   <div class="color-primary mb-2">
+    Total Marks : {{ count($data['question_arr']) }}
+</div>
                                     <div class="color-primary mb-2">(Total {{$data['questionpaper_data']['time_allowed']}} mins)</div> 
                                     <div class="text-secondary">Time Left: <p id="showtimer"></p></div>                                  
                                 </div>
@@ -51,7 +55,8 @@ html {
                         </div>
                     </div>
                     <input type="hidden" name="questionpaper_time" id="questionpaper_time" value="{{$data['questionpaper_data']['time_allowed']}}">
-                    <input type="hidden" name="total_marks" id="total_marks" value="{{$data['questionpaper_data']['total_marks']}}">
+                    <!-- <input type="hidden" name="total_marks" id="total_marks" value="{{$data['questionpaper_data']['total_marks']}}"> -->
+                   <input type="hidden" name="total_marks" id="total_marks" value="{{ count($data['question_arr']) }}">
                     <input type="hidden" name="total_question" id="total_question" value="{{count($data['question_arr'])}}">
                     
                    {{-- <input type="hidden" name="questionpaper_id" id="questionpaper_id" value="{{$data['questionpaper_data']['id']}}"> --}} 
@@ -211,12 +216,24 @@ $(document).ready(function() {
 //Set the date we're counting down to
 //var countDownDate = new Date("Jan 7, 2021 15:57:25").getTime();
 
-var min_to_add = $("#questionpaper_time").val();
+var min_to_add = parseInt($("#questionpaper_time").val());
 var session_date = $("#hid_session_quiz").val();
-// alert(session_date);
-var dt = new Date(session_date);//new Date("<?php echo request()->session()->get('quiz'); ?>");
-// console.log("session_time"+dt);
-dt.setMinutes( dt.getMinutes() + parseInt(min_to_add) );
+
+if (!session_date) {
+    console.error("Session date is missing!");
+    return;
+}
+
+// Convert to proper format for JS
+var dt = new Date(session_date.replace(/-/g, "/"));
+
+if (isNaN(dt.getTime())) {
+    console.error("Invalid date format:", session_date);
+    return;
+}
+
+dt.setMinutes(dt.getMinutes() + min_to_add);
+
 var countDownDate = dt.getTime();
 // console.log("countDownDate"+countDownDate);
 // Update the count down every 1 second
@@ -250,7 +267,8 @@ var x = setInterval(function() {
     alert("Your Exam time is exipred");
     $("#online_exam").submit();
     @php
-    request()->session()->forget("session_quiz");
+    session(['session_quiz' => now()]);
+    // request()->session()->forget("session_quiz");
     @endphp
     window.close();
   }
