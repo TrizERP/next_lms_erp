@@ -65,7 +65,7 @@
                                     <h3 class="card-title">{{$item['title']}}</h3>
                                 </div>
                                 
-                                <p class="card-description">Interactive learning with engaging activities and assessments</p>
+                                <p class="card-description">{{$item['description']}}</p>
                                 
                                 <div class="card-footer">
                                     <span class="explore-btn">

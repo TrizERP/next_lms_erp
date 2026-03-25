@@ -33,10 +33,10 @@ class H5PIndexController extends Controller
             ],
             [
                 'id' => 2,
-                'title' => 'Quiz',
-                'description' => 'AI Quiz for student',
+                'title' => 'Multiple Choice Questions',
+                'description' => 'Multiple Choice Questions',
                 'icon' => 'mdi mdi-help-circle-outline',
-                'route' => 'scenario_based.index',
+                'route' => 'h5p_mcq.index',
             ],
             [
                 'id' => 3,
