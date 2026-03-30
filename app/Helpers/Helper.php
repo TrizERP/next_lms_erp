@@ -2950,4 +2950,19 @@ if (!function_exists('get_string')) {
     }
     }
 
+    if(!function_exists('getTableFieldFromId')){
+        function getTableFieldFromId($tableName, $fieldName, $id,$fromField='')
+        {
+            $result = DB::table($tableName)
+                ->when($fromField != '', function ($q) use ($fromField,$id) {
+                    $q->where($fromField, $id);
+                },function($q) use ($id){
+                    $q->where('id', $id);
+                })
+                ->pluck($fieldName)
+                ->first();
+            return $result ?? '-';
+        }
+    }
+
 }

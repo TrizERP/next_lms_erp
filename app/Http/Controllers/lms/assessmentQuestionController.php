@@ -263,9 +263,9 @@ class assessmentQuestionController extends Controller
             if ($isMultipleType) {
                 // If "Multiple" is selected, only generate MCQ questions
                 $prompt = "Generate unique MCQ questions (Multiple Choice Questions with 4 options) for " .
-                    "Standard: " . ($standard ?? 'General') .
-                    ", Subject: " . ($subject_id ?? 'General') .
-                    ", Chapter: " . ($chapter_id ?? 'General');
+                    "Standard: " . ($standard_name ?? 'General') .
+                    ", Subject: " . ($subject_name ?? 'General') .
+                    ", Chapter: " . ($chapter_name ?? 'General');
                 
                 if ($topic_id) {
                     $prompt .= ", Topic: " . $topic_id;
@@ -288,9 +288,9 @@ class assessmentQuestionController extends Controller
             } else {
                 // Original behavior - generate varied question types
                 $prompt = "Generate unique, varied questions for " .
-                    "Standard: " . ($standard ?? 'General') .
-                    ", Subject: " . ($subject_id ?? 'General') .
-                    ", Chapter: " . ($chapter_id ?? 'General');
+                    "Standard: " . ($standard_name ?? 'General') .
+                    ", Subject: " . ($subject_name ?? 'General') .
+                    ", Chapter: " . ($chapter_name ?? 'General');
                 
                 if ($topic_id) {
                     $prompt .= ", Topic: " . $topic_id;
