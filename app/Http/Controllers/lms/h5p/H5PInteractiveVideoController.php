@@ -54,10 +54,12 @@ class H5PInteractiveVideoController extends Controller
             $sub_institute_id = $request->sub_institute_id;
             $syear = $request->syear;
             $user_id = $request->user_id;
-        }
-
+            
         // Validate the request
         $request->validate([
+            'sub_institute_id' => 'required',
+            'syear' => 'required',
+            'user_id' => 'required',
             'title' => 'required|string|max:255',
             'video_path' => 'required|file|mimes:mp4,mov,avi,mkv,webm|max:1024000',
             'chapter_id' => 'required',
@@ -68,6 +70,8 @@ class H5PInteractiveVideoController extends Controller
             'interactions.*.interaction_type' => 'required|in:multiple_choice,true_false,text_input',
             'interactions.*.question' => 'required|string|max:500',
         ]);
+
+        }
 
         // Handle video upload
         $video_path = null;
