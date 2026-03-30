@@ -222,16 +222,16 @@ class StudentGraphController extends Controller
             $year = (int) $request->get('syear', 2025); // Default to 2025
 
             // Required filter parameters for the query
-            $standardId = (int) $request->get('standard_id');
-            $subjectId = (int) $request->get('subject_id');
-            $chapterId = (int) $request->get('chapter_id');
-            $assessmentId = (int) $request->get('assessment_id');
+            // $standardId = (int) $request->get('standard_id');
+            // $subjectId = (int) $request->get('subject_id');
+            // $chapterId = (int) $request->get('chapter_id');
+            // $assessmentId = (int) $request->get('assessment_id');
 
             // Validation - all parameters required for this query
-            if (!$studentId || !$subInstituteId || !$standardId || !$subjectId || !$chapterId || !$assessmentId) {
+            if (!$studentId || !$subInstituteId) {
                 return response()->json([
                     'success' => false,
-                    'error' => 'student_id, sub_institute_id, standard_id, subject_id, chapter_id, and assessment_id are all required'
+                    'error' => 'student_id and sub_institute_id are required'
                 ], 400);
             }
 
@@ -240,21 +240,21 @@ class StudentGraphController extends Controller
                 'studentId' => $studentId,
                 'subInstituteId' => $subInstituteId,
                 'year' => $year,
-                'standardId' => $standardId,
-                'subjectId' => $subjectId,
-                'chapterId' => $chapterId,
-                'assessmentId' => $assessmentId
+                // 'standardId' => $standardId,
+                // 'subjectId' => $subjectId,
+                // 'chapterId' => $chapterId,
+                // 'assessmentId' => $assessmentId
             ];
 
             // Cypher query with parameters in MATCH clauses
             $query = 'MATCH (sd:StuDetail {student_id: $studentId, sub_institute_id: $subInstituteId})
       -[:HAS_STUDENT]->(stu:Student)
-MATCH (stu)-[:ENROLLED_IN]->(st:Standard{standard_id: $standardId})
-MATCH (st)-[:HAS_SUBJECT]->(sub:Subject{subject_id: $subjectId})
+MATCH (stu)-[:ENROLLED_IN]->(st:Standard)
+MATCH (st)-[:HAS_SUBJECT]->(sub:Subject)
 MATCH (stu)-[m:MASTERS]->(ch:Chapter)
-MATCH (stu)-[:HAS_RESULT]->(r:Result)-[:FOR_ASSESSMENT]->(ass:Assessment{subject_id: $subjectId,assId:$assessmentId})
+MATCH (stu)-[:HAS_RESULT]->(r:Result)-[:FOR_ASSESSMENT]->(ass:Assessment)
 MATCH (ass)-[:ASSESSES_CHAPTER]->(ch:Chapter)
-MATCH (ass)-[:HAS_QUESTION]->(q:Question{chapter_id:$chapterId})
+MATCH (ass)-[:HAS_QUESTION]->(q:Question)
 WITH sd, stu, st, sub, ch, ass,
      COLLECT(DISTINCT q.qId) AS question_ids,
      MAX(r.obtain_marks) AS obtained_marks,
@@ -331,11 +331,7 @@ LIMIT 1
                 'count' => count($data),
                 'filters' => [
                     'student_id' => $studentId,
-                    'sub_institute_id' => $subInstituteId,
-                    'standard_id' => $standardId ? (int) $standardId : null,
-                    'subject_id' => $subjectId ? (int) $subjectId : null,
-                    'chapter_id' => $chapterId ? (int) $chapterId : null,
-                    'assessment_id' => $assessmentId ? (int) $assessmentId : null
+                    'sub_institute_id' => $subInstituteId
                 ]
             ], 200);
 
@@ -343,7 +339,7 @@ LIMIT 1
             Log::error('StudentAssessment API Error: ' . $e->getMessage(), [
                 'student_id' => $request->get('student_id'),
                 'sub_institute_id' => $request->get('sub_institute_id'),
-                'syear' => $request->get('syear'),
+                'year' => $request->get('year'),    
                 'trace' => $e->getTraceAsString()
             ]);
 

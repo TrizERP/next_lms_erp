@@ -70,7 +70,7 @@ class adminapiController extends Controller
                 $otp = rand(100000, 999999);
 
                 $sub_institute_id = $data['sub_institute_id'];
-                $sub_Array = [328,329,330,331,333,61];
+                $sub_Array = [328,329,330,331,333,61,336,337,338,339,340,341];
                 if ($_REQUEST['mobile'] == '9979176562') {
                     $otp = "123456";
                 }else if(in_array($sub_institute_id, $sub_Array)){

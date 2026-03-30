@@ -716,61 +716,53 @@ class studentResultController extends Controller
         $attendance = $this->get_attendance($standard_id, $value['id'], $format, "total_attendance");
        
         $working = 0;
-$present = 0;
+        $present = 0;
 
-if (isset($attendance['table'])) {
-
-    $tableHtml = $attendance['table'];
-
-    // Extract all <td> values
+if (isset($explodeTermAtten) && $sub_institute_id == 47) {
+    /*$tableHtml = $attendance['table'];
     preg_match_all('/<td[^>]*>([^<]+)<\/td>/', $tableHtml, $tdMatches);
 
-    // Example match list:
-    // [0] => "No. Of Working Days"
-    // [1] => "212"
-    // [2] => "Days Attended"
-    // [3] => "193"
-
     if (!empty($tdMatches[1]) && count($tdMatches[1]) >= 4) {
-
-        // Working days is the 2nd <td> (index 1)
-        if (is_numeric(trim($tdMatches[1][1]))) {
+        if (is_numeric(trim($tdMatches[1][1])))
             $working = trim($tdMatches[1][1]);
-        }
 
-        // Present days is the 4th <td> (index 3)
-        if (is_numeric(trim($tdMatches[1][3]))) {
+        if (is_numeric(trim($tdMatches[1][3])))
             $present = trim($tdMatches[1][3]);
+    }
+    */
+    if (isset($explodeTermAtten[0]) && is_numeric($explodeTermAtten[0]))
+        $present = $explodeTermAtten[0];
+    if (isset($explodeTermAtten[1]) && is_numeric($explodeTermAtten[1]))
+        $working = $explodeTermAtten[1];
+
+    // 2. Get percentage (simple_result)
+    $percentage = 0;
+    if (isset($main_result['table'])) {
+        $tableHtml = $main_result['table'];
+
+        if (preg_match('/<b>(\d+(\.\d+)?)%<\/b>/', $tableHtml, $matches)) {
+            $percentage = $matches[1]; // numeric value
         }
     }
+
+    // 3. Save into DB
+    DB::table('result_reportcard_marks')->updateOrInsert(
+        [
+            'sub_institute_id' => session()->get('sub_institute_id'),
+            'student_id'  => $value['id'],
+            'standard_id' => $value['standard_id'],
+            'syear'       => $syear,
+        ],
+        [
+            'template_id'         => $template,
+            'total_working_day'   => $working,
+            'present_working_day' => $present,
+            'student_percentage'   => $percentage,
+            'updated_at'           => now(),
+        ]
+    );
 }
 
-        // 2. Get percentage (simple_result)
-        $percentage = 0;
-        if (isset($main_result['table'])) {
-            $tableHtml = $main_result['table'];
-
-            if (preg_match('/<b>(\d+(\.\d+)?)%<\/b>/', $tableHtml, $matches)) {
-                $percentage = $matches[1]; // numeric value
-            }
-        }
-
-        // 3. Save into DB
-        DB::table('result_reportcard_marks')->updateOrInsert(
-            [
-                'sub_institute_id' => session()->get('sub_institute_id'),
-                'student_id'  => $value['id'],
-                'standard_id' => $value['standard_id'],
-                'syear'       => $syear,
-            ],
-            [
-                'template_id'         => $template,
-                'total_working_day'   => $working,
-                'present_working_day' => $present,
-                'student_percentage'   => $percentage,
-                'updated_at'           => now(),
-            ]
-        );
         return $html_content;
         //  return $main_result;     ssmission_term_ssmission_term_higher    
     }
@@ -5515,7 +5507,7 @@ $table .= '</div>';
             // Store the total marks for each term
             $table .= '<th class="data_center"><b>Marks Obtained <br>(' . $total_mark . ') </b></th>';
             $overall_total += $total_mark;
-            $table .= '<th class="data_center"><b>Grade (' . $terms->title . ')</b></th>';
+            $table .= '<th class="data_center"><b>Grade</b></th>';// (' . $terms->title . ')
         }
 
         $table .= '</tr>

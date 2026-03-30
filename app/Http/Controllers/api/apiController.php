@@ -69,15 +69,14 @@ class apiController extends Controller
                 ->get($select);
 
             if (isset($data[0])) {
-                /* Hide By Rajesh for All fresh OTP 25-03-2026 */
-            	//if($data[0]->otp == null || $data[0]->otp == ''){
+            	if($data[0]->otp == null || $data[0]->otp == ''){
                 	$otp = rand(100000, 999999);
-            	//}else{
-            	//	$otp = $data[0]->otp;
-            	//}
+            	}else{
+            		$otp = $data[0]->otp;
+            	}
                 
                 $sub_institute_id = $data[0]->sub_institute_id;
-                $sub_Array = [328,329,330,331,333,61];
+                $sub_Array = [328,329,330,331,333,61,336,337,338,339,340,341];
                 if ($_REQUEST['mobile'] == '9979176562' || $_REQUEST['mobile'] == '9824154142') {
                     $otp = "123456";
                 } else if(in_array($sub_institute_id, $sub_Array)){
@@ -160,7 +159,7 @@ class apiController extends Controller
                 $otp = rand(100000, 999999);
 
                 $sub_institute_id = $data['sub_institute_id'];
-                $sub_Array = [328,329,330,331,333,61];
+                $sub_Array = [328,329,330,331,333,61,336,337,338,339,340,341];
                 if ($_REQUEST['mobile'] == '9979176562' || $_REQUEST['mobile'] == '9824154142') {
                     $otp = "123456";
                 }else if(in_array($sub_institute_id, $sub_Array)){

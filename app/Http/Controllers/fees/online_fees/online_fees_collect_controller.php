@@ -2998,7 +2998,13 @@ if (Str::startsWith($order_id, 'pay_')) {
         if (empty($get_map_bank_detail)) {
             return response()->json(['error' => 'Payment gateway configuration missing'], 500);
         }
-        
+
+if (isset($input['error'])) {
+    $type = $request->input('type') ?? 'web';
+    $school_data = array();
+    return \App\Helpers\is_mobile($type,"fees/online_fees_collect/show_error",$school_data,"view");
+}
+
         // STEP 4: Update payment record (same as first function)
         DB::table("fees_payment")
             ->where(["id" => $inserted_id])
