@@ -13,6 +13,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use function App\Helpers\getTableFieldFromId;
 
 class assessmentQuestionController extends Controller
 {
@@ -255,7 +256,11 @@ class assessmentQuestionController extends Controller
             // Get question type ID to check if "Multiple" (MCQ only) is selected
             $questionTypeId = $request->get('question_type_id');
             $isMultipleType = !empty($questionTypeId) && $questionTypeId == 1;
-            
+            $standard_name = getTableFieldFromId('standard', 'name', $standard);
+            $subject_name = getTableFieldFromId('sub_std_map','display_name',$subject_id,'subject_id');
+            $chapter_name = getTableFieldFromId('chapter_master','chapter_name',$chapter_id);
+            // return $subject_name;exit;
+
             // Generate a unique seed for variety
             $seed = rand(1, 10000);
             
@@ -309,11 +314,12 @@ class assessmentQuestionController extends Controller
                 $questionCount = !empty($mappings[0]['questions']) ? (int)$mappings[0]['questions'] : 5;
                 $prompt .= ". Generate exactly " . $questionCount . " different question(s) that vary in type (MCQ, short answer, long answer, fill in the blanks) and difficulty level. ";
                 $prompt .= "Make each question unique and different from each other. Use this seed for variety: " . $seed . ". ";
-                $prompt .= "Return the response as a JSON array of question objects with fields: question, question_type (MCQ/ShortAnswer/LongAnswer/FillInBlanks), difficulty (Easy/Medium/Hard), options (array of 4 for MCQ), correct_answer, and explanation.";
+                $prompt .= "Return the response as a JSON array of question objects with fields: question, question_type (MCQ/ShortAnswer/LongAnswer/FillInBlanks), difficulty (Easy/Medium/Hard), options (array of 4 for MCQ), correct_answer, and explanation. with no extra text want only json array";
             }
             if($request->get('question_type_id')==1){
                 $prompt .= " and it must have different types of 4 options which differentiate between them. give me corre t_answer also below the options array.";
             }
+            // return $prompt;exit;
             // Call the AI service
             $generatedQuestions = $response = $this->openAIService->generateContent($prompt);
             
