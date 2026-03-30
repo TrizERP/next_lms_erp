@@ -40,10 +40,10 @@ class H5PIndexController extends Controller
             ],
             [
                 'id' => 3,
-                'title' => 'Video',
-                'description' => 'AI Quiz for student',
+                'title' => 'Interactive Video',
+                'description' => 'Interactive Video',
                 'icon' => 'mdi mdi-help-circle-outline',
-                'route' => 'scenario_based.index',
+                'route' => 'h5p_interactive_video.index',
             ]
         ];
         $res['chapter_id'] = $request->chapter_id;

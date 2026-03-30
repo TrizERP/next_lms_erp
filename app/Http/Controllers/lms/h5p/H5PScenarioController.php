@@ -63,12 +63,29 @@ class H5PScenarioController extends Controller
 
         // Upload file
         $file = $request->file('image');
-        $filename = $file->getClientOriginalName();
-        $ext = $file->getClientOriginalExtension();
-        $size = $file->getSize();
-        $newfilename = 'scenario_' . date('Y-m-d_h-i-s') . '.' . $ext;
-        Storage::disk('digitalocean')->putFileAs('public/h5p_content/', $file, $newfilename, 'public');
-        $file_path = Storage::disk('digitalocean')->url('public/h5p_content/' . $newfilename);
+
+        if (!$file || !$file->isValid()) {
+            return "Invalid file";
+        }
+
+        $newfilename = 'scenario_' . date('Y-m-d_h-i-s') . '.' . $file->getClientOriginalExtension();
+
+        // Try DigitalOcean first
+        try {
+            Storage::disk('digitalocean')->putFileAs('public/h5p_content/', $file, $newfilename, 'public');
+            $file_path = Storage::disk('digitalocean')->url('public/h5p_content/' . $newfilename);
+        } catch (\Exception $e) {
+            // Fallback to local public/h5p_content folder
+            $destinationPath = public_path('/h5p_content/');
+            if (!file_exists($destinationPath)) {
+                mkdir($destinationPath, 0755, true);
+            }
+            $file->move($destinationPath, $newfilename);
+            $file_path = asset('/h5p_content/' . $newfilename);
+        }
+
+// return $file_path;
+// exit;
 
         // Create scenario and get the inserted ID
         $scenario = H5pScenario::create([

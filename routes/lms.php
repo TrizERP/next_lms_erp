@@ -56,6 +56,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\lms\h5p\H5PIndexController;
 use App\Http\Controllers\lms\h5p\H5PScenarioController;
 use App\Http\Controllers\lms\h5p\H5PMCQController;
+use App\Http\Controllers\lms\h5p\H5PInteractiveVideoController;
 
 Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
     Route::get('o-net-data-category',[\App\Http\Controllers\lms\ONetOnlineDataController::class,'index'])->name('o-net-data-category.index');
@@ -301,6 +302,7 @@ Route::prefix('h5p')->group(function () {
     Route::resource('html_contents',H5PIndexController::class);
     Route::resource('scenario_based',H5PScenarioController::class);
     Route::resource('h5p_mcq',H5PMCQController::class);
+    Route::resource('h5p_interactive_video',H5PInteractiveVideoController::class);
 });
 Route::post('get-h5p-ai-output', [H5PIndexController::class, 'getH5pAIOutput'])->name('get-h5p-ai-output');
 Route::post('get-h5p-ai-scenario', [H5PScenarioController::class, 'getH5pAIScenario'])->name('get-h5p-ai-scenario');
