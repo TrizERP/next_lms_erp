@@ -62,15 +62,7 @@ class H5PScenarioController extends Controller
         }
 
         // Upload file
-        // $file = $request->file('image');
-        // $filename = $file->getClientOriginalName();
-        // $ext = $file->getClientOriginalExtension();
-        // $size = $file->getSize();
-        // $newfilename = 'scenario_' . date('Y-m-d_h-i-s') . '.' . $ext;
-        // Storage::disk('digitalocean')->putFileAs('public/h5p_content/', $file, $newfilename, 'public');
-        // $file_path = Storage::disk('digitalocean')->url('public/h5p_content/' . $newfilename);
-
-     $file = $request->file('image');
+        $file = $request->file('image');
 
         if (!$file || !$file->isValid()) {
             return "Invalid file";
@@ -78,13 +70,19 @@ class H5PScenarioController extends Controller
 
         $newfilename = 'scenario_' . date('Y-m-d_h-i-s') . '.' . $file->getClientOriginalExtension();
 
-        // ✅ Move file to public folder
-        $destinationPath = public_path('admin_dep/h5p/image');
-
-        $file->move($destinationPath, $newfilename);
-
-        // ✅ Generate URL
-        $file_path = asset('admin_dep/h5p/image/' . $newfilename);
+        // Try DigitalOcean first
+        try {
+            Storage::disk('digitalocean')->putFileAs('public/h5p_content/', $file, $newfilename, 'public');
+            $file_path = Storage::disk('digitalocean')->url('public/h5p_content/' . $newfilename);
+        } catch (\Exception $e) {
+            // Fallback to local public/h5p_content folder
+            $destinationPath = public_path('/h5p_content/');
+            if (!file_exists($destinationPath)) {
+                mkdir($destinationPath, 0755, true);
+            }
+            $file->move($destinationPath, $newfilename);
+            $file_path = asset('/h5p_content/' . $newfilename);
+        }
 
 // return $file_path;
 // exit;

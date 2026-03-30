@@ -38,13 +38,13 @@ class H5PIndexController extends Controller
                 'icon' => 'mdi mdi-help-circle-outline',
                 'route' => 'h5p_mcq.index',
             ],
-            // [
-            //     'id' => 3,
-            //     'title' => 'Video',
-            //     'description' => 'AI Quiz for student',
-            //     'icon' => 'mdi mdi-help-circle-outline',
-            //     'route' => 'scenario_based.index',
-            // ]
+            [
+                'id' => 3,
+                'title' => 'Interactive Video',
+                'description' => 'Interactive Video',
+                'icon' => 'mdi mdi-help-circle-outline',
+                'route' => 'h5p_interactive_video.index',
+            ]
         ];
         $res['chapter_id'] = $request->chapter_id;
         $res['standard_id'] = $request->standard_id;
