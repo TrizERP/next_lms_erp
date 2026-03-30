@@ -601,9 +601,9 @@
             <div id="certificate" class="certificate">
                 <!-- Certificate Header with School Logo and Name -->
                 <div class="certificate-header">
-                    @if(session()->get('school_logo') && session()->get('school_logo') != 'null')
-                        <img src="/admin_dep/images/{{session()->get('school_logo')}}" class="school-logo" alt="School Logo">
-                    @endif
+                @if(session()->get('school_logo') && session()->get('school_logo') != 'null' && file_exists(public_path('admin_dep/images/' . session()->get('school_logo'))))
+                    <img src="{{ asset('admin_dep/images/' . session()->get('school_logo')) }}" class="school-logo" alt="School Logo">
+                @endif
                     <div class="school-name">{{ session()->get('school_name') ?? 'School Name' }}</div>
                 </div>
                 

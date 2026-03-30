@@ -62,13 +62,32 @@ class H5PScenarioController extends Controller
         }
 
         // Upload file
-        $file = $request->file('image');
-        $filename = $file->getClientOriginalName();
-        $ext = $file->getClientOriginalExtension();
-        $size = $file->getSize();
-        $newfilename = 'scenario_' . date('Y-m-d_h-i-s') . '.' . $ext;
-        Storage::disk('digitalocean')->putFileAs('public/h5p_content/', $file, $newfilename, 'public');
-        $file_path = Storage::disk('digitalocean')->url('public/h5p_content/' . $newfilename);
+        // $file = $request->file('image');
+        // $filename = $file->getClientOriginalName();
+        // $ext = $file->getClientOriginalExtension();
+        // $size = $file->getSize();
+        // $newfilename = 'scenario_' . date('Y-m-d_h-i-s') . '.' . $ext;
+        // Storage::disk('digitalocean')->putFileAs('public/h5p_content/', $file, $newfilename, 'public');
+        // $file_path = Storage::disk('digitalocean')->url('public/h5p_content/' . $newfilename);
+
+     $file = $request->file('image');
+
+        if (!$file || !$file->isValid()) {
+            return "Invalid file";
+        }
+
+        $newfilename = 'scenario_' . date('Y-m-d_h-i-s') . '.' . $file->getClientOriginalExtension();
+
+        // ✅ Move file to public folder
+        $destinationPath = public_path('admin_dep/h5p/image');
+
+        $file->move($destinationPath, $newfilename);
+
+        // ✅ Generate URL
+        $file_path = asset('admin_dep/h5p/image/' . $newfilename);
+
+// return $file_path;
+// exit;
 
         // Create scenario and get the inserted ID
         $scenario = H5pScenario::create([
