@@ -501,6 +501,8 @@ LIMIT 1");
         $html_content = str_replace(htmlspecialchars("<<student_dob_word_value>>"), $date_in_word, $html_content);
         $html_content = str_replace(htmlspecialchars("<<student_dise_uid_value>>"), $value['dise_uid'], $html_content);
         $html_content = str_replace(htmlspecialchars("<<student_dise_uid_plus>>"), $value['dise_uid_plus'], $html_content);
+    $html_content = str_replace(htmlspecialchars("<<student_pen_no>>"), $value['student_pen_no'], $html_content);
+        $html_content = str_replace(htmlspecialchars("<<aapar_id>>"), $value['aapar_id'], $html_content);
         $html_content = str_replace(htmlspecialchars("<<certificate_no>>"), $certificate_no, $html_content);
         $html_content = str_replace(htmlspecialchars("<<HIS_HER>>"), $cap_his_her, $html_content);
         $html_content = str_replace(htmlspecialchars("<<his_her>>"), $small_his_her, $html_content);

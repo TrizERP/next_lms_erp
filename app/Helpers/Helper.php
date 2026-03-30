@@ -1665,6 +1665,8 @@ if (!function_exists('getStudents')) {
             $student_data[$value->id]['admission_no'] = $value->enquiry_no;
             $student_data[$value->id]['admission_standard'] = $value->admission_standard;
             $student_data[$value->id]['pan_card'] = $value->pan_card;
+            $student_data[$value->id]['student_pen_no'] = $value->student_pen_no;
+            $student_data[$value->id]['aapar_id'] = $value->aapar_id;
         }
 
         return $student_data;

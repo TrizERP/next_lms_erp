@@ -41,7 +41,7 @@
                                 <tr>
                                     <td>{{$j}}</td>
                                     <td>{{$data['syear']}}</td>
-                                    <td>{{$data['bank_name']}}</td>
+                                    <td>{{ $data['bank_name'] ?? '' }}</td>
                                     <td>
                                         <a href="{{env('APP_URL')}}/fees/online_fees_collect" target="_blank">
                                             Link

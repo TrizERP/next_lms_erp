@@ -167,6 +167,8 @@ class templateMasterController extends Controller
             'admission_date_value' => 'Admission Date',
             'short_standard_name_value' => 'Current Standard Name in Short Form',
             'student_standard_value' => 'Student Current Standard',
+            'student_pen_no' => 'Student Pen No',
+            'aapar_id' => 'Student Appar ID',
             'short_standard_name_in_word_value' => 'School stream value from standard',
             'next_std_name'=>'Next Standard as per selected year from standard',// added on 05-05-2025
             'next_std_stream'=>'Next Standard stream as per selected year from standard',// added on 05-05-2025
