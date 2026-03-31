@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\lms\h5p\H5pInteractiveVideo;
 use App\Models\lms\h5p\H5pVideoInteraction;
 use Illuminate\Support\Facades\Storage;
-use function App\helpers\is_mobile;
+use function App\Helpers\is_mobile;
 
 class H5PInteractiveVideoController extends Controller
 {
@@ -90,7 +90,7 @@ class H5PInteractiveVideoController extends Controller
                 }
             } catch (\Exception $e) {
                 // Fallback to local storage
-                $destinationPath = public_path('h5p/video');
+                $destinationPath = public_path('/h5p_content/');
                 if (!file_exists($destinationPath)) {
                     mkdir($destinationPath, 0755, true);
                 }

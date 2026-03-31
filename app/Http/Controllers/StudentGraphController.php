@@ -221,12 +221,13 @@ class StudentGraphController extends Controller
             $subInstituteId = (int) $request->get('sub_institute_id');
             $year = (int) $request->get('syear', 2025); // Default to 2025
 
-            // Optional filter parameters
-            $standardId = $request->get('standard_id');
-            $subjectId = $request->get('subject_id');
-            $chapterId = $request->get('chapter_id');
+            // Required filter parameters for the query
+            // $standardId = (int) $request->get('standard_id');
+            // $subjectId = (int) $request->get('subject_id');
+            // $chapterId = (int) $request->get('chapter_id');
+            // $assessmentId = (int) $request->get('assessment_id');
 
-            // Validation
+            // Validation - all parameters required for this query
             if (!$studentId || !$subInstituteId) {
                 return response()->json([
                     'success' => false,
@@ -234,130 +235,71 @@ class StudentGraphController extends Controller
                 ], 400);
             }
 
-            // Build dynamic WHERE clauses for optional filters
-            $whereClauses = [];
+            // Params for the query
             $params = [
                 'studentId' => $studentId,
                 'subInstituteId' => $subInstituteId,
-                'year' => $year
+                'year' => $year,
+                // 'standardId' => $standardId,
+                // 'subjectId' => $subjectId,
+                // 'chapterId' => $chapterId,
+                // 'assessmentId' => $assessmentId
             ];
 
-            if ($standardId) {
-                $whereClauses[] = 'st.standard_id = $standardId';
-                $params['standardId'] = (int) $standardId;
-            }
+            // Cypher query with parameters in MATCH clauses
+            $query = 'MATCH (sd:StuDetail {student_id: $studentId, sub_institute_id: $subInstituteId})
+      -[:HAS_STUDENT]->(stu:Student)
+MATCH (stu)-[:ENROLLED_IN]->(st:Standard)
+MATCH (st)-[:HAS_SUBJECT]->(sub:Subject)
+MATCH (stu)-[m:MASTERS]->(ch:Chapter)
+MATCH (stu)-[:HAS_RESULT]->(r:Result)-[:FOR_ASSESSMENT]->(ass:Assessment)
+MATCH (ass)-[:ASSESSES_CHAPTER]->(ch:Chapter)
+MATCH (ass)-[:HAS_QUESTION]->(q:Question)
+WITH sd, stu, st, sub, ch, ass,
+     COLLECT(DISTINCT q.qId) AS question_ids,
+     MAX(r.obtain_marks) AS obtained_marks,
+     COALESCE(ass.total_marks, 0) AS total_marks
+/* Percentage */
+WITH sd, stu, st, sub, ch, ass,
+     question_ids,
+     obtained_marks,
+     total_marks,
+     CASE 
+        WHEN total_marks > 0 
+        THEN (obtained_marks * 1.0 / total_marks) * 100
+        ELSE 0
+     END AS percentage
 
-            if ($subjectId) {
-                $whereClauses[] = 'sub.subject_id = $subjectId';
-                $params['subjectId'] = (int) $subjectId;
-            }
+/* Level */
+WITH sd, stu, st, sub, ch, ass,
+     question_ids,
+     total_marks,
+     obtained_marks,
+     percentage,
+     CASE 
+        WHEN percentage < 40 THEN "easy"
+        WHEN percentage < 70 THEN "medium"
+        ELSE "hard"
+     END AS student_level
+RETURN  stu.student_id                     AS student_id,
+  sd.first_name + " " + sd.last_name AS student_name,
+  stu.syear                          AS syear,
+  st.standard_id                     AS standard_id,
+  st.name                            AS standard_name,
+  sub.subject_id                     AS subject_id,
+  sub.display_name                   AS subject_name,
+  ass.assId                          AS assessment_id,
+  ass.paper_name                     AS assessment_name,
+  ass.question_ids                   AS question_ids,
+  ch.chId                            AS chapter_id,
+  ch.chapter_name                    AS chapter_name,
+  total_marks                        AS assessment_total,
+  obtained_marks                     AS obtained_marks,
+  ROUND(percentage,2)                AS student_average_score,
+  student_level                      AS student_level
 
-            if ($chapterId) {
-                $whereClauses[] = 'ch.chId = $chapterId';
-                $params['chapterId'] = (int) $chapterId;
-            }
-
-            // Build WHERE clause for filters
-            $filterWhere = '';
-            if (!empty($whereClauses)) {
-                $filterWhere = ' AND ' . implode(' AND ', $whereClauses);
-            }
-
-            // Cypher query - gets all results, picks last exam per chapter
-            $query = '
-            MATCH (sd:StuDetail {student_id: $studentId, sub_institute_id: $subInstituteId})
-            -[:HAS_STUDENT]->(stu:Student)
-
-            /* Standard → Subject → Chapter */
-            MATCH (stu)-[:ENROLLED_IN]->(st:Standard)
-            MATCH (st)-[:HAS_SUBJECT]->(sub:Subject)
-            MATCH (sub)-[:HAS_CHAPTER]->(ch:Chapter)
-
-            /* Mastery */
-            MATCH (stu)-[m:MASTERS]->(ch)
-            WHERE m.proficiency_score IS NOT NULL
-
-            /* Get ALL results */
-             MATCH (stu)-[:HAS_RESULT]->(r:Result)
-             MATCH (r)-[:FOR_ASSESSMENT]->(ass:Assessment)
-
-            /* Filter year */
-            WHERE stu.syear = $year' . $filterWhere . '
-
-            /* Pick LAST exam */
-            WITH sd, stu, st, sub, ch, r, ass
-            ORDER BY ass.exam_date DESC
-
-            WITH sd, stu, st, sub, ch,
-                 COLLECT({r: r, ass: ass}) AS exams
-
-            WITH sd, stu, st, sub, ch,
-                 CASE 
-                    WHEN SIZE(exams) > 0 THEN [exams[0]]
-                    ELSE exams
-                 END AS selected_exams
-
-            UNWIND selected_exams AS ex
-
-            WITH sd, stu, st, sub, ch,
-                 ex.r AS r,
-                 ex.ass AS ass
-
-            /* Link chapter with assessment */
-             MATCH (ass)-[:ASSESSES_CHAPTER]->(ch)
-
-            /* Questions */
-             MATCH (ass)-[:HAS_QUESTION]->(q:Question)
-
-            /* Aggregation */
-            WITH sd, stu, st, sub, ch, ass,
-                 COLLECT(DISTINCT q.qId) AS question_ids,
-                 MAX(r.obtain_marks) AS obtained_marks,
-                 COALESCE(ass.total_marks, 0) AS total_marks
-
-            /* Percentage */
-            WITH sd, stu, st, sub, ch, ass,
-                 question_ids,
-                 obtained_marks,
-                 total_marks,
-                 CASE 
-                    WHEN total_marks > 0 
-                    THEN (obtained_marks * 1.0 / total_marks) * 100
-                    ELSE 0
-                 END AS percentage
-
-            /* Level */
-            WITH sd, stu, st, sub, ch, ass,
-                 question_ids,
-                 total_marks,
-                 obtained_marks,
-                 percentage,
-                 CASE 
-                    WHEN percentage < 40 THEN "easy"
-                    WHEN percentage < 70 THEN "medium"
-                    ELSE "hard"
-                 END AS student_level
-
-            RETURN
-              stu.student_id                     AS student_id,
-              sd.first_name + " " + sd.last_name AS student_name,
-              stu.syear                          AS syear,
-              st.standard_id                     AS standard_id,
-              st.name                            AS standard_name,
-              sub.subject_id                     AS subject_id,
-              sub.display_name                   AS subject_name,
-              ass.assId                          AS assessment_id,
-              ass.paper_name                     AS assessment_name,
-              ass.question_ids                   AS question_ids,
-              ch.chId                            AS chapter_id,
-              ch.chapter_name                    AS chapter_name,
-              total_marks                        AS assessment_total,
-              obtained_marks                     AS obtained_marks,
-              ROUND(percentage,2)                AS student_average_score,
-              student_level                      AS student_level
-
-            ORDER BY sub.display_name, ch.chapter_name
-            ';
+LIMIT 1
+';
 
             $result = $client->run($query, $params);
 
@@ -389,11 +331,7 @@ class StudentGraphController extends Controller
                 'count' => count($data),
                 'filters' => [
                     'student_id' => $studentId,
-                    'sub_institute_id' => $subInstituteId,
-                    'syear' => $year,
-                    'standard_id' => $standardId ? (int) $standardId : null,
-                    'subject_id' => $subjectId ? (int) $subjectId : null,
-                    'chapter_id' => $chapterId ? (int) $chapterId : null
+                    'sub_institute_id' => $subInstituteId
                 ]
             ], 200);
 
@@ -401,7 +339,7 @@ class StudentGraphController extends Controller
             Log::error('StudentAssessment API Error: ' . $e->getMessage(), [
                 'student_id' => $request->get('student_id'),
                 'sub_institute_id' => $request->get('sub_institute_id'),
-                'syear' => $request->get('syear'),
+                'year' => $request->get('year'),    
                 'trace' => $e->getTraceAsString()
             ]);
 

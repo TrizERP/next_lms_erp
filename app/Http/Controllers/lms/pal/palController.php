@@ -9,11 +9,14 @@ use function App\Helpers\getStudents;
 use App\Http\Controllers\AJAXController;
 use App\Http\Controllers\lms\onlineExamController;
 use App\Models\lms\lmsQuestionMasterModel;
-use App\Models\lms\lmsOnlineExamAnswerStudent;
-use App\Models\lms\lmsOnlineExamStudent;
+// use App\Models\lms\lmsOnlineExamAnswerStudent;
+// use App\Models\lms\lmsOnlineExamStudent;
+use App\Models\lms\lmsOnlineExamAnswerModel;
+use App\Models\lms\lmsOnlineExamModel;
 use App\Models\lms\answermasterModel;
 use App\Models\lms\lmsQuestionMappingModel;
 use App\Models\lms\questionpaperModel;
+use App\Models\lms\lmsmappingtypeModel;
 use DB;
 
 class palController extends Controller
@@ -54,11 +57,126 @@ class palController extends Controller
         $res['studentDetails'] = $newData;
         $res['subjectList'] =$getSubjectList;
         $res['chapterList'] =$getchapterList;  
-        $res['attemptExams'] = questionpaperModel::join('lms_online_exam_student as loes','loes.question_paper_id','=','question_paper.id')
+        // $res['attemptExams'] = questionpaperModel::join('lms_online_exam_student as loes','loes.question_paper_id','=','question_paper.id')
+        $res['attemptExams'] = questionpaperModel::join('lms_online_exam as loes','loes.question_paper_id','=','question_paper.id')
         ->where('question_paper.created_by',$student_id)->where(['question_paper.sub_institute_id'=>$sub_institute_id,'question_paper.syear'=>$syear])->where('question_paper.exam_type','PAL')->get()->toArray();
         // echo "<pre>";print_r($newData);exit;
         return is_mobile($type, 'lms/pal/show', $res, "view");        
     }
+    
+    /**
+     * Get Student Result API - Returns student level based on their exam performance
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getStudentResult(Request $request)
+    {
+        $type = $request->input('type');
+        
+        if ($type == 'API') {
+            $student_id = $request->user_id;
+            $sub_institute_id = $request->sub_institute_id;
+            $syear = $request->syear;
+        } else {
+            $student_id = session()->get('user_id');
+            $sub_institute_id = session()->get('sub_institute_id');
+            $syear = session()->get('syear');
+        }
+
+        // Get the latest PAL exam result for the student
+        $latestExam = DB::table('lms_online_exam_student as loes')
+            ->join('question_paper as qp', 'qp.id', '=', 'loes.question_paper_id')
+            ->where('loes.student_id', $student_id)
+            ->where('qp.exam_type', 'PAL')
+            ->where('qp.sub_institute_id', $sub_institute_id)
+            ->orderBy('loes.created_at', 'DESC')
+            ->first();
+
+        $studentLevel = null;
+        $studentLevelId = null;
+
+        if ($latestExam) {
+            // Calculate performance percentage
+            $totalQuestions = $latestExam->total_right + $latestExam->total_wrong;
+            $percentage = $totalQuestions > 0 ? ($latestExam->total_right / $totalQuestions) * 100 : 0;
+
+            // Determine student level based on performance
+            // Easy: < 40%, Medium: 40-70%, Hard: > 70%
+            if ($percentage < 40) {
+                $studentLevel = 'easy';
+            } elseif ($percentage < 70) {
+                $studentLevel = 'medium';
+            } else {
+                $studentLevel = 'hard';
+            }
+
+            // Get the level id from lms_mapping_type table
+            $levelMapping = lmsmappingtypeModel::where('name', $studentLevel)
+                // ->where('sub_institute_id', $sub_institute_id)
+                ->first();
+
+            if ($levelMapping && $levelMapping->id) {
+                $studentLevelId = $levelMapping->id;
+            } else {
+                // If level not found, get default "easy" level id
+                $easyLevel = lmsmappingtypeModel::where('name', 'easy')
+                    ->where('sub_institute_id', $sub_institute_id)
+                    ->first();
+                $studentLevelId = $easyLevel ? $easyLevel->id : null;
+            }
+        } else {
+            // No previous exam, default to easy level
+            $studentLevel = 'easy';
+            $easyLevel = lmsmappingtypeModel::where('name', 'easy')
+                ->where('sub_institute_id', $sub_institute_id)
+                ->first();
+            $studentLevelId = $easyLevel ? $easyLevel->id : null;
+        }
+
+        return response()->json([
+            'status' => 1,
+            'message' => 'Success',
+            'student_level' => $studentLevel,
+            'student_level_id' => $studentLevelId,
+            'latest_exam' => $latestExam
+        ]);
+    }
+
+    /**
+     * Get the next level based on current student level
+     * 
+     * @param string $currentLevel
+     * @return string
+     */
+    private function getNextLevel($currentLevel)
+    {
+        $levelMap = [
+            'easy' => 'medium',
+            'medium' => 'hard',
+            'hard' => 'hard'
+        ];
+
+        return $levelMap[$currentLevel] ?? 'medium';
+    }
+
+    /**
+     * Get level ID from lms_mapping_type by level name
+     * 
+     * @param string $levelName
+     * @param int $subInstituteId
+     * @return int|null
+     */
+  private function getLevelId($levelName, $subInstituteId)
+    {
+        $level = lmsmappingtypeModel::where('name', $levelName)
+            // ->where('sub_institute_id', $subInstituteId)
+ ->where('parent_id', 9)
+            ->first();
+
+        return $level ? $level->id : null;
+    }
+
 
     public function create(Request $request){
         $type=$request->type;
@@ -78,6 +196,22 @@ class palController extends Controller
             $sub_institute_id =session()->get('sub_institute_id');
             $syear = session()->get('syear');   
         }
+        // Get student level from Student Result API
+        $studentLevelRequest = new Request();
+        $studentLevelRequest->merge([
+            'type' => $type,
+            'user_id' => $student_id,
+            'sub_institute_id' => $sub_institute_id,
+            'syear' => $syear
+        ]);
+        $studentLevelResponse = $this->getStudentResult($studentLevelRequest);
+        $studentLevelData = $studentLevelResponse->getData(true);
+        
+        // Determine the level to fetch questions for
+        $currentLevel = $studentLevelData['student_level'] ?? 'easy';
+        $nextLevel = $this->getNextLevel($currentLevel);
+        $selectedLevelId = $this->getLevelId($nextLevel, $sub_institute_id);
+
 
         $command = "python3 /home/pal/pal.py $sub_institute_id $syear $standard_id $subject_id $chapter_id $enrollment_no";
         $getLists = shell_exec($command);
@@ -88,25 +222,52 @@ class palController extends Controller
         $answer=[];
         $existQusetion = [];
         if(empty($questionList)){
-            // $res['status_code'] = 0;
-            // $res['message'] = 'Questions Not Found';
-            // return is_mobile($type, 'pal.index', $res, "redirect");exit;       
-            $randomQuestions = DB::table('lms_question_master')
-                ->where('sub_institute_id', $sub_institute_id)
-                ->where('standard_id',$request->standard_id)
-                ->where('subject_id',$request->subject_id)
-                ->where('chapter_id',$request->chapter_id)
+             // Use level-based question fetching with the provided query
+            $randomQuestions = DB::table('lms_question_master as lqm')
+                ->join('lms_question_mapping as lm', 'lqm.id', '=', 'lm.questionmaster_id')
+                ->join('answer_master as am', 'lqm.id', '=', 'am.question_id')
+                ->select('lqm.*')
+                ->where('lqm.sub_institute_id', $sub_institute_id)
+                ->where('lqm.standard_id', $request->standard_id)
+                ->where('lqm.subject_id', $request->subject_id)
+                ->where('lqm.chapter_id', $request->chapter_id)
+                ->where('lqm.question_type_id', 1)
+                ->when($selectedLevelId, function ($query) use ($selectedLevelId) {
+                    $query->where('lm.mapping_value_id', $selectedLevelId);
+                })
                 ->inRandomOrder()
                 ->take(10)
-                ->get()->toArray();
-                foreach($randomQuestions as $k => $v){
-                    $questionList[$k]['question_id'] = $v->id;
-                    $questionList[$k]['question_text'] = $v->question_title;
-                }
+                ->groupBy('lqm.id')
+               ->groupBy('lqm.question_title')
+                ->get()
+                ->toArray();
+
+            // If no questions found with the selected level, fallback to any questions
+            if (empty($randomQuestions)) {
+                $randomQuestions = DB::table('lms_question_master as lqm')
+                    ->join('answer_master as am', 'lqm.id', '=', 'am.question_id')
+                    ->select('lqm.*')
+                    ->where('lqm.sub_institute_id', $sub_institute_id)
+                    ->where('lqm.standard_id', $request->standard_id)
+                    ->where('lqm.subject_id', $request->subject_id)
+                    ->where('lqm.chapter_id', $request->chapter_id)
+                    ->where('lqm.question_type_id', 1)
+                    ->inRandomOrder()
+                    ->take(10)
+                    ->groupBy('lqm.question_title')
+                    ->get()
+                    ->toArray();
+            }
+                
+            foreach($randomQuestions as $k => $v){
+                $questionList[$k]['question_id'] = $v->id;
+                $questionList[$k]['question_text'] = $v->question_title;
+            }
         }
         // echo "<pre>";print_r($questionList);exit;
 
         if(!empty($questionList)){
+            $filteredQuestions = [];
         foreach ($questionList as $key => $val) {
             if(!in_array($val['question_id'],$existQusetion)){
                 $answer_arr = answermasterModel::where([
@@ -117,9 +278,19 @@ class palController extends Controller
                     foreach ($answer_arr as $anskey => $ansval) {
                         $answer[$val['question_id']][] = $ansval;
                     }
+                    $filteredQuestions[] = $val;
+
                 }
                 $existQusetion[]=$val['question_id'];
             }
+        }
+         $questionList = $filteredQuestions;
+        
+        // Check if we have any questions with answers after filtering
+        if(empty($questionList)){
+            $res['status_code'] = 0;
+            $res['message'] = 'Questions Not Found';
+            return is_mobile($type, 'pal.index', $res, "redirect");exit;
         }
         // echo "<pre>";print_r($answer);exit;
     }else{
@@ -208,7 +379,7 @@ class palController extends Controller
             'created_at'        => now(),
         ];
 
-        lmsOnlineExamStudent::insert($online_exam);
+        lmsOnlineExamModel::insert($online_exam);
         $online_exam_id = DB::getPDO()->lastInsertId();
         //END Insert into lms_online_exam table
 
@@ -240,7 +411,7 @@ class palController extends Controller
                     'ans_status'        => $ans_status,
                     'created_at'        => now(),                    
                 ];
-                lmsOnlineExamAnswerStudent::insert($single);
+                lmsOnlineExamModel::insert($single);
             }
         }
 
@@ -270,7 +441,7 @@ class palController extends Controller
                             'ans_status'        => $ans_status,
                             'created_at'        => now(),                                                
                         ];
-                        lmsOnlineExamAnswerStudent::insert($multiple);
+                        lmsOnlineExamAnswerModel::insert($multiple);
                     }
                 }
             }
@@ -292,7 +463,7 @@ class palController extends Controller
                     'ans_status'        => $ans_status,
                     'created_at'        => now(),                                                                    
                 ];
-                lmsOnlineExamAnswerStudent::insert($narrative);
+                lmsOnlineExamModel::insert($narrative);
             }
         }
         $res['message'] = "Exam submitted";
@@ -350,7 +521,7 @@ class palController extends Controller
         
         // $data['online_exam_data'] =DB::SELECT("SELECT * FROM lms_online_exam  where id ='$online_exam_id' and student_id=95634 AND question_paper_id = '$user_id'");
 
-        $data['online_exam_data'] = lmsOnlineExamStudent::where([
+        $data['online_exam_data'] = lmsOnlineExamModel::where([
             'id'=>$online_exam_id,'student_id'=>$user_id
         ])->get()->toArray();
         // print_r($data['online_exam_data']);exit;
@@ -372,7 +543,7 @@ class palController extends Controller
                 ) AS right_wrong 
                 FROM (
                 SELECT question_id,ans_status, IFNULL(narrative_answer, GROUP_CONCAT(answer_id)) AS given_answer
-                FROM lms_online_exam_answer_student
+                FROM lms_online_exam_answer
                 WHERE online_exam_id = '".$online_exam_id."' AND student_id = '".$user_id."'
                 GROUP BY question_id) AS a
                 INNER JOIN lms_question_master q ON q.id = a.question_id and q.status = 1
@@ -406,7 +577,8 @@ class palController extends Controller
         }
 
             $data = DB::table('question_paper as q')
-            ->join('lms_online_exam_student as l', 'l.question_paper_id', '=', 'q.id')
+            // ->join('lms_online_exam_student as l', 'l.question_paper_id', '=', 'q.id')
+            ->join('lms_online_exam as l', 'l.question_paper_id', '=', 'q.id')
             ->join('tblstudent as t', 't.id', '=', 'l.student_id')
             ->join('tblstudent_enrollment as te', function ($join) {
                 $join->on('te.student_id', '=', 't.id')
@@ -442,3 +614,4 @@ class palController extends Controller
         return is_mobile($type, "lms/pal/palreport", $res, "view");
     }
 }
+

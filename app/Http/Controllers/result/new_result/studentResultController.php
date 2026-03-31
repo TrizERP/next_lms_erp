@@ -716,61 +716,53 @@ class studentResultController extends Controller
         $attendance = $this->get_attendance($standard_id, $value['id'], $format, "total_attendance");
        
         $working = 0;
-$present = 0;
+        $present = 0;
 
-if (isset($attendance['table'])) {
-
-    $tableHtml = $attendance['table'];
-
-    // Extract all <td> values
+if (isset($explodeTermAtten) && $sub_institute_id == 47) {
+    /*$tableHtml = $attendance['table'];
     preg_match_all('/<td[^>]*>([^<]+)<\/td>/', $tableHtml, $tdMatches);
 
-    // Example match list:
-    // [0] => "No. Of Working Days"
-    // [1] => "212"
-    // [2] => "Days Attended"
-    // [3] => "193"
-
     if (!empty($tdMatches[1]) && count($tdMatches[1]) >= 4) {
-
-        // Working days is the 2nd <td> (index 1)
-        if (is_numeric(trim($tdMatches[1][1]))) {
+        if (is_numeric(trim($tdMatches[1][1])))
             $working = trim($tdMatches[1][1]);
-        }
 
-        // Present days is the 4th <td> (index 3)
-        if (is_numeric(trim($tdMatches[1][3]))) {
+        if (is_numeric(trim($tdMatches[1][3])))
             $present = trim($tdMatches[1][3]);
+    }
+    */
+    if (isset($explodeTermAtten[0]) && is_numeric($explodeTermAtten[0]))
+        $present = $explodeTermAtten[0];
+    if (isset($explodeTermAtten[1]) && is_numeric($explodeTermAtten[1]))
+        $working = $explodeTermAtten[1];
+
+    // 2. Get percentage (simple_result)
+    $percentage = 0;
+    if (isset($main_result['table'])) {
+        $tableHtml = $main_result['table'];
+
+        if (preg_match('/<b>(\d+(\.\d+)?)%<\/b>/', $tableHtml, $matches)) {
+            $percentage = $matches[1]; // numeric value
         }
     }
+
+    // 3. Save into DB
+    DB::table('result_reportcard_marks')->updateOrInsert(
+        [
+            'sub_institute_id' => session()->get('sub_institute_id'),
+            'student_id'  => $value['id'],
+            'standard_id' => $value['standard_id'],
+            'syear'       => $syear,
+        ],
+        [
+            'template_id'         => $template,
+            'total_working_day'   => $working,
+            'present_working_day' => $present,
+            'student_percentage'   => $percentage,
+            'updated_at'           => now(),
+        ]
+    );
 }
 
-        // 2. Get percentage (simple_result)
-        $percentage = 0;
-        if (isset($main_result['table'])) {
-            $tableHtml = $main_result['table'];
-
-            if (preg_match('/<b>(\d+(\.\d+)?)%<\/b>/', $tableHtml, $matches)) {
-                $percentage = $matches[1]; // numeric value
-            }
-        }
-
-        // 3. Save into DB
-        DB::table('result_reportcard_marks')->updateOrInsert(
-            [
-                'sub_institute_id' => session()->get('sub_institute_id'),
-                'student_id'  => $value['id'],
-                'standard_id' => $value['standard_id'],
-                'syear'       => $syear,
-            ],
-            [
-                'template_id'         => $template,
-                'total_working_day'   => $working,
-                'present_working_day' => $present,
-                'student_percentage'   => $percentage,
-                'updated_at'           => now(),
-            ]
-        );
         return $html_content;
         //  return $main_result;     ssmission_term_ssmission_term_higher    
     }
@@ -2977,7 +2969,8 @@ if (isset($attendance['table'])) {
                     */
         //END RAJESH HIDE BELOW CONDITION - Not know but give solution 20-03-2025
         if ($result_remark == 0) {
-            if (isset($get_remark->remark)) {
+            $remark = trim($get_remark->remark ?? '');
+            if ($remark !== '') {
                 $result = '<b>Result : </b>' . str_replace('|', '', $get_remark->remark);
             } else if (in_array('Promoted', $pass_fail)) {
                 $result = '<b>Result : </b>Promoted to Grade : ' . $next_std;
@@ -4584,9 +4577,11 @@ if (isset($attendance['table'])) {
                         }
                         // echo $pAB.'<br>';
                         // get mark for total mark 
+                        //echo "<pre>";print_r($obtained_mark_arr);print_r($w_m);exit();
                         $ob_main_mark += $convert_mark;
                         if (count($obtained_mark_arr) > 1) {
-                            $total_marks += $w_m;
+                            //$total_marks += $w_m; by rajesh 24-03-2026
+                            $total_marks += is_array($w_m) ? (float)$w_m[0] : $w_m;
                             if (in_array($pAB, ['AB', 'N.A.', 'EX']) && $convert_mark == 0) { // added on 27-02-2025 by uma
                                 $tdVal = $pAB;  // added on 27-02-2025 by uma
                             } else {
@@ -4622,7 +4617,11 @@ if (isset($attendance['table'])) {
 
                 //echo "<pre>";print_r($exam_name);exit();
                 if($val->elective_subject != 'Yes' || $val->optional_type == 1)
-                    $table .= '<td class="data_center all_mark"'.$ob_main_mark.'-'.$total_marks.'><b>' . $obtained_mark_formatted . '</b></td>';
+                {
+                    $table .= '<td class="data_center all_mark"><b>' . 
+                              ($total_marks > 0 ? $obtained_mark_formatted : '-') . 
+                              '</b></td>';
+                }
                 else
                 {
                     for ($i = 0; $i < count($term_exam_titles); $i++) {
@@ -5508,7 +5507,7 @@ $table .= '</div>';
             // Store the total marks for each term
             $table .= '<th class="data_center"><b>Marks Obtained <br>(' . $total_mark . ') </b></th>';
             $overall_total += $total_mark;
-            $table .= '<th class="data_center"><b>Grade (' . $terms->title . ')</b></th>';
+            $table .= '<th class="data_center"><b>Grade</b></th>';// (' . $terms->title . ')
         }
 
         $table .= '</tr>
@@ -9281,6 +9280,7 @@ if ($format === 'yearly') {
         $mainTotalArr = [];
         // echo "<pre>";print_r($avgrank[$student_id]);exit
         // echo "<pre>";print_r($rankTerm1[$student_id]);
+        // echo "<pre>";print_r($FailTerm2);exit();
         $nextStd = DB::table('standard as std')->selectRaw('(select short_name from standard where id = std.next_standard_id) as next_sort_std,(select name from standard where id = std.next_standard_id) as next_std')->where('std.id', $standard_id)->whereNotNull('next_standard_id')->first();
         $sortNextStd = isset($nextStd->next_sort_std) ? $nextStd->next_sort_std : 0;
         $getRemarks = $this->getFrangeloRemarks($sortNextStd, $avgrank, $rankTerm1, $rankTerm2, $avgFail, $FailTerm1, $FailTerm2, $mainTotalArr);
@@ -9399,7 +9399,7 @@ if ($format === 'yearly') {
         $grade_arr = $this->getGradeScale($standard_id, '');
         // echo "<pre>";print_r($examArr);exit;
         $grandTotal = [];
-        $grandTotAnuualOut = $grandTotAnnualObt = $grandAvgOut = $grandAvgPass = $grandAvgObt = 0;
+        $grandTotAnuualOut = $grandTotAnnualObt = $grandAvgOut = $grandAvgPass = $grandAvgObt = $avgFailed = 0;
         foreach ($get_subject as $subkey => $subjectData) {
             $table .= '<tr>
                             <td>' . $subjectData->subject_name . '</td>'; // subject send start
@@ -9454,7 +9454,7 @@ if ($format === 'yearly') {
                     // for ab,na and ex
                     $tdVal = (count($examArr[$subjectData->subject_id][$examkey]['OBT']) == 1 && in_array($examArr[$subjectData->subject_id][$examkey]['OBT'][0], ['AB', 'N.A.', 'EX'])) ? $examArr[$subjectData->subject_id][$examkey]['OBT'][0] : $tdVal;
                 }
-                $table .= '<td class="data_center" json=`' . $allArr . '` ' . $pointMarks . '>' . $tdVal . '</td>';
+                $table .= '<td class="data_center" json=`' . $allArr . '` totalMarks=' . $pointMarks . ' obtMarks=' . $obtMarks . '>' . $tdVal . '</td>';
                 $annualOut += $examData['weightage'];
                 $annualObt += $obtMarks;
                 if ($subjectData->elective_subject != "Yes") {
@@ -9482,6 +9482,10 @@ if ($format === 'yearly') {
 
                 $annualOutOfgrade = $this->getGrade($grade_arr, $annualOut, $annualOut);
                 $annualObtgrade = $this->getGrade($grade_arr, $annualOut, $annualObt);
+
+                if ($avgMarks < $avgPassMarks) {
+                    $avgFailed += 1;
+                }
             }
             $table .= '<td class="data_center annual" ' . $annualOut . '>' . $annualOutOfgrade . '</td>';
             $table .= '<td class="data_center annual" ' . $annualObt . '>' . $annualObtgrade . '</td>';
@@ -9559,10 +9563,12 @@ if ($format === 'yearly') {
         $avgrank = isset($avgrankArr[$student_id]) ? $avgrankArr[$student_id]['rank'] : 0;
         $rankTerm1 = isset($rankTerm1Arr[$student_id]) ? $rankTerm1Arr[$student_id]['rank'] : 0;
         $rankTerm2 = isset($rankTerm2Arr[$student_id]) ? $rankTerm2Arr[$student_id]['rank'] : 0;
-        $avgFail = isset($avgrankArr[$student_id]) ? $avgrankArr[$student_id]['failed'] : 0;
+        //$avgFail = isset($avgrankArr[$student_id]) ? $avgrankArr[$student_id]['failed'] : 0; // by rajesh 24-03-2026
+        $avgFail = $avgFailed;
         $FailTerm1 = isset($rankTerm1Arr[$student_id]) ? $rankTerm1Arr[$student_id]['failed'] : 0;
         $FailTerm2 = isset($rankTerm2Arr[$student_id]) ? $rankTerm2Arr[$student_id]['failed'] : 0;
         $mainTotalArr = [];
+        
         // echo "<pre>";print_r($avgrank[$student_id]);
         // echo "<pre>";print_r($rankTerm1[$student_id]);
         $nextStd = DB::table('standard as std')->selectRaw('(select short_name from standard where id = std.next_standard_id) as next_sort_std,(select name from standard where id = std.next_standard_id) as next_std')->where('std.id', $standard_id)->whereNotNull('next_standard_id')->first();
@@ -9603,7 +9609,7 @@ if ($format === 'yearly') {
                 $table .= '<td>' . $application . '</td>';
             }
         }
-        $table .= '<td colspan="5" style="text-align:right"><b>' . $appText . '</b></td>
+        $table .= '<td colspan="5" style="text-align:right"' . json_encode($avgrankArr[$student_id]) . '><b>' . $appText . '</b></td>
             </tr>';
 
         $table .= '<tr>
@@ -9619,7 +9625,7 @@ if ($format === 'yearly') {
                 $table .= '<td>' . $remarks . '</td>';
             }
         }
-        $table .= '<td colspan="5" style="text-align:right"><b>' . $passText . '</b></td>
+        $table .= '<td colspan="5" style="text-align:right" sortNextStd='.$sortNextStd.' avgrank='.$avgrank.' rankTerm1='.$rankTerm1.' rankTerm2='.$rankTerm2.' avgFail='.$avgFail.' FailTerm1='.$FailTerm1.' FailTerm2='.$FailTerm2.'><b>' . $passText . '</b></td>
             </tr>';
 
         $table .= '</tbody>
@@ -10301,6 +10307,7 @@ if ($format === 'yearly') {
                 }
                 //                    $remarksText = "Aim higher";
             } else {
+                //echo "RAJ".$avgFail;exit();
                 $appText = "GOOD";
                 if ($avgFail) {
                     if ($avgFail == 1) {
@@ -10569,9 +10576,6 @@ if ($format === 'yearly') {
                     } else if ($FailTerm2 >= 3) {
                         $app2Text = "Not Satisfaction";
                         $pass2Text = 'Work Hard in Failed Subjects';
-                    } else {
-                        $app2Text = "GOOD";
-                        $pass2Text = 'Work Hard in Failed Subjects';
                     }
                 }
             }
@@ -10585,7 +10589,7 @@ if ($format === 'yearly') {
         $res['passText'] = $passText;
         $res['pass1Text'] = $pass1Text;
         $res['pass2Text'] = $pass2Text;
-
+//echo "<pre>";print_r($res);exit();
         return $res;
     }
     public function getRank($standard_id, $division_id, $passing_ratio, $term_id = '', $type = '', $exam_title = '')
