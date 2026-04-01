@@ -396,7 +396,7 @@
 </div>
 
 @include('includes.lmsfooterJs')
-<script src="https://cdn.ckeditor.com/4.22.1/full-all/ckeditor.js"></script>
+<script src="{{ asset("/ckeditor_wiris/ckeditor4/ckeditor.js") }}"></script>
 <script>
     let points = [];
     let currentX = 0, currentY = 0;

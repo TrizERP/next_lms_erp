@@ -52,7 +52,7 @@
                     @php 
                         $routeExists = Route::has($item['route']) ? $item['route'] : null;
                     @endphp 
-                    <div class="col-lg-4 col-md-6">
+                    <div class="col-lg-4 col-md-6 mt-3">
                         <a @if($routeExists) href="{{ route($item['route'], ['chapter_id'=>$data['chapter_id'],'standard_id'=>$data['standard_id'],'subject_id'=>$data['subject_id']]) }}" @endif class="modern-card">
                             <div class="card-inner" data-color="{{ ($key % 6) + 1 }}">
                                 <span class="card-number">{{ str_pad($key + 1, 2, '0', STR_PAD_LEFT) }}</span>
