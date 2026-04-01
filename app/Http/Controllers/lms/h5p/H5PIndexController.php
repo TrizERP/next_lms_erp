@@ -33,17 +33,24 @@ class H5PIndexController extends Controller
             ],
             [
                 'id' => 2,
+                'title' => 'Interactive Video',
+                'description' => 'Interactive Video',
+                'icon' => 'mdi mdi-help-circle-outline',
+                'route' => 'h5p_interactive_video.index',
+            ],
+            [
+                'id' => 3,
                 'title' => 'Multiple Choice Questions',
                 'description' => 'Multiple Choice Questions',
                 'icon' => 'mdi mdi-help-circle-outline',
                 'route' => 'h5p_mcq.index',
             ],
             [
-                'id' => 3,
-                'title' => 'Interactive Video',
-                'description' => 'Interactive Video',
-                'icon' => 'mdi mdi-help-circle-outline',
-                'route' => 'h5p_interactive_video.index',
+                'id'=>4,
+                'title' => 'Flash Cards',
+                'description' => 'Interactive Flashcard',
+                'icon' => 'mdi mdi-cards',
+                'route' => 'h5p_flashacard.index',
             ]
         ];
         $res['chapter_id'] = $request->chapter_id;

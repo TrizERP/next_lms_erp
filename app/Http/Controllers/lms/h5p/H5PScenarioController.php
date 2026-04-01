@@ -71,11 +71,18 @@ class H5PScenarioController extends Controller
         $newfilename = 'scenario_' . date('Y-m-d_h-i-s') . '.' . $file->getClientOriginalExtension();
 
         // Try DigitalOcean first
+    
         try {
+            // Store on DigitalOcean
             Storage::disk('digitalocean')->putFileAs('public/h5p_content/', $file, $newfilename, 'public');
             $file_path = Storage::disk('digitalocean')->url('public/h5p_content/' . $newfilename);
+
+            // Verify the file was actually stored
+            if (!Storage::disk('digitalocean')->exists('public/h5p_content/' . $newfilename)) {
+                throw new \Exception('DigitalOcean upload failed');
+            }
         } catch (\Exception $e) {
-            // Fallback to local public/h5p_content folder
+            // Fallback to local storage on any failure
             $destinationPath = public_path('/h5p_content/');
             if (!file_exists($destinationPath)) {
                 mkdir($destinationPath, 0755, true);
@@ -83,9 +90,6 @@ class H5PScenarioController extends Controller
             $file->move($destinationPath, $newfilename);
             $file_path = asset('/h5p_content/' . $newfilename);
         }
-
-// return $file_path;
-// exit;
 
         // Create scenario and get the inserted ID
         $scenario = H5pScenario::create([
@@ -189,16 +193,34 @@ class H5PScenarioController extends Controller
 
             // Update image if provided
             if ($request->hasFile('image')) {
-                $request->validate(['image' => 'image|mimes:jpeg,png,jpg,gif|max:2048']);
-
-                // Delete old image
-                if ($scenario->file_path && Storage::disk('public')->exists($scenario->file_path)) {
-                    Storage::disk('public')->delete($scenario->file_path);
+               $file = $request->file('image');
+                if (!$file || !$file->isValid()) {
+                    return "Invalid file";
                 }
 
-                // Upload new image
-                $imagePath = $request->file('image')->store('scenario_images', 'public');
-                $scenario->file_path = $imagePath;
+                $newfilename = 'scenario_' . date('Y-m-d_h-i-s') . '.' . $file->getClientOriginalExtension();
+
+                // Try DigitalOcean first
+            
+                 try {
+                    // Store on DigitalOcean
+                    Storage::disk('digitalocean')->putFileAs('public/h5p_content/', $file, $newfilename, 'public');
+                    $file_path = Storage::disk('digitalocean')->url('public/h5p_content/' . $newfilename);
+
+                    // Verify the file was actually stored
+                    if (!Storage::disk('digitalocean')->exists('public/h5p_content/' . $newfilename)) {
+                        throw new \Exception('DigitalOcean upload failed');
+                    }
+                } catch (\Exception $e) {
+                    // Fallback to local storage on any failure
+                    $destinationPath = public_path('/h5p_content/');
+                    if (!file_exists($destinationPath)) {
+                        mkdir($destinationPath, 0755, true);
+                    }
+                    $file->move($destinationPath, $newfilename);
+                    $file_path = asset('/h5p_content/' . $newfilename);
+                }
+                $scenario->file_path = $file_path;
             }
 
             // Update scenario details
