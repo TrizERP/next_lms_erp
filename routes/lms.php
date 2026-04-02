@@ -123,6 +123,15 @@ Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute',
 
     Route::resource('question_paper', questionpaperController::class);
     Route::post('question_paper/search', [questionpaperController::class,'search']);
+    
+    // AI Question Paper Generator Routes
+    Route::get('generate_ai_questionpaper', [questionpaperController::class, 'generateAIPaper'])->name('generate_ai_questionpaper');
+    Route::post('generate_ai_questionpaper', [questionpaperController::class, 'generateAIPaper']);
+    Route::post('ai_paper/validate_questions', [questionpaperController::class, 'validateQuestionAvailability'])->name('ai_paper.validate_questions');
+    Route::post('ai_paper/preview', [questionpaperController::class, 'previewAIPaper'])->name('ai_paper.preview');
+    Route::post('ai_paper/save', [questionpaperController::class, 'saveAIPaper'])->name('ai_paper.save');
+    Route::get('ai_paper/get_mapping_types', [questionpaperController::class, 'getMappingTypes'])->name('ai_paper.get_mapping_types');
+    
     Route::resource('bulk_chapter_upload', bulk_chapter_uploadController::class);
     Route::get('ajax_SubjectwiseQuestion', [questionpaperController::class, 'ajax_SubjectwiseQuestion'])->name('ajax_SubjectwiseQuestion');
 
