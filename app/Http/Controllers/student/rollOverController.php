@@ -290,7 +290,10 @@ class rollOverController extends Controller
                             ->where('syear', $to_next_syear)->get()->toArray();
                         // 06-01-2025 for only mapped subject
                         $getStudentOptionalSubject = DB::table('student_optional_subject as sos')
-                        ->join('tblstudent_enrollment as se','se.student_id','=','sos.student_id')
+                        ->join('tblstudent_enrollment as se', function ($join) {
+                            $join->on('se.student_id', '=', 'sos.student_id')
+                                 ->on('se.syear', '=', 'sos.syear');
+                        })
                         ->join('standard as std','std.id','=','se.standard_id')
                         ->join('sub_std_map as ssm',function($q){
                             $q->on('ssm.subject_id','=','sos.subject_id')->on('ssm.standard_id','=','std.next_standard_id');
@@ -301,7 +304,7 @@ class rollOverController extends Controller
                         // ->groupBy('ssm.standard_id')
                         ->get()->toArray();
 
-                        $opt_level = null;
+                        $opt_level = NULL;
                         if($sub_institute_id==254){
                             $opt_level = 4;
                         }
@@ -309,8 +312,18 @@ class rollOverController extends Controller
 
                         if (count($check_student_optional_subject) == 0 && !empty($getStudentOptionalSubject)) {
                             foreach ($getStudentOptionalSubject as $key => $value) {
-                                DB::INSERT("INSERT INTO student_optional_subject (syear,sub_institute_id,subject_id,student_id,level)
-                                values($to_next_syear,$sub_institute_id,$value->subject_id,$value->student_id,$opt_level)");
+                                DB::INSERT(
+                                    "INSERT INTO student_optional_subject 
+                                    (syear,sub_institute_id,subject_id,student_id,level)
+                                    VALUES (?, ?, ?, ?, ?)",
+                                    [
+                                        $to_next_syear,
+                                        $sub_institute_id,
+                                        $value->subject_id,
+                                        $value->student_id,
+                                        $opt_level
+                                    ]
+                                );
                             }
                         }
                         break;
@@ -383,10 +396,10 @@ class rollOverController extends Controller
 
                     if ($check_student[0]->total_student == 0) {
                         // START UPDATE in tblstudent 
-                        DB::INSERT("INSERT INTO tblstudent_enrollment (syear,student_id,grade_id,standard_id,section_id,
+                        DB::INSERT("INSERT INTO tblstudent_enrollment (syear,roll_no,student_id,grade_id,standard_id,section_id,
                                     student_quota,start_date,end_date,
                                     enrollment_code,drop_code,drop_remarks,remarks,admission_fees,house_id,lc_number,adhar,sub_institute_id,created_on)
-                                    SELECT '".$to_next_syear."',se.student_id,st.next_grade_id,st.next_standard_id,se.section_id,se.student_quota,se.start_date,se.end_date,
+                                    SELECT '".$to_next_syear."',se.roll_no,se.student_id,st.next_grade_id,st.next_standard_id,se.section_id,se.student_quota,se.start_date,se.end_date,
                                     se.enrollment_code,se.drop_code,
                                     se.drop_remarks,se.remarks,se.admission_fees,se.house_id,se.lc_number,se.adhar,se.sub_institute_id,Now()
                                     FROM tblstudent_enrollment se
@@ -577,10 +590,10 @@ class rollOverController extends Controller
 
                 if ($check_student[0]->total_student == 0) {
                     // START UPDATE in tblstudent 
-                    DB::INSERT("INSERT INTO tblstudent_enrollment (syear,student_id,grade_id,standard_id,section_id,
+                    DB::INSERT("INSERT INTO tblstudent_enrollment (syear,roll_no,student_id,grade_id,standard_id,section_id,
                                 student_quota,start_date,end_date,
                                 enrollment_code,drop_code,drop_remarks,remarks,admission_fees,house_id,lc_number,adhar,sub_institute_id,created_on)
-                                SELECT '".$to_next_syear."',se.student_id,st.next_grade_id,st.next_standard_id,se.section_id,se.student_quota,se.start_date,se.end_date,
+                                SELECT '".$to_next_syear."',se.roll_no,se.student_id,st.next_grade_id,st.next_standard_id,se.section_id,se.student_quota,se.start_date,se.end_date,
                                 se.enrollment_code,se.drop_code,
                                 se.drop_remarks,se.remarks,se.admission_fees,se.house_id,se.lc_number,se.adhar,se.sub_institute_id,Now()
                                 FROM tblstudent_enrollment se
@@ -851,10 +864,10 @@ class rollOverController extends Controller
             // END Check student is already exist in next year
 
             // START UPDATE in tblstudent 
-            DB::INSERT("INSERT INTO tblstudent_enrollment (syear,student_id,grade_id,standard_id,section_id,
+            DB::INSERT("INSERT INTO tblstudent_enrollment (syear,roll_no,student_id,grade_id,standard_id,section_id,
                             student_quota,start_date,end_date,
                             enrollment_code,drop_code,drop_remarks,remarks,admission_fees,house_id,lc_number,adhar,sub_institute_id,created_on)
-                            SELECT '".$to_next_syear."',se.student_id,".$to_academic_section.",".$to_standard.",".$to_division.",se.student_quota,se.start_date,se.end_date,
+                            SELECT '".$to_next_syear."',se.roll_no,se.student_id,".$to_academic_section.",".$to_standard.",".$to_division.",se.student_quota,se.start_date,se.end_date,
                             se.enrollment_code,se.drop_code,
                             se.drop_remarks,se.remarks,se.admission_fees,se.house_id,se.lc_number,se.adhar,se.sub_institute_id,Now()
                             FROM tblstudent_enrollment se
