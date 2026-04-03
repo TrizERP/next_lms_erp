@@ -3254,13 +3254,15 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
 
     // till month pending fees 27-03-2025 for hills
     public function tillMonthPendingFees(Request $request){
+        $subinstArray = [254];
         $type = $request->type;
         $studentId = $request->student_id;
         $sub_institute_id = $request->sub_institute_id;
         $syear = $request->syear;
         $nextYear = ($syear+1);
         $previousYear = ($syear-1);
-        $apiStatus = 1;
+        $apiStatus = in_array($sub_institute_id, $subinstArray) ? 1 : 0;
+        //$apiStatus = 1;
         $status = 0;
         $message = "Opps Something went wrong !";
         
@@ -3316,7 +3318,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
 
                     $feeYear = substr($value['month_id'], -4);  // "2025"
                     $feeMonth = substr($value['month_id'], 0, strlen($value['month_id']) - 4);
-
+//echo $feesMonth."=".$syear."||".$feesMonth."=".$nextYear;
                     if(($feesMonth == $syear || $feesMonth== $nextYear) && array_key_exists($currentMonth,$allFeesMonth)){
                         $feesMonths[] = $value['month_id'];
                         $pendingFees[] = $value;
@@ -3332,6 +3334,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                         // added by rajesh 07-01-2026
                         $feeSortable = (int)($feeYear . str_pad($feeMonth, 2, '0', STR_PAD_LEFT));
                         $currentSortable = (int)date('Ym');
+                        //echo $feeSortable."#".$currentSortable."&&".$feeYear."<=".date('Y');
                         if ($feeSortable < $currentSortable && $feeYear <= date('Y')) {
                             $currentFees += $value['remain'];
                         }
