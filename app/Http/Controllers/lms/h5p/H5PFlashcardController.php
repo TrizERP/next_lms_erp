@@ -18,25 +18,36 @@ class H5PFlashcardController extends Controller
     {
         $type = $request->type;
         $sub_institute_id = session()->get('sub_institute_id');
-        if(in_array($type,['API','JSON'])){
+
+        if (in_array($type, ['API', 'JSON'])) {
             $sub_institute_id = $request->sub_institute_id;
             $request->validate([
-                'sub_institute_id'=>'required|integer',
-                'standard_id'=>'required|integer',
-                'subject_id'=>'required|integer',
-                'chapter_id'=>'required|integer',
+                'sub_institute_id' => 'required|integer',
+                'standard_id' => 'required|integer',
+                'subject_id' => 'required|integer',
+                'chapter_id' => 'required|integer',
             ]);
         }
 
         $res = $request->all();
         $res['flashCards'] = h5pFlashcard::where([
-            'sub_institute_id'=>$sub_institute_id,
-            'standard_id'=>$request->standard_id,
-            'subject_id'=>$request->subject_id,
-            'chapter_id'=>$request->chapter_id,
-        ])->latest()->get();
-        // return view('flashcards.index', compact('res'));
-        return is_mobile($type,'lms/h5p/flashcard/index',$res,'view');
+            'sub_institute_id' => $sub_institute_id,
+            'standard_id' => $request->standard_id,
+            'subject_id' => $request->subject_id,
+            'chapter_id' => $request->chapter_id,
+        ])->get();
+        // return $res;
+        if(in_array(session()->get('user_profile_name'),['student','Student','STUDENT']))
+        {
+            // return redirect()->route('h5p_flashacard.show', [
+            //     'id' => 0,
+            //     'chapter_id'  => $request->chapter_id,
+            //     'standard_id' => $request->standard_id,
+            //     'subject_id'  => $request->subject_id
+            // ] + $request->query());
+            return $this->show($request,0);
+        }
+        return is_mobile($type, 'lms/h5p/flashcard/index', $res, 'view');
     }
 
     /**
@@ -46,21 +57,21 @@ class H5PFlashcardController extends Controller
      */
     public function create(Request $request)
     {
-       $type = $request->type;
+        $type = $request->type;
         $sub_institute_id = session()->get('sub_institute_id');
-        if(in_array($type,['API','JSON'])){
+        if (in_array($type, ['API', 'JSON'])) {
             $sub_institute_id = $request->sub_institute_id;
             $request->validate([
-                'sub_institute_id'=>'required|integer',
-                'standard_id'=>'required|integer',
-                'subject_id'=>'required|integer',
-                'chapter_id'=>'required|integer',
+                'sub_institute_id' => 'required|integer',
+                'standard_id' => 'required|integer',
+                'subject_id' => 'required|integer',
+                'chapter_id' => 'required|integer',
             ]);
         }
 
         $res = $request->all();
         // return view('flashcards.index', compact('res'));
-        return is_mobile($type,'lms/h5p/flashcard/create',$res,'view');
+        return is_mobile($type, 'lms/h5p/flashcard/create', $res, 'view');
     }
 
     /**
@@ -69,42 +80,60 @@ class H5PFlashcardController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-   public function store(Request $request)
-{
-    $request->validate([
-        'cards' => 'required|array|min:1',
-        'cards.*.question' => 'required|string',
-        'cards.*.correct_answer' => 'required|string',
-        'cards.*.content' => 'nullable|string',
-        'cards.*.hint' => 'nullable|string',
-        'standard_id' => 'required',
-        'subject_id' => 'required',
-        'chapter_id' => 'required'
-    ]);
+    public function store(Request $request)
+    {
+        // return $request->all();
+        // exit;
+        $type = $request->type;
+        $sub_institute_id = session()->get('sub_institute_id');
+        $user_id = session()->get('user_id');
 
-    $createdCards = [];
-    
-    foreach ($request->cards as $card) {
-        $flashcard = h5pFlashcard::create([
-            'sub_institute_id' => session()->get('sub_institute_id'),
+        if (in_array($type, ['API', 'JSON'])) {
+            $sub_institute_id = $request->sub_institute_id;
+            $request->validate([
+                'sub_institute_id' => 'required|integer',
+                'user_id' => 'required|integer',
+                'standard_id' => 'required|integer',
+                'subject_id' => 'required|integer',
+                'chapter_id' => 'required|integer',
+            ]);
+        }
+
+        $createdCards = [];
+
+        foreach ($request->cards as $card) {
+            $flashcard = h5pFlashcard::create([
+                'sub_institute_id' => $sub_institute_id,
+                'standard_id' => $request->standard_id,
+                'subject_id' => $request->subject_id,
+                'chapter_id' => $request->chapter_id,
+                'content' => $card['content'] ?? null,
+                'question' => $card['question'],
+                'correct_answer' => strtolower(trim($card['correct_answer'])),
+                'hint' => $card['hint'] ?? null,
+                'created_by' => $user_id,
+                'created_at' => now(),
+            ]);
+
+            $createdCards[] = $flashcard;
+        }
+
+        if(in_array($type, ['API', 'JSON'])){
+            return response()->json([
+                'status' => true,
+                'message' => count($createdCards) . ' flashcard(s) created successfully!',
+                'data' => $createdCards
+            ]);
+        }
+        return redirect()->route('h5p_flashacard.index', [
+            'chapter_id'  => $request->chapter_id,
             'standard_id' => $request->standard_id,
-            'subject_id' => $request->subject_id,
-            'chapter_id' => $request->chapter_id,
-            'content' => $card['content'] ?? null,
-            'question' => $card['question'],
-            'correct_answer' => strtolower(trim($card['correct_answer'])),
-            'hint' => $card['hint'] ?? null,
-            'created_by' => auth()->id()
+            'subject_id'  => $request->subject_id
+        ])->with('data', [
+            'status'  => true,
+            'message' => count($createdCards) . ' flashcard(s) created successfully!'
         ]);
-        
-        $createdCards[] = $flashcard;
     }
-
-    return redirect()->route('flashcards.index')->with('data', [
-        'status' => true,
-        'message' => count($createdCards) . ' flashcard(s) created successfully!'
-    ]);
-}
 
     /**
      * Display the specified resource.
@@ -112,9 +141,32 @@ class H5PFlashcardController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show($id)
+    public function show(Request $request, $id)
     {
-        //
+       $type = $request->type;
+        $sub_institute_id = session()->get('sub_institute_id');
+        if (in_array($type, ['API', 'JSON'])) {
+            $sub_institute_id = $request->sub_institute_id;
+            $request->validate([
+                'sub_institute_id' => 'required|integer',
+                'standard_id' => 'required|integer',
+                'subject_id' => 'required|integer',
+                'chapter_id' => 'required|integer',
+            ]);
+        }
+
+        $res = $request->all();
+        $res['flashCards'] = h5pFlashcard::where([
+            'sub_institute_id' => $sub_institute_id,
+            'standard_id' => $request->standard_id,
+            'subject_id' => $request->subject_id,
+            'chapter_id' => $request->chapter_id,
+        ])->get();
+        $res['chapter_id'] = $request->chapter_id;
+        $res['standard_id'] = $request->standard_id;
+        $res['subject_id'] = $request->subject_id;
+        // return $res;
+        return is_mobile($type, 'lms/h5p/flashcard/show', $res, 'view');
     }
 
     /**
@@ -123,9 +175,22 @@ class H5PFlashcardController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function edit($id)
+    public function edit(Request $request, $id)
     {
-        //
+        $type = $request->type;
+        $sub_institute_id = session()->get('sub_institute_id');
+        if(in_array($type, ['API', 'JSON'])){
+            $request->validate([
+                'id' => 'required|integer',
+                'sub_institute_id' => 'required|integer',
+            ]);
+            $sub_institute_id = $request->sub_institute_id;
+        }
+        $res['card'] = h5pFlashcard::findOrFail($id);
+        $res['chapter_id'] = $request->chapter_id;
+        $res['standard_id'] = $request->standard_id;
+        $res['subject_id'] = $request->subject_id;
+        return is_mobile($type, 'lms/h5p/flashcard/edit', $res, 'view');
     }
 
     /**
@@ -137,17 +202,42 @@ class H5PFlashcardController extends Controller
      */
     public function update(Request $request, $id)
     {
+        // return $request->all();
+        $type = $request->type;
+        $sub_institute_id = session()->get('sub_institute_id');
+        $user_id = session()->get('user_id');
+        if(in_array($type, ['API', 'JSON'])){
+            $request->validate([
+                'id' => 'required|integer',
+                'sub_institute_id' => 'required|integer',
+            ]);
+            $sub_institute_id = $request->sub_institute_id;
+            $user_id = $request->user_id;
+        }
         $card = h5pFlashcard::findOrFail($id);
-
+        
         $card->update([
-            'content' => $request->content,
-            'question' => $request->question,
-            'correct_answer' => strtolower(trim($request->correct_answer)),
-            'hint' => $request->hint,
-            'updated_by' => auth()->id()
+            'content' => $request->cards[0]['content'] ?? '-',
+            'question' => $request->cards[0]['question'] ?? '-',
+            'correct_answer' => strtolower(trim($request->cards[0]['correct_answer'])),
+            'hint' => $request->cards[0]['hint'] ?? '-',
+            'updated_by' => $user_id,
+            'updated_at' => now(),
         ]);
-
-        return redirect()->route('flashcards.index');
+        if(in_array($type, ['API', 'JSON'])){
+            return response()->json([
+                'status' => true,
+                'message' => 'Flashcard updated successfully!',
+            ]);
+        }
+        return redirect()->route('h5p_flashacard.index', [
+            'chapter_id'  => $request->chapter_id,
+            'standard_id' => $request->standard_id,
+            'subject_id'  => $request->subject_id
+        ])->with('data', [
+            'status'  => $card ? 1 : 0,
+            'message' => $card ? 'Flashcard updated successfully!' : 'Flashcard not found!'
+        ]);
     }
 
     /**
@@ -156,13 +246,38 @@ class H5PFlashcardController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
+        $type = $request->type;
+         $sub_institute_id = session()->get('sub_institute_id');
+        $user_id = session()->get('user_id');
+        if(in_array($type, ['API', 'JSON'])){
+            $request->validate([
+                'id' => 'required|integer',
+                'sub_institute_id' => 'required|integer',
+            ]);
+            $sub_institute_id = $request->sub_institute_id;
+            $user_id = $request->user_id;
+        }
         $card = h5pFlashcard::findOrFail($id);
-        $card->deleted_by = auth()->id();
+        $card->deleted_by = $user_id;
         $card->save();
         $card->delete();
-
-        return back();
+         if(in_array($type, ['API', 'JSON'])){
+            return response()->json([
+                'status' => true,
+                'message' => 'Flashcard updated successfully!',
+            ]);
+        }
+        return redirect()->route('h5p_flashacard.index', [
+            'chapter_id'  => $request->chapter_id,
+            'standard_id' => $request->standard_id,
+            'subject_id'  => $request->subject_id
+        ])->with('data', [
+            'status'  => $card ? 1 : 0,
+            'message' => $card ? 'Flashcard deleted successfully!' : 'Flashcard not found!'
+        ]);
     }
+
+    
 }
