@@ -398,7 +398,7 @@ public function edit(Request $request, $id)
         ->where('Id', $sub_institute_id)
         ->value('is_Lms');
 
-    $sub_institute_id_by_lms = ($getIsLms == 'Y') ? "(sub_institute_id = 1 or sub_institute_id = $sub_institute_id)" : "sub_institute_id = $sub_institute_id";
+    $sub_institute_id_by_lms = ($getIsLms == 'Y') ? "(qm.sub_institute_id = 1 or qm.sub_institute_id = $sub_institute_id)" : "qm.sub_institute_id = $sub_institute_id";
 
     $data['questionpaper_data'] = questionpaperModel::find($id)->toArray();
 
@@ -423,10 +423,13 @@ public function edit(Request $request, $id)
     $grade_id = $data['questionpaper_data']['grade_id'];
 
     // Apply LMS condition to subjects query
-    $stdData = sub_std_mapModel::where('standard_id', $std_id)
-        ->whereRaw($sub_institute_id_by_lms) // Apply LMS condition here
-        ->orderBy('display_name')
-        ->get()->toArray();
+    $stdData = sub_std_mapModel::from('sub_std_map as qm')
+    ->where('qm.standard_id', $std_id)
+    ->whereRaw($sub_institute_id_by_lms)
+    ->orderBy('qm.display_name')
+    ->get()
+    ->toArray();
+
     $data['subjects'] = $stdData;
 
     $sub_id = $data['questionpaper_data']['subject_id'];
@@ -1575,13 +1578,13 @@ public function search_question($all_data){
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
         $user_id = $request->session()->get('user_id');
-        
+
         $paper_name = $request->input('paper_name');
         $paper_desc = $request->input('paper_desc');
-        $grade_id = $request->input('grade_id');
-        $standard_id = $request->input('standard_id');
-        $subject_id = $request->input('subject_id');
-        $question_ids = $request->input('question_ids', []);
+        $grade_id = $request->input('grade');
+        $standard_id = $request->input('standard');
+        $subject_id = $request->input('subject');
+        $question_ids = $request->input('question_ids');
         $total_questions = $request->input('total_questions', 0);
         $total_marks = $request->input('total_marks', 0);
         $difficulty_distribution = $request->input('difficulty_distribution', []);
@@ -1595,12 +1598,19 @@ public function search_question($all_data){
         $type = $request->input('type');
         
         // Validate
-        if (empty($paper_name) || empty($question_ids)) {
-            $res = [
+        $message = '';
+
+        if (empty($paper_name)) {
+            $message = 'Please provide paper name';
+        } elseif (empty($question_ids)) {
+            $message = 'Please select questions';
+        }
+
+        if ($message != '') {
+            return is_mobile($type, 'question_paper.index', [
                 'status_code' => 0,
-                'message' => 'Please provide paper name and select questions'
-            ];
-            return is_mobile($type, 'question_paper.index', $res, 'redirect');
+                'message' => $message
+            ], 'redirect');
         }
         
         // Prepare dates
@@ -1620,7 +1630,7 @@ public function search_question($all_data){
             'time_allowed' => $time_allowed,
             'total_ques' => $total_questions,
             'total_marks' => $total_marks,
-            'question_ids' => implode(',', $question_ids),
+            'question_ids' => $question_ids,//implode(',', $question_ids),
             'shuffle_question' => 1,
             'attempt_allowed' => $attempt_allowed,
             'show_feedback' => 1,
@@ -1630,7 +1640,7 @@ public function search_question($all_data){
             'sub_institute_id' => $sub_institute_id,
             'syear' => $syear,
             'exam_type' => $exam_type,
-            'ai_generated' => 1,
+            'ai_generated' => '1',
             'difficulty_distribution' => json_encode($difficulty_distribution),
             'taxonomy_distribution' => json_encode($taxonomy_distribution),
             'sections_config' => json_encode($sections_config)
@@ -1650,6 +1660,207 @@ public function search_question($all_data){
         ];
         
         return is_mobile($type, 'question_paper.index', $res, 'redirect');
+    }
+    
+    /**
+     * Export AI Generated Question Paper as PDF
+     * @param Request $request
+     * @return \Illuminate\Http\Response
+     */
+    public function exportAIPaperPDF(Request $request)
+    {
+        $questionpaper_id = $request->input('questionpaper_id');
+        $set_index = $request->input('set_index', 0);
+        
+        if (!$questionpaper_id) {
+            return response()->json([
+                'status_code' => 0,
+                'message' => 'Question paper ID is required'
+            ]);
+        }
+        
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $syear = $request->session()->get('syear');
+        
+        $questionpaper = questionpaperModel::find($questionpaper_id);
+        
+        if (!$questionpaper) {
+            return response()->json([
+                'status_code' => 0,
+                'message' => 'Question paper not found'
+            ]);
+        }
+        
+        $question_ids = explode(",", $questionpaper->question_ids);
+        
+        $question_arr = lmsQuestionMasterModel::whereIn("id", $question_ids)->get()->toArray();
+        
+        $answer = [];
+        foreach ($question_arr as $key => $val) {
+            $answer_arr = answermasterModel::where("question_id", $val['id'])->get()->toArray();
+            if (count($answer_arr) > 0) {
+                foreach ($answer_arr as $anskey => $ansval) {
+                    $answer[$val['id']][] = $ansval;
+                }
+            }
+        }
+        
+        $data['questionpaper_data'] = $questionpaper->toArray();
+        $data['questionpaper_data']['set_name'] = 'Set ' . chr(65 + $set_index);
+        $data['question_arr'] = $question_arr;
+        $data['answer_arr'] = $answer;
+        
+        $sections_config = json_decode($questionpaper->sections_config, true);
+        if (!empty($sections_config)) {
+            $sectionLetters = ['A', 'B', 'C', 'D', 'E'];
+            $sections = [];
+            $currentIndex = 0;
+            
+            foreach ($sections_config as $idx => $section) {
+                $sectionQuestions = array_slice($question_arr, $currentIndex, $section['questions']);
+                $sections[] = [
+                    'name' => $sectionLetters[$idx] ?? chr(65 + $idx),
+                    'questions' => $sectionQuestions,
+                    'total_marks' => array_sum(array_column($sectionQuestions, 'points'))
+                ];
+                $currentIndex += $section['questions'];
+            }
+            $data['sections'] = $sections;
+        }
+        
+        $data['show_answer_space'] = true;
+        $html = view('lms/questionpaper_cbse', compact('data'))->render();
+        
+        $pdf_folder = public_path('storage/QuestionPaper');
+        if (!file_exists($pdf_folder)) {
+            mkdir($pdf_folder, 0777, true);
+        }
+        
+        $pdf_filename = $questionpaper_id . '_set' . ($set_index + 1) . '_' . $sub_institute_id . '_' . $syear . '.pdf';
+        $pdf_file_path = $pdf_folder . '/' . $pdf_filename;
+        
+        $dom = '<!DOCTYPE html>
+        <html>
+            <head>
+                <title>' . $questionpaper->paper_name . '</title>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            </head>
+            <body>
+                <div>##HTML_SEC##</div>
+            </body>
+        </html>';
+        
+        $html = str_replace('##HTML_SEC##', $html, $dom);
+        
+        $html_filename = $questionpaper_id . '_set' . ($set_index + 1) . '_' . $sub_institute_id . '_' . $syear . '.html';
+        $html_file_path = $pdf_folder . '/' . $html_filename;
+        
+        file_put_contents($html_file_path, $html);
+        
+        $this->htmlToPDF($html_file_path, $pdf_file_path);
+        
+        if (file_exists($html_file_path)) {
+            unlink($html_file_path);
+        }
+        
+        if (file_exists($pdf_file_path)) {
+            return response()->json([
+                'status_code' => 1,
+                'message' => 'PDF generated successfully',
+                'pdf_url' => asset('storage/QuestionPaper/' . $pdf_filename)
+            ]);
+        }
+        
+        return response()->json([
+            'status_code' => 0,
+            'message' => 'Failed to generate PDF'
+        ]);
+    }
+    
+    /**
+     * Export AI Generated Question Paper as HTML
+     * @param Request $request
+     * @return \Illuminate\Http\Response
+     */
+    public function exportAIPaperHTML(Request $request)
+    {
+        $questionpaper_id = $request->input('questionpaper_id');
+        $set_index = $request->input('set_index', 0);
+        
+        if (!$questionpaper_id) {
+            return response()->json([
+                'status_code' => 0,
+                'message' => 'Question paper ID is required'
+            ]);
+        }
+        
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $syear = $request->session()->get('syear');
+        
+        $questionpaper = questionpaperModel::find($questionpaper_id);
+        
+        if (!$questionpaper) {
+            return response()->json([
+                'status_code' => 0,
+                'message' => 'Question paper not found'
+            ]);
+        }
+        
+        $question_ids = explode(",", $questionpaper->question_ids);
+        
+        $question_arr = lmsQuestionMasterModel::whereIn("id", $question_ids)->get()->toArray();
+        
+        $answer = [];
+        foreach ($question_arr as $key => $val) {
+            $answer_arr = answermasterModel::where("question_id", $val['id'])->get()->toArray();
+            if (count($answer_arr) > 0) {
+                foreach ($answer_arr as $anskey => $ansval) {
+                    $answer[$val['id']][] = $ansval;
+                }
+            }
+        }
+        
+        $data['questionpaper_data'] = $questionpaper->toArray();
+        $data['questionpaper_data']['set_name'] = 'Set ' . chr(65 + $set_index);
+        $data['question_arr'] = $question_arr;
+        $data['answer_arr'] = $answer;
+        
+        $sections_config = json_decode($questionpaper->sections_config, true);
+        if (!empty($sections_config)) {
+            $sectionLetters = ['A', 'B', 'C', 'D', 'E'];
+            $sections = [];
+            $currentIndex = 0;
+            
+            foreach ($sections_config as $idx => $section) {
+                $sectionQuestions = array_slice($question_arr, $currentIndex, $section['questions']);
+                $sections[] = [
+                    'name' => $sectionLetters[$idx] ?? chr(65 + $idx),
+                    'questions' => $sectionQuestions,
+                    'total_marks' => array_sum(array_column($sectionQuestions, 'points'))
+                ];
+                $currentIndex += $section['questions'];
+            }
+            $data['sections'] = $sections;
+        }
+        
+        $data['show_answer_space'] = true;
+        $htmlContent = view('lms/questionpaper_cbse', compact('data'))->render();
+        
+        $fullHtml = '<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>' . ($questionpaper->paper_name ?? 'Question Paper') . '</title>
+</head>
+<body>' . $htmlContent . '</body>
+</html>';
+        
+        return response()->json([
+            'status_code' => 1,
+            'message' => 'HTML generated successfully',
+            'html' => $fullHtml
+        ]);
     }
 
 }

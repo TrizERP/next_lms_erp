@@ -113,16 +113,16 @@ class assessmentQuestionController extends Controller
                         $questionTypeName = $questionTypeData->question_type;
                     }
                 }
-                
+                $names = $this->getName($standardId, $subjectId, $chapterId, $topicId);
                 // Generate the prompt
                 $prompt = $this->generateEnhancedPrompt(
                     $totalQuestions,
                     $distribution,
                     $questionTypeName,
-                    $standardId ?? 'General',
-                    $subjectId ?? 'General',
-                    $chapterId ?? 'General',
-                    $topicId
+                    $names['standard'],
+                    $names['subject'],
+                    $names['chapter'],
+                    $names['topic']
                 );
                 
                 $response['prompt'] = $prompt;
@@ -346,7 +346,7 @@ class assessmentQuestionController extends Controller
      */
     private function generateEnhancedPrompt($totalQuestions, $distribution, $questionType, $standard, $subject, $chapter, $topic = null)
     {
-        $prompt = "Generate {$totalQuestions} {$questionType} questions for:\n";
+        $prompt = "Generate {$totalQuestions} {$questionType} CBSE questions for:\n";
         $prompt .= "- Standard: {$standard}\n";
         $prompt .= "- Subject: {$subject}\n";
         $prompt .= "- Chapter: {$chapter}\n";
@@ -363,7 +363,7 @@ class assessmentQuestionController extends Controller
                       self::MARKS_BY_DIFFICULTY[$item['difficulty']] . " mark(s) each - Focus: {$focusArea}\n";
         }
         
-        $prompt .= "\nTotal: {$totalQuestions} questions\n";
+        $prompt .= "\nTotal: {$totalQuestions} questions {$questionType} only\n";
         
         $prompt .= "\nReturn the response as a JSON array of question objects with fields: ";
         $prompt .= "question, question_type (always '{$questionType}'), difficulty (Easy/Medium/Hard), ";
@@ -397,6 +397,18 @@ class assessmentQuestionController extends Controller
         ];
         
         return $focusAreas[$levelName] ?? 'General understanding';
+    }
+    /**
+     * Get Text from pass IDs
+     */
+    public function getName($standard_id = null, $subject_id = null, $chapter_id = null, $topic_id = null)
+    {
+        return [
+            'standard' => DB::table('standard')->where('id', $standard_id)->value('name'),
+            'subject'  => DB::table('subject')->where('id', $subject_id)->value('subject_name'),
+            'chapter'  => DB::table('chapter_master')->where('id', $chapter_id)->value('chapter_name'),
+            'topic'    => DB::table('topic_master')->where('id', $topic_id)->value('name'),
+        ];
     }
     
     /**
@@ -675,6 +687,8 @@ class assessmentQuestionController extends Controller
                 $distribution = $this->distributeQuestionsByDifficulty($totalQuestions, $availableMappings);
                 $distribution = $this->calculateMarksForDistribution($distribution);
                 
+                $names = $this->getName($standard, $subject_id, $chapter_id, $topic_id);
+                
                 // Use custom prompt if provided, otherwise generate one
                 if (!empty($customPrompt)) {
                     $prompt = $customPrompt;
@@ -684,10 +698,10 @@ class assessmentQuestionController extends Controller
                         $totalQuestions,
                         $distribution,
                         $questionTypeName,
-                        $standard ?? 'General',
-                        $subject_id ?? 'General',
-                        $chapter_id ?? 'General',
-                        $topic_id
+                        $names['standard'],
+                        $names['subject'],
+                        $names['chapter'],
+                        $names['topic']
                     );
                 }
                 

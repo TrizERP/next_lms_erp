@@ -522,11 +522,30 @@ $(document).ready(function() {
     updateTaxonomyTotal();
     calculateTotalMarks();
     
-    // Standard change handler
+    // Grade change handler - load standards first
+    $("#grade").change(function() {
+        var grade_id = $("#grade").val();
+        if (grade_id) {
+            // Filter standards based on grade
+            $("#standard option").each(function() {
+                var stdGradeId = $(this).data('grade_id');
+                if (stdGradeId && stdGradeId != grade_id) {
+                    $(this).hide();
+                } else {
+                    $(this).show();
+                }
+            });
+            $("#standard").val("").trigger('change');
+        }
+    });
+    
+    // Standard change handler - load subjects
     $("#standard").change(function() {
         var std_id = $("#standard").val();
         var path = "{{ route('ajax_LMS_StandardwiseSubject') }}";
         $('#subject').find('option').remove().end().append('<option value="">Select Subject</option>').val('');
+        
+        if (!std_id) return;
         
         $.ajax({
             url: path,
@@ -535,6 +554,9 @@ $(document).ready(function() {
                 for(var i = 0; i < result.length; i++) {
                     $("#subject").append($("<option></option>").val(result[i].subject_id).html(result[i].display_name));
                 }
+            },
+            error: function(xhr, status, error) {
+                console.log('Error loading subjects:', error);
             }
         });
     });
@@ -745,15 +767,15 @@ function validateQuestions() {
 
 // Validate and preview
 function validateAndPreview() {
-    if (!validateForm()) {
-        return;
-    }
-    
     var standardId = $("#standard").val();
     var subjectId = $("#subject").val();
     
-    if (!standardId || !subjectId) {
-        alert("Please select Standard and Subject");
+    if (!standardId) {
+        alert("Please select Standard");
+        return;
+    }
+    if (!subjectId) {
+        alert("Please select Subject");
         return;
     }
     
@@ -800,7 +822,7 @@ function validateAndPreview() {
         },
         success: function(response) {
             if (response.status_code === 1) {
-                displayPreview(response);
+                displayPreview(response, null);
             } else {
                 $("#previewContent").html(
                     '<div class="alert alert-danger">' + response.message + '</div>'
@@ -811,10 +833,10 @@ function validateAndPreview() {
 }
 
 // Display preview
-function displayPreview(response) {
+function displayPreview(response, questionpaperId) {
     var html = '';
     
-    response.sets.forEach(function(set) {
+    response.sets.forEach(function(set, setIdx) {
         html += '<div class="set-card">';
         html += '<div class="set-header">' + set.set_name + '</div>';
         
@@ -824,9 +846,9 @@ function displayPreview(response) {
             
             section.questions.forEach(function(q, idx) {
                 html += '<div class="question-preview">';
-                html += '<strong>Q' + (idx + 1) + '.</strong> ' + q.question_title.substring(0, 100) + '...';
-                html += ' <span class="badge badge-primary">' + q.points + ' marks</span>';
-                html += ' <span class="badge badge-secondary">' + q.question_type + '</span>';
+                html += '<strong>Q' + (idx + 1) + '.</strong> ' + q.question_title;
+                html += ' <span class="badge badge-primary">' + q.points + ' mark</span>';
+                //html += ' <span class="badge badge-secondary">' + q.question_type + '</span>';
                 html += '</div>';
             });
             
@@ -836,8 +858,8 @@ function displayPreview(response) {
         html += '<div class="text-right"><strong>Total: ' + set.total_questions + ' questions, ' + set.total_marks + ' marks</strong></div>';
         html += '</div>';
         
-        // Store question IDs for saving
-        html += '<input type="hidden" name="selected_question_ids" value="' + set.question_ids.join(',') + '">';
+        var qpid = questionpaperId || '';
+        html += '<input type="hidden" name="question_ids" value="' + set.question_ids.join(',') + '" data-id="' + qpid + '" data-set-index="' + setIdx + '">';
     });
     
     $("#previewContent").html(html);
@@ -887,17 +909,114 @@ function validateForm() {
         return false;
     }
     
+    var questionIdsInput = document.querySelector('input[name="question_ids"]');
+    if (!questionIdsInput || !questionIdsInput.value) {
+        alert("Please preview the question paper first!");
+        return false;
+    }
+    
     return true;
 }
 
-// Export PDF (placeholder)
+// Export PDF
 function exportPDF() {
-    alert("PDF export will be available soon!");
+    var hiddenInput = document.querySelector('input[name="question_ids"]');
+    if (!hiddenInput) {
+        alert('Please preview the question paper first!');
+        return;
+    }
+    
+    var questionpaperId = hiddenInput.getAttribute('data-id');
+    var setIndex = hiddenInput.getAttribute('data-set-index') || 0;
+    
+    if (questionpaperId) {
+        $.ajax({
+            url: "{{ route('ai_paper.export_pdf') }}",
+            type: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            data: {
+                questionpaper_id: questionpaperId,
+                set_index: setIndex
+            },
+            success: function(response) {
+                if (response.status_code === 1) {
+                    window.open(response.pdf_url, '_blank');
+                } else {
+                    alert(response.message || 'Failed to generate PDF');
+                }
+            },
+            error: function() {
+                alert('Error generating PDF');
+            }
+        });
+    } else {
+        var previewContent = document.getElementById('previewContent');
+        var printWindow = window.open('', '_blank');
+        printWindow.document.write('<!DOCTYPE html><html><head><title>Question Paper</title>');
+        printWindow.document.write('<style>body{font-family:Arial,sans-serif;padding:20px;} .question-preview{border:1px solid #ddd;padding:10px;margin-bottom:10px;}</style>');
+        printWindow.document.write('</head><body>');
+        printWindow.document.write(previewContent.innerHTML);
+        printWindow.document.write('</body></html>');
+        printWindow.document.close();
+        printWindow.print();
+    }
 }
 
-// Export HTML (placeholder)
+// Export HTML
 function exportHTML() {
-    alert("HTML export will be available soon!");
+    var hiddenInput = document.querySelector('input[name="question_ids"]');
+    if (!hiddenInput) {
+        alert('Please preview the question paper first!');
+        return;
+    }
+    
+    var questionpaperId = hiddenInput.getAttribute('data-id');
+    var setIndex = hiddenInput.getAttribute('data-set-index') || 0;
+    
+    if (questionpaperId) {
+        $.ajax({
+            url: "{{ route('ai_paper.export_html') }}",
+            type: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            data: {
+                questionpaper_id: questionpaperId,
+                set_index: setIndex
+            },
+            success: function(response) {
+                if (response.status_code === 1) {
+                    var blob = new Blob([response.html], { type: 'text/html' });
+                    var url = URL.createObjectURL(blob);
+                    var a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'question_paper.html';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                } else {
+                    alert(response.message || 'Failed to generate HTML');
+                }
+            },
+            error: function() {
+                alert('Error generating HTML');
+            }
+        });
+    } else {
+        var previewContent = document.getElementById('previewContent');
+        var blob = new Blob([previewContent.innerHTML], { type: 'text/html' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'question_paper.html';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
 }
 
 // Event listeners

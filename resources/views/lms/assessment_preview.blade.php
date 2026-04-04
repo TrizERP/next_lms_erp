@@ -43,7 +43,7 @@
                                 <div class="col-md-3">
                                     <div class="form-group">
                                         <label for="total_questions">Total Questions <span class="text-danger">*</span></label>
-                                        <input type="number" class="form-control" name="total_questions" id="total_questions" min="1" max="100" value="10" required>
+                                        <input type="number" class="form-control" name="total_questions" id="total_questions" min="1" max="50" value="2" required>
                                         <small class="text-muted">Auto-distributed by difficulty</small>
                                     </div>
                                 </div>
@@ -55,33 +55,33 @@
                                         </button>
                                     </div>
                                 </div>
-                                <div class="col-md-3">
+                                <!-- <div class="col-md-3">
                                     <div class="form-group">
                                         <label>&nbsp;</label>
                                         <button type="button" class="btn btn-secondary btn-block" id="previewDistributionBtn">
                                             <i class="mdi mdi-chart-bar mr-1"></i> Preview Distribution
                                         </button>
                                     </div>
-                                </div>
+                                </div> -->
                             </div>
 
-                            <!-- Prompt Preview Section (Editable) -->
-                            <div id="promptPreviewSection" class="alert alert-warning d-none">
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <h6 class="alert-heading mb-0"><i class="mdi mdi-pencil-outline mr-1"></i>AI Prompt (Editable)</h6>
-                                    <button type="button" class="btn btn-sm btn-primary" id="generateFromPromptBtn">
-                                        <i class="mdi mdi-robot mr-1"></i> Generate Questions
-                                    </button>
-                                </div>
-                                <textarea class="form-control" id="aiPrompt" rows="8" placeholder="AI prompt will appear here..."></textarea>
-                                <small class="text-muted mt-1">You can edit the prompt before generating questions</small>
-                            </div>
+<!-- Prompt Preview Section (Editable) -->
+<div id="promptPreviewSection" class="alert alert-warning d-none">
+    <h6 class="alert-heading mb-0"><i class="mdi mdi-pencil-outline mr-1"></i>AI Prompt (Editable)</h6>
+    <textarea class="form-control" id="aiPrompt" rows="8" placeholder="AI prompt will appear here..."></textarea>
+    <small class="text-muted mt-1">You can edit the prompt before generating questions</small>
+    <div class="d-flex justify-content-center mb-2">
+        <button type="button" class="btn btn-sm btn-primary" id="generateFromPromptBtn">
+            <i class="mdi mdi-robot mr-1"></i> Generate Questions (AI)
+        </button>
+    </div>
+</div>
 
                             <!-- Distribution Preview Section -->
                             <div id="distributionPreviewSection" class="alert alert-info d-none">
                                 <h6 class="alert-heading"><i class="mdi mdi-information-outline mr-1"></i>Question Distribution Preview</h6>
                                 <div class="table-responsive mt-2">
-                                    <table class="table table-sm table-bordered" id="distributionTable">
+                                    <table class="table table-sm table-bordered" id="distributionTable" style="filter:none !important">
                                         <thead class="thead-light">
                                             <tr>
                                                 <th>Mapping Type</th>
@@ -114,11 +114,11 @@
                 </div>
 
                 <!-- Generate Question Button -->
-                <div class="text-center mb-4">
+                <!--<div class="text-center mb-4">
                     <button type="button" class="btn btn-primary btn-lg" id="generateQuestionsBtn">
                         <i class="mdi mdi-robot mr-2"></i>Generate Question (AI)
                     </button>
-                </div>
+                </div>-->
 
                 <!-- Tabs Section -->
                 <div class="card">
@@ -472,120 +472,6 @@ $(document).ready(function() {
         });
     });
 
-    // Generate Questions - Simplified Mode (Original button)
-    $('#generateQuestionsBtn').on('click', function() {
-        const questionTypeId = $('#question_type_id').val();
-        const totalQuestions = $('#total_questions').val();
-        
-        if (!questionTypeId) {
-            alert('Please select a question type');
-            return;
-        }
-        
-        if (!totalQuestions || totalQuestions < 1) {
-            alert('Please enter valid number of questions');
-            return;
-        }
-
-        const originalText = $(this).html();
-        $(this).prop('disabled', true).html('<span class="generate-loading"></span> Generating...');
-
-        const standardId = $('#standard_id').val();
-        const subjectId = $('#subject_id').val();
-        const chapterId = $('#chapter_id').val();
-        const topicId = $('#topic_id').val();
-
-        $.ajax({
-            url: "{{ route('lms_chat') }}",
-            type: 'POST',
-            data: {
-                _token: "{{ csrf_token() }}",
-                standard: standardId,
-                subject_id: subjectId,
-                chapter_id: chapterId,
-                topic_id: topicId,
-                question_type_id: questionTypeId,
-                total_questions: totalQuestions,
-                standard_id: standardId,
-                subject_id: subjectId,
-                chapter_id: chapterId
-            },
-            success: function(result) {
-                console.log('API Response:', result);
-                
-                let questionsData = [];
-                
-                if (result.ai_response && Array.isArray(result.ai_response) && result.ai_response.length > 0) {
-                    questionsData = result.ai_response;
-                } else if (result.questions && Array.isArray(result.questions) && result.questions.length > 0) {
-                    questionsData = result.questions;
-                }
-                
-                const isMCQ = questionTypeId == 1;
-                const distribution = result.distribution || currentDistribution;
-                
-                generatedQuestions = questionsData.length ? questionsData.map((q, idx) => ({
-                    id: idx + 1,
-                    question_title: q.question || q.question_title || '',
-                    question: q.question || q.question_title || '',
-                    question_type: q.question_type || (isMCQ ? 'MCQ' : ''),
-                    difficulty: q.difficulty || 'Medium',
-                    options: q.options || (isMCQ ? [
-                        { text: "Sample Option 1", correct: true },
-                        { text: "Sample Option 2", correct: false },
-                        { text: "Sample Option 3", correct: false },
-                        { text: "Sample Option 4", correct: false }
-                    ] : []),
-                    correct_answer: q.correct_answer || '',
-                    explanation: q.explanation || '',
-                    marks: q.marks || q.points || 1,
-                    points: q.marks || q.points || 1,
-                    mapping_type_id: q.mapping_type_id || null,
-                    mapping_value_id: q.mapping_value_id || null,
-                    mappings: q.mappings || []
-                })) : [];
-
-                if (distribution && generatedQuestions.length > 0) {
-                    let qIndex = 0;
-                    distribution.forEach((distItem) => {
-                        for (let i = 0; i < distItem.questions && qIndex < generatedQuestions.length; i++) {
-                            generatedQuestions[qIndex].mapping_type_id = distItem.mapping_type_id;
-                            generatedQuestions[qIndex].mapping_value_id = distItem.mapping_value_id;
-                            generatedQuestions[qIndex].difficulty = distItem.difficulty;
-                            generatedQuestions[qIndex].marks = distItem.marks;
-                            generatedQuestions[qIndex].points = distItem.marks;
-                            generatedQuestions[qIndex].mappings = [{
-                                mapping_type: distItem.mapping_type_id,
-                                mapping_value: distItem.mapping_value_id,
-                                reason: distItem.mapping_value_name + ' - ' + distItem.difficulty
-                            }];
-                            qIndex++;
-                        }
-                    });
-                }
-
-                displayEditableQuestions(generatedQuestions);
-                displayAnswerKey(generatedQuestions);
-                $('#generated_questions_data').val(JSON.stringify(generatedQuestions));
-                
-                if (distribution) {
-                    $('#distribution_data').val(JSON.stringify(distribution));
-                }
-                
-                $(this).prop('disabled', false).html(originalText);
-                
-                if (result.total_marks) {
-                    alert(`Generated ${generatedQuestions.length} questions with total marks: ${result.total_marks}`);
-                }
-            },
-            error: function(xhr) {
-                console.error('Error:', xhr.responseText);
-                alert('Error generating questions');
-                $(this).prop('disabled', false).html(originalText);
-            }
-        });
-    });
-
     // Display editable questions with delete buttons
     function displayEditableQuestions(questions) {
         const container = $('#questionsContainer').empty();
@@ -634,7 +520,7 @@ $(document).ready(function() {
                                 value="${(q.question || '')}" style="border:none; background:transparent; width:60%;">
                             <span class="badge badge-info ml-2">${q.question_type || 'Question'}</span> 
                             <span class="badge ${difficultyClass}">${q.difficulty || 'Medium'}</span>
-                            <span class="badge badge-warning ml-2">${q.marks || q.points || 1} marks</span>
+                            <span class="badge badge-warning ml-2">${q.marks || q.points || 1} mark</span>
                         </div>
                         <div>
                             <button type="button" class="btn btn-danger btn-sm delete-question-btn mr-2" data-question-index="${i}" title="Delete Question">
@@ -1029,7 +915,7 @@ $(document).ready(function() {
             return container.html('<div class="text-center py-5 text-muted"><i class="mdi mdi-key-variant mdi-48px mb-3"></i><p class="mb-0">No answer key available.</p></div>');
         }
 
-        let html = '<table class="table table-bordered"><thead><tr><th>Q.No.</th><th>Question</th><th>Difficulty</th><th>Marks</th><th>Correct Answer</th></tr></thead><tbody>';
+        let html = '<table class="table table-bordered" style="filter:none !important"><thead><tr><th>Q.No.</th><th>Question</th><th>Difficulty</th><th>Marks</th><th>Correct Answer</th></tr></thead><tbody>';
         questions.forEach((q, i) => {
             const correct = q.options?.find(opt => opt.correct)?.text || q.correct_answer || 'N/A';
             const difficultyClass = 'difficulty-' + (q.difficulty || 'Medium').toLowerCase();
@@ -1038,8 +924,8 @@ $(document).ready(function() {
                 <td>${(q.question || '').substring(0, 60)}...</td>
                 <td><span class="badge ${difficultyClass}">${q.difficulty || 'Medium'}</span></td>
                 <td>${q.marks || q.points || 1}</td>
-                <td><span class="badge badge-success">${correct}</span></td>
-            </tr>`;
+                <td>${correct}</td>
+            </tr>`;//<span class="badge badge-success"></span>
         });
         container.html(html + '</tbody></table>');
     }
