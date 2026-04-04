@@ -203,6 +203,146 @@
         transform: translateY(-2px);
         color: white;
     }
+
+    /* Multiple Cards Form Styles */
+    .cards-container {
+        background: white;
+        border-radius: 20px;
+        padding: 30px;
+        margin-top: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    }
+
+    .card-item {
+        background: #f8fafd;
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 20px;
+        border: 2px solid #e2e8f0;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .card-item:hover {
+        border-color: #005bea;
+        box-shadow: 0 5px 15px rgba(0, 91, 234, 0.1);
+    }
+
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #e2e8f0;
+    }
+
+    .card-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1e3c72;
+        margin: 0;
+    }
+
+    .card-number {
+        background: linear-gradient(145deg, #1e3c72, #2a5298);
+        color: white;
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group label {
+        font-weight: 600;
+        color: #1e3c72;
+        margin-bottom: 8px;
+        display: block;
+    }
+
+    .form-group input,
+    .form-group textarea {
+        width: 100%;
+        padding: 12px;
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        transition: all 0.3s ease;
+        font-size: 14px;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus {
+        border-color: #005bea;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(0, 91, 234, 0.1);
+    }
+
+    .form-group textarea {
+        resize: vertical;
+        min-height: 80px;
+    }
+
+    .info-section {
+        background: white;
+        border-radius: 20px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    }
+
+    .info-section select {
+        width: 100%;
+        padding: 12px;
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        font-size: 14px;
+    }
+
+    /* CKEditor Styles */
+    .cke {
+        border-radius: 12px !important;
+        border: 2px solid #e2e8f0 !important;
+    }
+
+    .cke_focus {
+        border-color: #005bea !important;
+        box-shadow: 0 0 0 3px rgba(0, 91, 234, 0.1) !important;
+    }
+    
+    /* Ensure CKEditor fits well in cards */
+    .cke_chrome {
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+    
+    .card-item .cke {
+        margin-bottom: 10px;
+    }
+    
+    /* Submit Button Styles */
+    .submit-btn {
+        background: linear-gradient(145deg, #005bea, #0046b5);
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 16px;
+        font-weight: 600;
+    }
+
+    .submit-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 91, 234, 0.3);
+    }
 </style>
 
 <div id="page-wrapper">
@@ -214,15 +354,28 @@
         </div>
         @endif
 
+        @if ($errors->any())
+        <div class="alert alert-danger alert-block">
+            <button type="button" class="close" data-dismiss="alert">×</button>
+            <strong>
+                <ul class="mb-0">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </strong>
+        </div>
+        @endif
+
         <!-- Animated Header -->
         <div class="modern-header">
             <div class="header-content">
                 <div class="header-left">
                     <div class="header-icon">
-                        <i class="fas fa-robot"></i>
+                        <i class="fas fa-edit"></i>
                     </div>
                    <div class="header-text">
-                        <h1> {{ App\Helpers\getTableFieldFromId('chapter_master','chapter_name',$data['chapter_id']) }}</h1>
+                        <h1>Edit Flashcard - {{ App\Helpers\getTableFieldFromId('chapter_master','chapter_name',$data['chapter_id']) }}</h1>
                         <div class="header-badges">
                             <span class="header-badge">
                                 <i class="fas fa-book-open"></i>
@@ -236,26 +389,223 @@
                     </div>
                 </div>
                 <div class="header-right">
-                    <div class="header-stats">
-                        <i class="fas fa-cubes"></i>
-                        {{ count($data['flashCards']) }} Flash Cards
-                    </div>
-                    <div class="header-stats">
-                        <a href="{{route('h5p_flashacard.create',['chapter_id' => $data['chapter_id'],'standard_id'=>$data['standard_id'],'subject_id'=>$data['subject_id']])}}" class="text-white">
-                            <i class="fas fa-plus"></i>
-                            Add Cards
-                        </a>
-                    </div>
+                   
                 </div>
             </div>
         </div>
 
-        <!-- Scenarios Table -->
-        
+        <form action="{{ route('h5p_flashacard.update', $data['card']->id) }}" method="POST" id="flashcards-form">
+            @csrf
+            @method('PUT')
+            <input type="hidden" name="chapter_id" value="{{$data['chapter_id']}}">
+            <input type="hidden" name="subject_id" value="{{$data['subject_id']}}">
+            <input type="hidden" name="standard_id" value="{{$data['standard_id']}}">
+            <input type="hidden" name="card_id" value="{{$data['card']->id}}">
+            
+            <!-- Cards Container -->
+            <div class="cards-container">
+                <div id="cards-wrapper">
+                    <!-- Card Edit -->
+                    <div class="card-item" data-card-index="0">
+                        <div class="card-header">
+                            <div class="d-flex align-items-center gap-3">
+                                <span class="card-number">Edit Card</span>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label for="cards_0_question">Question *</label>
+                                    <textarea name="cards[0][question]" id="cards_0_question" class="form-control" rows="5" placeholder="Enter the question...">{{ old('cards.0.question', $data['card']->question) }}</textarea>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label for="cards_0_content">Content / Explanation</label>
+                                    <textarea name="cards[0][content]" id="cards_0_content" class="form-control ckeditor-textarea" rows="5" placeholder="Enter additional content or explanation...">{{ old('cards.0.content', $data['card']->content) }}</textarea>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="cards_0_correct_answer">Correct Answer *</label>
+                                    <input type="text" name="cards[0][correct_answer]" id="cards_0_correct_answer" class="form-control" placeholder="Enter correct answer" required value="{{ old('cards.0.correct_answer', $data['card']->correct_answer) }}">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="cards_0_hint">Hint (Optional)</label>
+                                    <input type="text" name="cards[0][hint]" id="cards_0_hint" class="form-control" placeholder="Enter hint for students" value="{{ old('cards.0.hint', $data['card']->hint) }}">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="text-center mt-4">
+                    <button type="submit" class="submit-btn">
+                        <i class="fas fa-save"></i> Update
+                    </button>
+                </div>
+            </div>
+        </form>
     </div>
 </div>
 
 @include('includes.lmsfooterJs')
+<script src="{{ asset("/ckeditor_wiris/ckeditor4/ckeditor.js") }}"></script>
+<script>
+$(document).ready(function() {
+    let editorInstances = {};
+    
+    // CKEditor configuration
+    CKEDITOR.config.toolbar_Full = [
+        { name: 'document', items: [ 'Source'] },
+        { name: 'clipboard', items: [ 'Cut','Copy','Paste','-','Undo','Redo' ] },
+        { name: 'editing', items: [ 'Find'] },
+        { name: 'basicstyles', items: [ 'Bold','Italic','Underline'] },
+        { name: 'paragraph', items: [ 'JustifyLeft','JustifyCenter','JustifyRight'] }
+    ];
+    CKEDITOR.config.height = '150px';
+    
+    // Register external plugins if needed
+    CKEDITOR.plugins.addExternal('divarea', '../examples/extraplugins/divarea/', 'plugin.js');
+    CKEDITOR.plugins.addExternal('sharedspace', '../examples/extraplugins/sharedspace/', 'plugin.js');
+    CKEDITOR.plugins.addExternal('filebrowser', '../examples/extraplugins/filebrowser/', 'plugin.js');
+    CKEDITOR.plugins.addExternal('enterkey', '../examples/extraplugins/enterkey/', 'plugin.js');
+    CKEDITOR.plugins.addExternal('FMathEditor', '../examples/extraplugins/FMathEditor/', 'plugin.js');
+    
+    CKEDITOR.config.removePlugins = 'maximize,resize';
+    
+    // Initialize CKEditor only for content fields (not for questions)
+    function initCKEditor(elementId) {
+        try {
+            // Check if element exists and not already initialized
+            if (!elementId || editorInstances[elementId]) {
+                return;
+            }
+            
+            const element = document.getElementById(elementId);
+            if (!element) {
+                console.log('Element not found:', elementId);
+                return;
+            }
+            
+            editorInstances[elementId] = CKEDITOR.replace(elementId, {
+                extraPlugins: 'filebrowser,divarea,sharedspace,FMathEditor,enterkey',
+                enterMode: CKEDITOR.ENTER_BR,
+                language: 'en',
+                height: '200px',
+                toolbar: [
+                    { name: 'document', items: [ 'Source'] },
+                    { name: 'clipboard', items: [ 'Cut','Copy','Paste','-','Undo','Redo' ] },
+                    { name: 'editing', items: [ 'Find'] },
+                    { name: 'basicstyles', items: [ 'Bold','Italic','Underline'] },
+                    { name: 'paragraph', items: [ 'JustifyLeft','JustifyCenter','JustifyRight'] },
+                    { name: 'links', items: [ 'Link', 'Unlink' ] },
+                    { name: 'insert', items: [ 'Image', 'Table', 'HorizontalRule', 'SpecialChar' ] },
+                    { name: 'tools', items: [ 'Maximize' ] }
+                ],
+                filebrowserUploadUrl: "{{ route('uploadimage', ['_token' => csrf_token()]) }}",
+                filebrowserUploadMethod: 'form'
+            });
+            
+            // Add blur event to update textarea
+            editorInstances[elementId].on('blur', function() {
+                if (editorInstances[elementId] && editorInstances[elementId].getData) {
+                    $('#' + elementId).val(editorInstances[elementId].getData());
+                }
+            });
+            
+            // Add instance ready event
+            editorInstances[elementId].on('instanceReady', function() {
+                console.log('CKEditor initialized for content field:', elementId);
+            });
+            
+        } catch(e) {
+            console.log('Error initializing CKEditor for ' + elementId, e);
+        }
+    }
+    
+    // Function to initialize CKEditors only for content fields
+    function initializeContentEditors() {
+        $('.ckeditor-textarea').each(function() {
+            const id = $(this).attr('id');
+            if (id && !editorInstances[id]) {
+                // Small delay to ensure DOM is ready
+                setTimeout(function() {
+                    initCKEditor(id);
+                }, 100);
+            }
+        });
+    }
+    
+    // Function to update textarea values from CKEditor before submit
+    function updateTextareaValues() {
+        for (let id in editorInstances) {
+            if (editorInstances[id] && editorInstances[id].getData) {
+                const textarea = $('#' + id);
+                if (textarea.length) {
+                    textarea.val(editorInstances[id].getData());
+                }
+            }
+        }
+    }
+    
+    // Form validation before submit
+    $('#flashcards-form').submit(function(e) {
+        // Update all textarea values from CKEditor (only content fields)
+        updateTextareaValues();
+        
+        let hasError = false;
+        let errorMessages = [];
+        
+        // Get the question value (plain textarea, no CKEditor)
+        const question = $('#cards_0_question').val().trim();
+        const correctAnswer = $('#cards_0_correct_answer').val().trim();
+        
+        if (!question) {
+            hasError = true;
+            errorMessages.push(`Question is required`);
+            $('#cards_0_question').css('border-color', '#ef4444');
+        } else {
+            $('#cards_0_question').css('border-color', '#e2e8f0');
+        }
+        
+        if (!correctAnswer) {
+            hasError = true;
+            errorMessages.push(`Correct answer is required`);
+            $('#cards_0_correct_answer').css('border-color', '#ef4444');
+        } else {
+            $('#cards_0_correct_answer').css('border-color', '#e2e8f0');
+        }
+        
+        if (hasError) {
+            e.preventDefault();
+            alert('Please fix the following errors:\n\n' + errorMessages.join('\n'));
+            return false;
+        }
+        
+        return true;
+    });
+    
+    // Clear error styling on focus
+    $(document).on('focus', 'textarea, input, select', function() {
+        $(this).css('border-color', '#e2e8f0');
+    });
+    
+    // Initialize CKEditors only for content fields when page loads
+    setTimeout(function() {
+        initializeContentEditors();
+    }, 200);
+});
+</script>
 
 @include('includes.footer')
 @endsection
