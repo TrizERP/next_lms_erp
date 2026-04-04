@@ -28,7 +28,6 @@ use App\Models\school_setup\divisionModel;
 use App\Models\school_setup\academic_sectionModel;
 use App\Models\lmslmsData;
 use function App\Helpers\get_string;
-//use function App\Helpers\FeeBreakoffHeadWise;
 use GuzzleHttp\Client;
 use Illuminate\Support\Facades\Http;
 use function App\Helpers\is_mobile;
@@ -731,6 +730,17 @@ class AJAXController extends Controller
             exit;
         }
 
+$standard = DB::table('standard as s')
+    ->join('tblstudent_enrollment as t', function ($join) {
+        $join->on('t.standard_id', '=', 's.id')
+             ->on('t.sub_institute_id', '=', 's.sub_institute_id');
+    })
+    ->where('t.syear', $syear)
+    ->where('s.sub_institute_id', $sub_institute_id)
+    ->where('t.student_id', $student_id)
+    ->select('s.id as standard_id')
+    ->first();
+    $std = $standard->standard_id;
 
         $stu_arr = array(
             "0" => $student_id,
@@ -761,11 +771,75 @@ class AJAXController extends Controller
 //         }
         
         $other_bk_off_month_wise2 = $reg_bk_off2 = $other_bk_off2 = $head_wise_fees2 = array();
-        if(session()->get('sub_institute_id')!=48 && session()->get('sub_institute_id')!=61){
+        if(session()->get('sub_institute_id')!=61){
             $other_bk_off_month_wise2 = OtherBreackOfMonth($stu_arr,$last_syear); //for previous year
             $reg_bk_off2 = FeeBreackoff($stu_arr,'',$last_syear); //for previous year
             $other_bk_off2 = OtherBreackOff($stu_arr, $search_ids2,'','','',$last_syear); //for previous year
-            $head_wise_fees2 = FeeBreakoffHeadWise($stu_arr,'','','',$last_syear);//for previous year
+
+        // get fees breakoff according to fees titile from helper.php
+        $data = DB::table('tblstudent_enrollment as a')
+        ->select('a.syear', 'a.standard_id')
+        ->join('standard as s', 's.id', '=', 'a.standard_id')
+        ->whereNull('a.end_date')
+        ->where('a.sub_institute_id', $sub_institute_id)
+        ->where('a.student_id', $student_id)
+        ->where('a.standard_id', '<', $std)
+        ->get()->toArray();    
+
+        $previous_standard = [];
+
+        foreach ($data as $row) {
+            $previous_standard[] = [
+                'last_syear'             => $row->syear,
+                'last_std'               => $row->standard_id,
+            ];
+        }
+        $head_wise_fees2 = [];
+
+            foreach ($previous_standard as $item) {
+            
+                $merged_head_results = FeeBreakoffHeadWise(
+                    $stu_arr,
+                    '',
+                    '',
+                    '',
+                    $item['last_syear']
+                );
+            
+                if (!empty($merged_head_results)) {
+            
+                    foreach ($merged_head_results as $row) {
+            
+                        $id = $row['id'];
+            
+                        // If first record for this ID → set full data
+                        if (!isset($head_wise_fees2[$id])) {
+                            $head_wise_fees2[$id] = $row;
+                        } else {
+            
+                            // ────────────────
+                            // MERGE ONLY BREAKOFF
+                            // ────────────────
+                            if (!empty($row['breakoff'])) {
+            
+                                // Initialize breakoff if missing
+                                if (!isset($head_wise_fees2[$id]['breakoff'])) {
+                                    $head_wise_fees2[$id]['breakoff'] = [];
+                                }
+            
+                                // Flat merge → newer breakoff replaces older breakoff
+                                $head_wise_fees2[$id]['breakoff'] =
+                                    array_replace(
+                                        $head_wise_fees2[$id]['breakoff'],
+                                        $row['breakoff']
+                                    );
+                            }
+                        }
+                    }
+                }
+            }
+            
+            //$head_wise_fees2 = FeeBreakoffHeadWise($stu_arr,'','','',$last_syear);//for previous year
         }
      
         $till_now_breckoff = $till_now_breckoff2 = array();

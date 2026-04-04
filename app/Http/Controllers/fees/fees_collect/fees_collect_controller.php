@@ -243,8 +243,9 @@ class fees_collect_controller extends Controller
         $request = Request::capture();
         foreach ($result as $id => $arr) {
             $bk_stu_id = $arr->id;
+            $bk_std_id = $arr->standard_id;
             // get paid and unpiad history of student by his/her id
-            $paid_result = $this->getBk($request, $bk_stu_id);
+            $paid_result = $this->getBk($request, $bk_stu_id,$bk_std_id);
             // echo "<pre>";print_r($paid_result);exit;
             if(isset($paid_result) && !empty($paid_result)){
                 $pd_stu_id = $paid_result['stu_data']['student_id'];
@@ -490,7 +491,85 @@ class fees_collect_controller extends Controller
             $other_bk_off_month_wise2 = OtherBreackOfMonth($stu_arr,$last_syear,$sub_institute_id);   // for previous year
             $other_bk_off_month_head_wise2 = OtherBreackOfMonthHead($stu_arr, $search_ids,$last_syear,$sub_institute_id); // for previous year
             $year_arr2 = FeeMonthId($last_syear,$sub_institute_id) ?? []; // for previous year
-            $head_wise_fees2 = FeeBreakoffHeadWise($stu_arr,'','','',$last_syear,$sub_institute_id); // for previous year
+
+$standard = DB::table('standard as s')
+    ->join('tblstudent_enrollment as t', function ($join) {
+        $join->on('t.standard_id', '=', 's.id')
+             ->on('t.sub_institute_id', '=', 's.sub_institute_id');
+    })
+    ->where('t.syear', $syear)
+    ->where('s.sub_institute_id', $sub_institute_id)
+    ->where('t.student_id', $stu_arr[0])
+    ->select('s.id as standard_id')
+    ->first();
+    $std = $standard->standard_id;            
+            
+            
+        // get fees breakoff according to fees titile from helper.php
+    $data = DB::table('tblstudent_enrollment as a')
+    ->select('a.syear', 'a.standard_id', 's.marking_period_id')
+    ->join('standard as s', 's.id', '=', 'a.standard_id')
+    ->whereNull('a.end_date')
+    ->where('a.sub_institute_id', $sub_institute_id)
+    ->where('a.student_id', $stu_arr[0])
+    ->where('a.standard_id', '<', $std)
+    ->orderBy('s.sort_order', 'desc')
+    ->get()->toArray();
+            
+    $previous_standard = [];
+
+    foreach ($data as $row) {
+        $previous_standard[] = [
+            'last_syear'             => $row->syear,
+            'last_std'               => $row->standard_id,
+        ];
+    }
+    $head_wise_fees2 = [];
+
+        foreach ($previous_standard as $item) {
+        
+            $merged_head_results = FeeBreakoffHeadWise(
+                $stu_arr,
+                '',
+                '',
+                '',
+                $item['last_syear']
+            );
+        
+            if (!empty($merged_head_results)) {
+        
+                foreach ($merged_head_results as $row) {
+        
+                    $id = $row['id'];
+        
+                    // If first record for this ID → set full data
+                    if (!isset($head_wise_fees2[$id])) {
+                        $head_wise_fees2[$id] = $row;
+                    } else {
+        
+                        // ────────────────
+                        // MERGE ONLY BREAKOFF
+                        // ────────────────
+                        if (!empty($row['breakoff'])) {
+        
+                            // Initialize breakoff if missing
+                            if (!isset($head_wise_fees2[$id]['breakoff'])) {
+                                $head_wise_fees2[$id]['breakoff'] = [];
+                            }
+        
+                            // Flat merge → newer breakoff replaces older breakoff
+                            $head_wise_fees2[$id]['breakoff'] =
+                                array_replace(
+                                    $head_wise_fees2[$id]['breakoff'],
+                                    $row['breakoff']
+                                );
+                        }
+                    }
+                }
+            }
+        }            
+
+    //$head_wise_fees2 = FeeBreakoffHeadWise($stu_arr,'','','',$last_syear,$sub_institute_id); // for previous year
             // return $head_wise_fees2;exit;
             $reg_fee_heads2 = [];
             $reg_fee_bk2 = [];
@@ -630,8 +709,8 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             }
             if (isset($year_arr2) && array_key_exists($key, $year_arr2)) {
                 // $standard_ids
-                $standard_ids[$key] = ($_REQUEST['standard_id'] - 1);
-                $syears[$key] = ($syear - 1);
+                $standard_ids[$key] = $previous_standard[0]['last_std'];
+                $syears[$key] = $previous_standard[0]['last_syear'];
             }
         }
         // insert into fees_collect
@@ -2014,35 +2093,62 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
     }
 
     // function is used into getBk function to get data according to syear
-    public function get_syear_data($syear,$sub_institute_id,$student_id, $fees_join, $paid_other_join){
-        $termIdQuery = DB::table(function ($query) use ($syear,$sub_institute_id, $student_id, $fees_join, $paid_other_join) {
+    public function get_syear_data($syear,$sub_institute_id,$student_id, $fees_join, $paid_other_join,$std='',$marking_period_id=''){
+        
+        $termIdQuery = DB::table(function ($query) use ($syear,$sub_institute_id, $student_id, $fees_join, $paid_other_join,$std,$marking_period_id) {
             $query->selectRaw('SUM(fc.amount) as amount, fc.term_id,SUM(fc.fees_discount) as fees_discount,SUM(fc.fine) as fees_fine')
                 ->from('tblstudent as s')
+                ->join('tblstudent_enrollment as se',function($join) use($syear){
+                    $join->on('se.student_id','=','s.id')->where('syear',$syear);
+                })
                 ->join('fees_collect as fc', function ($join) use ($sub_institute_id) {
                     $join->on('fc.student_id', '=', 's.id')
                         ->where('fc.is_deleted', '=', 'N')
                         ->where('fc.sub_institute_id', '=', $sub_institute_id);
                 })
+                ->join('standard as st', function($join) use($marking_period_id) {
+                    $join->on('st.id', '=', 'se.standard_id')
+                    ->on('fc.standard_id', '=', 'se.standard_id');
+                    //->when($marking_period_id,function($query) use($marking_period_id){ // added on 03-03-2025
+                    //    $query->where('st.marking_period_id',$marking_period_id);
+                    //});
+                })
                 ->where('s.sub_institute_id', '=', $sub_institute_id)
                 ->where('s.id', '=', $student_id)
                 ->where('fc.syear', '=', $syear)
                 ->where('fc.is_deleted', '=',"N")
-                ->groupBy('s.id', 'fc.term_id');
+                ->when($std!='',function($q) use($std){
+                    $q->where('se.standard_id',$std);
+                })
+                ->groupBy('s.id', 'fc.term_id','se.standard_id');
             if (!empty($fees_join)) {
                 $query->whereRaw($fees_join);
             }
 
-            $query->unionAll(function ($subQuery) use ($syear,$sub_institute_id, $student_id, $paid_other_join) {
+            $query->unionAll(function ($subQuery) use ($syear,$sub_institute_id, $student_id, $paid_other_join,$std,$marking_period_id) {
                 $subQuery->selectRaw('SUM(fpo.actual_amountpaid) as amount, fpo.month_id,SUM(fpo.fees_discount) as fees_discount,SUM(fpo.fine) as fees_fine')
                     ->from('tblstudent as s')
+                    ->join('tblstudent_enrollment as se',function($join) use($syear){
+                        $join->on('se.student_id','=','s.id')->where('syear',$syear);
+                    })
+                    ->join('standard as st', function($join) use($marking_period_id) {
+                        $join->on('st.id', '=', 'se.standard_id');
+                        //->when($marking_period_id,function($query) use($marking_period_id){ // added on 03-03-2025
+                        //    $query->where('st.marking_period_id',$marking_period_id);
+                        //});
+                    })
                     ->join('fees_paid_other as fpo', function ($join) {
-                        $join->on('fpo.student_id', '=', 's.id');
+                        $join->on('fpo.student_id', '=', 's.id')
+                        ->on('fpo.standard_id', '=', 'se.standard_id');
                     })
                     ->where('s.sub_institute_id', '=', $sub_institute_id)
                     ->where('s.id', '=', $student_id)
                     ->where('fpo.syear', '=',$syear)
                     ->where('fpo.is_deleted', '=',"N")
-                    ->groupBy('s.id', 'fpo.month_id');
+                    ->when($std!='',function($q) use($std){
+                        $q->where('se.standard_id',$std);
+                    })
+                    ->groupBy('s.id', 'fpo.month_id','se.standard_id');
 
                 if (!empty($paid_other_join)) {
                     $subQuery->whereRaw($paid_other_join);
@@ -2059,7 +2165,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
     }
 
     // function is used to get fees BREAKOFF of particular student students
-    public function getBk(Request $request, $id)
+    public function getBk(Request $request, $id,$std='')
     {
         // echo "<pre>";print_r($request->all());exit;
         $sub_institute_id = session()->get('sub_institute_id');
@@ -2070,16 +2176,56 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             "0" => $id,
         ];
 
-        //session(['stu_arr' => $stu_arr]);
-        //$request->session()->put('stu_arr', $stu_arr);
-
         $student_id = $id;
 
-        // get current syear month_id with name and month_id
-        $month_arr = FeeMonthId();
-        $year_arr = FeeMonthId();//for current year
-        // get last syear month_id with name and month_id
-        $month_arr2 = FeeMonthId($last_syear);
+    // If $std not passed, fetch it
+    if (empty($std)) {
+        $std = DB::table('tblstudent_enrollment as a')
+            ->where('a.sub_institute_id', $sub_institute_id)
+            ->where('a.syear', $syear)
+            ->where('a.student_id', $student_id)
+            ->value('a.standard_id');
+    }
+
+    // Safety check (avoid error)
+    if (empty($std)) {
+        return []; // or handle as needed
+    }
+
+$data = DB::table('tblstudent_enrollment as a')
+    ->select('a.syear', 'a.standard_id')
+    ->join('standard as s', 's.id', '=', 'a.standard_id')
+    ->whereNull('a.end_date')
+    ->where('a.sub_institute_id', $sub_institute_id)
+    ->where('a.student_id', $student_id)
+    ->where('a.standard_id', '<', (int)$std)
+    ->orderBy('a.syear', 'desc')
+    ->get()->toArray();
+
+    $previous_standard = [];
+
+    foreach ($data as $row) {
+        $previous_standard[] = [
+            'last_syear'             => $row->syear,
+            'last_std'               => $row->standard_id,
+        ];
+    }
+
+$month_arr2 = [];
+
+foreach ($previous_standard as $item) {
+
+    $month_arr2_results = FeeMonthId($item['last_syear']);
+    if (!empty($month_arr2_results)) {
+        $month_arr2 = $month_arr2 + $month_arr2_results;
+    }
+}
+     
+    // get current syear month_id with name and month_id
+    $month_arr = FeeMonthId();
+    $year_arr = FeeMonthId();//for current year
+    // get last syear month_id with name and month_id
+    // $month_arr2 = FeeMonthId($last_syear);
 
         if($request->type=="API"){
             $sub_institute_id=$request->sub_institute_id;
@@ -2151,9 +2297,29 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             }
         }
 
+    $paid_result2 = collect();
+
+    foreach ($previous_standard as $item) {
+
+        $merged_paid_results = $this->get_syear_data(
+            $item['last_syear'],
+            $sub_institute_id,
+            $student_id,
+            $fees_join,
+            $paid_other_join,
+            $item['last_std']
+        );
+
+        // Merge only if NOT empty
+        if (!empty($merged_paid_results) && count($merged_paid_results) > 0) {
+            $paid_result2 = $paid_result2->merge($merged_paid_results);
+        }
+    }        
         // get student data according to syear and conditions
-       $paid_result = $this->get_syear_data($syear,$sub_institute_id,$student_id, $fees_join, $paid_other_join);
-       $paid_result2 = $this->get_syear_data($last_syear,$sub_institute_id,$student_id, $fees_join, $paid_other_join);
+//echo "<pre>";print_r($paid_result2);exit;
+    // $paid_result2 = $this->get_syear_data($last_syear,$sub_institute_id,$student_id, $fees_join, $paid_other_join);
+       $paid_result = $this->get_syear_data($syear,$sub_institute_id,$student_id, $fees_join, $paid_other_join,$std);
+
         $fees_paid_arr = $discount_arr = $fine_arr = $fees_paid_arr2 = $discount_arr2 = $fine_arr2 = [];
         foreach ($paid_result as $id => $arr) {
             $fees_paid_arr[$arr->term_id] = $arr->amount;
@@ -2173,8 +2339,23 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
         // get fees breakoff of all years
         $reg_bk_off = FeeBreackoff($stu_arr, $request->standard,$syear,$sub_institute_id); //for current year
 
-        if($sub_institute_id != 48 && $sub_institute_id != 61){//Previous Year Fees Not Display in Current Year - Rajesh 01-07-2024
-            $reg_bk_off2 = FeeBreackoff($stu_arr, null,$last_syear,$sub_institute_id); // for previous 
+        if($sub_institute_id != 61){//Previous Year Fees Not Display in Current Year - Rajesh 01-07-2024
+            //$reg_bk_off2 = FeeBreackoff($stu_arr, null,$last_syear,$sub_institute_id); // for previous 
+            $reg_bk_off2 = [];
+
+            foreach ($previous_standard as $item) {
+        
+                $merged_breakoff_results = FeeBreackoff(
+                    $stu_arr, 
+                    $item['last_std'],
+                    $item['last_syear']
+                );
+
+                // Merge only if NOT empty
+                if (!empty($merged_breakoff_results) && count($merged_breakoff_results) > 0) {
+                    $reg_bk_off2 = array_merge($reg_bk_off2, $merged_breakoff_results);
+                }
+            }
         }
         $reg_bk_off_count = is_array($reg_bk_off) ? count($reg_bk_off) : $reg_bk_off->count();
         // commented on 11-01-2025
@@ -2431,9 +2612,53 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
         // ];
 
         // get fees breakoff according to fees titile from hrlper.php
-        $head_wise_fees = FeeBreakoffHeadWise($stu_arr,'','','',$syear,'',$sub_institute_id); //for current year
+        $head_wise_fees2 = [];
+
+        foreach ($previous_standard as $item) {
         
-        $head_wise_fees2 = FeeBreakoffHeadWise($stu_arr,'','','',$last_syear,'',$sub_institute_id); //for previous year
+            $merged_head_results = FeeBreakoffHeadWise(
+                $stu_arr,
+                '',
+                '',
+                '',
+                $item['last_syear']
+            );
+        
+            if (!empty($merged_head_results)) {
+        
+                foreach ($merged_head_results as $row) {
+        
+                    $id = $row['id'];
+        
+                    // If first record for this ID → set full data
+                    if (!isset($head_wise_fees2[$id])) {
+                        $head_wise_fees2[$id] = $row;
+                    } else {
+        
+                        // ────────────────
+                        // MERGE ONLY BREAKOFF
+                        // ────────────────
+                        if (!empty($row['breakoff'])) {
+        
+                            // Initialize breakoff if missing
+                            if (!isset($head_wise_fees2[$id]['breakoff'])) {
+                                $head_wise_fees2[$id]['breakoff'] = [];
+                            }
+        
+                            // Flat merge → newer breakoff replaces older breakoff
+                            $head_wise_fees2[$id]['breakoff'] =
+                                array_replace(
+                                    $head_wise_fees2[$id]['breakoff'],
+                                    $row['breakoff']
+                                );
+                        }
+                    }
+                }
+            }
+        }
+
+        $head_wise_fees = FeeBreakoffHeadWise($stu_arr,'','','',$syear,'',$sub_institute_id); //for current year
+        //$head_wise_fees2 = FeeBreakoffHeadWise($stu_arr,'','','',$last_syear,'',$sub_institute_id); //for previous year
 
         $till_now_breckoff = $till_now_breckoff2 = [];
         foreach ($search_ids as $id => $val) {
@@ -2748,8 +2973,9 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             $sub_institute_id = $request->sub_institute_id;
             $syear = $request->syear;
         }
+
         $res = $this->getBk($request, $id);
-        // echo "<pre>";print_r($res);exit;
+        //echo "<pre>";print_r($res);exit;
         $res['bank_data'] = bankmasterModel::orderBy('bank_name', 'asc')->get()->toArray();
         // 18-01-2025 start get term 1 selected
         $res['header_month'] = DB::table('fees_month_header')
