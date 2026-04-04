@@ -19,11 +19,11 @@
                 </nav>
             </div>
             <div class="col-lg-6 col-md-4 col-sm-4 col-xs-12 mb-4 text-md-right">
-                <a href="#" id="openAssessmentPreview" class="btn btn-info add-new">
-                    <i class="fa fa-plus"></i> Add Question (AI)
-                </a> 
                 <a href="{{ route('question_master.create', ['chapter_id' => $_REQUEST['chapter_id'],'standard_id'=>$_REQUEST['standard_id']]) }}"
-                    class="btn btn-info add-new"><i class="fa fa-plus"></i> Add Question</a>  
+                    class="btn btn-info add-new"><i class="fa fa-plus"></i> Add Question</a>
+                <br/>
+                <a href="#" id="openAssessmentPreview" class="btn btn-success add-new">
+                    <i class="fa fa-rocket"></i> AI</a>
             </div>
         </div>
 
