@@ -422,7 +422,7 @@ class online_fees_collect_controller extends Controller
         $mission_account = ['SHRISWAMI1'];
 
         // 🔁 Run for last 3 days (including today)
-        for ($i = 0; $i < 3; $i++) {
+        for ($i = 0; $i < 4; $i++) {
             $settlementDate = Carbon::now()->subDays($i)->format('d-m-Y');
             //$settlementDate = '10-11-2025';
             
@@ -2483,16 +2483,21 @@ exit; */
 
         // get payment data if payment status is not captured and is not null and order id is not null
         $payment_data = DB::table('fees_payment AS fp')
-            ->select('fp.id', 'fp.student_id', 'fr.key_id', 'fr.key_secret', 'fp.razorpay_order_id', 'tse.syear', 'fp.sub_institute_id', 'fp.amount')
+            ->select('fp.id', 'fp.student_id',DB::raw('COALESCE(fr1.key_id, fr2.key_id) AS key_id'),
+    DB::raw('COALESCE(fr1.key_secret, fr2.key_secret) AS key_secret'), 'fp.razorpay_order_id', 'tse.syear', 'fp.sub_institute_id', 'fp.amount')
             ->join('tblstudent_enrollment AS tse', function ($join) {
                 $join->on('tse.student_id', '=', 'fp.student_id')
                     ->on('tse.syear', '=', 'fp.syear')
                     ->on('tse.sub_institute_id', '=', 'fp.sub_institute_id');
             })
             ->join('academic_section AS a', 'a.id', '=', 'tse.grade_id')
-            ->join('fees_razorpay AS fr', function ($join) {
-                $join->on('fr.medium', '=', 'a.medium')
-                    ->on('fr.sub_institute_id', '=', 'tse.sub_institute_id');
+            ->leftjoin('fees_razorpay AS fr1', function ($join) {
+                $join->on('fr1.medium', '=', 'a.medium')
+                    ->on('fr1.sub_institute_id', '=', 'tse.sub_institute_id');
+            })
+            ->leftjoin('fees_hdfcrazorpay AS fr2', function ($join) {
+                $join->on('fr2.medium', '=', 'a.medium')
+                    ->on('fr2.sub_institute_id', '=', 'tse.sub_institute_id');
             })
             ->where(function ($query) {
                 $query->whereNotIn('fp.razorpay_dashboard_ps', ['captured', 'refunded', 'rajesh','failed'])
@@ -2998,7 +3003,13 @@ if (Str::startsWith($order_id, 'pay_')) {
         if (empty($get_map_bank_detail)) {
             return response()->json(['error' => 'Payment gateway configuration missing'], 500);
         }
-        
+
+if (isset($input['error'])) {
+    $type = $request->input('type') ?? 'web';
+    $school_data = array();
+    return \App\Helpers\is_mobile($type,"fees/online_fees_collect/show_error",$school_data,"view");
+}
+
         // STEP 4: Update payment record (same as first function)
         DB::table("fees_payment")
             ->where(["id" => $inserted_id])

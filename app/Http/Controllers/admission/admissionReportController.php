@@ -406,7 +406,7 @@ class admissionReportController extends Controller
                 ai.previous_standard,ai.source_of_enquiry,ai.father_name, CONCAT_WS(' ',ts.first_name,ts.last_name) AS created_by";
             }else{
                 $select = "ai.enquiry_no,ai.first_name, ai.middle_name, ai.last_name, ai.gender,
-                ai.mobile, ai.email,s.name AS admission_standard,d.name AS div_name,sq.title AS stu_quota,
+                ai.mobile, ai.address,ai.email,s.name AS admission_standard,d.name AS div_name,sq.title AS stu_quota,
                 $customField, CONCAT_WS(' ',ts.first_name,ts.last_name) AS created_by";
             }
             // 2024-12-28 end 

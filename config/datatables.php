@@ -124,4 +124,9 @@ return [
      * Callbacks needs to start by those terms, or they will be cast to string.
      */
     'callback' => ['$', '$.', 'function'],
+    // store hindi,gujarati or html any data
+    'mysql' => [
+    'charset' => 'utf8mb4',
+    'collation' => 'utf8mb4_unicode_ci',
+],
 ];

@@ -206,6 +206,7 @@ class StudentGraphController extends Controller
 
     /**
      * Get student assessment data with scores and levels
+     * Gets all assessments and returns the last exam for each chapter
      * 
      * @param Request $request
      * @return JsonResponse
@@ -218,9 +219,15 @@ class StudentGraphController extends Controller
             // Required parameters
             $studentId = (int) $request->get('student_id');
             $subInstituteId = (int) $request->get('sub_institute_id');
-            $year = (int) $request->get('syear', 2024); // Default to 2024
+            $year = (int) $request->get('syear', 2025); // Default to 2025
 
-            // Validation
+            // Required filter parameters for the query
+            // $standardId = (int) $request->get('standard_id');
+            // $subjectId = (int) $request->get('subject_id');
+            // $chapterId = (int) $request->get('chapter_id');
+            // $assessmentId = (int) $request->get('assessment_id');
+
+            // Validation - all parameters required for this query
             if (!$studentId || !$subInstituteId) {
                 return response()->json([
                     'success' => false,
@@ -228,79 +235,71 @@ class StudentGraphController extends Controller
                 ], 400);
             }
 
-            // Cypher query converted from the user's request
-            $query = '
-            MATCH (sd:StuDetail {student_id: $studentId, sub_institute_id: $subInstituteId})
-            -[:HAS_STUDENT]->(stu:Student)
-
-            /* Standard → Subject → Chapter */
-            MATCH (stu)-[:ENROLLED_IN]->(st:Standard)
-            MATCH (st)-[:HAS_SUBJECT]->(sub:Subject)
-            MATCH (sub)-[:HAS_CHAPTER]->(ch:Chapter)
-
-            /* Mastery */
-            MATCH (stu)-[m:MASTERS]->(ch)
-            WHERE m.proficiency_score IS NOT NULL
-
-            /* Result → Assessment (filtered by year) */
-            MATCH (stu)-[:HAS_RESULT]->(r:Result)
-            MATCH (r)-[:FOR_ASSESSMENT]->(ass:Assessment)
-            WHERE stu.syear = $year
-
-            OPTIONAL MATCH (ass)-[:ASSESSES_CHAPTER]->(ch)
-
-            /* Aggregation */
-            WITH sd, stu, st, sub, ch, ass,
-                 MAX(r.obtain_marks) AS obtained_marks,
-                 COALESCE(ass.total_marks, 0) AS total_marks
-
-            /* Percentage */
-            WITH sd, stu, st, sub, ch, ass,
-                 obtained_marks,
-                 total_marks,
-                 CASE 
-                    WHEN total_marks > 0 
-                    THEN (obtained_marks * 1.0 / total_marks) * 100
-                    ELSE 0
-                 END AS percentage
-
-            /* Level */
-            WITH sd, stu, st, sub, ch, ass,
-                 total_marks,
-                 obtained_marks,
-                 percentage,
-                 CASE 
-                    WHEN percentage < 40 THEN "easy"
-                    WHEN percentage < 70 THEN "medium"
-                    ELSE "hard"
-                 END AS student_level
-
-            RETURN
-              stu.student_id                     AS student_id,
-              sd.first_name + " " + sd.last_name AS student_name,
-              stu.syear                          AS syear,
-              st.standard_id                     AS standard_id,
-              st.name                            AS standard_name,
-              sub.subject_id                     AS subject_id,
-              sub.display_name                   AS subject_name,
-              ass.assId                          AS assessment_id,
-              ass.paper_name                     AS assessment_name,
-              COALESCE(ass.question_ids, [])    AS question_ids,
-              ch.chId                            AS chapter_id,
-              ch.chapter_name                    AS chapter_name,
-              total_marks                        AS assessment_total,
-              obtained_marks                     AS obtained_marks,
-              ROUND(percentage,2)                AS student_average_score,
-              student_level                      AS student_level
-
-            ORDER BY sub.display_name, ch.chapter_name
-            ';
-
+            // Params for the query
             $params = [
                 'studentId' => $studentId,
                 'subInstituteId' => $subInstituteId,
-                'year' => $year
+                'year' => $year,
+                // 'standardId' => $standardId,
+                // 'subjectId' => $subjectId,
+                // 'chapterId' => $chapterId,
+                // 'assessmentId' => $assessmentId
             ];
+
+            // Cypher query with parameters in MATCH clauses
+            $query = 'MATCH (sd:StuDetail {student_id: $studentId, sub_institute_id: $subInstituteId})
+      -[:HAS_STUDENT]->(stu:Student)
+MATCH (stu)-[:ENROLLED_IN]->(st:Standard)
+MATCH (st)-[:HAS_SUBJECT]->(sub:Subject)
+MATCH (stu)-[m:MASTERS]->(ch:Chapter)
+MATCH (stu)-[:HAS_RESULT]->(r:Result)-[:FOR_ASSESSMENT]->(ass:Assessment)
+MATCH (ass)-[:ASSESSES_CHAPTER]->(ch:Chapter)
+MATCH (ass)-[:HAS_QUESTION]->(q:Question)
+WITH sd, stu, st, sub, ch, ass,
+     COLLECT(DISTINCT q.qId) AS question_ids,
+     MAX(r.obtain_marks) AS obtained_marks,
+     COALESCE(ass.total_marks, 0) AS total_marks
+/* Percentage */
+WITH sd, stu, st, sub, ch, ass,
+     question_ids,
+     obtained_marks,
+     total_marks,
+     CASE 
+        WHEN total_marks > 0 
+        THEN (obtained_marks * 1.0 / total_marks) * 100
+        ELSE 0
+     END AS percentage
+
+/* Level */
+WITH sd, stu, st, sub, ch, ass,
+     question_ids,
+     total_marks,
+     obtained_marks,
+     percentage,
+     CASE 
+        WHEN percentage < 40 THEN "easy"
+        WHEN percentage < 70 THEN "medium"
+        ELSE "hard"
+     END AS student_level
+RETURN  stu.student_id                     AS student_id,
+  sd.first_name + " " + sd.last_name AS student_name,
+  stu.syear                          AS syear,
+  st.standard_id                     AS standard_id,
+  st.name                            AS standard_name,
+  sub.subject_id                     AS subject_id,
+  sub.display_name                   AS subject_name,
+  ass.assId                          AS assessment_id,
+  ass.paper_name                     AS assessment_name,
+  ass.question_ids                   AS question_ids,
+  ch.chId                            AS chapter_id,
+  ch.chapter_name                    AS chapter_name,
+  total_marks                        AS assessment_total,
+  obtained_marks                     AS obtained_marks,
+  ROUND(percentage,2)                AS student_average_score,
+  student_level                      AS student_level
+
+LIMIT 1
+';
 
             $result = $client->run($query, $params);
 
@@ -332,8 +331,7 @@ class StudentGraphController extends Controller
                 'count' => count($data),
                 'filters' => [
                     'student_id' => $studentId,
-                    'sub_institute_id' => $subInstituteId,
-                    'syear' => $year
+                    'sub_institute_id' => $subInstituteId
                 ]
             ], 200);
 
@@ -341,7 +339,7 @@ class StudentGraphController extends Controller
             Log::error('StudentAssessment API Error: ' . $e->getMessage(), [
                 'student_id' => $request->get('student_id'),
                 'sub_institute_id' => $request->get('sub_institute_id'),
-                'syear' => $request->get('syear'),
+                'year' => $request->get('year'),    
                 'trace' => $e->getTraceAsString()
             ]);
 
