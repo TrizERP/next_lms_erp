@@ -920,15 +920,15 @@ if(in_array($sub_institute_id, $cn))
                 ->get();
 
             if (isset($data[0])) {
-                if($data[0]->otp == null || $data[0]->otp == ''){
+                //if($data[0]->otp == null || $data[0]->otp == ''){
                     $otp = rand(100000, 999999);
-                }else{
-                    $otp = $data[0]->otp;
-                }
+                //}else{
+                //    $otp = $data[0]->otp;
+                //}
                 
                 $sub_institute_id = $data[0]->sub_institute_id;
 
-                if ($mobile == '9979176562' || $mobile == '9824154142') {
+                if ($mobile == '9979176562' || $mobile == '9974463770') {
                     $otp = "123456";
                 }else{
                     $text = "OTP for login is ".$otp." and is valid for 5 minutes";

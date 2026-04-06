@@ -715,16 +715,16 @@ class assessmentQuestionController extends Controller
             } else {
                 // Original workflow - use mappings from frontend
                 $isMultipleType = !empty($questionTypeId) && $questionTypeId == 1;
-                
+                $names = $this->getName($standard, $subject_id, $chapter_id, $topic_id);
                 // Build the prompt - check if we need MCQ only
                 if ($isMultipleType) {
                     $prompt = "Generate unique MCQ questions (Multiple Choice Questions with 4 options) for " .
-                        "Standard: " . ($standard ?? 'General') .
-                        ", Subject: " . ($subject_id ?? 'General') .
-                        ", Chapter: " . ($chapter_id ?? 'General');
+                        "Standard: " . $names['standard'] .
+                        ", Subject: " . $names['subject'] .
+                        ", Chapter: " . $names['chapter'];
                     
                     if ($topic_id) {
-                        $prompt .= ", Topic: " . $topic_id;
+                        $prompt .= ", Topic: " . $names['topic'];
                     }
                     
                     // Add mapping info to make questions more specific
@@ -744,12 +744,12 @@ class assessmentQuestionController extends Controller
                 } else {
                     // Original behavior - generate varied question types
                     $prompt = "Generate unique, varied questions for " .
-                        "Standard: " . ($standard ?? 'General') .
-                        ", Subject: " . ($subject_id ?? 'General') .
-                        ", Chapter: " . ($chapter_id ?? 'General');
+                        "Standard: " . $names['standard'] .
+                        ", Subject: " . $names['subject'] .
+                        ", Chapter: " . $names['chapter'];
                     
                     if ($topic_id) {
-                        $prompt .= ", Topic: " . $topic_id;
+                        $prompt .= ", Topic: " . $names['topic'];
                     }
                     
                     // Add mapping info to make questions more specific
@@ -765,7 +765,7 @@ class assessmentQuestionController extends Controller
                     $questionCount = !empty($mappings[0]['questions']) ? (int)$mappings[0]['questions'] : 5;
                     $prompt .= ". Generate exactly " . $questionCount . " different question(s) that vary in type (MCQ, short answer, long answer, fill in the blanks) and difficulty level. ";
                     $prompt .= "Make each question unique and different from each other. Use this seed for variety: " . $seed . ". ";
-                    $prompt .= "Return the response as a JSON array of question objects with fields: question, question_type (MCQ/ShortAnswer/LongAnswer/FillInBlanks), difficulty (Easy/Medium/Hard), options (array of 4 for MCQ), correct_answer, and explanation.";
+                    $prompt .= "Return the response as a JSON array of question objects with fields: question, question_type (MCQ/ShortAnswer/LongAnswer/FillInBlanks), difficulty (Easy/Medium/Hard), options (array of 4 for MCQ), correct_answer, and explanation. with no extra text want only json array";
                 }
                 if($questionTypeId == 1){
                     $prompt .= " and it must have different types of 4 options which differentiate between them. give me corre t_answer also below the options array.";
