@@ -490,7 +490,6 @@ class fees_collect_controller extends Controller
             $other_bk_off2 = OtherBreackOff($stu_arr, $search_ids,'','','','',$sub_institute_id); // for previous year
             $other_bk_off_month_wise2 = OtherBreackOfMonth($stu_arr,$last_syear,$sub_institute_id);   // for previous year
             $other_bk_off_month_head_wise2 = OtherBreackOfMonthHead($stu_arr, $search_ids,$last_syear,$sub_institute_id); // for previous year
-            $year_arr2 = FeeMonthId($last_syear,$sub_institute_id) ?? []; // for previous year
 
 $standard = DB::table('standard as s')
     ->join('tblstudent_enrollment as t', function ($join) {
@@ -502,28 +501,44 @@ $standard = DB::table('standard as s')
     ->where('t.student_id', $stu_arr[0])
     ->select('s.id as standard_id')
     ->first();
-    $std = $standard->standard_id;            
-            
-            
-        // get fees breakoff according to fees titile from helper.php
-    $data = DB::table('tblstudent_enrollment as a')
+    $std = $standard->standard_id;
+
+$data = DB::table('tblstudent_enrollment as a')
     ->select('a.syear', 'a.standard_id', 's.marking_period_id')
     ->join('standard as s', 's.id', '=', 'a.standard_id')
     ->whereNull('a.end_date')
     ->where('a.sub_institute_id', $sub_institute_id)
     ->where('a.student_id', $stu_arr[0])
     ->where('a.standard_id', '<', $std)
-    ->orderBy('s.sort_order', 'desc')
-    ->get()->toArray();
-            
-    $previous_standard = [];
+    ->orderBy('s.sort_order', 'asc')
+    ->get()
+    ->toArray();
 
-    foreach ($data as $row) {
-        $previous_standard[] = [
-            'last_syear'             => $row->syear,
-            'last_std'               => $row->standard_id,
-        ];
+$previous_standard = [];
+$year_arr2 = [];
+
+foreach ($data as $row) {
+
+    // Get months array
+    $months_arr = FeeMonthId($row->syear);
+
+    // Convert to comma-separated string (values only)
+    $months_string = '';
+    if (!empty($months_arr)) {
+        $months_string = implode(',', array_keys($months_arr));
+        // Merge for global array (if needed)
+        $year_arr2 = $year_arr2 + $months_arr;
     }
+
+    // Store with last_months
+    $previous_standard[] = [
+        'last_syear'   => $row->syear,
+        'last_std'     => $row->standard_id,
+        'last_months'  => $months_string, // comma separated
+    ];
+}
+//echo "<pre>";print_r($previous_standard);print_r($year_arr2);exit();
+    
     $head_wise_fees2 = [];
 
         foreach ($previous_standard as $item) {
@@ -595,7 +610,7 @@ $standard = DB::table('standard as s')
                     $reg_months_pay2[] = $id;
                 }
             }
-
+//echo "<pre>";print_r($_REQUEST['fees_data']);print_r($reg_fee_bk2);exit();
             foreach ($reg_fee_bk2 as $month => $bk_off) {
                 if (in_array($month, $reg_months_pay2)) {
                     foreach ($bk_off as $title => $arr) {
@@ -617,6 +632,7 @@ $standard = DB::table('standard as s')
             }
             $reg_insert_arr2 = [];
         }
+//echo "<pre>";print_r($reg_insert_arr);exit();
         //get last generated receipt number fees_heads
         $receipt_number = $this->gunrate_receipt_number($sub_institute_id,$syear);
         // getting all heads with id
@@ -641,7 +657,7 @@ $standard = DB::table('standard as s')
                 }
             }
         }
-
+//echo "<pre>";print_r($new_insert_arr);exit();
         // sort other breakoff month date
        // Custom sorting function
 uksort($other_bk_off_month_head_wise, function($a, $b) {
@@ -708,9 +724,21 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                 $syears[$key] = $syear;
             }
             if (isset($year_arr2) && array_key_exists($key, $year_arr2)) {
-                // $standard_ids
-                $standard_ids[$key] = $previous_standard[0]['last_std'];
-                $syears[$key] = $previous_standard[0]['last_syear'];
+
+                foreach ($previous_standard as $ps) {
+                    
+                    // Convert comma string → array
+                    $months = explode(',', $ps['last_months']);
+
+                    // Check if key exists in that months list
+                    if (in_array($key, $months)) {
+
+                        $standard_ids[$key] = $ps['last_std'];
+                        $syears[$key]       = $ps['last_syear'];
+
+                        break; // stop once found
+                    }
+                }
             }
         }
         // insert into fees_collect

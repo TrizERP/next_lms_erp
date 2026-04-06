@@ -28,6 +28,7 @@ use App\Models\school_setup\divisionModel;
 use App\Models\school_setup\academic_sectionModel;
 use App\Models\lmslmsData;
 use function App\Helpers\get_string;
+//use function App\Helpers\FeeBreakoffHeadWise;
 use GuzzleHttp\Client;
 use Illuminate\Support\Facades\Http;
 use function App\Helpers\is_mobile;
@@ -725,28 +726,57 @@ class AJAXController extends Controller
         $student_id = $request->student_id;
         $last_syear = (session()->get('syear')-1);
 
+        //ADDED BY RAJESH 04-04-2026
+        $syear = session()->get('syear');
+        $sub_institute_id = session()->get('sub_institute_id');
+
         if (empty($months)) {
             return "";
             exit;
         }
 
-$standard = DB::table('standard as s')
-    ->join('tblstudent_enrollment as t', function ($join) {
-        $join->on('t.standard_id', '=', 's.id')
-             ->on('t.sub_institute_id', '=', 's.sub_institute_id');
-    })
-    ->where('t.syear', $syear)
-    ->where('s.sub_institute_id', $sub_institute_id)
-    ->where('t.student_id', $student_id)
-    ->select('s.id as standard_id')
-    ->first();
-    $std = $standard->standard_id;
 
         $stu_arr = array(
             "0" => $student_id,
         );
 
-        $year_arr2 = FeeMonthId($last_syear); //for current year
+$std = DB::table('tblstudent_enrollment as a')
+    ->where('a.sub_institute_id', $sub_institute_id)
+    ->where('a.syear', $syear)
+    ->where('a.student_id', $student_id)
+    ->value('a.standard_id');
+
+$data = DB::table('tblstudent_enrollment as a')
+    ->select('a.syear', 'a.standard_id')
+    ->join('standard as s', 's.id', '=', 'a.standard_id')
+    ->whereNull('a.end_date')
+    ->where('a.sub_institute_id', $sub_institute_id)
+    ->where('a.student_id', $student_id)
+    ->where('a.standard_id', '<', (int)$std)
+    ->orderBy('a.syear', 'desc')
+    ->get()->toArray();
+
+    $previous_standard = [];
+
+    foreach ($data as $row) {
+        $previous_standard[] = [
+            'last_syear'             => $row->syear,
+            'last_std'               => $row->standard_id,
+        ];
+    }    
+
+    $year_arr2 = [];
+
+foreach ($previous_standard as $item) {
+
+    $year_arr2_results = FeeMonthId($item['last_syear']);
+    if (!empty($year_arr2_results)) {
+        $year_arr2 = $year_arr2 + $year_arr2_results;
+    }
+}
+
+//echo "<pre>";print_r($year_arr2);exit;
+        // $year_arr2 = FeeMonthId($last_syear);
 
         $currunt_month = date('m');
         $last_y_month_id = $currunt_month . (session()->get('syear') - 1);
@@ -775,25 +805,7 @@ $standard = DB::table('standard as s')
             $other_bk_off_month_wise2 = OtherBreackOfMonth($stu_arr,$last_syear); //for previous year
             $reg_bk_off2 = FeeBreackoff($stu_arr,'',$last_syear); //for previous year
             $other_bk_off2 = OtherBreackOff($stu_arr, $search_ids2,'','','',$last_syear); //for previous year
-
-        // get fees breakoff according to fees titile from helper.php
-        $data = DB::table('tblstudent_enrollment as a')
-        ->select('a.syear', 'a.standard_id')
-        ->join('standard as s', 's.id', '=', 'a.standard_id')
-        ->whereNull('a.end_date')
-        ->where('a.sub_institute_id', $sub_institute_id)
-        ->where('a.student_id', $student_id)
-        ->where('a.standard_id', '<', $std)
-        ->get()->toArray();    
-
-        $previous_standard = [];
-
-        foreach ($data as $row) {
-            $previous_standard[] = [
-                'last_syear'             => $row->syear,
-                'last_std'               => $row->standard_id,
-            ];
-        }
+        
         $head_wise_fees2 = [];
 
             foreach ($previous_standard as $item) {
