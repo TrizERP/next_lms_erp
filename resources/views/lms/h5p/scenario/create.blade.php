@@ -327,7 +327,7 @@
                     </div>
                     <div class="col-md-2 mb-3">
                         <button type="button" id="generateAIContent" class="btn ai-btn">
-                            <i class="mdi mdi-creation"></i>
+                            <i class="mdi mdi-creation"></i> Generate AI
                         </button>
                     </div>
                     <div class="col-md-12 mb-3">
@@ -407,6 +407,25 @@
     let pointModalInstance = null;
     let currentImageFile = null;
 
+    // CKEditor Configuration
+    CKEDITOR.config.toolbar_Full = [
+        { name: 'document', items: [ 'Source'] },
+        { name: 'clipboard', items: [ 'Cut','Copy','Paste','-','Undo','Redo' ] },
+        { name: 'editing', items: [ 'Find'] },
+        { name: 'basicstyles', items: [ 'Bold','Italic','Underline'] },
+        { name: 'paragraph', items: [ 'JustifyLeft','JustifyCenter','JustifyRight'] }
+    ];
+    CKEDITOR.config.height = '200px';
+    
+    // Register external plugins
+    CKEDITOR.plugins.addExternal('divarea', '../examples/extraplugins/divarea/', 'plugin.js');
+    CKEDITOR.plugins.addExternal('sharedspace', '../examples/extraplugins/sharedspace/', 'plugin.js');
+    CKEDITOR.plugins.addExternal('filebrowser', '../examples/extraplugins/filebrowser/', 'plugin.js');
+    CKEDITOR.plugins.addExternal('enterkey', '../examples/extraplugins/enterkey/', 'plugin.js');
+    CKEDITOR.plugins.addExternal('FMathEditor', '../examples/extraplugins/FMathEditor/', 'plugin.js');
+    
+    CKEDITOR.config.removePlugins = 'maximize,resize';
+
     function showNotification(message, type = 'success') {
         const notification = $('<div>')
             .addClass(type === 'success' ? 'ai-success-alert' : 'ai-error-alert')
@@ -467,12 +486,18 @@
 
     // Initialize CKEditor for main description
     CKEDITOR.replace('descriptionEditor', {
-        height: 200,
+        extraPlugins: 'filebrowser,divarea,sharedspace,FMathEditor,enterkey',
+        enterMode: CKEDITOR.ENTER_BR,
+        language: 'en',
+        height: '200px',
         toolbar: [
-            { name: 'basicstyles', items: ['Bold', 'Italic', 'Underline'] },
-            { name: 'paragraph', items: ['NumberedList', 'BulletedList'] },
-            { name: 'links', items: ['Link', 'Unlink'] },
-            { name: 'insert', items: ['Image', 'Table'] }
+            { name: 'document', items: [ 'Source'] },
+            { name: 'clipboard', items: [ 'Cut','Copy','Paste','-','Undo','Redo' ] },
+            { name: 'editing', items: [ 'Find'] },
+            { name: 'basicstyles', items: [ 'Bold','Italic','Underline'] },
+            { name: 'paragraph', items: [ 'JustifyLeft','JustifyCenter','JustifyRight'] },
+            { name: 'links', items: [ 'Link', 'Unlink' ] },
+            { name: 'insert', items: [ 'Image', 'Table', 'HorizontalRule', 'SpecialChar' ] }
         ],
         filebrowserUploadUrl: "{{ route('uploadimage', ['_token' => csrf_token()]) }}",
         filebrowserUploadMethod: 'form'
@@ -484,21 +509,35 @@
             pointEditor.destroy();
         }
         pointEditor = CKEDITOR.replace('pointDescription', {
-            height: 250,
+            extraPlugins: 'filebrowser,divarea,sharedspace,FMathEditor,enterkey',
+            enterMode: CKEDITOR.ENTER_BR,
+            language: 'en',
+            height: '250px',
             toolbar: [
-                { name: 'basicstyles', items: ['Bold', 'Italic', 'Underline'] },
-                { name: 'paragraph', items: ['NumberedList', 'BulletedList'] },
-                { name: 'links', items: ['Link', 'Unlink'] },
-                { name: 'insert', items: ['Image'] }
+                { name: 'document', items: [ 'Source'] },
+                { name: 'clipboard', items: [ 'Cut','Copy','Paste','-','Undo','Redo' ] },
+                { name: 'basicstyles', items: [ 'Bold','Italic','Underline'] },
+                { name: 'paragraph', items: [ 'JustifyLeft','JustifyCenter','JustifyRight'] },
+                { name: 'links', items: [ 'Link', 'Unlink' ] },
+                { name: 'insert', items: [ 'Image', 'Table' ] }
             ],
             filebrowserUploadUrl: "{{ route('uploadimage', ['_token' => csrf_token()]) }}",
             filebrowserUploadMethod: 'form'
+        });
+        
+        // Add blur event to update textarea
+        pointEditor.on('blur', function() {
+            $('#pointDescription').val(this.getData());
         });
     }
 
     CKEDITOR.on('instanceReady', function(ev) {
         if (ev.editor.name === 'descriptionEditor') {
             mainEditor = ev.editor;
+            // Add blur event for main editor
+            mainEditor.on('blur', function() {
+                $('#descriptionEditor').val(this.getData());
+            });
         }
     });
 
@@ -948,8 +987,13 @@ Analyze the image data carefully and generate accurate, educational content.`;
     });
 
     $('form').on('submit', function(e) {
-        if (mainEditor) mainEditor.updateElement();
-        if (pointEditor) pointEditor.updateElement();
+        // Update textarea values from CKEditor
+        if (mainEditor) {
+            mainEditor.updateElement();
+        }
+        if (pointEditor) {
+            pointEditor.updateElement();
+        }
         
         let imageUploaded = $('#imageUpload').val();
         if (imageUploaded && points.length === 0) {

@@ -178,6 +178,17 @@
         overflow-y: auto;
     }
     
+    /* Custom CKEditor Styles */
+    .cke {
+        border-radius: 12px !important;
+        border: 2px solid #e2e8f0 !important;
+    }
+
+    .cke_focus {
+        border-color: #005bea !important;
+        box-shadow: 0 0 0 3px rgba(0, 91, 234, 0.1) !important;
+    }
+    
     @media (max-width: 768px) {
         .points-list {
             justify-content: center;
@@ -322,31 +333,51 @@
 </div>
 
 @include('includes.lmsfooterJs')
-<script src="https://cdn.ckeditor.com/4.22.1/full-all/ckeditor.js"></script>
+<script src="{{ asset("/ckeditor_wiris/ckeditor4/ckeditor.js") }}"></script>
 <script>
     let points = [];
     let currentX = 0, currentY = 0;
     let isEditing = false;
     let mainEditor, pointEditor;
     let pointModalInstance;
+    
+    // CKEditor configuration
+    CKEDITOR.config.toolbar_Full = [
+        { name: 'document', items: [ 'Source'] },
+        { name: 'clipboard', items: [ 'Cut','Copy','Paste','-','Undo','Redo' ] },
+        { name: 'editing', items: [ 'Find'] },
+        { name: 'basicstyles', items: [ 'Bold','Italic','Underline'] },
+        { name: 'paragraph', items: [ 'JustifyLeft','JustifyCenter','JustifyRight'] }
+    ];
+    CKEDITOR.config.height = '200px';
+    
+    // Register external plugins
+    CKEDITOR.plugins.addExternal('divarea', '../examples/extraplugins/divarea/', 'plugin.js');
+    CKEDITOR.plugins.addExternal('sharedspace', '../examples/extraplugins/sharedspace/', 'plugin.js');
+    CKEDITOR.plugins.addExternal('filebrowser', '../examples/extraplugins/filebrowser/', 'plugin.js');
+    CKEDITOR.plugins.addExternal('enterkey', '../examples/extraplugins/enterkey/', 'plugin.js');
+    CKEDITOR.plugins.addExternal('FMathEditor', '../examples/extraplugins/FMathEditor/', 'plugin.js');
+    
+    CKEDITOR.config.removePlugins = 'maximize,resize';
 
     // Initialize CKEditor for main description
     CKEDITOR.replace('descriptionEditor', {
-        height: 200,
+        extraPlugins: 'filebrowser,divarea,sharedspace,FMathEditor,enterkey',
+        enterMode: CKEDITOR.ENTER_BR,
+        language: 'en',
+        height: '200px',
         toolbar: [
-            { name: 'basicstyles', items: ['Bold', 'Italic', 'Underline', 'Strike'] },
-            { name: 'paragraph', items: ['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent'] },
-            { name: 'links', items: ['Link', 'Unlink', 'Anchor'] },
-            { name: 'insert', items: ['Image', 'Table', 'HorizontalRule', 'SpecialChar'] },
-            { name: 'styles', items: ['Format', 'Font', 'FontSize'] },
-            { name: 'colors', items: ['TextColor', 'BGColor'] },
-            { name: 'tools', items: ['Maximize'] }
+            { name: 'document', items: [ 'Source'] },
+            { name: 'clipboard', items: [ 'Cut','Copy','Paste','-','Undo','Redo' ] },
+            { name: 'editing', items: [ 'Find'] },
+            { name: 'basicstyles', items: [ 'Bold','Italic','Underline'] },
+            { name: 'paragraph', items: [ 'JustifyLeft','JustifyCenter','JustifyRight'] },
+            { name: 'links', items: [ 'Link', 'Unlink' ] },
+            { name: 'insert', items: [ 'Image', 'Table', 'HorizontalRule', 'SpecialChar' ] },
+            { name: 'tools', items: [ 'Maximize' ] }
         ],
         filebrowserUploadUrl: "{{ route('uploadimage', ['_token' => csrf_token()]) }}",
-        filebrowserUploadMethod: 'form',
-        allowedContent: true,
-        removePlugins: 'resize',
-        extraPlugins: 'image,link,table'
+        filebrowserUploadMethod: 'form'
     });
 
     // Initialize CKEditor for point description with full toolbar
@@ -356,41 +387,39 @@
         }
         
         pointEditor = CKEDITOR.replace('pointDesc', {
-            height: 300,
+            extraPlugins: 'filebrowser,divarea,sharedspace,FMathEditor,enterkey',
+            enterMode: CKEDITOR.ENTER_BR,
+            language: 'en',
+            height: '300px',
             toolbar: [
-                { name: 'basicstyles', items: ['Bold', 'Italic', 'Underline', 'Strike', '-', 'RemoveFormat'] },
-                { name: 'paragraph', items: ['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent', '-', 'Blockquote'] },
-                { name: 'links', items: ['Link', 'Unlink', 'Anchor'] },
-                { name: 'insert', items: ['Image', 'Table', 'HorizontalRule', 'SpecialChar', 'PageBreak'] },
-                { name: 'styles', items: ['Format', 'Font', 'FontSize'] },
-                { name: 'colors', items: ['TextColor', 'BGColor'] },
-                { name: 'document', items: ['Source'] },
-                { name: 'tools', items: ['Maximize'] }
+                { name: 'document', items: [ 'Source'] },
+                { name: 'clipboard', items: [ 'Cut','Copy','Paste','-','Undo','Redo' ] },
+                { name: 'editing', items: [ 'Find'] },
+                { name: 'basicstyles', items: [ 'Bold','Italic','Underline'] },
+                { name: 'paragraph', items: [ 'JustifyLeft','JustifyCenter','JustifyRight'] },
+                { name: 'links', items: [ 'Link', 'Unlink' ] },
+                { name: 'insert', items: [ 'Image', 'Table', 'HorizontalRule', 'SpecialChar' ] },
+                { name: 'tools', items: [ 'Maximize' ] }
             ],
             filebrowserUploadUrl: "{{ route('uploadimage', ['_token' => csrf_token()]) }}",
-            filebrowserUploadMethod: 'form',
-            allowedContent: true,
-            removePlugins: 'resize',
-            extraPlugins: 'image,link,table,sourcearea',
-            // Ensure links are properly formatted
-            linkShowTargetTab: true,
-            linkShowAdvancedTab: true,
-            // Allow embedding external content
-            embed_provider: '//ckeditor.iframe.ly/api/oembed?url={url}&callback={callback}'
+            filebrowserUploadMethod: 'form'
         });
         
-        // Add event listener for link dialog to ensure proper formatting
-        pointEditor.on('dialogDefinition', function(ev) {
-            var dialogName = ev.data.name;
-            var dialogDefinition = ev.data.definition;
-            
-            if (dialogName === 'link') {
-                var infoTab = dialogDefinition.getContents('info');
-                var urlField = infoTab.get('url');
-                urlField['default'] = 'http://';
-            }
+        // Add blur event to update textarea
+        pointEditor.on('blur', function() {
+            $('#pointDesc').val(this.getData());
         });
     }
+    
+    CKEDITOR.on('instanceReady', function(ev) {
+        if (ev.editor.name === 'descriptionEditor') {
+            mainEditor = ev.editor;
+            // Add blur event for main editor
+            mainEditor.on('blur', function() {
+                $('#descriptionEditor').val(this.getData());
+            });
+        }
+    });
 
     $(document).ready(function() {
         // Initialize modal

@@ -2,83 +2,6 @@
 @section('container')
 <link rel="stylesheet" href="/admin_dep/css/h5pCSS.css">
 <style>
-    /* DataTable Custom Styles */
-    .dataTables_wrapper {
-        padding: 20px;
-        background: white;
-        border-radius: 20px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
-        margin-top: 20px;
-    }
-
-    .dataTables_length select,
-    .dataTables_filter input {
-        border: 2px solid #e2e8f0;
-        border-radius: 12px;
-        padding: 8px 15px;
-        margin: 0 5px;
-    }
-
-    .dataTables_length select:focus,
-    .dataTables_filter input:focus {
-        border-color: #005bea;
-        outline: none;
-        box-shadow: 0 0 0 3px rgba(0, 91, 234, 0.1);
-    }
-
-    .dataTables_info {
-        padding: 15px 0;
-        color: #64748b;
-    }
-
-    .dataTables_paginate {
-        padding: 15px 0;
-    }
-
-    .dataTables_paginate .paginate_button {
-        border-radius: 12px;
-        margin: 0 3px;
-        padding: 8px 15px;
-    }
-
-    .dataTables_paginate .paginate_button.current {
-        background: linear-gradient(145deg, #1e3c72, #2a5298) !important;
-        border: none;
-        color: white !important;
-    }
-
-    /* Table Styles */
-    table.dataTable {
-        border-collapse: separate;
-        border-spacing: 0 10px;
-        width: 100%;
-    }
-
-    table.dataTable thead th {
-        background: #f8fafd;
-        color: #1e3c72;
-        font-weight: 600;
-        padding: 15px;
-        border-bottom: 2px solid #e2e8f0;
-    }
-
-    table.dataTable tbody tr {
-        background: white;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
-        transition: all 0.3s ease;
-    }
-
-    table.dataTable tbody tr:hover {
-        box-shadow: 0 8px 25px rgba(30, 60, 114, 0.1);
-        transform: translateY(-2px);
-    }
-
-    table.dataTable tbody td {
-        padding: 15px;
-        border-bottom: 1px solid #f1f5f9;
-        color: #334155;
-    }
-
     /* Action Buttons */
     .action-buttons {
         display: flex;
@@ -221,7 +144,7 @@
                     <div class="header-icon">
                         <i class="fas fa-robot"></i>
                     </div>
-                   <div class="header-text">
+                    <div class="header-text">
                         <h1> {{ App\Helpers\getTableFieldFromId('chapter_master','chapter_name',$data['chapter_id']) }}</h1>
                         <div class="header-badges">
                             <span class="header-badge">
@@ -251,7 +174,52 @@
         </div>
 
         <!-- Scenarios Table -->
-        
+        @if(isset($data['flashCards']) && count($data['flashCards']) > 0)
+        <div class="card">
+            <table id="scenarioTable" class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>SR No.</th>
+                        <th>Question</th>
+                        <th>Correct Answer</th>
+                        <th>Hint</th>
+                        <th class="text-left">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($data['flashCards'] as $key => $card)
+                    <tr>
+                        <td>{{ $key + 1 }}</td>
+                        <td>{{ $card->question }}</td>
+                        <td>{{ $card->correct_answer }}</td>
+                        <td>{{ $card->hint }}</td>
+                        <td>
+                            <a href="{{ route('h5p_flashacard.show',0) }}?chapter_id={{$data['chapter_id']}}&standard_id={{$data['standard_id']}}&subject_id={{$data['subject_id']}}" class="btn-view">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            @if(!in_array(session()->get('user_profile_name'),['student','Student','STUDENT']))
+                            <a href="{{ route('h5p_flashacard.edit', $card->id) }}?chapter_id={{$data['chapter_id']}}&standard_id={{$data['standard_id']}}&subject_id={{$data['subject_id']}}" class="btn-edit">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <form action="{{ route('h5p_flashacard.destroy', $card->id)}}"
+                                method="post" class="d-inline">
+                                @csrf
+                                @method('DELETE')
+                                <input type="hidden" name="standard_id" value="{{$data['standard_id']}}">
+                                <input type="hidden" name="chapter_id" value="{{$data['chapter_id']}}">
+                                <input type="hidden" name="subject_id" value="{{$data['subject_id']}}">
+                                <button class="btn-delete" onclick="return confirmDelete();">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                            @endif
+                        </td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+        @endif
     </div>
 </div>
 

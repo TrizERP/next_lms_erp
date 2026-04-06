@@ -32,6 +32,8 @@
                 <div class="col-md-3 mb-4 text-md-right">
                     <a href="{{ route('question_paper.create') }}" class="btn btn-info add-new"><i
                             class="fa fa-plus"></i>Add Exam</a>
+                    <a href="{{ route('generate_ai_questionpaper') }}" class="btn btn-success add-new ml-2"><i
+                            class="fa fa-magic"></i>Generate AI</a>
                 </div>
             @endif
         </div>

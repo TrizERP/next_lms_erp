@@ -17,6 +17,7 @@ class apiController extends Controller
     public function login(Request $request, JwtToken $jwt)
     {
         $send_data = [];
+        $mobile = request()->input('mobile');
         $response = ['status' => '0', 'message' => 'No Student Found', 'data' => $send_data];
         $validator = Validator::make($request->all(), [
             'mobile' => 'required|numeric',
@@ -49,23 +50,23 @@ class apiController extends Controller
                 "school_setup.is_lms",
             ];
 
-            $data = DB::table("tblstudent")
+            $data = DB::table('tblstudent')
                 ->join('school_setup', 'school_setup.id', '=', 'tblstudent.sub_institute_id')
-                ->join('tblstudent_enrollment', 'tblstudent_enrollment.student_id', '=', 'tblstudent.id')
+                ->join('tblstudent_enrollment', function ($join) {
+                    $join->on('tblstudent_enrollment.student_id', '=', 'tblstudent.id')
+                         ->whereNull('tblstudent_enrollment.end_date');
+                })
                 ->join('standard', 'standard.id', '=', 'tblstudent_enrollment.standard_id')
                 ->join('division', 'division.id', '=', 'tblstudent_enrollment.section_id')
                 ->join('sms_api_details', 'sms_api_details.sub_institute_id', '=', 'school_setup.id')
-                ->orWhere([
-                    "tblstudent.mobile"         => $_REQUEST['mobile'],
-                    "tblstudent.mother_mobile"  => $_REQUEST['mobile'],
-                    "tblstudent.student_mobile" => $_REQUEST['mobile'],
-                ])
-                ->where([
-                    "sms_api_details.is_active" => "1", 
-//                    'school_setup.syear' => 'tblstudent_enrollment.syear'
-                ])
-                ->whereRaw('tblstudent_enrollment.end_date is NULL')
-//Rajesh 25-03-2026 ->whereNotIn('tblstudent.sub_institute_id', [254])
+                ->where(function ($query) use ($mobile) {
+                    $query->where('tblstudent.mobile', $mobile)
+                          ->orWhere('tblstudent.mother_mobile', $mobile)
+                          ->orWhere('tblstudent.student_mobile', $mobile);
+                })
+                ->where('sms_api_details.is_active', 1)
+                ->whereNotIn('tblstudent.sub_institute_id', [254])
+                ->whereColumn('school_setup.syear', 'tblstudent_enrollment.syear')
                 ->get($select);
 
             if (isset($data[0])) {
@@ -77,7 +78,7 @@ class apiController extends Controller
                 
                 $sub_institute_id = $data[0]->sub_institute_id;
                 $sub_Array = [328,329,330,331,333,61,336,337,338,339,340,341];
-                if ($_REQUEST['mobile'] == '9979176562' || $_REQUEST['mobile'] == '9824154142') {
+                if ($mobile == '9979176562' || $mobile == '9824154142') {
                     $otp = "123456";
                 } else if(in_array($sub_institute_id, $sub_Array)){
                     $otp = date('dmy', strtotime($data[0]->dob));
@@ -93,7 +94,7 @@ class apiController extends Controller
                         $text = "OTP for login is ".$otp." and is valid for 5 minutes";
                     }
 
-                    $res = $this->sendSMS($_REQUEST['mobile'], $text, $sub_institute_id);
+                    $res = $this->sendSMS($mobile, $text, $sub_institute_id);
                     if ($res["error"] == 1) {
                         $errorMessage = "Please add api details first.";
                         if ($res["error"] == $errorMessage) {
@@ -103,14 +104,14 @@ class apiController extends Controller
                     }
                 }
 
-                $data = DB::table("tblstudent")
-//Rajesh 25-03-2026 ->whereNotIn('tblstudent.sub_institute_id', [254])
-                    ->orWhere([
-                        "tblstudent.mobile"         => $_REQUEST['mobile'],
-                        "tblstudent.mother_mobile"  => $_REQUEST['mobile'],
-                        "tblstudent.student_mobile" => $_REQUEST['mobile'],
-                    ])
-                    ->update(["tblstudent.otp" => $otp]);
+                $data = DB::table('tblstudent')
+                    ->whereNotIn('sub_institute_id', [254])
+                    ->where(function ($query) use ($mobile) {
+                        $query->where('mobile', $mobile)
+                              ->orWhere('mother_mobile', $mobile)
+                              ->orWhere('student_mobile', $mobile);
+                    })
+                    ->update(['otp' => $otp]);
 
                 $response['status'] = '1';
                 $response['message'] = 'success';
@@ -922,12 +923,12 @@ if(in_array($sub_institute_id, $cn))
                 //if($data[0]->otp == null || $data[0]->otp == ''){
                     $otp = rand(100000, 999999);
                 //}else{
-                //  $otp = $data[0]->otp;
+
                 //}
                 
                 $sub_institute_id = $data[0]->sub_institute_id;
 
-                if ($mobile == '9979176562' || $mobile == '9824154142') {
+                if ($mobile == '9979176562' || $mobile == '9974463770') {
                     $otp = "123456";
                 }else{
                     $text = "OTP for login is ".$otp." and is valid for 5 minutes";

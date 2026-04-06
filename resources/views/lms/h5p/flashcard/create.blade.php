@@ -390,6 +390,16 @@
         border-color: #005bea !important;
         box-shadow: 0 0 0 3px rgba(0, 91, 234, 0.1) !important;
     }
+    
+    /* Ensure CKEditor fits well in cards */
+    .cke_chrome {
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+    
+    .card-item .cke {
+        margin-bottom: 10px;
+    }
 </style>
 
 <div id="page-wrapper">
@@ -454,14 +464,14 @@
                     <div class="card-item" data-card-index="0">
                         <div class="card-header">
                             <div class="d-flex align-items-center gap-3">
-                                <span class="card-number">Card #1</span>
+                                <!-- <span class="card-number">Card #1</span> -->
                             </div>
                             <div>
                                 <button type="button" class="add-card-btn-card me-2" data-position="after-0">
-                                    <i class="fas fa-plus-circle"></i> Add Card After
+                                    <i class="fas fa-plus-circle"></i>
                                 </button>
                                 <button type="button" class="remove-card" style="display: none;">
-                                    <i class="fas fa-trash-alt"></i> Remove
+                                    <i class="fas fa-trash-alt"></i>
                                 </button>
                             </div>
                         </div>
@@ -470,7 +480,7 @@
                             <div class="col-md-12">
                                 <div class="form-group">
                                     <label for="cards_0_question">Question *</label>
-                                    <textarea name="cards[0][question]" id="cards_0_question" class="form-control ckeditor-textarea" rows="5" placeholder="Enter the question...">{{ old('cards.0.question') }}</textarea>
+                                    <textarea name="cards[0][question]" id="cards_0_question" class="form-control" rows="5" placeholder="Enter the question...">{{ old('cards.0.question') }}</textarea>
                                 </div>
                             </div>
                         </div>
@@ -501,15 +511,15 @@
                     </div>
                 </div>
                 
-                <div class="text-center">
+                <!-- <div class="text-center">
                     <button type="button" class="add-card-btn-bottom" id="add-card-bottom-btn">
                         <i class="fas fa-plus-circle"></i> Add Another Card
                     </button>
-                </div>
+                </div> -->
                 
                 <div class="text-center mt-4">
                     <button type="submit" class="submit-btn">
-                        <i class="fas fa-save"></i> Save All Cards
+                        <i class="fas fa-save"></i> Submit
                     </button>
                 </div>
             </div>
@@ -524,41 +534,84 @@ $(document).ready(function() {
     let cardCount = $('.card-item').length;
     let editorInstances = {};
     
-    // Initialize CKEditor for all textareas
+   // CKEditor configuration
+    CKEDITOR.config.toolbar_Full = [
+        { name: 'document', items: [ 'Source'] },
+        { name: 'clipboard', items: [ 'Cut','Copy','Paste','-','Undo','Redo' ] },
+        { name: 'editing', items: [ 'Find'] },
+        { name: 'basicstyles', items: [ 'Bold','Italic','Underline'] },
+        { name: 'paragraph', items: [ 'JustifyLeft','JustifyCenter','JustifyRight'] }
+    ];
+    CKEDITOR.config.height = '150px';
+    
+    // Register external plugins if needed
+    CKEDITOR.plugins.addExternal('divarea', '../examples/extraplugins/divarea/', 'plugin.js');
+    CKEDITOR.plugins.addExternal('sharedspace', '../examples/extraplugins/sharedspace/', 'plugin.js');
+    CKEDITOR.plugins.addExternal('filebrowser', '../examples/extraplugins/filebrowser/', 'plugin.js');
+    CKEDITOR.plugins.addExternal('enterkey', '../examples/extraplugins/enterkey/', 'plugin.js');
+    CKEDITOR.plugins.addExternal('FMathEditor', '../examples/extraplugins/FMathEditor/', 'plugin.js');
+    
+    CKEDITOR.config.removePlugins = 'maximize,resize';
+    
+    // Initialize CKEditor only for content fields (not for questions)
     function initCKEditor(elementId) {
-        if (typeof CKEDITOR !== 'undefined') {
-            if (editorInstances[elementId]) {
-                editorInstances[elementId].destroy();
+        try {
+            // Check if element exists and not already initialized
+            if (!elementId || editorInstances[elementId]) {
+                return;
             }
+            
+            const element = document.getElementById(elementId);
+            if (!element) {
+                console.log('Element not found:', elementId);
+                return;
+            }
+            
             editorInstances[elementId] = CKEDITOR.replace(elementId, {
-                height: 150,
+                extraPlugins: 'filebrowser,divarea,sharedspace,FMathEditor,enterkey',
+                enterMode: CKEDITOR.ENTER_BR,
+                language: 'en',
+                height: '200px',
                 toolbar: [
-                    { name: 'basicstyles', items: ['Bold', 'Italic', 'Underline', 'Strike', 'Subscript', 'Superscript'] },
-                    { name: 'paragraph', items: ['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent', '-', 'Blockquote'] },
-                    { name: 'links', items: ['Link', 'Unlink'] },
-                    { name: 'insert', items: ['Image', 'Table', 'HorizontalRule', 'SpecialChar'] },
-                    { name: 'styles', items: ['Styles', 'Format', 'Font', 'FontSize'] },
-                    { name: 'colors', items: ['TextColor', 'BGColor'] },
-                    { name: 'tools', items: ['Maximize', 'ShowBlocks'] }
+                    { name: 'document', items: [ 'Source'] },
+                    { name: 'clipboard', items: [ 'Cut','Copy','Paste','-','Undo','Redo' ] },
+                    { name: 'editing', items: [ 'Find'] },
+                    { name: 'basicstyles', items: [ 'Bold','Italic','Underline'] },
+                    { name: 'paragraph', items: [ 'JustifyLeft','JustifyCenter','JustifyRight'] },
+                    { name: 'links', items: [ 'Link', 'Unlink' ] },
+                    { name: 'insert', items: [ 'Image', 'Table', 'HorizontalRule', 'SpecialChar' ] },
+                    { name: 'tools', items: [ 'Maximize' ] }
                 ],
-                removeButtons: '',
-                allowedContent: true,
-                extraPlugins: 'autogrow',
-                autoGrow_minHeight: 150,
-                autoGrow_maxHeight: 300,
-                autoGrow_bottomSpace: 50,
                 filebrowserUploadUrl: "{{ route('uploadimage', ['_token' => csrf_token()]) }}",
                 filebrowserUploadMethod: 'form'
             });
+            
+            // Add blur event to update textarea
+            editorInstances[elementId].on('blur', function() {
+                if (editorInstances[elementId] && editorInstances[elementId].getData) {
+                    $('#' + elementId).val(editorInstances[elementId].getData());
+                }
+            });
+            
+            // Add instance ready event
+            editorInstances[elementId].on('instanceReady', function() {
+                console.log('CKEditor initialized for content field:', elementId);
+            });
+            
+        } catch(e) {
+            console.log('Error initializing CKEditor for ' + elementId, e);
         }
     }
     
-    // Function to initialize all CKEditors in the form
-    function initializeAllEditors() {
+    // Function to initialize CKEditors only for content fields
+    function initializeContentEditors() {
         $('.ckeditor-textarea').each(function() {
             const id = $(this).attr('id');
             if (id && !editorInstances[id]) {
-                initCKEditor(id);
+                // Small delay to ensure DOM is ready
+                setTimeout(function() {
+                    initCKEditor(id);
+                }, 100);
             }
         });
     }
@@ -567,7 +620,10 @@ $(document).ready(function() {
     function updateTextareaValues() {
         for (let id in editorInstances) {
             if (editorInstances[id] && editorInstances[id].getData) {
-                $('#' + id).val(editorInstances[id].getData());
+                const textarea = $('#' + id);
+                if (textarea.length) {
+                    textarea.val(editorInstances[id].getData());
+                }
             }
         }
     }
@@ -575,43 +631,67 @@ $(document).ready(function() {
     // Function to destroy CKEditor instances
     function destroyEditor(editorId) {
         if (editorInstances[editorId]) {
-            editorInstances[editorId].destroy();
-            delete editorInstances[editorId];
+            try {
+                editorInstances[editorId].destroy();
+                delete editorInstances[editorId];
+            } catch(e) {
+                console.log('Error destroying editor', e);
+            }
         }
     }
     
-    // Function to update card numbers
+    // Function to destroy all editors in a card
+    function destroyCardEditors(cardElement) {
+        $(cardElement).find('.ckeditor-textarea').each(function() {
+            const id = $(this).attr('id');
+            if (id && editorInstances[id]) {
+                destroyEditor(id);
+            }
+        });
+    }
+    
+    // Function to update card numbers and reinitialize editors for content fields only
     function updateCardNumbers() {
         let index = 0;
-        $('.card-item').each(function() {
-            $(this).attr('data-card-index', index);
-            $(this).find('.card-number').text('Card #' + (index + 1));
+        const cards = $('.card-item');
+        
+        cards.each(function() {
+            const $card = $(this);
+            $card.attr('data-card-index', index);
+            $card.find('.card-number').text('Card #' + (index + 1));
             
             // Update all input names and ids
-            $(this).find('textarea, input').each(function() {
-                let name = $(this).attr('name');
+            $card.find('textarea, input').each(function() {
+                const $element = $(this);
+                let name = $element.attr('name');
+                let id = $element.attr('id');
+                
                 if (name) {
                     let newName = name.replace(/cards\[\d+\]/, 'cards[' + index + ']');
-                    $(this).attr('name', newName);
+                    $element.attr('name', newName);
                 }
-                let id = $(this).attr('id');
+                
                 if (id) {
                     let newId = id.replace(/_\d+_/, '_' + index + '_');
                     let oldId = id;
-                    $(this).attr('id', newId);
+                    $element.attr('id', newId);
                     
-                    // Update CKEditor instance if it exists
-                    if (editorInstances[oldId]) {
-                        destroyEditor(oldId);
-                        if ($(this).hasClass('ckeditor-textarea')) {
-                            initCKEditor(newId);
+                    // Handle CKEditor reinitialization only for content fields
+                    if ($element.hasClass('ckeditor-textarea')) {
+                        // Destroy old editor instance
+                        if (editorInstances[oldId]) {
+                            destroyEditor(oldId);
                         }
+                        // Initialize new editor with new ID
+                        setTimeout(function() {
+                            initCKEditor(newId);
+                        }, 50);
                     }
                 }
             });
             
             // Update add card after button position
-            $(this).find('.add-card-btn-card').attr('data-position', 'after-' + index);
+            $card.find('.add-card-btn-card').attr('data-position', 'after-' + index);
             index++;
         });
         
@@ -625,19 +705,19 @@ $(document).ready(function() {
     
     // Function to add new card after specific card
     function addCardAfter(positionIndex) {
-        const newCardIndex = cardCount;
+        const newCardIndex = $('.card-item').length;
         const newCardHtml = `
             <div class="card-item" data-card-index="${newCardIndex}">
                 <div class="card-header">
                     <div class="d-flex align-items-center gap-3">
-                        <span class="card-number">Card #${newCardIndex + 1}</span>
+                        <!-- <span class="card-number">Card #${newCardIndex + 1}</span> -->
                     </div>
                     <div>
                         <button type="button" class="add-card-btn-card me-2" data-position="after-${newCardIndex}">
-                            <i class="fas fa-plus-circle"></i> Add Card After
+                            <i class="fas fa-plus-circle"></i>
                         </button>
                         <button type="button" class="remove-card">
-                            <i class="fas fa-trash-alt"></i> Remove
+                            <i class="fas fa-trash-alt"></i>
                         </button>
                     </div>
                 </div>
@@ -646,7 +726,7 @@ $(document).ready(function() {
                     <div class="col-md-12">
                         <div class="form-group">
                             <label for="cards_${newCardIndex}_question">Question *</label>
-                            <textarea name="cards[${newCardIndex}][question]" id="cards_${newCardIndex}_question" class="form-control ckeditor-textarea" rows="5" placeholder="Enter the question..." required></textarea>
+                            <textarea name="cards[${newCardIndex}][question]" id="cards_${newCardIndex}_question" class="form-control" rows="5" placeholder="Enter the question..." required></textarea>
                         </div>
                     </div>
                 </div>
@@ -685,13 +765,18 @@ $(document).ready(function() {
             $('#cards-wrapper').append(newCardHtml);
         }
         
-        cardCount++;
+        // Update card numbers and reinitialize editors
         updateCardNumbers();
         
         // Scroll to the new card
-        $('html, body').animate({
-            scrollTop: $(`.card-item[data-card-index="${positionIndex + 1}"]`).offset().top - 100
-        }, 500);
+        setTimeout(function() {
+            const newCard = $(`.card-item[data-card-index="${positionIndex + 1}"]`);
+            if (newCard.length) {
+                $('html, body').animate({
+                    scrollTop: newCard.offset().top - 100
+                }, 500);
+            }
+        }, 200);
     }
     
     // Add new card at the bottom
@@ -713,22 +798,20 @@ $(document).ready(function() {
     $(document).on('click', '.remove-card', function() {
         if (confirm('Are you sure you want to remove this card?')) {
             const cardItem = $(this).closest('.card-item');
-            const cardId = cardItem.find('.ckeditor-textarea').attr('id');
             
-            // Destroy CKEditor instance
-            if (cardId && editorInstances[cardId]) {
-                destroyEditor(cardId);
-            }
+            // Destroy all CKEditor instances in this card (only content fields)
+            destroyCardEditors(cardItem);
             
+            // Remove the card
             cardItem.remove();
-            cardCount--;
+            
+            // Update remaining cards
             updateCardNumbers();
         }
     });
     
     // Form validation before submit
     $('#flashcards-form').submit(function(e) {
-        // Update all textarea values from CKEditor
         updateTextareaValues();
         
         let hasError = false;
@@ -769,8 +852,20 @@ $(document).ready(function() {
         $(this).css('border-color', '#e2e8f0');
     });
     
-    // Initialize all CKEditors
-    initializeAllEditors();
+    // Initialize CKEditors only for content fields when page loads
+    $(document).ready(function() {
+        // Wait for DOM to be fully ready
+        setTimeout(function() {
+            initializeContentEditors();
+        }, 200);
+    });
+    
+    // Reinitialize editors if needed (for dynamic content)
+    $(document).ajaxComplete(function() {
+        setTimeout(function() {
+            initializeContentEditors();
+        }, 100);
+    });
 });
 </script>
 

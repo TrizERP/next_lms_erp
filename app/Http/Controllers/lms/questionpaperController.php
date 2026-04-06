@@ -398,7 +398,7 @@ public function edit(Request $request, $id)
         ->where('Id', $sub_institute_id)
         ->value('is_Lms');
 
-    $sub_institute_id_by_lms = ($getIsLms == 'Y') ? "(sub_institute_id = 1 or sub_institute_id = $sub_institute_id)" : "sub_institute_id = $sub_institute_id";
+    $sub_institute_id_by_lms = ($getIsLms == 'Y') ? "(qm.sub_institute_id = 1 or qm.sub_institute_id = $sub_institute_id)" : "qm.sub_institute_id = $sub_institute_id";
 
     $data['questionpaper_data'] = questionpaperModel::find($id)->toArray();
 
@@ -423,10 +423,13 @@ public function edit(Request $request, $id)
     $grade_id = $data['questionpaper_data']['grade_id'];
 
     // Apply LMS condition to subjects query
-    $stdData = sub_std_mapModel::where('standard_id', $std_id)
-        ->whereRaw($sub_institute_id_by_lms) // Apply LMS condition here
-        ->orderBy('display_name')
-        ->get()->toArray();
+    $stdData = sub_std_mapModel::from('sub_std_map as qm')
+    ->where('qm.standard_id', $std_id)
+    ->whereRaw($sub_institute_id_by_lms)
+    ->orderBy('qm.display_name')
+    ->get()
+    ->toArray();
+
     $data['subjects'] = $stdData;
 
     $sub_id = $data['questionpaper_data']['subject_id'];
@@ -1143,6 +1146,721 @@ public function search_question($all_data){
             $count =$data[0]->total;
         }
         return $count;
+    }
+
+    /**
+     * AI Question Paper Generator - Show UI
+     * @param Request $request
+     * @return \Illuminate\Http\Response
+     */
+    public function generateAIPaper(Request $request)
+    {
+        $type = $request->input('type');
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $syear = $request->session()->get('syear');
+        $user_id = $request->session()->get('user_id');
+        $user_profile_name = $request->session()->get('user_profile_name');
+        
+        // Get difficulty levels (parent_id = 1)
+        $data['difficulty_levels'] = lmsmappingtypeModel::select('*')
+            ->where(['parent_id' => '1', 'status' => '1'])
+            ->orWhere(function($query) {
+                $query->where('parent_id', '1')->where('globally', '1');
+            })
+            ->get()->toArray();
+        
+        // Get Bloom's Taxonomy (parent_id = 2)
+        $data['bloom_taxonomy'] = lmsmappingtypeModel::select('*')
+            ->where(['parent_id' => '2', 'status' => '1'])
+            ->orWhere(function($query) {
+                $query->where('parent_id', '2')->where('globally', '1');
+            })
+            ->get()->toArray();
+        
+        // Get question types
+        $data['questiontype_data'] = questiontypeModel::select('*')->where('status', '1')->get()->toArray();
+        
+        // Get LMS mapping types for filtering
+        $data['lms_mapping_type'] = lmsmappingtypeModel::select('*')
+            ->where(['globally' => '1', 'parent_id' => '0'])
+            ->get()->toArray();
+        
+        return is_mobile($type, 'lms/generate_ai_questionpaper', $data, "view");
+    }
+    
+    /**
+     * Get Mapping Types for AI Generator
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getMappingTypes(Request $request)
+    {
+        $type = $request->input('type');
+        $parent_id = $request->input('parent_id');
+        
+        $mapping_types = lmsmappingtypeModel::select('*')
+            ->where(['parent_id' => $parent_id, 'status' => '1'])
+            ->orWhere(function($query) use ($parent_id) {
+                $query->where('parent_id', $parent_id)->where('globally', '1');
+            })
+            ->get()->toArray();
+        
+        return response()->json([
+            'status_code' => 1,
+            'data' => $mapping_types
+        ]);
+    }
+    
+    /**
+     * Validate Question Availability
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function validateQuestionAvailability(Request $request)
+    {
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $syear = $request->session()->get('syear');
+        
+        $standard_id = $request->input('standard_id');
+        $subject_id = $request->input('subject_id');
+        $chapter_ids = $request->input('chapter_ids', []);
+        $difficulty_distribution = $request->input('difficulty_distribution', []);
+        $taxonomy_distribution = $request->input('taxonomy_distribution', []);
+        $total_questions = $request->input('total_questions', 0);
+        $question_types = $request->input('question_types', []);
+        
+        // Get IsLms condition
+        $getIsLms = DB::table('school_setup')
+            ->where('Id', $sub_institute_id)
+            ->value('is_Lms');
+        $sub_institute_id_by_lms = ($getIsLms == 'Y') ? 
+            "(qm.sub_institute_id = 1 or qm.sub_institute_id = $sub_institute_id)" : 
+            "qm.sub_institute_id = $sub_institute_id";
+        
+        // Build base query
+        $query = DB::table('lms_question_master as qm')
+            ->select('qm.id', 'qm.points', 'qm.question_type_id')
+            ->where('qm.standard_id', $standard_id)
+            ->where('qm.subject_id', $subject_id)
+            ->where('qm.status', 1)
+            ->whereRaw($sub_institute_id_by_lms);
+        
+        // Filter by chapters
+        if (!empty($chapter_ids)) {
+            $query->whereIn('qm.chapter_id', $chapter_ids);
+        }
+        
+        // Filter by question types
+        if (!empty($question_types)) {
+            $query->whereIn('qm.question_type_id', $question_types);
+        }
+        
+        $questions = $query->get();
+        
+        // Get difficulty and taxonomy counts for each question
+        $questionIds = $questions->pluck('id')->toArray();
+        
+        $difficultyCounts = [];
+        $taxonomyCounts = [];
+        $typeCounts = [];
+        $totalMarks = 0;
+        
+        if (!empty($questionIds)) {
+            // Get difficulty mappings
+            $difficultyMappings = DB::table('lms_question_mapping as lqm')
+                ->join('lms_mapping_type as lmt', 'lmt.id', '=', 'lqm.mapping_value_id')
+                ->whereIn('lqm.questionmaster_id', $questionIds)
+                ->where('lqm.mapping_type_id', 1) // Difficulty type
+                ->groupBy('lqm.mapping_value_id')
+                ->select('lqm.mapping_value_id', DB::raw('count(*) as count'), DB::raw('group_concat(lqm.questionmaster_id) as question_ids'))
+                ->get();
+            
+            foreach ($difficultyMappings as $dm) {
+                $difficultyCounts[$dm->mapping_value_id] = [
+                    'count' => $dm->count,
+                    'question_ids' => explode(',', $dm->question_ids)
+                ];
+            }
+            
+            // Get taxonomy mappings
+            $taxonomyMappings = DB::table('lms_question_mapping as lqm')
+                ->join('lms_mapping_type as lmt', 'lmt.id', '=', 'lqm.mapping_value_id')
+                ->whereIn('lqm.questionmaster_id', $questionIds)
+                ->where('lqm.mapping_type_id', 2) // Bloom's taxonomy type
+                ->groupBy('lqm.mapping_value_id')
+                ->select('lqm.mapping_value_id', DB::raw('count(*) as count'), DB::raw('group_concat(lqm.questionmaster_id) as question_ids'))
+                ->get();
+            
+            foreach ($taxonomyMappings as $tm) {
+                $taxonomyCounts[$tm->mapping_value_id] = [
+                    'count' => $tm->count,
+                    'question_ids' => explode(',', $tm->question_ids)
+                ];
+            }
+            
+            // Count by question type
+            foreach ($questions as $q) {
+                $typeCounts[$q->question_type_id] = ($typeCounts[$q->question_type_id] ?? 0) + 1;
+                $totalMarks += $q->points;
+            }
+        }
+        
+        // Calculate required questions
+        $requiredDifficulty = [];
+        $requiredTaxonomy = [];
+        $canGenerate = true;
+        $warnings = [];
+        
+        foreach ($difficulty_distribution as $diff) {
+            $required = round($total_questions * ($diff['percentage'] / 100));
+            $requiredDifficulty[$diff['id']] = $required;
+            
+            $available = $difficultyCounts[$diff['id']]['count'] ?? 0;
+            if ($required > $available) {
+                $canGenerate = false;
+                $warnings[] = "Need {$required} {$diff['name']} questions, but only {$available} available";
+            }
+        }
+        
+        foreach ($taxonomy_distribution as $tax) {
+            $required = round($total_questions * ($tax['percentage'] / 100));
+            $requiredTaxonomy[$tax['id']] = $required;
+            
+            $available = $taxonomyCounts[$tax['id']]['count'] ?? 0;
+            if ($required > $available) {
+                $canGenerate = false;
+                $warnings[] = "Need {$required} {$tax['name']} questions, but only {$available} available";
+            }
+        }
+        
+        return response()->json([
+            'status_code' => $canGenerate ? 1 : 0,
+            'message' => $canGenerate ? 'Sufficient questions available' : 'Insufficient questions',
+            'total_questions_available' => count($questions),
+            'total_marks_available' => $totalMarks,
+            'difficulty_counts' => $difficultyCounts,
+            'taxonomy_counts' => $taxonomyCounts,
+            'type_counts' => $typeCounts,
+            'required_difficulty' => $requiredDifficulty,
+            'required_taxonomy' => $requiredTaxonomy,
+            'warnings' => $warnings
+        ]);
+    }
+    
+    /**
+     * Generate AI Question Paper Preview
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function previewAIPaper(Request $request)
+    {
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $syear = $request->session()->get('syear');
+        
+        $standard_id = $request->input('standard_id');
+        $subject_id = $request->input('subject_id');
+        $chapter_ids = $request->input('chapter_ids', []);
+        $difficulty_distribution = $request->input('difficulty_distribution', []);
+        $taxonomy_distribution = $request->input('taxonomy_distribution', []);
+        $total_questions = $request->input('total_questions', 0);
+        $total_marks = $request->input('total_marks', 0);
+        $marks_per_question = $request->input('marks_per_question', 1);
+        $question_types = $request->input('question_types', []);
+        $sections = $request->input('sections', []);
+        $generate_sets = $request->input('generate_sets', 1);
+        $exclude_question_ids = $request->input('exclude_question_ids', []);
+        
+        // Get IsLms condition
+        $getIsLms = DB::table('school_setup')
+            ->where('Id', $sub_institute_id)
+            ->value('is_Lms');
+        $sub_institute_id_by_lms = ($getIsLms == 'Y') ? 
+            "(qm.sub_institute_id = 1 or qm.sub_institute_id = $sub_institute_id)" : 
+            "qm.sub_institute_id = $sub_institute_id";
+        
+        // Build base query
+        $query = DB::table('lms_question_master as qm')
+            ->select(
+                'qm.id', 
+                'qm.question_title', 
+                'qm.points', 
+                'qm.question_type_id',
+                't.question_type',
+                'c.chapter_name',
+                'c.sort_order'
+            )
+            ->join('question_type_master as t', 't.id', '=', 'qm.question_type_id')
+            ->join('chapter_master as c', 'c.id', '=', 'qm.chapter_id')
+            ->where('qm.standard_id', $standard_id)
+            ->where('qm.subject_id', $subject_id)
+            ->where('qm.status', 1)
+            ->whereRaw($sub_institute_id_by_lms);
+        
+        // Filter by chapters
+        if (!empty($chapter_ids)) {
+            $query->whereIn('qm.chapter_id', $chapter_ids);
+        }
+        
+        // Filter by question types
+        if (!empty($question_types)) {
+            $query->whereIn('qm.question_type_id', $question_types);
+        }
+        
+        // Exclude already used questions
+        if (!empty($exclude_question_ids)) {
+            $query->whereNotIn('qm.id', $exclude_question_ids);
+        }
+        
+        $allQuestions = $query->get();
+        $questionIds = $allQuestions->pluck('id')->toArray();
+        
+        if (count($questionIds) < $total_questions) {
+            return response()->json([
+                'status_code' => 0,
+                'message' => 'Not enough questions available. Required: ' . $total_questions . ', Available: ' . count($questionIds)
+            ]);
+        }
+        
+        // Get mappings for each question
+        $questionMappings = DB::table('lms_question_mapping')
+            ->whereIn('questionmaster_id', $questionIds)
+            ->get()
+            ->groupBy('questionmaster_id');
+        
+        // Group questions by difficulty and taxonomy
+        $difficultyQuestions = [];
+        $taxonomyQuestions = [];
+        
+        foreach ($allQuestions as $q) {
+            $mappings = $questionMappings[$q->id] ?? collect();
+            
+            // Find difficulty
+            $difficulty = null;
+            foreach ($mappings as $m) {
+                if ($m->mapping_type_id == 1) { // Difficulty type
+                    $difficulty = $m->mapping_value_id;
+                    break;
+                }
+            }
+            
+            // Find taxonomy
+            $taxonomy = null;
+            foreach ($mappings as $m) {
+                if ($m->mapping_type_id == 2) { // Bloom's taxonomy
+                    $taxonomy = $m->mapping_value_id;
+                    break;
+                }
+            }
+            
+            $difficultyQuestions[$difficulty][] = $q;
+            $taxonomyQuestions[$taxonomy][] = $q;
+        }
+        
+        // Select questions based on distribution
+        $selectedQuestions = [];
+        $usedQuestionIds = [];
+        
+        // Calculate and select based on difficulty distribution
+        $questionsPerDifficulty = [];
+        foreach ($difficulty_distribution as $diff) {
+            $count = round($total_questions * ($diff['percentage'] / 100));
+            $questionsPerDifficulty[$diff['id']] = $count;
+        }
+        
+        // Select questions for each difficulty level
+        foreach ($questionsPerDifficulty as $diffId => $count) {
+            $availableQuestions = $difficultyQuestions[$diffId] ?? [];
+            
+            // Shuffle available questions
+            shuffle($availableQuestions);
+            
+            // Select required number
+            $selected = array_slice($availableQuestions, 0, $count);
+            foreach ($selected as $q) {
+                if (!in_array($q->id, $usedQuestionIds)) {
+                    $selectedQuestions[] = $q;
+                    $usedQuestionIds[] = $q->id;
+                }
+            }
+        }
+        
+        // If we don't have enough questions, fill from remaining
+        $remainingNeeded = $total_questions - count($selectedQuestions);
+        if ($remainingNeeded > 0) {
+            foreach ($allQuestions as $q) {
+                if (!in_array($q->id, $usedQuestionIds)) {
+                    $selectedQuestions[] = $q;
+                    $usedQuestionIds[] = $q->id;
+                    $remainingNeeded--;
+                    if ($remainingNeeded <= 0) break;
+                }
+            }
+        }
+        
+        // Shuffle selected questions
+        shuffle($selectedQuestions);
+        
+        // Organize into sections
+        $sectionData = [];
+        $sectionLetters = ['A', 'B', 'C', 'D', 'E'];
+        
+        if (empty($sections)) {
+            // Single section default
+            $sectionData[] = [
+                'name' => 'A',
+                'questions' => $selectedQuestions,
+                'total_marks' => array_sum(array_column($selectedQuestions, 'points'))
+            ];
+        } else {
+            $currentIndex = 0;
+            foreach ($sections as $idx => $section) {
+                $sectionQuestions = array_slice($selectedQuestions, $currentIndex, $section['questions']);
+                $sectionMarks = array_sum(array_column($sectionQuestions, 'points'));
+                
+                $sectionData[] = [
+                    'name' => $sectionLetters[$idx] ?? chr(65 + $idx),
+                    'questions' => $sectionQuestions,
+                    'total_marks' => $sectionMarks
+                ];
+                
+                $currentIndex += $section['questions'];
+            }
+        }
+        
+        // Generate multiple sets if requested
+        $allSets = [];
+        for ($setNum = 0; $setNum < $generate_sets; $setNum++) {
+            // Create a shuffled copy for each set
+            $setQuestions = $selectedQuestions;
+            shuffle($setQuestions);
+            
+            // Reorganize into sections
+            $setSectionData = [];
+            $currentIndex = 0;
+            foreach ($sections as $idx => $section) {
+                $sectionQuestions = array_slice($setQuestions, $currentIndex, $section['questions']);
+                $sectionMarks = array_sum(array_column($sectionQuestions, 'points'));
+                
+                $setSectionData[] = [
+                    'name' => $sectionLetters[$idx] ?? chr(65 + $idx),
+                    'questions' => $sectionQuestions,
+                    'total_marks' => $sectionMarks
+                ];
+                
+                $currentIndex += $section['questions'];
+            }
+            
+            $allSets[] = [
+                'set_name' => 'Set ' . chr(65 + $setNum),
+                'sections' => $setSectionData,
+                'total_questions' => count($setQuestions),
+                'total_marks' => array_sum(array_column($setQuestions, 'points')),
+                'question_ids' => array_column($setQuestions, 'id')
+            ];
+        }
+        
+        return response()->json([
+            'status_code' => 1,
+            'message' => 'Question paper generated successfully',
+            'sets' => $allSets,
+            'total_questions' => count($selectedQuestions),
+            'total_marks' => array_sum(array_column($selectedQuestions, 'points'))
+        ]);
+    }
+    
+    /**
+     * Save AI Generated Question Paper
+     * @param Request $request
+     * @return \Illuminate\Http\Response
+     */
+    public function saveAIPaper(Request $request)
+    {
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $syear = $request->session()->get('syear');
+        $user_id = $request->session()->get('user_id');
+
+        $paper_name = $request->input('paper_name');
+        $paper_desc = $request->input('paper_desc');
+        $grade_id = $request->input('grade');
+        $standard_id = $request->input('standard');
+        $subject_id = $request->input('subject');
+        $question_ids = $request->input('question_ids');
+        $total_questions = $request->input('total_questions', 0);
+        $total_marks = $request->input('total_marks', 0);
+        $difficulty_distribution = $request->input('difficulty_distribution', []);
+        $taxonomy_distribution = $request->input('taxonomy_distribution', []);
+        $sections_config = $request->input('sections_config', []);
+        $exam_type = $request->input('exam_type', 'online');
+        $time_allowed = $request->input('time_allowed', 60);
+        $attempt_allowed = $request->input('attempt_allowed', 1);
+        $open_date = $request->input('open_date');
+        $close_date = $request->input('close_date');
+        $type = $request->input('type');
+        
+        // Validate
+        $message = '';
+
+        if (empty($paper_name)) {
+            $message = 'Please provide paper name';
+        } elseif (empty($question_ids)) {
+            $message = 'Please select questions';
+        }
+
+        if ($message != '') {
+            return is_mobile($type, 'question_paper.index', [
+                'status_code' => 0,
+                'message' => $message
+            ], 'redirect');
+        }
+        
+        // Prepare dates
+        $openDate = !empty($open_date) ? date('Y-m-d H:i:s', strtotime($open_date)) : null;
+        $closeDate = !empty($close_date) ? date('Y-m-d 23:59:59', strtotime($close_date)) : null;
+        
+        // Create question paper
+        $questionpaper = questionpaperModel::create([
+            'grade_id' => $grade_id,
+            'standard_id' => $standard_id,
+            'subject_id' => $subject_id,
+            'paper_name' => $paper_name,
+            'paper_desc' => $paper_desc,
+            'open_date' => $openDate,
+            'close_date' => $closeDate,
+            'timelimit_enable' => 1,
+            'time_allowed' => $time_allowed,
+            'total_ques' => $total_questions,
+            'total_marks' => $total_marks,
+            'question_ids' => $question_ids,//implode(',', $question_ids),
+            'shuffle_question' => 1,
+            'attempt_allowed' => $attempt_allowed,
+            'show_feedback' => 1,
+            'show_hide' => 1,
+            'result_show_ans' => 1,
+            'created_by' => $user_id,
+            'sub_institute_id' => $sub_institute_id,
+            'syear' => $syear,
+            'exam_type' => $exam_type,
+            'ai_generated' => '1',
+            'difficulty_distribution' => json_encode($difficulty_distribution),
+            'taxonomy_distribution' => json_encode($taxonomy_distribution),
+            'sections_config' => json_encode($sections_config)
+        ]);
+        
+        $questionpaper_id = $questionpaper->id;
+        
+        // Generate PDF
+        $this->generatePDF([
+            'sub_institute_id' => $sub_institute_id,
+            'syear' => $syear
+        ], $questionpaper_id);
+        
+        $res = [
+            'status_code' => 1,
+            'message' => 'AI Question Paper Generated Successfully'
+        ];
+        
+        return is_mobile($type, 'question_paper.index', $res, 'redirect');
+    }
+    
+    /**
+     * Export AI Generated Question Paper as PDF
+     * @param Request $request
+     * @return \Illuminate\Http\Response
+     */
+    public function exportAIPaperPDF(Request $request)
+    {
+        $questionpaper_id = $request->input('questionpaper_id');
+        $set_index = $request->input('set_index', 0);
+        
+        if (!$questionpaper_id) {
+            return response()->json([
+                'status_code' => 0,
+                'message' => 'Question paper ID is required'
+            ]);
+        }
+        
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $syear = $request->session()->get('syear');
+        
+        $questionpaper = questionpaperModel::find($questionpaper_id);
+        
+        if (!$questionpaper) {
+            return response()->json([
+                'status_code' => 0,
+                'message' => 'Question paper not found'
+            ]);
+        }
+        
+        $question_ids = explode(",", $questionpaper->question_ids);
+        
+        $question_arr = lmsQuestionMasterModel::whereIn("id", $question_ids)->get()->toArray();
+        
+        $answer = [];
+        foreach ($question_arr as $key => $val) {
+            $answer_arr = answermasterModel::where("question_id", $val['id'])->get()->toArray();
+            if (count($answer_arr) > 0) {
+                foreach ($answer_arr as $anskey => $ansval) {
+                    $answer[$val['id']][] = $ansval;
+                }
+            }
+        }
+        
+        $data['questionpaper_data'] = $questionpaper->toArray();
+        $data['questionpaper_data']['set_name'] = 'Set ' . chr(65 + $set_index);
+        $data['question_arr'] = $question_arr;
+        $data['answer_arr'] = $answer;
+        
+        $sections_config = json_decode($questionpaper->sections_config, true);
+        if (!empty($sections_config)) {
+            $sectionLetters = ['A', 'B', 'C', 'D', 'E'];
+            $sections = [];
+            $currentIndex = 0;
+            
+            foreach ($sections_config as $idx => $section) {
+                $sectionQuestions = array_slice($question_arr, $currentIndex, $section['questions']);
+                $sections[] = [
+                    'name' => $sectionLetters[$idx] ?? chr(65 + $idx),
+                    'questions' => $sectionQuestions,
+                    'total_marks' => array_sum(array_column($sectionQuestions, 'points'))
+                ];
+                $currentIndex += $section['questions'];
+            }
+            $data['sections'] = $sections;
+        }
+        
+        $data['show_answer_space'] = true;
+        $html = view('lms/questionpaper_cbse', compact('data'))->render();
+        
+        $pdf_folder = public_path('storage/QuestionPaper');
+        if (!file_exists($pdf_folder)) {
+            mkdir($pdf_folder, 0777, true);
+        }
+        
+        $pdf_filename = $questionpaper_id . '_set' . ($set_index + 1) . '_' . $sub_institute_id . '_' . $syear . '.pdf';
+        $pdf_file_path = $pdf_folder . '/' . $pdf_filename;
+        
+        $dom = '<!DOCTYPE html>
+        <html>
+            <head>
+                <title>' . $questionpaper->paper_name . '</title>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            </head>
+            <body>
+                <div>##HTML_SEC##</div>
+            </body>
+        </html>';
+        
+        $html = str_replace('##HTML_SEC##', $html, $dom);
+        
+        $html_filename = $questionpaper_id . '_set' . ($set_index + 1) . '_' . $sub_institute_id . '_' . $syear . '.html';
+        $html_file_path = $pdf_folder . '/' . $html_filename;
+        
+        file_put_contents($html_file_path, $html);
+        
+        $this->htmlToPDF($html_file_path, $pdf_file_path);
+        
+        if (file_exists($html_file_path)) {
+            unlink($html_file_path);
+        }
+        
+        if (file_exists($pdf_file_path)) {
+            return response()->json([
+                'status_code' => 1,
+                'message' => 'PDF generated successfully',
+                'pdf_url' => asset('storage/QuestionPaper/' . $pdf_filename)
+            ]);
+        }
+        
+        return response()->json([
+            'status_code' => 0,
+            'message' => 'Failed to generate PDF'
+        ]);
+    }
+    
+    /**
+     * Export AI Generated Question Paper as HTML
+     * @param Request $request
+     * @return \Illuminate\Http\Response
+     */
+    public function exportAIPaperHTML(Request $request)
+    {
+        $questionpaper_id = $request->input('questionpaper_id');
+        $set_index = $request->input('set_index', 0);
+        
+        if (!$questionpaper_id) {
+            return response()->json([
+                'status_code' => 0,
+                'message' => 'Question paper ID is required'
+            ]);
+        }
+        
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $syear = $request->session()->get('syear');
+        
+        $questionpaper = questionpaperModel::find($questionpaper_id);
+        
+        if (!$questionpaper) {
+            return response()->json([
+                'status_code' => 0,
+                'message' => 'Question paper not found'
+            ]);
+        }
+        
+        $question_ids = explode(",", $questionpaper->question_ids);
+        
+        $question_arr = lmsQuestionMasterModel::whereIn("id", $question_ids)->get()->toArray();
+        
+        $answer = [];
+        foreach ($question_arr as $key => $val) {
+            $answer_arr = answermasterModel::where("question_id", $val['id'])->get()->toArray();
+            if (count($answer_arr) > 0) {
+                foreach ($answer_arr as $anskey => $ansval) {
+                    $answer[$val['id']][] = $ansval;
+                }
+            }
+        }
+        
+        $data['questionpaper_data'] = $questionpaper->toArray();
+        $data['questionpaper_data']['set_name'] = 'Set ' . chr(65 + $set_index);
+        $data['question_arr'] = $question_arr;
+        $data['answer_arr'] = $answer;
+        
+        $sections_config = json_decode($questionpaper->sections_config, true);
+        if (!empty($sections_config)) {
+            $sectionLetters = ['A', 'B', 'C', 'D', 'E'];
+            $sections = [];
+            $currentIndex = 0;
+            
+            foreach ($sections_config as $idx => $section) {
+                $sectionQuestions = array_slice($question_arr, $currentIndex, $section['questions']);
+                $sections[] = [
+                    'name' => $sectionLetters[$idx] ?? chr(65 + $idx),
+                    'questions' => $sectionQuestions,
+                    'total_marks' => array_sum(array_column($sectionQuestions, 'points'))
+                ];
+                $currentIndex += $section['questions'];
+            }
+            $data['sections'] = $sections;
+        }
+        
+        $data['show_answer_space'] = true;
+        $htmlContent = view('lms/questionpaper_cbse', compact('data'))->render();
+        
+        $fullHtml = '<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>' . ($questionpaper->paper_name ?? 'Question Paper') . '</title>
+</head>
+<body>' . $htmlContent . '</body>
+</html>';
+        
+        return response()->json([
+            'status_code' => 1,
+            'message' => 'HTML generated successfully',
+            'html' => $fullHtml
+        ]);
     }
 
 }
