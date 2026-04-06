@@ -1606,7 +1606,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
 
             $html_content = str_replace(htmlspecialchars("<<receipt_logo>>"), $image_path, $html_content);
             // 22-01-2025 start
-            $receipt_line_1 = $receipt_line_2 = $receipt_line_3 = $receipt_line_3 ='&nbsp;' ;
+            $receipt_line_1 = $receipt_line_2 = $receipt_line_3 = $receipt_line_4 ='&nbsp;' ;
 
             if ($receipt_book_arr->receipt_line_1 != '') {
                 $receipt_line_1 =  $receipt_book_arr->receipt_line_1;
